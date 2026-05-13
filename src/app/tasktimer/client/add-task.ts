@@ -42,6 +42,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   let selectedColor: string | null = null;
   let selectedColorTouched = false;
   let addTaskPlannedStartTouched = false;
+  let addTaskScheduleEnabled = false;
   let addTaskOverlayHideTimer: number | null = null;
 
   function clearAddTaskOverlayHideTimer() {
@@ -61,6 +62,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function hasSelectedTaskType() {
     return ctx.getAddTaskType() === "recurring" || ctx.getAddTaskType() === "once-off";
+  }
+
+  function syncAddTaskScheduleToggleUi() {
+    if (els.addTaskScheduleToggle) {
+      els.addTaskScheduleToggle.checked = addTaskScheduleEnabled;
+    }
+    els.addTaskScheduleFields?.classList.toggle("isHidden", !addTaskScheduleEnabled);
   }
 
   function setAddTaskError(msg: string) {
@@ -185,7 +193,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
       milestones: [],
       hasStarted: false,
-      timeGoalEnabled: true,
+      timeGoalEnabled: getAddTaskTimeGoalMinutes() > 0,
       timeGoalValue: Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0),
       timeGoalUnit: ctx.getAddTaskDurationUnit(),
       timeGoalPeriod,
@@ -285,7 +293,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       durationUnit: ctx.getAddTaskDurationUnit(),
       durationPeriod: ctx.getAddTaskDurationPeriod(),
       taskType: ctx.getAddTaskType() || undefined,
-      noTimeGoal: false,
+      noTimeGoal: getAddTaskTimeGoalMinutes() <= 0,
       milestonesEnabled: !!ctx.getAddTaskMilestonesEnabled(),
       milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
       milestones: ctx.getAddTaskMilestones(),
@@ -511,7 +519,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function validateAddTaskTimeGoal() {
     syncAddTaskDurationUi();
-    if (!(Number(ctx.getAddTaskDurationValue()) > 0)) {
+    if (!(getAddTaskTimeGoalMinutes() > 0)) {
       showAddTaskValidationError("Enter a time amount greater than 0", { duration: true });
       return false;
     }
@@ -623,6 +631,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function resetAddTaskState() {
+    addTaskScheduleEnabled = false;
     ctx.setAddTaskTypeState("recurring");
     ctx.setAddTaskOnceOffDayState("mon");
     ctx.setAddTaskPlannedStartTimeState("09:00");
@@ -657,6 +666,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       els.addTaskColorPalette.setAttribute("data-view", "main");
     }
     clearAddTaskValidationState();
+    syncAddTaskScheduleToggleUi();
     syncAddTaskTypeUi();
     syncAddTaskPlannedStartUi();
     syncAddTaskColorPalette();
@@ -702,33 +712,53 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncPlannedStartValueFromSelectors();
     clearAddTaskValidationState();
     if (!validateAddTaskName()) return;
-    if (!validateAddTaskType()) return;
-    if (!validateAddTaskOnceOffDay()) return;
-    if (!validateAddTaskTimeGoal()) return;
-    if (!validateAddTaskCheckpoints()) return;
 
     const name = (els.addTaskName?.value || "").trim();
     rememberCustomTaskName(name);
     const tasks = ctx.getTasks();
     const nextOrder = (tasks.reduce((mx, task) => Math.max(mx, task.order || 0), 0) || 0) + 1;
     const newTask = sharedTasks.makeTask(name, nextOrder);
+    newTask.color = resolveNewTaskColor({
+      tasks,
+      selectedColor,
+      selectedColorTouched,
+    });
+
+    if (!addTaskScheduleEnabled) {
+      newTask.plannedStartPushRemindersEnabled = false;
+      ctx.setTasks([...tasks, newTask]);
+      ctx.render();
+      closeAddTaskModal();
+      ctx.save();
+      void trackEvent("task_created", {
+        source_page: ctx.getCurrentAppPage(),
+        has_time_goal: false,
+        task_has_elapsed: false,
+        plan_tier: getTelemetryPlanTier(),
+      });
+      ctx.jumpToTaskAndHighlight(String(newTask.id || ""));
+      return;
+    }
+
+    if (!validateAddTaskType()) return;
+    if (!validateAddTaskOnceOffDay()) return;
+    if (!validateAddTaskTimeGoal()) return;
+    if (!validateAddTaskCheckpoints()) return;
+
     const checkpointingEnabled = !!ctx.getAddTaskMilestonesEnabled() && getAddTaskTimeGoalMinutes() > 0;
     const derivedAlertState = sharedTasks.deriveCheckpointAlertEnabledState({
       milestonesEnabled: checkpointingEnabled,
       milestones: ctx.getAddTaskMilestones(),
     } as Task);
 
-    newTask.color = resolveNewTaskColor({
-      tasks,
-      selectedColor,
-      selectedColorTouched,
-    });
     newTask.taskType = ctx.getAddTaskType() === "once-off" ? "once-off" : "recurring";
-    newTask.timeGoalEnabled = true;
+    const timeGoalMinutes = getAddTaskTimeGoalMinutes();
+    const hasTimeGoal = timeGoalMinutes > 0;
+    newTask.timeGoalEnabled = hasTimeGoal;
     newTask.timeGoalValue = Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0);
     newTask.timeGoalUnit = ctx.getAddTaskDurationUnit();
     newTask.timeGoalPeriod = isOnceOffTaskType() ? "day" : ctx.getAddTaskDurationPeriod();
-    newTask.timeGoalMinutes = getAddTaskTimeGoalMinutes();
+    newTask.timeGoalMinutes = timeGoalMinutes;
     newTask.milestonesEnabled = checkpointingEnabled;
     newTask.milestoneTimeUnit = ctx.getAddTaskMilestoneTimeUnit();
     newTask.milestones = ctx.sortMilestones(ctx.getAddTaskMilestones().slice()).map((milestone) => ({
@@ -783,6 +813,18 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskForm, "submit", (e: Event) => {
       e.preventDefault();
       createTask();
+    });
+    ctx.on(els.addTaskScheduleToggle, "change", () => {
+      addTaskScheduleEnabled = !!els.addTaskScheduleToggle?.checked;
+      clearAddTaskValidationState();
+      syncAddTaskScheduleToggleUi();
+      if (addTaskScheduleEnabled) {
+        syncAddTaskTypeUi();
+        syncAddTaskDurationUi();
+        syncAddTaskPlannedStartUi();
+        syncAddTaskCheckpointAlertUi();
+        maybeAutoFillAddTaskPlannedStart();
+      }
     });
     ctx.on(els.addTaskTypeRecurringBtn, "click", () => {
       if (ctx.getAddTaskType() === "recurring") return;

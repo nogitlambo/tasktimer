@@ -28,122 +28,129 @@ export default function EditTaskOverlay() {
               </div>
             </div>
 
-            <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
-              <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">
-                Recurring
-              </button>
-              <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
-                Once-Off
-              </button>
-            </div>
+            <label className="addTaskPlannedStartCheckboxRow editTaskInlineCheckboxLabel taskScheduleToggleRow" htmlFor="editTaskScheduleToggle">
+              <input id="editTaskScheduleToggle" type="checkbox" />
+              <span>Schedule This Task</span>
+            </label>
 
-            <div className="field editTaskTimeGoalField">
-              <div className="editTaskTimeGoalHeader" id="editTaskTimeGoalToggleRow">
-                <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
+            <div className="taskScheduleFields" id="editTaskScheduleFields">
+              <div className="unitButtons timerTypePills editTaskTypePills" id="editTaskTypePills" role="group" aria-label="Task type">
+                <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="editTaskTypeRecurringBtn" type="button" aria-pressed="true">
+                  Recurring
+                </button>
+                <button className="btn btn-ghost small unitBtn timerTypePill" id="editTaskTypeOnceOffBtn" type="button" aria-pressed="false">
+                  Once-Off
+                </button>
               </div>
-              <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
-                <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
-                <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
-                  <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
-                    Min
-                  </button>
-                  <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
-                    Hour
-                  </button>
-                </div>
-                <span className="addTaskDurationPerLabel">per</span>
-                <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
-                  <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
-                    Day
-                  </button>
-                  <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
-                    Week
-                  </button>
-                </div>
-              </div>
-              <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
-              </div>
-            </div>
 
-            <div className="field editPlannedStartField">
-              <label>Planned Start Time</label>
-              <div className="addTaskPlannedStartSection editPlannedStartSection">
-                <div className="addTaskPlannedStartSelectorRow">
-                  <div className="field editTaskOnceOffDayField isHidden" id="editTaskOnceOffDayField">
-                    <select id="editTaskOnceOffDaySelect" defaultValue="mon" aria-label="Once-off day">
-                      <option value="mon">Monday</option>
-                      <option value="tue">Tuesday</option>
-                      <option value="wed">Wednesday</option>
-                      <option value="thu">Thursday</option>
-                      <option value="fri">Friday</option>
-                      <option value="sat">Saturday</option>
-                      <option value="sun">Sunday</option>
-                    </select>
+              <div className="field editTaskTimeGoalField">
+                <div className="editTaskTimeGoalHeader" id="editTaskTimeGoalToggleRow">
+                  <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
+                </div>
+                <div className="addTaskDurationRow editTaskDurationRow" id="editTaskDurationRow">
+                  <input id="editTaskDurationValueInput" type="number" min={1} step={1} inputMode="numeric" defaultValue={5} />
+                  <div className="unitButtons addTaskDurationPills" id="editTaskDurationUnitPills" role="group" aria-label="Edit time goal unit">
+                    <button className="btn btn-ghost small unitBtn" id="editTaskDurationUnitMinute" type="button" aria-pressed="false">
+                      Min
+                    </button>
+                    <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationUnitHour" type="button" aria-pressed="true">
+                      Hour
+                    </button>
                   </div>
-                  <div className="addTaskPlannedStartTimeCluster">
-                    <select id="editPlannedStartHourSelect" aria-label="Edit start hour" defaultValue="09">
-                      <option value="01">01</option>
-                      <option value="02">02</option>
-                      <option value="03">03</option>
-                      <option value="04">04</option>
-                      <option value="05">05</option>
-                      <option value="06">06</option>
-                      <option value="07">07</option>
-                      <option value="08">08</option>
-                      <option value="09">09</option>
-                      <option value="10">10</option>
-                      <option value="11">11</option>
-                      <option value="12">12</option>
-                    </select>
-                    <span className="addTaskPlannedStartSeparator" aria-hidden="true">
-                      :
-                    </span>
-                    <select id="editPlannedStartMinuteSelect" aria-label="Edit start minute" defaultValue="00">
-                      <option value="00">00</option>
-                      <option value="05">05</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                      <option value="25">25</option>
-                      <option value="30">30</option>
-                      <option value="35">35</option>
-                      <option value="40">40</option>
-                      <option value="45">45</option>
-                      <option value="50">50</option>
-                      <option value="55">55</option>
-                    </select>
-                    <select id="editPlannedStartMeridiemSelect" aria-label="Edit start time meridiem" defaultValue="AM">
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
+                  <span className="addTaskDurationPerLabel">per</span>
+                  <div className="unitButtons addTaskDurationPills" id="editTaskDurationPeriodPills" role="group" aria-label="Edit time goal period">
+                    <button className="btn btn-ghost small unitBtn" id="editTaskDurationPeriodDay" type="button" aria-pressed="false">
+                      Day
+                    </button>
+                    <button className="btn btn-ghost small unitBtn isOn" id="editTaskDurationPeriodWeek" type="button" aria-pressed="true">
+                      Week
+                    </button>
                   </div>
                 </div>
-                <div className="editPlannedStartCheckboxRow">
-                  <label
-                    className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
-                    id="editPlannedStartPushRemindersRow"
-                    htmlFor="editPlannedStartPushReminders"
-                  >
-                    <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
-                    <span>Remind Me</span>
+                <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
+                </div>
+              </div>
+
+              <div className="field editPlannedStartField">
+                <label>Planned Start Time</label>
+                <div className="addTaskPlannedStartSection editPlannedStartSection">
+                  <div className="addTaskPlannedStartSelectorRow">
+                    <div className="field editTaskOnceOffDayField isHidden" id="editTaskOnceOffDayField">
+                      <select id="editTaskOnceOffDaySelect" defaultValue="mon" aria-label="Once-off day">
+                        <option value="mon">Monday</option>
+                        <option value="tue">Tuesday</option>
+                        <option value="wed">Wednesday</option>
+                        <option value="thu">Thursday</option>
+                        <option value="fri">Friday</option>
+                        <option value="sat">Saturday</option>
+                        <option value="sun">Sunday</option>
+                      </select>
+                    </div>
+                    <div className="addTaskPlannedStartTimeCluster">
+                      <select id="editPlannedStartHourSelect" aria-label="Edit start hour" defaultValue="09">
+                        <option value="01">01</option>
+                        <option value="02">02</option>
+                        <option value="03">03</option>
+                        <option value="04">04</option>
+                        <option value="05">05</option>
+                        <option value="06">06</option>
+                        <option value="07">07</option>
+                        <option value="08">08</option>
+                        <option value="09">09</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                      </select>
+                      <span className="addTaskPlannedStartSeparator" aria-hidden="true">
+                        :
+                      </span>
+                      <select id="editPlannedStartMinuteSelect" aria-label="Edit start minute" defaultValue="00">
+                        <option value="00">00</option>
+                        <option value="05">05</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="25">25</option>
+                        <option value="30">30</option>
+                        <option value="35">35</option>
+                        <option value="40">40</option>
+                        <option value="45">45</option>
+                        <option value="50">50</option>
+                        <option value="55">55</option>
+                      </select>
+                      <select id="editPlannedStartMeridiemSelect" aria-label="Edit start time meridiem" defaultValue="AM">
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="editPlannedStartCheckboxRow">
+                    <label
+                      className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow"
+                      id="editPlannedStartPushRemindersRow"
+                      htmlFor="editPlannedStartPushReminders"
+                    >
+                      <input id="editPlannedStartPushReminders" type="checkbox" defaultChecked />
+                      <span>Remind Me</span>
+                    </label>
+                  </div>
+                  <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
+                </div>
+              </div>
+
+              <div className="milestones" id="msArea">
+                <div className="milestonesSummary">
+                  <label className="editTaskCheckpointToggleWrap" htmlFor="msToggle">
+                    <input id="msToggle" type="checkbox" aria-label="Enable time checkpoints" />
+                    <span className="milestonesSummaryPrimary">Time Checkpoints</span>
                   </label>
                 </div>
-                <input id="editPlannedStartInput" type="hidden" defaultValue="09:00" />
-              </div>
-            </div>
-
-            <div className="milestones" id="msArea">
-              <div className="milestonesSummary">
-                <label className="editTaskCheckpointToggleWrap" htmlFor="msToggle">
-                  <input id="msToggle" type="checkbox" aria-label="Enable time checkpoints" />
-                  <span className="milestonesSummaryPrimary">Time Checkpoints</span>
-                </label>
-              </div>
-              <div className="milestonesBody">
-                <div id="msList" />
-                <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
-                  + Add Checkpoint
-                </button>
+                <div className="milestonesBody">
+                  <div id="msList" />
+                  <button className="btn btn-ghost" id="addMsBtn" type="button" style={{ width: "100%", marginTop: 10 }}>
+                    + Add Checkpoint
+                  </button>
+                </div>
               </div>
             </div>
           </div>

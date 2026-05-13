@@ -38,6 +38,7 @@ export type SettingsAccountViewModel = {
   authStatus: string;
   authError: string;
   authBusy: boolean;
+  authProfileReady: boolean;
   authPlan: TaskTimerPlan;
   authPlanStatus: "confirmed" | "refreshing";
   authPlanIsProvisional: boolean;
@@ -68,6 +69,7 @@ export type SettingsAccountViewModel = {
 export type SettingsAvatarViewModel = {
   avatarOptions: AvatarOption[];
   avatarGroups: SettingsAvatarGroup[];
+  avatarProfileReady: boolean;
   selectedAvatarId: string;
   selectedAvatar: AvatarOption | null;
   avatarSyncNotice: string;

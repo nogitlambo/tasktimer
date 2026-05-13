@@ -24,15 +24,10 @@ import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
 import WebSignIn from "../webSign-in";
 import { getEmailLinkActionCodeSettings, getEmailLinkSendErrorMessage } from "./emailLinkAuth";
+import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "./googleAuth";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
-
-function createGoogleSignInProvider() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-  return provider;
-}
 
 function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -67,15 +62,6 @@ function isNativeFirebaseAuthPluginAvailable() {
 
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
-}
-
-function shouldDisableAndroidCredentialManager() {
-  if (!isNativeOrFileRuntime()) return false;
-  try {
-    return Capacitor.getPlatform() === "android";
-  } catch {
-    return false;
-  }
 }
 
 async function resolveAuthUser(auth: Auth): Promise<User | null> {
@@ -475,10 +461,10 @@ function WebSignInPageContent() {
       if (shouldUseRedirectAuth()) {
         try {
           const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
-          const nativeResult = await FirebaseAuthentication.signInWithGoogle({
-            skipNativeAuth: true,
-            ...(shouldDisableAndroidCredentialManager() ? { useCredentialManager: false } : {}),
+          await FirebaseAuthentication.signOut().catch(() => {
+            // Best-effort native session clearing; the sign-in attempt below still owns the final outcome.
           });
+          const nativeResult = await FirebaseAuthentication.signInWithGoogle(createNativeGoogleSignInOptions());
           const idToken = nativeResult.credential?.idToken;
           const accessToken = nativeResult.credential?.accessToken;
           if (!idToken && !accessToken) {

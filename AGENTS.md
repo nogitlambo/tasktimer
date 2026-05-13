@@ -72,7 +72,6 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
   - overlays/modals: `04-overlays.css`
   - settings/account/about/rank ladder: `06-settings.css`
   - desktop rail: `09-desktop-rail.css` and `10-responsive.css`
-- Preserve the current slanted/parallelogram control language unless the request explicitly asks to change it.
 - Ensure purple/cyan theme parity when introducing new visual elements.
 - New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
 - New toggle switches should match the shared app dimensions by default: `39x21` switch track, `18x18` thumb, and `left:19px` for the on-state thumb position.

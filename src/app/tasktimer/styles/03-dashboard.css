@@ -1201,7 +1201,7 @@ body[data-control-style="square"] .dashboardTimelineDensityBtn{
   min-width:0;
 }
 .dashboardHeatDayCell.isActive{
-  background: var(--heat-color, rgba(106,196,86,.58));
+  background: rgba(201,255,36,.58);
   border-color: rgba(255,255,255,.25);
 }
 .dashboardHeatDayCell.isFiller{
@@ -2108,7 +2108,7 @@ body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch
 
 /* Final heatmap override:
    keep the dashboard card theme-aware, but make heatmap cells use a fixed
-   activity spectrum independent from cyan/purple theme selection. */
+   lime opacity scale independent from cyan/purple theme selection. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell{
   border-color: rgba(255,255,255,.08) !important;
   background:
@@ -2122,32 +2122,48 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell.isActive{
-  border-color: color-mix(in srgb, var(--heat-color) 72%, rgba(255,255,255,.34)) !important;
+  --heat-alpha: 1;
+  --heat-alpha-end: .76;
+  --heat-border-alpha: .74;
+  --heat-glow-alpha: .28;
+  border-color: rgba(201,255,36,var(--heat-border-alpha)) !important;
   background:
     radial-gradient(140% 140% at 50% 20%, rgba(255,255,255,.18), rgba(255,255,255,0) 42%),
-    linear-gradient(180deg, color-mix(in srgb, var(--heat-color) 100%, #ffffff 0%), color-mix(in srgb, var(--heat-color) 76%, #000000 24%)) !important;
+    linear-gradient(180deg, rgba(201,255,36,var(--heat-alpha)), rgba(201,255,36,var(--heat-alpha-end))) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.16),
-    0 0 0 1px color-mix(in srgb, var(--heat-color) 38%, rgba(255,255,255,.10)),
-    0 0 16px color-mix(in srgb, var(--heat-color) 36%, transparent) !important;
+    0 0 0 1px rgba(201,255,36,var(--heat-border-alpha)),
+    0 0 16px rgba(201,255,36,var(--heat-glow-alpha)) !important;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="low"].isActive{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.14),
-    0 0 0 1px rgba(76,214,103,.28),
-    0 0 14px rgba(76,214,103,.18) !important;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="level-1"].isActive{
+  --heat-alpha: .2;
+  --heat-alpha-end: .15;
+  --heat-border-alpha: .24;
+  --heat-glow-alpha: .08;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="medium"].isActive{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.16),
-    0 0 0 1px rgba(255,155,64,.3),
-    0 0 16px rgba(255,155,64,.2) !important;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="level-2"].isActive{
+  --heat-alpha: .4;
+  --heat-alpha-end: .3;
+  --heat-border-alpha: .36;
+  --heat-glow-alpha: .12;
 }
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="high"].isActive{
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.18),
-    0 0 0 1px rgba(255,88,70,.32),
-    0 0 18px rgba(255,88,70,.22) !important;
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="level-3"].isActive{
+  --heat-alpha: .6;
+  --heat-alpha-end: .46;
+  --heat-border-alpha: .48;
+  --heat-glow-alpha: .16;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="level-4"].isActive{
+  --heat-alpha: .8;
+  --heat-alpha-end: .61;
+  --heat-border-alpha: .62;
+  --heat-glow-alpha: .22;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayCell[data-activity-level="level-5"].isActive{
+  --heat-alpha: 1;
+  --heat-alpha-end: .76;
+  --heat-border-alpha: .74;
+  --heat-glow-alpha: .28;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardHeatDayNum{
   color: rgba(240,246,250,.94);

@@ -63,6 +63,14 @@ export function resolveSelectedCustomAvatarSrc(uid: string, avatarId: string): s
   return findStoredCustomAvatarUploadSrc(uid, avatarId) || (avatarId === customAvatarIdForUid(uid) ? readStoredCustomAvatarSrc(uid) : "");
 }
 
+function areStoredCustomAvatarUploadsEqual(a: StoredCustomAvatarUpload[], b: StoredCustomAvatarUpload[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((upload, index) => {
+    const nextUpload = b[index];
+    return upload.id === nextUpload?.id && upload.src === nextUpload.src && upload.label === nextUpload.label && upload.createdAt === nextUpload.createdAt;
+  });
+}
+
 export function useSettingsAvatarState({
   authUserUid,
   authUserEmail,
@@ -86,7 +94,9 @@ export function useSettingsAvatarState({
   const [rankThumbnailSrc, setRankThumbnailSrc] = useState("");
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [customAvatarUploads, setCustomAvatarUploads] = useState<StoredCustomAvatarUpload[]>([]);
+  const [avatarProfileReady, setAvatarProfileReady] = useState(false);
   const avatarSyncNoticeTimerRef = useRef<number | null>(null);
+  const loadedAvatarUidRef = useRef<string | null>(null);
 
   const showAvatarSyncNotice = useCallback((message: string, isError = false) => {
     setAvatarSyncNotice(message);
@@ -115,7 +125,10 @@ export function useSettingsAvatarState({
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
-      if (!cancelled) setCustomAvatarUploads(authUserUid ? migrateStoredCustomAvatarSrcToUploads(authUserUid) : []);
+      if (!cancelled) {
+        const nextUploads = authUserUid ? migrateStoredCustomAvatarSrcToUploads(authUserUid) : [];
+        setCustomAvatarUploads((prev) => (areStoredCustomAvatarUploadsEqual(prev, nextUploads) ? prev : nextUploads));
+      }
     });
     return () => {
       cancelled = true;
@@ -127,9 +140,24 @@ export function useSettingsAvatarState({
   }, [authGooglePhotoUrl, authHasGoogleProvider, authUserUid, customAvatarUploads]);
 
   useEffect(() => {
-    if (!authUserUid) return;
+    if (!authUserUid) {
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (!cancelled) setAvatarProfileReady(true);
+      });
+      loadedAvatarUidRef.current = null;
+      return () => {
+        cancelled = true;
+      };
+    }
 
     let cancelled = false;
+    const isInitialAvatarLoad = loadedAvatarUidRef.current !== authUserUid;
+    if (isInitialAvatarLoad) {
+      queueMicrotask(() => {
+        if (!cancelled) setAvatarProfileReady(false);
+      });
+    }
     const loadAvatar = async () => {
       const cachedAvatarId = readStoredAvatarId(authUserUid);
       if (cachedAvatarId && avatarOptions.some((avatar) => avatar.id === cachedAvatarId) && !cancelled) {
@@ -141,6 +169,7 @@ export function useSettingsAvatarState({
         if (!cancelled) {
           const fallbackAvatarId = avatarOptions.some((avatar) => avatar.id === cachedAvatarId) ? cachedAvatarId : avatarOptions[0]?.id || "";
           setSelectedAvatarId(fallbackAvatarId);
+          setAvatarProfileReady(true);
         }
         return;
       }
@@ -190,9 +219,11 @@ export function useSettingsAvatarState({
       else if (cachedRankThumbnail) await saveUserDocPatch(authUserUid, { rankThumbnailSrc: cachedRankThumbnail });
 
       if (!cancelled) {
-        setCustomAvatarUploads(nextCustomAvatarUploads);
+        setCustomAvatarUploads((prev) => (areStoredCustomAvatarUploadsEqual(prev, nextCustomAvatarUploads) ? prev : nextCustomAvatarUploads));
         setSelectedAvatarId(nextAvatarId);
         setRankThumbnailSrc(nextRankThumbnail);
+        loadedAvatarUidRef.current = authUserUid;
+        setAvatarProfileReady(true);
       }
     };
 
@@ -201,6 +232,8 @@ export function useSettingsAvatarState({
       const cachedAvatarId = readStoredAvatarId(authUserUid);
       const fallbackAvatarId = avatarOptions.some((avatar) => avatar.id === cachedAvatarId) ? cachedAvatarId : avatarOptions[0]?.id || "";
       setSelectedAvatarId(fallbackAvatarId);
+      loadedAvatarUidRef.current = authUserUid;
+      setAvatarProfileReady(true);
     });
 
     return () => {
@@ -397,6 +430,7 @@ export function useSettingsAvatarState({
   return {
     avatarOptions,
     avatarGroups,
+    avatarProfileReady,
     selectedAvatarId: effectiveSelectedAvatarId,
     selectedAvatar,
     avatarSyncNotice,

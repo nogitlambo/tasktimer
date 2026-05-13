@@ -2092,28 +2092,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const key = localDayKey(dayDate.getTime());
       const dayMs = Math.max(0, byDayMs.get(key) || 0);
       const ratio = maxDayMs > 0 ? Math.max(0, Math.min(1, dayMs / maxDayMs)) : 0;
-      const colorCss =
-        dayMs > 0
-          ? (() => {
-              if (ratio <= 0.5) {
-                const t = ratio / 0.5;
-                const hue = 120 - 84 * t;
-                const sat = 78 + 6 * t;
-                const light = 42 + 6 * t;
-                return `hsl(${Math.round(hue)} ${Math.round(sat)}% ${Math.round(light)}%)`;
-              }
-              const t = (ratio - 0.5) / 0.5;
-              const hue = 36 - 32 * t;
-              const sat = 84 + 6 * t;
-              const light = 48 - 6 * t;
-              return `hsl(${Math.round(hue)} ${Math.round(sat)}% ${Math.round(light)}%)`;
-            })()
-          : "";
-      const activityLevel = dayMs <= 0 ? "none" : ratio < 0.34 ? "low" : ratio < 0.67 ? "medium" : "high";
+      const activityLevel = dayMs <= 0 ? "none" : `level-${Math.max(1, Math.min(5, Math.ceil(ratio * 5)))}`;
       const dateText = dayDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
       const durationText = formatDashboardDurationShort(dayMs);
       const aria = `${dateText}: ${durationText} of focused time`;
-      const styleAttr = colorCss ? ` style="--heat-color:${colorCss}"` : "";
       const hasHistoryEntries = (historyByDayMs.get(key) || 0) > 0;
       html.push(
         hasHistoryEntries
@@ -2121,10 +2103,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
               key
             )}" data-heat-date-label="${ctx.escapeHtmlUI(dateText)}" role="gridcell" aria-label="${ctx.escapeHtmlUI(aria)}" title="${ctx.escapeHtmlUI(
               aria
-            )}"${styleAttr}><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></button>`
+            )}"><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></button>`
           : `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${ctx.escapeHtmlUI(
               aria
-            )}" title="${ctx.escapeHtmlUI(aria)}"${styleAttr}><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></span>`
+            )}" title="${ctx.escapeHtmlUI(aria)}"><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></span>`
       );
     }
 

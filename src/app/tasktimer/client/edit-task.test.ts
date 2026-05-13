@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
 import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
-import { normalizeRecurringScheduleFieldsForSave } from "./edit-task";
+import {
+  clearTaskScheduleConfig,
+  normalizeRecurringScheduleFieldsForSave,
+  restoreEditScheduleFieldsFromSnapshot,
+  taskHasMeaningfulScheduleConfig,
+} from "./edit-task";
 
 function task(overrides: Partial<Task>): Task {
   return {
@@ -50,5 +55,100 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     );
     expect(editDraft.plannedStartDay).toBeNull();
     expect(editDraft.plannedStartTime).toBe("10:15");
+  });
+});
+
+describe("edit task schedule toggle helpers", () => {
+  it("treats a true name-only task as unscheduled on edit open", () => {
+    expect(
+      taskHasMeaningfulScheduleConfig(
+        task({
+          timeGoalEnabled: false,
+          timeGoalValue: 0,
+          timeGoalMinutes: 0,
+          taskType: "recurring",
+          plannedStartTime: null,
+          plannedStartByDay: null,
+        })
+      )
+    ).toBe(false);
+  });
+
+  it("opens checked for time goals, planned starts, and checkpoints", () => {
+    expect(taskHasMeaningfulScheduleConfig(task({ timeGoalEnabled: true, timeGoalMinutes: 30 }))).toBe(true);
+    expect(taskHasMeaningfulScheduleConfig(task({ timeGoalEnabled: false, timeGoalMinutes: 0, plannedStartByDay: { mon: "09:00" } }))).toBe(true);
+    expect(taskHasMeaningfulScheduleConfig(task({ timeGoalEnabled: false, timeGoalMinutes: 0, milestonesEnabled: true }))).toBe(true);
+  });
+
+  it("clears below-section fields when saving with scheduling unticked", () => {
+    const draft = task({
+      taskType: "once-off",
+      onceOffDay: "wed",
+      onceOffTargetDate: "2026-05-13",
+      timeGoalEnabled: true,
+      timeGoalValue: 2,
+      timeGoalMinutes: 120,
+      milestonesEnabled: true,
+      milestones: [{ hours: 1, description: "" }],
+      plannedStartDay: "wed",
+      plannedStartTime: "09:30",
+      plannedStartByDay: { wed: "09:30" },
+      plannedStartPushRemindersEnabled: true,
+    });
+
+    clearTaskScheduleConfig(draft);
+
+    expect(draft).toEqual(
+      expect.objectContaining({
+        taskType: "recurring",
+        onceOffDay: null,
+        onceOffTargetDate: null,
+        timeGoalEnabled: false,
+        timeGoalValue: 0,
+        timeGoalMinutes: 0,
+        milestonesEnabled: false,
+        milestones: [],
+        plannedStartDay: null,
+        plannedStartTime: null,
+        plannedStartByDay: null,
+        plannedStartOpenEnded: false,
+        plannedStartPushRemindersEnabled: false,
+      })
+    );
+  });
+
+  it("restores the original schedule draft when re-ticking before save", () => {
+    const draft = task({ timeGoalEnabled: false, timeGoalValue: 0, timeGoalMinutes: 0, plannedStartByDay: null });
+    const snapshot = task({
+      taskType: "once-off",
+      onceOffDay: "fri",
+      onceOffTargetDate: "2026-05-15",
+      timeGoalValue: 2,
+      timeGoalMinutes: 120,
+      milestonesEnabled: true,
+      milestones: [{ id: "ms-1", hours: 1, description: "", alertsEnabled: true }],
+      plannedStartDay: "fri",
+      plannedStartTime: "13:45",
+      plannedStartByDay: { fri: "13:45" },
+    });
+
+    restoreEditScheduleFieldsFromSnapshot(draft, snapshot);
+
+    expect(draft).toEqual(
+      expect.objectContaining({
+        taskType: "once-off",
+        onceOffDay: "fri",
+        onceOffTargetDate: "2026-05-15",
+        timeGoalEnabled: true,
+        timeGoalValue: 2,
+        timeGoalMinutes: 120,
+        milestonesEnabled: true,
+        plannedStartDay: "fri",
+        plannedStartTime: "13:45",
+        plannedStartByDay: { fri: "13:45" },
+      })
+    );
+    expect(draft.milestones).toEqual([{ id: "ms-1", hours: 1, description: "", alertsEnabled: true }]);
+    expect(draft.milestones).not.toBe(snapshot.milestones);
   });
 });

@@ -22,6 +22,12 @@ function createHarness(initialValue: string) {
     disabled: false,
     setAttribute: vi.fn(),
   } as unknown as HTMLInputElement;
+  const addTaskScheduleToggle = {
+    checked: false,
+  } as unknown as HTMLInputElement;
+  const addTaskScheduleFields = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLElement;
 
   const on = vi.fn((target: object | null | undefined, type: string, handler: (event?: Event) => void) => {
     if (!target) return;
@@ -41,6 +47,8 @@ function createHarness(initialValue: string) {
       addTaskForm: {} as HTMLFormElement,
       addTaskTypeRecurringBtn: null,
       addTaskTypeOnceOffBtn: null,
+      addTaskScheduleToggle,
+      addTaskScheduleFields,
       addTaskOnceOffDaySelect: null,
       addTaskNameMenu: null,
       addTaskNameCustomList: null,
@@ -138,6 +146,8 @@ function createHarness(initialValue: string) {
     setSuppressAddTaskNameFocusOpenState: vi.fn(),
     getSuppressAddTaskNameFocusOpen: () => false,
     getCurrentAppPage: () => "tasks",
+    getOptimalProductivityStartTime: () => "09:00",
+    getOptimalProductivityEndTime: () => "17:00",
     jumpToTaskAndHighlight: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
@@ -154,6 +164,10 @@ function createHarness(initialValue: string) {
     addTaskMsToggle,
     ctx,
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
+    toggleSchedule: (checked = true) => {
+      addTaskScheduleToggle.checked = checked;
+      handlers.get(addTaskScheduleToggle)?.get("change")?.();
+    },
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
     toggleCheckpoints: () => handlers.get(addTaskMsToggle)?.get("change")?.(),
@@ -200,9 +214,9 @@ describe("createTaskTimerAddTask", () => {
   it("re-renders the task list immediately after a task is created", () => {
     const harness = createHarness("1");
     harness.addTaskMsToggle.checked = false;
-    const setTasksMock = harness.ctx.setTasks as any;
-    const renderMock = harness.ctx.render as any;
-    const saveMock = harness.ctx.save as any;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+    const renderMock = vi.mocked(harness.ctx.render);
+    const saveMock = vi.mocked(harness.ctx.save);
 
     harness.submit();
 
@@ -217,5 +231,56 @@ describe("createTaskTimerAddTask", () => {
     expect(renderMock.mock.invocationCallOrder[0]).toBeGreaterThan(setTasksMock.mock.invocationCallOrder[0]);
     expect(saveMock.mock.invocationCallOrder[0]).toBeGreaterThan(renderMock.mock.invocationCallOrder[0]);
     expect(harness.ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("task-1");
+  });
+
+  it("creates a name-only task when Schedule this task is unchecked", () => {
+    const harness = createHarness("1");
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "New Task",
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+        milestonesEnabled: false,
+        milestones: [],
+        plannedStartPushRemindersEnabled: false,
+      }),
+    ]);
+  });
+
+  it("preserves scheduled-task creation when Schedule this task is checked", () => {
+    const harness = createHarness("1");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "New Task",
+        taskType: "recurring",
+        timeGoalEnabled: true,
+        timeGoalValue: 1,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+      }),
+    ]);
+  });
+
+  it("rejects a scheduled task when the time amount is zero", () => {
+    const harness = createHarness("0");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(setTasksMock).not.toHaveBeenCalled();
+    expect(harness.addTaskDurationValueInput.classList.toggle).toHaveBeenCalledWith("isInvalid", true);
   });
 });

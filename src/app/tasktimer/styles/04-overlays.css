@@ -2407,6 +2407,53 @@ body[data-theme="purple"] .rewardsInfoText{
     0 0 0 1px rgba(194, 201, 211, .18);
 }
 
+#confirmOverlay.isClearTaskScheduleConfirm .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(165, 172, 182, .66);
+  border-radius: 0;
+  clip-path: none;
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, .46),
+    inset 0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+#confirmOverlay.isClearTaskScheduleConfirm .confirmText{
+  font-size: 13px;
+}
+
+#confirmOverlay.isClearTaskScheduleConfirm #confirmCancelBtn{
+  border-color: rgba(165, 172, 182, .72);
+  color: rgba(226, 232, 240, .92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+}
+
+#confirmOverlay.isClearTaskScheduleConfirm #confirmOkBtn{
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+  background: transparent;
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 255, 36, .12),
+    0 0 0 1px rgba(201, 255, 36, .12);
+}
+
+#confirmOverlay.isClearTaskScheduleConfirm #confirmCancelBtn:hover:not(:disabled),
+#confirmOverlay.isClearTaskScheduleConfirm #confirmCancelBtn:focus-visible:not(:disabled){
+  border-color: rgba(194, 201, 211, .9);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .05),
+    0 0 0 1px rgba(194, 201, 211, .18);
+}
+
+#confirmOverlay.isClearTaskScheduleConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isClearTaskScheduleConfirm #confirmOkBtn:focus-visible:not(:disabled){
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+  background: rgba(201, 255, 36, .08);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 255, 36, .18),
+    0 0 0 1px rgba(201, 255, 36, .2);
+}
+
 /* Export Task modal: match Edit Task modal style */
 
 #exportTaskOverlay .modal{
@@ -3085,6 +3132,13 @@ body[data-theme="purple"] .rewardsInfoText{
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (max-width: 980px){
+  #addTaskOverlay .modal{
+    padding: calc(14px + var(--safe-top)) calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left));
+    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
+  }
 }
 
 #addTaskOverlay .editTaskModalFrame{
@@ -5279,6 +5333,36 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   + :is(.field, .milestones, .checkpointAlertsGroup){
   margin-top: 18px;
   padding-top: 14px;
+}
+
+#editOverlay .taskScheduleToggleRow,
+#addTaskOverlay .taskScheduleToggleRow{
+  margin:2px 0 10px;
+}
+
+#editOverlay .taskScheduleToggleRow,
+#addTaskOverlay .taskScheduleToggleRow{
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+
+#editOverlay .taskScheduleToggleRow input[type="checkbox"],
+#addTaskOverlay .taskScheduleToggleRow input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+#editOverlay .taskScheduleFields,
+#addTaskOverlay .taskScheduleFields{
+  display:block;
+}
+
+#editOverlay .taskScheduleFields.isHidden,
+#addTaskOverlay .taskScheduleFields.isHidden{
+  display:none;
 }
 
 body[data-theme="purple"] #editOverlay .unitBtn.isOn,

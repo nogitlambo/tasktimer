@@ -124,6 +124,67 @@ export function getEditTimeGoalSaveFields(
   return { timeGoalPeriod, timeGoalMinutes };
 }
 
+export function taskHasMeaningfulScheduleConfig(task: Task | null | undefined) {
+  if (!task) return false;
+  if (!!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0) return true;
+  if (!!task.milestonesEnabled || (Array.isArray(task.milestones) && task.milestones.length > 0)) return true;
+  if (!!task.plannedStartOpenEnded) return true;
+  if (!!normalizeTaskPlannedStartByDay(task.plannedStartByDay)) return true;
+  if (!!normalizeScheduleStoredTime(task.plannedStartTime)) return true;
+  if (task.taskType === "once-off" && (!!task.onceOffDay || !!task.onceOffTargetDate || !!task.plannedStartDay)) return true;
+  return false;
+}
+
+export function restoreEditScheduleFieldsFromSnapshot(task: Task, snapshot: Task) {
+  task.taskType = snapshot.taskType === "once-off" ? "once-off" : "recurring";
+  task.onceOffDay = snapshot.onceOffDay || null;
+  task.onceOffTargetDate = snapshot.onceOffTargetDate || null;
+  task.timeGoalEnabled = !!snapshot.timeGoalEnabled;
+  task.timeGoalValue = Number(snapshot.timeGoalValue || 0);
+  task.timeGoalUnit = snapshot.timeGoalUnit === "minute" ? "minute" : "hour";
+  task.timeGoalPeriod = snapshot.timeGoalPeriod === "day" ? "day" : "week";
+  task.timeGoalMinutes = Number(snapshot.timeGoalMinutes || 0);
+  task.milestonesEnabled = !!snapshot.milestonesEnabled;
+  task.milestoneTimeUnit = snapshot.milestoneTimeUnit === "minute" ? "minute" : "hour";
+  task.milestones = Array.isArray(snapshot.milestones) ? snapshot.milestones.map((milestone) => ({ ...milestone })) : [];
+  task.checkpointSoundEnabled = !!snapshot.checkpointSoundEnabled;
+  task.checkpointSoundMode = snapshot.checkpointSoundMode === "repeat" ? "repeat" : "once";
+  task.checkpointToastEnabled = !!snapshot.checkpointToastEnabled;
+  task.checkpointToastMode = snapshot.checkpointToastMode === "manual" ? "manual" : "auto5s";
+  task.plannedStartDay = snapshot.plannedStartDay || null;
+  task.plannedStartTime = snapshot.plannedStartTime || null;
+  task.plannedStartByDay = snapshot.plannedStartByDay ? { ...snapshot.plannedStartByDay } : null;
+  task.plannedStartOpenEnded = !!snapshot.plannedStartOpenEnded;
+  task.plannedStartPushRemindersEnabled = snapshot.plannedStartPushRemindersEnabled !== false;
+}
+
+export function clearTaskScheduleConfig(task: Task) {
+  task.taskType = "recurring";
+  task.onceOffDay = null;
+  task.onceOffTargetDate = null;
+  task.timeGoalEnabled = false;
+  task.timeGoalValue = 0;
+  task.timeGoalUnit = "hour";
+  task.timeGoalPeriod = "week";
+  task.timeGoalMinutes = 0;
+  task.milestonesEnabled = false;
+  task.milestoneTimeUnit = "hour";
+  task.milestones = [];
+  task.checkpointSoundEnabled = false;
+  task.checkpointSoundMode = "once";
+  task.checkpointToastEnabled = false;
+  task.checkpointToastMode = "auto5s";
+  task.presetIntervalsEnabled = false;
+  task.presetIntervalValue = 0;
+  task.presetIntervalLastMilestoneId = null;
+  task.presetIntervalNextSeq = 1;
+  task.plannedStartDay = null;
+  task.plannedStartTime = null;
+  task.plannedStartByDay = null;
+  task.plannedStartOpenEnded = false;
+  task.plannedStartPushRemindersEnabled = false;
+}
+
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
@@ -131,6 +192,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   let editOverlayHideTimer: number | null = null;
   let editOverlayOpeningTimer: number | null = null;
   let editOverlayOriginRect: { left: number; top: number; width: number; height: number } | null = null;
+  let editTaskScheduleEnabled = true;
+  let editTaskScheduleRestoreSnapshot: Task | null = null;
 
   function clearEditOverlayHideTimer() {
     if (editOverlayHideTimer == null) return;
@@ -264,6 +327,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       meridiemSelect: els.editPlannedStartMeridiemSelect,
     });
   }
+
+  function syncEditTaskScheduleToggleUi() {
+    if (els.editTaskScheduleToggle) {
+      els.editTaskScheduleToggle.checked = editTaskScheduleEnabled;
+    }
+    els.editTaskScheduleFields?.classList.toggle("isHidden", !editTaskScheduleEnabled);
+  }
+
 
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
@@ -469,6 +540,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function validateEditTimeGoal() {
+    if (!editTaskScheduleEnabled) return true;
     const value = Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0);
     if (!(value > 0)) {
       els.editTaskDurationValueInput?.classList.add("isInvalid");
@@ -490,6 +562,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function validateEditOnceOffDay(task?: Task | null) {
+    if (!editTaskScheduleEnabled) return true;
     const currentTask = task || getCurrentEditTask();
     if (!currentTask || currentTask.taskType !== "once-off") return true;
     return !!String(els.editTaskOnceOffDaySelect?.value || currentTask.onceOffDay || "").trim();
@@ -838,6 +911,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return true;
   }
 
+  function finalizeUnscheduledEditSave(sourceTask: Task, t: Task) {
+    t.name = (els.editName?.value || "").trim() || t.name;
+    t.color = normalizeTaskColor(t.color);
+    clearTaskScheduleConfig(t);
+    delete (t as Task & { mode?: string }).mode;
+    Object.assign(sourceTask, ctx.cloneTaskForEdit(t));
+    ctx.save();
+    void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
+    ctx.render();
+    return true;
+  }
+
   function syncEditCheckpointAlertUi(t: Task) {
     sharedTasks.ensureMilestoneIdentity(t);
     const hasActiveTimeGoal = editTaskHasActiveTimeGoal();
@@ -912,6 +997,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const hasEnabledMilestoneAlerts = hasAnyMilestoneAlertsEnabled(task);
     return JSON.stringify({
       name: String(els.editName?.value || task.name || "").trim(),
+      scheduleEnabled: editTaskScheduleEnabled,
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
       color: normalizeTaskColor(task.color),
       plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
@@ -940,6 +1026,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (!task) {
       els.saveEditBtn.disabled = false;
       els.saveEditBtn.title = "";
+      return;
+    }
+    if (!editTaskScheduleEnabled) {
+      els.editTaskDurationValueInput?.classList.remove("isInvalid");
+      els.saveEditBtn.disabled = false;
+      els.saveEditBtn.title = "Save Changes";
       return;
     }
     const invalidTimeGoal = !validateEditTimeGoal();
@@ -1091,12 +1183,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const sourceTask = ctx.getTasks()[i];
     if (!sourceTask) return;
     const t = ctx.cloneTaskForEdit(sourceTask);
+    editTaskScheduleRestoreSnapshot = ctx.cloneTaskForEdit(sourceTask);
+    editTaskScheduleEnabled = taskHasMeaningfulScheduleConfig(sourceTask);
     t.plannedStartPushRemindersEnabled = t.plannedStartPushRemindersEnabled !== false;
     t.milestoneTimeUnit = t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     ctx.setEditIndex(i);
     ctx.setEditTaskDraft(t);
     if (els.editName) els.editName.value = t.name || "";
     if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
+    syncEditTaskScheduleToggleUi();
     syncEditTaskTypeUi(t);
     syncEditTaskColorPalette(t);
     syncEditPlannedStartSelectors(t);
@@ -1117,11 +1212,51 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     showEditOverlay(sourceEl);
   }
 
+  function finishUnscheduledEditSave(sourceTask: Task, t: Task) {
+    if (!finalizeUnscheduledEditSave(sourceTask, t)) return false;
+    hideEditOverlay();
+    setEditTaskColorPopoverOpen(false);
+    ctx.clearEditValidationState();
+    closeElapsedPad(false);
+    ctx.setEditIndex(null);
+    ctx.setEditTaskDraft(null);
+    ctx.setEditDraftSnapshot("");
+    editTaskScheduleRestoreSnapshot = null;
+    return true;
+  }
+
+  function confirmClearTaskSchedule(sourceTask: Task, t: Task, onCancel?: () => void) {
+    els.confirmOverlay?.classList.add("isClearTaskScheduleConfirm");
+    return void ctx.confirm(
+      "Clear Task Schedule",
+      "This will clear the time goal, schedule(s) and checkpoints for this task.",
+      {
+        okLabel: "Save & Close",
+        cancelLabel: "Cancel",
+        onOk: () => {
+          ctx.closeConfirm();
+          finishUnscheduledEditSave(sourceTask, t);
+        },
+        onCancel: () => {
+          ctx.closeConfirm();
+          onCancel?.();
+        },
+      }
+    );
+  }
+
   function closeEdit(saveChanges: boolean) {
     const editIndex = ctx.getEditIndex();
     const sourceTask = editIndex != null ? ctx.getTasks()[editIndex] : null;
     const t = getCurrentEditTask();
     if (saveChanges && t && sourceTask) {
+      if (!editTaskScheduleEnabled) {
+        if (taskHasMeaningfulScheduleConfig(sourceTask)) {
+          return confirmClearTaskSchedule(sourceTask, t);
+        }
+        finishUnscheduledEditSave(sourceTask, t);
+        return;
+      }
       els.editTaskDurationValueInput?.classList.remove("isInvalid");
       const aggregateValidation = getEditAggregateTimeGoalValidation(t);
       if (!validateEditOnceOffDay(t)) {
@@ -1194,6 +1329,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditIndex(null);
     ctx.setEditTaskDraft(null);
     ctx.setEditDraftSnapshot("");
+    editTaskScheduleRestoreSnapshot = null;
   }
 
   function handleEditNameInput() {
@@ -1228,6 +1364,52 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       closeEdit(true);
     });
     ctx.on(els.editName, "input", handleEditNameInput);
+    ctx.on(els.editTaskScheduleToggle, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      const editIndex = ctx.getEditIndex();
+      const sourceTask = editIndex != null ? ctx.getTasks()[editIndex] : null;
+      editTaskScheduleEnabled = !!els.editTaskScheduleToggle?.checked;
+      if (editTaskScheduleEnabled && editTaskScheduleRestoreSnapshot) {
+        restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
+        if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
+        if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
+        ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
+        ctx.setEditTaskDurationPeriod(t.timeGoalPeriod === "day" ? "day" : "week");
+        syncEditTaskTypeUi(t);
+        syncEditPlannedStartSelectors(t);
+        ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
+        ctx.renderMilestoneEditor(t);
+      }
+      syncEditTaskScheduleToggleUi();
+      if (editTaskScheduleEnabled) {
+        ctx.syncEditTaskTimeGoalUi(t);
+        ctx.syncEditCheckpointAlertUi(t);
+        ctx.syncEditMilestoneSectionUi(t);
+      }
+      ctx.syncEditSaveAvailability(t);
+      if (!editTaskScheduleEnabled && sourceTask) {
+        confirmClearTaskSchedule(sourceTask, t, () => {
+          editTaskScheduleEnabled = true;
+          if (editTaskScheduleRestoreSnapshot) {
+            restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
+            if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
+            if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
+            ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
+            ctx.setEditTaskDurationPeriod(t.timeGoalPeriod === "day" ? "day" : "week");
+            syncEditTaskTypeUi(t);
+            syncEditPlannedStartSelectors(t);
+            ctx.setMilestoneUnitUi(t.milestoneTimeUnit === "minute" ? "minute" : "hour");
+            ctx.renderMilestoneEditor(t);
+          }
+          syncEditTaskScheduleToggleUi();
+          ctx.syncEditTaskTimeGoalUi(t);
+          ctx.syncEditCheckpointAlertUi(t);
+          ctx.syncEditMilestoneSectionUi(t);
+          ctx.syncEditSaveAvailability(t);
+        });
+      }
+    });
     ctx.on(els.editTaskColorTrigger, "click", (event: any) => {
       event?.preventDefault?.();
       const isOpen = els.editTaskColorPopover instanceof HTMLElement && els.editTaskColorPopover.style.display === "flex";

@@ -540,6 +540,40 @@ input[type="text"], input[type="number"]{
 input[type="text"]:focus, input[type="number"]:focus{
   border-color: rgba(0,207,200,.40);
 }
+@media (max-width: 980px){
+  input[type="checkbox"]{
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    display: inline-grid;
+    place-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(255,255,255,.34);
+    border-radius: 3px;
+    background: rgba(0,0,0,.18);
+    vertical-align: middle;
+  }
+
+  input[type="checkbox"]:checked{
+    border-color: color-mix(in srgb, var(--accent3) 76%, #ffffff 12%);
+    background: linear-gradient(180deg, var(--accent3), var(--accent));
+  }
+
+  input[type="checkbox"]:checked::after{
+    content: "";
+    width: 8px;
+    height: 5px;
+    border: solid #050607;
+    border-width: 0 0 2px 2px;
+    transform: translateY(-1px) rotate(-45deg);
+  }
+
+  input[type="checkbox"]:focus-visible{
+    outline: 2px solid color-mix(in srgb, var(--accent3) 72%, transparent);
+    outline-offset: 2px;
+  }
+}
 option,
 optgroup{
   background:#0d0f13;

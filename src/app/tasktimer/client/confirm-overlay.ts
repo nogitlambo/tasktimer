@@ -126,6 +126,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetAllDeleteConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isApplySharedScheduleConfirm");
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isClearTaskScheduleConfirm");
     ctx.setConfirmAction(null);
     ctx.setConfirmActionAlt(null);
     ctx.setConfirmActionCancel(null);

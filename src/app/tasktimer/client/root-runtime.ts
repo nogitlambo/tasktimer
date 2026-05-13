@@ -11,6 +11,8 @@ import {
   finishTaskTimerBootstrapUi,
   runInitialTaskTimerHydration,
 } from "./tasktimer-bootstrap";
+import { registerPrimaryClickAudio } from "./primary-click-audio";
+import { registerSecondaryClickAudio } from "./secondary-click-audio";
 import type { AppPage } from "./types";
 
 type ScheduleDay = Task["plannedStartDay"];
@@ -117,6 +119,9 @@ type StartRootLifecycleOptions = {
 
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
+
+  registerPrimaryClickAudio({ on, documentRef });
+  registerSecondaryClickAudio({ on, documentRef });
 
   options.registerAppShellEvents();
 

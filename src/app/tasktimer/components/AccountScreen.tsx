@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
+import { getAccountBackRoute } from "../lib/accountRoute";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
+import RankThumbnail from "./RankThumbnail";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
@@ -39,6 +41,20 @@ export default function AccountScreen() {
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const accountProfileReady = account.authProfileReady && avatar.avatarProfileReady && account.authPlanStatus === "confirmed";
+  const [hasLoadedAccountProfile, setHasLoadedAccountProfile] = useState(false);
+  const shouldRenderAccountProfile = hasLoadedAccountProfile || accountProfileReady;
+
+  useEffect(() => {
+    if (!accountProfileReady) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setHasLoadedAccountProfile(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountProfileReady]);
 
   useEffect(() => {
     let timerId: number | null = null;
@@ -72,11 +88,8 @@ export default function AccountScreen() {
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    window.location.href = resolveTaskTimerRouteHref("/dashboard");
+    const targetRoute = getAccountBackRoute(document.referrer, window.location.href);
+    window.location.href = resolveTaskTimerRouteHref(targetRoute);
   }, []);
 
   const handleSignOut = useCallback(async () => {
@@ -92,153 +105,200 @@ export default function AccountScreen() {
   }, [signOutBusy]);
 
   const profileName = account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
-  const planLabel = account.authPlan === "pro" ? "Pro" : "Free";
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
       <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
         <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
-          <AppImg className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon" src="/logo/launch-icon-original-transparent.png" alt="" />
+          <AppImg
+            className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
+            src="/logo/launch-icon-original-transparent.png"
+            alt=""
+          />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
         </div>
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage="account" useClientNavButtons={false} showMobileFooter={false} />
-        <main className="desktopAppMain accountRouteMain">
-          <section className="accountProfilePage" aria-label="Account profile">
-            <header className="accountProfileTopbar">
-              <button className="iconBtn accountProfileBackBtn" type="button" aria-label="Back" onClick={handleBack}>
-                <span>Back</span>
-              </button>
-              <h1>Account</h1>
-            </header>
-
-            <div className="accountProfileHero">
-              <button className="accountProfileAvatarBtn" type="button" aria-label="Choose avatar" onClick={() => avatar.setShowAvatarPickerModal(true)}>
-                <span className="accountProfileAvatarRing" aria-hidden="true">
-                  {avatar.selectedAvatar ? (
-                    <AppImg
-                      className="accountProfileAvatarImg"
-                      src={avatar.selectedAvatar.src}
-                      alt=""
-                      referrerPolicy={/^https?:\/\//i.test(avatar.selectedAvatar.src) ? "no-referrer" : undefined}
-                    />
-                  ) : (
-                    <span className="accountProfileAvatarFallback">TL</span>
-                  )}
-                </span>
-              </button>
-              <div className="accountProfileIdentity">
-                {account.authUserAliasEditing ? (
-                  <div className="accountProfileAliasEdit">
-                    <input
-                      className="settingsAccountAliasInput accountProfileAliasInput"
-                      type="text"
-                      value={account.authUserAliasDraft}
-                      onChange={(event) => account.onAliasDraftChange(event.target.value)}
-                      disabled={account.authUserAliasBusy}
-                      aria-label="Username"
-                      maxLength={60}
-                    />
-                    <button className="iconBtn" type="button" onClick={() => void account.onSaveAlias()} disabled={account.authUserAliasBusy} aria-label="Save username">
-                      {"\u2713"}
+        <div className="desktopAppMain">
+          <div className="list accountPageList" style={{ paddingTop: 18 }}>
+            <div className="accountSceneBackdrop" aria-hidden="true">
+              <div className="accountSceneGlow accountSceneGlowA" />
+              <div className="accountSceneGlow accountSceneGlowB" />
+            </div>
+            <main className="menu accountMenu accountDashboardShell dashboardShell" aria-label="Account">
+              <div className="accountDetailPanel dashboardCard">
+                {shouldRenderAccountProfile ? (
+                <section className="accountProfilePage" aria-label="Account profile">
+                  <header className="accountProfileTopbar">
+                    <button className="iconBtn accountProfileBackBtn" type="button" aria-label="Back" onClick={handleBack}>
+                      <span>Back</span>
                     </button>
-                    <button className="iconBtn" type="button" onClick={account.onCancelAliasEdit} disabled={account.authUserAliasBusy} aria-label="Cancel username edit">
-                      {"\u2715"}
+                    <h1>Account</h1>
+                  </header>
+
+                  <div className="accountProfileHero">
+                    <button className="accountProfileAvatarBtn" type="button" aria-label="Choose avatar" onClick={() => avatar.setShowAvatarPickerModal(true)}>
+                      <span className="accountProfileAvatarRing" aria-hidden="true">
+                        {avatar.selectedAvatar ? (
+                          <AppImg
+                            className="accountProfileAvatarImg"
+                            src={avatar.selectedAvatar.src}
+                            alt=""
+                            referrerPolicy={/^https?:\/\//i.test(avatar.selectedAvatar.src) ? "no-referrer" : undefined}
+                          />
+                        ) : (
+                          <span className="accountProfileAvatarFallback">TL</span>
+                        )}
+                      </span>
+                    </button>
+                    <div className="accountProfileIdentity">
+                      {account.authUserAliasEditing ? (
+                        <div className="accountProfileAliasEdit">
+                          <input
+                            className="accountAliasInput accountProfileAliasInput"
+                            type="text"
+                            value={account.authUserAliasDraft}
+                            onChange={(event) => account.onAliasDraftChange(event.target.value)}
+                            disabled={account.authUserAliasBusy}
+                            aria-label="Username"
+                            maxLength={60}
+                          />
+                          <button className="iconBtn" type="button" onClick={() => void account.onSaveAlias()} disabled={account.authUserAliasBusy} aria-label="Save username">
+                            {"\u2713"}
+                          </button>
+                          <button className="iconBtn" type="button" onClick={account.onCancelAliasEdit} disabled={account.authUserAliasBusy} aria-label="Cancel username edit">
+                            {"\u2715"}
+                          </button>
+                        </div>
+                      ) : (
+                        <h2>{profileName}</h2>
+                      )}
+                      <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
+                      <p className="accountProfileBio">
+                        Member since {formatMemberSinceDate(account.authMemberSince)}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="accountProfileStats" aria-label="Account summary">
+                    <div>
+                      <strong>{formatXp(rewardsHeader.totalXp)}</strong>
+                      <span>XP</span>
+                    </div>
+                    <button type="button" onClick={() => avatar.setShowRankLadderModal(true)} aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}>
+                      <strong className="accountProfileRankText">{rewardsHeader.rankLabel}</strong>
+                      <span>Rank</span>
+                    </button>
+                    <button type="button" onClick={() => avatar.setShowRankLadderModal(true)} aria-label={`Open rank insignia. Current rank: ${rewardsHeader.rankLabel}`}>
+                      <RankThumbnail
+                        rankId={avatar.rewardProgress.currentRankId}
+                        storedThumbnailSrc={avatar.rankThumbnailSrc}
+                        className="accountProfileRankInsignia"
+                        imageClassName="accountProfileRankInsigniaImage"
+                        placeholderClassName="accountProfileRankInsigniaPlaceholder"
+                        alt="Rank insignia"
+                        size={44}
+                      />
+                      <span>Insignia</span>
                     </button>
                   </div>
+
+                  <div className="accountProfileStatus" aria-live="polite">
+                    <div className={`accountSyncStatus is-${account.syncState}`}>
+                      <span className="accountSyncStatusDot" aria-hidden="true" />
+                      <span className="accountSyncStatusText">{account.syncMessage}</span>
+                    </div>
+                    {account.authStatus ? <div className="accountAuthNotice">{account.authStatus}</div> : null}
+                    {account.authError ? <div className="accountAuthError">{account.authError}</div> : null}
+                    {avatar.avatarSyncNotice ? (
+                      <div className={avatar.avatarSyncNoticeIsError ? "accountAuthError" : "accountAuthNotice"}>{avatar.avatarSyncNotice}</div>
+                    ) : null}
+                    {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
+                  </div>
+
+                  <div className="accountProfileActions" role="list" aria-label="Account actions">
+                    <button className="accountProfileAction" type="button" onClick={account.onStartAliasEdit}>
+                      <AppImg src="/Settings.svg" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>Edit my profile</strong>
+                        <small>Update your username and avatar</small>
+                      </span>
+                    </button>
+                    <a className="accountProfileAction" href={resolveTaskTimerRouteHref("/settings")}>
+                      <AppImg src="/icons/icons_default/settings.png" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>Settings</strong>
+                        <small>Edit preferences and app controls</small>
+                      </span>
+                    </a>
+                    <button className="accountProfileAction" type="button" onClick={() => void account.onOpenPlanAction()}>
+                      <AppImg src="/icons/icons_default/leaderboard.png" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>{account.authPlan === "pro" ? "Manage subscription" : "Upgrade plan"}</strong>
+                        <small>{account.authPlan === "pro" ? "Open billing and plan management" : "Review Pro account features"}</small>
+                      </span>
+                    </button>
+                    {account.authUserUid ? (
+                      <button className="accountProfileAction" type="button" onClick={() => void account.onCopyUid()}>
+                        <AppImg src="/icons/icons_default/share.png" alt="" aria-hidden="true" />
+                        <span>
+                          <strong>{account.uidCopyStatus || "Copy account ID"}</strong>
+                          <small>Copy your TaskLaunch UID</small>
+                        </span>
+                      </button>
+                    ) : null}
+                    <button className="accountProfileAction" type="button" onClick={handleSignOut} disabled={signOutBusy}>
+                      <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>{signOutBusy ? "Signing out" : "Sign out"}</strong>
+                        <small>Log out of your account</small>
+                      </span>
+                    </button>
+                    <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
+                      <AppImg src="/icons/icons_default/trash.png" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>Delete Account</strong>
+                        <small>Permanently remove this sign-in account</small>
+                      </span>
+                    </button>
+                  </div>
+                </section>
                 ) : (
-                  <h2>{profileName}</h2>
+                  <section className="accountProfilePage accountProfileLoadingPage" aria-label="Loading account profile" aria-busy="true">
+                    <header className="accountProfileTopbar">
+                      <button className="iconBtn accountProfileBackBtn" type="button" aria-label="Back" onClick={handleBack}>
+                        <span>Back</span>
+                      </button>
+                      <h1>Account</h1>
+                    </header>
+                    <div className="accountProfileLoadingState" role="status" aria-live="polite">
+                      <div className="accountProfileLoadingAvatar" aria-hidden="true" />
+                      <div>
+                        <h2>Loading account</h2>
+                        <p>Refreshing your profile data...</p>
+                      </div>
+                    </div>
+                  </section>
                 )}
-                <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
-                <p className="accountProfileBio">
-                  {rewardsHeader.rankLabel} focused on TaskLaunch. Member since {formatMemberSinceDate(account.authMemberSince)}.
-                </p>
               </div>
-            </div>
-
-            <div className="accountProfileStats" aria-label="Account summary">
-              <div>
-                <strong>{formatXp(rewardsHeader.totalXp)}</strong>
-                <span>XP</span>
-              </div>
-              <button type="button" onClick={() => avatar.setShowRankLadderModal(true)} aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}>
-                <strong>{rewardsHeader.rankLabel}</strong>
-                <span>Rank</span>
-              </button>
-              <div>
-                <strong>{planLabel}</strong>
-                <span>Plan</span>
-              </div>
-            </div>
-
-            <div className="accountProfileStatus" aria-live="polite">
-              <div className={`settingsSyncStatus is-${account.syncState}`}>
-                <span className="settingsSyncStatusDot" aria-hidden="true" />
-                <span className="settingsSyncStatusText">{account.syncMessage}</span>
-              </div>
-              {account.authStatus ? <div className="settingsAuthNotice">{account.authStatus}</div> : null}
-              {account.authError ? <div className="settingsAuthError">{account.authError}</div> : null}
-              {avatar.avatarSyncNotice ? (
-                <div className={avatar.avatarSyncNoticeIsError ? "settingsAuthError" : "settingsAuthNotice"}>{avatar.avatarSyncNotice}</div>
-              ) : null}
-              {signOutError ? <div className="settingsAuthError">{signOutError}</div> : null}
-            </div>
-
-            <div className="accountProfileActions" role="list" aria-label="Account actions">
-              <button className="accountProfileAction" type="button" onClick={account.onStartAliasEdit}>
-                <AppImg src="/Settings.svg" alt="" aria-hidden="true" />
-                <span>
-                  <strong>Edit my profile</strong>
-                  <small>Update your username and avatar</small>
-                </span>
-              </button>
-              <a className="accountProfileAction" href={resolveTaskTimerRouteHref("/settings")}>
-                <AppImg src="/icons/icons_default/settings.png" alt="" aria-hidden="true" />
-                <span>
-                  <strong>Settings</strong>
-                  <small>Edit preferences and app controls</small>
-                </span>
-              </a>
-              <button className="accountProfileAction" type="button" onClick={() => void account.onOpenPlanAction()}>
-                <AppImg src="/icons/icons_default/leaderboard.png" alt="" aria-hidden="true" />
-                <span>
-                  <strong>{account.authPlan === "pro" ? "Manage subscription" : "Upgrade plan"}</strong>
-                  <small>{account.authPlan === "pro" ? "Open billing and plan management" : "Review Pro account features"}</small>
-                </span>
-              </button>
-              {account.authUserUid ? (
-                <button className="accountProfileAction" type="button" onClick={() => void account.onCopyUid()}>
-                  <AppImg src="/icons/icons_default/share.png" alt="" aria-hidden="true" />
-                  <span>
-                    <strong>{account.uidCopyStatus || "Copy account ID"}</strong>
-                    <small>Copy your TaskLaunch UID</small>
-                  </span>
-                </button>
-              ) : null}
-              <button className="accountProfileAction" type="button" onClick={handleSignOut} disabled={signOutBusy}>
-                <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
-                <span>
-                  <strong>{signOutBusy ? "Signing out" : "Sign out"}</strong>
-                  <small>Log out of your account</small>
-                </span>
-              </button>
-              <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
-                <AppImg src="/icons/icons_default/trash.png" alt="" aria-hidden="true" />
-                <span>
-                  <strong>Delete Account</strong>
-                  <small>Permanently remove this sign-in account</small>
-                </span>
-              </button>
-            </div>
-          </section>
-        </main>
+            </main>
+          </div>
+        </div>
       </div>
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
 
-      <InlineConfirmModal open={account.showDeleteAccountConfirm} onClose={() => account.setShowDeleteAccountConfirm(false)} ariaLabel="Delete Account" title="Delete Account">
-        <p className="settingsInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
-        <div className="footerBtns settingsInlineConfirmBtns">
+      <InlineConfirmModal
+        open={account.showDeleteAccountConfirm}
+        onClose={() => account.setShowDeleteAccountConfirm(false)}
+        ariaLabel="Delete Account"
+        title="Delete Account"
+        overlayClassName="accountInlineConfirmOverlay"
+        modalClassName="accountInlineConfirmModal"
+        titleClassName="accountInlineConfirmTitle"
+      >
+        <p className="accountInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
+        <div className="footerBtns accountInlineConfirmBtns">
           <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
             Cancel
           </button>
@@ -248,30 +308,38 @@ export default function AccountScreen() {
         </div>
       </InlineConfirmModal>
 
-      <InlineConfirmModal open={avatar.showAvatarPickerModal} onClose={() => avatar.setShowAvatarPickerModal(false)} ariaLabel="Choose Avatar" title="Choose Avatar" modalClassName="settingsInlineConfirmModal settingsAvatarModal">
-        <div className="settingsAvatarOptions" role="list" aria-label="Available avatars">
+      <InlineConfirmModal
+        open={avatar.showAvatarPickerModal}
+        onClose={() => avatar.setShowAvatarPickerModal(false)}
+        ariaLabel="Choose Avatar"
+        title="Choose Avatar"
+        overlayClassName="accountInlineConfirmOverlay"
+        modalClassName="accountInlineConfirmModal accountAvatarModal"
+        titleClassName="accountInlineConfirmTitle"
+      >
+        <div className="accountAvatarOptions" role="list" aria-label="Available avatars">
           {avatar.avatarGroups.map((group) => (
-            <section key={group.key} className="settingsAvatarGroup" aria-label={group.title}>
-              <h4 className="settingsAvatarGroupTitle">{group.title}</h4>
-              <div className="settingsAvatarGroupRow" role="list">
+            <section key={group.key} className="accountAvatarGroup" aria-label={group.title}>
+              <h4 className="accountAvatarGroupTitle">{group.title}</h4>
+              <div className="accountAvatarGroupRow" role="list">
                 {group.items.map((option) => (
                   <button
                     key={option.id}
                     type="button"
-                    className={`settingsAvatarOption${avatar.selectedAvatarId === option.id ? " isSelected" : ""}`}
+                    className={`accountAvatarOption${avatar.selectedAvatarId === option.id ? " isSelected" : ""}`}
                     onClick={() => void avatar.onSelectAvatar(option.id)}
                     aria-pressed={avatar.selectedAvatarId === option.id}
                     title={option.label}
                   >
-                    <AppImg src={option.src} alt={option.label} className="settingsAvatarOptionImg" referrerPolicy={/^https?:\/\//i.test(option.src) ? "no-referrer" : undefined} />
-                    <span className="settingsAvatarOptionLabel">{option.label}</span>
+                    <AppImg src={option.src} alt={option.label} className="accountAvatarOptionImg" referrerPolicy={/^https?:\/\//i.test(option.src) ? "no-referrer" : undefined} />
+                    <span className="accountAvatarOptionLabel">{option.label}</span>
                   </button>
                 ))}
               </div>
             </section>
           ))}
         </div>
-        <div className="footerBtns settingsInlineConfirmBtns">
+        <div className="footerBtns accountInlineConfirmBtns">
           <input
             ref={avatarUploadInputRef}
             type="file"

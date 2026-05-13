@@ -32,6 +32,7 @@ export function useSettingsAccountState(): {
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [authProfileReady, setAuthProfileReady] = useState(false);
   const [authPlan, setAuthPlan] = useState<SettingsAccountViewModel["authPlan"]>(() => readTaskTimerPlanFromStorage());
   const [authPlanStatus, setAuthPlanStatus] = useState<SettingsAccountViewModel["authPlanStatus"]>("confirmed");
   const [authPlanIsProvisional, setAuthPlanIsProvisional] = useState(false);
@@ -53,6 +54,7 @@ export function useSettingsAccountState(): {
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
   const pendingPlanRefreshRef = useRef(false);
   const planRefreshIdRef = useRef(0);
+  const loadedAliasUidRef = useRef<string | null>(null);
 
   const markPlanConfirmed = useCallback((plan: SettingsAccountViewModel["authPlan"], uid: string | null) => {
     lastConfirmedPlanRef.current = plan;
@@ -114,15 +116,23 @@ export function useSettingsAccountState(): {
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
-    if (!auth) return;
+    if (!auth) {
+      setAuthProfileReady(true);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       planRefreshIdRef.current += 1;
+      const uid = String(user?.uid || "").trim();
+      const isNewUser = uid !== loadedAliasUidRef.current;
+      if (isNewUser) setAuthProfileReady(false);
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
-      setAuthUserAlias("");
-      setAuthUserAliasDraft("");
-      setAuthUserAliasEditing(false);
-      setAuthUserAliasBusy(false);
+      if (isNewUser) {
+        setAuthUserAlias("");
+        setAuthUserAliasDraft("");
+        setAuthUserAliasEditing(false);
+        setAuthUserAliasBusy(false);
+      }
       setAuthMemberSince(user?.metadata?.creationTime || null);
 
       const providerIds = new Set((user?.providerData || []).map((provider) => String(provider?.providerId || "")));
@@ -134,7 +144,6 @@ export function useSettingsAccountState(): {
       setAuthGooglePhotoUrl(hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null);
 
       if (user?.uid) {
-        const uid = String(user.uid || "").trim();
         const cachedPlan = readTaskTimerPlanFromStorage();
         const hasConfirmedPlanForUid = lastConfirmedPlanUidRef.current === uid;
         const retainedPlan = hasConfirmedPlanForUid ? lastConfirmedPlanRef.current : cachedPlan;
@@ -144,6 +153,7 @@ export function useSettingsAccountState(): {
           displayName: user.displayName || null,
           googlePhotoUrl: hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null,
         }).catch(() => {});
+        if (loadedAliasUidRef.current === uid) setAuthProfileReady(true);
         markSynced();
       } else {
         pendingPlanRefreshRef.current = false;
@@ -151,6 +161,8 @@ export function useSettingsAccountState(): {
         setSyncState("idle");
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
+        loadedAliasUidRef.current = null;
+        setAuthProfileReady(true);
       }
     });
     return () => unsubscribe();
@@ -163,14 +175,23 @@ export function useSettingsAccountState(): {
       return;
     }
     let cancelled = false;
+    const isInitialAliasLoad = loadedAliasUidRef.current !== authUserUid;
+    if (isInitialAliasLoad) setAuthProfileReady(false);
     const loadUsername = async () => {
       try {
         const claimedUsername = await loadClaimedUsername(authUserUid);
-        if (!claimedUsername || cancelled) return;
-        setAuthUserAlias(claimedUsername);
-        setAuthUserAliasDraft((prev) => (authUserAliasEditing ? prev : claimedUsername));
+        if (cancelled) return;
+        if (claimedUsername) {
+          setAuthUserAlias(claimedUsername);
+          setAuthUserAliasDraft((prev) => (authUserAliasEditing ? prev : claimedUsername));
+        }
       } catch {
         // Keep the username field empty when the claimed username cannot be loaded.
+      } finally {
+        if (!cancelled) {
+          loadedAliasUidRef.current = authUserUid;
+          setAuthProfileReady(true);
+        }
       }
     };
     void loadUsername();
@@ -332,6 +353,7 @@ export function useSettingsAccountState(): {
       authStatus,
       authError,
       authBusy,
+      authProfileReady,
       authPlan,
       authPlanStatus,
       authPlanIsProvisional,
