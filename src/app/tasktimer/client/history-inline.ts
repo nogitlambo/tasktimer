@@ -307,6 +307,13 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
   }
 
+  function closeUnpinnedOpenHistoryCharts() {
+    Array.from(ctx.getOpenHistoryTaskIds()).forEach((taskId) => {
+      if (ctx.getPinnedHistoryTaskIds().has(taskId)) return;
+      closeHistory(taskId);
+    });
+  }
+
   function clearHistoryLockedSelections(taskId: string) {
     const state = ensureHistoryViewState(taskId);
     historyInlineSelection.clearLockedSelections(state);
@@ -1619,6 +1626,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     clearHistoryChartSelection,
     resetHistoryChartSelectionToDefault,
     resetAllOpenHistoryChartSelections,
+    closeUnpinnedOpenHistoryCharts,
     clearHistoryLockedSelections,
     getHistoryUi,
     renderHistory,

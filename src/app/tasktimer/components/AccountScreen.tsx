@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
-import { getAccountBackRoute } from "../lib/accountRoute";
-import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
@@ -86,12 +84,6 @@ export default function AccountScreen() {
     };
   }, []);
 
-  const handleBack = useCallback(() => {
-    if (typeof window === "undefined") return;
-    const targetRoute = getAccountBackRoute(document.referrer, window.location.href);
-    window.location.href = resolveTaskTimerRouteHref(targetRoute);
-  }, []);
-
   const handleSignOut = useCallback(async () => {
     if (signOutBusy) return;
     setSignOutBusy(true);
@@ -130,13 +122,6 @@ export default function AccountScreen() {
               <div className="accountDetailPanel dashboardCard">
                 {shouldRenderAccountProfile ? (
                 <section className="accountProfilePage" aria-label="Account profile">
-                  <header className="accountProfileTopbar">
-                    <button className="iconBtn accountProfileBackBtn" type="button" aria-label="Back" onClick={handleBack}>
-                      <span>Back</span>
-                    </button>
-                    <h1>Account</h1>
-                  </header>
-
                   <div className="accountProfileHero">
                     <button className="accountProfileAvatarBtn" type="button" aria-label="Choose avatar" onClick={() => avatar.setShowAvatarPickerModal(true)}>
                       <span className="accountProfileAvatarRing" aria-hidden="true">
@@ -200,15 +185,11 @@ export default function AccountScreen() {
                         alt="Rank insignia"
                         size={44}
                       />
-                      <span>Insignia</span>
+                      <span>Badge</span>
                     </button>
                   </div>
 
                   <div className="accountProfileStatus" aria-live="polite">
-                    <div className={`accountSyncStatus is-${account.syncState}`}>
-                      <span className="accountSyncStatusDot" aria-hidden="true" />
-                      <span className="accountSyncStatusText">{account.syncMessage}</span>
-                    </div>
                     {account.authStatus ? <div className="accountAuthNotice">{account.authStatus}</div> : null}
                     {account.authError ? <div className="accountAuthError">{account.authError}</div> : null}
                     {avatar.avatarSyncNotice ? (
@@ -218,36 +199,6 @@ export default function AccountScreen() {
                   </div>
 
                   <div className="accountProfileActions" role="list" aria-label="Account actions">
-                    <button className="accountProfileAction" type="button" onClick={account.onStartAliasEdit}>
-                      <AppImg src="/Settings.svg" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>Edit my profile</strong>
-                        <small>Update your username and avatar</small>
-                      </span>
-                    </button>
-                    <a className="accountProfileAction" href={resolveTaskTimerRouteHref("/settings")}>
-                      <AppImg src="/icons/icons_default/settings.png" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>Settings</strong>
-                        <small>Edit preferences and app controls</small>
-                      </span>
-                    </a>
-                    <button className="accountProfileAction" type="button" onClick={() => void account.onOpenPlanAction()}>
-                      <AppImg src="/icons/icons_default/leaderboard.png" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>{account.authPlan === "pro" ? "Manage subscription" : "Upgrade plan"}</strong>
-                        <small>{account.authPlan === "pro" ? "Open billing and plan management" : "Review Pro account features"}</small>
-                      </span>
-                    </button>
-                    {account.authUserUid ? (
-                      <button className="accountProfileAction" type="button" onClick={() => void account.onCopyUid()}>
-                        <AppImg src="/icons/icons_default/share.png" alt="" aria-hidden="true" />
-                        <span>
-                          <strong>{account.uidCopyStatus || "Copy account ID"}</strong>
-                          <small>Copy your TaskLaunch UID</small>
-                        </span>
-                      </button>
-                    ) : null}
                     <button className="accountProfileAction" type="button" onClick={handleSignOut} disabled={signOutBusy}>
                       <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
                       <span>
@@ -266,12 +217,6 @@ export default function AccountScreen() {
                 </section>
                 ) : (
                   <section className="accountProfilePage accountProfileLoadingPage" aria-label="Loading account profile" aria-busy="true">
-                    <header className="accountProfileTopbar">
-                      <button className="iconBtn accountProfileBackBtn" type="button" aria-label="Back" onClick={handleBack}>
-                        <span>Back</span>
-                      </button>
-                      <h1>Account</h1>
-                    </header>
                     <div className="accountProfileLoadingState" role="status" aria-live="polite">
                       <div className="accountProfileLoadingAvatar" aria-hidden="true" />
                       <div>

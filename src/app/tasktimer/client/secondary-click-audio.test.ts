@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  CANCEL_CLICK_AUDIO_SRC,
+  CLOSE_CLICK_AUDIO_SRC,
+  getCancelClickTarget,
+  getCloseClickTarget,
   getSecondaryClickTarget,
+  playCancelClickAudio,
+  playCloseClickAudio,
   playSecondaryClickAudio,
   registerSecondaryClickAudio,
   SECONDARY_CLICK_AUDIO_SRC,
@@ -56,10 +62,10 @@ describe("secondary click audio", () => {
     }
   });
 
-  it("matches cancel, close, and exit controls by accessible label or text", () => {
+  it("matches ordinary buttons and links by accessible label or text", () => {
     const textSelector = "button,a";
 
-    for (const label of ["Cancel", "Close", "Exit"]) {
+    for (const label of ["Exit", "Done", "Open"]) {
       const byText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: label });
       const byAria = makeElement({
         selectorMatches: { [textSelector]: true },
@@ -76,10 +82,52 @@ describe("secondary click audio", () => {
     }
   });
 
+  it("excludes action labels with dedicated or destructive sounds from default secondary audio", () => {
+    const textSelector = "button,a";
+
+    for (const label of ["Save", "Cancel", "Create", "Delete", "Save & Close", "Close", " Save   &   Close "]) {
+      const byText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: label });
+      const byAria = makeElement({
+        selectorMatches: { [textSelector]: true },
+        attributes: { "aria-label": label },
+      });
+
+      expect(getSecondaryClickTarget(byText)).toBeNull();
+      expect(getSecondaryClickTarget(byAria)).toBeNull();
+    }
+  });
+
+  it("matches cancel controls for dedicated cancel audio", () => {
+    const textSelector = "button,a";
+    const cancelByText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" });
+    const cancelByAria = makeElement({
+      selectorMatches: { [textSelector]: true },
+      attributes: { "aria-label": "Cancel" },
+    });
+    const done = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Done" });
+
+    expect(getCancelClickTarget(cancelByText)).toBe(cancelByText);
+    expect(getCancelClickTarget(cancelByAria)).toBe(cancelByAria);
+    expect(getCancelClickTarget(done)).toBeNull();
+  });
+
+  it("matches close controls for dedicated close audio", () => {
+    const textSelector = "button,a";
+    const closeByText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" });
+    const closeByAria = makeElement({
+      selectorMatches: { [textSelector]: true },
+      attributes: { "aria-label": "Close" },
+    });
+    const cancel = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" });
+
+    expect(getCloseClickTarget(closeByText)).toBe(closeByText);
+    expect(getCloseClickTarget(closeByAria)).toBe(closeByAria);
+    expect(getCloseClickTarget(cancel)).toBeNull();
+  });
+
   it("ignores unrelated and disabled controls", () => {
     const directSelector = ".switch,[role=\"switch\"],input[type=\"checkbox\"],[role=\"checkbox\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
-    const textSelector = "button,a";
-    const unrelated = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Save" });
+    const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
       selectorMatches: { [directSelector]: true },
@@ -91,13 +139,14 @@ describe("secondary click audio", () => {
     expect(getSecondaryClickTarget(ariaDisabled)).toBeNull();
   });
 
-  it("defers primary action controls to primary click audio", () => {
+  it("does not blanket-exclude accent controls from default secondary audio", () => {
     const directSelector = ".switch,[role=\"switch\"],input[type=\"checkbox\"],[role=\"checkbox\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
-    const primaryDirectTarget = makeElement({
+    const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
+      textContent: "Done",
     });
 
-    expect(getSecondaryClickTarget(primaryDirectTarget)).toBeNull();
+    expect(getSecondaryClickTarget(accentDirectTarget)).toBe(accentDirectTarget);
   });
 
   it("plays the configured audio source without surfacing playback failures", () => {
@@ -107,6 +156,26 @@ describe("secondary click audio", () => {
     expect(() => playSecondaryClickAudio(audioFactory)).not.toThrow();
 
     expect(audioFactory).toHaveBeenCalledWith(SECONDARY_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the configured cancel audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playCancelClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(CANCEL_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the configured close audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playCloseClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(CLOSE_CLICK_AUDIO_SRC);
     expect(play).toHaveBeenCalledTimes(1);
   });
 
@@ -128,6 +197,33 @@ describe("secondary click audio", () => {
     expect(playAudio).not.toHaveBeenCalled();
 
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
+    expect(playAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes close controls to the dedicated close audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playCancelAudio = vi.fn();
+    const playCloseAudio = vi.fn();
+    const textSelector = "button,a";
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playCancelAudio,
+      playCloseAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" }) } as unknown as Event);
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" }) } as unknown as Event);
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Done" }) } as unknown as Event);
+
+    expect(playCloseAudio).toHaveBeenCalledTimes(1);
+    expect(playCancelAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).toHaveBeenCalledTimes(1);
   });
 });

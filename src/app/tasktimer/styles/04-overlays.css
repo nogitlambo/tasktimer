@@ -3867,13 +3867,22 @@ body[data-theme="purple"] .rewardsInfoText{
 #historyEntryNoteOverlay .closePopup.isSaveAndClose,
 #historyEntryNoteOverlay .closePopup.isSaveAndClose:hover,
 #historyEntryNoteOverlay .closePopup.isSaveAndClose:focus-visible{
-  background: #c9ff24 !important;
-  color: #02060d !important;
+  background: rgba(255,255,255,.01) !important;
+  color: #c9ff24 !important;
   border-color: #c9ff24 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.22),
     0 0 16px rgba(201,255,36,.2) !important;
   font-weight: 800;
+}
+
+#historyEntryNoteOverlay .closePopup.isSaveAndClose:active{
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
 }
 
 #historyEntryNoteOverlay .closePopup:hover,
@@ -5607,14 +5616,28 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #saveEditBtn,
 #editOverlay #saveEditBtn:hover,
 #editOverlay #saveEditBtn:focus-visible,
+#addTaskOverlay #addTaskConfirmBtn,
+#addTaskOverlay #addTaskConfirmBtn:hover:not(:disabled),
+#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled),
 body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   font-family: var(--font-orbitron) !important;
+  background: rgba(255,255,255,.01) !important;
   color: #c9ff24 !important;
   border-color: #c9ff24 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.22),
     0 0 16px rgba(201,255,36,.2) !important;
   font-weight: 800;
+}
+
+#editOverlay #saveEditBtn:active,
+#addTaskOverlay #addTaskConfirmBtn:active:not(:disabled){
+  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
+  color: #02060d !important;
+  border-color: rgba(201,255,36,.86) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 0 16px rgba(201,255,36,.2) !important;
 }
 
 #taskManualEntryOverlay #taskManualEntrySaveBtn,

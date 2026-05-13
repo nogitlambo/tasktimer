@@ -4461,28 +4461,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   box-shadow: 0 32px 80px rgba(0,0,0,.38);
 }
 
-.accountProfileTopbar{
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
-  align-items: center;
-  gap: 8px;
-}
-
-.accountProfileTopbar h1{
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-tight);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.accountProfileBackBtn{
-  color: rgba(255,255,255,.92);
-  background: transparent;
-  border-color: transparent;
-}
-
 .accountProfileHero{
   display: grid;
   justify-items: center;
@@ -4626,7 +4604,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
-  padding: 14px 18px;
+  padding: 14px 0;
   border-radius: 8px;
   background: rgba(255,255,255,.04);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
@@ -4636,7 +4614,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 .accountProfileStats button{
   min-width: 0;
   display: grid;
+  grid-template-rows: 44px auto;
   justify-items: center;
+  align-items: center;
+  align-content: center;
   gap: 3px;
   padding: 0;
   border: 0;
@@ -4657,6 +4638,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 .accountProfileStats strong{
   max-width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
   font-size: 26px;
@@ -4808,7 +4793,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 .accountProfileAction strong{
   color: #fff;
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron);
   font-size: 17px;
   line-height: 1.1;
   font-weight: 850;
@@ -4816,6 +4801,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 .accountProfileAction small{
   color: rgba(238,242,246,.58);
+  font-family: var(--font-orbitron);
   font-size: 14px;
   line-height: 1.25;
 }

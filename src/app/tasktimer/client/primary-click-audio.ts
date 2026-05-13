@@ -1,12 +1,6 @@
+import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-player";
+
 export const PRIMARY_CLICK_AUDIO_SRC = "/click_save_create.mp3";
-
-type AudioLike = {
-  currentTime: number;
-  preload?: string;
-  play: () => Promise<unknown> | void;
-};
-
-type AudioFactory = (src: string) => AudioLike;
 
 type ClosestCapable = {
   closest?: (selector: string) => Element | null;
@@ -32,19 +26,10 @@ export function getPrimaryClickTarget(target: EventTarget | null): HTMLElement |
   return isDisabledControl(primaryTarget) ? null : primaryTarget;
 }
 
-export function playPrimaryClickAudio(audioFactory?: AudioFactory) {
+export function playPrimaryClickAudio(audioFactory?: ClickAudioFactory) {
   if (typeof window === "undefined" && !audioFactory) return;
 
-  try {
-    const factory = audioFactory || ((src: string) => new Audio(src));
-    const audio = factory(PRIMARY_CLICK_AUDIO_SRC);
-    audio.preload = "auto";
-    audio.currentTime = 0;
-    const playback = audio.play();
-    if (playback && typeof playback.catch === "function") playback.catch(() => {});
-  } catch {
-    // Browser autoplay failures are non-blocking for primary click feedback.
-  }
+  createClickAudioPlayer(PRIMARY_CLICK_AUDIO_SRC, audioFactory).play();
 }
 
 export function registerPrimaryClickAudio(options: {
@@ -52,10 +37,13 @@ export function registerPrimaryClickAudio(options: {
   documentRef: Document;
   playAudio?: () => void;
 }) {
+  const player = options.playAudio ? null : createClickAudioPlayer(PRIMARY_CLICK_AUDIO_SRC);
+  player?.warm();
+
   options.on(options.documentRef, "click", (event: Event) => {
     if (event.defaultPrevented) return;
     if ("isTrusted" in event && event.isTrusted === false) return;
     if (!getPrimaryClickTarget(event.target)) return;
-    (options.playAudio || playPrimaryClickAudio)();
-  });
+    (options.playAudio || (() => player?.play()))();
+  }, { capture: true });
 }

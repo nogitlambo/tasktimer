@@ -14,6 +14,7 @@ type CreateTaskTimerRuntimeFacadeOptions = {
     requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => void;
     render: () => void;
     resetAllOpenHistoryChartSelections: () => void;
+    closeUnpinnedOpenHistoryCharts: () => void;
     renderHistory: (taskId: string) => void;
     subscribeToCheckpointAlertMuteSignals: (unsubscribeRef: { current: (() => void) | null }) => void;
   };
@@ -32,6 +33,8 @@ export function createTaskTimerRuntimeFacade(options: CreateTaskTimerRuntimeFaca
     render: () => options.runtimeCoordinator.render(),
     resetAllOpenHistoryChartSelections: () =>
       options.runtimeCoordinator.resetAllOpenHistoryChartSelections(),
+    closeUnpinnedOpenHistoryCharts: () =>
+      options.runtimeCoordinator.closeUnpinnedOpenHistoryCharts(),
     renderHistory: (taskId: string) => options.runtimeCoordinator.renderHistory(taskId),
     subscribeToCheckpointAlertMuteSignals: (unsubscribeRef: { current: (() => void) | null }) =>
       options.runtimeCoordinator.subscribeToCheckpointAlertMuteSignals(unsubscribeRef),

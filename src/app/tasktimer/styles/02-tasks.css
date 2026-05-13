@@ -7,8 +7,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   display:grid !important;
   width:100% !important;
 }
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
-  display:block !important;
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
+  display:inline-flex !important;
   visibility:visible !important;
   opacity:1 !important;
   pointer-events:auto !important;

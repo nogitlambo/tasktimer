@@ -365,6 +365,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   };
   let render = () => {};
   let resetAllOpenHistoryChartSelections = () => {};
+  let closeUnpinnedOpenHistoryCharts = () => {};
   let renderHistory: (taskId: string) => void = () => {};
   let isTaskSharedByOwner: (taskId: string) => boolean = () => false;
   let applyMainMode: (mode: "mode1") => void = () => {};
@@ -980,6 +981,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         cacheRuntimeState.set("navStackMemory", stack);
       },
       resetAllOpenHistoryChartSelections: () => resetAllOpenHistoryChartSelections(),
+      closeUnpinnedOpenHistoryCharts: () => closeUnpinnedOpenHistoryCharts(),
       clearTaskFlipStates,
       renderFriendsFooterAlertBadge,
       closeTaskExportModal,
@@ -1104,6 +1106,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   requestScheduleEntryScroll = runtimeFacade.requestScheduleEntryScroll;
   render = runtimeFacade.render;
   resetAllOpenHistoryChartSelections = runtimeFacade.resetAllOpenHistoryChartSelections;
+  closeUnpinnedOpenHistoryCharts = runtimeFacade.closeUnpinnedOpenHistoryCharts;
   renderHistory = runtimeFacade.renderHistory;
 
   function subscribeToCheckpointAlertMuteSignals() {

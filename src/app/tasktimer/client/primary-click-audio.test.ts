@@ -64,7 +64,7 @@ describe("primary click audio", () => {
     registerPrimaryClickAudio({ on, documentRef: documentRef as unknown as Document, playAudio });
 
     const handler = on.mock.calls[0]?.[2] as EventListener;
-    expect(on).toHaveBeenCalledWith(documentRef, "click", expect.any(Function));
+    expect(on).toHaveBeenCalledWith(documentRef, "click", expect.any(Function), { capture: true });
 
     handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();

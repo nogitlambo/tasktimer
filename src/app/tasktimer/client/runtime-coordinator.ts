@@ -44,6 +44,7 @@ type CreateTaskTimerRuntimeCoordinatorOptions = {
   getHistoryInlineApi: () =>
     | {
         resetAllOpenHistoryChartSelections: () => void;
+        closeUnpinnedOpenHistoryCharts: () => void;
         renderHistory: (taskId: string) => void;
       }
     | null;
@@ -430,6 +431,10 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
     options.getHistoryInlineApi()?.resetAllOpenHistoryChartSelections();
   }
 
+  function closeUnpinnedOpenHistoryCharts() {
+    options.getHistoryInlineApi()?.closeUnpinnedOpenHistoryCharts();
+  }
+
   function renderHistory(taskId: string) {
     options.getHistoryInlineApi()?.renderHistory(taskId);
   }
@@ -444,6 +449,7 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
     maybeHandlePendingPushAction,
     subscribeToCheckpointAlertMuteSignals,
     resetAllOpenHistoryChartSelections,
+    closeUnpinnedOpenHistoryCharts,
     renderHistory,
     getTileColumnCount: () => getTaskTimerTileColumnCount(options.windowRef),
     isArchitectUser: () =>

@@ -262,6 +262,7 @@ export type TaskTimerAppShellContext = {
   getLastNativeBackHandledAtMs: () => number;
   setLastNativeBackHandledAtMs: (ms: number) => void;
   resetAllOpenHistoryChartSelections: () => void;
+  closeUnpinnedOpenHistoryCharts: () => void;
   clearTaskFlipStates: () => void;
   renderFriendsFooterAlertBadge: () => void;
   closeTaskExportModal: () => void;

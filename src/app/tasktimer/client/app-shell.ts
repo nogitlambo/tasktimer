@@ -266,7 +266,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function navigateToAppRoute(path: string) {
-    if (ctx.getCurrentAppPage() === "tasks") ctx.resetAllOpenHistoryChartSelections();
+    if (ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") {
+      ctx.resetAllOpenHistoryChartSelections();
+      ctx.closeUnpinnedOpenHistoryCharts();
+    }
     pushCurrentScreenToNavStack();
     window.location.href = appRoute(path);
   }
@@ -382,6 +385,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     if ((ctx.getCurrentAppPage() === "tasks" || ctx.getCurrentAppPage() === "schedule") && nextPage !== "tasks" && nextPage !== "schedule") {
       ctx.resetAllOpenHistoryChartSelections();
+      ctx.closeUnpinnedOpenHistoryCharts();
     }
     if (nextPage !== "tasks" && nextPage !== "schedule") ctx.clearTaskFlipStates();
     if (nextPage !== "dashboard" && ctx.getDashboardMenuFlipped()) {

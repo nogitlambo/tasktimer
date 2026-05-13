@@ -554,6 +554,7 @@ type CreateAppShellOptionsArgs = {
   getNavStackMemory: () => string[];
   setNavStackMemory: (stack: string[]) => void;
   resetAllOpenHistoryChartSelections: () => void;
+  closeUnpinnedOpenHistoryCharts: () => void;
   clearTaskFlipStates: () => void;
   renderFriendsFooterAlertBadge: () => void;
   closeTaskExportModal: () => void;
@@ -1395,6 +1396,7 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     getLastNativeBackHandledAtMs: () => asType<number>(args.appRuntimeState.get("lastNativeBackHandledAtMs")),
     setLastNativeBackHandledAtMs: (ms) => args.appRuntimeState.set("lastNativeBackHandledAtMs", ms),
     resetAllOpenHistoryChartSelections: args.resetAllOpenHistoryChartSelections,
+    closeUnpinnedOpenHistoryCharts: args.closeUnpinnedOpenHistoryCharts,
     clearTaskFlipStates: args.clearTaskFlipStates,
     renderFriendsFooterAlertBadge: args.renderFriendsFooterAlertBadge,
     closeTaskExportModal: args.closeTaskExportModal,
