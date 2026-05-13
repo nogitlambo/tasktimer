@@ -85,7 +85,7 @@ describe("secondary click audio", () => {
   it("excludes action labels with dedicated or destructive sounds from default secondary audio", () => {
     const textSelector = "button,a";
 
-    for (const label of ["Save", "Cancel", "Create", "Delete", "Save & Close", "Close", " Save   &   Close "]) {
+    for (const label of ["Save", "Cancel", "Create", "Delete", "Save & Close", "Close", "Launch", " Save   &   Close "]) {
       const byText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: label });
       const byAria = makeElement({
         selectorMatches: { [textSelector]: true },

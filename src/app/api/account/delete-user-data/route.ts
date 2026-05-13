@@ -112,6 +112,8 @@ export async function POST(req: Request) {
       db.recursiveDelete(userRef),
       subscriptionRef.delete(),
       deleteQueryDocs(db.collection("scheduled_time_goal_pushes").where("ownerUid", "==", uid)),
+      deleteQueryDocs(db.collection("shared_task_reminder_state").where("ownerUid", "==", uid)),
+      deleteQueryDocs(db.collection("shared_task_reminder_state").where("lastSentByUid", "==", uid)),
       deleteQueryDocs(db.collection("friend_requests").where("senderUid", "==", uid)),
       deleteQueryDocs(db.collection("friend_requests").where("receiverUid", "==", uid)),
       deleteQueryDocs(db.collection("friendships").where("users", "array-contains", uid)),

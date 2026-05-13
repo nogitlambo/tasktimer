@@ -15,6 +15,21 @@ type PushActionResult = {
   dueAtMs?: number | null;
 };
 
+export type SharedTaskReminderStatus =
+  | "sent"
+  | "cooldown"
+  | "already-running"
+  | "no-devices"
+  | "not-shared"
+  | "missing-task"
+  | "disabled";
+
+export type SharedTaskReminderResult = {
+  ok?: boolean;
+  status?: SharedTaskReminderStatus;
+  nextAllowedAtMs?: number | null;
+};
+
 export async function applyScheduledPushAction(input: {
   actionId: "launchTask" | "snooze10m" | "postponeNextGap";
   taskId: string;
@@ -60,5 +75,49 @@ export async function applyScheduledPushAction(input: {
       .replace(/^internal\s*/i, "")
       .trim();
     throw new Error(normalizedMessage || "Unable to apply push action right now.");
+  }
+}
+
+export async function sendSharedTaskReminder(input: {
+  ownerUid: string;
+  taskId: string;
+}): Promise<SharedTaskReminderResult> {
+  await bootstrapFirebaseWebAppCheck();
+  const app = getFirebaseAppClient();
+  if (!app) {
+    throw new Error("Firebase client is not configured.");
+  }
+  const functions = getFunctions(app, FUNCTIONS_REGION);
+  const callable = httpsCallable<
+    { ownerUid: string; taskId: string },
+    SharedTaskReminderResult
+  >(functions, "sendSharedTaskReminder");
+
+  try {
+    const result = await callable({
+      ownerUid: input.ownerUid,
+      taskId: input.taskId,
+    });
+    return result.data || {};
+  } catch (error: unknown) {
+    const firebaseError = error as FirebaseError & {
+      details?: unknown;
+      customData?: { details?: unknown };
+    };
+    const detailMessage =
+      firebaseError?.details && typeof firebaseError.details === "object" && "message" in firebaseError.details
+        ? String((firebaseError.details as { message?: unknown }).message || "").trim()
+        : firebaseError?.customData?.details && typeof firebaseError.customData.details === "object" && "message" in firebaseError.customData.details
+          ? String(((firebaseError.customData.details as { message?: unknown }).message) || "").trim()
+          : "";
+    const baseMessage =
+      detailMessage ||
+      (typeof firebaseError?.message === "string" ? firebaseError.message.trim() : "") ||
+      "Unable to send reminder right now.";
+    const normalizedMessage = baseMessage
+      .replace(/^functions\/internal\s*/i, "")
+      .replace(/^internal\s*/i, "")
+      .trim();
+    throw new Error(normalizedMessage || "Unable to send reminder right now.");
   }
 }

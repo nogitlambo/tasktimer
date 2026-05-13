@@ -86,6 +86,7 @@ Account deletion is handled directly by the app and does not require Firebase's 
   - `users/{uid}` recursively
   - `userSubscriptions/{uid}`
   - `scheduled_time_goal_pushes` owned by the user
+  - `shared_task_reminder_state` owned by or last sent by the user
   - friendship/request/share records associated with the user
   - username and email lookup index rows for the user
 - If the user has an active paid subscription, the delete flow may preserve a minimal `retainedSubscriptions/{normalizedEmail}` record so `pro` can be restored automatically if the same email signs in again before the paid period ends.

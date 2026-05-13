@@ -34,7 +34,8 @@ It does not use the default Firestore database.
 7. `userEmailLookup`
 8. `shared_task_summaries`
 9. `scheduled_time_goal_pushes`
-10. `leaderboardProfiles`
+10. `shared_task_reminder_state`
+11. `leaderboardProfiles`
 
 ---
 
@@ -598,10 +599,38 @@ Runtime usage:
 
 ---
 
+### `shared_task_reminder_state/{reminderDocId}`
+
+Doc ID convention:
+
+- `${ownerUid}__${taskId}`
+
+Allowed fields:
+
+- `ownerUid: string`
+- `taskId: string`
+- `lastSentAtMs: int`
+- `lastSentByUid: string`
+- `lastSenderDisplayName: string`
+- `updatedAt: timestamp`
+- `schemaVersion: int`
+
+Access:
+
+- Client read/write is denied.
+- Server callables create/update/delete this collection only.
+
+Runtime usage:
+
+- Stores the one-hour shared-task reminder cooldown across all friends for an owner task.
+
+---
+
 ### Firestore security summary
 
 - All `users/{userId}` tree data is owner-scoped.
 - Social collections (`friend_requests`, `friendships`, `userEmailLookup`, `shared_task_summaries`) are auth-gated with path/data constraints.
+- `shared_task_reminder_state` is server-only and denied to clients.
 - Several operations intentionally allow read on non-existent docs for transaction pre-reads (`friend_requests`, `friendships`).
 - Account deletion now uses an explicit server/admin cleanup route (`src/app/api/account/delete-user-data/route.ts`) against the named `timebase` database rather than relying on Firebase’s Delete User Data extension.
 

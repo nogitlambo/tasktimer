@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   getPrimaryClickTarget,
+  getTaskLaunchClickTarget,
   playPrimaryClickAudio,
+  playTaskLaunchClickAudio,
   registerPrimaryClickAudio,
   PRIMARY_CLICK_AUDIO_SRC,
+  TASK_LAUNCH_CLICK_AUDIO_SRC,
 } from "./primary-click-audio";
 
 function makeElement(opts: {
@@ -33,6 +36,12 @@ describe("primary click audio", () => {
     expect(getPrimaryClickTarget(element)).toBe(element);
   });
 
+  it("matches enabled task launch controls", () => {
+    const element = makeElement({ selectorMatches: { 'button[data-action="start"][title="Launch"]': true } });
+
+    expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
   it("ignores unrelated and disabled controls", () => {
     const unrelated = makeElement({ selectorMatches: { ".btn-accent": true } });
     const disabled = makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true }, disabled: true });
@@ -56,6 +65,16 @@ describe("primary click audio", () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
+  it("plays the configured task launch audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playTaskLaunchClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(TASK_LAUNCH_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
   it("registers one scoped app click listener and skips prevented or synthetic clicks", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
@@ -74,5 +93,8 @@ describe("primary click audio", () => {
 
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(1);
+
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { 'button[data-action="start"][title="Launch"]': true } }) } as unknown as Event);
+    expect(playAudio).toHaveBeenCalledTimes(2);
   });
 });

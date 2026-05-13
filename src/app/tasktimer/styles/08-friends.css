@@ -255,6 +255,10 @@
 .friendSharedTaskActions .btn {
   margin: 0;
 }
+.friendSharedTaskReminderActions {
+  justify-content: flex-start;
+  margin-top: 6px;
+}
 .friendSharedTaskCard.friendSharedTaskCardState-running {
   border-color: rgba(134, 170, 196, 0.58);
 }

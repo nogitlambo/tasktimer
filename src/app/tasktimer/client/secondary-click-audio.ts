@@ -35,6 +35,7 @@ const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
   "delete",
   "save & close",
   "close",
+  "launch",
 ]);
 const CANCEL_CLICK_LABELS = new Set(["cancel"]);
 const CLOSE_CLICK_LABELS = new Set(["close"]);

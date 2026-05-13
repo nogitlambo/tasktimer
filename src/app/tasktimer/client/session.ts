@@ -1104,7 +1104,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const existing = ctx.getCheckpointBeepAudio();
     if (existing) return existing;
     try {
-      const audio = new Audio("/checkpoint-beep.wav");
+      const audio = new Audio("/checkpoint_alert.mp3");
       audio.preload = "auto";
       ctx.setCheckpointBeepAudio(audio);
       return audio;

@@ -32,10 +32,13 @@ const UNSCHEDULED_GAP_REMINDER_EVENT = "unscheduledGapReminder";
 const UNSCHEDULED_GAP_NOTIFICATION_KIND = "unscheduledGap";
 const TIME_GOAL_COMPLETE_EVENT = "timeGoalComplete";
 const TIME_GOAL_COMPLETE_NOTIFICATION_KIND = "timeGoalComplete";
+const FRIEND_TASK_REMINDER_EVENT = "friendTaskReminder";
+const FRIEND_TASK_REMINDER_NOTIFICATION_KIND = "friendTaskReminder";
 const PUSH_ACTION_LAUNCH_TASK = "launchTask";
 const PUSH_ACTION_SNOOZE_10M = "snooze10m";
 const PUSH_ACTION_POSTPONE_NEXT_GAP = "postponeNextGap";
 const MINUTE_MS = 60 * 1000;
+const SHARED_TASK_REMINDER_COOLDOWN_MS = 60 * MINUTE_MS;
 const protectedCallableOptions = {
   region,
   enforceAppCheck: true,
@@ -63,6 +66,19 @@ function normalizePlan(value) {
 
 function normalizeEmailKey(value) {
   return asString(value).toLowerCase();
+}
+
+function sortedPair(a, b) {
+  return [asString(a), asString(b)].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0));
+}
+
+function friendshipDocId(uidA, uidB) {
+  const [a, b] = sortedPair(uidA, uidB);
+  return `pair:${a}:${b}`;
+}
+
+function sharedTaskSummaryDocId(ownerUid, friendUid, taskId) {
+  return `share:${ownerUid}:${friendUid}:${taskId}`;
 }
 
 const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
@@ -164,6 +180,24 @@ function asStringMap(value) {
     .map(([key, entryValue]) => [String(key || "").trim(), entryValue == null ? "" : String(entryValue)] )
     .filter(([key]) => !!key);
   return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
+function asProfileDisplayName(value, fallback = "A friend") {
+  const profile = value && typeof value === "object" ? value : {};
+  return asString(profile.alias || profile.username || profile.displayName, fallback).slice(0, 60) || fallback;
+}
+
+async function resolveFriendReminderSenderName(callerUid, ownerUid) {
+  const pairSnap = await db.collection("friendships").doc(friendshipDocId(callerUid, ownerUid)).get();
+  if (!pairSnap.exists) return {ok: false, senderName: ""};
+  const profileByUid = pairSnap.get("profileByUid") || {};
+  const senderName = asProfileDisplayName(profileByUid[callerUid], "");
+  if (senderName) return {ok: true, senderName};
+  const userSnap = await db.collection("users").doc(callerUid).get().catch(() => null);
+  return {
+    ok: true,
+    senderName: asString(userSnap?.get?.("username"), "A friend").slice(0, 60) || "A friend",
+  };
 }
 
 async function cleanupInvalidDeviceTokens(uid, deviceRows, response) {
@@ -759,6 +793,120 @@ async function sendScheduledTaskNotification({
     taskName,
   };
 }
+
+export const sendSharedTaskReminder = onCall(protectedCallableOptions, async (request) => {
+  const requesterUid = asString(request.auth?.uid);
+  if (!requesterUid) {
+    throw new HttpsError("unauthenticated", "You must be signed in to send a task reminder.");
+  }
+
+  const rawData = request.data && typeof request.data === "object" ? request.data : {};
+  const ownerUid = asString(rawData.ownerUid);
+  const taskId = asString(rawData.taskId);
+  const nowMs = Date.now();
+
+  if (!ownerUid || !taskId) {
+    throw new HttpsError("invalid-argument", "A valid owner and task are required.");
+  }
+  if (ownerUid === requesterUid) {
+    return {ok: false, status: "not-shared"};
+  }
+
+  try {
+    const [shareSnap, senderResult, taskSnap] = await Promise.all([
+      db.collection("shared_task_summaries").doc(sharedTaskSummaryDocId(ownerUid, requesterUid, taskId)).get(),
+      resolveFriendReminderSenderName(requesterUid, ownerUid),
+      db.collection("users").doc(ownerUid).collection("tasks").doc(taskId).get(),
+    ]);
+
+    if (!shareSnap.exists || !senderResult.ok) {
+      return {ok: false, status: "not-shared"};
+    }
+    if (!taskSnap.exists) {
+      return {ok: false, status: "missing-task"};
+    }
+
+    const taskData = taskSnap.data() || {};
+    if (taskData.running === true) {
+      return {ok: false, status: "already-running"};
+    }
+
+    const taskName = asString(taskData.name || shareSnap.get("taskName"), "Task") || "Task";
+    const senderName = senderResult.senderName || "A friend";
+    const stateRef = db.collection("shared_task_reminder_state").doc(`${ownerUid}__${taskId}`);
+    const cooldown = await db.runTransaction(async (tx) => {
+      const stateSnap = await tx.get(stateRef);
+      const lastSentAtMs = stateSnap.exists ? asInt(stateSnap.get("lastSentAtMs"), 0) || 0 : 0;
+      const nextAllowedAtMs = lastSentAtMs + SHARED_TASK_REMINDER_COOLDOWN_MS;
+      if (lastSentAtMs > 0 && nextAllowedAtMs > nowMs) {
+        return {blocked: true, nextAllowedAtMs};
+      }
+      tx.set(stateRef, {
+        ownerUid,
+        taskId,
+        lastSentAtMs: nowMs,
+        lastSentByUid: requesterUid,
+        lastSenderDisplayName: senderName,
+        updatedAt: FieldValue.serverTimestamp(),
+        schemaVersion: 1,
+      }, {merge: true});
+      return {blocked: false, nextAllowedAtMs: nowMs + SHARED_TASK_REMINDER_COOLDOWN_MS};
+    });
+    if (cooldown.blocked) {
+      return {ok: false, status: "cooldown", nextAllowedAtMs: cooldown.nextAllowedAtMs};
+    }
+
+    const response = await sendScheduledTaskNotification({
+      uid: ownerUid,
+      nowMs,
+      route: "/tasklaunch",
+      taskId,
+      taskName,
+      payloadData: {
+        eventType: FRIEND_TASK_REMINDER_EVENT,
+        baseEventType: FRIEND_TASK_REMINDER_EVENT,
+        effectiveEventType: FRIEND_TASK_REMINDER_EVENT,
+        route: "/tasklaunch",
+        taskId,
+        taskName,
+        notificationKind: FRIEND_TASK_REMINDER_NOTIFICATION_KIND,
+        requesterUid,
+        requesterName: senderName,
+        dueAtMs: String(nowMs),
+      },
+      webTitle: "Task Reminder",
+      webBody: `${senderName} reminded you to start ${taskName}.`,
+      allowWeb: true,
+      skipIfForeground: false,
+    });
+
+    if (response.status === "sent") {
+      return {ok: true, status: "sent", nextAllowedAtMs: cooldown.nextAllowedAtMs};
+    }
+
+    await stateRef.delete().catch(() => {});
+    if (response.status === "no-devices") {
+      return {ok: false, status: "no-devices"};
+    }
+    return {ok: false, status: "disabled"};
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    const message = error instanceof Error && error.message ? error.message : "Unexpected shared task reminder failure.";
+    logger.error("sendSharedTaskReminder failed", {
+      requesterUid,
+      ownerUid,
+      taskId,
+      databaseId,
+      region,
+      message,
+      error,
+    });
+    throw new HttpsError("internal", `Shared task reminder failed: ${message}`, {
+      databaseId,
+      region,
+    });
+  }
+});
 
 async function processDuePlannedStartTask(docSnap, nowMs) {
   const data = docSnap.data() || {};

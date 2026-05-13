@@ -18,6 +18,7 @@ import {
 } from "../lib/friendsStore";
 import { getCalendarWeekStartMs } from "../lib/history";
 import { getRankForXp, getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
+import { sendSharedTaskReminder, type SharedTaskReminderResult } from "../lib/pushFunctions";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
 
@@ -42,6 +43,22 @@ const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
   loadSharedTaskSummariesForViewer,
   loadSharedTaskSummariesForOwner,
 };
+
+export function shouldRenderSharedTaskReminderButton(timerState: unknown) {
+  return String(timerState || "stopped").trim().toLowerCase() !== "running";
+}
+
+export function getSharedTaskReminderStatusMessage(result: SharedTaskReminderResult | null | undefined) {
+  const status = String(result?.status || "").trim();
+  if (result?.ok && status === "sent") return { message: "Reminder sent.", tone: "success" as const };
+  if (status === "cooldown") return { message: "A reminder was sent recently. Try again later.", tone: "info" as const };
+  if (status === "already-running") return { message: "That task is already running.", tone: "info" as const };
+  if (status === "no-devices") return { message: "No enabled push devices were found for this friend.", tone: "error" as const };
+  if (status === "not-shared" || status === "missing-task" || status === "disabled") {
+    return { message: "This reminder could not be sent right now.", tone: "error" as const };
+  }
+  return { message: "Unable to send reminder right now.", tone: "error" as const };
+}
 
 export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnapshotLoaders = defaultGroupsSnapshotLoaders) {
   const [incomingResult, outgoingResult, friendshipsResult] = await Promise.allSettled([
@@ -133,6 +150,33 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       return;
     }
     host.style.color = "rgba(188,214,230,.78)";
+  }
+
+  async function handleSendSharedTaskReminder(ownerUidRaw: string, taskIdRaw: string) {
+    if (!canUseSocialFeatures()) {
+      ctx.showUpgradePrompt("Friends and sharing", "pro");
+      return;
+    }
+    const ownerUid = String(ownerUidRaw || "").trim();
+    const taskId = String(taskIdRaw || "").trim();
+    if (!ownerUid || !taskId) {
+      setGroupsStatus("This reminder could not be sent right now.", "error");
+      return;
+    }
+    const result = await runGroupsBusy(
+      "Sending reminder...",
+      "Reminder send is taking longer than expected. Please try again.",
+      () => sendSharedTaskReminder({ ownerUid, taskId })
+    );
+    if (!result.ok) {
+      setGroupsStatus(result.message || "Unable to send reminder right now.", "error");
+      return;
+    }
+    const status = getSharedTaskReminderStatusMessage(result.value);
+    setGroupsStatus(status.message, status.tone);
+    if (result.value?.status === "already-running") {
+      void refreshGroupsData().catch(() => {});
+    }
   }
 
   function openFriendRequestModal() {
@@ -1001,6 +1045,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
             const trendBars = buildSharedTrendBarSvgMarkup(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
+            const reminderActionHtml = shouldRenderSharedTaskReminderButton(entry.timerState)
+              ? `<div class="friendSharedTaskActions friendSharedTaskReminderActions">
+                  <button class="btn btn-ghost small" type="button" data-friend-action="send-shared-task-reminder" data-owner-uid="${ctx.escapeHtmlUI(
+                    entry.ownerUid
+                  )}" data-task-id="${ctx.escapeHtmlUI(entry.taskId)}">Remind</button>
+                </div>`
+              : "";
             return `<div class="friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
@@ -1013,6 +1064,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   <div class="friendSharedTaskMeta">Total logged: ${ctx.escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(entry.totalTimeLoggedMs || 0))
                   )}</div>
+                  ${reminderActionHtml}
                 </div>
                 <div class="friendSharedTaskTrend" aria-label="Focus Trend chart">
                   <div class="friendSharedTaskTrendLabel">Focus Trend</div>
@@ -1401,6 +1453,16 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       void handleFriendRequestAction(requestId, action);
     });
     ctx.on(els.groupsFriendsList, "click", (e: any) => {
+      const remindBtn = e.target?.closest?.('[data-friend-action="send-shared-task-reminder"]') as HTMLElement | null;
+      if (remindBtn) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        if (ctx.getGroupsLoading()) return;
+        const ownerUid = String(remindBtn.getAttribute("data-owner-uid") || "").trim();
+        const taskId = String(remindBtn.getAttribute("data-task-id") || "").trim();
+        void handleSendSharedTaskReminder(ownerUid, taskId);
+        return;
+      }
       const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
       if (!btn) return;
       e?.preventDefault?.();
@@ -1411,6 +1473,16 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
     ctx.on(els.groupsFriendsList, "keydown", (e: any) => {
       if (e?.key !== "Enter" && e?.key !== " ") return;
+      const remindBtn = e.target?.closest?.('[data-friend-action="send-shared-task-reminder"]') as HTMLElement | null;
+      if (remindBtn) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        if (ctx.getGroupsLoading()) return;
+        const ownerUid = String(remindBtn.getAttribute("data-owner-uid") || "").trim();
+        const taskId = String(remindBtn.getAttribute("data-task-id") || "").trim();
+        void handleSendSharedTaskReminder(ownerUid, taskId);
+        return;
+      }
       const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
       if (!btn) return;
       e?.preventDefault?.();
