@@ -1117,6 +1117,12 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.timeGoalCompletedAtMs == null || !Number.isFinite(Number(row.timeGoalCompletedAtMs))
       ? null
       : Math.max(0, Math.floor(Number(row.timeGoalCompletedAtMs)));
+  row.timeGoalCompletedReason =
+    row.timeGoalCompletedReason === "reset" || row.timeGoalCompletedReason === "goal" ? row.timeGoalCompletedReason : null;
+  row.timeGoalCompletedElapsedMs =
+    row.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(row.timeGoalCompletedElapsedMs))
+      ? null
+      : Math.max(0, Math.floor(Number(row.timeGoalCompletedElapsedMs)));
   row.taskType = row.taskType === "once-off" ? "once-off" : "recurring";
   row.onceOffDay = row.taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null;
   row.onceOffTargetDate = row.taskType === "once-off" ? normalizeLocalDateValue(row.onceOffTargetDate) : null;
@@ -1176,6 +1182,11 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs))),
+    timeGoalCompletedReason: task.timeGoalCompletedReason === "reset" || task.timeGoalCompletedReason === "goal" ? task.timeGoalCompletedReason : null,
+    timeGoalCompletedElapsedMs:
+      task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,

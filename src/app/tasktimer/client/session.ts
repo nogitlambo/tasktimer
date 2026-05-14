@@ -113,9 +113,9 @@ export function shiftValidDeferredTimeGoalModal(
   return { nextPending: null, remainingQueue: [] };
 }
 
-export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs: number): void {
+export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs: number, elapsedMs?: number | null): void {
   if (isTaskTimeGoalCompletedToday(task, completedAtMs)) return;
-  markTaskTimeGoalCompleted(task, completedAtMs);
+  markTaskTimeGoalCompleted(task, completedAtMs, { reason: "goal", elapsedMs });
 }
 
 function formatTimeGoalCompleteNextTaskSchedule(task: Task, nowDate = new Date()) {
@@ -652,7 +652,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs());
+    markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task));
     ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote, completionDifficulty });
     clearTaskTimeGoalFlow(taskId);
     stopTimeGoalCompleteConfetti();
@@ -678,7 +678,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs());
+    markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task));
     ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
     ctx.save();
     ctx.render();
@@ -1500,8 +1500,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
           const completed = isTaskTimeGoalCompletedToday(task);
-          const resetLabel = completed ? "Done until tomorrow" : task.running ? "Stop task to reset" : "Reset";
-          resetBtn.disabled = !!task.running || completed;
+          const hasResettableTime = elapsedMs > 0;
+          const resetLabel = completed ? "Done until tomorrow" : task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
+          resetBtn.disabled = !!task.running || completed || !hasResettableTime;
           resetBtn.title = resetLabel;
           resetBtn.setAttribute("aria-label", resetLabel);
         }

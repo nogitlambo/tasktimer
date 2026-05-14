@@ -1243,6 +1243,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   overflow:hidden;
   min-height: 520px;
   padding: 0;
+  background:
+    linear-gradient(180deg, rgba(4,7,12,.5), rgba(4,7,12,.74) 46%, rgba(4,7,12,.9)),
+    linear-gradient(90deg, rgba(4,7,12,.82), rgba(4,7,12,.16) 48%, rgba(4,7,12,.82)),
+    url("/leaderboard/deep-space-bg.webp") center / cover no-repeat;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyBoard::before{
   content:"";
@@ -1250,6 +1254,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   inset:0 0 auto;
   height: 300px;
   pointer-events:none;
+  z-index:1;
   background:
     linear-gradient(rgba(103,255,159,.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(103,255,159,.08) 1px, transparent 1px);

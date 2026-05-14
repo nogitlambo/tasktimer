@@ -316,6 +316,8 @@ service cloud.firestore {
         "timeGoalMinutes",
         "timeGoalCompletedDayKey",
         "timeGoalCompletedAtMs",
+        "timeGoalCompletedReason",
+        "timeGoalCompletedElapsedMs",
         "taskType",
         "onceOffDay",
         "onceOffTargetDate",
@@ -366,6 +368,8 @@ service cloud.firestore {
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
       && (!("timeGoalCompletedDayKey" in request.resource.data) || request.resource.data.timeGoalCompletedDayKey == null || request.resource.data.timeGoalCompletedDayKey is string)
       && (!("timeGoalCompletedAtMs" in request.resource.data) || request.resource.data.timeGoalCompletedAtMs == null || request.resource.data.timeGoalCompletedAtMs is int)
+      && (!("timeGoalCompletedReason" in request.resource.data) || request.resource.data.timeGoalCompletedReason == null || request.resource.data.timeGoalCompletedReason in ["goal", "reset"])
+      && (!("timeGoalCompletedElapsedMs" in request.resource.data) || request.resource.data.timeGoalCompletedElapsedMs == null || request.resource.data.timeGoalCompletedElapsedMs is int)
       && (!("taskType" in request.resource.data) || request.resource.data.taskType in ["recurring", "once-off"])
       && (!("onceOffDay" in request.resource.data) || request.resource.data.onceOffDay == null || request.resource.data.onceOffDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("onceOffTargetDate" in request.resource.data) || request.resource.data.onceOffTargetDate == null || request.resource.data.onceOffTargetDate is string)

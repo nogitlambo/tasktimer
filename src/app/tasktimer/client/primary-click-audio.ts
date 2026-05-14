@@ -8,7 +8,8 @@ type ClosestCapable = {
 };
 
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn";
-const TASK_LAUNCH_CLICK_SELECTOR = 'button[data-action="start"][title="Launch"]';
+const TASK_LAUNCH_CLICK_SELECTOR =
+  'button[data-action="start"][title="Launch"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 
 function getClosestElement(target: EventTarget | null, selector: string): HTMLElement | null {
   const node = target as (ClosestCapable & Element) | null;

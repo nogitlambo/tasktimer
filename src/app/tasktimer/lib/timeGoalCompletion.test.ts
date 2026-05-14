@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./types";
-import { getTimeGoalCompletionDayKey, isTaskTimeGoalCompletedToday, markTaskTimeGoalCompleted } from "./timeGoalCompletion";
+import {
+  getTimeGoalCompletionDayKey,
+  isTaskTimeGoalCompletedToday,
+  markTaskTimeGoalCompleted,
+  markTaskTimeGoalResetCompleted,
+} from "./timeGoalCompletion";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -44,5 +49,28 @@ describe("time goal completion lock", () => {
 
     expect(entry.timeGoalCompletedDayKey).toBe(getTimeGoalCompletionDayKey(nowValue));
     expect(entry.timeGoalCompletedAtMs).toBe(nowValue);
+    expect(entry.timeGoalCompletedReason).toBe("goal");
+    expect(entry.timeGoalCompletedElapsedMs).toBeNull();
+  });
+
+  it("marks goal completion with elapsed metadata", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task();
+
+    markTaskTimeGoalCompleted(entry, nowValue, { reason: "goal", elapsedMs: 1234.8 });
+
+    expect(entry.timeGoalCompletedReason).toBe("goal");
+    expect(entry.timeGoalCompletedElapsedMs).toBe(1234);
+  });
+
+  it("marks reset completion with elapsed metadata", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task();
+
+    markTaskTimeGoalResetCompleted(entry, nowValue, 30 * 60 * 1000);
+
+    expect(entry.timeGoalCompletedDayKey).toBe(getTimeGoalCompletionDayKey(nowValue));
+    expect(entry.timeGoalCompletedReason).toBe("reset");
+    expect(entry.timeGoalCompletedElapsedMs).toBe(30 * 60 * 1000);
   });
 });

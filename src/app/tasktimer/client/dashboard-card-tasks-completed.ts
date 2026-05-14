@@ -1,6 +1,7 @@
 import { localDayKey } from "../lib/history";
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
+import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
 
 export type DashboardTasksCompletedItem = {
   name: string;
@@ -36,6 +37,16 @@ export function buildDashboardTasksCompletedModel(options: {
   const dailyLiveMsByTask = new Map<string, number>();
   const dailyProgressByTask = new Map<string, number>();
   const dailyLiveProgressByTask = new Map<string, number>();
+  const dailyCompleteByTask = new Map<string, boolean>();
+
+  function getResetCompletionProgress(task: Task, goalMinutes: number) {
+    if (goalMinutes <= 0) return null;
+    if (!isTaskTimeGoalCompletedToday(task, options.nowMs)) return null;
+    if (task.timeGoalCompletedReason !== "reset") return null;
+    const elapsedMs = Number(task.timeGoalCompletedElapsedMs);
+    if (!Number.isFinite(elapsedMs)) return null;
+    return Math.max(0, Math.min(1, elapsedMs / (goalMinutes * 60000)));
+  }
 
   options.dueTasks.forEach((task) => {
     const taskId = String(task.id || "").trim();
@@ -63,9 +74,12 @@ export function buildDashboardTasksCompletedModel(options: {
     const goalMinutes = dailyTaskGoalMinutes.get(taskId) || 0;
     const loggedMs = dailyLoggedMsByTask.get(taskId) || 0;
     const liveMs = dailyLiveMsByTask.get(taskId) || 0;
-    const progress = goalMinutes > 0 ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0;
+    const resetProgress = getResetCompletionProgress(task, goalMinutes);
+    const progress = resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
     dailyProgressByTask.set(taskId, progress);
-    if (progress >= 1) totalCompleted += 1;
+    const complete = progress >= 1;
+    dailyCompleteByTask.set(taskId, complete);
+    if (complete) totalCompleted += 1;
   });
 
   options.dueTasks.forEach((task) => {
@@ -74,7 +88,8 @@ export function buildDashboardTasksCompletedModel(options: {
     if (!taskId) return;
     const loggedMs = dailyLoggedMsByTask.get(taskId) || 0;
     const liveMs = dailyLiveMsByTask.get(taskId) || 0;
-    const liveProgress = goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0;
+    const resetProgress = getResetCompletionProgress(task, goalMinutes);
+    const liveProgress = resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
     dailyLiveProgressByTask.set(taskId, liveProgress);
   });
 
@@ -90,7 +105,7 @@ export function buildDashboardTasksCompletedModel(options: {
         name: String(task.name || "Task"),
         goalMinutes: dailyTaskGoalMinutes.get(taskId) || 0,
         progress,
-        complete: Math.max(0, Math.min(1, dailyProgressByTask.get(taskId) || 0)) >= 1,
+        complete: dailyCompleteByTask.get(taskId) === true,
         running: options.isTaskRunning(task),
         color: normalizeTaskColor(task.color) || options.fallbackColor,
       };

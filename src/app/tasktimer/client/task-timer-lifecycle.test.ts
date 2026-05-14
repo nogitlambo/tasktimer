@@ -153,11 +153,30 @@ describe("task timer lifecycle", () => {
   });
 
   it("resets task state and syncs focus note UI when the task is focused", () => {
-    const harness = createHarness({ tasks: [task({ running: true, startMs: 1, accumulatedMs: 55, hasStarted: true })], focusTaskId: "task-1" });
+    const harness = createHarness({
+      tasks: [
+        task({
+          running: true,
+          startMs: 1,
+          accumulatedMs: 55,
+          hasStarted: true,
+          timeGoalCompletedReason: "reset",
+          timeGoalCompletedElapsedMs: 55,
+        }),
+      ],
+      focusTaskId: "task-1",
+    });
 
     harness.lifecycle.resetTaskStateImmediate(harness.tasks[0], { sessionNote: "done", completionDifficulty: 4 });
 
-    expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 0, startMs: null, hasStarted: false });
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: 0,
+      startMs: null,
+      hasStarted: false,
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 55,
+    });
     expect(harness.calls).toEqual([
       "flush-note:task-1",
       "finalize-live:task-1:678:done:4",

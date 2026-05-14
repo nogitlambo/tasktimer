@@ -122,12 +122,12 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                       <svg
                         className="dashboardTasksCompletedSvg"
                         id="dashboardTasksCompletedSvg"
-                        viewBox="0 0 320 320"
+                        viewBox="0 0 380 380"
                         aria-hidden="true"
                         focusable="false"
                       >
-                        <circle className="dashboardTasksCompletedTrack" cx="160" cy="160" r="88" pathLength="100" />
-                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="160" y1="106" x2="160" y2="82" />
+                        <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
+                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
                       </svg>
                       <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
                       <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />

@@ -475,6 +475,82 @@ export function isWeeklyLeaderboardPlaceholderProfile(profile: LeaderboardProfil
   return /^weekly-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
 }
 
+function buildGlobalPlaceholderProfile(rank: number): LeaderboardProfile {
+  const safeRank = Math.max(1, Math.floor(rank || 1));
+  const rewardTotalXp = Math.max(900, 12_400 - (safeRank - 1) * 840);
+  const weeklyXpGain = Math.max(32, 520 - (safeRank - 1) * 38);
+  const totalFocusMs = Math.max(90 * 60 * 1000, (26 - safeRank) * 58 * 60 * 1000);
+  const streakDays = Math.max(1, 18 - safeRank);
+  const label = `Focus Pilot ${safeRank}`;
+  return {
+    uid: `global-placeholder-${safeRank}`,
+    username: label,
+    displayLabel: label,
+    avatarId: null,
+    avatarCustomSrc: null,
+    googlePhotoUrl: null,
+    rankThumbnailSrc: null,
+    rewardCurrentRankId: getRankForXp(rewardTotalXp).id,
+    rewardTotalXp,
+    streakDays,
+    totalFocusMs,
+    weeklyXpGain,
+    memberSinceMs: null,
+    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+  };
+}
+
+export function isGlobalLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
+  return /^global-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
+}
+
+export function buildGlobalLeaderboardRows(input: {
+  topEntries: LeaderboardProfile[];
+  currentUserEntry: LeaderboardProfile | null;
+  currentUserRank: number | null;
+}): WeeklyLeaderboardRow[] {
+  const currentUid = String(input.currentUserEntry?.uid || "").trim();
+  const rows = (input.topEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
+    const isCurrentUser = !!currentUid && profile.uid === currentUid;
+    const rank = index + 1;
+    return {
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank),
+      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser,
+      isPlaceholder: false,
+    };
+  });
+
+  while (rows.length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+    const rank = rows.length + 1;
+    const profile = buildGlobalPlaceholderProfile(rank);
+    rows.push({
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank),
+      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser: false,
+      isPlaceholder: true,
+    });
+  }
+
+  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
+
+  return [
+    {
+      profile: input.currentUserEntry,
+      rank: input.currentUserRank,
+      rankLabel: formatWeeklyRankLabel(input.currentUserRank),
+      playerLabel: "You",
+      isCurrentUser: true,
+      isPlaceholder: false,
+    },
+    ...rows,
+  ];
+}
+
 export function buildWeeklyLeaderboardRows(input: {
   weeklyEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;

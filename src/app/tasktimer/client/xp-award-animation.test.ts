@@ -3,6 +3,7 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAward,
+  enqueuePendingXpAwardFromOverlayState,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
@@ -45,6 +46,15 @@ describe("xp award animation state", () => {
     expect(ignored).toEqual(queued);
 
     const started = notifyXpAwardOverlayClosed(queued, "timeGoalCompleteOverlay");
+    expect(started.pending).toBeNull();
+    expect(started.active).toMatchObject({ fromXp: 10, toXp: 22, awardedXp: 12 });
+  });
+
+  it("starts immediately when the source overlay already closed before the award update is applied", () => {
+    const started = enqueuePendingXpAwardFromOverlayState(createXpAwardAnimationState(), award(), {
+      sourceOverlayVisible: false,
+    });
+
     expect(started.pending).toBeNull();
     expect(started.active).toMatchObject({ fromXp: 10, toXp: 22, awardedXp: 12 });
   });

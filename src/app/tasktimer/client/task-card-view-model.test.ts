@@ -63,6 +63,19 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
+  it("disables reset until the task has logged time", () => {
+    const rendered = renderCard();
+
+    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" disabled');
+  });
+
+  it("enables reset after the task has logged time", () => {
+    const rendered = renderCard({ elapsedMs: 60_000 });
+
+    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset" ');
+    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');
+  });
+
   it("renders running, alert, history, and shared-owner states", () => {
     const rendered = renderCard({
       task: baseTask({ running: true, collapsed: true }),

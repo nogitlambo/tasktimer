@@ -1,5 +1,5 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
-import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
+import { isTaskTimeGoalCompletedToday, markTaskTimeGoalResetCompleted } from "../lib/timeGoalCompletion";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
@@ -78,17 +78,20 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     const task = options.getTasks()[index];
     if (!task || task.running) return;
     if (isTaskTimeGoalCompletedToday(task)) return;
+    if (Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0)) <= 0) return;
     const taskId = String(task.id || "");
     const rewardPreview = getResetAwardPreview(task);
     const shouldExitFocusModeAfterReset = String(options.getFocusModeTaskId() || "").trim() === taskId.trim();
 
-    options.confirm("Reset Task", "Reset timer to zero?", {
+    const resetConfirmText =
+      rewardPreview.awardedXp > 0
+        ? `Reset this task? You will still bank <span class="confirmAwardText" id="confirmResetTaskAwardText">+${rewardPreview.awardedXp}</span> XP for your logged time.`
+        : "Reset this task? You will still bank 0 XP for your logged time.";
+
+    options.confirm("Reset Task", "Reset this task?", {
       okLabel: "Reset",
       cancelLabel: "Cancel",
-      textHtml:
-        rewardPreview.awardedXp > 0
-          ? `Reset timer to zero?<br /><span class="confirmAwardText" id="confirmResetTaskAwardText">This reset will bank +${rewardPreview.awardedXp} XP.</span>`
-          : undefined,
+      textHtml: resetConfirmText,
       onOk: async () => {
         options.setResetTaskConfirmBusy(true, false);
         const sessionNote = options.captureResetActionSessionNote(taskId);
@@ -104,6 +107,8 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
               sourceRect: captureXpAwardRectSnapshot(document.getElementById("confirmResetTaskAwardText")),
             });
           }
+          const resetElapsedMs = Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0));
+          markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs);
           options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
           options.save();
           options.closeConfirm();

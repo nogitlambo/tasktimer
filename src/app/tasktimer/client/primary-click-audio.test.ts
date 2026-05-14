@@ -29,6 +29,9 @@ function makeElement(opts: {
   return element as unknown as HTMLElement;
 }
 
+const TASK_LAUNCH_CLICK_SELECTOR =
+  'button[data-action="start"][title="Launch"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+
 describe("primary click audio", () => {
   it("matches enabled primary action controls", () => {
     const element = makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } });
@@ -37,7 +40,25 @@ describe("primary click audio", () => {
   });
 
   it("matches enabled task launch controls", () => {
-    const element = makeElement({ selectorMatches: { 'button[data-action="start"][title="Launch"]': true } });
+    const element = makeElement({
+      selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true },
+    });
+
+    expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
+  it("matches the reset task confirm primary action for task launch audio", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true },
+    });
+
+    expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
+  it("matches task-complete next-task tiles for task launch audio", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true },
+    });
 
     expect(getTaskLaunchClickTarget(element)).toBe(element);
   });
@@ -94,7 +115,12 @@ describe("primary click audio", () => {
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(1);
 
-    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { 'button[data-action="start"][title="Launch"]': true } }) } as unknown as Event);
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true },
+      }),
+    } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(2);
   });
 });

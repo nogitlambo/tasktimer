@@ -126,7 +126,7 @@ function createDocumentHarness() {
   return { byId, documentRef };
 }
 
-function createRenderHarness(tasks: Task[]) {
+function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number }>> }) {
   const { byId, documentRef } = createDocumentHarness();
   const originalDocument = globalThis.document;
   Object.defineProperty(globalThis, "document", {
@@ -138,7 +138,7 @@ function createRenderHarness(tasks: Task[]) {
     els: {} as never,
     getRewardProgress: () => ({}) as never,
     getTasks: () => tasks,
-    getHistoryByTaskId: () => ({}),
+    getHistoryByTaskId: () => options?.historyByTaskId || {},
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => "mon",
     getDashboardAvgRange: () => "past7",
@@ -191,11 +191,81 @@ describe("dashboard completed card", () => {
       harness.render();
       const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
       const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
 
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Goal Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("New Task");
-      expect(centerEl?.innerHTML).toContain("No progress yet");
+      expect(connectorEls).toHaveLength(2);
+      expect(centerEl?.innerHTML).toContain("Task Focus");
+      expect(centerEl?.innerHTML).toContain("0% completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows the running task name and in-progress subtext in the donut center", () => {
+    const tasks = [
+      task({ id: "running-task", name: "Deep Work", running: true, startMs: Date.now() - 1000 }),
+      task({ id: "queued-task", name: "Queued Task" }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(centerEl?.innerHTML).toContain("Deep Work");
+      expect(centerEl?.innerHTML).toContain("In Progress");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows today's completed task percentage when no task is running", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({ id: "done-task", name: "Done Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 }),
+      task({ id: "open-task", name: "Open Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "done-task": [{ ts: nowValue, name: "Done Task", ms: 60 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(centerEl?.innerHTML).toContain("Task Focus");
+      expect(centerEl?.innerHTML).toContain("50% completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders connector paths when short time-goal labels are bunched", () => {
+    const tasks = [
+      task({ id: "quick-1", name: "Quick 1", order: 1, timeGoalMinutes: 1 }),
+      task({ id: "quick-2", name: "Quick 2", order: 2, timeGoalMinutes: 1 }),
+      task({ id: "quick-3", name: "Quick 3", order: 3, timeGoalMinutes: 1 }),
+      task({ id: "quick-4", name: "Quick 4", order: 4, timeGoalMinutes: 1 }),
+      task({ id: "deep-work", name: "Deep Work", order: 5, timeGoalMinutes: 180 }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
+
+      expect(labelsEl?.children).toHaveLength(5);
+      expect(labelsEl?.children.some((child) => child.innerHTML.includes("Quick 1"))).toBe(true);
+      expect(connectorEls).toHaveLength(5);
+      expect(connectorEls.every((child) => child.getAttribute("d")?.includes(" L "))).toBe(true);
     } finally {
       harness.restore();
     }

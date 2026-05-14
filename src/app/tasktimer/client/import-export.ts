@@ -146,6 +146,17 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.checkpointToastEnabled = !!rawTask.checkpointToastEnabled;
     nextTask.checkpointToastMode = rawTask.checkpointToastMode === "manual" ? "manual" : "auto5s";
     nextTask.timeGoalAction = "confirmModal";
+    nextTask.timeGoalCompletedDayKey = rawTask.timeGoalCompletedDayKey == null ? null : String(rawTask.timeGoalCompletedDayKey).trim() || null;
+    nextTask.timeGoalCompletedAtMs =
+      rawTask.timeGoalCompletedAtMs == null || !Number.isFinite(Number(rawTask.timeGoalCompletedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(rawTask.timeGoalCompletedAtMs)));
+    nextTask.timeGoalCompletedReason =
+      rawTask.timeGoalCompletedReason === "reset" || rawTask.timeGoalCompletedReason === "goal" ? rawTask.timeGoalCompletedReason : null;
+    nextTask.timeGoalCompletedElapsedMs =
+      rawTask.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(rawTask.timeGoalCompletedElapsedMs))
+        ? null
+        : Math.max(0, Math.floor(Number(rawTask.timeGoalCompletedElapsedMs)));
     nextTask.presetIntervalsEnabled = !!rawTask.presetIntervalsEnabled;
     nextTask.presetIntervalValue = ctx.getPresetIntervalValueNum(rawTask as Task);
     nextTask.presetIntervalLastMilestoneId = rawTask.presetIntervalLastMilestoneId

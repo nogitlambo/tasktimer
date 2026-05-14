@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getFriendProfileOpenUidFromTarget,
   getSharedTaskReminderStatusMessage,
   loadGroupsSnapshotForUid,
   shouldRenderSharedTaskReminderButton,
@@ -80,5 +81,26 @@ describe("shared task reminders", () => {
       message: "No enabled push devices were found for this friend.",
       tone: "error",
     });
+  });
+});
+
+describe("friend profile row targets", () => {
+  function targetResolvingTo(uid: string | null) {
+    return {
+      closest: vi.fn(() =>
+        uid == null
+          ? null
+          : {
+              getAttribute: vi.fn((name: string) => (name === "data-friend-profile-open" ? uid : null)),
+            }
+      ),
+    };
+  }
+
+  it("opens Friend Info only for avatar or username controls with the profile hook", () => {
+    expect(getFriendProfileOpenUidFromTarget(targetResolvingTo("friend-1"))).toBe("friend-1");
+    expect(getFriendProfileOpenUidFromTarget(targetResolvingTo(""))).toBe("");
+    expect(getFriendProfileOpenUidFromTarget(targetResolvingTo(null))).toBe("");
+    expect(getFriendProfileOpenUidFromTarget({})).toBe("");
   });
 });

@@ -74,6 +74,18 @@ export function enqueuePendingXpAward(
   };
 }
 
+export function enqueuePendingXpAwardFromOverlayState(
+  state: XpAwardAnimationState,
+  award: PendingXpAward,
+  opts?: { sourceOverlayVisible?: boolean }
+): XpAwardAnimationState {
+  const queued = enqueuePendingXpAward(state, award);
+  if (opts?.sourceOverlayVisible === false) {
+    return notifyXpAwardOverlayClosed(queued, award.sourceOverlayId);
+  }
+  return queued;
+}
+
 export function notifyXpAwardOverlayClosed(
   state: XpAwardAnimationState,
   overlayIdRaw: string | null | undefined

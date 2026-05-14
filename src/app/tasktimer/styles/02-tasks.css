@@ -346,8 +346,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   font-family: var(--font-orbitron);
   font-size: 9px;
   font-weight: 800;
+  color: #ffffff;
   letter-spacing: .08em;
-  line-height: 1;
+  line-height: .3em;
   text-transform: uppercase;
   position: relative;
   top: 1px;
@@ -3215,35 +3216,19 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks :is(.tas
   filter:none;
 }
 
-/* Final task progress block clipping. */
+/* Task progress bar clipping. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
-  --task-progress-segment: 18px;
-  --task-progress-gap: 3px;
   --task-progress-cut: 6px;
-  overflow: visible !important;
+  overflow: hidden !important;
   clip-path: none !important;
   border: 0 !important;
   box-shadow: none !important;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,.055) 0 calc(var(--task-progress-segment) - var(--task-progress-gap)),
-      rgba(0,0,0,.22) calc(var(--task-progress-segment) - var(--task-progress-gap)) var(--task-progress-segment)
-    ),
-    rgba(0,0,0,.24) !important;
+  background: rgba(0,0,0,.24) !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressFill{
   clip-path: polygon(var(--task-progress-cut) 0, 100% 0, 100% calc(100% - var(--task-progress-cut)), calc(100% - var(--task-progress-cut)) 100%, 0 100%, 0 var(--task-progress-cut)) !important;
-  -webkit-mask-image: repeating-linear-gradient(
-    90deg,
-    #000 0 calc(var(--task-progress-segment) - var(--task-progress-gap)),
-    transparent calc(var(--task-progress-segment) - var(--task-progress-gap)) var(--task-progress-segment)
-  ) !important;
-  mask-image: repeating-linear-gradient(
-    90deg,
-    #000 0 calc(var(--task-progress-segment) - var(--task-progress-gap)),
-    transparent calc(var(--task-progress-segment) - var(--task-progress-gap)) var(--task-progress-segment)
-  ) !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 @media (max-width: 1320px){
@@ -3652,6 +3637,24 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   font-size: clamp(11px, 2.8vw, 13px) !important;
   font-weight: 800 !important;
   white-space: nowrap !important;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions .btn[data-action="stop"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"],
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]{
+  border-color: rgba(255,65,65,.82) !important;
+  background: linear-gradient(180deg, #ff4545, #bf1f2f) !important;
+  color: #fff6f6 !important;
+  box-shadow: 0 0 16px rgba(255,45,45,.3), inset 0 0 0 1px rgba(255,255,255,.16) !important;
+}
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions .btn[data-action="stop"]:hover,
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions .btn[data-action="stop"]:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:focus-visible,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:hover,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn[data-action="stop"]:focus-visible{
+  border-color: rgba(255,95,95,.92) !important;
+  background: linear-gradient(180deg, #ff5656, #d02032) !important;
+  box-shadow: 0 0 20px rgba(255,55,55,.36), inset 0 0 0 1px rgba(255,255,255,.18) !important;
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions .btn[data-action="start"]::before,
 #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions .btn[data-action="stop"]::before,

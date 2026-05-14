@@ -34,8 +34,10 @@ vi.mock("./accountProfileStorage", () => ({
 }));
 
 import {
+  buildGlobalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   getLeaderboardResolvedRank,
+  isGlobalLeaderboardPlaceholderProfile,
   isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   type LeaderboardProfile,
@@ -231,6 +233,66 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
+    expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+  });
+});
+
+describe("buildGlobalLeaderboardRows", () => {
+  it("backfills an empty global board with ten placeholder rows", () => {
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [],
+      currentUserEntry: null,
+      currentUserRank: null,
+    });
+
+    expect(rows).toHaveLength(10);
+    expect(rows.every((row) => row.isPlaceholder)).toBe(true);
+    expect(rows.map((row) => row.rankLabel)).toEqual([
+      "#1",
+      "#2",
+      "#3",
+      "#4",
+      "#5",
+      "#6",
+      "#7",
+      "#8",
+      "#9",
+      "#10",
+    ]);
+    expect(rows.every((row) => isGlobalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
+  });
+
+  it("keeps real global entries ahead of placeholder rows", () => {
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [
+        createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 }),
+        createProfile({ uid: "top-2", username: "top_2", rewardTotalXp: 700 }),
+      ],
+      currentUserEntry: null,
+      currentUserRank: null,
+    });
+
+    expect(rows).toHaveLength(10);
+    expect(rows.slice(0, 2).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
+    expect(rows[0]?.isPlaceholder).toBe(false);
+    expect(rows[1]?.isPlaceholder).toBe(false);
+    expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+  });
+
+  it("pins the current user with their global rank when outside the top board", () => {
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 })],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 200 }),
+      currentUserRank: 42,
+    });
+
+    expect(rows[0]).toMatchObject({
+      isCurrentUser: true,
+      rankLabel: "#42",
+      playerLabel: "You",
+      isPlaceholder: false,
+    });
+    expect(rows).toHaveLength(11);
     expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
   });
 });

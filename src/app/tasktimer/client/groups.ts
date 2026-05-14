@@ -60,6 +60,11 @@ export function getSharedTaskReminderStatusMessage(result: SharedTaskReminderRes
   return { message: "Unable to send reminder right now.", tone: "error" as const };
 }
 
+export function getFriendProfileOpenUidFromTarget(target: unknown) {
+  const btn = (target as { closest?: (selector: string) => HTMLElement | null } | null)?.closest?.("[data-friend-profile-open]");
+  return String(btn?.getAttribute?.("data-friend-profile-open") || "").trim();
+}
+
 export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnapshotLoaders = defaultGroupsSnapshotLoaders) {
   const [incomingResult, outgoingResult, friendshipsResult] = await Promise.allSettled([
     loaders.loadIncomingRequests(uid),
@@ -1094,12 +1099,12 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   <img class="leaderboardAvatarImg friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" />
                 </span>
               </button>
-              <button class="friendIdentityBtn friendIdentityNameBtn leaderboardIdentity" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
-                <span class="friendIdentityText">
+              <div class="friendIdentityText leaderboardIdentity">
+                <button class="friendIdentityBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
                   <strong class="leaderboardName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
-                  <span class="leaderboardMeta friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
-                </span>
-              </button>
+                </button>
+                <span class="leaderboardMeta friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
+              </div>
               <div class="leaderboardStats friendIdentityStats">
                 <span class="leaderboardStatPrimary">
                   <span class="leaderboardRankLabel">${ctx.escapeHtmlUI(rankLabel)}</span>
@@ -1463,12 +1468,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         void handleSendSharedTaskReminder(ownerUid, taskId);
         return;
       }
-      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
-      if (!btn) return;
+      const friendUid = getFriendProfileOpenUidFromTarget(e.target);
+      if (!friendUid) return;
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
-      if (!friendUid) return;
       openFriendProfileModal(friendUid);
     });
     ctx.on(els.groupsFriendsList, "keydown", (e: any) => {
@@ -1483,12 +1486,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         void handleSendSharedTaskReminder(ownerUid, taskId);
         return;
       }
-      const btn = e.target?.closest?.("[data-friend-profile-open]") as HTMLElement | null;
-      if (!btn) return;
+      const friendUid = getFriendProfileOpenUidFromTarget(e.target);
+      if (!friendUid) return;
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      const friendUid = String(btn.getAttribute("data-friend-profile-open") || "").trim();
-      if (!friendUid) return;
       openFriendProfileModal(friendUid);
     });
     ctx.on(els.groupsSharedByYouList, "click", (e: any) => {

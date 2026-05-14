@@ -293,6 +293,11 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs))),
+    timeGoalCompletedReason: task.timeGoalCompletedReason === "reset" || task.timeGoalCompletedReason === "goal" ? task.timeGoalCompletedReason : null,
+    timeGoalCompletedElapsedMs:
+      task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
     plannedStartDay,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
@@ -699,6 +704,11 @@ function taskSignature(task: Task | null | undefined): string {
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs))),
+    timeGoalCompletedReason: task.timeGoalCompletedReason === "reset" || task.timeGoalCompletedReason === "goal" ? task.timeGoalCompletedReason : null,
+    timeGoalCompletedElapsedMs:
+      task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? String(task.onceOffDay || "").trim().toLowerCase() || null : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,

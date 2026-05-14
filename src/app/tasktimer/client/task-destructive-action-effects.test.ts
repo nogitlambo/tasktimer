@@ -143,7 +143,7 @@ function createHarness(overrides: {
 
 describe("task destructive action effects", () => {
   it("opens reset confirmation and marks reset confirm state", () => {
-    const harness = createHarness();
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 60_000 })] });
 
     harness.adapter.resetTask(0);
 
@@ -158,7 +158,8 @@ describe("task destructive action effects", () => {
 
     harness.adapter.resetTask(0);
 
-    expect(harness.confirmCalls[0]?.opts.textHtml).toContain("This reset will bank +1 XP.");
+    expect(harness.confirmCalls[0]?.opts.textHtml).toContain("Reset this task? You will still bank");
+    expect(harness.confirmCalls[0]?.opts.textHtml).toContain("+1</span> XP for your logged time.");
   });
 
   it("ignores reset for a task completed today", () => {
@@ -182,7 +183,7 @@ describe("task destructive action effects", () => {
   });
 
   it("resets a task, captures session note, and closes focus mode when reset task is focused", async () => {
-    const harness = createHarness({ focusTaskId: "task-1", sessionNote: "done" });
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 30 * 60 * 1000 })], focusTaskId: "task-1", sessionNote: "done" });
 
     harness.adapter.resetTask(0);
     await harness.confirmCalls[0].opts.onOk();
@@ -192,17 +193,41 @@ describe("task destructive action effects", () => {
     expect(harness.calls).toContain("resetImmediate:task-1:done");
     expect(harness.calls).toContain("save:{}");
     expect(harness.calls).toContain("closeFocus");
+    expect(harness.tasks[0]).toMatchObject({
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+    });
     expect(harness.classes.has("isResetTaskConfirm")).toBe(false);
   });
 
+  it("ignores a second reset after the first reset locks the task as done", async () => {
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 30 * 60 * 1000 })] });
+
+    harness.adapter.resetTask(0);
+    await harness.confirmCalls[0].opts.onOk();
+    harness.adapter.resetTask(0);
+
+    expect(harness.confirmCalls).toHaveLength(1);
+    expect(harness.calls.filter((call) => call.startsWith("resetImmediate:"))).toHaveLength(1);
+  });
+
   it("clears reset confirm state on cancel", () => {
-    const harness = createHarness();
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 60_000 })] });
 
     harness.adapter.resetTask(0);
     harness.confirmCalls[0].opts.onCancel?.();
 
     expect(harness.classes.has("isResetTaskConfirm")).toBe(false);
     expect(harness.calls).toContain("closeConfirm");
+  });
+
+  it("ignores reset for a task with no logged time", () => {
+    const harness = createHarness();
+
+    harness.adapter.resetTask(0);
+
+    expect(harness.calls).toEqual([]);
+    expect(harness.confirmCalls).toEqual([]);
   });
 
   it("deletes history only and syncs shared summaries for existing tasks", () => {

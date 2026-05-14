@@ -29,11 +29,13 @@ import { ACCOUNT_AVATAR_UPDATED_EVENT } from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  buildGlobalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
+  isGlobalLeaderboardPlaceholderProfile,
   isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
@@ -52,7 +54,7 @@ import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
 import {
   clearActiveXpAward,
   createXpAwardAnimationState,
-  enqueuePendingXpAward,
+  enqueuePendingXpAwardFromOverlayState,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
@@ -204,6 +206,13 @@ function stopXpIncreaseAudio(audio: HTMLAudioElement | null) {
   }
 }
 
+function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
+  if (typeof document === "undefined") return undefined;
+  const overlay = document.getElementById(overlayId) as HTMLElement | null;
+  if (!overlay) return false;
+  return overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
+}
+
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -351,7 +360,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const handlePendingAward = (event: Event) => {
       const detail = (event as CustomEvent<PendingXpAward>).detail;
       if (!detail) return;
-      setXpAnimationState((current) => enqueuePendingXpAward(current, detail));
+      setXpAnimationState((current) =>
+        enqueuePendingXpAwardFromOverlayState(current, detail, {
+          sourceOverlayVisible: isXpAwardSourceOverlayVisible(detail.sourceOverlayId),
+        })
+      );
     };
     const handleOverlayClosed = (event: Event) => {
       const overlayId = String((event as CustomEvent<{ overlayId?: string }>).detail?.overlayId || "").trim();
@@ -641,20 +654,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const weeklyTableRows = weeklyRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
   const globalRows = useMemo(() => {
-    const currentUid = String(leaderboardData.currentUserEntry?.uid || "").trim();
-    return leaderboardData.topEntries.slice(0, 10).map((profile, index) => {
-      const isCurrentUser = !!currentUid && profile.uid === currentUid;
-      return {
-        profile,
-        rank: index + 1,
-        rankLabel: `#${index + 1}`,
-        playerLabel: isCurrentUser ? "You" : getLeaderboardLabel(profile),
-        isCurrentUser,
-      };
+    return buildGlobalLeaderboardRows({
+      topEntries: leaderboardData.topEntries,
+      currentUserEntry: leaderboardData.currentUserEntry,
+      currentUserRank: leaderboardData.currentUserRank,
     });
-  }, [leaderboardData.currentUserEntry, leaderboardData.topEntries]);
-  const globalPodiumRows = globalRows.filter((row) => row.rank <= 3).slice(0, 3);
-  const globalTableRows = globalRows.filter((row) => row.rank >= 4 && row.rank <= 10);
+  }, [leaderboardData.currentUserEntry, leaderboardData.currentUserRank, leaderboardData.topEntries]);
+  const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
+  const globalTableRows = globalRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
   const rivalRows = useMemo(() => {
     const currentUid = String(leaderboardData.currentUserEntry?.uid || "").trim();
     const rows: Array<{
@@ -722,6 +729,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   };
 
   const openLeaderboardProfile = (profile: LeaderboardProfile) => {
+    if (isGlobalLeaderboardPlaceholderProfile(profile)) return;
     setSelectedLeaderboardProfile(profile);
   };
 
@@ -1177,7 +1185,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
                     <p className="leaderboardHeroMeta">Top focus performers</p>
                   </div>
-                  {leaderboardState === "ready" && globalRows.length ? (
+                  {leaderboardState === "ready" ? (
                     <>
                       <div className="leaderboardWeeklyPodium" aria-label="Global top three">
                         {globalPodiumRows.map((row) => (
@@ -1185,6 +1193,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}`}
                             type="button"
                             key={row.profile.uid}
+                            disabled={row.isPlaceholder}
+                            aria-disabled={row.isPlaceholder}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
                             <span className="leaderboardWeeklyPodiumAvatar">
@@ -1221,6 +1231,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               role="row"
                               type="button"
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
+                              disabled={row.isPlaceholder}
+                              aria-disabled={row.isPlaceholder}
                               onClick={() => openLeaderboardProfile(row.profile)}
                             >
                               <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>

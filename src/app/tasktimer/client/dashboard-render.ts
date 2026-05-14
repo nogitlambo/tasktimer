@@ -27,6 +27,7 @@ import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDe
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
+import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
 import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -57,6 +58,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_FALLBACK_COLOR = "#6f7785";
   const DASHBOARD_COMPLETED_SEGMENT_GAP_PCT = 1.2;
   const DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT = 1.4;
+  const DASHBOARD_COMPLETED_CHART_SIZE = 380;
+  const DASHBOARD_COMPLETED_CHART_CENTER = 190;
+  const DASHBOARD_COMPLETED_RING_RADIUS = 88;
+  const DASHBOARD_COMPLETED_LABEL_MAX_WIDTH = 96;
+
+  function estimateDashboardCompletedLabelWidth(name: string, statusLabel: string) {
+    const nameWidth = name.length * 6.5;
+    const statusWidth = statusLabel.length * 5.3;
+    return Math.max(28, Math.min(DASHBOARD_COMPLETED_LABEL_MAX_WIDTH, Math.ceil(Math.max(nameWidth, statusWidth) + 4)));
+  }
   type DashboardHeatHistoryEntry = {
     ts: number;
     ms: number;
@@ -1008,7 +1019,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           name: String(item.name || "Task").trim() || "Task",
           goalMinutes: Math.max(0, Number(item.goalMinutes) || 0),
           progress,
-          complete: item.complete === true || progress >= 1,
+          complete: item.complete === true,
           running: item.running === true,
           color: normalizeTaskColor(item.color) || DASHBOARD_COMPLETED_FALLBACK_COLOR,
         };
@@ -1017,7 +1028,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const totalSliceWeightUnits = safeItems.reduce((sum, item) => sum + (item.goalMinutes > 0 ? item.goalMinutes : 1), 0);
       ticksEl.classList.toggle("isEmpty", totalCount <= 0);
       ticksEl.classList.toggle("hasProgress", totalProgress > 0);
-      svgEl.innerHTML = '<circle class="dashboardTasksCompletedTrack" cx="160" cy="160" r="88" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="160" y1="106" x2="160" y2="82"></line>';
+      svgEl.setAttribute("viewBox", `0 0 ${DASHBOARD_COMPLETED_CHART_SIZE} ${DASHBOARD_COMPLETED_CHART_SIZE}`);
+      svgEl.innerHTML = `<circle class="dashboardTasksCompletedTrack" cx="${DASHBOARD_COMPLETED_CHART_CENTER}" cy="${DASHBOARD_COMPLETED_CHART_CENTER}" r="${DASHBOARD_COMPLETED_RING_RADIUS}" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="${DASHBOARD_COMPLETED_CHART_CENTER}" y1="${DASHBOARD_COMPLETED_CHART_CENTER - 54}" x2="${DASHBOARD_COMPLETED_CHART_CENTER}" y2="${DASHBOARD_COMPLETED_CHART_CENTER - 78}"></line>`;
       labelsEl.innerHTML = "";
 
       if (totalCount <= 0) {
@@ -1026,10 +1038,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         return;
       }
 
+      const runningItem = safeItems.find((item) => item.running);
+      const completedPct = totalCount > 0 ? Math.round((Math.max(0, Math.round(completed)) / totalCount) * 100) : 0;
       centerEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(Math.max(0, Math.min(100, totalProgress * 100))));
-      centerEl.innerHTML = totalProgress > 0
-        ? `<span class="dashboardTasksCompletedCenterLabel">Task focus</span><span class="dashboardTasksCompletedCenterSubtext">${Math.round(totalProgress * 100)}% total progress</span>`
-        : '<span class="dashboardTasksCompletedCenterLabel">No progress yet</span><span class="dashboardTasksCompletedCenterSubtext">Start a due task</span>';
+      centerEl.innerHTML = runningItem
+        ? `<span class="dashboardTasksCompletedCenterLabel">${ctx.escapeHtmlUI(runningItem.name)}</span><span class="dashboardTasksCompletedCenterSubtext">In Progress</span>`
+        : `<span class="dashboardTasksCompletedCenterLabel">Task Focus</span><span class="dashboardTasksCompletedCenterSubtext">${completedPct}% completed today</span>`;
 
       const labelWeightTotal = safeItems.length || 1;
       const weightedSlices = safeItems.map((item) => {
@@ -1083,59 +1097,75 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       let runningOffset = sliceCount > 1 ? DASHBOARD_COMPLETED_SEGMENT_GAP_PCT / 2 : 0;
       let runningNeedlePct: number | null = null;
       let stoppedPartialNeedlePct: number | null = null;
-      sliceEntries.forEach(({ item, statusLabel, slicePct }) => {
-        const segmentStartPct = runningOffset + slicePct / 2;
+      const positionedSliceEntries = sliceEntries.map((entry, index) => {
+        const sliceStartPct = runningOffset;
+        runningOffset += entry.slicePct + DASHBOARD_COMPLETED_SEGMENT_GAP_PCT;
+        return { ...entry, key: `task-${index}`, sliceStartPct };
+      });
+      const labelLayouts = buildDashboardTasksCompletedLabelLayout(positionedSliceEntries.map((entry) => ({
+        key: entry.key,
+        sliceStartPct: entry.sliceStartPct,
+        slicePct: entry.slicePct,
+        labelWidth: estimateDashboardCompletedLabelWidth(entry.item.name, entry.statusLabel),
+      })));
+      const labelLayoutByKey = new Map(labelLayouts.map((layout) => [layout.key, layout]));
+
+      positionedSliceEntries.forEach(({ item, slicePct, sliceStartPct }) => {
         const fillPctWithinSlice = Math.max(0, Math.min(1, item.progress)) * slicePct;
         const dash = item.progress > 0 ? `${fillPctWithinSlice} ${Math.max(0, 100 - fillPctWithinSlice)}` : "0 100";
         if (item.running && fillPctWithinSlice > 0) {
-          runningNeedlePct = runningOffset + fillPctWithinSlice;
+          runningNeedlePct = sliceStartPct + fillPctWithinSlice;
         } else if (!item.running && item.progress > 0 && item.progress < 1 && fillPctWithinSlice > 0) {
-          stoppedPartialNeedlePct = runningOffset + fillPctWithinSlice;
+          stoppedPartialNeedlePct = sliceStartPct + fillPctWithinSlice;
         }
-        const midAngleDeg = -90 + segmentStartPct * 3.6;
-        const midAngleRad = (midAngleDeg * Math.PI) / 180;
-        const labelEdgeInset = 1;
-        const labelAnchorRadius = 109 + labelEdgeInset;
-        const ringOuterX = 160 + Math.cos(midAngleRad) * labelAnchorRadius;
-        const ringOuterY = 160 + Math.sin(midAngleRad) * labelAnchorRadius;
-        const isRightSide = Math.cos(midAngleRad) >= 0;
-        const leftLabelMidRingOffset = 10;
-        const labelX = isRightSide ? ringOuterX : ringOuterX - leftLabelMidRingOffset;
-        const labelY = ringOuterY;
         const trackSegmentEl = document.createElementNS(svgNs, "circle");
         trackSegmentEl.setAttribute("class", "dashboardTasksCompletedTrackSegment");
-        trackSegmentEl.setAttribute("cx", "160");
-        trackSegmentEl.setAttribute("cy", "160");
-        trackSegmentEl.setAttribute("r", "88");
+        trackSegmentEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        trackSegmentEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        trackSegmentEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
         trackSegmentEl.setAttribute("pathLength", "100");
         trackSegmentEl.setAttribute("stroke", item.color);
         trackSegmentEl.setAttribute("stroke-dasharray", `${slicePct} ${Math.max(0, 100 - slicePct)}`);
-        trackSegmentEl.setAttribute("stroke-dashoffset", String(-runningOffset));
+        trackSegmentEl.setAttribute("stroke-dashoffset", String(-sliceStartPct));
         svgEl.appendChild(trackSegmentEl);
 
         if (totalProgress > 0 && item.progress > 0) {
           const segmentEl = document.createElementNS(svgNs, "circle");
           segmentEl.setAttribute("class", `dashboardTasksCompletedSegment${item.complete ? " isComplete" : ""}${item.running ? " isRunning" : ""}`);
-          segmentEl.setAttribute("cx", "160");
-          segmentEl.setAttribute("cy", "160");
-          segmentEl.setAttribute("r", "88");
+          segmentEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+          segmentEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+          segmentEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
           segmentEl.setAttribute("pathLength", "100");
           segmentEl.setAttribute("stroke", item.color);
           segmentEl.setAttribute("stroke-dasharray", dash);
-          segmentEl.setAttribute("stroke-dashoffset", String(-runningOffset));
+          segmentEl.setAttribute("stroke-dashoffset", String(-sliceStartPct));
           svgEl.appendChild(segmentEl);
         }
+      });
+
+      positionedSliceEntries.forEach(({ key }) => {
+        const layout = labelLayoutByKey.get(key);
+        if (!layout?.connectorPath) return;
+        const connectorEl = document.createElementNS(svgNs, "path");
+        connectorEl.setAttribute("class", "dashboardTasksCompletedConnector");
+        connectorEl.setAttribute("d", layout.connectorPath);
+        connectorEl.setAttribute("aria-hidden", "true");
+        svgEl.appendChild(connectorEl);
+      });
+
+      positionedSliceEntries.forEach(({ item, statusLabel, key }) => {
+        const layout = labelLayoutByKey.get(key);
+        if (!layout) return;
 
         const linkEl = document.createElement("span");
-        linkEl.className = `dashboardTasksCompletedLabel${isRightSide ? " isRight" : " isLeft"}${item.complete ? " isComplete" : ""}${item.progress > 0 && item.progress < 1 ? " isPartial" : ""}${item.running ? " isRunning" : ""}`;
+        linkEl.className = `dashboardTasksCompletedLabel${layout.isRightSide ? " isRight" : " isLeft"}${layout.isExternal ? " isExternal" : ""}${item.complete ? " isComplete" : ""}${item.progress > 0 && item.progress < 1 ? " isPartial" : ""}${item.running ? " isRunning" : ""}`;
         linkEl.setAttribute("role", "listitem");
-        linkEl.style.left = `${labelX}px`;
-        linkEl.style.top = `${labelY}px`;
+        linkEl.style.left = `${layout.labelX}px`;
+        linkEl.style.top = `${layout.labelY}px`;
         linkEl.style.setProperty("--dashboard-task-label-color", item.color);
         linkEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(item.progress * 100));
         linkEl.innerHTML = `<span class="dashboardTasksCompletedLabelName">${ctx.escapeHtmlUI(item.name)}</span><span class="dashboardTasksCompletedLabelStatus">${ctx.escapeHtmlUI(statusLabel)}</span>`;
         labelsEl.appendChild(linkEl);
-        runningOffset += slicePct + DASHBOARD_COMPLETED_SEGMENT_GAP_PCT;
       });
       const needle = (document.getElementById("dashboardTasksCompletedNeedle") as SVGLineElement | null) || needleEl;
       if (needle) {
@@ -1144,10 +1174,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const needleAngleRad = (needleAngleDeg * Math.PI) / 180;
         const needleInnerRadius = 54;
         const needleOuterRadius = 78;
-        const needleX1 = 160 + Math.cos(needleAngleRad) * needleInnerRadius;
-        const needleY1 = 160 + Math.sin(needleAngleRad) * needleInnerRadius;
-        const needleX2 = 160 + Math.cos(needleAngleRad) * needleOuterRadius;
-        const needleY2 = 160 + Math.sin(needleAngleRad) * needleOuterRadius;
+        const needleX1 = DASHBOARD_COMPLETED_CHART_CENTER + Math.cos(needleAngleRad) * needleInnerRadius;
+        const needleY1 = DASHBOARD_COMPLETED_CHART_CENTER + Math.sin(needleAngleRad) * needleInnerRadius;
+        const needleX2 = DASHBOARD_COMPLETED_CHART_CENTER + Math.cos(needleAngleRad) * needleOuterRadius;
+        const needleY2 = DASHBOARD_COMPLETED_CHART_CENTER + Math.sin(needleAngleRad) * needleOuterRadius;
         needle.setAttribute("x1", needleX1.toFixed(2));
         needle.setAttribute("y1", needleY1.toFixed(2));
         needle.setAttribute("x2", needleX2.toFixed(2));
