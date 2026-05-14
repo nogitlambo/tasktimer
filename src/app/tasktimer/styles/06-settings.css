@@ -4270,6 +4270,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile .settingsNavRowText{
     flex:0 1 auto;
     text-align:center;
+    font-family:var(--font-orbitron) !important;
     font-size:12px;
     line-height:1.15;
   }

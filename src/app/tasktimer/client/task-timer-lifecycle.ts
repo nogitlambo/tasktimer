@@ -1,6 +1,6 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
-import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
+import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 
@@ -29,7 +29,7 @@ type TaskTimerLifecycleCommandAdapters = {
   openRewardSessionSegment: (task: Task, startMs: number) => void;
   closeRewardSessionSegment: (task: Task, endMs: number) => void;
   clearRewardSessionTracker: (taskId: string) => void;
-  upsertLiveSession: (task: Task, opts: { elapsedMs: number; forceCloudFlush?: boolean; reason?: string }) => void;
+  upsertLiveSession: (task: Task, opts: { elapsedMs: number; resumedFromMs?: number; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
     opts: { elapsedMs: number; note?: string; completionDifficulty?: CompletionDifficulty }
@@ -72,14 +72,15 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
 
   function startTaskTimer(task: Task, index: number, startMs: number) {
     const taskId = String(task.id || "");
-    const hadElapsedBeforeStart = options.getTaskElapsedMs(task) > 0;
+    const previousElapsedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+    const hadElapsedBeforeStart = previousElapsedMs > 0;
     options.clearTaskTimeGoalFlow(taskId);
     options.flushPendingFocusSessionNoteSave(taskId);
     task.running = true;
     task.startMs = startMs;
     task.hasStarted = true;
     options.openRewardSessionSegment(task, startMs);
-    options.upsertLiveSession(task, { elapsedMs: 0, forceCloudFlush: true, reason: "start" });
+    options.upsertLiveSession(task, { elapsedMs: 0, resumedFromMs: previousElapsedMs, forceCloudFlush: true, reason: "start" });
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
     void trackEvent("task_started", {
@@ -169,7 +170,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalCompletedToday(task, options.nowMs())) return;
+    if (isTaskTimeGoalStartLockedToday(task, options.nowMs())) return;
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

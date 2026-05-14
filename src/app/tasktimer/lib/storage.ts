@@ -415,6 +415,7 @@ function normalizeLiveTaskSession(row: unknown): LiveTaskSession | null {
   const startedAtMs = Math.max(0, Math.floor(Number((row as LiveTaskSession).startedAtMs || 0) || 0));
   const updatedAtMs = Math.max(startedAtMs, Math.floor(Number((row as LiveTaskSession).updatedAtMs || 0) || startedAtMs));
   const elapsedMs = Math.max(0, Math.floor(Number((row as LiveTaskSession).elapsedMs || 0) || 0));
+  const resumedFromMs = Math.max(0, Math.floor(Number((row as LiveTaskSession).resumedFromMs || 0) || 0));
   const name = String((row as LiveTaskSession).name || "").trim() || "Task";
   const color = typeof (row as LiveTaskSession).color === "string" && String((row as LiveTaskSession).color).trim()
     ? String((row as LiveTaskSession).color).trim()
@@ -429,6 +430,7 @@ function normalizeLiveTaskSession(row: unknown): LiveTaskSession | null {
     startedAtMs,
     updatedAtMs,
     elapsedMs,
+    ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
     status: "running",
     ...(color ? { color } : {}),
     ...(note ? { note } : {}),
@@ -856,6 +858,7 @@ function liveSessionSignature(session: LiveTaskSession | null | undefined): stri
     normalized.startedAtMs,
     normalized.updatedAtMs,
     normalized.elapsedMs,
+    normalized.resumedFromMs || 0,
     normalized.note || "",
     normalized.color || "",
     normalized.status,

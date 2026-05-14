@@ -12,6 +12,21 @@ import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountSe
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
+type TaskLaunchMobileMenuLinkItem = {
+  kind: "link";
+  label: string;
+  href: string;
+  iconSrc: string;
+};
+
+type TaskLaunchMobileMenuActionItem = {
+  kind: "signOut";
+  label: string;
+  iconSrc: string;
+};
+
+type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem | TaskLaunchMobileMenuActionItem;
+
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
   children: ReactNode;
@@ -39,6 +54,22 @@ type TaskTimerAppFrameProps = {
 
 function formatXpNumber(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+}
+
+export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
+  return [
+    {
+      kind: "link",
+      label: "Settings",
+      href: resolveTaskTimerRouteHref("/settings"),
+      iconSrc: "/icons/icons_default/settings.png",
+    },
+    {
+      kind: "signOut",
+      label: "Sign Out",
+      iconSrc: "/icons/icons_default/signout.png",
+    },
+  ];
 }
 
 export default function TaskTimerAppFrame({
@@ -227,50 +258,43 @@ export default function TaskTimerAppFrame({
             <span className="taskLaunchMobileMenuHeaderText">TASKLAUNCH</span>
           </div>
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
-            <a
-              className="menuItem taskLaunchMobileMenuItem"
-              href={resolveTaskTimerRouteHref("/account")}
-              role="menuitem"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <AppImg
-                className="taskLaunchMobileMenuItemIcon"
-                src="/Settings.svg"
-                alt=""
-                aria-hidden="true"
-              />
-              <span className="taskLaunchMobileMenuItemText">Account</span>
-            </a>
-            <a
-              className="menuItem taskLaunchMobileMenuItem"
-              href={resolveTaskTimerRouteHref("/settings")}
-              role="menuitem"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <AppImg
-                className="taskLaunchMobileMenuItemIcon"
-                src="/icons/icons_default/settings.png"
-                alt=""
-                aria-hidden="true"
-              />
-              <span className="taskLaunchMobileMenuItemText">Settings</span>
-            </a>
-            <button
-              className="menuItem taskLaunchMobileMenuItem"
-              type="button"
-              role="menuitem"
-              aria-label="Sign Out"
-              onClick={handleMobileSignOut}
-              disabled={signOutBusy}
-            >
-              <AppImg
-                className="taskLaunchMobileMenuItemIcon"
-                src="/icons/icons_default/signout.png"
-                alt=""
-                aria-hidden="true"
-              />
-              <span className="taskLaunchMobileMenuItemText">{signOutBusy ? "Signing Out" : "Sign Out"}</span>
-            </button>
+            {getTaskLaunchMobileMenuItems().map((item) =>
+              item.kind === "link" ? (
+                <a
+                  key={item.label}
+                  className="menuItem taskLaunchMobileMenuItem"
+                  href={item.href}
+                  role="menuitem"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <AppImg
+                    className="taskLaunchMobileMenuItemIcon"
+                    src={item.iconSrc}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
+                </a>
+              ) : (
+                <button
+                  key={item.label}
+                  className="menuItem taskLaunchMobileMenuItem"
+                  type="button"
+                  role="menuitem"
+                  aria-label={item.label}
+                  onClick={handleMobileSignOut}
+                  disabled={signOutBusy}
+                >
+                  <AppImg
+                    className="taskLaunchMobileMenuItemIcon"
+                    src={item.iconSrc}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span className="taskLaunchMobileMenuItemText">{signOutBusy ? "Signing Out" : item.label}</span>
+                </button>
+              )
+            )}
             {signOutError ? (
               <div className="settingsDetailNote taskLaunchMobileMenuError" role="alert" aria-live="polite">
                 {signOutError}

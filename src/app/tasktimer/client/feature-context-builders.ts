@@ -733,6 +733,7 @@ type CreateRewardsHistoryOptionsArgs = {
   saveLiveSession: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveLiveSession"];
   clearLiveSession: Parameters<typeof createTaskTimerRewardsHistory>[0]["clearLiveSession"];
   saveHistoryLocally: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveHistoryLocally"];
+  saveHistory: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveHistory"];
   buildDefaultCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["buildDefaultCloudPreferences"];
   saveCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveCloudPreferences"];
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
@@ -1622,6 +1623,7 @@ export function createTaskTimerRewardsHistoryContext(
     saveLiveSession: args.saveLiveSession,
     clearLiveSession: args.clearLiveSession,
     saveHistoryLocally: args.saveHistoryLocally,
+    saveHistory: args.saveHistory,
     buildDefaultCloudPreferences: args.buildDefaultCloudPreferences,
     saveCloudPreferences: args.saveCloudPreferences,
     syncSharedTaskSummariesForTask: args.syncSharedTaskSummariesForTask,

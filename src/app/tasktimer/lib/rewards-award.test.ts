@@ -82,7 +82,7 @@ describe("awardCompletedSessionXp", () => {
     expect(result.next.completedSessions).toBe(2);
   });
 
-  it("does not apply a global daily session XP cap", () => {
+  it("does not apply a global daily session XP cap across different tasks", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
 
@@ -182,7 +182,7 @@ describe("awardCompletedSessionXp", () => {
     expect(result.next.awardLedger).toEqual([]);
   });
 
-  it("does not cap a long session at ninety minutes", () => {
+  it("caps a no-goal task session at sixty minutes per day", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
 
@@ -199,14 +199,101 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(120);
-    expect(result.next.totalXp).toBe(120);
+    const sessionEligibleMs = result.next.awardLedger
+      .filter((entry) => entry.reason === "session")
+      .reduce((sum, entry) => sum + entry.eligibleMs, 0);
+    expect(sessionEligibleMs).toBe(60 * MINUTE_MS);
+    expect(result.next.totalXp).toBe(60);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
-      eligibleMs: elapsedMs,
-      baseXp: 120,
+      eligibleMs: 60 * MINUTE_MS,
+      baseXp: 60,
       multiplier: 1,
     });
+  });
+
+  it("caps a daily-goal task at its configured daily goal minutes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const elapsedMs = 45 * MINUTE_MS;
+    const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: elapsedMs }],
+      },
+      tasks: [task({ timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 30 })],
+      weekStarting: "mon",
+      momentumEntitled: false,
+    });
+
+    expect(result.amount).toBe(30);
+    expect(result.next.totalXp).toBe(30);
+    expect(result.next.awardLedger[0]).toMatchObject({
+      reason: "session",
+      eligibleMs: 30 * MINUTE_MS,
+      baseXp: 30,
+    });
+  });
+
+  it("uses the sixty-minute fallback cap for weekly-goal tasks", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const elapsedMs = 90 * MINUTE_MS;
+    const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: elapsedMs }],
+      },
+      tasks: [task({ timeGoalEnabled: true, timeGoalPeriod: "week", timeGoalMinutes: 120 })],
+      weekStarting: "mon",
+      momentumEntitled: false,
+    });
+
+    const sessionEligibleMs = result.next.awardLedger
+      .filter((entry) => entry.reason === "session")
+      .reduce((sum, entry) => sum + entry.eligibleMs, 0);
+    expect(sessionEligibleMs).toBe(60 * MINUTE_MS);
+    expect(result.next.totalXp).toBeGreaterThanOrEqual(60);
+  });
+
+  it("persists extra logged time after the cap without awarding more session XP", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const previous = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: Date.now() - MINUTE_MS,
+      elapsedMs: 60 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now() - MINUTE_MS, name: "Focus", ms: 60 * MINUTE_MS }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+    }).next;
+
+    const result = awardCompletedSessionXp(previous, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs: 10 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: 70 * MINUTE_MS }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+      completedSessionsDelta: 0,
+    });
+
+    expect(result.amount).toBe(0);
+    expect(result.next.totalXp).toBe(60);
+    expect(result.next.completedSessions).toBe(1);
   });
 
   it("applies Momentum multipliers without an advancedInsights entitlement", () => {

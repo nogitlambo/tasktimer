@@ -73,6 +73,7 @@ export type LiveTaskSession = {
   name: string;
   startedAtMs: number;
   elapsedMs: number;
+  resumedFromMs?: number;
   note?: string;
   color?: string;
   status: "running";

@@ -1,6 +1,6 @@
 import type { Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
-import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
+import { isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 
 type TaskListRendererDocument = Pick<Document, "createElement">;
@@ -190,7 +190,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         canUseAdvancedHistory: options.canUseAdvancedHistory(),
         canUseSocialFeatures: options.canUseSocialFeatures(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
-        isTimeGoalCompleted: isTaskTimeGoalCompletedToday(task),
+        isTimeGoalCompleted: isTaskTimeGoalStartLockedToday(task),
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         modeColor: options.getModeColor("mode1"),
         fillBackgroundForPct: options.fillBackgroundForPct,

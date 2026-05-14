@@ -23,10 +23,10 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 function createHarness(
-  overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number; historyByTaskId: HistoryByTaskId }> = {}
+  overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number; historyByTaskId: HistoryByTaskId; tasks: Task[] }> = {}
 ) {
   const calls: string[] = [];
-  const tasks = [task()];
+  const tasks = overrides.tasks || [task()];
   let historyByTaskId: HistoryByTaskId = overrides.historyByTaskId || {};
   let storedHistoryByTaskId: HistoryByTaskId = overrides.historyByTaskId || {};
   const savedHistoryArgs: HistoryByTaskId[] = [];
@@ -87,6 +87,11 @@ function createHarness(
       savedHistoryArgs.push(history);
       storedHistoryByTaskId = history;
       calls.push("save-history");
+    },
+    saveHistory: (history) => {
+      savedHistoryArgs.push(history);
+      storedHistoryByTaskId = history;
+      calls.push("replace-history");
     },
     buildDefaultCloudPreferences: () =>
       ({
@@ -208,6 +213,120 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
     expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
+  });
+
+  it("updates the same same-day history row on resumed stops and awards only the elapsed delta", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const startedAtMs = Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS;
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs,
+          elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+          updatedAtMs: Date.now(),
+          status: "running",
+        },
+      },
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS, note: "first", completionDifficulty: 3 });
+
+    const secondElapsedMs = 2 * MIN_REWARD_ELIGIBLE_SESSION_MS;
+    vi.setSystemTime(new Date(Date.now() + MIN_REWARD_ELIGIBLE_SESSION_MS));
+    harness.tasks[0]!.accumulatedMs = MIN_REWARD_ELIGIBLE_SESSION_MS;
+    harness.setLiveSessionsByTaskId({
+      "task-1": {
+        sessionId: "session-2",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: Date.now(),
+        elapsedMs: secondElapsedMs,
+        resumedFromMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+        updatedAtMs: Date.now(),
+        status: "running",
+      },
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: secondElapsedMs, note: "second", completionDifficulty: 4 });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({
+      ms: secondElapsedMs,
+      note: "second",
+      completionDifficulty: 4,
+      sessionId: "session-1",
+    });
+    expect(harness.getRewardProgress().totalXp).toBe(2);
+    expect(harness.getRewardProgress().completedSessions).toBe(1);
+    expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
+    expect(harness.calls).toContain("replace-history");
+  });
+
+  it("does not append or award when a repeated finalization has unchanged elapsed time", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const liveSession = {
+      sessionId: "session-1",
+      taskId: "task-1",
+      name: "Focus",
+      startedAtMs: Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      updatedAtMs: Date.now(),
+      status: "running" as const,
+    };
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      liveSessionsByTaskId: { "task-1": liveSession },
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+    harness.setLiveSessionsByTaskId({ "task-1": liveSession });
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
+    expect(harness.getRewardProgress().totalXp).toBe(1);
+    expect(harness.getRewardProgress().completedSessions).toBe(1);
+    expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
+  });
+
+  it("creates a new same-day row after reset has zeroed accumulated time", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const initialHistory: HistoryByTaskId = {
+      "task-1": [{ ts: Date.now() - 60_000, name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS, sessionId: "before-reset" }],
+    };
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      historyByTaskId: initialHistory,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "after-reset",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS,
+          elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+          updatedAtMs: Date.now(),
+          status: "running",
+        },
+      },
+    });
+    harness.tasks[0]!.accumulatedMs = 0;
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(2);
+    expect(harness.getHistoryByTaskId()["task-1"]?.[1]).toMatchObject({ sessionId: "after-reset", ms: MIN_REWARD_ELIGIBLE_SESSION_MS });
+  });
+
+  it("keeps cross-midnight completion on the stop day", () => {
+    vi.setSystemTime(new Date("2026-05-03T00:05:00"));
+    const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]?.ts).toBe(Date.now());
   });
 
   it("saves completed history with a new history snapshot so pending sync detects the append", () => {

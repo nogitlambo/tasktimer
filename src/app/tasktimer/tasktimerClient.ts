@@ -1049,6 +1049,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       saveLiveSession: (session) => workspaceRepository.saveLiveSession(session as any),
       clearLiveSession: (taskId) => workspaceRepository.clearLiveSession(taskId),
       saveHistoryLocally: workspaceRepository.saveHistoryLocally,
+      saveHistory: workspaceRepository.saveHistory,
       buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
       saveCloudPreferences: (prefs) => workspaceRepository.savePreferences(prefs),
       syncSharedTaskSummariesForTask,

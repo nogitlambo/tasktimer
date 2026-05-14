@@ -1,8 +1,9 @@
 import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-player";
 
 export const SECONDARY_CLICK_AUDIO_SRC = "/click-secondary.mp3";
-export const CANCEL_CLICK_AUDIO_SRC = "/click_cancel.mp3";
-export const CLOSE_CLICK_AUDIO_SRC = "/click_close.mp3";
+export const CANCEL_CLICK_AUDIO_SRC = "/click_cancel_button.mp3";
+export const CLOSE_CLICK_AUDIO_SRC = "/click_close_button.mp3";
+const CLICK_AUDIO_SYNC_TIMEOUT_MS = 120;
 
 type ClosestCapable = {
   closest?: (selector: string) => Element | null;
@@ -133,6 +134,7 @@ export function registerSecondaryClickAudio(options: {
   const player = options.playAudio ? null : createClickAudioPlayer(SECONDARY_CLICK_AUDIO_SRC);
   const cancelPlayer = options.playCancelAudio ? null : createClickAudioPlayer(CANCEL_CLICK_AUDIO_SRC);
   const closePlayer = options.playCloseAudio ? null : createClickAudioPlayer(CLOSE_CLICK_AUDIO_SRC);
+  const replayTargets = new WeakSet<HTMLElement>();
   player?.warm();
   cancelPlayer?.warm();
   closePlayer?.warm();
@@ -142,17 +144,35 @@ export function registerSecondaryClickAudio(options: {
     "click",
     (event: Event) => {
       if (event.defaultPrevented) return;
+      const closeTarget = getCloseClickTarget(event.target);
+      const cancelTarget = closeTarget ? null : getCancelClickTarget(event.target);
+      const secondaryTarget = closeTarget || cancelTarget ? null : getSecondaryClickTarget(event.target);
+      const target = closeTarget || cancelTarget || secondaryTarget;
+      if (!target) return;
+      if (replayTargets.has(target)) {
+        replayTargets.delete(target);
+        return;
+      }
       if ("isTrusted" in event && event.isTrusted === false) return;
-      if (getCloseClickTarget(event.target)) {
-        (options.playCloseAudio || (() => closePlayer?.play()))();
+
+      const activePlayer = closeTarget ? closePlayer : cancelTarget ? cancelPlayer : player;
+      const playAudio = closeTarget
+        ? options.playCloseAudio || (() => closePlayer?.play())
+        : cancelTarget
+          ? options.playCancelAudio || (() => cancelPlayer?.play())
+          : options.playAudio || (() => player?.play());
+
+      if (!activePlayer || activePlayer.isReady()) {
+        playAudio();
         return;
       }
-      if (getCancelClickTarget(event.target)) {
-        (options.playCancelAudio || (() => cancelPlayer?.play()))();
-        return;
-      }
-      if (!getSecondaryClickTarget(event.target)) return;
-      (options.playAudio || (() => player?.play()))();
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void activePlayer.playWhenReady(CLICK_AUDIO_SYNC_TIMEOUT_MS).finally(() => {
+        replayTargets.add(target);
+        target.click();
+      });
     },
     { capture: true }
   );

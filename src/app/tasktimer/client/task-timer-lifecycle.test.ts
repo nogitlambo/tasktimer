@@ -28,7 +28,8 @@ function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focu
     openRewardSessionSegment: (entry, startMs) => calls.push(`open-reward:${entry.id}:${startMs}`),
     closeRewardSessionSegment: (entry, endMs) => calls.push(`close-reward:${entry.id}:${endMs}`),
     clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
-    upsertLiveSession: (entry, opts) => calls.push(`upsert-live:${entry.id}:${opts.elapsedMs}:${opts.forceCloudFlush === true ? "force" : "queued"}`),
+    upsertLiveSession: (entry, opts) =>
+      calls.push(`upsert-live:${entry.id}:${opts.elapsedMs}:${opts.resumedFromMs || 0}:${opts.forceCloudFlush === true ? "force" : "queued"}`),
     finalizeLiveSession: (entry, opts) => calls.push(`finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}`),
     getElapsedMs: () => 345,
     getTaskElapsedMs: () => 678,
@@ -76,7 +77,7 @@ describe("task timer lifecycle", () => {
       "clear-goal:task-1",
       "flush-note:task-1",
       "open-reward:task-1:123",
-      "upsert-live:task-1:0:force",
+      "upsert-live:task-1:0:0:force",
       "clear-checkpoint:task-1",
       "save:force",
       "sync-shared:task-1",
@@ -85,15 +86,41 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
-  it("does not start a task completed today", () => {
+  it("does not start a goal-completed task before reset", () => {
     const harness = createHarness({
-      tasks: [task({ timeGoalCompletedDayKey: "1970-01-01", timeGoalCompletedAtMs: 123 })],
+      tasks: [task({ timeGoalCompletedDayKey: "1970-01-01", timeGoalCompletedAtMs: 123, timeGoalCompletedReason: "goal" })],
     });
 
     harness.lifecycle.startTask(0);
 
     expect(harness.tasks[0]).toMatchObject({ running: false, startMs: null });
     expect(harness.calls).toEqual([]);
+  });
+
+  it("starts a reset-completed task again on the same day", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          timeGoalCompletedDayKey: "1970-01-01",
+          timeGoalCompletedAtMs: 123,
+          timeGoalCompletedReason: "reset",
+          timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+        }),
+      ],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true });
+    expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
+  });
+
+  it("preserves resumed elapsed in the live session when restarting a stopped task", () => {
+    const harness = createHarness({ tasks: [task({ accumulatedMs: 5 * 60 * 1000, hasStarted: true })] });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.calls).toContain("upsert-live:task-1:0:300000:force");
   });
 
   it("confirms before switching away from another running task", () => {

@@ -3,6 +3,7 @@ import type { Task } from "./types";
 import {
   getTimeGoalCompletionDayKey,
   isTaskTimeGoalCompletedToday,
+  isTaskTimeGoalStartLockedToday,
   markTaskTimeGoalCompleted,
   markTaskTimeGoalResetCompleted,
 } from "./timeGoalCompletion";
@@ -39,6 +40,28 @@ describe("time goal completion lock", () => {
 
   it("does not lock a task without completion fields", () => {
     expect(isTaskTimeGoalCompletedToday(task(), new Date(2026, 4, 7, 10, 0, 0).getTime())).toBe(false);
+  });
+
+  it("does not start-lock a reset-completed task on the current local day", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+
+    expect(
+      isTaskTimeGoalStartLockedToday(
+        task({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue), timeGoalCompletedReason: "reset" }),
+        nowValue
+      )
+    ).toBe(false);
+  });
+
+  it("start-locks a goal-completed task on the current local day", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+
+    expect(
+      isTaskTimeGoalStartLockedToday(
+        task({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue), timeGoalCompletedReason: "goal" }),
+        nowValue
+      )
+    ).toBe(true);
   });
 
   it("marks completion with the local day key and timestamp", () => {

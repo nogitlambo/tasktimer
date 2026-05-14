@@ -55,7 +55,6 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="edit"');
     expect(rendered.html).toContain('data-action="history"');
     expect(rendered.html).toContain('data-action="manualEntry"');
-    expect(rendered.html).toContain('data-action="collapse"');
     expect(rendered.html).toContain('data-action="shareTask"');
     expect(rendered.html).toContain('data-action="archive"');
     expect(rendered.html).toContain('data-action="exportTask"');

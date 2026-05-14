@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as clickAudioPlayerModule from "./click-audio-player";
 
 import {
   getPrimaryClickTarget,
@@ -31,10 +32,21 @@ function makeElement(opts: {
 
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
 
 describe("primary click audio", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("matches enabled primary action controls", () => {
-    const element = makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } });
+    const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } });
+
+    expect(getPrimaryClickTarget(element)).toBe(element);
+  });
+
+  it("matches save-and-close controls promoted to primary actions", () => {
+    const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } });
 
     expect(getPrimaryClickTarget(element)).toBe(element);
   });
@@ -65,9 +77,9 @@ describe("primary click audio", () => {
 
   it("ignores unrelated and disabled controls", () => {
     const unrelated = makeElement({ selectorMatches: { ".btn-accent": true } });
-    const disabled = makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true }, disabled: true });
+    const disabled = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true }, disabled: true });
     const ariaDisabled = makeElement({
-      selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true },
+      selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true },
       attributes: { "aria-disabled": "true" },
     });
 
@@ -106,13 +118,13 @@ describe("primary click audio", () => {
     const handler = on.mock.calls[0]?.[2] as EventListener;
     expect(on).toHaveBeenCalledWith(documentRef, "click", expect.any(Function), { capture: true });
 
-    handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
+    handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
+    handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "#saveEditBtn, #addTaskConfirmBtn": true } }) } as unknown as Event);
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(1);
 
     handler({
@@ -122,5 +134,84 @@ describe("primary click audio", () => {
       }),
     } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(2);
+  });
+
+  it("delays an unready primary click, then replays it exactly once", async () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const mockPlayers: Array<{
+      warm: ReturnType<typeof vi.fn>;
+      play: ReturnType<typeof vi.fn>;
+      isReady: ReturnType<typeof vi.fn>;
+      playWhenReady: ReturnType<typeof vi.fn>;
+    }> = [];
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      const player = {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      };
+      mockPlayers.push(player);
+      return player as never;
+    });
+    registerPrimaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    const primaryPlayer = mockPlayers[0];
+    primaryPlayer.isReady.mockReturnValue(false);
+    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
+    replay.click = vi.fn();
+    const preventDefault = vi.fn();
+    const stopImmediatePropagation = vi.fn();
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, isTrusted: true, target: replay, preventDefault, stopImmediatePropagation } as unknown as Event);
+    await Promise.resolve();
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
+    expect(primaryPlayer.playWhenReady).toHaveBeenCalledWith(120);
+    expect(replay.click).toHaveBeenCalledTimes(1);
+
+    handler({ defaultPrevented: false, isTrusted: false, target: replay } as unknown as Event);
+    expect(primaryPlayer.play).not.toHaveBeenCalled();
+  });
+
+  it("does not delay an already-ready primary click", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const mockPlayers: Array<{
+      warm: ReturnType<typeof vi.fn>;
+      play: ReturnType<typeof vi.fn>;
+      isReady: ReturnType<typeof vi.fn>;
+      playWhenReady: ReturnType<typeof vi.fn>;
+    }> = [];
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      const player = {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      };
+      mockPlayers.push(player);
+      return player as never;
+    });
+    registerPrimaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    const primaryPlayer = mockPlayers[0];
+    primaryPlayer.isReady.mockReturnValue(true);
+    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
+    replay.click = vi.fn();
+    const preventDefault = vi.fn();
+    const stopImmediatePropagation = vi.fn();
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, isTrusted: true, target: replay, preventDefault, stopImmediatePropagation } as unknown as Event);
+
+    expect(primaryPlayer.play).toHaveBeenCalledTimes(1);
+    expect(primaryPlayer.playWhenReady).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(stopImmediatePropagation).not.toHaveBeenCalled();
+    expect(replay.click).not.toHaveBeenCalled();
   });
 });

@@ -334,6 +334,7 @@ function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTa
     ? Math.max(startedAtMs, Math.floor(Number((row as LiveTaskSession).updatedAtMs)))
     : startedAtMs;
   const elapsedMs = Number.isFinite(Number((row as LiveTaskSession).elapsedMs)) ? Math.max(0, Math.floor(Number((row as LiveTaskSession).elapsedMs))) : 0;
+  const resumedFromMs = Number.isFinite(Number((row as LiveTaskSession).resumedFromMs)) ? Math.max(0, Math.floor(Number((row as LiveTaskSession).resumedFromMs))) : 0;
   const name = String((row as LiveTaskSession).name || "").trim() || "Task";
   const note = typeof (row as LiveTaskSession).note === "string" ? String((row as LiveTaskSession).note).trim() : "";
   const color = typeof (row as LiveTaskSession).color === "string" ? String((row as LiveTaskSession).color).trim() : "";
@@ -344,6 +345,7 @@ function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTa
     startedAtMs,
     updatedAtMs,
     elapsedMs,
+    ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
     status: "running",
     ...(note ? { note } : {}),
     ...(color ? { color } : {}),
@@ -1741,6 +1743,7 @@ export async function saveLiveSession(uid: string, session: LiveTaskSession): Pr
     name: String(session.name || "").trim() || "Task",
     startedAtMs: Math.max(0, Math.floor(Number(session.startedAtMs || 0) || 0)),
     elapsedMs: Math.max(0, Math.floor(Number(session.elapsedMs || 0) || 0)),
+    resumedFromMs: Math.max(0, Math.floor(Number(session.resumedFromMs || 0) || 0)),
     updatedAtMs: Math.max(0, Math.floor(Number(session.updatedAtMs || 0) || 0)),
     status: "running",
     createdAt: serverTimestamp(),

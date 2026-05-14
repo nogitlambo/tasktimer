@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as clickAudioPlayerModule from "./click-audio-player";
 
 import {
   CANCEL_CLICK_AUDIO_SRC,
@@ -35,6 +36,10 @@ function makeElement(opts: {
 }
 
 describe("secondary click audio", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("matches requested direct controls", () => {
     const directSelectors = [
       ".switch",
@@ -225,5 +230,89 @@ describe("secondary click audio", () => {
     expect(playCloseAudio).toHaveBeenCalledTimes(1);
     expect(playCancelAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it("delays an unready cancel click, then replays it exactly once", async () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const mockPlayers: Array<{
+      warm: ReturnType<typeof vi.fn>;
+      play: ReturnType<typeof vi.fn>;
+      isReady: ReturnType<typeof vi.fn>;
+      playWhenReady: ReturnType<typeof vi.fn>;
+    }> = [];
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      const player = {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      };
+      mockPlayers.push(player);
+      return player as never;
+    });
+    registerSecondaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    const cancelPlayer = mockPlayers[1];
+    cancelPlayer.isReady.mockReturnValue(false);
+    const textSelector = "button,a";
+    const cancelTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
+    cancelTarget.click = vi.fn();
+    const preventDefault = vi.fn();
+    const stopImmediatePropagation = vi.fn();
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, isTrusted: true, target: cancelTarget, preventDefault, stopImmediatePropagation } as unknown as Event);
+    await Promise.resolve();
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
+    expect(cancelPlayer.playWhenReady).toHaveBeenCalledWith(120);
+    expect(cancelTarget.click).toHaveBeenCalledTimes(1);
+
+    handler({ defaultPrevented: false, isTrusted: false, target: cancelTarget } as unknown as Event);
+    expect(cancelPlayer.play).not.toHaveBeenCalled();
+  });
+
+  it("falls back to replaying after timeout when close audio is still unready", async () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const mockPlayers: Array<{
+      warm: ReturnType<typeof vi.fn>;
+      play: ReturnType<typeof vi.fn>;
+      isReady: ReturnType<typeof vi.fn>;
+      playWhenReady: ReturnType<typeof vi.fn>;
+    }> = [];
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      const player = {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      };
+      mockPlayers.push(player);
+      return player as never;
+    });
+    registerSecondaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    const closePlayer = mockPlayers[2];
+    closePlayer.isReady.mockReturnValue(false);
+    closePlayer.playWhenReady.mockResolvedValue("timed_out");
+    const textSelector = "button,a";
+    const closeTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
+    closeTarget.click = vi.fn();
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      isTrusted: true,
+      target: closeTarget,
+      preventDefault: vi.fn(),
+      stopImmediatePropagation: vi.fn(),
+    } as unknown as Event);
+    await Promise.resolve();
+
+    expect(closePlayer.playWhenReady).toHaveBeenCalledWith(120);
+    expect(closeTarget.click).toHaveBeenCalledTimes(1);
   });
 });

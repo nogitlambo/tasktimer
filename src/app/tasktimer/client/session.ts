@@ -4,7 +4,7 @@ import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
-import { isTaskTimeGoalCompletedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
+import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
 import {
   findNextScheduledTaskAfterLocalTime,
   formatScheduleSlotTime,
@@ -148,7 +148,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
       if (!taskId || taskId === activeTaskId) return false;
       if (task.running) return false;
       if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
-      return !isTaskTimeGoalCompletedToday(task);
+      return !isTaskTimeGoalStartLockedToday(task);
     })
     .map((task, index) => ({
       id: String(task.id || "").trim(),
@@ -630,7 +630,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
     const taskId = String(task.id || "");
-    if (isTaskTimeGoalCompletedToday(task)) {
+    if (isTaskTimeGoalStartLockedToday(task)) {
       clearTaskTimeGoalFlow(taskId);
       stopTimeGoalCompleteConfetti();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
@@ -693,7 +693,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function syncFocusRunButtons(task?: Task | null) {
     const running = !!task?.running;
-    const completed = isTaskTimeGoalCompletedToday(task);
+    const completed = isTaskTimeGoalStartLockedToday(task);
     const hintText = completed ? "Done" : running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
     if (els.focusDialHint) els.focusDialHint.textContent = hintText;
     if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running || completed;
@@ -1470,7 +1470,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
-          if (isTaskTimeGoalCompletedToday(task)) {
+          if (isTaskTimeGoalStartLockedToday(task)) {
             primaryActionBtn.className = "btn btn-done small";
             primaryActionBtn.dataset.action = "start";
             primaryActionBtn.title = "Done until tomorrow";
@@ -1499,7 +1499,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         }
         const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
-          const completed = isTaskTimeGoalCompletedToday(task);
+          const completed = isTaskTimeGoalStartLockedToday(task);
           const hasResettableTime = elapsedMs > 0;
           const resetLabel = completed ? "Done until tomorrow" : task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
           resetBtn.disabled = !!task.running || completed || !hasResettableTime;
@@ -1567,7 +1567,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (idx < 0) return;
       const task = ctx.getTasks()[idx];
       if (!task) return;
-      if (isTaskTimeGoalCompletedToday(task)) return;
+      if (isTaskTimeGoalStartLockedToday(task)) return;
       if (task.running) ctx.stopTask(idx);
       else ctx.startTask(idx);
     });

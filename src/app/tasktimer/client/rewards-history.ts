@@ -344,12 +344,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       .replaceAll("'", "&#039;");
   }
 
-  function appendHistory(taskId: string, entry: Record<string, unknown>) {
-    if (!taskId) return false;
-    const historyByTaskId = ctx.getHistoryByTaskId();
+  function normalizeCompletedHistoryEntry(entry: Record<string, unknown>): HistoryEntry {
     const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
     const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
-    const normalizedEntry: HistoryEntry = {
+    return {
       ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
       name: String(entry?.name || ""),
       ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
@@ -358,9 +356,72 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...(completionDifficulty ? { completionDifficulty } : {}),
       ...(sessionId ? { sessionId } : {}),
     };
+  }
+
+  function findMergeableHistoryIndex(entries: HistoryEntry[], completedAtMs: number, sessionId: string, canMergeLatestSameDay: boolean) {
+    if (sessionId) {
+      const sessionIndex = entries.findIndex((row) => String(row?.sessionId || "").trim() === sessionId);
+      if (sessionIndex >= 0) return sessionIndex;
+    }
+    if (!canMergeLatestSameDay) return -1;
+    const completedDayKey = localDayKey(completedAtMs);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const row = entries[index];
+      const rowTs = Math.max(0, Math.floor(Number(row?.ts || 0) || 0));
+      if (rowTs > 0 && localDayKey(rowTs) === completedDayKey) return index;
+    }
+    return -1;
+  }
+
+  function entriesEqual(a: HistoryEntry, b: HistoryEntry) {
+    return (
+      Number(a.ts || 0) === Number(b.ts || 0) &&
+      Number(a.ms || 0) === Number(b.ms || 0) &&
+      String(a.name || "") === String(b.name || "") &&
+      String(a.color || "") === String(b.color || "") &&
+      String(a.note || "") === String(b.note || "") &&
+      String(a.completionDifficulty || "") === String(b.completionDifficulty || "") &&
+      String(a.sessionId || "") === String(b.sessionId || "")
+    );
+  }
+
+  function upsertCompletedHistory(
+    taskId: string,
+    entry: Record<string, unknown>,
+    opts?: { canMergeLatestSameDay?: boolean }
+  ): { changed: boolean; isNewEntry: boolean; previousMs: number } {
+    if (!taskId) return { changed: false, isNewEntry: false, previousMs: 0 };
+    const historyByTaskId = ctx.getHistoryByTaskId();
+    const normalizedEntry = normalizeCompletedHistoryEntry(entry);
     const currentTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
-    if (normalizedEntry.sessionId && currentTaskHistory.some((row) => row?.sessionId === normalizedEntry.sessionId)) {
-      return false;
+    const mergeIndex = findMergeableHistoryIndex(
+      currentTaskHistory,
+      normalizedEntry.ts,
+      normalizedEntry.sessionId || "",
+      opts?.canMergeLatestSameDay === true
+    );
+    if (mergeIndex >= 0) {
+      const previousEntry = currentTaskHistory[mergeIndex]!;
+      const previousMs = Math.max(0, Math.floor(Number(previousEntry.ms || 0) || 0));
+      const nextEntry: HistoryEntry = {
+        ...previousEntry,
+        name: normalizedEntry.name || previousEntry.name,
+        ms: normalizedEntry.ms,
+        ...(normalizedEntry.color ? { color: normalizedEntry.color } : {}),
+        ...(normalizedEntry.note ? { note: normalizedEntry.note } : {}),
+        ...(normalizedEntry.completionDifficulty ? { completionDifficulty: normalizedEntry.completionDifficulty } : {}),
+        ...(previousEntry.sessionId ? { sessionId: previousEntry.sessionId } : normalizedEntry.sessionId ? { sessionId: normalizedEntry.sessionId } : {}),
+      };
+      if (entriesEqual(previousEntry, nextEntry)) return { changed: false, isNewEntry: false, previousMs };
+      const nextTaskHistory = currentTaskHistory.map((row, index) => (index === mergeIndex ? nextEntry : row));
+      const nextHistoryByTaskId = {
+        ...historyByTaskId,
+        [taskId]: nextTaskHistory,
+      };
+      ctx.setHistoryByTaskId(nextHistoryByTaskId);
+      ctx.saveHistory(nextHistoryByTaskId, { showIndicator: false });
+      void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+      return { changed: true, isNewEntry: false, previousMs };
     }
     const nextHistoryByTaskId = {
       ...historyByTaskId,
@@ -370,7 +431,11 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     ctx.appendHistoryEntry(taskId, normalizedEntry);
     ctx.saveHistoryLocally(nextHistoryByTaskId);
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    return true;
+    return { changed: true, isNewEntry: true, previousMs: 0 };
+  }
+
+  function appendHistory(taskId: string, entry: Record<string, unknown>) {
+    return upsertCompletedHistory(taskId, entry, { canMergeLatestSameDay: false }).changed;
   }
 
   function getCurrentSessionNoteForTask(taskId: string): string {
@@ -379,7 +444,12 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     return ctx.captureSessionNoteSnapshot(taskKey);
   }
 
-  function buildLiveSession(task: Task, elapsedMsOverride?: number | null, noteOverride?: string): LiveTaskSession | null {
+  function buildLiveSession(
+    task: Task,
+    elapsedMsOverride?: number | null,
+    noteOverride?: string,
+    resumedFromMsOverride?: number | null
+  ): LiveTaskSession | null {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return null;
     const elapsedMs =
@@ -391,6 +461,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         ? Math.floor(Number(task.startMs || 0))
         : Math.max(0, nowMs() - elapsedMs);
     const existing = ctx.getLiveSessionsByTaskId()[taskId];
+    const resumedFromMs =
+      resumedFromMsOverride != null && Number.isFinite(Number(resumedFromMsOverride))
+        ? Math.max(0, Math.floor(Number(resumedFromMsOverride) || 0))
+        : Math.max(0, Math.floor(Number(existing?.resumedFromMs || 0) || 0));
     const note = String(noteOverride || getCurrentSessionNoteForTask(taskId) || "").trim();
     return {
       sessionId: String(existing?.sessionId || `${taskId}:${startedAtMs}`),
@@ -398,6 +472,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       name: String(task.name || "").trim() || "Task",
       startedAtMs,
       elapsedMs,
+      ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
       updatedAtMs: nowMs(),
       status: "running",
       color: ctx.sessionColorForTaskMs(task, elapsedMs),
@@ -405,8 +480,8 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     };
   }
 
-  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) {
-    const session = buildLiveSession(task, opts?.elapsedMs, opts?.note);
+  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) {
+    const session = buildLiveSession(task, opts?.elapsedMs, opts?.note, opts?.resumedFromMs);
     if (!session) return;
     ctx.setLiveSessionsByTaskId({
       ...(ctx.getLiveSessionsByTaskId() || {}),
@@ -440,11 +515,12 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const taskId = String(task.id || "");
     const liveSession = ctx.getLiveSessionsByTaskId()[taskId];
     const sessionId = typeof liveSession?.sessionId === "string" ? liveSession.sessionId.trim() : "";
+    const canMergeLatestSameDay = Math.max(0, Math.floor(Number(liveSession?.resumedFromMs || 0) || 0)) > 0 || (!liveSession && Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0)) > 0);
     const liveNote = getCurrentSessionNoteForTask(taskId);
     const note = String(noteOverride || liveNote || "").trim();
     const completionDifficulty = normalizeCompletionDifficulty(completionDifficultyRaw);
     if (note) ctx.setFocusSessionDraft(taskId, note);
-    const didAppendHistory = appendHistory(task.id, {
+    const historyResult = upsertCompletedHistory(task.id, {
       ts: completedAtMs,
       name: task.name,
       ms: safeElapsedMs,
@@ -452,8 +528,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...(note ? { note } : {}),
       ...(sessionId ? { sessionId } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
-    });
-    if (!didAppendHistory) return;
+    }, { canMergeLatestSameDay });
+    const awardElapsedMs = Math.max(0, safeElapsedMs - historyResult.previousMs);
+    if (!historyResult.changed && awardElapsedMs <= 0) return;
     ctx.clearFocusSessionDraft(taskId);
     if (String(ctx.getFocusModeTaskId() || "") === taskId) {
       ctx.syncFocusSessionNotesInput(taskId);
@@ -462,12 +539,13 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const nextAward = awardCompletedSessionXp(ctx.getRewardProgress(), {
       taskId,
       awardedAt: completedAtMs,
-      elapsedMs: safeElapsedMs,
+      elapsedMs: awardElapsedMs,
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
       momentumEntitled: true,
-      sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, safeElapsedMs),
+      sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, awardElapsedMs),
+      completedSessionsDelta: historyResult.isNewEntry ? 1 : 0,
     });
     ctx.setRewardProgress(nextAward.next);
     clearRewardSessionTracker(taskId);

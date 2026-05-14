@@ -339,7 +339,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 ${startStopHtml}
                 <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || isTimeGoalCompleted || !hasResettableTime ? "disabled" : ""}>&#10227;</button>
                 <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
-                <button class="iconBtn" data-action="collapse" title="${task.collapsed ? "Expand" : "Collapse"}" aria-label="${task.collapsed ? "Expand task" : "Collapse task"}">${task.collapsed ? "&#9662;" : "&#9652;"}</button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>
             </div>

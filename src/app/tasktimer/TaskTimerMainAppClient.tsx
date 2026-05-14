@@ -216,7 +216,7 @@ function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!getFirebaseAuthClient()?.currentUser);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [rewardProgressHydrated, setRewardProgressHydrated] = useState(false);
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);

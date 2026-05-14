@@ -57,6 +57,7 @@ export type CompletedSessionXpContext = {
   weekStarting: DashboardWeekStart;
   momentumEntitled?: boolean;
   sessionSegments?: RewardSessionSegment[];
+  completedSessionsDelta?: number;
 };
 
 export type RewardSessionSegment = {
@@ -114,6 +115,7 @@ export const WEEKLY_GOAL_100_XP = 8;
 
 const WEEKLY_DAILY_GOAL_MIN_MINUTES = 20;
 const WEEKLY_WEEKLY_GOAL_MIN_MINUTES = 120;
+const DEFAULT_DAILY_SESSION_XP_CAP_MS = 60 * 60 * 1000;
 const LEDGER_RETENTION_DAYS = 35;
 const CLOCK_SKEW_ALLOWANCE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -311,6 +313,39 @@ function getSessionEligibleMs(elapsedMs: number): number {
   const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
   if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
   return safeElapsedMs;
+}
+
+function getTaskDailySessionXpCapMs(tasks: Task[], taskId: string | null): number {
+  const normalizedTaskId = String(taskId || "").trim();
+  const task = (Array.isArray(tasks) ? tasks : []).find((row) => String(row?.id || "").trim() === normalizedTaskId) || null;
+  if (task?.timeGoalEnabled && task.timeGoalPeriod === "day") {
+    const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+    if (goalMinutes > 0) return Math.floor(goalMinutes * 60 * 1000);
+  }
+  return DEFAULT_DAILY_SESSION_XP_CAP_MS;
+}
+
+function getTaskLoggedMsForDay(historyByTaskId: HistoryByTaskId, taskId: string | null, dayKey: string): number {
+  const normalizedTaskId = String(taskId || "").trim();
+  if (!normalizedTaskId) return 0;
+  const entries = Array.isArray(historyByTaskId?.[normalizedTaskId]) ? historyByTaskId[normalizedTaskId] : [];
+  return entries.reduce((sum, entry) => {
+    const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
+    const ms = Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
+    if (!ts || ms <= 0 || localDayKey(ts) !== dayKey) return sum;
+    return sum + ms;
+  }, 0);
+}
+
+function getDailyCappedSessionEligibleMs(context: CompletedSessionXpContext, awardedAt: number, taskId: string | null): number {
+  const rawEligibleMs = getSessionEligibleMs(context.elapsedMs);
+  if (!(rawEligibleMs > 0)) return 0;
+  const dayKey = localDayKey(awardedAt);
+  const capMs = getTaskDailySessionXpCapMs(context.tasks, taskId);
+  const loggedAfterMs = getTaskLoggedMsForDay(context.historyByTaskId || {}, taskId, dayKey);
+  const loggedBeforeMs = Math.max(0, loggedAfterMs - Math.max(0, Math.floor(Number(context.elapsedMs || 0) || 0)));
+  const remainingMs = Math.max(0, capMs - loggedBeforeMs);
+  return Math.min(rawEligibleMs, remainingMs);
 }
 
 function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], completedSessionsDelta: number): RewardAwardResult {
@@ -657,12 +692,12 @@ export function awardWeeklyGoalBonuses(
 export function awardCompletedSessionXp(progress: RewardProgressV1, context: CompletedSessionXpContext): RewardAwardResult {
   const previous = normalizeRewardProgress(progress);
   const awardedAt = clampAwardTimestamp(previous, context.awardedAt);
-  const completedSessionsDelta = 1;
+  const completedSessionsDelta = Math.max(0, Math.floor(Number(context.completedSessionsDelta ?? 1) || 0));
   if (!awardedAt) return awardEntries(previous, [], completedSessionsDelta);
 
   const rawTaskId = context.taskId == null ? "" : String(context.taskId || "").trim();
   const taskId = rawTaskId || null;
-  const eligibleMs = getSessionEligibleMs(context.elapsedMs);
+  const eligibleMs = getDailyCappedSessionEligibleMs(context, awardedAt, taskId);
   const existingSources = getExistingSourceKeys(previous);
   const entries: RewardLedgerEntry[] = [];
   const completionMultiplier = resolveRewardMultiplier(context, awardedAt);

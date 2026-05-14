@@ -12,6 +12,10 @@ export function isTaskTimeGoalCompletedToday(task: Task | null | undefined, nowV
   return !!completedDayKey && completedDayKey === getTimeGoalCompletionDayKey(nowValue);
 }
 
+export function isTaskTimeGoalStartLockedToday(task: Task | null | undefined, nowValue = Date.now()): boolean {
+  return isTaskTimeGoalCompletedToday(task, nowValue) && task?.timeGoalCompletedReason !== "reset";
+}
+
 function normalizeCompletedElapsedMs(value: unknown): number | null {
   if (value == null || !Number.isFinite(Number(value))) return null;
   return Math.max(0, Math.floor(Number(value)));

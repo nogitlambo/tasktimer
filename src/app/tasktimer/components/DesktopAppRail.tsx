@@ -115,7 +115,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings");
-const PROFILE_MENU_PAGES = ["account", "settings", "history"] as const;
+const PROFILE_MENU_PAGES = ["settings", "history"] as const;
 
 export function getDesktopRailProfileMenuItems() {
   return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);

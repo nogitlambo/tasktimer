@@ -466,6 +466,7 @@ service cloud.firestore {
         "name",
         "startedAtMs",
         "elapsedMs",
+        "resumedFromMs",
         "updatedAtMs",
         "status",
         "note",
@@ -478,6 +479,7 @@ service cloud.firestore {
       && request.resource.data.name is string
       && request.resource.data.startedAtMs is int
       && request.resource.data.elapsedMs is int
+      && (!("resumedFromMs" in request.resource.data) || request.resource.data.resumedFromMs is int)
       && request.resource.data.updatedAtMs is int
       && request.resource.data.status == "running"
       && (!("note" in request.resource.data) || request.resource.data.note is string)
