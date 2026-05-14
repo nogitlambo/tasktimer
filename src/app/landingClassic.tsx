@@ -93,9 +93,9 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
             <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
 
             <p className="landingV2HeroCopy">
-              TaskLaunch is a flexible productivity tool designed for the neurodivergent mind, forgiving inconsistency
-              instead of punishing it, helping you to re-focus quickly after difficult days, maintain momentum without
-              perfectionism, and grow sustainably over time.
+              Designed for neurodivergent minds, TaskLaunch helps you break free from guilt-driven productivity
+              systems by turning scattered energy into sustainable momentum, helping you recover faster after difficult
+              days and keep moving forward without perfectionism.
             </p>
 
             <form id="subscribe" className="landingV2SubscribeCard" onSubmit={handleSubmit} noValidate>
