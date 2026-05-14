@@ -104,6 +104,9 @@ Firebase client identifiers should be supplied via environment variables or depl
   - Configure `NEXT_PUBLIC_FIREBASE_API_KEY` and `NEXT_PUBLIC_FIREBASE_MOBILE_API_KEY` as App Hosting secrets, since `apphosting.yaml` now references them via `secret:`.
 - Git hygiene:
   - `android/app/google-services.json` is intentionally ignored and should not be committed.
+  - Firebase Admin service-account JSON files must not live in the repo root. Use Application Default Credentials for local admin work where possible, or place temporary local credentials under `workspace/secrets/` and keep them out of commits and logs.
+  - The APK-to-Google-Drive helper reads `workspace/secrets/tasktimer-prod-7ce230e31df3.json` by default. You can override this with `GOOGLE_SERVICE_ACCOUNT_PATH` or `GOOGLE_SERVICE_ACCOUNT_JSON`.
+  - Run `npm run security:check` before handoff when touching dependencies, Firebase credentials, rules, or server routes.
 
 ## Learn More
 

@@ -39,6 +39,9 @@ const PUSH_ACTION_SNOOZE_10M = "snooze10m";
 const PUSH_ACTION_POSTPONE_NEXT_GAP = "postponeNextGap";
 const MINUTE_MS = 60 * 1000;
 const SHARED_TASK_REMINDER_COOLDOWN_MS = 60 * MINUTE_MS;
+const MAX_PUSH_DEVICE_ROWS_PER_USER = 20;
+const MAX_DUE_PUSH_DOCS_PER_TICK = 500;
+const STALE_SCHEDULE_DOC_TTL_MS = 30 * 24 * 60 * MINUTE_MS;
 const protectedCallableOptions = {
   region,
   enforceAppCheck: true,
@@ -81,7 +84,7 @@ function sharedTaskSummaryDocId(ownerUid, friendUid, taskId) {
   return `share:${ownerUid}:${friendUid}:${taskId}`;
 }
 
-const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
+const ADMIN_ACCOUNT_EMAIL = normalizeEmailKey(process.env.TASKLAUNCH_ADMIN_EMAIL);
 
 function isActiveSubscriptionStatus(status) {
   const activeStatuses = new Set(["trialing", "active", "past_due"]);
@@ -102,7 +105,14 @@ function millisFromTimestampLike(value) {
 }
 
 function isAdminAccountEmail(email) {
-  return normalizeEmailKey(email) === ADMIN_ACCOUNT_EMAIL;
+  return !!ADMIN_ACCOUNT_EMAIL && normalizeEmailKey(email) === ADMIN_ACCOUNT_EMAIL;
+}
+
+function isAdminRequest(request) {
+  const token = request.auth?.token || {};
+  if (token.taskLaunchAdmin === true || token.admin === true) return true;
+  if (token.email_verified === true && isAdminAccountEmail(token.email)) return true;
+  return false;
 }
 
 async function upsertUserPlan(uid, plan) {
@@ -266,7 +276,8 @@ export const sendPushTest = onCall(protectedCallableOptions, async (request) => 
       }))
       .filter((row) => !!row.token && row.enabled)
       .filter((row) => row.native || row.platform === "web")
-      .filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled);
+      .filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled)
+      .slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
 
     if (!deviceRows.length) {
       throw new HttpsError("failed-precondition", "No registered device tokens were found for this user.");
@@ -369,19 +380,26 @@ export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (reque
   }
 });
 
-export const setUserPlanAdmin = onCall({region}, async (request) => {
+export const setUserPlanAdmin = onCall(protectedCallableOptions, async (request) => {
   const callerUid = asString(request.auth?.uid);
   const callerEmail = normalizeEmailKey(request.auth?.token?.email);
   if (!callerUid) {
     throw new HttpsError("unauthenticated", "You must be signed in to update a plan.");
   }
-  if (!isAdminAccountEmail(callerEmail)) {
+  if (!isAdminRequest(request)) {
     throw new HttpsError("permission-denied", "You do not have permission to update plans.");
   }
   const rawData = request.data && typeof request.data === "object" ? request.data : {};
   const targetUid = asString(rawData.uid);
   const targetPlan = normalizePlan(rawData.plan);
   try {
+    logger.warn("setUserPlanAdmin requested", {
+      callerUid,
+      callerEmail,
+      targetUid,
+      targetPlan,
+      authorizedByClaim: request.auth?.token?.taskLaunchAdmin === true || request.auth?.token?.admin === true,
+    });
     const plan = await upsertUserPlan(targetUid, targetPlan);
     return {ok: true, uid: targetUid, plan};
   } catch (error) {
@@ -458,6 +476,10 @@ async function loadUserPushPreferences(uid) {
 
 function filterDeviceRowsByPushPreferences(deviceRows, prefs) {
   return deviceRows.filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled);
+}
+
+function isStaleScheduleDoc(dueAtMs, nowMs) {
+  return dueAtMs != null && nowMs - dueAtMs > STALE_SCHEDULE_DOC_TTL_MS;
 }
 
 function computeNextPlannedStartDueAtMs(plannedStartDay, plannedStartTime, fromMs) {
@@ -695,7 +717,8 @@ async function sendScheduledTaskNotification({
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const prefs = await loadUserPushPreferences(uid);
-  const deviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs);
+  const deviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs)
+    .slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
   const hasForegroundNativeDevice = hasFreshForegroundNativeDevice(deviceRows, nowMs);
   const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
@@ -930,6 +953,10 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || baseEventType !== PLANNED_START_REMINDER_EVENT) {
     return {status: "skipped"};
   }
+  if (isStaleScheduleDoc(dueAtMs, nowMs)) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
   if (isMissedCheck && missedScheduledStartDueAtMs != null && lastMissedDueAtMs === missedScheduledStartDueAtMs) {
     return {status: "duplicate"};
   }
@@ -1102,6 +1129,17 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
 }
 
 async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
+  const activeDocSnaps = [];
+  await Promise.all(docSnaps.map(async (docSnap) => {
+    const dueAtMs = asInt((docSnap.data() || {}).dueAtMs, null);
+    if (isStaleScheduleDoc(dueAtMs, nowMs)) {
+      await docSnap.ref.delete().catch(() => {});
+      return;
+    }
+    activeDocSnaps.push(docSnap);
+  }));
+  if (!activeDocSnaps.length) return {status: "skipped"};
+
   const dayStartMs = startOfLocalDayMs(nowMs);
   const dayEndMs = nextLocalDayStartMs(nowMs);
   const todayKey = localDayKeyFromMs(nowMs);
@@ -1113,7 +1151,7 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
 
   const runningTask = taskRows.find((row) => row.data.running === true);
   if (runningTask) {
-    await Promise.all(docSnaps.map((docSnap) =>
+    await Promise.all(activeDocSnaps.map((docSnap) =>
       docSnap.ref.set({
         dueAtMs: nowMs + MINUTE_MS,
         updatedAt: FieldValue.serverTimestamp(),
@@ -1124,7 +1162,7 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
 
   const gap = findCurrentGap(buildScheduledBlocksForDay(taskRows.map((row) => row.data), nowMs), nowMs);
   if (gap.status !== "gap") {
-    await Promise.all(docSnaps.map((docSnap) =>
+    await Promise.all(activeDocSnaps.map((docSnap) =>
       docSnap.ref.set({
         dueAtMs: gap.nextDueAtMs,
         updatedAt: FieldValue.serverTimestamp(),
@@ -1134,7 +1172,7 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
   }
 
   const gapDurationMinutes = Math.max(0, Math.floor((gap.gapEndMs - gap.gapStartMs) / MINUTE_MS));
-  const docByTaskId = new Map(docSnaps.map((docSnap) => [asString((docSnap.data() || {}).taskId || docSnap.id), docSnap]));
+  const docByTaskId = new Map(activeDocSnaps.map((docSnap) => [asString((docSnap.data() || {}).taskId || docSnap.id), docSnap]));
   const eligibleRows = [];
   const deferredDueAtByTaskId = new Map();
 
@@ -1172,7 +1210,7 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
   }
 
   if (!eligibleRows.length) {
-    await Promise.all(docSnaps.map((docSnap) =>
+    await Promise.all(activeDocSnaps.map((docSnap) =>
       docSnap.ref.set({
         dueAtMs: deferredDueAtByTaskId.get(asString((docSnap.data() || {}).taskId || docSnap.id)) || gap.nextDueAtMs,
         updatedAt: FieldValue.serverTimestamp(),
@@ -1255,6 +1293,10 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
   const route = asString(data.route, "/tasklaunch") || "/tasklaunch";
 
   if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs) {
+    return {status: "skipped"};
+  }
+  if (isStaleScheduleDoc(dueAtMs, nowMs)) {
+    await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
   if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
@@ -1512,6 +1554,8 @@ export const sendDueTimeGoalPushes = onSchedule(
     try {
       dueSnap = await db.collection("scheduled_time_goal_pushes")
         .where("dueAtMs", "<=", nowMs)
+        .orderBy("dueAtMs", "asc")
+        .limit(MAX_DUE_PUSH_DOCS_PER_TICK)
         .get();
     } catch (error) {
       logger.error("sendDueTimeGoalPushes schedule query failed", {

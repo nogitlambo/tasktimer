@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
+    "security:check": "node scripts/security-check.mjs",
     "fonts:check": "node scripts/check-font-contract.mjs",
     "css:audit:tasktimer": "node scripts/audit-tasktimer-css.mjs",
     "css:audit:tasktimer:duplicates": "node scripts/audit-tasktimer-css.mjs --focus=duplicates",
@@ -54,9 +55,9 @@
     "@fontsource/inconsolata": "^5.2.8",
     "@fontsource/orbitron": "^5.2.8",
     "firebase": "^12.9.0",
-    "firebase-admin": "^13.6.1",
+    "firebase-admin": "^13.9.0",
     "material-design-inspired-color-picker": "^1.7.2",
-    "next": "^16.2.4",
+    "next": "^16.2.6",
     "phaser": "^4.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -72,7 +73,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.2.6",
     "googleapis": "^171.4.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^4",
@@ -80,6 +81,8 @@
     "vitest": "^4.1.5"
   },
   "overrides": {
-    "postcss": "$postcss"
+    "postcss": "$postcss",
+    "fast-xml-builder": "^1.2.0",
+    "fast-xml-parser": "^5.8.0"
   }
 }

@@ -8,6 +8,17 @@ function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function resolveSafeReturnPath(value: unknown) {
+  const raw = asString(value) || "/account";
+  const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+  if (normalized.startsWith("//") || normalized.includes("\\") || normalized.includes("://")) {
+    return "/account";
+  }
+  const pathOnly = normalized.split("#")[0]?.split("?")[0] || "/account";
+  const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/pricing"]);
+  return allowedPaths.has(pathOnly.replace(/\/+$/, "") || "/") ? normalized : "/account";
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -20,7 +31,7 @@ export async function POST(req: Request) {
       code: "stripe/billing-portal-rate-limited",
       message: "Too many billing portal attempts recently. Please wait before trying again.",
     });
-    const returnPath = asString(body.returnPath) || "/account";
+    const returnPath = resolveSafeReturnPath(body.returnPath);
 
     const customerId = await loadStripeCustomerIdForUser(uid);
 

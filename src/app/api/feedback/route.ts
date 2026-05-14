@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { ApiRateLimitError, enforceUidRateLimit } from "../shared/rateLimit";
+import {
+  ApiRateLimitError,
+  buildPublicRateLimitActorKey,
+  enforcePublicRateLimit,
+  enforceUidRateLimit,
+  extractClientIp,
+} from "../shared/rateLimit";
 import {
   asString,
   createJiraIssue,
@@ -21,6 +27,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_FEEDBACK_ATTACHMENTS = 8;
 const MAX_FEEDBACK_ATTACHMENT_BYTES = 6 * 1024 * 1024;
+const MAX_GUEST_FEEDBACK_ATTACHMENTS = 2;
 
 type ParsedFeedbackAttachment = {
   filename: string;
@@ -130,6 +137,41 @@ export async function POST(req: Request) {
     const type = normalizeFeedbackType(body.type);
     const isAnonymous = normalizeBoolean(body.isAnonymous);
     const isGuest = uid.startsWith("guest:");
+    const clientIp = extractClientIp(req);
+    if (isGuest) {
+      await enforcePublicRateLimit({
+        namespace: "feedback-guest-submission-ip",
+        actorKey: buildPublicRateLimitActorKey({ ip: clientIp }),
+        windowMs: 24 * 60 * 60 * 1000,
+        maxEvents: 5,
+        code: "feedback/guest-rate-limited",
+        message: "Too many guest feedback submissions recently. Please sign in or try again later.",
+      });
+      await enforcePublicRateLimit({
+        namespace: "feedback-guest-submission-burst",
+        actorKey: buildPublicRateLimitActorKey({ ip: clientIp, secondaryKey: `${type}:${title}` }),
+        windowMs: 10 * 60 * 1000,
+        maxEvents: 2,
+        code: "feedback/guest-burst-rate-limited",
+        message: "Please wait before submitting similar guest feedback again.",
+      });
+      if (attachments.length > MAX_GUEST_FEEDBACK_ATTACHMENTS) {
+        throw new FeedbackApiError(
+          "feedback/guest-too-many-attachments",
+          `Guest submissions can attach up to ${MAX_GUEST_FEEDBACK_ATTACHMENTS} screenshots.`,
+          400
+        );
+      }
+    } else {
+      await enforceUidRateLimit({
+        namespace: "feedback-submission",
+        uid,
+        windowMs: 10 * 60 * 1000,
+        maxEvents: 6,
+        code: "feedback/submission-burst-rate-limited",
+        message: "Too many feedback submissions recently. Please wait before trying again.",
+      });
+    }
     const authorProfile = isAnonymous ? null : await loadFeedbackAuthorProfile(uid);
     const authorEmail = isAnonymous ? null : email || (isGuest ? asString(body.authorEmail, 320) || null : null);
     const authorDisplayName = isAnonymous ? null : authorProfile?.displayName || null;
@@ -195,7 +237,6 @@ export async function POST(req: Request) {
       createPayload: {
         ownerUid: uid,
         authorDisplayName,
-        authorEmail,
         authorRankThumbnailSrc,
         authorCurrentRankId,
         isAnonymous,
@@ -207,6 +248,14 @@ export async function POST(req: Request) {
         commentCount: 0,
         jiraIssueBrowseUrl: asString(jira?.jiraIssueBrowseUrl, 2048) || null,
       },
+      privatePayload: authorEmail
+        ? {
+            authorEmail,
+            isAnonymous,
+            type,
+            title,
+          }
+        : undefined,
     });
 
     return NextResponse.json({

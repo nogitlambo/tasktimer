@@ -57,6 +57,7 @@ next-env.d.ts
 /workspace/node_modules/
 /workspace/package-lock.json
 /workspace/package.json
+/workspace/secrets/
 /workspace/firebase-service-account.json
 /workspace/*firebase-adminsdk-*.json
 tasktimer-prod-*.json

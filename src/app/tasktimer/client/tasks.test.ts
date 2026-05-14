@@ -194,9 +194,9 @@ function createHarness() {
         stopPropagation: vi.fn(),
         target: {
           closest: (selector: string) => {
-            if (selector === ".task") return { dataset: { index: "0", taskId: "task-1" } };
+            if (selector === ".task") return { dataset: { index: "0", taskId: "task-1" } as Record<string, string> };
             if (selector === "[data-task-flip]") return null;
-            if (selector === "[data-action]") return { getAttribute: () => "archive", dataset: { action: "archive" } };
+            if (selector === "[data-action]") return { getAttribute: () => "archive", dataset: { action: "archive" } as Record<string, string> };
             return null;
           },
         },

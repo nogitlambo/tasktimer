@@ -96,21 +96,21 @@ class FakeElement {
     return child;
   }
 
-  contains(node: FakeElement | null) {
+  contains(node: FakeElement | null): boolean {
     if (!node) return false;
     if (node === this) return true;
     return this.children.some((child) => child.contains(node));
   }
 
-  closest(selector: string) {
+  closest(selector: string): FakeElement | null {
     return findClosestMatch(this, selector);
   }
 
-  querySelector(selector: string) {
+  querySelector(selector: string): FakeElement | null {
     return this.querySelectorAll(selector)[0] ?? null;
   }
 
-  querySelectorAll(selector: string) {
+  querySelectorAll(selector: string): FakeElement[] {
     const matches: FakeElement[] = [];
     const visit = (node: FakeElement) => {
       if (matchesSelector(node, selector)) matches.push(node);
@@ -147,7 +147,7 @@ class FakeElement {
     this.listeners.set(type, existing);
   }
 
-  get nextElementSibling() {
+  get nextElementSibling(): FakeElement | null {
     const parent = this.parentElement;
     if (!parent) return null;
     const index = parent.children.indexOf(this);
@@ -185,7 +185,10 @@ function buildTask(id: string, order: number): Task {
     name: id.toUpperCase(),
     order,
     elapsed: 0,
+    accumulatedMs: 0,
     running: false,
+    startMs: null,
+    hasStarted: false,
     collapsed: false,
     milestonesEnabled: false,
     milestones: [],
@@ -233,7 +236,7 @@ function createHarness(taskIdsInOrder = ["a", "b", "c", "d"]) {
   vi.stubGlobal("HTMLElement", FakeElement);
 
   const ui = createTaskTimerTaskListUi({
-    els: { taskList: list as unknown as HTMLElement } as { taskList: HTMLElement },
+    els: { taskList: list as unknown as HTMLElement } as never,
     on: ((target: unknown, eventName: string, handler: Handler) => {
       void target;
       handlers.set(eventName, handler);
@@ -377,7 +380,7 @@ describe("task list ui drag ordering", () => {
         .mockReturnValueOnce(delayedTaskCard as unknown as FakeElement);
 
       const ui = createTaskTimerTaskListUi({
-        els: { taskList: harness.list as unknown as HTMLElement } as { taskList: HTMLElement },
+        els: { taskList: harness.list as unknown as HTMLElement } as never,
         on: (() => {}) as never,
         runtime: { newTaskHighlightTimer: null } as never,
         getTasks: () => harness.tasks,

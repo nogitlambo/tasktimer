@@ -9,6 +9,28 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(allowed);
     }
 
+    function optionalStringMax(field, maxLength) {
+      return !(field in request.resource.data)
+      || (
+        request.resource.data[field] is string
+        && request.resource.data[field].size() <= maxLength
+      );
+    }
+
+    function optionalNullableStringMax(field, maxLength) {
+      return !(field in request.resource.data)
+      || request.resource.data[field] == null
+      || (
+        request.resource.data[field] is string
+        && request.resource.data[field].size() <= maxLength
+      );
+    }
+
+    function isPublicFeedbackItemReadSafe() {
+      return resource != null
+      && !("authorEmail" in resource.data);
+    }
+
     function isValidUserPlanValue(value) {
       return value in ["free", "pro"];
     }
@@ -245,7 +267,7 @@ service cloud.firestore {
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
-    function isDeviceDoc() {
+    function isDeviceDoc(deviceId) {
         return onlyKeys([
           "token",
           "enabled",
@@ -263,18 +285,23 @@ service cloud.firestore {
           "createdAt",
           "updatedAt"
         ])
-      && (!("token" in request.resource.data) || request.resource.data.token is string)
+      && deviceId is string
+      && deviceId.size() <= 160
+      && (!("token" in request.resource.data) || (
+        request.resource.data.token is string
+        && request.resource.data.token.size() <= 4096
+      ))
       && (!("enabled" in request.resource.data) || request.resource.data.enabled is bool)
-      && (!("platform" in request.resource.data) || request.resource.data.platform is string)
-      && (!("provider" in request.resource.data) || request.resource.data.provider is string)
-      && (!("channelId" in request.resource.data) || request.resource.data.channelId == null || request.resource.data.channelId is string)
+      && (!("platform" in request.resource.data) || request.resource.data.platform in ["web", "ios", "android", "native"])
+      && (!("provider" in request.resource.data) || request.resource.data.provider == "fcm")
+      && optionalNullableStringMax("channelId", 80)
       && (!("native" in request.resource.data) || request.resource.data.native is bool)
-      && (!("appId" in request.resource.data) || request.resource.data.appId == null || request.resource.data.appId is string)
+      && optionalNullableStringMax("appId", 160)
       && (!("appActive" in request.resource.data) || request.resource.data.appActive is bool)
       && (!("appStateUpdatedAtMs" in request.resource.data) || request.resource.data.appStateUpdatedAtMs is int)
-        && (!("kind" in request.resource.data) || request.resource.data.kind is string)
-        && (!("scope" in request.resource.data) || request.resource.data.scope is string)
-        && (!("checkpointAlertMuteTaskId" in request.resource.data) || request.resource.data.checkpointAlertMuteTaskId == null || request.resource.data.checkpointAlertMuteTaskId is string)
+        && (!("kind" in request.resource.data) || request.resource.data.kind in ["native", "webpush"])
+        && (!("scope" in request.resource.data) || request.resource.data.scope in ["native", "web"])
+        && optionalNullableStringMax("checkpointAlertMuteTaskId", 160)
         && (!("checkpointAlertMuteAtMs" in request.resource.data) || request.resource.data.checkpointAlertMuteAtMs is int)
         && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
         && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
@@ -760,19 +787,26 @@ service cloud.firestore {
         "schemaVersion"
       ])
       && request.resource.data.ownerUid is string
+      && request.resource.data.ownerUid.size() <= 120
       && request.resource.data.taskId is string
+      && request.resource.data.taskId.size() <= 160
       && request.resource.data.taskName is string
-      && (!("notificationKind" in request.resource.data) || request.resource.data.notificationKind is string)
-      && request.resource.data.eventType is string
-      && (!("baseEventType" in request.resource.data) || request.resource.data.baseEventType is string)
-      && (!("effectiveEventType" in request.resource.data) || request.resource.data.effectiveEventType is string)
+      && request.resource.data.taskName.size() <= 160
+      && (!("notificationKind" in request.resource.data) || request.resource.data.notificationKind in ["plannedStart", "missedScheduledTask", "unscheduledGap", "timeGoalComplete"])
+      && request.resource.data.eventType in ["plannedStartReminder", "plannedStartReminderSnoozed", "missedScheduledTask", "unscheduledGapReminder", "timeGoalComplete"]
+      && (!("baseEventType" in request.resource.data) || request.resource.data.baseEventType in ["plannedStartReminder", "unscheduledGapReminder", "timeGoalComplete"])
+      && (!("effectiveEventType" in request.resource.data) || request.resource.data.effectiveEventType in ["plannedStartReminder", "plannedStartReminderSnoozed", "missedScheduledTask", "unscheduledGapReminder", "timeGoalComplete"])
       && request.resource.data.dueAtMs is int
+      && request.resource.data.dueAtMs > 0
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes == null || request.resource.data.timeGoalMinutes is int)
       && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
-      && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || request.resource.data.plannedStartTime is string)
+      && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || (
+        request.resource.data.plannedStartTime is string
+        && request.resource.data.plannedStartTime.matches("^([01][0-9]|2[0-3]):[0-5][0-9]$")
+      ))
       && (!("plannedStartByDay" in request.resource.data) || request.resource.data.plannedStartByDay == null || request.resource.data.plannedStartByDay is map)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
-      && request.resource.data.route is string
+      && request.resource.data.route == "/tasklaunch"
       && (!("snoozedUntilMs" in request.resource.data) || request.resource.data.snoozedUntilMs == null || request.resource.data.snoozedUntilMs is int)
       && (!("sentAtMs" in request.resource.data) || request.resource.data.sentAtMs == null || request.resource.data.sentAtMs is int)
       && (!("sentDueAtMs" in request.resource.data) || request.resource.data.sentDueAtMs == null || request.resource.data.sentDueAtMs is int)
@@ -782,14 +816,14 @@ service cloud.firestore {
       && (!("lastMissedAtMs" in request.resource.data) || request.resource.data.lastMissedAtMs == null || request.resource.data.lastMissedAtMs is int)
       && (!("lastMissedDueAtMs" in request.resource.data) || request.resource.data.lastMissedDueAtMs == null || request.resource.data.lastMissedDueAtMs is int)
       && (!("lastActionAtMs" in request.resource.data) || request.resource.data.lastActionAtMs == null || request.resource.data.lastActionAtMs is int)
-      && (!("lastActionByDeviceId" in request.resource.data) || request.resource.data.lastActionByDeviceId == null || request.resource.data.lastActionByDeviceId is string)
-      && (!("lastGapAlertDayKey" in request.resource.data) || request.resource.data.lastGapAlertDayKey == null || request.resource.data.lastGapAlertDayKey is string)
+      && optionalNullableStringMax("lastActionByDeviceId", 160)
+      && optionalNullableStringMax("lastGapAlertDayKey", 40)
       && (!("lastGapAlertStartMs" in request.resource.data) || request.resource.data.lastGapAlertStartMs == null || request.resource.data.lastGapAlertStartMs is int)
       && (!("lastGapAlertEndMs" in request.resource.data) || request.resource.data.lastGapAlertEndMs == null || request.resource.data.lastGapAlertEndMs is int)
-      && (!("activeGapDayKey" in request.resource.data) || request.resource.data.activeGapDayKey == null || request.resource.data.activeGapDayKey is string)
+      && optionalNullableStringMax("activeGapDayKey", 40)
       && (!("activeGapStartMs" in request.resource.data) || request.resource.data.activeGapStartMs == null || request.resource.data.activeGapStartMs is int)
       && (!("activeGapEndMs" in request.resource.data) || request.resource.data.activeGapEndMs == null || request.resource.data.activeGapEndMs is int)
-      && (!("postponedGapDayKey" in request.resource.data) || request.resource.data.postponedGapDayKey == null || request.resource.data.postponedGapDayKey is string)
+      && optionalNullableStringMax("postponedGapDayKey", 40)
       && (!("postponedGapStartMs" in request.resource.data) || request.resource.data.postponedGapStartMs == null || request.resource.data.postponedGapStartMs is int)
       && (!("postponedGapEndMs" in request.resource.data) || request.resource.data.postponedGapEndMs == null || request.resource.data.postponedGapEndMs is int)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
@@ -835,7 +869,7 @@ service cloud.firestore {
 
     match /users/{userId}/devices/{deviceId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isDeviceDoc();
+      allow create, update: if isOwner(userId) && isDeviceDoc(deviceId);
       allow delete: if isOwner(userId);
     }
 
@@ -954,13 +988,17 @@ service cloud.firestore {
     }
 
     match /feedback_items/{feedbackId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && isPublicFeedbackItemReadSafe();
       allow create, update, delete: if false;
 
       match /votes/{uid} {
-        allow read: if request.auth != null;
+        allow read: if false;
         allow create, update, delete: if false;
       }
+    }
+
+    match /feedback_private/{feedbackId} {
+      allow read, create, update, delete: if false;
     }
   }
 }

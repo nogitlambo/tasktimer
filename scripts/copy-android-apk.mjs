@@ -5,7 +5,7 @@ import { google } from "googleapis";
 
 const root = process.cwd();
 const sourceApkPath = path.join(root, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-const defaultServiceAccountPath = path.join(root, "tasktimer-prod-7ce230e31df3.json");
+const defaultServiceAccountPath = path.join(root, "workspace", "secrets", "tasktimer-prod-7ce230e31df3.json");
 const defaultDriveFolderId = "1WiAeikmzft6HgRCvpPIL-9q57chgCwbj";
 const uploadedFilename = "app-debug.apk";
 
@@ -17,7 +17,7 @@ async function loadServiceAccountCredentials() {
   if (!existsSync(credentialsPath)) {
     throw new Error(
       `Google service account credentials were not found at ${credentialsPath}. ` +
-        "Set GOOGLE_SERVICE_ACCOUNT_PATH or GOOGLE_SERVICE_ACCOUNT_JSON."
+        "Move the local JSON key to workspace/secrets/, set GOOGLE_SERVICE_ACCOUNT_PATH, or set GOOGLE_SERVICE_ACCOUNT_JSON."
     );
   }
 

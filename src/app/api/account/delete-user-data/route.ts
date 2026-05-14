@@ -120,6 +120,7 @@ export async function POST(req: Request) {
       deleteQueryDocs(db.collection("shared_task_summaries").where("ownerUid", "==", uid)),
       deleteQueryDocs(db.collection("shared_task_summaries").where("friendUid", "==", uid)),
       deleteQueryDocTrees(db, db.collection("feedback_items").where("ownerUid", "==", uid)),
+      deleteQueryDocs(db.collection("feedback_private").where("ownerUid", "==", uid)),
       deleteFeedbackVotesForUser(db, uid, authoredFeedbackIds),
       deleteQueryDocs(db.collection("api_rate_limits").where("uid", "==", uid)),
       db.collection("feedback_limits").doc(uid).delete(),

@@ -235,13 +235,9 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
 export async function listFeedbackItems(opts?: { viewerUid?: string | null }): Promise<FeedbackItem[]> {
   const col = feedbackItemsCollection();
   if (!col) return [];
-  const viewerUid = normalizeString(opts?.viewerUid, 120);
+  void opts;
   const snap = await getDocs(query(col, orderBy("lastActivityAt", "desc")));
-  const items = snap.docs.map((row) => asFeedbackItem(row));
-  if (!viewerUid || !items.length) return items;
-
-  const voteDocs = await Promise.all(items.map((item) => getDoc(feedbackVoteDoc(item.feedbackId, viewerUid)!)));
-  return items.map((item, index) => ({ ...item, viewerHasUpvoted: voteDocs[index]?.exists?.() || false }));
+  return snap.docs.map((row) => asFeedbackItem(row));
 }
 
 export function subscribeToFeedbackItems(
@@ -254,18 +250,12 @@ export function subscribeToFeedbackItems(
     onError?.("Cloud Firestore is not available.");
     return () => {};
   }
-  const viewerUid = normalizeString(opts.viewerUid, 120);
+  void opts;
   return onSnapshot(
     query(col, orderBy("lastActivityAt", "desc")),
     async (snap) => {
       try {
-        const items = snap.docs.map((row) => asFeedbackItem(row));
-        if (!viewerUid || !items.length) {
-          onChange(items);
-          return;
-        }
-        const voteDocs = await Promise.all(items.map((item) => getDoc(feedbackVoteDoc(item.feedbackId, viewerUid)!)));
-        onChange(items.map((item, index) => ({ ...item, viewerHasUpvoted: voteDocs[index]?.exists?.() || false })));
+        onChange(snap.docs.map((row) => asFeedbackItem(row)));
       } catch (error) {
         const message = String((error as FirestoreError | undefined)?.message || "").trim();
         onError?.(message || "Could not load feedback.");
@@ -281,8 +271,12 @@ export function subscribeToFeedbackItems(
 export async function hasUserUpvoted(feedbackId: string, uid: string): Promise<boolean> {
   const voteRef = feedbackVoteDoc(normalizeString(feedbackId, 120), normalizeString(uid, 120));
   if (!voteRef) return false;
-  const snap = await getDoc(voteRef);
-  return snap.exists();
+  try {
+    const snap = await getDoc(voteRef);
+    return snap.exists();
+  } catch {
+    return false;
+  }
 }
 
 export async function toggleFeedbackUpvote(

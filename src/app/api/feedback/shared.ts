@@ -226,12 +226,14 @@ export async function validateAndRecordFeedbackSubmission(input: {
   title: string;
   details: string;
   createPayload: Record<string, unknown>;
+  privatePayload?: Record<string, unknown>;
 }) {
   const normalizedUid = asString(input.uid, 120);
   const fingerprint = buildFeedbackFingerprint(input.type, input.title, input.details);
   const db = getFirebaseAdminDb();
   const nowMs = Date.now();
   const feedbackRef = db.collection("feedback_items").doc();
+  const privateFeedbackRef = db.collection("feedback_private").doc(feedbackRef.id);
 
   await db.runTransaction(async (tx) => {
     const controlRef = feedbackControlDoc(normalizedUid);
@@ -255,6 +257,16 @@ export async function validateAndRecordFeedbackSubmission(input: {
       lastActivityAt: FieldValue.serverTimestamp(),
       schemaVersion: 1,
     });
+    if (input.privatePayload && Object.keys(input.privatePayload).length) {
+      tx.create(privateFeedbackRef, {
+        feedbackId: feedbackRef.id,
+        ownerUid: normalizedUid,
+        ...input.privatePayload,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        schemaVersion: 1,
+      });
+    }
     tx.set(
       controlRef,
       {

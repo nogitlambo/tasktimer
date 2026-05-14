@@ -4333,6 +4333,32 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn{
+  margin-left: auto;
+  min-width: 74px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid rgba(168, 176, 189, .56);
+  background: rgba(255,255,255,.02);
+  color: rgba(232,236,242,.92);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:hover,
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:focus-visible{
+  outline: none;
+  border-color: rgba(205, 213, 224, .78);
+  background: rgba(255,255,255,.06);
+  color: #fff;
+}
+
 #app[aria-label="TaskLaunch Account"] .accountPageList{
   position:relative;
   overflow:visible;
@@ -4340,8 +4366,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   max-width:none;
   min-height: var(--settings-page-list-min-height);
   margin: var(--settings-page-list-margin);
-  padding-left:0 !important;
-  padding-bottom: var(--settings-page-list-padding-bottom) !important;
+  padding:0 !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -4399,9 +4424,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   margin:0 !important;
   margin-left: var(--settings-dashboard-shell-margin-left) !important;
   margin-right: var(--settings-dashboard-shell-margin-right) !important;
-  padding: var(--settings-dashboard-shell-padding);
-  padding-left: var(--settings-dashboard-shell-padding-left) !important;
-  padding-right: var(--settings-dashboard-shell-padding-right) !important;
+  padding:0 !important;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -4418,9 +4441,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   width:100%;
   max-height: var(--settings-panel-max-height);
   margin:0;
-  padding:12px;
-  padding-left: var(--settings-detail-panel-padding-inline);
-  padding-right: var(--settings-detail-panel-padding-inline);
+  padding:0 !important;
   border:none;
   background:transparent !important;
   box-shadow:none;
@@ -4453,7 +4474,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 28px 36px 34px;
+  padding: 28px 14px 34px;
   border: 1px solid rgba(255,255,255,.08);
   background:
     linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01)),
@@ -4522,8 +4543,23 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 .accountProfileEmail{
   margin: 0;
   color: rgba(188,198,208,.72);
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron);
+  font-size: 13px;
+  line-height: 1.1;
+  letter-spacing: .1em;
   font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.accountProfileUserId{
+  margin: -2px 0 0;
+  padding-bottom: 18px;
+  color: rgba(188,198,208,.56);
+  font-family: var(--font-orbitron);
+  font-size: 13px;
+  line-height: 1.1;
+  letter-spacing: .1em;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
 
@@ -4532,7 +4568,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   margin: 6px auto 0;
   color: rgba(238,242,246,.68);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.1;
+  letter-spacing: .1em;
 }
 
 .accountProfileAliasEdit{
@@ -4749,6 +4786,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   display: grid;
   gap: 10px;
   margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid rgba(188,198,208,.18);
 }
 
 .accountProfileAction{
@@ -4762,6 +4801,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   border: 0;
   background: transparent;
   color: rgba(255,255,255,.94);
+  font-family: var(--font-orbitron);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -4791,9 +4831,9 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   gap: 4px;
 }
 
-.accountProfileAction strong{
+#app[aria-label="TaskLaunch Account"] .accountProfileAction strong{
   color: #fff;
-  font-family: var(--font-orbitron);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 17px;
   line-height: 1.1;
   font-weight: 850;
@@ -4810,6 +4850,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   color: #ff8c8c;
 }
 
+.accountProfileActionDanger img{
+  filter: sepia(1) saturate(8) hue-rotate(315deg) brightness(1.18);
+}
+
 body[data-theme="purple"] #app[aria-label="TaskLaunch Account"] .accountProfileAvatarRing{
   border-color: #ffc400;
 }
@@ -4824,7 +4868,7 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileLoa
   box-shadow: 0 0 0 6px rgba(53,232,255,.08);
 }
 
-body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAction img{
+body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAction:not(.accountProfileActionDanger) img{
   filter: none;
 }
 
@@ -5028,7 +5072,7 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAct
   .accountProfilePage{
     width: 100%;
     min-height: calc(100vh - 76px);
-    padding: 24px 28px 30px;
+    padding: 24px 14px 30px;
     border: 0;
     box-shadow: none;
   }

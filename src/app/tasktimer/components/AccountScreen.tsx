@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
+import { useRouter } from "next/navigation";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
+import { getAccountBackRoute } from "../lib/accountRoute";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
@@ -25,6 +27,7 @@ function formatXp(value: number) {
 }
 
 export default function AccountScreen() {
+  const router = useRouter();
   const accountState = useSettingsAccountState();
   const account = accountState.account;
   const avatar = useSettingsAvatarState({
@@ -96,6 +99,16 @@ export default function AccountScreen() {
     }
   }, [signOutBusy]);
 
+  const handleBack = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const fallbackHref = getAccountBackRoute(document.referrer, window.location.href);
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    router.push(fallbackHref);
+  }, [router]);
+
   const profileName = account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
 
   return (
@@ -109,11 +122,14 @@ export default function AccountScreen() {
           />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
         </div>
+        <button className="accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+          Back
+        </button>
       </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage="account" useClientNavButtons={false} showMobileFooter={false} />
         <div className="desktopAppMain">
-          <div className="list accountPageList" style={{ paddingTop: 18 }}>
+          <div className="list accountPageList">
             <div className="accountSceneBackdrop" aria-hidden="true">
               <div className="accountSceneGlow accountSceneGlowA" />
               <div className="accountSceneGlow accountSceneGlowB" />
@@ -160,6 +176,7 @@ export default function AccountScreen() {
                         <h2>{profileName}</h2>
                       )}
                       <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
+                      {account.authUserUid ? <p className="accountProfileUserId">UserID: {account.authUserUid}</p> : null}
                       <p className="accountProfileBio">
                         Member since {formatMemberSinceDate(account.authMemberSince)}.
                       </p>
@@ -202,7 +219,7 @@ export default function AccountScreen() {
                     <button className="accountProfileAction" type="button" onClick={handleSignOut} disabled={signOutBusy}>
                       <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
                       <span>
-                        <strong>{signOutBusy ? "Signing out" : "Sign out"}</strong>
+                        <strong>{signOutBusy ? "Signing Out" : "Sign Out"}</strong>
                         <small>Log out of your account</small>
                       </span>
                     </button>
