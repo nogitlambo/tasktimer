@@ -1,0 +1,55 @@
+[browser] Can't perform a React state update on a component that hasn't mounted yet. This indicates that you have a side-effect in your render function that asynchronously tries to update the component. Move this work to useEffect instead. 
+[api/account/sync-identity] Rate limited {
+  logId: 'acct-sync-MP5THGHP-2C13EF2D244D',
+  route: '/api/account/sync-identity',
+  uid: 'NTyyxhxcCKbQpoqq8vi2V5VlnIg1',
+  code: 'account/sync-identity-rate-limited',
+  status: 429
+}
+[api/account/sync-identity] Rate limited {
+  logId: 'acct-sync-MP5THGI2-0551BD8CD031',
+  route: '/api/account/sync-identity',
+  uid: 'NTyyxhxcCKbQpoqq8vi2V5VlnIg1',
+  code: 'account/sync-identity-rate-limited',
+  status: 429
+}
+[browser] [tasktimer-cloud] Deferred account identity index sync {
+  email: [32m'28nevina@gmail.com'[39m,
+  error: {
+    code: [32m'account/sync-identity-rate-limited'[39m,
+    customData: [1mnull[22m,
+    logId: [32m'acct-sync-MP5THGHP-2C13EF2D244D'[39m,
+    message: [32m'Too many identity sync attempts recently. Please wait before trying again. (status 429)'[39m,
+    name: [32m'Error'[39m,
+    stack: [32m'Error: Too many identity sync attempts recently. Please wait before trying again. (status 429)\n'[39m +
+      [32m'    at buildIdentitySyncResponseError (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:171:23)\n'[39m +
+      [32m'    at async eval (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:539:23)\n'[39m +
+      [32m'    at async syncUserIdentityIndex (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:574:5)\n'[39m +
+      [32m'    at async eval (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:1064:17)\n'[39m +
+      [32m'    at async ensureUserProfileIndex (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:1107:5)'[39m,
+    status: [33m429[39m
+  },
+  prevEmail: [1mnull[22m,
+  retryAfterMs: [33m600000[39m,
+  uid: [32m'NTyyxhxcCKbQpoqq8vi2V5VlnIg1'[39m
+} (src\app\tasktimer\lib\cloudStore.ts:655:19)
+[browser] [tasktimer-cloud] Deferred account identity index sync {
+  email: [32m'28nevina@gmail.com'[39m,
+  error: {
+    code: [32m'account/sync-identity-rate-limited'[39m,
+    customData: [1mnull[22m,
+    logId: [32m'acct-sync-MP5THGI2-0551BD8CD031'[39m,
+    message: [32m'Too many identity sync attempts recently. Please wait before trying again. (status 429)'[39m,
+    name: [32m'Error'[39m,
+    stack: [32m'Error: Too many identity sync attempts recently. Please wait before trying again. (status 429)\n'[39m +
+      [32m'    at buildIdentitySyncResponseError (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:171:23)\n'[39m +
+      [32m'    at async eval (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:539:23)\n'[39m +
+      [32m'    at async syncUserIdentityIndex (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:574:5)\n'[39m +
+      [32m'    at async writeUserRootDocument (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:656:13)\n'[39m +
+      [32m'    at async savePreferences (webpack-internal:///(app-pages-browser)/./src/app/tasktimer/lib/cloudStore.ts:1690:9)'[39m,
+    status: [33m429[39m
+  },
+  prevEmail: [32m'28nevina@gmail.com'[39m,
+  retryAfterMs: [33m600000[39m,
+  uid: [32m'NTyyxhxcCKbQpoqq8vi2V5VlnIg1'[39m
+} (src\app\tasktimer\lib\cloudStore.ts:655:19)

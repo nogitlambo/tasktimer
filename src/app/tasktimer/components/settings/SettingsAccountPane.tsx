@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { buildRewardsHeaderViewModel } from "@/app/tasktimer/lib/rewards";
 import { playDeleteAlertAudio } from "@/app/tasktimer/client/delete-alert-audio";
+import {
+  buildRankPromotionTestPayload,
+  startRankPromotionCelebration,
+  stopRankPromotionCelebration,
+  type RankPromotion,
+} from "@/app/tasktimer/client/rank-promotion";
 import RankLadderModal from "../RankLadderModal";
+import RankPromotionOverlay from "../RankPromotionOverlay";
 import RankThumbnail from "../RankThumbnail";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
@@ -38,10 +45,19 @@ export function SettingsAccountPane({
 }) {
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
 
   useEffect(() => {
     if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
   }, [account.showDeleteAccountConfirm]);
+
+  useEffect(() => {
+    if (!activeRankPromotion || typeof document === "undefined") return;
+    startRankPromotionCelebration(document);
+    return () => {
+      stopRankPromotionCelebration(document);
+    };
+  }, [activeRankPromotion]);
 
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Account" subtitle="">
@@ -321,7 +337,25 @@ export function SettingsAccountPane({
         rankThumbnailSrc={avatar.rankThumbnailSrc}
         canSelectRankInsignia={avatar.canSelectRankInsignia}
         onSelectRankThumbnail={avatar.onSelectRankThumbnail}
+        onTestRankPromotion={(rankId) => {
+          const promotion = buildRankPromotionTestPayload(rankId);
+          if (!promotion) return;
+          avatar.setShowRankLadderModal(false);
+          setActiveRankPromotion(promotion);
+        }}
       />
+      {activeRankPromotion ? (
+        <RankPromotionOverlay
+          previousRankId={activeRankPromotion.previousRankId}
+          previousRankLabel={activeRankPromotion.previousRankLabel}
+          nextRankId={activeRankPromotion.nextRankId}
+          nextRankLabel={activeRankPromotion.nextRankLabel}
+          onClose={() => {
+            stopRankPromotionCelebration(document);
+            setActiveRankPromotion(null);
+          }}
+        />
+      ) : null}
     </SettingsDetailPane>
   );
 }

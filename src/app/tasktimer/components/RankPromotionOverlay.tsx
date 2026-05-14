@@ -1,7 +1,11 @@
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import RankThumbnail from "./RankThumbnail";
 
 type RankPromotionOverlayProps = {
-  rankLabel: string;
+  previousRankId: string;
+  previousRankLabel: string;
+  nextRankId: string;
+  nextRankLabel: string;
   onClose: () => void;
 };
 
@@ -47,24 +51,102 @@ function buildConfettiPieces(): ConfettiPiece[] {
 
 const CONFETTI_PIECES = buildConfettiPieces();
 
-export default function RankPromotionOverlay({ rankLabel, onClose }: RankPromotionOverlayProps) {
+const RANK_PROMOTION_INTRO_DELAY_MS = 3000;
+const RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS = 1000;
+const RANK_PROMOTION_SETTLE_MS = 200;
+const RANK_PROMOTION_SMASH_DURATION_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + RANK_PROMOTION_SETTLE_MS;
+const RANK_PROMOTION_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
+
+type RankPromotionPhase = "intro" | "smashing" | "complete";
+
+export default function RankPromotionOverlay({
+  previousRankId,
+  previousRankLabel,
+  nextRankId,
+  nextRankLabel,
+  onClose,
+}: RankPromotionOverlayProps) {
+  const [phase, setPhase] = useState<RankPromotionPhase>("intro");
+  const isComplete = phase === "complete";
+
+  useEffect(() => {
+    const smashTimer = window.setTimeout(() => {
+      setPhase("smashing");
+    }, RANK_PROMOTION_INTRO_DELAY_MS);
+    const completeTimer = window.setTimeout(() => {
+      setPhase("complete");
+    }, RANK_PROMOTION_INTRO_DELAY_MS + RANK_PROMOTION_SMASH_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(smashTimer);
+      window.clearTimeout(completeTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "smashing") return;
+
+    try {
+      const audio = new Audio(RANK_PROMOTION_IMPACT_AUDIO_SRC);
+      audio.preload = "auto";
+      audio.currentTime = 0;
+      const playback = audio.play();
+      if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    } catch {
+      // Browser autoplay failures are non-blocking for the promotion UI.
+    }
+  }, [phase]);
+
   return (
-    <div className="overlay" id="rankPromotionOverlay" style={{ display: "flex" }} onClick={onClose}>
+    <div className="overlay" id="rankPromotionOverlay" style={{ display: "flex" }} onClick={isComplete ? onClose : undefined}>
       <div className="timeGoalCompleteConfettiStage" id="rankPromotionConfettiStage" aria-hidden="true">
         {CONFETTI_PIECES.map((piece, index) => (
           <i className={piece.className} key={index} style={piece.style} />
         ))}
       </div>
-      <div className="modal rankPromotionModal" role="dialog" aria-modal="true" aria-label="Rank promotion" onClick={(event) => event.stopPropagation()}>
-        <h2>Promotion!</h2>
-        <p className="modalSubtext confirmText" id="rankPromotionText">
-          You have been promoted to {rankLabel}!
-        </p>
-        <div className="confirmBtns">
-          <button className="btn btn-accent" id="rankPromotionCloseBtn" type="button" onClick={onClose}>
-            Close
-          </button>
+      <div
+        className={`modal rankPromotionModal is-${phase}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Rank promotion"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2>You&apos;ve been promoted!</h2>
+        <div className="rankPromotionStage" id="rankPromotionText" aria-live="polite">
+          <div className="rankPromotionRank rankPromotionRankOld" aria-hidden={isComplete ? "true" : undefined}>
+            <RankThumbnail
+              rankId={previousRankId}
+              storedThumbnailSrc=""
+              className="rankPromotionInsignia"
+              imageClassName="rankPromotionInsigniaImage"
+              placeholderClassName="rankPromotionInsigniaPlaceholder"
+              alt=""
+              size={96}
+              aria-hidden
+            />
+            <p className="modalSubtext confirmText rankPromotionLabel">{previousRankLabel}</p>
+          </div>
+          <div className="rankPromotionRank rankPromotionRankNew" aria-hidden={phase === "intro" ? "true" : undefined}>
+            <RankThumbnail
+              rankId={nextRankId}
+              storedThumbnailSrc=""
+              className="rankPromotionInsignia"
+              imageClassName="rankPromotionInsigniaImage"
+              placeholderClassName="rankPromotionInsigniaPlaceholder"
+              alt=""
+              size={112}
+              aria-hidden
+            />
+            <p className="modalSubtext confirmText rankPromotionLabel">{nextRankLabel}</p>
+          </div>
         </div>
+        {isComplete ? (
+          <div className="confirmBtns">
+            <button className="btn btn-accent" id="rankPromotionCloseBtn" type="button" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

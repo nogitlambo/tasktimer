@@ -7,7 +7,14 @@ import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import { getAccountBackRoute } from "../lib/accountRoute";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
+import RankPromotionOverlay from "./RankPromotionOverlay";
 import RankThumbnail from "./RankThumbnail";
+import {
+  buildRankPromotionTestPayload,
+  startRankPromotionCelebration,
+  stopRankPromotionCelebration,
+  type RankPromotion,
+} from "../client/rank-promotion";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
@@ -42,6 +49,7 @@ export default function AccountScreen() {
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
   const accountProfileReady = account.authProfileReady && avatar.avatarProfileReady && account.authPlanStatus === "confirmed";
   const [hasLoadedAccountProfile, setHasLoadedAccountProfile] = useState(false);
   const shouldRenderAccountProfile = hasLoadedAccountProfile || accountProfileReady;
@@ -87,6 +95,14 @@ export default function AccountScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!activeRankPromotion || typeof document === "undefined") return;
+    startRankPromotionCelebration(document);
+    return () => {
+      stopRankPromotionCelebration(document);
+    };
+  }, [activeRankPromotion]);
+
   const handleSignOut = useCallback(async () => {
     if (signOutBusy) return;
     setSignOutBusy(true);
@@ -102,10 +118,6 @@ export default function AccountScreen() {
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
     const fallbackHref = getAccountBackRoute(document.referrer, window.location.href);
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
     router.push(fallbackHref);
   }, [router]);
 
@@ -216,7 +228,7 @@ export default function AccountScreen() {
                   </div>
 
                   <div className="accountProfileActions" role="list" aria-label="Account actions">
-                    <button className="accountProfileAction" type="button" onClick={handleSignOut} disabled={signOutBusy}>
+                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={handleSignOut} disabled={signOutBusy}>
                       <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
                       <span>
                         <strong>{signOutBusy ? "Signing Out" : "Sign Out"}</strong>
@@ -333,7 +345,25 @@ export default function AccountScreen() {
         rankThumbnailSrc={avatar.rankThumbnailSrc}
         canSelectRankInsignia={avatar.canSelectRankInsignia}
         onSelectRankThumbnail={avatar.onSelectRankThumbnail}
+        onTestRankPromotion={(rankId) => {
+          const promotion = buildRankPromotionTestPayload(rankId);
+          if (!promotion) return;
+          avatar.setShowRankLadderModal(false);
+          setActiveRankPromotion(promotion);
+        }}
       />
+      {activeRankPromotion ? (
+        <RankPromotionOverlay
+          previousRankId={activeRankPromotion.previousRankId}
+          previousRankLabel={activeRankPromotion.previousRankLabel}
+          nextRankId={activeRankPromotion.nextRankId}
+          nextRankLabel={activeRankPromotion.nextRankLabel}
+          onClose={() => {
+            stopRankPromotionCelebration(document);
+            setActiveRankPromotion(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

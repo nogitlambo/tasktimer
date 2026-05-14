@@ -4,11 +4,13 @@ import * as clickAudioPlayerModule from "./click-audio-player";
 import {
   getPrimaryClickTarget,
   getTaskLaunchClickTarget,
+  getTaskStopClickTarget,
   playPrimaryClickAudio,
   playTaskLaunchClickAudio,
   registerPrimaryClickAudio,
   PRIMARY_CLICK_AUDIO_SRC,
   TASK_LAUNCH_CLICK_AUDIO_SRC,
+  TASK_STOP_CLICK_AUDIO_SRC,
 } from "./primary-click-audio";
 
 function makeElement(opts: {
@@ -31,7 +33,8 @@ function makeElement(opts: {
 }
 
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
 
 describe("primary click audio", () => {
@@ -57,6 +60,22 @@ describe("primary click audio", () => {
     });
 
     expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
+  it("matches enabled task resume controls for primary click audio", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true },
+    });
+
+    expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
+  it("matches enabled task stop controls for alert audio", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_STOP_CLICK_SELECTOR]: true },
+    });
+
+    expect(getTaskStopClickTarget(element)).toBe(element);
   });
 
   it("matches the reset task confirm primary action for task launch audio", () => {
@@ -134,6 +153,33 @@ describe("primary click audio", () => {
       }),
     } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(2);
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { [TASK_STOP_CLICK_SELECTOR]: true },
+      }),
+    } as unknown as Event);
+    expect(playAudio).toHaveBeenCalledTimes(3);
+  });
+
+  it("creates distinct players for primary, resume, and stop sounds", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      return {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      } as never;
+    });
+
+    registerPrimaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    expect(clickAudioPlayerModule.createClickAudioPlayer).toHaveBeenNthCalledWith(1, PRIMARY_CLICK_AUDIO_SRC);
+    expect(clickAudioPlayerModule.createClickAudioPlayer).toHaveBeenNthCalledWith(2, TASK_LAUNCH_CLICK_AUDIO_SRC);
+    expect(clickAudioPlayerModule.createClickAudioPlayer).toHaveBeenNthCalledWith(3, TASK_STOP_CLICK_AUDIO_SRC);
   });
 
   it("delays an unready primary click, then replays it exactly once", async () => {
@@ -159,8 +205,9 @@ describe("primary click audio", () => {
 
     const primaryPlayer = mockPlayers[0];
     primaryPlayer.isReady.mockReturnValue(false);
-    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
-    replay.click = vi.fn();
+    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement;
+    const replayClick = vi.fn();
+    Object.defineProperty(replay, "click", { value: replayClick });
     const preventDefault = vi.fn();
     const stopImmediatePropagation = vi.fn();
     const handler = on.mock.calls[0]?.[2] as EventListener;
@@ -171,7 +218,7 @@ describe("primary click audio", () => {
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
     expect(primaryPlayer.playWhenReady).toHaveBeenCalledWith(120);
-    expect(replay.click).toHaveBeenCalledTimes(1);
+    expect(replayClick).toHaveBeenCalledTimes(1);
 
     handler({ defaultPrevented: false, isTrusted: false, target: replay } as unknown as Event);
     expect(primaryPlayer.play).not.toHaveBeenCalled();
@@ -200,8 +247,9 @@ describe("primary click audio", () => {
 
     const primaryPlayer = mockPlayers[0];
     primaryPlayer.isReady.mockReturnValue(true);
-    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
-    replay.click = vi.fn();
+    const replay = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } }) as HTMLElement;
+    const replayClick = vi.fn();
+    Object.defineProperty(replay, "click", { value: replayClick });
     const preventDefault = vi.fn();
     const stopImmediatePropagation = vi.fn();
     const handler = on.mock.calls[0]?.[2] as EventListener;
@@ -212,6 +260,6 @@ describe("primary click audio", () => {
     expect(primaryPlayer.playWhenReady).not.toHaveBeenCalled();
     expect(preventDefault).not.toHaveBeenCalled();
     expect(stopImmediatePropagation).not.toHaveBeenCalled();
-    expect(replay.click).not.toHaveBeenCalled();
+    expect(replayClick).not.toHaveBeenCalled();
   });
 });

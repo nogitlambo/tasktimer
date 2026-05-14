@@ -45,6 +45,7 @@ type TaskTimerAppFrameProps = {
   };
   isXpCountAnimating?: boolean;
   isXpAwardSpotlightActive?: boolean;
+  onTestRankPromotion?: (rankId: string) => void;
   xpAwardFx?: {
     visible: boolean;
     payloadStyle: CSSProperties | null;
@@ -84,6 +85,7 @@ export default function TaskTimerAppFrame({
   rewardsHeader,
   isXpCountAnimating = false,
   isXpAwardSpotlightActive = false,
+  onTestRankPromotion,
   xpAwardFx,
 }: TaskTimerAppFrameProps) {
   const pathname = usePathname();
@@ -364,6 +366,10 @@ export default function TaskTimerAppFrame({
         rankThumbnailSrc={rankThumbnailSrc}
         canSelectRankInsignia={false}
         onSelectRankThumbnail={async () => {}}
+        onTestRankPromotion={(rankId) => {
+          setShowRankLadderModal(false);
+          onTestRankPromotion?.(rankId);
+        }}
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} />
       <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>

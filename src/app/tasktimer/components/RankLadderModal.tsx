@@ -13,7 +13,12 @@ type RankLadderModalProps = {
   rankThumbnailSrc: string;
   canSelectRankInsignia: boolean;
   onSelectRankThumbnail: (rankId: string) => void | Promise<void>;
+  onTestRankPromotion?: (rankId: string) => void;
 };
+
+const RANK_PROMOTION_TEST_TRIGGER_ENABLED = ["1", "true"].includes(
+  String(process.env.NEXT_PUBLIC_RANK_PROMOTION_TEST_TRIGGER || "").trim().toLowerCase()
+);
 
 function formatXpValue(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
@@ -31,6 +36,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     rankThumbnailSrc,
     canSelectRankInsignia,
     onSelectRankThumbnail,
+    onTestRankPromotion,
   } = props;
 
   const [isMobileLayout, setIsMobileLayout] = useState(false);
@@ -69,6 +75,15 @@ export default function RankLadderModal(props: RankLadderModalProps) {
               const thresholdLabel = Number.isFinite(rank.minXp) ? `${formatXpValue(rank.minXp)} XP` : "Threshold pending";
               const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
               const isSelectedThumbnail = rankThumbnailSrc === rankThumbnail && !!rankThumbnail;
+              const canTestRankPromotion = RANK_PROMOTION_TEST_TRIGGER_ENABLED && !!onTestRankPromotion;
+              const isClickable = canTestRankPromotion || canSelectRankInsignia;
+              const handleRankClick = () => {
+                if (canTestRankPromotion) {
+                  onTestRankPromotion(rank.id);
+                  return;
+                }
+                void onSelectRankThumbnail(rank.id);
+              };
               const content = (
                 <>
                   <div className="rankLadderItemBadge" aria-hidden="true">
@@ -96,14 +111,14 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                 </>
               );
 
-              if (canSelectRankInsignia) {
+              if (isClickable) {
                 return (
                   <button
                     key={rank.id}
                     type="button"
                     className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                     role="listitem"
-                    onClick={() => void onSelectRankThumbnail(rank.id)}
+                    onClick={handleRankClick}
                   >
                     {content}
                   </button>

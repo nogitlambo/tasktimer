@@ -4653,23 +4653,125 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay h2{
-  margin: 0 0 8px;
+  margin: 0 0 14px;
   color: #c9ff24;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: .06em;
+  text-align: center;
   text-transform: uppercase;
 }
 
 #rankPromotionOverlay #rankPromotionText{
   margin: 0;
   color: rgba(245,248,244,.94);
-  font-size: 15px;
-  line-height: 1.45;
+  text-align: center;
+}
+
+#rankPromotionOverlay .rankPromotionModal{
+  overflow: hidden;
+  --rank-promotion-birdseye-scale: 4.35;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing{
+  animation: rankPromotionImpactShake 1.2s cubic-bezier(.2,.8,.2,1) both;
+}
+
+#rankPromotionOverlay .rankPromotionStage{
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 148px;
+}
+
+#rankPromotionOverlay .rankPromotionRank{
+  grid-area: 1 / 1;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(100%, 240px);
+  text-align: center;
+}
+
+#rankPromotionOverlay .rankPromotionRankNew{
+  opacity: 0;
+  transform: none;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
+  animation: rankPromotionOldHardSwap 1.2s steps(1,end) both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
+  animation: rankPromotionNewSmash 1.2s linear both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia{
+  animation: rankPromotionNewBirdseyeDrop 1.2s cubic-bezier(.08,.86,.14,1) both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
+  animation: rankPromotionNewLabelImpact 1.2s ease both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankOld{
+  opacity: 0;
+  visibility: hidden;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew{
+  opacity: 1;
+  transform: none;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionLabel{
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+#rankPromotionOverlay .rankPromotionInsignia{
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
+
+#rankPromotionOverlay .rankPromotionInsigniaImage{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 26px rgba(0,0,0,.46));
+}
+
+#rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 1px solid rgba(53,232,255,.34);
+  border-radius: 50%;
+  color: #c9ff24;
+  background: rgba(53,232,255,.08);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+#rankPromotionOverlay .rankPromotionLabel{
+  margin: 0;
+  color: rgba(245,248,244,.94);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
   text-align: center;
 }
 
 #rankPromotionOverlay .confirmBtns{
+  margin-top: 14px;
   justify-content: center;
 }
 
@@ -4691,6 +4793,16 @@ body[data-theme="purple"] #rankPromotionOverlay #rankPromotionText{
   color: rgba(250,240,255,.96);
 }
 
+body[data-theme="purple"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
+  border-color: rgba(233,134,245,.38);
+  color: #f4a7ff;
+  background: rgba(233,134,245,.1);
+}
+
+body[data-theme="purple"] #rankPromotionOverlay .rankPromotionLabel{
+  color: rgba(250,240,255,.96);
+}
+
 body[data-theme="lime"] #rankPromotionOverlay .modal{
   border-color: rgba(214,214,214,.34);
   background:
@@ -4706,9 +4818,125 @@ body[data-theme="lime"] #rankPromotionOverlay #rankPromotionText{
   color: rgba(243,255,198,.92);
 }
 
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
+  border-color: rgba(214,214,214,.38);
+  color: #f3ff7a;
+  background: rgba(214,214,214,.08);
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
+  color: rgba(243,255,198,.92);
+}
+
+@keyframes rankPromotionImpactShake{
+  0%,82%{ transform: translateX(0); }
+  84%{ transform: translateX(-9px); }
+  86%{ transform: translateX(8px); }
+  89%{ transform: translateX(-5px); }
+  93%{ transform: translateX(3px); }
+  100%{ transform: translateX(0); }
+}
+
+@keyframes rankPromotionOldHardSwap{
+  0%,82%{ opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+  83%,100%{ opacity: 0; visibility: hidden; transform: translateY(22px) scale(.86); }
+}
+
+@keyframes rankPromotionNewSmash{
+  0%{ opacity: 1; }
+  100%{ opacity: 1; }
+}
+
+@keyframes rankPromotionNewBirdseyeDrop{
+  0%{
+    opacity: 0;
+    transform: scale(var(--rank-promotion-birdseye-scale));
+    filter: blur(10px) drop-shadow(0 0 44px rgba(201,255,36,.34));
+  }
+  10%{
+    opacity: 1;
+  }
+  83%{
+    opacity: 1;
+    transform: scale(1.08);
+    filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
+  }
+  88%{
+    transform: scale(.88);
+    filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
+  }
+  94%{
+    transform: scale(1.05);
+    filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
+  }
+  100%{
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0) drop-shadow(0 12px 26px rgba(0,0,0,.46));
+  }
+}
+
+@keyframes rankPromotionNewLabelImpact{
+  0%,83%{ opacity: 0; transform: translateY(10px); }
+  88%{ opacity: 1; transform: translateY(0); }
+  100%{ opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce){
   #rankPromotionOverlay .timeGoalCompleteConfettiStage{
     display: none;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-smashing{
+    animation: none;
+  }
+
+  #rankPromotionOverlay .rankPromotionRankNew{
+    transform: none;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
+    animation: rankPromotionReducedOldSwap 1.2s ease both;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
+    animation: rankPromotionReducedNewSwap 1.2s ease both;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia,
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
+    animation: none;
+  }
+}
+
+@keyframes rankPromotionReducedOldSwap{
+  0%{ opacity: 1; visibility: visible; }
+  100%{ opacity: 0; visibility: hidden; }
+}
+
+@keyframes rankPromotionReducedNewSwap{
+  0%{ opacity: 0; }
+  100%{ opacity: 1; }
+}
+
+@media (max-width: 520px){
+  #rankPromotionOverlay .rankPromotionModal{
+    --rank-promotion-birdseye-scale: 3.6;
+  }
+
+  #rankPromotionOverlay .rankPromotionStage{
+    min-height: 138px;
+  }
+
+  #rankPromotionOverlay .rankPromotionInsignia{
+    width: 96px;
+    height: 96px;
+  }
+
+  #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
+    width: 82px;
+    height: 82px;
+    font-size: 30px;
   }
 }
 

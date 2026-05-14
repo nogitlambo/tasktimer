@@ -1,0 +1,53 @@
+
+> tasklaunch@1.0.1 dev
+> node scripts/ensure-port-free.mjs 3000 && next dev --webpack
+
+[dev] Port 3000 is already free.
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.4.22:3000
+- Environments: .env.local
+✓ Ready in 347ms
+
+○ Compiling /dashboard ...
+ GET /dashboard/ 200 in 8.3s (next.js: 7.5s, application-code: 821ms)
+ GET /dashboard/ 200 in 94ms (next.js: 6ms, application-code: 88ms)
+ GET /dashboard/ 200 in 92ms (next.js: 65ms, application-code: 27ms)
+ GET /dashboard/ 200 in 277ms (next.js: 2ms, application-code: 275ms)
+ POST /api/account/sync-identity/ 429 in 1574ms (next.js: 1202ms, application-code: 373ms)
+ POST /api/account/sync-identity/ 429 in 985ms (next.js: 604ms, application-code: 381ms)
+ GET /dashboard/ 200 in 198ms (next.js: 152ms, application-code: 46ms)
+ GET /dashboard/ 200 in 34ms (next.js: 2ms, application-code: 32ms)
+ POST /api/account/sync-identity/ 200 in 652ms (next.js: 392ms, application-code: 259ms)
+ POST /api/account/sync-identity/ 200 in 108ms (next.js: 2ms, application-code: 105ms)
+ GET /tasklaunch/ 200 in 541ms (next.js: 483ms, application-code: 58ms)
+ POST /api/account/sync-identity/ 200 in 379ms (next.js: 300ms, application-code: 80ms)
+ POST /api/account/sync-identity/ 200 in 93ms (next.js: 1186µs, application-code: 92ms)
+ GET /tasklaunch/ 200 in 476ms (next.js: 67ms, application-code: 409ms)
+ POST /api/account/sync-identity/ 200 in 80ms (next.js: 1586µs, application-code: 79ms)
+ POST /api/account/sync-identity/ 200 in 58ms (next.js: 1480µs, application-code: 56ms)
+ GET /tasklaunch/ 200 in 88ms (next.js: 59ms, application-code: 29ms)
+ GET /tasklaunch/ 200 in 20ms (next.js: 1971µs, application-code: 18ms)
+ GET /tasklaunch/ 200 in 20ms (next.js: 1902µs, application-code: 18ms)
+ GET /tasklaunch/ 200 in 33ms (next.js: 2ms, application-code: 30ms)
+ GET /tasklaunch/ 200 in 24ms (next.js: 2ms, application-code: 21ms)
+ GET /tasklaunch/ 200 in 204ms (next.js: 161ms, application-code: 43ms)
+ GET /tasklaunch/ 200 in 22ms (next.js: 2ms, application-code: 20ms)
+ GET /tasklaunch/ 200 in 116ms (next.js: 71ms, application-code: 45ms)
+ POST /api/account/sync-identity/ 200 in 1087ms (next.js: 753ms, application-code: 334ms)
+ GET /click.mp3 404 in 813ms (next.js: 595ms, application-code: 218ms)
+ GET /tasklaunch/ 200 in 75ms (next.js: 49ms, application-code: 27ms)
+ GET /tasklaunch/ 200 in 113ms (next.js: 87ms, application-code: 25ms)
+ GET /tasklaunch/ 200 in 46ms (next.js: 2ms, application-code: 44ms)
+ GET /tasklaunch/ 200 in 35ms (next.js: 3ms, application-code: 32ms)
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.4.22:3000
+- Environments: .env.local
+✓ Ready in 443ms
+
+ GET /tasklaunch/ 200 in 3.9s (next.js: 3.0s, application-code: 871ms)
+ GET /tasklaunch/ 200 in 98ms (next.js: 61ms, application-code: 36ms)
+ POST /api/account/sync-identity/ 200 in 1390ms (next.js: 864ms, application-code: 527ms)
+ POST /api/account/sync-identity/ 200 in 2.6s (next.js: 1214ms, application-code: 1417ms)
+[?25h

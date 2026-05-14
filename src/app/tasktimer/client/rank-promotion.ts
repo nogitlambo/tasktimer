@@ -7,8 +7,10 @@ export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
 export const RANK_PROMOTION_CONFETTI_STAGE_ID = "rankPromotionConfettiStage";
 
 export type RankPromotion = {
-  rankId: string;
-  rankLabel: string;
+  previousRankId: string;
+  previousRankLabel: string;
+  nextRankId: string;
+  nextRankLabel: string;
 };
 
 type AudioLike = {
@@ -33,8 +35,31 @@ export function getRankPromotion(previousRankId: string | null | undefined, next
   const previousIndex = getRankIndex(String(previousRankId || ""));
   const nextIndex = getRankIndex(String(nextRankId || ""));
   if (previousIndex < 0 || nextIndex < 0 || nextIndex <= previousIndex) return null;
+  const previousRank = getRank(String(previousRankId || ""));
   const nextRank = getRank(String(nextRankId || ""));
-  return nextRank ? { rankId: nextRank.id, rankLabel: nextRank.label } : null;
+  return previousRank && nextRank
+    ? {
+        previousRankId: previousRank.id,
+        previousRankLabel: previousRank.label,
+        nextRankId: nextRank.id,
+        nextRankLabel: nextRank.label,
+      }
+    : null;
+}
+
+export function buildRankPromotionTestPayload(rankId: string | null | undefined): RankPromotion | null {
+  const nextIndex = getRankIndex(String(rankId || ""));
+  if (nextIndex < 0) return null;
+  const previousRank = RANK_LADDER[Math.max(0, nextIndex - 1)] || null;
+  const nextRank = RANK_LADDER[nextIndex] || null;
+  return previousRank && nextRank
+    ? {
+        previousRankId: previousRank.id,
+        previousRankLabel: previousRank.label,
+        nextRankId: nextRank.id,
+        nextRankLabel: nextRank.label,
+      }
+    : null;
 }
 
 export function hasBlockingPromotionOverlay(documentRef: Pick<Document, "querySelectorAll">): boolean {

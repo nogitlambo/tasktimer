@@ -1,23 +1,38 @@
 import { readFile } from "node:fs/promises";
-import { createReadStream, existsSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { google } from "googleapis";
 
 const root = process.cwd();
 const sourceApkPath = path.join(root, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
-const defaultServiceAccountPath = path.join(root, "workspace", "secrets", "tasktimer-prod-7ce230e31df3.json");
+const secretsDirPath = path.join(root, "workspace", "secrets");
+const defaultServiceAccountPath = path.join(secretsDirPath, "tasktimer-prod-7ce230e31df3.json");
 const defaultDriveFolderId = "1WiAeikmzft6HgRCvpPIL-9q57chgCwbj";
 const uploadedFilename = "app-debug.apk";
+
+function resolveServiceAccountPath() {
+  const configuredPath = (process.env.GOOGLE_SERVICE_ACCOUNT_PATH || "").trim();
+  if (configuredPath) return configuredPath;
+  if (existsSync(defaultServiceAccountPath)) return defaultServiceAccountPath;
+  if (!existsSync(secretsDirPath)) return defaultServiceAccountPath;
+
+  const matchingFiles = readdirSync(secretsDirPath)
+    .filter((entry) => /^tasktimer-prod-.*\.json$/i.test(entry))
+    .sort();
+
+  if (matchingFiles.length === 1) return path.join(secretsDirPath, matchingFiles[0]);
+  return defaultServiceAccountPath;
+}
 
 async function loadServiceAccountCredentials() {
   const rawJson = (process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "").trim();
   if (rawJson) return JSON.parse(rawJson);
 
-  const credentialsPath = (process.env.GOOGLE_SERVICE_ACCOUNT_PATH || defaultServiceAccountPath).trim();
+  const credentialsPath = resolveServiceAccountPath();
   if (!existsSync(credentialsPath)) {
     throw new Error(
       `Google service account credentials were not found at ${credentialsPath}. ` +
-        "Move the local JSON key to workspace/secrets/, set GOOGLE_SERVICE_ACCOUNT_PATH, or set GOOGLE_SERVICE_ACCOUNT_JSON."
+        "Move the local JSON key to workspace/secrets/, ensure there is exactly one tasktimer-prod-*.json key there, set GOOGLE_SERVICE_ACCOUNT_PATH, or set GOOGLE_SERVICE_ACCOUNT_JSON."
     );
   }
 

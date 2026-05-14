@@ -18,7 +18,7 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
-import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
+import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -666,6 +666,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
     return true;
+  }
+
+  function notifyTimeGoalCompleteOverlayClosedForXpAward() {
+    if (typeof window === "undefined") return;
+    dispatchOverlayClosedEvent(window, "timeGoalCompleteOverlay");
   }
 
   function completeTimeGoalTask(task: Task, elapsedMs: number, opts?: { reminder?: boolean; deferModal?: boolean }) {
@@ -1606,6 +1611,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!completed) return;
       const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
       if (nextIndex >= 0) ctx.startTask(nextIndex);
+      notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteNextTaskGrid, "click", async (event: Event) => {
       const tile = (event.target as HTMLElement | null)?.closest?.("[data-time-goal-next-task-id]") as HTMLElement | null;
@@ -1617,6 +1623,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!completed) return;
       const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
       if (nextIndex >= 0) ctx.startTask(nextIndex);
+      notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {
       const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;

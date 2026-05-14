@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildRankPromotionTestPayload,
   getRankPromotion,
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
@@ -29,13 +30,34 @@ const stage = elementStub("rankPromotionConfettiStage");
 
 describe("rank promotion celebration", () => {
   it("detects an upward rank change and resolves the promoted rank label", () => {
-    expect(getRankPromotion("unranked", "initiate")).toEqual({ rankId: "initiate", rankLabel: "Initiate" });
+    expect(getRankPromotion("initiate", "operator")).toEqual({
+      previousRankId: "initiate",
+      previousRankLabel: "Initiate",
+      nextRankId: "operator",
+      nextRankLabel: "Operator",
+    });
   });
 
   it("does not detect unchanged ranks, demotions, or unknown initial ranks", () => {
     expect(getRankPromotion("initiate", "initiate")).toBeNull();
     expect(getRankPromotion("operator", "initiate")).toBeNull();
     expect(getRankPromotion(null, "initiate")).toBeNull();
+  });
+
+  it("builds test promotion payloads from the clicked ladder rank", () => {
+    expect(buildRankPromotionTestPayload("operator")).toEqual({
+      previousRankId: "initiate",
+      previousRankLabel: "Initiate",
+      nextRankId: "operator",
+      nextRankLabel: "Operator",
+    });
+    expect(buildRankPromotionTestPayload("unranked")).toEqual({
+      previousRankId: "unranked",
+      previousRankLabel: "Unranked",
+      nextRankId: "unranked",
+      nextRankLabel: "Unranked",
+    });
+    expect(buildRankPromotionTestPayload("unknown")).toBeNull();
   });
 
   it("waits while another visible overlay is blocking the promotion modal", () => {

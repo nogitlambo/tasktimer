@@ -66,6 +66,7 @@ import {
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
+  buildRankPromotionTestPayload,
   getRankPromotion,
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
@@ -797,6 +798,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         rewardsHeader={rewardsHeader}
         isXpCountAnimating={isXpCountAnimating}
         isXpAwardSpotlightActive={isXpAwardSpotlightActive}
+        onTestRankPromotion={(rankId) => {
+          const promotion = buildRankPromotionTestPayload(rankId);
+          if (!promotion) return;
+          setPendingRankPromotion(null);
+          setActiveRankPromotion(promotion);
+        }}
         xpAwardFx={xpAwardFx}
       >
         <div className="appPages">
@@ -1338,7 +1345,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       <FriendsOverlays />
       {activeRankPromotion ? (
         <RankPromotionOverlay
-          rankLabel={activeRankPromotion.rankLabel}
+          previousRankId={activeRankPromotion.previousRankId}
+          previousRankLabel={activeRankPromotion.previousRankLabel}
+          nextRankId={activeRankPromotion.nextRankId}
+          nextRankLabel={activeRankPromotion.nextRankLabel}
           onClose={() => {
             stopRankPromotionCelebration(document);
             setActiveRankPromotion(null);
