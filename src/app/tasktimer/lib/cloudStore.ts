@@ -27,6 +27,7 @@ import {
   syncLegacyPlannedStartFields,
   type ScheduleDay,
 } from "./schedule-placement";
+import type { DashboardWeekStart } from "./historyChart";
 
 import {
   normalizeTaskStatusState,
@@ -39,8 +40,10 @@ import {
 } from "./types";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityDays,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
 import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
@@ -62,6 +65,7 @@ export type UserPreferencesV1 = {
   checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
+  optimalProductivityDays: DashboardWeekStart[];
   rewards: RewardProgressV1;
   updatedAtMs: number;
 };
@@ -1480,6 +1484,9 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
           prefSnap.get("optimalProductivityEndTime"),
           DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
         ),
+        optimalProductivityDays: normalizeOptimalProductivityDays(
+          prefSnap.get("optimalProductivityDays") || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
+        ),
         rewards: normalizeRewardProgress(prefSnap.get("rewards") || DEFAULT_REWARD_PROGRESS),
         updatedAtMs: Number(prefSnap.get("updatedAtMs") || Date.now()),
       }
@@ -2015,6 +2022,7 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
         prefs.optimalProductivityEndTime,
         DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
       ),
+      optimalProductivityDays: normalizeOptimalProductivityDays(prefs.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
       schemaVersion: 1,
       updatedAtMs: Date.now(),
       updatedAt: serverTimestamp(),
@@ -2066,6 +2074,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
     ),
     optimalProductivityEndTime: normalizeTimeOfDay(data.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
+    optimalProductivityDays: normalizeOptimalProductivityDays(data.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
     rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Number(data.updatedAtMs || Date.now()),
   };

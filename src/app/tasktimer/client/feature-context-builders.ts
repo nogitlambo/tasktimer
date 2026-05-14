@@ -139,6 +139,7 @@ type CreatePersistenceOptionsArgs = {
   loadDynamicColorsSetting: () => void;
   loadCheckpointAlertSettings: () => void;
   loadOptimalProductivityPeriodPreference: () => void;
+  loadOptimalProductivityDaysPreference: () => void;
   loadDashboardWidgetState: () => void;
   loadThemePreference: () => void;
   loadMenuButtonStylePreference: () => void;
@@ -901,6 +902,10 @@ export function createTaskTimerPreferencesContext(
     setOptimalProductivityEndTimeState: (value) => {
       args.preferencesState.set("optimalProductivityEndTime", value);
     },
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerPreferences>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
+    setOptimalProductivityDaysState: (value) => {
+      args.preferencesState.set("optimalProductivityDays", value);
+    },
     getRewardProgress: () => args.rewardState.get("rewardProgress"),
     normalizeRewardProgress: args.normalizeRewardProgress,
     currentUid: args.getCurrentUid,
@@ -991,6 +996,7 @@ export function createTaskTimerPersistenceContext(
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadCheckpointAlertSettings: args.loadCheckpointAlertSettings,
     loadOptimalProductivityPeriodPreference: args.loadOptimalProductivityPeriodPreference,
+    loadOptimalProductivityDaysPreference: args.loadOptimalProductivityDaysPreference,
     loadDashboardWidgetState: args.loadDashboardWidgetState,
     loadThemePreference: args.loadThemePreference,
     loadMenuButtonStylePreference: args.loadMenuButtonStylePreference,
@@ -1345,6 +1351,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
       args.preferencesState.get("checkpointAlertToastMode") === "manual" ? "manual" : "auto5s",
     getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
     getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerSession>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     render: args.render,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardLiveWidgets: args.renderDashboardLiveWidgets,
@@ -1430,6 +1437,7 @@ export function createTaskTimerDashboardRenderContext(
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerDashboardRender>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     getDashboardAvgRange: () => asType<DashboardAvgRange>(args.dashboardUiState.get("dashboardAvgRange")),
     setDashboardAvgRange: (value) => args.dashboardUiState.set("dashboardAvgRange", value),
     getDashboardTimelineDensity: () => asType<DashboardTimelineDensity>(args.dashboardUiState.get("dashboardTimelineDensity")),
@@ -1596,6 +1604,7 @@ export function createTaskTimerRewardsHistoryContext(
     setLiveSessionsByTaskId: (value) => args.setLiveSessionsByTaskId(value),
     getDeletedTaskMeta: args.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerRewardsHistory>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     setRewardProgress: (value) => args.rewardState.set("rewardProgress", value),
     getRewardSessionTrackersByTaskId: () =>

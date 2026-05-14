@@ -1,9 +1,13 @@
 import { completionDifficultyLabel, normalizeCompletionDifficulty, type CompletionDifficulty } from "./completionDifficulty";
 import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityDays,
   normalizeOptimalProductivityPeriod,
+  timestampIsInOptimalProductivityDays,
   timestampIsInProductivityPeriod,
+  type OptimalProductivityDays,
   type OptimalProductivityPeriod,
 } from "./productivityPeriod";
 
@@ -40,7 +44,7 @@ function startOfWeekMs(refMs: number): number {
 export function computeFocusInsights(
   entries: InsightEntry[],
   nowTs: number,
-  productivityPeriod?: Partial<OptimalProductivityPeriod>
+  productivityPeriod?: Partial<OptimalProductivityPeriod> & { days?: OptimalProductivityDays }
 ): FocusInsightsResult {
   const valid = (entries || []).filter((e) => Number.isFinite(+e?.ms) && Number.isFinite(+e?.ts));
   const bestMs = valid.length ? Math.max(...valid.map((e) => Math.max(0, +e.ms || 0))) : 0;
@@ -48,13 +52,16 @@ export function computeFocusInsights(
     optimalProductivityStartTime: productivityPeriod?.startTime || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
     optimalProductivityEndTime: productivityPeriod?.endTime || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   });
+  const normalizedProductivityDays = normalizeOptimalProductivityDays(productivityPeriod?.days || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
 
   const byWeekday = new Array<number>(7).fill(0);
   let productivityPeriodMs = 0;
   valid.forEach((e) => {
     const ts = +e.ts || 0;
-    byWeekday[new Date(ts).getDay()] += 1;
-    if (timestampIsInProductivityPeriod(ts, normalizedProductivityPeriod)) {
+    if (timestampIsInOptimalProductivityDays(ts, normalizedProductivityDays)) {
+      byWeekday[new Date(ts).getDay()] += 1;
+    }
+    if (timestampIsInOptimalProductivityDays(ts, normalizedProductivityDays) && timestampIsInProductivityPeriod(ts, normalizedProductivityPeriod)) {
       productivityPeriodMs += Math.max(0, +e.ms || 0);
     }
   });
@@ -63,6 +70,7 @@ export function computeFocusInsights(
   for (let i = 1; i < 7; i += 1) {
     if (byWeekday[i] > byWeekday[weekdayIdx]) weekdayIdx = i;
   }
+  const hasOptimalDaySignal = byWeekday.some((count) => count > 0);
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   const todayStart = startOfTodayMs(nowTs);
@@ -104,8 +112,8 @@ export function computeFocusInsights(
 
   return {
     bestMs,
-    weekdaySessionCount: byWeekday[weekdayIdx],
-    weekdayName: valid.length ? weekdayNames[weekdayIdx] : null,
+    weekdaySessionCount: hasOptimalDaySignal ? byWeekday[weekdayIdx] : 0,
+    weekdayName: hasOptimalDaySignal ? weekdayNames[weekdayIdx] : null,
     todayDeltaMs: todayMs - yesterdayMs,
     weekDeltaMs: thisWeekMs - lastWeekMs,
     completionDifficultyLabel: completionDifficultyLabel(completionDifficulty),

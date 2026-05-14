@@ -16,6 +16,7 @@ type TaskTimerStorageKeys = {
   CHECKPOINT_ALERT_TOAST_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
+  OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
   NAV_STACK_KEY: string;
   FOCUS_SESSION_NOTES_KEY: string;
   NAV_STACK_MAX: number;
@@ -42,6 +43,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: `${storageKey}:optimalProductivityStartTime`,
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: `${storageKey}:optimalProductivityEndTime`,
+    OPTIMAL_PRODUCTIVITY_DAYS_KEY: `${storageKey}:optimalProductivityDays`,
     NAV_STACK_KEY: `${storageKey}:navStack`,
     FOCUS_SESSION_NOTES_KEY: `${storageKey}:focusSessionNotes`,
     NAV_STACK_MAX: 50,
@@ -79,6 +81,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     checkpointAlertToastMode: "auto5s",
     optimalProductivityStartTime: "00:00",
     optimalProductivityEndTime: "23:59",
+    optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
     rewardProgress: DEFAULT_REWARD_PROGRESS,
     historyByTaskId: {},
     liveSessionsByTaskId: {},

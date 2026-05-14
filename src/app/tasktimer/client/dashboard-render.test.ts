@@ -289,6 +289,8 @@ describe("momentum summary copy", () => {
       activeDayCount: 3,
       trailingStreak: 2,
       recentDaysMs: [2 * 60 * 60 * 1000, 60 * 60 * 1000, 0],
+      recentQualifiedLabels: ["Mon", "Tue"],
+      selectedDaysSummary: "All days",
     };
 
     expect(getPrimaryMomentumDriverKey(momentum)).toBe("weeklyProgress");
@@ -312,11 +314,13 @@ describe("momentum summary copy", () => {
       activeDayCount: 1,
       trailingStreak: 1,
       recentDaysMs: [5 * 60 * 1000, 0, 0],
+      recentQualifiedLabels: ["Mon"],
+      selectedDaysSummary: "All days",
     };
 
     const message = buildMomentumSummaryMessage(momentum);
-    expect(message).toContain("Recent Activity contributed 13 of 25 momentum points from today");
-    expect(message).toContain("3-day weighted presence model");
+    expect(message).toContain("Recent Activity contributed 13 of 25 momentum points from Mon");
+    expect(message).toContain("selected optimal days (all days)");
     expect(message).toContain("5-minute minimum session threshold");
     expect(message).not.toContain("5m today, 0m yesterday");
   });

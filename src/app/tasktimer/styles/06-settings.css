@@ -3538,6 +3538,64 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   }
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow{
+  align-items: flex-start;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysField{
+  position: relative;
+  width: min(280px, 100%);
+  margin-left: auto;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysTrigger{
+  width: 100%;
+  min-height: 40px;
+  justify-content: space-between;
+  text-align: left;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 6;
+  width: min(280px, 100%);
+  padding: 10px;
+  border: 1px solid rgba(121,226,255,.18);
+  background: #0d0f13;
+  box-shadow: 0 16px 32px rgba(0,0,0,.36), inset 0 0 0 1px rgba(255,255,255,.02);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu[hidden]{
+  display: none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 6px 0;
+}
+
+body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
+  border-color: rgba(240,110,224,.24);
+  box-shadow: 0 16px 32px rgba(0,0,0,.36), inset 0 0 0 1px rgba(240,110,224,.06);
+}
+
+@media (max-width: 640px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysField{
+    width: 100%;
+    margin-left: 0;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+}
+
 /* Final Account plan selector */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPlanSelectorRow{
   align-items: center;

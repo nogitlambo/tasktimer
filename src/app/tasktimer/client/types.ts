@@ -2,6 +2,7 @@ import type { HistoryByTaskId, DeletedTaskMeta, LiveSessionsByTaskId, Task } fro
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { StartupModulePreference } from "../lib/startupModule";
+import type { OptimalProductivityDays } from "../lib/productivityPeriod";
 
 export type AppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 export type MainMode = "mode1";
@@ -97,6 +98,7 @@ export type TaskTimerMutableState = {
   checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
+  optimalProductivityDays: OptimalProductivityDays;
   rewardProgress: unknown;
   historyByTaskId: HistoryByTaskId;
   liveSessionsByTaskId: LiveSessionsByTaskId;

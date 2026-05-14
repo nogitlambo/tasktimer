@@ -152,4 +152,46 @@ describe("computeMomentumSnapshot recent activity", () => {
 
     expect(result.recentActivityScore).toBeCloseTo(12.5);
   });
+
+  it("uses selected productivity days as the required recent checkpoints", () => {
+    const nowValue = new Date("2026-05-06T12:00:00").getTime();
+    const mondayStart = dayStartMs("2026-05-04");
+    const tuesdayStart = dayStartMs("2026-05-05");
+    const historyByTaskId: HistoryByTaskId = {
+      [task.id]: [
+        entry(mondayStart + 60 * 60 * 1000, 10 * 60 * 1000),
+        entry(tuesdayStart + 60 * 60 * 1000, 10 * 60 * 1000),
+      ],
+    };
+
+    const result = computeMomentumSnapshot({
+      tasks: [task],
+      historyByTaskId,
+      weekStarting: "mon",
+      optimalProductivityDays: ["mon", "tue"],
+      nowValue,
+    });
+
+    expect(result.recentActivityScore).toBeGreaterThan(0);
+    expect(result.recentQualifiedLabels).toEqual(["Tue", "Mon"]);
+  });
+
+  it("allows off-day activity to add recent credit without fully replacing selected-day coverage", () => {
+    const nowValue = new Date("2026-05-06T12:00:00").getTime();
+    const wednesdayStart = dayStartMs("2026-05-06");
+    const historyByTaskId: HistoryByTaskId = {
+      [task.id]: [entry(wednesdayStart + 60 * 60 * 1000, 10 * 60 * 1000)],
+    };
+
+    const result = computeMomentumSnapshot({
+      tasks: [task],
+      historyByTaskId,
+      weekStarting: "mon",
+      optimalProductivityDays: ["mon", "tue"],
+      nowValue,
+    });
+
+    expect(result.recentActivityScore).toBeGreaterThan(0);
+    expect(result.recentActivityScore).toBeLessThan(10);
+  });
 });

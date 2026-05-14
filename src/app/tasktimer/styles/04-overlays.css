@@ -4597,61 +4597,6 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.08);
 }
 
-#rankPromotionOverlay .timeGoalCompleteConfettiStage{
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-}
-
-#rankPromotionOverlay .timeGoalCompleteConfettiStage::before{
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffd84c, transparent 70%);
-  opacity: 0;
-  transform: translate(-50%,-50%) scale(.1);
-}
-
-#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying{
-  opacity: 1;
-}
-
-#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying::before{
-  animation: timeGoalConfettiPulse 2.4s ease-out 5 both;
-}
-
-#rankPromotionOverlay .timeGoalConfettiPiece{
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  width: var(--w);
-  height: var(--h);
-  border-radius: 2px;
-  background: var(--c);
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(.2) rotate(var(--rot));
-}
-
-#rankPromotionOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
-  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 5 both;
-  animation-delay: var(--d);
-}
-
-#rankPromotionOverlay .timeGoalConfettiDot{
-  border-radius: 999px;
-}
-
-#rankPromotionOverlay .timeGoalConfettiStar{
-  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-}
-
 #rankPromotionOverlay h2{
   margin: 0 0 14px;
   color: #c9ff24;
@@ -4671,17 +4616,124 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 #rankPromotionOverlay .rankPromotionModal{
   overflow: hidden;
   --rank-promotion-birdseye-scale: 4.35;
+  --rank-promotion-beam-pulse-width: 62%;
+}
+
+#rankPromotionOverlay .rankPromotionLightBeam{
+  position: absolute;
+  left: 50%;
+  top: -18%;
+  z-index: 0;
+  width: min(24%, 124px);
+  height: 136%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scaleY(.2);
+  transform-origin: 50% 50%;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(126,243,255,.08) 24%, rgba(238,253,255,1) 50%, rgba(126,243,255,.08) 76%, transparent 100%),
+    radial-gradient(ellipse at 50% 50%, rgba(126,243,255,.7) 0%, rgba(53,232,255,.18) 28%, transparent 58%);
+  filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 26px rgba(53,232,255,.22));
+  mix-blend-mode: screen;
+}
+
+#rankPromotionOverlay .rankPromotionLightBeam::before,
+#rankPromotionOverlay .rankPromotionLightBeam::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 190%;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+#rankPromotionOverlay .rankPromotionLightBeamPulse{
+  position: absolute;
+  left: 50%;
+  width: var(--rank-promotion-beam-pulse-width);
+  pointer-events: none;
+}
+
+#rankPromotionOverlay .rankPromotionLightBeam::before,
+#rankPromotionOverlay .rankPromotionLightBeam::after{
+  top: 0;
+  height: 100%;
+}
+
+#rankPromotionOverlay .rankPromotionLightBeam::before{
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(126,243,255,.1) 43%, rgba(255,255,255,1) 50%, rgba(126,243,255,.1) 57%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,255,255,.16) 20px, transparent 24px);
+  filter: blur(5px);
+}
+
+#rankPromotionOverlay .rankPromotionLightBeam::after{
+  background: radial-gradient(ellipse at 50% 82%, rgba(255,255,255,.84) 0%, rgba(126,243,255,.28) 18%, transparent 48%);
+  filter: blur(7px);
+}
+
+#rankPromotionOverlay .rankPromotionLightBeamPulse{
+  bottom: -13%;
+  height: 13%;
+  opacity: 0;
+  transform: translate3d(-50%,0,0) scaleY(.72);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.96) 0%, rgba(126,243,255,.5) 30%, rgba(126,243,255,.12) 58%, transparent 78%),
+    linear-gradient(90deg, transparent 0%, rgba(255,255,255,.16) 24%, rgba(255,255,255,.82) 50%, rgba(255,255,255,.16) 76%, transparent 100%);
+  filter: blur(1px) drop-shadow(0 0 8px rgba(126,243,255,.42));
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing{
-  animation: rankPromotionImpactShake 1.2s cubic-bezier(.2,.8,.2,1) both;
+  animation: rankPromotionImpactShake 1.9s cubic-bezier(.2,.8,.2,1) both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam{
+  animation: rankPromotionLightBeamImpact 1.9s linear both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam::before{
+  animation: rankPromotionLightBeamFlicker 1.9s steps(1,end) both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam::after{
+  animation: rankPromotionLightBeamCore 1.9s ease-out both;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
+  opacity: .5;
+  transform: translateX(-50%) scaleY(.92) scaleX(.9);
+  animation: rankPromotionLightBeamSustain 5.6s ease-in-out infinite;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
+  opacity: .46;
+  animation: rankPromotionLightBeamSustainFlicker 4.8s linear infinite;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
+  opacity: .38;
+  transform: translateX(-50%) scale(.92);
+  animation: rankPromotionLightBeamSustainCore 6.2s ease-in-out infinite;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeamPulse{
+  animation: rankPromotionLightBeamPulse 2s linear infinite;
 }
 
 #rankPromotionOverlay .rankPromotionStage{
   position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  min-height: 148px;
+  min-height: 176px;
+}
+
+#rankPromotionOverlay h2,
+#rankPromotionOverlay .confirmBtns{
+  position: relative;
+  z-index: 1;
 }
 
 #rankPromotionOverlay .rankPromotionRank{
@@ -4699,19 +4751,19 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
-  animation: rankPromotionOldHardSwap 1.2s steps(1,end) both;
+  animation: rankPromotionOldHardSwap 1.9s steps(1,end) both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
-  animation: rankPromotionNewSmash 1.2s linear both;
+  animation: rankPromotionNewSmash 1.9s linear both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia{
-  animation: rankPromotionNewBirdseyeDrop 1.2s cubic-bezier(.08,.86,.14,1) both;
+  animation: rankPromotionNewBirdseyeDrop 1.9s cubic-bezier(.08,.86,.14,1) both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
-  animation: rankPromotionNewLabelImpact 1.2s ease both;
+  animation: rankPromotionNewLabelImpact 1.9s ease both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankOld{
@@ -4731,6 +4783,21 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   filter: none;
 }
 
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia{
+  animation: rankPromotionInsigniaFloat 4.8s ease-in-out infinite;
+  perspective: 720px;
+  transform-style: preserve-3d;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaImage,
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaPlaceholder{
+  animation: rankPromotionInsigniaSpin 8s linear infinite;
+  backface-visibility: visible;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
 #rankPromotionOverlay .rankPromotionInsignia{
   display: grid;
   place-items: center;
@@ -4738,6 +4805,11 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   height: 112px;
   transform-origin: 50% 50%;
   will-change: transform, opacity, filter;
+}
+
+#rankPromotionOverlay .rankPromotionInsigniaNew{
+  width: 140px;
+  height: 140px;
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaImage{
@@ -4761,6 +4833,12 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   font-weight: 800;
 }
 
+#rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
+  width: 116px;
+  height: 116px;
+  font-size: 40px;
+}
+
 #rankPromotionOverlay .rankPromotionLabel{
   margin: 0;
   color: rgba(245,248,244,.94);
@@ -4773,6 +4851,18 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 #rankPromotionOverlay .confirmBtns{
   margin-top: 14px;
   justify-content: center;
+}
+
+#rankPromotionOverlay .rankPromotionCloseSlot #rankPromotionCloseBtn{
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#rankPromotionOverlay .rankPromotionCloseSlot.is-ready #rankPromotionCloseBtn{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 #rankPromotionOverlay #rankPromotionCloseBtn{
@@ -4829,17 +4919,39 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
 }
 
 @keyframes rankPromotionImpactShake{
-  0%,82%{ transform: translateX(0); }
-  84%{ transform: translateX(-9px); }
-  86%{ transform: translateX(8px); }
-  89%{ transform: translateX(-5px); }
-  93%{ transform: translateX(3px); }
+  0%,52%{ transform: translateX(0); }
+  54%{ transform: translateX(-9px); }
+  56%{ transform: translateX(8px); }
+  59%{ transform: translateX(-5px); }
+  64%{ transform: translateX(3px); }
   100%{ transform: translateX(0); }
 }
 
 @keyframes rankPromotionOldHardSwap{
-  0%,82%{ opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-  83%,100%{ opacity: 0; visibility: hidden; transform: translateY(22px) scale(.86); }
+  0%{
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  28%{
+    opacity: .58;
+    visibility: visible;
+    transform: translateY(8px) scale(.78);
+    filter: blur(1.5px);
+  }
+  52%{
+    opacity: 0;
+    visibility: visible;
+    transform: translateY(18px) scale(.5);
+    filter: blur(4px);
+  }
+  53%,100%{
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(18px) scale(.5);
+    filter: blur(4px);
+  }
 }
 
 @keyframes rankPromotionNewSmash{
@@ -4856,16 +4968,16 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
   10%{
     opacity: 1;
   }
-  83%{
+  53%{
     opacity: 1;
     transform: scale(1.08);
     filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
   }
-  88%{
+  58%{
     transform: scale(.88);
     filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
   }
-  94%{
+  64%{
     transform: scale(1.05);
     filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
   }
@@ -4877,18 +4989,220 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
 }
 
 @keyframes rankPromotionNewLabelImpact{
-  0%,83%{ opacity: 0; transform: translateY(10px); }
-  88%{ opacity: 1; transform: translateY(0); }
+  0%,53%{ opacity: 0; transform: translateY(10px); }
+  58%{ opacity: 1; transform: translateY(0); }
   100%{ opacity: 1; transform: translateY(0); }
 }
 
+@keyframes rankPromotionInsigniaFloat{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-7px); }
+}
+
+@keyframes rankPromotionInsigniaSpin{
+  0%{
+    transform: rotateY(0deg);
+  }
+  20%{
+    transform: rotateY(70deg);
+  }
+  22%{
+    transform: rotateY(80deg);
+  }
+  24%{
+    transform: rotateY(94deg);
+  }
+  26%{
+    transform: rotateY(105deg);
+  }
+  28%{
+    transform: rotateY(110deg);
+  }
+  50%{
+    transform: rotateY(180deg);
+  }
+  70%{
+    transform: rotateY(250deg);
+  }
+  72%{
+    transform: rotateY(260deg);
+  }
+  74%{
+    transform: rotateY(274deg);
+  }
+  76%{
+    transform: rotateY(285deg);
+  }
+  78%{
+    transform: rotateY(290deg);
+  }
+  100%{
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes rankPromotionLightBeamImpact{
+  0%,45%{
+    opacity: 0;
+    transform: translateX(-50%) scaleY(.18) scaleX(.58);
+    filter: blur(.5px) drop-shadow(0 0 8px rgba(126,243,255,.3)) drop-shadow(0 0 16px rgba(53,232,255,.14));
+  }
+  49%{
+    opacity: .34;
+    transform: translateX(-50%) scaleY(.72) scaleX(.72);
+    filter: blur(.5px) drop-shadow(0 0 10px rgba(126,243,255,.38)) drop-shadow(0 0 22px rgba(53,232,255,.18));
+  }
+  53%,58%{
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1.04) scaleX(4.6);
+    filter: blur(.5px) drop-shadow(0 0 28px rgba(126,243,255,.78)) drop-shadow(0 0 64px rgba(53,232,255,.4));
+  }
+  72%{
+    opacity: .82;
+    transform: translateX(-50%) scaleY(.98) scaleX(2.9);
+    filter: blur(.5px) drop-shadow(0 0 22px rgba(126,243,255,.66)) drop-shadow(0 0 48px rgba(53,232,255,.32));
+  }
+  88%{
+    opacity: .56;
+    transform: translateX(-50%) scaleY(.94) scaleX(1.45);
+    filter: blur(.5px) drop-shadow(0 0 16px rgba(126,243,255,.54)) drop-shadow(0 0 34px rgba(53,232,255,.26));
+  }
+  100%{
+    opacity: .5;
+    transform: translateX(-50%) scaleY(.92) scaleX(.9);
+    filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 26px rgba(53,232,255,.22));
+  }
+}
+
+@keyframes rankPromotionLightBeamFlicker{
+  0%,47%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }
+  49%{ opacity: .28; transform: translateX(-50%) skewX(-3deg); }
+  51%{ opacity: .72; transform: translateX(-50%) skewX(2deg); }
+  53%,58%{ opacity: 1; transform: translateX(-50%) skewX(-1deg); }
+  72%{ opacity: .46; transform: translateX(-50%) skewX(3deg); }
+  86%{ opacity: .84; transform: translateX(-50%) skewX(-2deg); }
+  96%{ opacity: .34; transform: translateX(-50%) skewX(1deg); }
+  100%{ opacity: .46; transform: translateX(-50%) skewX(0deg); }
+}
+
+@keyframes rankPromotionLightBeamCore{
+  0%,48%{
+    opacity: 0;
+    transform: translateX(-50%) scale(.42);
+  }
+  53%,58%{
+    opacity: 1;
+    transform: translateX(-50%) scale(1.36);
+  }
+  100%{
+    opacity: .38;
+    transform: translateX(-50%) scale(.92);
+  }
+}
+
+@keyframes rankPromotionLightBeamSustain{
+  0%,100%{
+    opacity: .42;
+    transform: translateX(-50%) scaleY(.86) scaleX(.86);
+    filter: blur(.5px) drop-shadow(0 0 10px rgba(126,243,255,.4)) drop-shadow(0 0 24px rgba(53,232,255,.18));
+  }
+  24%{
+    opacity: .5;
+    transform: translateX(-50%) scaleY(.91) scaleX(.89);
+    filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 27px rgba(53,232,255,.2));
+  }
+  52%{
+    opacity: .66;
+    transform: translateX(-50%) scaleY(1) scaleX(.94);
+    filter: blur(.5px) drop-shadow(0 0 15px rgba(126,243,255,.56)) drop-shadow(0 0 32px rgba(53,232,255,.24));
+  }
+  78%{
+    opacity: .48;
+    transform: translateX(-50%) scaleY(.9) scaleX(.91);
+    filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.44)) drop-shadow(0 0 26px rgba(53,232,255,.2));
+  }
+}
+
+@keyframes rankPromotionLightBeamSustainFlicker{
+  0%,100%{ opacity: .28; transform: translateX(-50%) skewX(0deg); filter: blur(5px); }
+  12%{ opacity: .39; transform: translateX(-50%) skewX(-.4deg); }
+  25%{ opacity: .34; transform: translateX(-50%) skewX(.35deg); }
+  39%{ opacity: .44; transform: translateX(-50%) skewX(-.65deg); filter: blur(4px); }
+  54%{ opacity: .52; transform: translateX(-50%) skewX(.45deg); }
+  68%{ opacity: .43; transform: translateX(-50%) skewX(-.25deg); }
+  83%{ opacity: .46; transform: translateX(-50%) skewX(.35deg); filter: blur(5px); }
+}
+
+@keyframes rankPromotionLightBeamSustainCore{
+  0%,100%{
+    opacity: .28;
+    transform: translateX(-50%) scale(.86);
+  }
+  28%{
+    opacity: .36;
+    transform: translateX(-50%) scale(.94);
+  }
+  50%{
+    opacity: .46;
+    transform: translateX(-50%) scale(1.02);
+  }
+  74%{
+    opacity: .34;
+    transform: translateX(-50%) scale(.9);
+  }
+}
+
+@keyframes rankPromotionLightBeamPulse{
+  0%,55%{
+    opacity: 0;
+    transform: translate3d(-50%,0,0) scaleY(.72);
+  }
+  58%{
+    opacity: .35;
+    transform: translate3d(-50%,-80%,0) scaleY(.82);
+  }
+  70%{
+    opacity: .9;
+    transform: translate3d(-50%,-520%,0) scaleY(1);
+  }
+  80%{
+    opacity: .46;
+    transform: translate3d(-50%,-820%,0) scaleY(.88);
+  }
+  84%,100%{
+    opacity: 0;
+    transform: translate3d(-50%,-900%,0) scaleY(.72);
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
-  #rankPromotionOverlay .timeGoalCompleteConfettiStage{
+  #rankPromotionOverlay .rankPromotionModal.is-smashing{
+    animation: none;
+  }
+
+  #rankPromotionOverlay .rankPromotionLightBeam,
+  #rankPromotionOverlay .rankPromotionLightBeam::before,
+  #rankPromotionOverlay .rankPromotionLightBeam::after,
+  #rankPromotionOverlay .rankPromotionLightBeamPulse{
+    animation: none !important;
+  }
+
+  #rankPromotionOverlay .rankPromotionLightBeamPulse{
     display: none;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-smashing{
-    animation: none;
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
+    opacity: .42;
+    transform: translateX(-50%) scaleY(.9) scaleX(.88);
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
+    opacity: .34;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
+    opacity: .3;
+    transform: translateX(-50%) scale(.9);
   }
 
   #rankPromotionOverlay .rankPromotionRankNew{
@@ -4896,22 +5210,36 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
   }
 
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
-    animation: rankPromotionReducedOldSwap 1.2s ease both;
+    animation: rankPromotionReducedOldSwap 1.9s ease both;
   }
 
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
-    animation: rankPromotionReducedNewSwap 1.2s ease both;
+    animation: rankPromotionReducedNewSwap 1.9s ease both;
   }
 
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia,
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
     animation: none;
   }
+
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaImage,
+  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaPlaceholder{
+    animation: none;
+  }
 }
 
 @keyframes rankPromotionReducedOldSwap{
-  0%{ opacity: 1; visibility: visible; }
-  100%{ opacity: 0; visibility: hidden; }
+  0%{
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+  }
+  100%{
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(.82);
+  }
 }
 
 @keyframes rankPromotionReducedNewSwap{
@@ -4925,7 +5253,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
   }
 
   #rankPromotionOverlay .rankPromotionStage{
-    min-height: 138px;
+    min-height: 164px;
   }
 
   #rankPromotionOverlay .rankPromotionInsignia{
@@ -4933,10 +5261,21 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
     height: 96px;
   }
 
+  #rankPromotionOverlay .rankPromotionInsigniaNew{
+    width: 120px;
+    height: 120px;
+  }
+
   #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
     width: 82px;
     height: 82px;
     font-size: 30px;
+  }
+
+  #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
+    width: 102px;
+    height: 102px;
+    font-size: 36px;
   }
 }
 

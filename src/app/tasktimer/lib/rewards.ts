@@ -55,6 +55,7 @@ export type CompletedSessionXpContext = {
   historyByTaskId: HistoryByTaskId;
   tasks: Task[];
   weekStarting: DashboardWeekStart;
+  optimalProductivityDays?: DashboardWeekStart[];
   momentumEntitled?: boolean;
   sessionSegments?: RewardSessionSegment[];
   completedSessionsDelta?: number;
@@ -98,6 +99,7 @@ type RewardMomentumContext = {
   historyByTaskId?: HistoryByTaskId;
   tasks?: Task[];
   weekStarting?: DashboardWeekStart;
+  optimalProductivityDays?: DashboardWeekStart[];
   momentumEntitled?: boolean;
 };
 
@@ -572,6 +574,7 @@ function resolveRewardMultiplier(context: RewardMomentumContext | null | undefin
     tasks: context.tasks,
     historyByTaskId: context.historyByTaskId,
     weekStarting: context.weekStarting,
+    optimalProductivityDays: context.optimalProductivityDays,
     nowValue: awardedAt,
   }).multiplier;
 }

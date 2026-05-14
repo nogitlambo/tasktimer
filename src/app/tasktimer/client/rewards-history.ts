@@ -19,6 +19,8 @@ type RewardSessionTracker = {
 export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContext) {
   const lastLiveSessionSyncAtByTaskId: Record<string, number> = {};
   const LIVE_SESSION_SYNC_INTERVAL_MS = ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS;
+  const getOptimalProductivityDays = () =>
+    typeof ctx.getOptimalProductivityDays === "function" ? ctx.getOptimalProductivityDays() : undefined;
 
   function rewardSessionTrackerStorageKey() {
     const uid = ctx.currentUid();
@@ -102,6 +104,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         tasks: ctx.getTasks(),
         historyByTaskId: ctx.getHistoryByTaskId(),
         weekStarting: ctx.getWeekStarting(),
+        optimalProductivityDays: getOptimalProductivityDays(),
         nowValue,
       }).multiplier;
     } catch {
@@ -543,6 +546,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
+      optimalProductivityDays: getOptimalProductivityDays(),
       momentumEntitled: true,
       sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, awardElapsedMs),
       completedSessionsDelta: historyResult.isNewEntry ? 1 : 0,

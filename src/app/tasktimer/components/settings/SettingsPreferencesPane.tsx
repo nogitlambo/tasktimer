@@ -50,6 +50,51 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               </label>
             </div>
           </div>
+          <div className="unitRow optimalProductivityDaysRow" id="optimalProductivityDaysRow">
+            <span>Optimal Productivity Days</span>
+            <div className="optimalProductivityDaysField">
+              <button
+                className="btn btn-ghost optimalProductivityDaysTrigger"
+                id="optimalProductivityDaysTrigger"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                aria-controls="optimalProductivityDaysMenu"
+              >
+                <span id="optimalProductivityDaysSummary">All days</span>
+              </button>
+              <div className="optimalProductivityDaysMenu" id="optimalProductivityDaysMenu" hidden>
+                <label className="chkRow" htmlFor="optimalProductivityDaySun">
+                  <span>Sunday</span>
+                  <input id="optimalProductivityDaySun" type="checkbox" value="sun" data-optimal-productivity-day="sun" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDayMon">
+                  <span>Monday</span>
+                  <input id="optimalProductivityDayMon" type="checkbox" value="mon" data-optimal-productivity-day="mon" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDayTue">
+                  <span>Tuesday</span>
+                  <input id="optimalProductivityDayTue" type="checkbox" value="tue" data-optimal-productivity-day="tue" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDayWed">
+                  <span>Wednesday</span>
+                  <input id="optimalProductivityDayWed" type="checkbox" value="wed" data-optimal-productivity-day="wed" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDayThu">
+                  <span>Thursday</span>
+                  <input id="optimalProductivityDayThu" type="checkbox" value="thu" data-optimal-productivity-day="thu" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDayFri">
+                  <span>Friday</span>
+                  <input id="optimalProductivityDayFri" type="checkbox" value="fri" data-optimal-productivity-day="fri" />
+                </label>
+                <label className="chkRow" htmlFor="optimalProductivityDaySat">
+                  <span>Saturday</span>
+                  <input id="optimalProductivityDaySat" type="checkbox" value="sat" data-optimal-productivity-day="sat" />
+                </label>
+              </div>
+            </div>
+          </div>
           <div className="settingsInlineFooter">
             <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
               Load Defaults

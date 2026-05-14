@@ -66,7 +66,7 @@ export default function FocusModeScreen() {
           </span>
         </div>
         <div className="focusInsightRow">
-          <span className="focusInsightLabel">Top productivity weekday</span>
+          <span className="focusInsightLabel">Top optimal-day weekday</span>
           <span className="focusInsightValue" id="focusInsightWeekday">
             No logged sessions yet
           </span>
@@ -90,7 +90,7 @@ export default function FocusModeScreen() {
           </span>
         </div>
         <div className="focusInsightRow">
-          <span className="focusInsightLabel">In productivity period</span>
+          <span className="focusInsightLabel">In productivity period on optimal days</span>
           <span className="focusInsightValue" id="focusInsightProductivityPeriod">
             --
           </span>

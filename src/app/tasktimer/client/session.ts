@@ -511,6 +511,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       momentumEntitled: true,
     });
     return {
@@ -756,6 +757,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const insights = computeFocusInsights(entries, nowMs(), {
       startTime: ctx.getOptimalProductivityStartTime(),
       endTime: ctx.getOptimalProductivityEndTime(),
+      days: ctx.getOptimalProductivityDays(),
     });
     if (els.focusInsightBest) {
       els.focusInsightBest.textContent = insights.bestMs > 0 ? ctx.formatTime(insights.bestMs) : "--";

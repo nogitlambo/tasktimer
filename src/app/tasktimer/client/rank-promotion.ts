@@ -1,10 +1,8 @@
 import { RANK_LADDER, type RankDefinition } from "../lib/rewards";
-import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import type { XpAwardAnimationState } from "./xp-award-animation";
 
 export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
-export const RANK_PROMOTION_CONFETTI_STAGE_ID = "rankPromotionConfettiStage";
 
 export type RankPromotion = {
   previousRankId: string;
@@ -77,10 +75,6 @@ export function hasBlockingPromotionXpAnimation(state: XpAwardAnimationState): b
   return !!state.pending || !!state.active;
 }
 
-export function getRankPromotionConfettiStage(overlay: HTMLElement | null | undefined) {
-  return (overlay?.querySelector(`#${RANK_PROMOTION_CONFETTI_STAGE_ID}`) as HTMLElement | null) || null;
-}
-
 export function playRankPromotionAudio(audioFactory?: AudioFactory) {
   if (typeof window === "undefined" && !audioFactory) return;
   try {
@@ -98,12 +92,10 @@ export function playRankPromotionAudio(audioFactory?: AudioFactory) {
 export function startRankPromotionCelebration(documentRef: Pick<Document, "getElementById">, audioFactory?: AudioFactory) {
   const overlay = documentRef.getElementById(RANK_PROMOTION_OVERLAY_ID) as HTMLElement | null;
   if (overlay) overlay.style.display = "flex";
-  startTimeGoalConfetti(getRankPromotionConfettiStage(overlay));
   playRankPromotionAudio(audioFactory);
 }
 
 export function stopRankPromotionCelebration(documentRef: Pick<Document, "getElementById">) {
   const overlay = documentRef.getElementById(RANK_PROMOTION_OVERLAY_ID) as HTMLElement | null;
-  stopTimeGoalConfetti(getRankPromotionConfettiStage(overlay));
   if (overlay) overlay.style.display = "none";
 }

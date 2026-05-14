@@ -17,7 +17,6 @@ function elementStub(id = "") {
     offsetWidth: 1,
     style: { display: "" } as CSSStyleDeclaration,
     getAttribute: () => null,
-    querySelector: (selector: string) => (selector === "#rankPromotionConfettiStage" ? stage : null),
     classList: {
       add: (className: string) => classes.add(className),
       remove: (className: string) => classes.delete(className),
@@ -25,8 +24,6 @@ function elementStub(id = "") {
     },
   } as unknown as HTMLElement;
 }
-
-const stage = elementStub("rankPromotionConfettiStage");
 
 describe("rank promotion celebration", () => {
   it("detects an upward rank change and resolves the promoted rank label", () => {
@@ -99,7 +96,7 @@ describe("rank promotion celebration", () => {
     expect(hasBlockingPromotionXpAnimation({ pending: null, active: null })).toBe(false);
   });
 
-  it("opens the modal, starts confetti, and plays the promotion audio", () => {
+  it("opens the modal and plays the promotion audio", () => {
     const overlay = elementStub("rankPromotionOverlay");
     const play = vi.fn(() => Promise.resolve());
     const audioFactory = vi.fn(() => ({ currentTime: 10, play }));
@@ -110,8 +107,6 @@ describe("rank promotion celebration", () => {
     startRankPromotionCelebration(documentRef, audioFactory);
 
     expect(overlay.style.display).toBe("flex");
-    expect(stage.classList.contains("isPlaying")).toBe(true);
-    expect(stage.dataset.confettiState).toBe("playing");
     expect(audioFactory).toHaveBeenCalledWith(RANK_PROMOTION_AUDIO_SRC);
     expect(play).toHaveBeenCalledTimes(1);
   });

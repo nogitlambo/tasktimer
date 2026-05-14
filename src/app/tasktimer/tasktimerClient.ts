@@ -143,6 +143,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       TASK_ORDER_BY_KEY,
       OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
       OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
+      OPTIMAL_PRODUCTIVITY_DAYS_KEY,
       NAV_STACK_KEY,
       FOCUS_SESSION_NOTES_KEY,
       NAV_STACK_MAX,
@@ -1246,6 +1247,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         WEB_PUSH_ALERTS_KEY,
         OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
         OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
+        OPTIMAL_PRODUCTIVITY_DAYS_KEY,
         MENU_BUTTON_STYLE_KEY,
         WEEK_STARTING_KEY,
         STARTUP_MODULE_KEY,
@@ -1304,6 +1306,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     loadDynamicColorsSetting,
     loadCheckpointAlertSettings,
     loadOptimalProductivityPeriodPreference,
+    loadOptimalProductivityDaysPreference,
     registerPreferenceEvents,
   } = preferences;
 
@@ -1417,6 +1420,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       loadDynamicColorsSetting,
       loadCheckpointAlertSettings,
       loadOptimalProductivityPeriodPreference,
+      loadOptimalProductivityDaysPreference,
       loadDashboardWidgetState: () => loadDashboardWidgetStateApi(),
       loadThemePreference,
       loadMenuButtonStylePreference,

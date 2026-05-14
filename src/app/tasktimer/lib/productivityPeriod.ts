@@ -1,10 +1,24 @@
+import { normalizeDashboardWeekStart, type DashboardWeekStart } from "./historyChart";
+
 export const DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME = "00:00";
 export const DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME = "23:59";
+export const DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS: readonly DashboardWeekStart[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+export const OPTIMAL_PRODUCTIVITY_DAY_LABELS: ReadonlyArray<{ value: DashboardWeekStart; label: string; shortLabel: string }> = [
+  { value: "sun", label: "Sunday", shortLabel: "Sun" },
+  { value: "mon", label: "Monday", shortLabel: "Mon" },
+  { value: "tue", label: "Tuesday", shortLabel: "Tue" },
+  { value: "wed", label: "Wednesday", shortLabel: "Wed" },
+  { value: "thu", label: "Thursday", shortLabel: "Thu" },
+  { value: "fri", label: "Friday", shortLabel: "Fri" },
+  { value: "sat", label: "Saturday", shortLabel: "Sat" },
+] as const;
 
 export type OptimalProductivityPeriod = {
   startTime: string;
   endTime: string;
 };
+
+export type OptimalProductivityDays = DashboardWeekStart[];
 
 export function normalizeTimeOfDay(value: unknown, fallback: string): string {
   const raw = String(value || "").trim();
@@ -26,6 +40,44 @@ export function normalizeOptimalProductivityPeriod(value: {
     startTime: normalizeTimeOfDay(value.optimalProductivityStartTime, DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME),
     endTime: normalizeTimeOfDay(value.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
   };
+}
+
+export function normalizeOptimalProductivityDays(value: unknown): OptimalProductivityDays {
+  const source = Array.isArray(value) ? value : typeof value === "string" ? String(value).split(",") : [];
+  const seen = new Set<DashboardWeekStart>();
+  const normalized = source.reduce<OptimalProductivityDays>((days, entry) => {
+    const day = normalizeDashboardWeekStart(entry);
+    const raw = String(entry || "").trim().toLowerCase();
+    if (raw !== day || seen.has(day)) return days;
+    seen.add(day);
+    days.push(day);
+    return days;
+  }, []);
+  if (!normalized.length) return [...DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS];
+  return DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.filter((day) => seen.has(day));
+}
+
+export function isOptimalProductivityDay(day: unknown): day is DashboardWeekStart {
+  return DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.includes(normalizeDashboardWeekStart(day));
+}
+
+export function localDayToDashboardWeekStart(ts: number): DashboardWeekStart {
+  const dayIndex = new Date(ts).getDay();
+  return (DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS[dayIndex] || "sun") as DashboardWeekStart;
+}
+
+export function timestampIsInOptimalProductivityDays(ts: number, days: OptimalProductivityDays): boolean {
+  if (!Number.isFinite(ts) || ts <= 0) return false;
+  const normalizedDays = normalizeOptimalProductivityDays(days);
+  return normalizedDays.includes(localDayToDashboardWeekStart(ts));
+}
+
+export function buildOptimalProductivityDaysSummary(days: OptimalProductivityDays): string {
+  const normalizedDays = normalizeOptimalProductivityDays(days);
+  if (normalizedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length) return "All days";
+  return OPTIMAL_PRODUCTIVITY_DAY_LABELS.filter((day) => normalizedDays.includes(day.value))
+    .map((day) => day.shortLabel)
+    .join(", ");
 }
 
 export function timeOfDayToMinutes(value: unknown, fallback: string): number {

@@ -769,6 +769,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       tasks: ctx.getTasks(),
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       nowValue,
     });
     const score = momentum.score;
@@ -1822,6 +1823,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       tasks: ctx.getTasks(),
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       nowValue: nowMs(),
     });
     const message = buildMomentumDriverMessages(momentum)[nextKey] || null;

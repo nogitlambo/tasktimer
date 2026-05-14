@@ -18,6 +18,8 @@ function momentum(overrides: Partial<MomentumSnapshot>): MomentumSnapshot {
     activeDayCount: 0,
     trailingStreak: 0,
     recentDaysMs: [0, 0, 0],
+    recentQualifiedLabels: [],
+    selectedDaysSummary: "All days",
     ...overrides,
   };
 }

@@ -3,8 +3,11 @@ import type { MainMode, TaskOrderBy } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
+  buildOptimalProductivityDaysSummary,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityDays,
   normalizeTimeOfDay,
 } from "../lib/productivityPeriod";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
@@ -115,6 +118,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       checkpointAlertToastMode: ctx.getCheckpointAlertToastMode(),
       optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
       optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
     });
   }
@@ -331,6 +335,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.optimalProductivityEndTimeInput) {
       els.optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
     }
+    syncOptimalProductivityDaysUi();
     syncTaskOrderByMenuUi();
     const lockAdvancedTaskConfig = !canUseAdvancedTaskConfig();
     if (els.taskDynamicColorsToggle) {
@@ -446,6 +451,66 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.optimalProductivityEndTimeInput) els.optimalProductivityEndTimeInput.value = endTime;
   }
 
+  function getOptimalProductivityDayInputs() {
+    return [
+      els.optimalProductivityDaySun,
+      els.optimalProductivityDayMon,
+      els.optimalProductivityDayTue,
+      els.optimalProductivityDayWed,
+      els.optimalProductivityDayThu,
+      els.optimalProductivityDayFri,
+      els.optimalProductivityDaySat,
+    ].filter((input): input is HTMLInputElement => !!input);
+  }
+
+  function syncOptimalProductivityDaysUi() {
+    const days = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
+    getOptimalProductivityDayInputs().forEach((input) => {
+      input.checked = days.includes(normalizeDashboardWeekStart(input.value));
+    });
+    if (els.optimalProductivityDaysSummary) {
+      els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
+    }
+    if (els.optimalProductivityDaysTrigger) {
+      const expanded = !els.optimalProductivityDaysMenu?.hasAttribute("hidden");
+      els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+  }
+
+  function closeOptimalProductivityDaysMenu() {
+    if (els.optimalProductivityDaysMenu) els.optimalProductivityDaysMenu.setAttribute("hidden", "");
+    if (els.optimalProductivityDaysTrigger) els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", "false");
+  }
+
+  function openOptimalProductivityDaysMenu() {
+    els.optimalProductivityDaysMenu?.removeAttribute("hidden");
+    if (els.optimalProductivityDaysTrigger) els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", "true");
+  }
+
+  function toggleOptimalProductivityDaysMenu() {
+    if (els.optimalProductivityDaysMenu?.hasAttribute("hidden")) openOptimalProductivityDaysMenu();
+    else closeOptimalProductivityDaysMenu();
+  }
+
+  function applyOptimalProductivityDaysPreference(nextDays: unknown) {
+    const days = normalizeOptimalProductivityDays(nextDays);
+    ctx.setOptimalProductivityDaysState(days);
+    syncOptimalProductivityDaysUi();
+  }
+
+  function loadOptimalProductivityDaysPreference() {
+    applyOptimalProductivityDaysPreference(preferenceService.loadOptimalProductivityDays());
+  }
+
+  function saveOptimalProductivityDaysPreference() {
+    try {
+      localStorage.setItem(ctx.storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY, normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()).join(","));
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function loadOptimalProductivityPeriodPreference() {
     const period = preferenceService.loadOptimalProductivityPeriod();
     applyOptimalProductivityPeriodPreference(period.startTime, period.endTime);
@@ -481,6 +546,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveMobilePushAlertsSetting();
     saveCheckpointAlertSettings();
     saveOptimalProductivityPeriodPreference();
+    saveOptimalProductivityDaysPreference();
     ctx.render();
   }
 
@@ -528,6 +594,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
         DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
       );
+      applyOptimalProductivityDaysPreference(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
       syncTaskSettingsUi();
       persistInlineTaskSettingsImmediate();
       void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
@@ -662,6 +729,30 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveOptimalProductivityPeriodPreference();
       ctx.render();
     });
+    ctx.on(els.optimalProductivityDaysTrigger, "click", () => {
+      toggleOptimalProductivityDaysMenu();
+    });
+    ctx.on(document, "click", (event) => {
+      const target = event.target as Node | null;
+      const row = els.optimalProductivityDaysRow as HTMLElement | null;
+      if (!row || !target || row.contains(target)) return;
+      closeOptimalProductivityDaysMenu();
+    });
+    getOptimalProductivityDayInputs().forEach((input) => {
+      ctx.on(input, "change", () => {
+        const selectedDays = getOptimalProductivityDayInputs()
+          .filter((checkbox) => checkbox.checked)
+          .map((checkbox) => normalizeDashboardWeekStart(checkbox.value));
+        if (!selectedDays.length) {
+          input.checked = true;
+          syncOptimalProductivityDaysUi();
+          return;
+        }
+        applyOptimalProductivityDaysPreference(selectedDays);
+        saveOptimalProductivityDaysPreference();
+        ctx.render();
+      });
+    });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();
       saveStartupModulePreference();
@@ -670,6 +761,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveMobilePushAlertsSetting();
       saveCheckpointAlertSettings();
       saveOptimalProductivityPeriodPreference();
+      saveOptimalProductivityDaysPreference();
       ctx.render();
       ctx.closeOverlay(els.taskSettingsOverlay as HTMLElement | null);
     });
@@ -716,6 +808,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyOptimalProductivityPeriodPreference,
     loadOptimalProductivityPeriodPreference,
     saveOptimalProductivityPeriodPreference,
+    applyOptimalProductivityDaysPreference,
+    loadOptimalProductivityDaysPreference,
+    saveOptimalProductivityDaysPreference,
     setThemeMode,
     setMenuButtonStyle,
     applyMainMode,

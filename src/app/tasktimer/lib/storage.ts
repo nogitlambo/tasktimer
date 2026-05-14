@@ -36,8 +36,10 @@ import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, reconcileRewardProgressWithHistory } from "./rewards";
 import {
+  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
+  normalizeOptimalProductivityDays,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
 import {
@@ -1273,6 +1275,7 @@ export function buildDefaultCloudPreferences() {
     checkpointAlertToastMode: "auto5s" as const,
     optimalProductivityStartTime: DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
     optimalProductivityEndTime: DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+    optimalProductivityDays: [...DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS],
     rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
     updatedAtMs: Date.now(),
   };
@@ -1856,6 +1859,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
     ),
     optimalProductivityEndTime: normalizeTimeOfDay(prefs?.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
+    optimalProductivityDays: normalizeOptimalProductivityDays(prefs?.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
     rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
   };
   const uid = currentUid();

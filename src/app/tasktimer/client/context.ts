@@ -21,6 +21,7 @@ import type { RewardProgressV1 } from "../lib/rewards";
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskOrderBy } from "./types";
+import type { OptimalProductivityDays } from "../lib/productivityPeriod";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -52,6 +53,7 @@ export type TaskTimerCachedPreferences = {
   checkpointAlertToastEnabled?: unknown;
   optimalProductivityStartTime?: unknown;
   optimalProductivityEndTime?: unknown;
+  optimalProductivityDays?: unknown;
   modeSettings?: TaskTimerCachedModeSettings;
   rewards?: unknown;
   updatedAtMs?: unknown;
@@ -124,6 +126,7 @@ export type TaskTimerRewardsHistoryContext = {
   setLiveSessionsByTaskId: (value: LiveSessionsByTaskId) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
   getRewardProgress: () => RewardProgressV1;
   setRewardProgress: (value: RewardProgressV1) => void;
   getRewardSessionTrackersByTaskId: () => Record<
@@ -722,6 +725,7 @@ export type TaskTimerSessionContext = {
   getCheckpointAlertToastMode: () => "auto5s" | "manual";
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
   broadcastCheckpointAlertMute: (taskId: string) => void;
   render: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
@@ -810,6 +814,7 @@ export type TaskTimerDashboardRenderContext = {
   getHistoryByTaskId: () => HistoryByTaskId;
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
   getDashboardAvgRange: () => DashboardAvgRange;
   setDashboardAvgRange: (value: DashboardAvgRange) => void;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
@@ -848,6 +853,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     WEB_PUSH_ALERTS_KEY: string;
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
+    OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     WEEK_STARTING_KEY: string;
   };
@@ -884,6 +890,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setOptimalProductivityStartTimeState: (value: string) => void;
   getOptimalProductivityEndTime: () => string;
   setOptimalProductivityEndTimeState: (value: string) => void;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
+  setOptimalProductivityDaysState: (value: OptimalProductivityDays) => void;
   getRewardProgress: () => unknown;
   normalizeRewardProgress: (value: unknown) => unknown;
   currentUid: () => string | null;
