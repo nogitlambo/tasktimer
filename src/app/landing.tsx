@@ -71,6 +71,7 @@ function FeatureIcon({ icon, title }: { icon: FeatureIconName; title: string }) 
 
 export default function Landing({ showTitlePhase, showActions }: LandingExperimentalProps) {
   const [revealStage, setRevealStage] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const timers: number[] = [];
@@ -99,7 +100,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
-          style={{ background: "#1a1b20" }}
         >
           <Link href="/" className="landingV2FooterBrand displayFont">
             <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
@@ -111,29 +111,53 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             <Link href="/pricing">Pricing</Link>
             <Link href="/web-sign-in">Sign In</Link>
           </div>
+          <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
+            <button
+              type="button"
+              className="landingV2MobileMenuButton"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen ? "true" : "false"}
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <div className="landingV2MobileMenuLinks" aria-hidden={mobileMenuOpen ? "false" : "true"}>
+              <button
+                type="button"
+                className="landingV2MobileMenuClose"
+                aria-label="Close navigation menu"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span />
+                <span />
+              </button>
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/web-sign-in">Sign In</Link>
+            </div>
+          </div>
         </header>
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />
-              <span>Flexible task management</span>
+              <span>Progress over perfection</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
+            <h1 className="landingV2HeroTitle displayFont">Break free from guilt-driven productivity systems</h1>
 
             <p className="landingV2HeroCopy">
-              Designed for neurodivergent minds, TaskLaunch helps you break free from guilt-driven productivity
-              systems by turning scattered energy into sustainable momentum, helping you recover faster after difficult
-              days and keep moving forward without perfectionism.
+              Flexible task management to support neurodivergent minds by directing scattered energy into sustainable
+              momentum so you can recover quickly after difficult days and continue making progress even when focus,
+              energy, and motivation fluctuate.
             </p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
               <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
                 Get Started
-              </Link>
-              <Link href="/tasklaunch" className="landingV2SecondaryBtn displayFont">
-                Continue without account
               </Link>
               <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
                 Watch Demo

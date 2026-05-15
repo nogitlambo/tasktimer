@@ -11,6 +11,7 @@ function isValidEmail(value: string) {
 
 export default function LandingClassic({ showTitlePhase }: LandingClassicProps) {
   const [revealStage, setRevealStage] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -71,7 +72,6 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
-          style={{ background: "#1a1b20" }}
         >
           <Link href="/" className="landingV2FooterBrand displayFont">
             <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
@@ -81,21 +81,46 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
           <div className="landingV2FooterLinks">
             <Link href="/privacy">Privacy</Link>
           </div>
+          <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
+            <button
+              type="button"
+              className="landingV2MobileMenuButton"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen ? "true" : "false"}
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <div className="landingV2MobileMenuLinks" aria-hidden={mobileMenuOpen ? "false" : "true"}>
+              <button
+                type="button"
+                className="landingV2MobileMenuClose"
+                aria-label="Close navigation menu"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span />
+                <span />
+              </button>
+              <Link href="/privacy">Privacy</Link>
+            </div>
+          </div>
         </header>
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch coming soon hero">
           <div className="landingV2HeroMain">
             <div className="landingV2HeroTag">
               <span className="landingV2HeroTagDot" />
-              <span>Flexible task management</span>
+              <span>Progress over perfection</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Productivity without the guilt trip</h1>
+            <h1 className="landingV2HeroTitle displayFont">Break free from guilt-driven productivity systems</h1>
 
             <p className="landingV2HeroCopy">
-              Designed for neurodivergent minds, TaskLaunch helps you break free from guilt-driven productivity
-              systems by turning scattered energy into sustainable momentum, helping you recover faster after difficult
-              days and keep moving forward without perfectionism.
+              Flexible task management to support neurodivergent minds by directing scattered energy into sustainable
+              momentum so you can recover quickly after difficult days and continue making progress even when focus,
+              energy, and motivation fluctuate.
             </p>
 
             <form id="subscribe" className="landingV2SubscribeCard" onSubmit={handleSubmit} noValidate>
@@ -130,11 +155,6 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
               {submitError ? <p className="landingV2SubscribeMessage isError">{submitError}</p> : null}
               {submitSuccess ? <p className="landingV2SubscribeMessage isSuccess">{submitSuccess}</p> : null}
             </form>
-            <div className="landingV2Actions isVisible">
-              <Link href="/tasklaunch" className="landingV2SecondaryBtn displayFont">
-                Continue without account
-              </Link>
-            </div>
           </div>
         </section>
       </div>

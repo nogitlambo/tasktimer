@@ -235,6 +235,10 @@ body.webSignInRoute .webSignInPage {
   opacity: 1;
 }
 
+.webSignInGoogleButton {
+  margin-bottom: 32px;
+}
+
 .webSignInAuthButtonIcon {
   position: absolute;
   left: 30px;
@@ -250,6 +254,21 @@ body.webSignInRoute .webSignInPage {
   justify-content: center;
   text-align: center;
   padding-left: 52px;
+}
+
+.webSignInGuestLink {
+  color: rgba(248, 250, 252, 0.74);
+  font-family: var(--font-readable);
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.webSignInGuestLink:hover {
+  color: rgba(248, 250, 252, 0.96);
 }
 
 .webSignInAuthInput {
@@ -418,8 +437,8 @@ canvas {
   gap: 28px;
   min-height: 68px;
   padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 48px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 9, 10, 0.9);
+  border-bottom: 0;
+  background: #08090a;
   backdrop-filter: blur(16px);
   opacity: 0;
   transform: translateY(-16px);
@@ -441,13 +460,14 @@ canvas {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  font-size: 1.64rem;
 }
 
 .landingV2 .landingV2HeaderBrandIcon {
   display: block;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   object-fit: contain;
 }
 
@@ -540,7 +560,7 @@ canvas {
 }
 
 .landingV2 .landingV2HeroTitle {
-  margin: 0;
+  margin: -24px 0 0;
   max-width: 10ch;
   font-size: clamp(2.5125rem, 6vw, 5.25rem);
   font-weight: 900;
@@ -629,7 +649,7 @@ canvas {
   gap: 10px;
   font-family: var(--font-display-ui);
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--landing-muted);
 }
@@ -1201,6 +1221,107 @@ canvas {
 .landingV2 .landingV2FooterLinks a {
   font-size: 0.72rem;
   text-decoration: none;
+}
+
+.landingV2 .landingV2MobileMenu {
+  display: none;
+  position: relative;
+}
+
+.landingV2 .landingV2MobileMenuButton {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--landing-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.landingV2 .landingV2MobileMenuButton::-webkit-details-marker {
+  display: none;
+}
+
+.landingV2 .landingV2MobileMenuButton span {
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+}
+
+.landingV2 .landingV2MobileMenuLinks {
+  position: absolute;
+  top: calc((max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
+  right: calc(var(--landing-mobile-header-pad, 24px) * -1);
+  display: grid;
+  width: 100vw;
+  padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 68px) var(--landing-mobile-header-pad, 24px) 18px;
+  background: #08090a;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-14px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.landingV2 .landingV2MobileMenu.isOpen .landingV2MobileMenuLinks {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.landingV2 .landingV2MobileMenuClose {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  position: relative;
+  margin-bottom: 6px;
+  color: var(--landing-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.landingV2 .landingV2MobileMenuClose::-webkit-details-marker {
+  display: none;
+}
+
+.landingV2 .landingV2MobileMenuClose span {
+  position: absolute;
+  width: 20px;
+  height: 1px;
+  background: currentColor;
+}
+
+.landingV2 .landingV2MobileMenuClose span:first-child {
+  transform: rotate(45deg);
+}
+
+.landingV2 .landingV2MobileMenuClose span:last-child {
+  transform: rotate(-45deg);
+}
+
+.landingV2 .landingV2MobileMenuLinks a {
+  padding: 13px 0;
+  color: var(--landing-muted);
+  font-family: var(--font-readable);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+}
+
+.landingV2 .landingV2MobileMenuLinks a:hover {
+  color: var(--landing-text);
 }
 
 .landingV2ComingSoon .landingV2Hero {
@@ -1805,11 +1926,35 @@ canvas {
 
 }
 
+@media (max-width: 700px) {
+  .landingV2 .landingV2Header {
+    --landing-mobile-header-pad: 24px;
+  }
+
+  .landingV2 .landingV2HeaderFooter {
+    align-items: center;
+  }
+
+  .landingV2 .landingV2HeaderFooter > .landingV2FooterLinks {
+    display: none;
+  }
+
+  .landingV2 .landingV2MobileMenu {
+    display: block;
+  }
+}
+
 @media (max-width: 560px) {
   .landingV2 .landingV2Header {
-    grid-template-columns: 1fr;
-    justify-items: start;
+    --landing-mobile-header-pad: 18px;
+    grid-template-columns: 1fr auto;
+    justify-items: stretch;
     padding: calc(max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 18px 16px;
+  }
+
+  .landingV2 .landingV2MobileMenuLinks {
+    top: calc((max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
+    padding-top: calc(max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 68px);
   }
 
   .landingV2 .landingV2HeaderActions {

@@ -120,7 +120,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   type="button"
                   onClick={onGoogleSignIn}
                   disabled={authBusy}
-                  className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
+                  className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary webSignInGoogleButton self-center rounded-none"
                   style={showEmailLoginForm ? { display: "none" } : undefined}
                 >
                   <span className="webSignInAuthButtonIcon" aria-hidden="true">
@@ -145,6 +145,15 @@ export default function WebSignIn(props: WebSignInProps) {
                   </span>
                   <span className="webSignInAuthButtonLabel">Continue with Google</span>
                 </button>
+
+                {!showEmailLoginForm ? (
+                  <a
+                    href="/tasklaunch"
+                    className="webSignInGuestLink self-center"
+                  >
+                    Continue without account
+                  </a>
+                ) : null}
 
                 {showEmailLoginForm ? (
                   <>

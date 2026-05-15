@@ -12,7 +12,10 @@ describe("Landing", () => {
     expect(html).toContain('alt=""');
     expect(html).toContain('href="/web-sign-in"');
     expect(html).toContain("Get Started");
-    expect(html).toContain('href="/tasklaunch"');
-    expect(html).toContain("Continue without account");
+    expect(html).toContain("Watch Demo");
+    expect(html).toContain('class="landingV2MobileMenu"');
+    expect(html).toContain('aria-label="Open navigation menu"');
+    expect(html).toContain('aria-label="Close navigation menu"');
+    expect(html).not.toContain("Continue without account");
   });
 });

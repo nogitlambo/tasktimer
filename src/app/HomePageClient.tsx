@@ -12,6 +12,7 @@ import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
+const CTA_PHASE_MS = (LOGO_PHASE_MS + DIAL_PHASE_MS) / 2;
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
 function shouldUseRedirectAuth() {
@@ -101,7 +102,7 @@ function HomeContent() {
 
   useEffect(() => {
     const titleTimer = window.setTimeout(() => setShowTitlePhase(true), LOGO_PHASE_MS);
-    const actionTimer = window.setTimeout(() => setShowActions(true), LOGO_PHASE_MS + DIAL_PHASE_MS);
+    const actionTimer = window.setTimeout(() => setShowActions(true), CTA_PHASE_MS);
 
     return () => {
       window.clearTimeout(titleTimer);
