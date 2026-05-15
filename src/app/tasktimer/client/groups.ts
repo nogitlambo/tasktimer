@@ -17,6 +17,7 @@ import {
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
 import { getCalendarWeekStartMs } from "../lib/history";
+import { formatDashboardDurationShort } from "../lib/historyChart";
 import { getRankForXp, getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import { sendSharedTaskReminder, type SharedTaskReminderResult } from "../lib/pushFunctions";
 import type { TaskTimerGroupsContext } from "./context";
@@ -252,7 +253,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           row.createdAt && typeof (row.createdAt as any).toMillis === "function"
             ? Number((row.createdAt as any).toMillis())
             : Number.NaN;
-        return { peerUid, alias, avatarSrc, currentRankId, totalXp, sharedCount, createdAtMs };
+        const summaries = ctx.getGroupsSharedSummaries().filter((entry) => entry.ownerUid === peerUid);
+        const sharedTotalMs = summaries.reduce((sum, entry) => sum + Math.max(0, Number(entry.totalTimeLoggedMs || 0) || 0), 0);
+        const sharedAverageMs = summaries.length
+          ? Math.floor(
+              summaries.reduce((sum, entry) => sum + Math.max(0, Number(entry.avgTimeLoggedThisWeekMs || 0) || 0), 0) / summaries.length
+            )
+          : 0;
+        return { peerUid, alias, avatarSrc, currentRankId, totalXp, sharedCount, sharedTotalMs, sharedAverageMs, createdAtMs };
       })
       .filter(
         (row): row is {
@@ -262,6 +270,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           currentRankId: string;
           totalXp: number;
           sharedCount: number;
+          sharedTotalMs: number;
+          sharedAverageMs: number;
           createdAtMs: number;
         } => !!row
       )
@@ -278,7 +288,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
 
     if (els.friendProfileAvatar) {
       els.friendProfileAvatar.src = row.avatarSrc;
-      els.friendProfileAvatar.alt = `${row.alias} avatar`;
+      els.friendProfileAvatar.alt = "";
     }
     if (els.friendProfileName) els.friendProfileName.textContent = row.alias;
     if (els.friendProfileRankImage) {
@@ -296,7 +306,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         }
       }
     }
-    if (els.friendProfileRank) els.friendProfileRank.textContent = `Rank: ${getRankLabelById(row.currentRankId)}`;
+    if (els.friendProfileRank) els.friendProfileRank.textContent = getRankLabelById(row.currentRankId);
+    if (els.friendProfileXp) els.friendProfileXp.textContent = `${new Intl.NumberFormat().format(row.totalXp)} XP`;
+    if (els.friendProfileSharedTaskCount) els.friendProfileSharedTaskCount.textContent = String(row.sharedCount);
+    if (els.friendProfileSharedTime) els.friendProfileSharedTime.textContent = formatDashboardDurationShort(row.sharedTotalMs);
+    if (els.friendProfileSharedAverage) els.friendProfileSharedAverage.textContent = formatDashboardDurationShort(row.sharedAverageMs);
     if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
     ctx.setActiveFriendProfileUid(row.peerUid);
     ctx.setActiveFriendProfileName(row.alias);

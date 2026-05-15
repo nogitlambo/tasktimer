@@ -18,7 +18,8 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
-import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent } from "./xp-award-events";
+import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
+import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -688,7 +689,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
     ctx.save();
     ctx.render();
-    if (opts?.deferModal) {
+    if (opts?.deferModal || shouldDeferTimeGoalModalForBlockingOverlay()) {
       queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
     } else {
       openTimeGoalCompleteModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
@@ -1037,6 +1038,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return !!activeFocusTaskId && !!taskId && taskId !== activeFocusTaskId;
   }
 
+  function shouldDeferTimeGoalModalForBlockingOverlay() {
+    if (typeof document === "undefined") return false;
+    return hasBlockingTimeGoalCompleteOverlay(document);
+  }
+
   function queueDeferredFocusModeTimeGoalModal(
     task: Task,
     elapsedMs: number,
@@ -1058,6 +1064,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function openDeferredFocusModeTimeGoalModal() {
+    if (shouldDeferTimeGoalModalForBlockingOverlay()) return;
     const queuedCompleted = getDeferredQueue().find((entry) => {
       const task = ctx.getTasks().find((row) => String(row.id || "").trim() === String(entry?.taskId || "").trim()) || null;
       return isTaskTimeGoalCompletedToday(task);
@@ -1642,6 +1649,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const taskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
       if (taskId) setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
     });
+    if (typeof window !== "undefined") {
+      ctx.on(window, TASKTIMER_OVERLAY_CLOSED_EVENT, () => {
+        window.setTimeout(() => {
+          openDeferredFocusModeTimeGoalModal();
+        }, 0);
+      });
+    }
     ctx.on(els.checkpointToastHost, "click", (e: any) => {
       const delegatedAction = getDelegatedAction(e.target, "data-action");
       if (!delegatedAction) return;

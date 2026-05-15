@@ -51,14 +51,6 @@ export function SettingsAccountPane({
     if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
   }, [account.showDeleteAccountConfirm]);
 
-  useEffect(() => {
-    if (!activeRankPromotion || typeof document === "undefined") return;
-    startRankPromotionCelebration(document);
-    return () => {
-      stopRankPromotionCelebration(document);
-    };
-  }, [activeRankPromotion]);
-
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Account" subtitle="">
       <div className="settingsInlineStack">
@@ -350,6 +342,9 @@ export function SettingsAccountPane({
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          onPresentationStart={() => {
+            startRankPromotionCelebration(document);
+          }}
           onClose={() => {
             stopRankPromotionCelebration(document);
             setActiveRankPromotion(null);

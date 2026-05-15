@@ -75,12 +75,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     page: "leaderboard",
-    label: "Leaderboard",
-    ariaLabel: "Leaderboard",
+    label: "Leaderboards",
+    ariaLabel: "Leaderboards",
     iconSrc: "/icons/icons_default/leaderboard.png",
     desktopId: "commandCenterLeaderboardBtn",
     mobileId: "footerLeaderboardBtn",
-    href: "/leaderboard",
+    href: "/leaderboards",
   },
   {
     page: "history",

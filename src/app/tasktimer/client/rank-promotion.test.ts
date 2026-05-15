@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildRankPromotionTestPayload,
@@ -6,8 +6,11 @@ import {
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   RANK_PROMOTION_AUDIO_SRC,
+  RANK_PROMOTION_OVERLAY_ID,
   startRankPromotionCelebration,
+  stopRankPromotionCelebration,
 } from "./rank-promotion";
+import { TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 
 function elementStub(id = "") {
   const classes = new Set<string>();
@@ -24,6 +27,10 @@ function elementStub(id = "") {
     },
   } as unknown as HTMLElement;
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("rank promotion celebration", () => {
   it("detects an upward rank change and resolves the promoted rank label", () => {
@@ -109,5 +116,24 @@ describe("rank promotion celebration", () => {
     expect(overlay.style.display).toBe("flex");
     expect(audioFactory).toHaveBeenCalledWith(RANK_PROMOTION_AUDIO_SRC);
     expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("dispatches the shared overlay closed event when closing the modal", () => {
+    const overlay = elementStub(RANK_PROMOTION_OVERLAY_ID);
+    overlay.style.display = "flex";
+    const listener = vi.fn();
+    const windowRef = new EventTarget();
+    const documentRef = {
+      getElementById: (id: string) => (id === RANK_PROMOTION_OVERLAY_ID ? overlay : null),
+    } as unknown as Document;
+    vi.stubGlobal("window", windowRef);
+
+    windowRef.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, listener);
+    stopRankPromotionCelebration(documentRef);
+    windowRef.removeEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, listener);
+
+    expect(overlay.style.display).toBe("none");
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ overlayId: RANK_PROMOTION_OVERLAY_ID });
   });
 });

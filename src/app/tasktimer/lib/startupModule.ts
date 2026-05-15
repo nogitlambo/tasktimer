@@ -19,7 +19,7 @@ export function startupModuleToAppPage(startupModule: StartupModulePreference): 
 export function startupModuleToRoute(startupModule: StartupModulePreference): string {
   if (startupModule === "tasks") return "/tasklaunch";
   if (startupModule === "friends") return "/friends";
-  if (startupModule === "leaderboard") return "/leaderboard";
+  if (startupModule === "leaderboard") return "/leaderboards";
   return "/dashboard";
 }
 

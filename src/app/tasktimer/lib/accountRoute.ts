@@ -9,7 +9,7 @@ function normalizeTaskTimerAccountBackPath(pathname: string) {
   if (normalized === "/tasklaunch") return "/tasklaunch";
   if (normalized === "/dashboard") return "/dashboard";
   if (normalized === "/friends") return "/friends";
-  if (normalized === "/leaderboard") return "/leaderboard";
+  if (normalized === "/leaderboard" || normalized === "/leaderboards") return "/leaderboards";
   if (normalized === "/history-manager") return "/history-manager";
   if (normalized === "/settings") return "/settings";
   if (normalized === "/feedback") return "/feedback";

@@ -97,7 +97,7 @@ describe("friend profile row targets", () => {
     };
   }
 
-  it("opens Friend Info only for avatar or username controls with the profile hook", () => {
+  it("opens User Summary only for avatar or username controls with the profile hook", () => {
     expect(getFriendProfileOpenUidFromTarget(targetResolvingTo("friend-1"))).toBe("friend-1");
     expect(getFriendProfileOpenUidFromTarget(targetResolvingTo(""))).toBe("");
     expect(getFriendProfileOpenUidFromTarget(targetResolvingTo(null))).toBe("");

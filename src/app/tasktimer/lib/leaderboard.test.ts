@@ -35,9 +35,11 @@ vi.mock("./accountProfileStorage", () => ({
 
 import {
   buildGlobalLeaderboardRows,
+  buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   getLeaderboardResolvedRank,
   isGlobalLeaderboardPlaceholderProfile,
+  isRivalLeaderboardPlaceholderProfile,
   isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   type LeaderboardProfile,
@@ -294,6 +296,44 @@ describe("buildGlobalLeaderboardRows", () => {
     });
     expect(rows).toHaveLength(11);
     expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+  });
+});
+
+describe("buildRivalLeaderboardRows", () => {
+  it("uses an inferred ladder position for the current user when rival rank is unavailable", () => {
+    const rows = buildRivalLeaderboardRows({
+      rivalEntries: [],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: null,
+    });
+
+    expect(rows[0]).toMatchObject({
+      isCurrentUser: true,
+      rank: 1,
+      rankLabel: "#1",
+      playerLabel: "You",
+      isPlaceholder: false,
+    });
+    expect(rows).toHaveLength(10);
+    expect(rows.slice(1).every((row) => row.isPlaceholder)).toBe(true);
+    expect(rows.slice(1).every((row) => isRivalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
+  });
+
+  it("keeps the current user on their numeric rival ladder rank when outside the visible board", () => {
+    const rows = buildRivalLeaderboardRows({
+      rivalEntries: [createProfile({ uid: "rival-1", username: "rival_1", rewardTotalXp: 1600 })],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 900 }),
+      currentUserRivalRank: 14,
+    });
+
+    expect(rows[0]).toMatchObject({
+      isCurrentUser: true,
+      rank: 14,
+      rankLabel: "#14",
+      playerLabel: "You",
+      isPlaceholder: false,
+    });
+    expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
   });
 });
 

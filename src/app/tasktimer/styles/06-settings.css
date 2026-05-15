@@ -231,9 +231,9 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .menuItem:hover{
-  background: linear-gradient(180deg, rgba(53,232,255,.10), rgba(255,255,255,.02)) !important;
-  border-color: rgba(53,232,255,.34);
-  box-shadow: inset 0 0 0 1px rgba(53,232,255,.10), 0 0 10px rgba(0,220,255,.12);
+  background: rgba(255,255,255,.08) !important;
+  border-color: transparent;
+  box-shadow: none;
   transform: translateY(-1px);
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuItemText{
@@ -1394,7 +1394,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile::before{
   content: "";
   position: absolute;
-  left: 10px;
+  left: 0;
   top: 50%;
   bottom: 50%;
   width: 2px;
@@ -1427,7 +1427,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
@@ -2635,61 +2635,62 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
     max-width:none;
   }
 }
-/* Final Settings nav hover override: use border accent only, no glass fill. */
+/* Final Settings nav hover override: use neutral shading, no accent border. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:hover,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:hover,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
-/* Final Settings menu hover cleanup: keep hover border-only in all themes. */
+/* Final Settings menu hover cleanup: keep hover neutral in all themes. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .menuItem:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .menuItem:focus-visible{
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 @media (hover: hover) and (pointer: fine){
   .settingsMenu .menuItem:hover{
-    background: linear-gradient(180deg, rgba(53,232,255,.18), rgba(255,255,255,.05));
-    border-color: rgba(53,232,255,.5);
-    box-shadow: inset 0 0 0 1px rgba(53,232,255,.2), 0 0 12px rgba(0,220,255,.16);
+    background: rgba(255,255,255,.08);
+    border-color: transparent;
+    box-shadow: none;
     transform: translateY(-1px);
   }
 }
@@ -3707,7 +3708,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
   border-color: transparent !important;
-  background: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   box-shadow: none !important;
 }
 body[data-theme="lime"] .settingsDetailTitle,

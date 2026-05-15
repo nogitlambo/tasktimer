@@ -30,12 +30,14 @@ import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
   buildGlobalLeaderboardRows,
+  buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
   isGlobalLeaderboardPlaceholderProfile,
+  isRivalLeaderboardPlaceholderProfile,
   isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
@@ -335,14 +337,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }, 0);
     return () => window.clearTimeout(openTimer);
   }, [activeRankPromotion, pendingRankPromotion, promotionOverlayRetrySeq, xpAnimationState]);
-
-  useEffect(() => {
-    if (!activeRankPromotion || typeof document === "undefined") return;
-    startRankPromotionCelebration(document);
-    return () => {
-      stopRankPromotionCelebration(document);
-    };
-  }, [activeRankPromotion]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -663,62 +657,31 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, [leaderboardData.currentUserEntry, leaderboardData.currentUserRank, leaderboardData.topEntries]);
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const globalTableRows = globalRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
-  const rivalRows = useMemo(() => {
-    const currentUid = String(leaderboardData.currentUserEntry?.uid || "").trim();
-    const rows: Array<{
-      profile: LeaderboardProfile;
-      rank: number | null;
-      rankLabel: string;
-      playerLabel: string;
-      isCurrentUser: boolean;
-    }> = leaderboardData.rivalEntries.slice(0, 10).map((profile, index) => {
-      const isCurrentUser = !!currentUid && profile.uid === currentUid;
-      const rank = isCurrentUser && leaderboardData.currentUserRivalRank ? leaderboardData.currentUserRivalRank : index + 1;
-      return {
-        profile,
-        rank,
-        rankLabel: rank > 0 ? `#${rank}` : "--",
-        playerLabel: isCurrentUser ? "You" : getLeaderboardLabel(profile),
-        isCurrentUser,
-      };
-    });
-    if (leaderboardData.currentUserEntry && !rows.some((row) => row.profile.uid === leaderboardData.currentUserEntry!.uid)) {
-      const rank = leaderboardData.currentUserRivalRank;
-      rows.push({
-        profile: leaderboardData.currentUserEntry,
-        rank,
-        rankLabel: rank && rank > 0 ? `#${rank}` : "--",
-        playerLabel: "You",
-        isCurrentUser: true,
-      });
-    }
-    return rows;
-  }, [leaderboardData.currentUserEntry, leaderboardData.currentUserRivalRank, leaderboardData.rivalEntries]);
+  const rivalRows = useMemo(
+    () =>
+      buildRivalLeaderboardRows({
+        rivalEntries: leaderboardData.rivalEntries,
+        currentUserEntry: leaderboardData.currentUserEntry,
+        currentUserRivalRank: leaderboardData.currentUserRivalRank,
+      }),
+    [leaderboardData.currentUserEntry, leaderboardData.currentUserRivalRank, leaderboardData.rivalEntries]
+  );
   const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const rivalTableRows = rivalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+  const selectedGlobalRow = selectedLeaderboardProfile ? globalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedWeeklyRow = selectedLeaderboardProfile ? weeklyRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedRivalRow = selectedLeaderboardProfile ? rivalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
-  const selectedLeaderboardRank =
-    selectedLeaderboardProfile && leaderboardData.currentUserEntry?.uid === selectedLeaderboardProfile.uid
-      ? leaderboardData.currentUserRank
-      : selectedLeaderboardProfile
-        ? leaderboardData.topEntries.findIndex((entry) => entry.uid === selectedLeaderboardProfile.uid) + 1
-        : null;
-  const selectedLeaderboardRankLabel =
-    leaderboardView === "weekly" && selectedWeeklyRow
-      ? selectedWeeklyRow.rankLabel
-      : leaderboardView === "rivals" && selectedRivalRow
-        ? selectedRivalRow.rankLabel
-      : selectedLeaderboardRank && selectedLeaderboardRank > 0
-        ? `#${selectedLeaderboardRank}`
-        : "--";
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile
     ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
     : "";
+  const selectedGlobalRankLabel = selectedGlobalRow?.rankLabel || "--";
+  const selectedWeeklyRankLabel = selectedWeeklyRow?.rankLabel || "--";
+  const selectedRivalRankLabel = selectedRivalRow?.rankLabel || "--";
   const currentUserAvatarSrc = leaderboardData.currentUserEntry ? getLeaderboardAvatarRenderSrc(leaderboardData.currentUserEntry) : "";
   const currentUserAvatarInitials = leaderboardData.currentUserEntry ? getLeaderboardInitials(getLeaderboardLabel(leaderboardData.currentUserEntry)) : "U";
   const currentUserLabel = leaderboardData.currentUserEntry ? getLeaderboardLabel(leaderboardData.currentUserEntry) : "User";
+  const currentUserRankLabel = leaderboardData.currentUserEntry ? getLeaderboardRankLabel(leaderboardData.currentUserEntry) : "your rank";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -731,6 +694,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   const openLeaderboardProfile = (profile: LeaderboardProfile) => {
     if (isGlobalLeaderboardPlaceholderProfile(profile)) return;
+    if (isRivalLeaderboardPlaceholderProfile(profile)) return;
     setSelectedLeaderboardProfile(profile);
   };
 
@@ -958,7 +922,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </div>
           </section>
 
-          <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboard page">
+          <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboards page">
             <div className="dashboardShell leaderboardShell">
               <div className="leaderboardViewHeader">
                 <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
@@ -993,7 +957,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     aria-selected={leaderboardView === "rivals"}
                     onClick={() => setLeaderboardView("rivals")}
                   >
-                    Rivals
+                    Rank Rivals
                   </button>
                 </div>
               </div>
@@ -1097,13 +1061,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   id="leaderboardRivalsPanel"
                   role="tabpanel"
                   aria-labelledby="leaderboardRivalsTab"
-                  aria-label="Rivals leaderboard rankings"
+                  aria-label="Rank Rivals leaderboard rankings"
                 >
                   <div className="leaderboardWeeklyIntro">
-                    <p className="dashboardCardEyebrow">Rivals</p>
-                    <p className="leaderboardHeroMeta">Same-rank focus performers</p>
+                    <p className="dashboardCardEyebrow">Rank Rivals</p>
+                    <p className="leaderboardHeroMeta">Ranked leaderboard for {currentUserRankLabel}</p>
                   </div>
-                  {leaderboardState === "ready" && rivalRows.length ? (
+                  {leaderboardState === "ready" ? (
                     <>
                       <div className="leaderboardWeeklyPodium" aria-label="Rivals top three">
                         {rivalPodiumRows.map((row) => (
@@ -1111,6 +1075,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}`}
                             type="button"
                             key={row.profile.uid}
+                            disabled={row.isPlaceholder}
+                            aria-disabled={row.isPlaceholder}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
                             <span className="leaderboardWeeklyPodiumAvatar">
@@ -1147,6 +1113,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               role="row"
                               type="button"
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
+                              disabled={row.isPlaceholder}
+                              aria-disabled={row.isPlaceholder}
                               onClick={() => openLeaderboardProfile(row.profile)}
                             >
                               <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
@@ -1287,15 +1255,30 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="leaderboardPositionModalIdentity">
                   <LeaderboardAvatar profile={selectedLeaderboardProfile} />
                   <div className="leaderboardPositionModalIdentityText">
-                    <strong className="leaderboardName">{selectedLeaderboardLabel}</strong>
+                    <strong
+                      className="leaderboardName leaderboardPositionName"
+                    >
+                      {selectedLeaderboardLabel}
+                    </strong>
                     {selectedLeaderboardMemberSince ? (
                       <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
                     ) : null}
                   </div>
                 </div>
-                <div className="leaderboardMiniRow leaderboardPositionInfo">
-                  <span className="leaderboardMiniLabel">Leaderboard position</span>
-                  <strong>{selectedLeaderboardRankLabel}</strong>
+                <div className="leaderboardPositionStats" aria-label="Leaderboard positions">
+                  <div className="leaderboardPositionStatsTitle">Leaderboard Positions</div>
+                  <div>
+                    <strong>{selectedGlobalRankLabel}</strong>
+                    <span>Global</span>
+                  </div>
+                  <div>
+                    <strong>{selectedWeeklyRankLabel}</strong>
+                    <span>Weekly</span>
+                  </div>
+                  <div>
+                    <strong>{selectedRivalRankLabel}</strong>
+                    <span>Rivals</span>
+                  </div>
                 </div>
                 <div className="leaderboardMiniRow">
                   <span className="leaderboardMiniLabel">Rank</span>
@@ -1308,10 +1291,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="leaderboardMiniRow">
                   <span className="leaderboardMiniLabel">Time logged</span>
                   <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
-                </div>
-                <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">Current streak</span>
-                  <strong>{formatLeaderboardStreak(selectedLeaderboardProfile.streakDays)}</strong>
                 </div>
                 <div className="leaderboardMiniRow">
                   <span className="leaderboardMiniLabel">Weekly XP</span>
@@ -1349,6 +1328,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          onPresentationStart={() => {
+            startRankPromotionCelebration(document);
+          }}
           onClose={() => {
             stopRankPromotionCelebration(document);
             setActiveRankPromotion(null);

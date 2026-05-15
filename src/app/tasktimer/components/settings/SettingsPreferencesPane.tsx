@@ -22,7 +22,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
               <option value="friends">Friends</option>
-              <option value="leaderboard">Leaderboard</option>
+              <option value="leaderboard">Leaderboards</option>
             </select>
           </div>
           <div className="unitRow" id="taskWeekStartingRow">

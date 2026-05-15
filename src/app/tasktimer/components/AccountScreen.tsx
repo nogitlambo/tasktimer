@@ -95,14 +95,6 @@ export default function AccountScreen() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!activeRankPromotion || typeof document === "undefined") return;
-    startRankPromotionCelebration(document);
-    return () => {
-      stopRankPromotionCelebration(document);
-    };
-  }, [activeRankPromotion]);
-
   const handleSignOut = useCallback(async () => {
     if (signOutBusy) return;
     setSignOutBusy(true);
@@ -358,6 +350,9 @@ export default function AccountScreen() {
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          onPresentationStart={() => {
+            startRankPromotionCelebration(document);
+          }}
           onClose={() => {
             stopRankPromotionCelebration(document);
             setActiveRankPromotion(null);

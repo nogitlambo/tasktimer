@@ -504,6 +504,37 @@ export function isGlobalLeaderboardPlaceholderProfile(profile: LeaderboardProfil
   return /^global-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
 }
 
+function buildRivalPlaceholderProfile(rank: number, currentUserEntry: LeaderboardProfile | null): LeaderboardProfile {
+  const safeRank = Math.max(1, Math.floor(rank || 1));
+  const currentTotalXp = normalizeInt(currentUserEntry?.rewardTotalXp);
+  const baseTotalXp = currentTotalXp > 0 ? currentTotalXp + 420 : 7_600;
+  const rewardTotalXp = Math.max(600, baseTotalXp - (safeRank - 1) * 150);
+  const weeklyXpGain = Math.max(28, 360 - (safeRank - 1) * 24);
+  const totalFocusMs = Math.max(60 * 60 * 1000, (18 - safeRank) * 46 * 60 * 1000);
+  const streakDays = Math.max(1, 14 - safeRank);
+  const label = `Rank Rival ${safeRank}`;
+  return {
+    uid: `rival-placeholder-${safeRank}`,
+    username: label,
+    displayLabel: label,
+    avatarId: null,
+    avatarCustomSrc: null,
+    googlePhotoUrl: null,
+    rankThumbnailSrc: null,
+    rewardCurrentRankId: currentUserEntry?.rewardCurrentRankId || getRankForXp(rewardTotalXp).id,
+    rewardTotalXp,
+    streakDays,
+    totalFocusMs,
+    weeklyXpGain,
+    memberSinceMs: null,
+    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+  };
+}
+
+export function isRivalLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
+  return /^rival-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
+}
+
 export function buildGlobalLeaderboardRows(input: {
   topEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
@@ -549,6 +580,67 @@ export function buildGlobalLeaderboardRows(input: {
     },
     ...rows,
   ];
+}
+
+export function buildRivalLeaderboardRows(input: {
+  rivalEntries: LeaderboardProfile[];
+  currentUserEntry: LeaderboardProfile | null;
+  currentUserRivalRank: number | null;
+}): WeeklyLeaderboardRow[] {
+  const currentUid = String(input.currentUserEntry?.uid || "").trim();
+  const rows = (input.rivalEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
+    const isCurrentUser = !!currentUid && profile.uid === currentUid;
+    const rank = isCurrentUser && input.currentUserRivalRank ? input.currentUserRivalRank : index + 1;
+    return {
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank),
+      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser,
+      isPlaceholder: false,
+    };
+  });
+
+  if (input.currentUserEntry && !rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
+    const inferredRank =
+      input.currentUserRivalRank && input.currentUserRivalRank > 0
+        ? input.currentUserRivalRank
+        : Math.min(rows.length + 1, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+    const currentUserRow: WeeklyLeaderboardRow = {
+      profile: input.currentUserEntry,
+      rank: inferredRank,
+      rankLabel: formatWeeklyRankLabel(inferredRank),
+      playerLabel: "You",
+      isCurrentUser: true,
+      isPlaceholder: false,
+    };
+    if (inferredRank > WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+      rows.unshift(currentUserRow);
+    } else {
+      rows.splice(Math.max(0, inferredRank - 1), 0, currentUserRow);
+    }
+  }
+
+  while (rows.filter((row) => !row.rank || row.rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT).length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+    const rank =
+      Math.max(
+        0,
+        ...rows
+          .map((row) => row.rank || 0)
+          .filter((rowRank) => rowRank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT)
+      ) + 1;
+    const profile = buildRivalPlaceholderProfile(rank, input.currentUserEntry);
+    rows.push({
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank),
+      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
+      isCurrentUser: false,
+      isPlaceholder: true,
+    });
+  }
+
+  return rows;
 }
 
 export function buildWeeklyLeaderboardRows(input: {

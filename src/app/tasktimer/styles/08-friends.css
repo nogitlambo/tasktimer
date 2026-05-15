@@ -1148,7 +1148,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardName,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText strong{
   display:block;
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
@@ -1520,6 +1523,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 #leaderboardPositionOverlay .leaderboardUserSummaryTitle{
   margin: 0;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .1em;
@@ -1586,10 +1590,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   object-fit: cover;
   object-position: center;
 }
-#leaderboardPositionOverlay .leaderboardName{
+#leaderboardPositionOverlay .leaderboardPositionName{
   display:block;
   min-width: 0;
-  font: inherit;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
@@ -1607,6 +1611,57 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   line-height: 1.25;
   font-weight: 400;
   color: rgba(170, 176, 184, 0.82);
+}
+#leaderboardPositionOverlay .leaderboardPositionStats{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 10px;
+  padding: 12px 0 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+#leaderboardPositionOverlay .leaderboardPositionStatsTitle{
+  grid-column: 1 / -1;
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(170, 176, 184, 0.22);
+  text-align: center;
+  color: rgba(238,242,246,.72);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+#leaderboardPositionOverlay .leaderboardPositionStats > div{
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 44px auto;
+  justify-items: center;
+  align-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 0;
+}
+#leaderboardPositionOverlay .leaderboardPositionStats strong{
+  max-width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 26px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#leaderboardPositionOverlay .leaderboardPositionStats span{
+  color: rgba(238,242,246,.55);
+  font-size: 12px;
 }
 #leaderboardPositionOverlay .leaderboardMiniRow{
   display:grid;
@@ -1628,6 +1683,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   line-height: 1.3;
   color: rgba(170, 176, 184, 0.82);
   font-weight: 400;
+  text-align: right;
 }
 #leaderboardPositionOverlay .leaderboardMiniRow strong{
   text-align: left;
@@ -1647,6 +1703,242 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 #leaderboardPositionOverlay .confirmBtns .btn-ghost:hover:not(:disabled),
 #leaderboardPositionOverlay .confirmBtns .btn-ghost:focus-visible{
+  background: rgba(255,255,255,.05) !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  border-color: rgba(202,210,218,.62) !important;
+  box-shadow: 0 0 0 1px rgba(202,210,218,.12) inset !important;
+}
+#friendProfileModal .friendUserSummaryModal{
+  max-width: min(420px, calc(100vw - 32px));
+  border-radius: 0;
+}
+#friendProfileModal .friendUserSummaryHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 2px;
+}
+#friendProfileModal .friendUserSummaryTitle{
+  margin: 0;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #c9ff24 !important;
+}
+#friendProfileModal .friendUserSummaryRankInsignia{
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+#friendProfileModal .friendUserSummaryRankInsigniaImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+#friendProfileModal .friendUserSummaryRankInsigniaPlaceholder{
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.04);
+  color: rgba(233,252,255,.94);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+#friendProfileModal .friendUserSummaryIdentity{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+#friendProfileModal .friendUserSummaryIdentityText{
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+#friendProfileModal .friendUserSummaryAvatar{
+  width: 54px;
+  height: 54px;
+  display:grid;
+  place-items:center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#friendProfileModal .friendUserSummaryAvatarImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+#friendProfileModal .friendUserSummaryName{
+  display:block;
+  min-width: 0;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#friendProfileModal .friendUserSummaryMemberSince{
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 400;
+  color: rgba(170, 176, 184, 0.82);
+}
+#friendProfileModal .friendUserSummaryRemoveBtn{
+  appearance: none;
+  justify-self: start;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  clip-path: none;
+  color: #ff5c70;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+#friendProfileModal .friendUserSummaryRemoveBtn:hover,
+#friendProfileModal .friendUserSummaryRemoveBtn:focus-visible{
+  color: #ff8f8f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#friendProfileModal .friendUserSummaryRemoveBtn:focus-visible{
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+#friendProfileModal .friendUserSummaryStats{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 10px;
+  padding: 12px 0 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+#friendProfileModal .friendUserSummaryStatsTitle{
+  grid-column: 1 / -1;
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(170, 176, 184, 0.22);
+  text-align: center;
+  color: rgba(238,242,246,.72);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+#friendProfileModal .friendUserSummaryStats > div{
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 44px auto;
+  justify-items: center;
+  align-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 0;
+}
+#friendProfileModal .friendUserSummaryStats strong{
+  max-width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 26px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#friendProfileModal .friendUserSummaryStats span{
+  color: rgba(238,242,246,.55);
+  font-size: 12px;
+}
+#friendProfileModal .friendUserSummaryMiniRow{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items:center;
+  gap:12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 0;
+  border-radius: 0;
+  clip-path: none;
+}
+#friendProfileModal .friendUserSummaryMiniRow + .friendUserSummaryMiniRow{
+  margin-top: 0;
+}
+#friendProfileModal .friendUserSummaryMiniLabel{
+  font-size: 12px;
+  line-height: 1.3;
+  color: rgba(170, 176, 184, 0.82);
+  font-weight: 400;
+  text-align: right;
+}
+#friendProfileModal .friendUserSummaryMiniRow strong{
+  text-align: left;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.3;
+}
+#friendProfileModal .confirmBtns{
+  margin-top: 16px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+#friendProfileModal #friendProfileCloseBtn{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+}
+#friendProfileModal .confirmBtns .btn-ghost{
+  background: rgba(255,255,255,.01) !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  border-color: rgba(178,187,196,.46) !important;
+  box-shadow: none !important;
+}
+#friendProfileModal .confirmBtns .btn-ghost:hover:not(:disabled),
+#friendProfileModal .confirmBtns .btn-ghost:focus-visible{
   background: rgba(255,255,255,.05) !important;
   background-image: none !important;
   color: var(--text) !important;

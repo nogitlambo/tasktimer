@@ -1,5 +1,6 @@
 import { RANK_LADDER, type RankDefinition } from "../lib/rewards";
 import type { XpAwardAnimationState } from "./xp-award-animation";
+import { dispatchOverlayClosedEvent } from "./xp-award-events";
 
 export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
@@ -98,4 +99,5 @@ export function startRankPromotionCelebration(documentRef: Pick<Document, "getEl
 export function stopRankPromotionCelebration(documentRef: Pick<Document, "getElementById">) {
   const overlay = documentRef.getElementById(RANK_PROMOTION_OVERLAY_ID) as HTMLElement | null;
   if (overlay) overlay.style.display = "none";
+  if (typeof window !== "undefined") dispatchOverlayClosedEvent(window, RANK_PROMOTION_OVERLAY_ID);
 }

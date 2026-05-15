@@ -16,7 +16,7 @@ function normalizeKnownRoute(pathRaw: string) {
   if (/\/tasklaunch$/i.test(normalizedPath)) return `/tasklaunch${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/dashboard$/i.test(normalizedPath)) return `/dashboard${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/friends$/i.test(normalizedPath)) return `/friends${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
-  if (/\/leaderboard$/i.test(normalizedPath)) return `/leaderboard${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  if (/\/leaderboards?$/i.test(normalizedPath)) return `/leaderboards${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/settings$/i.test(normalizedPath)) return `/settings${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/history-manager$/i.test(normalizedPath)) return `/history-manager${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/feedback$/i.test(normalizedPath)) return `/feedback${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
@@ -31,7 +31,7 @@ function pathForAppToken(token: string) {
   const page = match[1];
   if (page === "dashboard") return "/dashboard";
   if (page === "friends") return "/friends";
-  if (page === "leaderboard") return "/leaderboard";
+  if (page === "leaderboard") return "/leaderboards";
   if (page === "history") return "/history-manager";
   if (page === "schedule") return "/tasklaunch?page=schedule";
   return "/tasklaunch";

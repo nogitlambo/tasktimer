@@ -51,36 +51,50 @@ export default function FriendsOverlays() {
       </div>
 
       <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Friend Profile">
-          <div className="friendProfileHeaderRow">
-            <h2>Friend Info</h2>
-            <button className="friendProfileDeleteLink" id="friendProfileDeleteBtn" type="button">
-              Remove
-            </button>
+        <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
+          <div className="friendUserSummaryHeader">
+            <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
+            <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
+              <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
+              <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
+            </span>
           </div>
-          <div className="chkRow" id="friendProfileIdentityRow">
-            <AppImg id="friendProfileAvatar" src="/avatars/toons/toonHead-male.svg" alt="" aria-hidden="true" />
-            <div className="friendProfileIdentityText">
-              <div id="friendProfileName">Friend</div>
-              <div id="friendProfileMemberSince">Member since --</div>
+          <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
+            <span className="friendUserSummaryAvatar" aria-hidden="true">
+              <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toonHead-male.svg" alt="" />
+            </span>
+            <div className="friendUserSummaryIdentityText">
+              <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+              <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
+              <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+                Remove
+              </button>
             </div>
           </div>
-          <div className="modalSubtext">
-            <AppImg
-              id="friendProfileRankImage"
-              src={undefined}
-              alt="Rank insignia"
-              style={{ display: "none", width: 72, height: 72, objectFit: "contain", borderRadius: 10, marginBottom: 10 }}
-            />
-            <div
-              id="friendProfileRankPlaceholder"
-              className="friendProfileRankPlaceholder"
-              style={{ display: "none", width: 72, height: 72, marginBottom: 10 }}
-              aria-hidden="true"
-            />
-            <div id="friendProfileRank">Rank: --</div>
+          <div className="friendUserSummaryStats" aria-label="Friend summary">
+            <div className="friendUserSummaryStatsTitle">STATS</div>
+            <div>
+              <strong id="friendProfileSharedTaskCount">0</strong>
+              <span>Shared</span>
+            </div>
+            <div>
+              <strong id="friendProfileSharedTime">0m</strong>
+              <span>Logged</span>
+            </div>
+            <div>
+              <strong id="friendProfileSharedAverage">0m</strong>
+              <span>Weekly avg</span>
+            </div>
           </div>
-          <div className="footerBtns friendProfileCloseRow">
+          <div className="friendUserSummaryMiniRow">
+            <span className="friendUserSummaryMiniLabel">Rank</span>
+            <strong id="friendProfileRank">--</strong>
+          </div>
+          <div className="friendUserSummaryMiniRow">
+            <span className="friendUserSummaryMiniLabel">XP</span>
+            <strong id="friendProfileXp">0 XP</strong>
+          </div>
+          <div className="confirmBtns friendProfileCloseRow">
             <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
               Close
             </button>

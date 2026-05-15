@@ -5,6 +5,7 @@ import {
   isTaskTimerOverlayVisible,
   openTaskTimerOverlay,
 } from "./overlay-lifecycle";
+import { hasBlockingTimeGoalCompleteOverlay, isBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 
 function overlayStub(id = "overlay", attrs: Record<string, string | null> = {}) {
   return {
@@ -83,6 +84,39 @@ describe("overlay lifecycle", () => {
     expect(isTaskTimerOverlayVisible(hiddenByDisplay)).toBe(false);
     expect(isTaskTimerOverlayVisible(hiddenByAria)).toBe(false);
     expect(isTaskTimerOverlayVisible(null)).toBe(false);
+  });
+
+  it("detects visible overlays that should block task complete modals", () => {
+    const rankPromotionOverlay = overlayStub("rankPromotionOverlay");
+    const hiddenOverlay = overlayStub("addTaskOverlay");
+    const taskCompleteOverlay = overlayStub("timeGoalCompleteOverlay");
+    hiddenOverlay.style.display = "none";
+    rankPromotionOverlay.style.display = "flex";
+    taskCompleteOverlay.style.display = "flex";
+    const documentRef = {
+      querySelectorAll: (selector: string) =>
+        selector === ".overlay" ? [hiddenOverlay, taskCompleteOverlay, rankPromotionOverlay] : [],
+    } as unknown as Document;
+
+    expect(isBlockingTimeGoalCompleteOverlay(taskCompleteOverlay)).toBe(false);
+    expect(isBlockingTimeGoalCompleteOverlay(hiddenOverlay)).toBe(false);
+    expect(isBlockingTimeGoalCompleteOverlay(rankPromotionOverlay)).toBe(true);
+    expect(hasBlockingTimeGoalCompleteOverlay(documentRef)).toBe(true);
+  });
+
+  it("does not block task complete modals on time-goal overlay family members", () => {
+    const completeOverlay = overlayStub("timeGoalCompleteOverlay");
+    const noteOverlay = overlayStub("timeGoalCompleteNoteOverlay");
+    const saveNoteOverlay = overlayStub("timeGoalCompleteSaveNoteOverlay");
+    completeOverlay.style.display = "flex";
+    noteOverlay.style.display = "flex";
+    saveNoteOverlay.style.display = "flex";
+    const documentRef = {
+      querySelectorAll: (selector: string) =>
+        selector === ".overlay" ? [completeOverlay, noteOverlay, saveNoteOverlay] : [],
+    } as unknown as Document;
+
+    expect(hasBlockingTimeGoalCompleteOverlay(documentRef)).toBe(false);
   });
 
   it("returns false when no top overlay is open", () => {

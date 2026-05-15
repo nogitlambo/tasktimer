@@ -4439,7 +4439,7 @@ body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
   font-size:15px;
 }
 
-/* Final Delete Friend confirm override: destructive styling belongs on the shared confirm modal, not Friend Info. */
+/* Final Delete Friend confirm override: destructive styling belongs on the shared confirm modal, not User Summary. */
 
 #confirmOverlay.isDeleteFriendConfirm .modal{
   background: linear-gradient(180deg, rgba(28,10,14,.98) 0%, rgba(13,15,19,.98) 100%);
@@ -4595,6 +4595,27 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   padding: 16px 16px 14px;
   border: 1px solid rgba(53,232,255,.28);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.08);
+}
+
+#rankPromotionOverlay::before{
+  opacity: 1;
+  background: rgba(0,0,0,.94);
+  backdrop-filter: none;
+}
+
+#rankPromotionOverlay.is-dimming::before{
+  animation: rankPromotionCinemaDim 1s ease-in-out both;
+}
+
+#rankPromotionOverlay.is-dimming .rankPromotionModal{
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px) scale(.98);
+}
+
+#rankPromotionOverlay.is-intro .rankPromotionModal{
+  animation: rankPromotionModalReveal .28s ease-out both;
 }
 
 #rankPromotionOverlay h2{
@@ -4754,6 +4775,10 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   animation: rankPromotionOldHardSwap 1.9s steps(1,end) both;
 }
 
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld .rankPromotionLabel{
+  animation: rankPromotionOldLabelImpactHide 1.9s ease both;
+}
+
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
   animation: rankPromotionNewSmash 1.9s linear both;
 }
@@ -4807,6 +4832,60 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   will-change: transform, opacity, filter;
 }
 
+#rankPromotionOverlay .rankPromotionOldInsigniaWrap{
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+}
+
+#rankPromotionOverlay .rankPromotionOldInsigniaWrap > .rankPromotionInsignia{
+  grid-area: 1 / 1;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldInsigniaWrap > .rankPromotionInsignia{
+  animation: rankPromotionOldInsigniaImpactHide 1.9s steps(1,end) both;
+}
+
+#rankPromotionOverlay .rankPromotionShatterField{
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+#rankPromotionOverlay .rankPromotionShard{
+  position: absolute;
+  display: block;
+  opacity: 0;
+  clip-path: var(--rank-promotion-shard-clip);
+  transform: translate3d(0,0,0) rotate(0deg) scale(1);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
+
+#rankPromotionOverlay .rankPromotionShard.is-image{
+  background-image: var(--rank-promotion-shard-bg);
+  background-repeat: no-repeat;
+  background-size: 1500% 1400%;
+  background-position: var(--rank-promotion-shard-bg-x) var(--rank-promotion-shard-bg-y);
+  filter: drop-shadow(0 0 2px rgba(126,243,255,.34));
+}
+
+#rankPromotionOverlay .rankPromotionShard.is-placeholder{
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255,255,255,.82), transparent 30%),
+    linear-gradient(135deg, rgba(201,255,36,.95), rgba(53,232,255,.62) 56%, rgba(8,12,18,.5));
+  box-shadow: 0 0 5px rgba(126,243,255,.24);
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionShard{
+  animation: rankPromotionShardExplosion 1.9s cubic-bezier(.12,.76,.18,1) both;
+  animation-delay: var(--rank-promotion-shard-delay);
+}
+
 #rankPromotionOverlay .rankPromotionInsigniaNew{
   width: 140px;
   height: 140px;
@@ -4840,12 +4919,25 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay .rankPromotionLabel{
+  position: relative;
   margin: 0;
+  padding-bottom: 12px;
   color: rgba(245,248,244,.94);
   font-size: 17px;
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
+}
+
+#rankPromotionOverlay .rankPromotionLabel::after{
+  content: "";
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 0;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(190,196,205,.5);
 }
 
 #rankPromotionOverlay .confirmBtns{
@@ -4868,6 +4960,20 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 #rankPromotionOverlay #rankPromotionCloseBtn{
   min-width: 132px;
   justify-content: center;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border-color: rgba(190,196,205,.62);
+  color: rgba(235,239,245,.92);
+  box-shadow: inset 0 0 0 1px rgba(190,196,205,.12);
+}
+
+#rankPromotionOverlay #rankPromotionCloseBtn:hover,
+#rankPromotionOverlay #rankPromotionCloseBtn:focus-visible{
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border-color: rgba(218,224,232,.78);
 }
 
 body[data-theme="purple"] #rankPromotionOverlay .modal{
@@ -4889,8 +4995,23 @@ body[data-theme="purple"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholde
   background: rgba(233,134,245,.1);
 }
 
+body[data-theme="purple"] #rankPromotionOverlay .rankPromotionShard.is-image{
+  filter: drop-shadow(0 0 2px rgba(244,167,255,.34));
+}
+
+body[data-theme="purple"] #rankPromotionOverlay .rankPromotionShard.is-placeholder{
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255,255,255,.82), transparent 30%),
+    linear-gradient(135deg, rgba(244,167,255,.95), rgba(126,90,255,.64) 56%, rgba(14,10,20,.52));
+  box-shadow: 0 0 5px rgba(244,167,255,.24);
+}
+
 body[data-theme="purple"] #rankPromotionOverlay .rankPromotionLabel{
   color: rgba(250,240,255,.96);
+}
+
+body[data-theme="purple"] #rankPromotionOverlay .rankPromotionLabel::after{
+  background: rgba(244,167,255,.5);
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .modal{
@@ -4914,8 +5035,45 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
   background: rgba(214,214,214,.08);
 }
 
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-image{
+  filter: drop-shadow(0 0 2px rgba(243,255,122,.28));
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-placeholder{
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255,255,255,.78), transparent 30%),
+    linear-gradient(135deg, rgba(243,255,122,.92), rgba(214,214,214,.62) 56%, rgba(13,15,16,.54));
+  box-shadow: 0 0 5px rgba(243,255,122,.2);
+}
+
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
   color: rgba(243,255,198,.92);
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
+  background: rgba(243,255,122,.46);
+}
+
+@keyframes rankPromotionCinemaDim{
+  0%{
+    opacity: 0;
+  }
+  100%{
+    opacity: 1;
+  }
+}
+
+@keyframes rankPromotionModalReveal{
+  0%{
+    opacity: 0;
+    transform: translateY(8px) scale(.98);
+    filter: blur(3px);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
 }
 
 @keyframes rankPromotionImpactShake{
@@ -4931,26 +5089,101 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
   0%{
     opacity: 1;
     visibility: visible;
-    transform: translateY(0) scale(1);
+  }
+  92%{
+    opacity: 1;
+    visibility: visible;
+  }
+  93%,100%{
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes rankPromotionOldLabelImpactHide{
+  0%{
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
     filter: blur(0);
   }
   28%{
     opacity: .58;
     visibility: visible;
-    transform: translateY(8px) scale(.78);
+    transform: translateY(8px);
     filter: blur(1.5px);
   }
-  52%{
+  50%{
     opacity: 0;
     visibility: visible;
-    transform: translateY(18px) scale(.5);
+    transform: translateY(18px);
     filter: blur(4px);
   }
-  53%,100%{
+  51%,100%{
     opacity: 0;
     visibility: hidden;
-    transform: translateY(18px) scale(.5);
+    transform: translateY(18px);
     filter: blur(4px);
+  }
+}
+
+@keyframes rankPromotionOldInsigniaImpactHide{
+  0%,50%{
+    opacity: 1;
+    visibility: visible;
+  }
+  51%,100%{
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes rankPromotionShardExplosion{
+  0%,48%{
+    opacity: 0;
+    transform: translate3d(0,0,0) rotate(0deg) scale(1);
+    filter: brightness(1) blur(0);
+  }
+  50%{
+    opacity: 1;
+    transform: translate3d(0,0,0) rotate(0deg) scale(1.08);
+    filter: brightness(1.65) blur(0);
+  }
+  58%{
+    opacity: 1;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-mid),
+        var(--rank-promotion-shard-dy-mid),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-mid))
+      scale(var(--rank-promotion-shard-scale-mid));
+    filter: brightness(1.25) blur(.1px);
+  }
+  76%{
+    opacity: .72;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-near),
+        var(--rank-promotion-shard-dy-near),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-near))
+      scale(var(--rank-promotion-shard-scale));
+    filter: brightness(1) blur(.25px);
+  }
+  100%{
+    opacity: 0;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-far),
+        var(--rank-promotion-shard-dy-far),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot))
+      scale(var(--rank-promotion-shard-scale-end));
+    filter: brightness(.8) blur(1.4px);
   }
 }
 
@@ -5211,6 +5444,15 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
 
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
     animation: rankPromotionReducedOldSwap 1.9s ease both;
+  }
+
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldInsigniaWrap > .rankPromotionInsignia,
+  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionShard{
+    animation: none;
+  }
+
+  #rankPromotionOverlay .rankPromotionShard{
+    display: none;
   }
 
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{

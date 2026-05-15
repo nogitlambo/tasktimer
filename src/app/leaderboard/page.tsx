@@ -1,5 +1,5 @@
-import TaskTimerMainAppPage from "../tasktimer/TaskTimerMainAppPage";
+import { redirect } from "next/navigation";
 
-export default function LeaderboardPage() {
-  return <TaskTimerMainAppPage initialPage="leaderboard" />;
+export default function LeaderboardRedirectPage() {
+  redirect("/leaderboards");
 }

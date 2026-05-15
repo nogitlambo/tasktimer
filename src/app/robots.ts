@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           "/feedback",
           "/friends",
           "/history-manager",
-          "/leaderboard",
+          "/leaderboards",
           "/settings",
           "/signed-out",
           "/tasklaunch",
