@@ -3540,60 +3540,106 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow{
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysField{
-  position: relative;
-  width: min(280px, 100%);
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  flex: 0 0 auto;
   margin-left: auto;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysTrigger{
-  width: 100%;
-  min-height: 40px;
-  justify-content: space-between;
-  text-align: left;
-}
-
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 6;
-  width: min(280px, 100%);
-  padding: 10px;
-  border: 1px solid rgba(121,226,255,.18);
-  background: #0d0f13;
-  box-shadow: 0 16px 32px rgba(0,0,0,.36), inset 0 0 0 1px rgba(255,255,255,.02);
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu[hidden]{
-  display: none;
+  display: inline-flex !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 38px;
-  padding: 6px 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 39px;
+  min-height: 28px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: rgba(226,247,255,.78);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  user-select: none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:focus-within{
+  background: transparent;
+  color: rgba(244,252,255,.98);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:has(input:checked){
+  border-color: #c9ff24;
+  background: transparent;
+  color: rgba(244,252,255,.98);
+  box-shadow: inset 0 0 0 1px rgba(201,255,36,.14);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow input[type="checkbox"]{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
-  border-color: rgba(240,110,224,.24);
-  box-shadow: 0 16px 32px rgba(0,0,0,.36), inset 0 0 0 1px rgba(240,110,224,.06);
+  border-color: transparent;
+}
+
+body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
+  color: rgba(245,218,255,.78);
+}
+
+body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:has(input:checked){
+  border-color: #c9ff24;
+  background: transparent;
+  color: rgba(251,236,255,.98);
 }
 
 @media (max-width: 640px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow{
+    align-items: stretch;
+  }
+
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysField{
     width: 100%;
     margin-left: 0;
   }
 
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
-    left: 0;
-    right: auto;
     width: 100%;
+    justify-content: stretch;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
+    flex: 1 1 calc((100% - 12px) / 4);
+    min-width: 0;
   }
 }
 
