@@ -72,4 +72,17 @@ describe("dashboard layout helpers", () => {
     expect(placements.week).toEqual({ col: 4, row: 1 });
     expect(requested.week).toEqual({ col: 1, row: 1 });
   });
+
+  it("lets an actively dragged card claim the exact requested slot before displaced cards", () => {
+    const placements = resolveDashboardCardPlacements(
+      [
+        { id: "today", size: "quarter", requested: { col: 1, row: 1 }, orderIndex: 0 },
+        { id: "week", size: "quarter", requested: { col: 1, row: 1 }, orderIndex: 1, placementPriority: 1 },
+      ],
+      12
+    );
+
+    expect(placements.week).toEqual({ col: 1, row: 1 });
+    expect(placements.today).toEqual({ col: 4, row: 1 });
+  });
 });

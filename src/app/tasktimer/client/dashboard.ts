@@ -376,6 +376,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function collectDashboardLayoutItems(grid: HTMLElement) {
     const cardSizes = ctx.getDashboardCardSizes();
     const requestedPlacements = ctx.getDashboardCardPlacements();
+    const dragging = ctx.getDashboardDragEl();
+    const draggingId = String(dragging?.getAttribute("data-dashboard-id") || "").trim();
     return Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]"))
       .map((el, orderIndex) => {
         const card = el as HTMLElement;
@@ -388,6 +390,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
           size,
           requested: requestedPlacements[cardId] || null,
           orderIndex,
+          placementPriority: draggingId && cardId === draggingId ? 1 : 0,
         };
       })
       .filter((item) => !!item.id);
@@ -568,6 +571,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       ctx.getDashboardCardSizesDraftBeforeEdit() ? { ...ctx.getDashboardCardSizesDraftBeforeEdit()! } : {}
     );
     applyDashboardCardSizes();
+    saveDashboardOrder();
     ctx.setDashboardEditMode(false);
     ctx.setDashboardOrderDraftBeforeEdit(null);
     ctx.setDashboardCardPlacementsDraftBeforeEdit(null);
@@ -879,6 +883,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (!drag) return;
     if (Number(e.pointerId) !== drag.pointerId) return;
     finishDashboardPointerDrag();
+    saveDashboardOrder();
     if (ctx.getCurrentAppPage() === "dashboard") {
       renderDashboardWidgets();
     }
@@ -957,6 +962,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (!ctx.getDashboardEditMode()) return;
     e.preventDefault();
     applyDashboardCardPlacements();
+    saveDashboardOrder();
     if (ctx.getCurrentAppPage() === "dashboard") {
       renderDashboardWidgets();
     }

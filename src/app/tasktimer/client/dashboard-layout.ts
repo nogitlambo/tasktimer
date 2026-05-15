@@ -10,6 +10,7 @@ export type DashboardLayoutItem = {
   size: DashboardCardSize | null;
   requested: DashboardCardPlacement | null;
   orderIndex: number;
+  placementPriority?: number;
 };
 
 function clampPositiveInt(value: unknown) {
@@ -115,6 +116,8 @@ export function resolveDashboardCardPlacements(items: DashboardLayoutItem[], col
     if (aRequested && bRequested) {
       if (aRequested.row !== bRequested.row) return aRequested.row - bRequested.row;
       if (aRequested.col !== bRequested.col) return aRequested.col - bRequested.col;
+      const priorityDelta = (b.placementPriority || 0) - (a.placementPriority || 0);
+      if (priorityDelta) return priorityDelta;
     } else if (aRequested || bRequested) {
       return aRequested ? -1 : 1;
     }
