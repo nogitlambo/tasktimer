@@ -43,6 +43,13 @@ const MOMENTUM_THRESHOLDS = {
 } as const;
 const RECENT_ACTIVITY_DAY_WEIGHTS: readonly [number, number, number] = [1, 0.65, 0.35];
 const RECENT_ACTIVITY_MIN_SESSION_MS = 5 * 60 * 1000;
+const MOMENTUM_RECENT_ACTIVITY_MAX = 30;
+const MOMENTUM_RECENT_ACTIVITY_SELECTED_DAYS_MAX = 25;
+const MOMENTUM_RECENT_ACTIVITY_OFF_DAY_BONUS_MAX = 5;
+const MOMENTUM_CONSISTENCY_ACTIVE_DAYS_MAX = 18;
+const MOMENTUM_CONSISTENCY_STREAK_MAX = 12;
+const MOMENTUM_WEEKLY_PROGRESS_MAX = 30;
+const MOMENTUM_LIVE_BONUS_MAX = 10;
 const DAY_MS = 86400000;
 
 function clampMomentumScore(value: number): number {
@@ -175,9 +182,13 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
     return sum + (qualified ? RECENT_ACTIVITY_DAY_WEIGHTS[index] : 0);
   }, 0);
   const maxRecentPresenceWeight = RECENT_ACTIVITY_DAY_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
+  const recentSelectedMax =
+    optimalProductivityDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length
+      ? MOMENTUM_RECENT_ACTIVITY_MAX
+      : MOMENTUM_RECENT_ACTIVITY_SELECTED_DAYS_MAX;
   const recentSelectedScore = Math.max(
     0,
-    Math.min(optimalProductivityDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? 25 : 20, (recentPresenceWeight / maxRecentPresenceWeight) * (optimalProductivityDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? 25 : 20))
+    Math.min(recentSelectedMax, (recentPresenceWeight / maxRecentPresenceWeight) * recentSelectedMax)
   );
   const recentOffDayBonusQualifiedCount = Array.from(qualifyingMsByDayKey.entries()).reduce((count, [dayKey, ms]) => {
     if (ms < RECENT_ACTIVITY_MIN_SESSION_MS || recentSelectedDayKeys.includes(dayKey)) return count;
@@ -185,23 +196,23 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
     if (dayStartMs < todayStartMs - 2 * DAY_MS || dayStartMs > nowValue) return count;
     return count + 1;
   }, 0);
-  const recentOffDayBonus = Math.min(5, recentOffDayBonusQualifiedCount * 2.5);
+  const recentOffDayBonus = Math.min(MOMENTUM_RECENT_ACTIVITY_OFF_DAY_BONUS_MAX, recentOffDayBonusQualifiedCount * 2.5);
   const recentActivityScore =
     optimalProductivityDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length
-      ? Math.max(0, Math.min(25, recentSelectedScore))
-      : Math.max(0, Math.min(25, recentSelectedScore + recentOffDayBonus));
+      ? Math.max(0, Math.min(MOMENTUM_RECENT_ACTIVITY_MAX, recentSelectedScore))
+      : Math.max(0, Math.min(MOMENTUM_RECENT_ACTIVITY_MAX, recentSelectedScore + recentOffDayBonus));
 
   const qualifyingDaySet = new Set(
     Array.from(activeDayKeys).filter((dayKey) => (qualifyingMsByDayKey.get(dayKey) || 0) >= RECENT_ACTIVITY_MIN_SESSION_MS)
   );
   const trailingStreak = computeSelectedTrailingStreak(todayStartMs, optimalProductivityDays, qualifyingDaySet);
-  const activeDaysScore = Math.max(0, Math.min(27, (activeDayKeys.size / 5) * 27));
-  const streakScore = Math.max(0, Math.min(18, (trailingStreak / 4) * 18));
+  const activeDaysScore = Math.max(0, Math.min(MOMENTUM_CONSISTENCY_ACTIVE_DAYS_MAX, (activeDayKeys.size / 5) * MOMENTUM_CONSISTENCY_ACTIVE_DAYS_MAX));
+  const streakScore = Math.max(0, Math.min(MOMENTUM_CONSISTENCY_STREAK_MAX, (trailingStreak / 4) * MOMENTUM_CONSISTENCY_STREAK_MAX));
   const consistencyScore = trailingStreak >= 2 ? activeDaysScore + streakScore : 0;
 
   const weeklyProgressRatio = currentWeekGoalMs > 0 ? currentWeekLoggedMs / currentWeekGoalMs : 0;
-  const weeklyProgressScore = Math.max(0, Math.min(20, weeklyProgressRatio * 20));
-  const activeSessionBonus = Math.min(10, runningTaskCount > 0 ? 6 + Math.min(4, runningTaskCount - 1) : 0);
+  const weeklyProgressScore = Math.max(0, Math.min(MOMENTUM_WEEKLY_PROGRESS_MAX, weeklyProgressRatio * MOMENTUM_WEEKLY_PROGRESS_MAX));
+  const activeSessionBonus = Math.min(MOMENTUM_LIVE_BONUS_MAX, runningTaskCount > 0 ? 6 + Math.min(4, runningTaskCount - 1) : 0);
 
   const score = clampMomentumScore(recentActivityScore + consistencyScore + weeklyProgressScore + activeSessionBonus);
   const hasSignal =

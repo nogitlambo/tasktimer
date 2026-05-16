@@ -90,6 +90,39 @@ const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar
   if (id && src) acc[id] = src;
   return acc;
 }, {});
+const placeholderAvatarIds = AVATAR_CATALOG.map((avatar) => String(avatar?.id || "").trim()).filter(Boolean);
+const placeholderUsernameWords = [
+  "beacon",
+  "blitz",
+  "cinder",
+  "comet",
+  "drift",
+  "ember",
+  "focus",
+  "forge",
+  "glide",
+  "grind",
+  "horizon",
+  "lumen",
+  "neon",
+  "orbit",
+  "pixel",
+  "prime",
+  "pulse",
+  "quest",
+  "rally",
+  "rocket",
+  "runner",
+  "signal",
+  "spark",
+  "stride",
+  "summit",
+  "tempo",
+  "thrive",
+  "vector",
+  "vivid",
+  "zenith",
+];
 const leaderboardIdentityCache = new Map<string, { expiresAtMs: number; value: LeaderboardIdentityFields }>();
 
 function dbOrNull() {
@@ -214,6 +247,35 @@ function resolveBuiltInAvatarSrc(avatarIdRaw: string | null | undefined): string
   const avatarId = String(avatarIdRaw || "").trim();
   if (!avatarId) return "";
   return String(avatarSrcById[avatarId] || "").trim();
+}
+
+function hashPlaceholderSeed(seed: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function pickSeededValue<T>(values: T[], seed: string): T | null {
+  if (!values.length) return null;
+  return values[hashPlaceholderSeed(seed) % values.length] ?? null;
+}
+
+function pickPlaceholderAvatarId(seed: string): string | null {
+  return pickSeededValue(placeholderAvatarIds, seed);
+}
+
+function buildPlaceholderUsername(seed: string): string {
+  const firstWord = pickSeededValue(placeholderUsernameWords, `${seed}:first`) || "focus";
+  const secondWord = pickSeededValue(
+    placeholderUsernameWords.filter((word) => word !== firstWord),
+    `${seed}:second`
+  ) || "runner";
+  const separator = hashPlaceholderSeed(`${seed}:separator`) % 2 === 0 ? "_" : "-";
+  const suffix = hashPlaceholderSeed(`${seed}:number`) % 3 === 0 ? String((hashPlaceholderSeed(`${seed}:digit`) % 90) + 10) : "";
+  return `${firstWord}${separator}${secondWord}${suffix}`;
 }
 
 function dispatchLeaderboardProfileUpdated(uid: string): void {
@@ -452,12 +514,12 @@ function buildWeeklyPlaceholderProfile(rank: number): LeaderboardProfile {
   const rewardTotalXp = Math.max(weeklyXpGain, 4_800 - (safeRank - 1) * 320);
   const totalFocusMs = Math.max(30 * 60 * 1000, (14 - safeRank) * 42 * 60 * 1000);
   const streakDays = Math.max(1, 12 - safeRank);
-  const label = `Focus Pilot ${safeRank}`;
+  const label = buildPlaceholderUsername(`weekly:${safeRank}`);
   return {
     uid: `weekly-placeholder-${safeRank}`,
     username: label,
     displayLabel: label,
-    avatarId: null,
+    avatarId: pickPlaceholderAvatarId(`weekly:${safeRank}`),
     avatarCustomSrc: null,
     googlePhotoUrl: null,
     rankThumbnailSrc: null,
@@ -481,12 +543,12 @@ function buildGlobalPlaceholderProfile(rank: number): LeaderboardProfile {
   const weeklyXpGain = Math.max(32, 520 - (safeRank - 1) * 38);
   const totalFocusMs = Math.max(90 * 60 * 1000, (26 - safeRank) * 58 * 60 * 1000);
   const streakDays = Math.max(1, 18 - safeRank);
-  const label = `Focus Pilot ${safeRank}`;
+  const label = buildPlaceholderUsername(`global:${safeRank}`);
   return {
     uid: `global-placeholder-${safeRank}`,
     username: label,
     displayLabel: label,
-    avatarId: null,
+    avatarId: pickPlaceholderAvatarId(`global:${safeRank}`),
     avatarCustomSrc: null,
     googlePhotoUrl: null,
     rankThumbnailSrc: null,
@@ -512,12 +574,12 @@ function buildRivalPlaceholderProfile(rank: number, currentUserEntry: Leaderboar
   const weeklyXpGain = Math.max(28, 360 - (safeRank - 1) * 24);
   const totalFocusMs = Math.max(60 * 60 * 1000, (18 - safeRank) * 46 * 60 * 1000);
   const streakDays = Math.max(1, 14 - safeRank);
-  const label = `Rank Rival ${safeRank}`;
+  const label = buildPlaceholderUsername(`rival:${safeRank}`);
   return {
     uid: `rival-placeholder-${safeRank}`,
     username: label,
     displayLabel: label,
-    avatarId: null,
+    avatarId: pickPlaceholderAvatarId(`rival:${safeRank}`),
     avatarCustomSrc: null,
     googlePhotoUrl: null,
     rankThumbnailSrc: null,

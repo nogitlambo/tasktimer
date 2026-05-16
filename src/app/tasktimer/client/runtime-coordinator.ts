@@ -16,6 +16,7 @@ import type { TaskTimerMutableStore } from "./mutable-store";
 import type { AppPage } from "./types";
 import type { TaskTimerElements } from "./elements";
 import type { DashboardWeekStart } from "../lib/historyChart";
+import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 
 type CreateTaskTimerRuntimeCoordinatorOptions = {
   els: TaskTimerElements;
@@ -61,13 +62,6 @@ export function escapeTaskTimerHtml(str: unknown) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function getTaskTimerTileColumnCount(windowRef: Window) {
-  if (typeof windowRef === "undefined") return 1;
-  if (windowRef.matchMedia("(min-width: 1200px)").matches) return 3;
-  if (windowRef.matchMedia("(min-width: 720px)").matches) return 2;
-  return 1;
 }
 
 function isTaskTimerArchitectUser(options: {

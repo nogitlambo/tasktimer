@@ -63,7 +63,7 @@ describe("computeMomentumSnapshot recent activity", () => {
       nowValue,
     });
 
-    expect(result.recentActivityScore).toBeCloseTo(12.5);
+    expect(result.recentActivityScore).toBeCloseTo(15);
   });
 
   it("scores today plus yesterday using weighted daily presence", () => {
@@ -81,10 +81,10 @@ describe("computeMomentumSnapshot recent activity", () => {
       nowValue,
     });
 
-    expect(result.recentActivityScore).toBeCloseTo(20.625);
+    expect(result.recentActivityScore).toBeCloseTo(24.75);
   });
 
-  it("reaches the full 25 points when all three recent days qualify", () => {
+  it("reaches the full 30 points when all three recent days qualify", () => {
     const historyByTaskId: HistoryByTaskId = {
       [task.id]: [
         entry(todayStart + 60 * 60 * 1000, 5 * 60 * 1000),
@@ -100,7 +100,7 @@ describe("computeMomentumSnapshot recent activity", () => {
       nowValue,
     });
 
-    expect(result.recentActivityScore).toBeCloseTo(25);
+    expect(result.recentActivityScore).toBeCloseTo(30);
   });
 
   it("ignores sessions under 5 minutes", () => {
@@ -133,7 +133,7 @@ describe("computeMomentumSnapshot recent activity", () => {
       nowValue,
     });
 
-    expect(result.recentActivityScore).toBeCloseTo(12.5);
+    expect(result.recentActivityScore).toBeCloseTo(15);
   });
 
   it("counts a running session only when that day contributes at least 5 minutes", () => {
@@ -150,7 +150,7 @@ describe("computeMomentumSnapshot recent activity", () => {
       nowValue,
     });
 
-    expect(result.recentActivityScore).toBeCloseTo(12.5);
+    expect(result.recentActivityScore).toBeCloseTo(15);
   });
 
   it("uses selected productivity days as the required recent checkpoints", () => {

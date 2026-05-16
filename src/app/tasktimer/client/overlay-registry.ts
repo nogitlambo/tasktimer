@@ -20,10 +20,6 @@ export function createTaskTimerOverlayRegistry(ctx: TaskTimerPopupMenuContext): 
       },
     },
     {
-      id: "about",
-      open: () => ctx.openOverlay(els.aboutOverlay as HTMLElement | null),
-    },
-    {
       id: "appearance",
       open: () => ctx.openOverlay(els.appearanceOverlay as HTMLElement | null),
     },

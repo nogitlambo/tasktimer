@@ -36,6 +36,6 @@ describe("dashboard momentum card module", () => {
     });
 
     expect(getPrimaryMomentumDriverKey(snapshot)).toBe("weeklyProgress");
-    expect(buildMomentumSummaryMessage(snapshot)).toContain("Weekly Progress contributed 20 of 20 momentum points");
+    expect(buildMomentumSummaryMessage(snapshot)).toContain("Weekly Progress contributed 20 of 30 momentum points");
   });
 });

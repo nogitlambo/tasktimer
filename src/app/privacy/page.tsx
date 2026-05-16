@@ -68,11 +68,6 @@ export default function PrivacyPolicyPage() {
 
         <section className="landingV2Hero isVisible" aria-label="TaskLaunch privacy policy hero">
           <div className="landingV2HeroMain">
-            <div className="landingV2HeroTag">
-              <span className="landingV2HeroTagDot" />
-              <span>TASKLAUNCH</span>
-            </div>
-
             <h1 className="landingV2HeroTitle displayFont">Privacy Policy</h1>
 
             <p className="landingV2HeroCopy">UPDATED: APRIL 21, 2026</p>

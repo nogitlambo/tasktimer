@@ -21,6 +21,7 @@ function normalizeKnownRoute(pathRaw: string) {
   if (/\/history-manager$/i.test(normalizedPath)) return `/history-manager${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/feedback$/i.test(normalizedPath)) return `/feedback${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/privacy$/i.test(normalizedPath)) return `/privacy${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  if (/\/about$/i.test(normalizedPath)) return `/about${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/signed-out$/i.test(normalizedPath)) return `/signed-out${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   return "";
 }

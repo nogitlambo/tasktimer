@@ -52,7 +52,7 @@ function task(overrides: Partial<Task>): Task {
   } as Task;
 }
 
-function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "tile"; taskOrderBy: "custom" | "alpha" | "schedule"; appPage: string }> = {}) {
+function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "tile"; taskOrderBy: "custom" | "alpha" | "schedule"; appPage: string; tileColumnCount: number }> = {}) {
   const taskListEl = elementStub("section");
   const openHistoryTaskIds = new Set<string>();
   const pinnedHistoryTaskIds = new Set<string>();
@@ -68,7 +68,7 @@ function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "t
     getTasks: () => tasks,
     getTaskView: () => overrides.taskView ?? "list",
     getTaskOrderBy: () => overrides.taskOrderBy ?? "custom",
-    getTileColumnCount: () => 2,
+    getTileColumnCount: () => overrides.tileColumnCount ?? 2,
     setCurrentTileColumnCount: (value) => calls.push(`tile-count:${value}`),
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
     getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
@@ -143,6 +143,39 @@ describe("task list renderer", () => {
     expect(secondColumnTask?.dataset.taskId).toBe("b");
     expect(harness.calls).toContain("apply-flip:a");
     expect(harness.calls).toContain("apply-flip:b");
+  });
+
+  it("renders four tile columns when the responsive helper selects four", () => {
+    const harness = createHarness({
+      taskView: "tile",
+      taskOrderBy: "custom",
+      tileColumnCount: 4,
+      tasks: [
+        task({ id: "a", name: "Alpha", order: 1 }),
+        task({ id: "b", name: "Bravo", order: 2 }),
+        task({ id: "c", name: "Charlie", order: 3 }),
+        task({ id: "d", name: "Delta", order: 4 }),
+        task({ id: "e", name: "Echo", order: 5 }),
+      ],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    expect(harness.taskListEl.attributes.get("data-tile-columns")).toBe("4");
+    expect(harness.taskListEl.children).toHaveLength(4);
+    expect(harness.taskListEl.children.map((column) => column.className)).toEqual([
+      "taskTileColumn",
+      "taskTileColumn",
+      "taskTileColumn",
+      "taskTileColumn",
+    ]);
+    expect(harness.taskListEl.children.map((column) => column.children.map((child) => child.dataset.taskId))).toEqual([
+      ["a", "e"],
+      ["b"],
+      ["c"],
+      ["d"],
+    ]);
+    expect(harness.calls).toContain("tile-count:4");
   });
 
   it("promotes pinned history, clears stale history state, and schedules history rerender", () => {

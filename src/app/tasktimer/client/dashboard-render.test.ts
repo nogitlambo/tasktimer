@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildMomentumSummaryMessage, createTaskTimerDashboardRender, getPrimaryMomentumDriverKey } from "./dashboard-render";
+import { startOfCurrentWeekMs } from "../lib/historyChart";
 import type { MomentumSnapshot } from "../lib/momentum";
 import type { Task } from "../lib/types";
 
@@ -8,10 +9,9 @@ class ElementStub {
   className = "";
   textContent = "";
   children: ElementStub[] = [];
-  style = {
+  style: Record<string, string | ((name: string, value: string) => void)> = {
     setProperty: (name: string, value: string) => {
-      void name;
-      void value;
+      this.style[name] = value;
     },
   };
   private html = "";
@@ -105,6 +105,14 @@ function createDocumentHarness() {
   register("dashboardTasksCompletedCenter");
   register("dashboardTasksCompletedLabels");
   register("dashboardTasksCompletedMeta");
+  register("dashboardWeeklyTrendIndicator");
+  register("dashboardWeeklyGoalsValue");
+  register("dashboardWeeklyGoalsMeta");
+  register("dashboardWeeklyGoalsProgressBar");
+  register("dashboardWeeklyGoalsProjectionMarker");
+  register("dashboardWeeklyGoalsProjectionFill");
+  register("dashboardWeeklyGoalsProgressFill");
+  register("dashboardWeeklyGoalsProgressText");
 
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
@@ -135,7 +143,15 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
   });
 
   const dashboardRender = createTaskTimerDashboardRender({
-    els: {} as never,
+    els: {
+      dashboardWeeklyGoalsValue: byId.get("dashboardWeeklyGoalsValue"),
+      dashboardWeeklyGoalsMeta: byId.get("dashboardWeeklyGoalsMeta"),
+      dashboardWeeklyGoalsProgressBar: byId.get("dashboardWeeklyGoalsProgressBar"),
+      dashboardWeeklyGoalsProjectionMarker: byId.get("dashboardWeeklyGoalsProjectionMarker"),
+      dashboardWeeklyGoalsProjectionFill: byId.get("dashboardWeeklyGoalsProjectionFill"),
+      dashboardWeeklyGoalsProgressFill: byId.get("dashboardWeeklyGoalsProgressFill"),
+      dashboardWeeklyGoalsProgressText: byId.get("dashboardWeeklyGoalsProgressText"),
+    } as never,
     getRewardProgress: () => ({}) as never,
     getTasks: () => tasks,
     getHistoryByTaskId: () => options?.historyByTaskId || {},
@@ -170,6 +186,7 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
   return {
     byId,
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
+    renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
     restore: () => {
       Object.defineProperty(globalThis, "document", {
         configurable: true,
@@ -178,6 +195,55 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
     },
   };
 }
+
+describe("weekly goals dashboard card", () => {
+  it("hides the percent comparison until previous-week history exists", () => {
+    const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
+    const tasks = [task({ id: "focus", name: "Focus" })];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        focus: [{ ts: weekStartMs + 60 * 60 * 1000, name: "Focus", ms: 30 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.renderWeeklyGoals();
+      const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
+
+      expect(trendEl?.style.display).toBe("none");
+      expect(trendEl?.textContent).toBe("");
+      expect(trendEl?.classList.contains("positive")).toBe(false);
+      expect(trendEl?.classList.contains("negative")).toBe(false);
+      expect(trendEl?.classList.contains("neutral")).toBe(false);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows the percent comparison when previous-week history exists", () => {
+    const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
+    const tasks = [task({ id: "focus", name: "Focus" })];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        focus: [
+          { ts: weekStartMs + 60 * 60 * 1000, name: "Focus", ms: 30 * 60 * 1000 },
+          { ts: weekStartMs - 2 * 60 * 60 * 1000, name: "Focus", ms: 15 * 60 * 1000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderWeeklyGoals();
+      const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
+
+      expect(trendEl?.style.display).toBe("");
+      expect(trendEl?.textContent).toBe("+100%");
+      expect(trendEl?.classList.contains("positive")).toBe(true);
+    } finally {
+      harness.restore();
+    }
+  });
+});
 
 describe("dashboard completed card", () => {
   it("adds newly created due tasks without daily goals to the donut", () => {
@@ -294,7 +360,7 @@ describe("momentum summary copy", () => {
     };
 
     expect(getPrimaryMomentumDriverKey(momentum)).toBe("weeklyProgress");
-    expect(buildMomentumSummaryMessage(momentum)).toContain("Weekly Progress contributed 20 of 20 momentum points");
+    expect(buildMomentumSummaryMessage(momentum)).toContain("Weekly Progress contributed 20 of 30 momentum points");
     expect(buildMomentumSummaryMessage(momentum)).not.toContain("driven by 3 active days this week");
   });
 
@@ -319,7 +385,7 @@ describe("momentum summary copy", () => {
     };
 
     const message = buildMomentumSummaryMessage(momentum);
-    expect(message).toContain("Recent Activity contributed 13 of 25 momentum points from Mon");
+    expect(message).toContain("Recent Activity contributed 13 of 30 momentum points from Mon");
     expect(message).toContain("selected optimal days (all days)");
     expect(message).toContain("5-minute minimum session threshold");
     expect(message).not.toContain("5m today, 0m yesterday");

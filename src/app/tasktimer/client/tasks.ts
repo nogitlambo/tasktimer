@@ -6,6 +6,7 @@ import { createTaskCardActionEffects } from "./task-card-action-effects";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import { createTaskListRenderer } from "./task-list-renderer";
 import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
+import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -54,21 +55,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     return ctx.hasEntitlement("socialFeatures");
   }
 
-  function getTileColumnCount() {
-    if (typeof window === "undefined") return 1;
-    if (window.matchMedia("(min-width: 1500px)").matches) return 4;
-    if (window.matchMedia("(min-width: 1200px)").matches) return 3;
-    if (window.matchMedia("(min-width: 720px)").matches) return 2;
-    return 1;
-  }
-
   const taskListRenderer = createTaskListRenderer({
     taskListEl: els.taskList,
     documentRef: document,
     getTasks: ctx.getTasks,
     getTaskView: ctx.getTaskView,
     getTaskOrderBy: ctx.getTaskOrderBy,
-    getTileColumnCount,
+    getTileColumnCount: () => getTaskTimerTileColumnCount(typeof window === "undefined" ? null : window),
     setCurrentTileColumnCount: ctx.setCurrentTileColumnCount,
     getOpenHistoryTaskIds: ctx.getOpenHistoryTaskIds,
     getPinnedHistoryTaskIds: ctx.getPinnedHistoryTaskIds,

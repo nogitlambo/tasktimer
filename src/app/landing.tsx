@@ -74,6 +74,21 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    const applyLandingRouteBodyState = () => {
+      document.body.classList.remove("webSignInRoute");
+      document.body.classList.add("landingRoute");
+    };
+
+    applyLandingRouteBodyState();
+    window.addEventListener("pageshow", applyLandingRouteBodyState);
+
+    return () => {
+      window.removeEventListener("pageshow", applyLandingRouteBodyState);
+      document.body.classList.remove("landingRoute");
+    };
+  }, []);
+
+  useEffect(() => {
     const timers: number[] = [];
     const frameId = window.requestAnimationFrame(() => {
       setRevealStage(1);
@@ -147,7 +162,9 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               <span>Progress over perfection</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Break free from guilt-driven productivity systems</h1>
+            <h1 className="landingV2HeroTitle displayFont">
+              <span className="landingV2HeroTitleGradient">Break free</span> from guilt-driven productivity systems
+            </h1>
 
             <p className="landingV2HeroCopy">
               Flexible task management to support neurodivergent minds by directing scattered energy into sustainable
@@ -334,6 +351,7 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             TaskLaunch
           </Link>
           <div className="landingV2FooterLinks">
+            <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/pricing">Pricing</Link>
             <Link href="/web-sign-in">Sign In</Link>

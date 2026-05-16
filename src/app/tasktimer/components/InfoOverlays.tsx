@@ -1,32 +1,16 @@
-import AppImg from "@/components/AppImg";
 import InfoOverlayFrame from "./InfoOverlayFrame";
 
 export default function InfoOverlays() {
   return (
     <>
       <InfoOverlayFrame overlayId="aboutOverlay" ariaLabel="About" footerClassName="footerBtns">
-        <div className="aboutHead">
-          <AppImg className="aboutLogo" alt="Timebase logo" src="/timebase-logo.svg" />
-          <div>
-            <h2 className="aboutTitle">Timebase</h2>
-            <div className="aboutKicker">Focused time tracking with progress and history</div>
-          </div>
-        </div>
-
-        <div className="aboutText aboutTextBody">
-          <p className="aboutLead">
-            Timebase is built for tracking focused work across multiple tasks, with a fast workflow for start/stop
-            timing, reviewing progress, and managing your history.
-          </p>
-          <p>Key features include:</p>
-          <ul className="aboutFeatureList">
-            <li>Per-task timers with start, stop, reset, duplication, and manual editing controls</li>
-            <li>Checkpoint milestones and progress tracking on each task</li>
-            <li>Inline history charts with entry/day views, selection tools, export, analysis, and manager access</li>
-            <li>Focus Mode for a single-task timer view with dedicated controls and insights</li>
-            <li>Backup export/import, including import merge/overwrite options</li>
-            <li>Dashboard and guide pages for overview and support</li>
-          </ul>
+        <p className="modalSubtext">
+          TaskLaunch&apos;s full About page is now available as a public page.
+        </p>
+        <div className="confirmBtns">
+          <a className="btn btn-accent" href="/about">
+            Open About
+          </a>
         </div>
       </InfoOverlayFrame>
 

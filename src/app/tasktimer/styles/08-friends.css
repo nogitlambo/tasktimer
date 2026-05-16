@@ -1507,6 +1507,17 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaCell{
   display:none;
 }
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyInsigniaCell,
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyInsigniaCell,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyInsigniaCell{
+  display:grid;
+  place-items:center;
+  justify-content:center;
+  justify-items:center;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaCell .leaderboardRankInsignia{
+  justify-self:center;
+}
 #leaderboardPositionOverlay .leaderboardPositionModal{
   max-width: min(420px, calc(100vw - 32px));
   border-radius: 0;

@@ -372,6 +372,20 @@ function renderProfileHelpMenu() {
         </a>
         <a
           className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
+          href="/about"
+          role="menuitem"
+          aria-label="About TaskLaunch"
+        >
+          <AppImg
+            className="dashboardRailMenuIconImage"
+            src="/About.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          <span className="dashboardRailMenuLabel">About</span>
+        </a>
+        <a
+          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
           href="/feedback"
           role="menuitem"
           aria-label="Feedback"

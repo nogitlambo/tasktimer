@@ -48,9 +48,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const MOMENTUM_ANIMATION_DURATION_MS = 1050;
   const MOMENTUM_MEANINGFUL_DELTA = 3;
   const MOMENTUM_DRIVER_DEFS = [
-    { key: "recentActivity", label: "Recent activity", max: 25 },
-    { key: "consistency", label: "Consistency", max: 45 },
-    { key: "weeklyProgress", label: "Weekly Progress", max: 20 },
+    { key: "recentActivity", label: "Recent activity", max: 30 },
+    { key: "consistency", label: "Consistency", max: 30 },
+    { key: "weeklyProgress", label: "Weekly Progress", max: 30 },
     { key: "liveBonus", label: "Live Bonus", max: 10 },
   ] as const;
   const MOMENTUM_DRIVER_AUTO_RESET_MS = 10000;
@@ -662,6 +662,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }, 0);
       return sum + taskWeekMs;
     }, 0);
+    let hasPrevWeekHistoryEntries = false;
     const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return sum;
@@ -671,6 +672,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
         if (!Number.isFinite(ms) || ms <= 0) return entrySum;
+        hasPrevWeekHistoryEntries = true;
         return entrySum + ms;
       }, 0);
       return sum + taskPrevWeekMs;
@@ -684,9 +686,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectedMs = loggedMs + runningMs;
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
-      showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
-    });
+    let trendDeltaPct: number | null = null;
+    if (trendIndicatorEl) {
+      if (hasPrevWeekHistoryEntries) {
+        trendIndicatorEl.style.display = "";
+        trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
+          showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+        });
+      } else {
+        trendIndicatorEl.style.display = "none";
+        trendIndicatorEl.textContent = "";
+        trendIndicatorEl.classList.remove("positive", "negative", "neutral");
+      }
+    }
     if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";
@@ -713,7 +725,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
     if (cardEl) {
       const trendSummary =
-        trendDeltaPct == null ? "Trend unavailable versus previous week." : `${trendDeltaPct >= 0 ? "+" : ""}${trendDeltaPct}% versus previous week.`;
+        !hasPrevWeekHistoryEntries
+          ? "No previous-week history to compare yet."
+          : trendDeltaPct == null
+            ? "Trend unavailable versus previous week."
+            : `${trendDeltaPct >= 0 ? "+" : ""}${trendDeltaPct}% versus previous week.`;
       cardEl.setAttribute("aria-label", `Weekly logged time and time goal progress. ${trendSummary}`);
     }
   }

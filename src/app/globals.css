@@ -48,6 +48,10 @@ body.webSignInRoute {
   padding: 0 !important;
 }
 
+body.landingRoute {
+  padding: 0;
+}
+
 .displayFont {
   font-family: var(--font-display-ui);
 }
@@ -438,7 +442,7 @@ canvas {
   min-height: 68px;
   padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 48px 18px;
   border-bottom: 0;
-  background: #08090a;
+  background: #1a1b20;
   backdrop-filter: blur(16px);
   opacity: 0;
   transform: translateY(-16px);
@@ -569,6 +573,13 @@ canvas {
   text-transform: uppercase;
   color: var(--landing-text);
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.38), 0 0 22px rgba(255, 255, 255, 0.08);
+}
+
+.landingV2 .landingV2HeroTitleGradient {
+  background: linear-gradient(100deg, #c9ff24 0%, #f4ffbf 58%, #c9ff24 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .landingV2 .landingV2HeroCopy {
@@ -1202,6 +1213,7 @@ canvas {
   gap: 24px;
   padding: 28px 48px 36px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1a1b20;
 }
 
 .landingV2 .landingV2FooterBrand {

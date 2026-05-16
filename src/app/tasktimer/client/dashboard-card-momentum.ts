@@ -9,15 +9,15 @@ export function buildMomentumDriverMessages(momentum: MomentumSnapshot) {
   const weeklyPct = momentum.currentWeekGoalMs > 0 ? Math.round((momentum.currentWeekLoggedMs / momentum.currentWeekGoalMs) * 100) : null;
   const consistencyMessage =
     momentum.trailingStreak >= 2
-      ? `Consistency contributed ${Math.round(momentum.consistencyScore)} of 45 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-occurrence streak across ${selectedDaysSummary.toLowerCase()}.`
-      : `Consistency contributed 0 of 45 momentum points because streak scoring starts at 2 selected-day occurrences. You currently have ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-occurrence streak across ${selectedDaysSummary.toLowerCase()}.`;
+      ? `Consistency contributed ${Math.round(momentum.consistencyScore)} of 30 momentum points from ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-occurrence streak across ${selectedDaysSummary.toLowerCase()}.`
+      : `Consistency contributed 0 of 30 momentum points because streak scoring starts at 2 selected-day occurrences. You currently have ${momentum.activeDayCount} active day${momentum.activeDayCount === 1 ? "" : "s"} this week and a ${momentum.trailingStreak}-occurrence streak across ${selectedDaysSummary.toLowerCase()}.`;
   return {
-    recentActivity: `Recent Activity contributed ${Math.round(momentum.recentActivityScore)} of 25 momentum points from ${recentText}, using your selected optimal days (${selectedDaysSummary.toLowerCase()}) plus a 5-minute minimum session threshold.`,
+    recentActivity: `Recent Activity contributed ${Math.round(momentum.recentActivityScore)} of 30 momentum points from ${recentText}, using your selected optimal days (${selectedDaysSummary.toLowerCase()}) plus a 5-minute minimum session threshold.`,
     consistency: consistencyMessage,
     weeklyProgress:
       weeklyPct == null
-        ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points. Add weekly or daily time goals to give this driver more signal.`
-        : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 20 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
+        ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 30 momentum points. Add weekly or daily time goals to give this driver more signal.`
+        : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 30 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
     liveBonus:
       momentum.runningTaskCount > 0
         ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 10 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`

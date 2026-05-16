@@ -118,11 +118,6 @@ function formatLeaderboardTrend(xpRaw: number): string {
   return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "No gain yet";
 }
 
-function formatLeaderboardStreak(daysRaw: number): string {
-  const days = Math.max(0, Math.floor(daysRaw || 0));
-  return days === 1 ? "1 day streak" : `${days} day streak`;
-}
-
 function formatLeaderboardMemberSince(memberSinceMs: number | null | undefined): string {
   if (!memberSinceMs || !Number.isFinite(memberSinceMs) || memberSinceMs <= 0) return "";
   return new Date(memberSinceMs).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -1008,11 +1003,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyTableWrap">
                         <div className="leaderboardWeeklyTable" role="table" aria-label="Weekly leaderboard table">
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-                            <span role="columnheader">Rank</span>
+                            <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Weekly XP</span>
                             <span role="columnheader">Time</span>
-                            <span role="columnheader">Streak</span>
+                            <span role="columnheader">Rank</span>
                           </div>
                           {weeklyTableRows.map((row) => (
                             <button
@@ -1034,8 +1029,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
-                              <span className="leaderboardWeeklyStreakCell" role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
-                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-hidden="true">
+                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                               </span>
                             </button>
@@ -1101,11 +1095,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyTableWrap">
                         <div className="leaderboardWeeklyTable" role="table" aria-label="Rivals leaderboard table">
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-                            <span role="columnheader">Rank</span>
+                            <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Total XP</span>
                             <span role="columnheader">Time</span>
-                            <span role="columnheader">Streak</span>
+                            <span role="columnheader">Rank</span>
                           </div>
                           {rivalTableRows.map((row) => (
                             <button
@@ -1127,8 +1121,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
-                              <span className="leaderboardWeeklyStreakCell" role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
-                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-hidden="true">
+                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                               </span>
                             </button>
@@ -1194,11 +1187,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyTableWrap">
                         <div className="leaderboardWeeklyTable" role="table" aria-label="Global leaderboard table">
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-                            <span role="columnheader">Rank</span>
+                            <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Total XP</span>
                             <span role="columnheader">Time</span>
-                            <span role="columnheader">Streak</span>
+                            <span role="columnheader">Rank</span>
                           </div>
                           {globalTableRows.map((row) => (
                             <button
@@ -1220,8 +1213,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
-                              <span className="leaderboardWeeklyStreakCell" role="cell">{formatLeaderboardStreak(row.profile.streakDays)}</span>
-                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-hidden="true">
+                              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                               </span>
                             </button>

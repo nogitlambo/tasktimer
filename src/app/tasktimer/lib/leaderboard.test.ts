@@ -37,6 +37,7 @@ import {
   buildGlobalLeaderboardRows,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
+  getLeaderboardAvatarSrc,
   getLeaderboardResolvedRank,
   isGlobalLeaderboardPlaceholderProfile,
   isRivalLeaderboardPlaceholderProfile,
@@ -80,6 +81,24 @@ function querySnap(docs: Array<ReturnType<typeof docSnap>>) {
     docs,
     size: docs.length,
   };
+}
+
+function expectValidPlaceholderUsernames(rows: Array<{ playerLabel: string; profile: LeaderboardProfile }>) {
+  expect(rows.length).toBeGreaterThan(0);
+  rows.forEach((row) => {
+    const username = String(row.profile.username || "");
+    expect(username).toBeTruthy();
+    expect(row.profile.displayLabel).toBe(username);
+    expect(row.playerLabel).toBe(username);
+    expect(username).not.toMatch(/\s/);
+    expect(username).toMatch(/^[a-z0-9_-]+$/);
+    const wordParts = username.match(/[a-z]+/g) || [];
+    expect(wordParts.length).toBeGreaterThan(0);
+    wordParts.forEach((word) => {
+      expect(word.length).toBeGreaterThanOrEqual(4);
+      expect(word.length).toBeLessThanOrEqual(15);
+    });
+  });
 }
 
 describe("getLeaderboardResolvedRank", () => {
@@ -201,6 +220,9 @@ describe("buildWeeklyLeaderboardRows", () => {
       "#10",
     ]);
     expect(rows.every((row) => isWeeklyLeaderboardPlaceholderProfile(row.profile))).toBe(true);
+    expect(rows.every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
+    expectValidPlaceholderUsernames(rows);
+    expect(rows.some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
   });
 
   it("fills the weekly table from fourth to tenth place without repeating the podium", () => {
@@ -262,6 +284,9 @@ describe("buildGlobalLeaderboardRows", () => {
       "#10",
     ]);
     expect(rows.every((row) => isGlobalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
+    expect(rows.every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
+    expectValidPlaceholderUsernames(rows);
+    expect(rows.some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
   });
 
   it("keeps real global entries ahead of placeholder rows", () => {
@@ -317,6 +342,9 @@ describe("buildRivalLeaderboardRows", () => {
     expect(rows).toHaveLength(10);
     expect(rows.slice(1).every((row) => row.isPlaceholder)).toBe(true);
     expect(rows.slice(1).every((row) => isRivalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
+    expect(rows.slice(1).every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
+    expectValidPlaceholderUsernames(rows.slice(1));
+    expect(rows.slice(1).some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
   });
 
   it("keeps the current user on their numeric rival ladder rank when outside the visible board", () => {
