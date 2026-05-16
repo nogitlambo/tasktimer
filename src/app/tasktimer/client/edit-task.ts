@@ -23,6 +23,7 @@ import {
   syncLegacyPlannedStartFields,
 } from "../lib/schedule-placement";
 import { getTaskColorFamilyForColor, normalizeTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
+import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 import {
   clampCheckpointValueToTimeGoal,
   formatCheckpointSliderLabel,
@@ -814,8 +815,21 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       `;
 
       const bell = row.querySelector('[data-action="toggleMsAlert"]') as HTMLButtonElement | null;
-      ctx.on(bell, "click", () => {
-        m.alertsEnabled = m.alertsEnabled === false;
+      ctx.on(bell, "click", async () => {
+        const enablingAlerts = m.alertsEnabled === false;
+        if (enablingAlerts) {
+          const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
+            mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+            webEnabled: ctx.getWebPushAlertsEnabled(),
+          }).catch(() => ({
+            mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+            webEnabled: ctx.getWebPushAlertsEnabled(),
+          }));
+          ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
+          ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
+          ctx.persistPushAlertsPreference();
+        }
+        m.alertsEnabled = enablingAlerts;
         t.milestones = ms;
         syncEditCheckpointAlertUi(t);
         renderMilestoneEditor(t);

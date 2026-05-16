@@ -1,6 +1,7 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
+import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsPreferencesPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
@@ -18,16 +19,16 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
           </div>
           <div className="unitRow" id="taskStartupModuleRow">
             <span>Load Module on App Startup</span>
-            <select id="taskStartupModuleSelect" aria-label="Load module on app startup">
+            <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Load module on app startup">
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>
-            </select>
+            </SettingsDownwardSelect>
           </div>
           <div className="unitRow" id="taskWeekStartingRow">
             <span>Week Starts On</span>
-            <select id="taskWeekStartingSelect" aria-label="Week start">
+            <SettingsDownwardSelect id="taskWeekStartingSelect" aria-label="Week start">
               <option value="sun">Sunday</option>
               <option value="mon">Monday</option>
               <option value="tue">Tuesday</option>
@@ -35,7 +36,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="thu">Thursday</option>
               <option value="fri">Friday</option>
               <option value="sat">Saturday</option>
-            </select>
+            </SettingsDownwardSelect>
           </div>
           <div className="settingsInlineSectionHead">
             <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.png" alt="" aria-hidden="true" />

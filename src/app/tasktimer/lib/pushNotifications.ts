@@ -827,6 +827,24 @@ export async function syncTaskTimerPushNotificationsEnabled(
   return syncPromise;
 }
 
+export async function enableTaskTimerPushNotificationsForCurrentRuntime(
+  currentPreference: Partial<PushChannelPreference>
+): Promise<PushChannelPreference> {
+  const nativeRuntime = isNativePushRuntime();
+  const webRuntime = await isWebPushRuntimeSupported();
+  const nextPreference = normalizePushChannelPreference(currentPreference);
+
+  if (nativeRuntime) {
+    nextPreference.mobileEnabled = true;
+  } else if (webRuntime) {
+    nextPreference.webEnabled = true;
+  } else {
+    return nextPreference;
+  }
+
+  return syncTaskTimerPushNotificationsEnabled(nextPreference);
+}
+
 export async function initTaskTimerPushNotifications(): Promise<() => void> {
   await syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: true });
   return () => {

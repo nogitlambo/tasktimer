@@ -1331,6 +1331,22 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     ...editStateBindings,
     getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
     getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
+    getMobilePushAlertsEnabled: () => preferencesState.get("mobilePushAlertsEnabled"),
+    setMobilePushAlertsEnabledState: (value) => {
+      preferencesState.set("mobilePushAlertsEnabled", value);
+    },
+    getWebPushAlertsEnabled: () => preferencesState.get("webPushAlertsEnabled"),
+    setWebPushAlertsEnabledState: (value) => {
+      preferencesState.set("webPushAlertsEnabled", value);
+    },
+    persistPushAlertsPreference: () => {
+      try {
+        localStorage.setItem(MOBILE_PUSH_ALERTS_KEY, preferencesState.get("mobilePushAlertsEnabled") ? "true" : "false");
+        localStorage.setItem(WEB_PUSH_ALERTS_KEY, preferencesState.get("webPushAlertsEnabled") ? "true" : "false");
+      } catch {
+        // Ignore localStorage write failures.
+      }
+    },
     getElapsedMs,
     render,
     save: renderBindings.save,

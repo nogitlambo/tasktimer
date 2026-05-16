@@ -64,8 +64,8 @@ function readNavStackTarget(currentPath: string) {
   return "";
 }
 
-export function resolveStandaloneRouteBackTarget(fallbackPath: string) {
-  if (typeof window === "undefined") return fallbackPath;
+function resolveStandaloneRouteBackCandidate() {
+  if (typeof window === "undefined") return "";
 
   const currentPath = `${window.location.pathname || "/"}${window.location.search || ""}${window.location.hash || ""}`;
   const currentNormalized = normalizeKnownRoute(currentPath);
@@ -86,5 +86,32 @@ export function resolveStandaloneRouteBackTarget(fallbackPath: string) {
   const navStackTarget = readNavStackTarget(currentPath);
   if (navStackTarget) return navStackTarget;
 
+  return "";
+}
+
+function isAuthenticatedBackRoute(pathRaw: string) {
+  const normalized = normalizeKnownRoute(pathRaw);
+  if (!normalized) return false;
+  const path = normalized.split(/[?#]/)[0];
+  return (
+    path === "/tasklaunch" ||
+    path === "/dashboard" ||
+    path === "/friends" ||
+    path === "/leaderboards" ||
+    path === "/settings" ||
+    path === "/history-manager" ||
+    path === "/feedback"
+  );
+}
+
+export function resolveStandaloneRouteBackTarget(fallbackPath: string) {
+  const candidate = resolveStandaloneRouteBackCandidate();
+  if (candidate) return candidate;
   return fallbackPath;
+}
+
+export function resolvePublicInfoRouteBackTarget(isAuthenticated: boolean) {
+  if (!isAuthenticated) return "/";
+  const candidate = resolveStandaloneRouteBackCandidate();
+  return isAuthenticatedBackRoute(candidate) ? candidate : "/tasklaunch?page=dashboard";
 }

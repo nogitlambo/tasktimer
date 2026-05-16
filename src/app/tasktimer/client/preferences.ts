@@ -320,8 +320,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskCheckpointToastModeSelect.value = ctx.getCheckpointAlertToastMode();
       els.taskCheckpointToastModeSelect.disabled = !ctx.getCheckpointAlertToastEnabled();
     }
-    els.taskCheckpointSoundModeField?.classList.toggle("isDisabled", !ctx.getCheckpointAlertSoundEnabled());
-    els.taskCheckpointToastModeField?.classList.toggle("isDisabled", !ctx.getCheckpointAlertToastEnabled());
+    els.taskCheckpointSoundModeField?.classList.toggle("isHidden", !ctx.getCheckpointAlertSoundEnabled());
+    els.taskCheckpointToastModeField?.classList.toggle("isHidden", !ctx.getCheckpointAlertToastEnabled());
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }

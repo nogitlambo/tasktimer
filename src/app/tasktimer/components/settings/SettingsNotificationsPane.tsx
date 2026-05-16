@@ -1,6 +1,7 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
+import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsNotificationsPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
@@ -10,7 +11,7 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
       exiting={exiting}
       paneClassName="settingsDisplayTypographyPane settingsNotificationsPane"
       title="Notifications"
-      subtitle="Manage mobile push, checkpoint sound, and toast alerts."
+      subtitle="Manage push notifications, in-app sounds and toast alerts."
     >
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
@@ -35,23 +36,23 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               <span>Checkpoint Sound</span>
               <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
             </div>
+            <div className="field checkpointAlertSoundModeField" id="taskCheckpointSoundModeField">
+              <label htmlFor="taskCheckpointSoundModeSelect">Sound Behaviour</label>
+              <SettingsDownwardSelect id="taskCheckpointSoundModeSelect" defaultValue="once">
+                <option value="once">Once</option>
+                <option value="repeat">Repeat until dismissed</option>
+              </SettingsDownwardSelect>
+            </div>
             <div className="toggleRow" id="taskCheckpointToastToggleRow">
               <span>Checkpoint Toast</span>
               <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
             </div>
-            <div className="field checkpointAlertSoundModeField" id="taskCheckpointSoundModeField">
-              <label htmlFor="taskCheckpointSoundModeSelect">Sound Behaviour</label>
-              <select id="taskCheckpointSoundModeSelect" defaultValue="once">
-                <option value="once">Once</option>
-                <option value="repeat">Repeat until dismissed</option>
-              </select>
-            </div>
             <div className="field checkpointAlertSoundModeField" id="taskCheckpointToastModeField">
               <label htmlFor="taskCheckpointToastModeSelect">Toast Behaviour</label>
-              <select id="taskCheckpointToastModeSelect" defaultValue="auto5s">
+              <SettingsDownwardSelect id="taskCheckpointToastModeSelect" defaultValue="auto5s">
                 <option value="auto5s">Auto dismiss after 5 seconds</option>
                 <option value="manual">Dismiss manually</option>
-              </select>
+              </SettingsDownwardSelect>
             </div>
           </div>
         </section>
