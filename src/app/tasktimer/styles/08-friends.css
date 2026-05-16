@@ -1031,7 +1031,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   text-align: center;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardCardEyebrow{
-  margin:0 0 6px;
+  margin:0;
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size:11px;
   letter-spacing:.14em;
   text-transform:uppercase;
@@ -1272,7 +1273,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   z-index:1;
   display:grid;
   justify-items:center;
-  gap:6px;
+  gap:0;
   text-align:center;
   margin: 0 auto 8px;
 }
@@ -1304,7 +1305,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   position:relative;
   z-index:1;
   display:grid;
+  grid-template-columns:auto auto;
   justify-items:center;
+  justify-content:center;
   align-content:start;
   gap:7px;
   min-width:0;
@@ -1359,6 +1362,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   height:100%;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumIdentity{
+  grid-column:1 / -1;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1367,11 +1371,17 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   min-width:0;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRank{
-  flex:0 0 auto;
+  display:block;
+  align-self:center;
+  justify-self:center;
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   color:#67ff9f;
   font-size:12px;
   font-weight:800;
   letter-spacing:.08em;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankMobile{
+  display:none;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlayer{
   display:grid;
@@ -1404,8 +1414,15 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   color:rgba(204,218,230,.72);
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumMetric{
+  display:block;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
   font-size:12px;
   font-weight:700;
+  line-height:1.15;
   letter-spacing:.06em;
   color:#eef4fb;
 }
@@ -1468,20 +1485,18 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   text-overflow:ellipsis;
   white-space:nowrap;
   padding: 10px 14px;
-  border-left:1px solid rgba(255,255,255,.08);
-}
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow > span:first-child{
-  border-left:0;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyRankCell{
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   color:#67ff9f;
   font-weight:800;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPlayerCell{
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   gap:10px;
+  text-align:left;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyMetricCell{
   text-align:center;
@@ -1514,9 +1529,23 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   place-items:center;
   justify-content:center;
   justify-items:center;
+  gap:3px;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaCell .leaderboardRankInsignia{
   justify-self:center;
+}
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaLabel{
+  display:block;
+  max-width:96px;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:rgba(188,214,230,.72);
+  font-size:11px;
+  font-weight:700;
+  line-height:1.15;
+  text-align:center;
 }
 #leaderboardPositionOverlay .leaderboardPositionModal{
   max-width: min(420px, calc(100vw - 32px));
@@ -2093,12 +2122,15 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace2,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace3{
     order:initial;
-    grid-template-columns: 42px minmax(0, 1fr) auto 34px;
+    grid-template-columns: 34px 42px minmax(0, 1fr) minmax(86px, max-content);
+    column-gap:12px;
+    row-gap:0;
     justify-items:start;
+    justify-content:stretch;
     align-items:center;
     align-content:center;
     min-height:58px;
-    padding: 2px 12px;
+    padding: 4px 0;
     border:1px solid rgba(255,255,255,.12);
     background: rgba(7,9,13,.72);
   }
@@ -2114,9 +2146,32 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
     display:none;
   }
 
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankDesktop{
+    display:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankMobile{
+    display:block;
+    grid-column:1;
+    grid-row:1;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatar{
+    grid-column:2;
+    grid-row:1;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumIdentity{
+    grid-column:3;
+    grid-row:1;
     justify-content:flex-start;
     width:100%;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlayer{
+    justify-items:start;
+    max-width:100%;
+    text-align:left;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumName,
@@ -2126,13 +2181,32 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumMetric{
-    min-width:max-content;
-    text-align:right;
+    text-align:left;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumInsignia{
+    grid-column:4;
+    grid-row:1;
     display:grid;
     place-items:center;
+    justify-self:center;
+    justify-items:center;
+    min-width:0;
+    gap:3px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumInsignia .leaderboardRankInsignia{
+    justify-self:center;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumInsignia .leaderboardWeeklyPodiumUserRank{
+    display:block;
+    max-width:96px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align:center;
   }
 }
 
@@ -2214,11 +2288,11 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow{
-    grid-template-columns: 42px minmax(0, 1fr) auto 34px;
-    gap: 10px;
+    grid-template-columns: 42px minmax(0, 1fr) auto minmax(58px, max-content) minmax(86px, max-content);
+    gap: 1px;
     min-height: 0;
     width: 100%;
-    padding: 2px 12px;
+    padding: 4px 0;
     justify-items:center;
   }
 
@@ -2227,9 +2301,17 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
     border-left: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTimeCell,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyStreakCell{
     display:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTimeCell{
+    display:inline-block;
+    min-width:max-content;
+    text-align:center;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.04em;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyMetricCell{
@@ -2244,6 +2326,7 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaCell{
     display:grid;
     place-items:center;
+    overflow:visible;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPlayerCell{

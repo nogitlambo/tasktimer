@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebaseinstallations.googleapis.com https://firebaseappcheck.googleapis.com https://www.googleapis.com https://api.stripe.com https://*.atlassian.net",
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebaseinstallations.googleapis.com https://firebaseappcheck.googleapis.com https://www.googleapis.com https://www.google-analytics.com https://www.google.com https://api.stripe.com https://*.atlassian.net",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://*.firebaseapp.com",
       "worker-src 'self' blob:",
       "manifest-src 'self'",

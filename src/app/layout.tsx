@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Orbitron } from "next/font/google";
 import TelemetryBootstrap from "./TelemetryBootstrap";
 import ThemeBootstrap from "./ThemeBootstrap";
 import "./globals.css";
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  variable: "--font-orbitron",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tasklaunch.app"),
@@ -52,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={orbitron.variable}>
       <body
         suppressHydrationWarning
         className="antialiased"

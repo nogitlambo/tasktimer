@@ -981,20 +981,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             aria-disabled={row.isPlaceholder}
                             onClick={() => openWeeklyLeaderboardProfile(row.profile)}
                           >
+                            <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
                             <span className="leaderboardWeeklyPodiumAvatar">
                               <LeaderboardAvatar profile={row.profile} />
                               <LeaderboardRankInsignia profile={row.profile} />
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
-                              <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
+                              <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
-                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                               </span>
                             </span>
-                            <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
-                            <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
+                            <span className="leaderboardWeeklyPodiumInsignia">
                               <LeaderboardRankInsignia profile={row.profile} />
+                              <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
                             </span>
                           </button>
                         ))}
@@ -1005,7 +1006,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Weekly XP</span>
+                            <span role="columnheader">Achievements</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1024,13 +1025,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 <LeaderboardAvatar profile={row.profile} small />
                                 <span className="leaderboardWeeklyPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  <span>{getLeaderboardRankLabel(row.profile)}</span>
+                                  <span className="leaderboardWeeklyUserMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                                 </span>
                               </span>
-                              <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                              <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
+                                <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
                               </span>
                             </button>
                           ))}
@@ -1073,20 +1075,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             aria-disabled={row.isPlaceholder}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
+                            <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
                             <span className="leaderboardWeeklyPodiumAvatar">
                               <LeaderboardAvatar profile={row.profile} />
                               <LeaderboardRankInsignia profile={row.profile} />
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
-                              <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
+                              <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
-                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               </span>
                             </span>
-                            <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                            <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
+                            <span className="leaderboardWeeklyPodiumInsignia">
                               <LeaderboardRankInsignia profile={row.profile} />
+                              <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
                             </span>
                           </button>
                         ))}
@@ -1097,7 +1100,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Total XP</span>
+                            <span role="columnheader">Achievements</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1116,13 +1119,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 <LeaderboardAvatar profile={row.profile} small />
                                 <span className="leaderboardWeeklyPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  <span>{getLeaderboardRankLabel(row.profile)}</span>
+                                  <span className="leaderboardWeeklyUserMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                                 </span>
                               </span>
-                              <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                              <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
+                                <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
                               </span>
                             </button>
                           ))}
@@ -1151,7 +1155,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 >
                   <div className="leaderboardWeeklyIntro">
                     <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
-                    <p className="leaderboardHeroMeta">Top focus performers</p>
+                    <p className="leaderboardHeroMeta">Top XP earners of all time</p>
                   </div>
                   {leaderboardState === "ready" ? (
                     <>
@@ -1165,20 +1169,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             aria-disabled={row.isPlaceholder}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
+                            <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
                             <span className="leaderboardWeeklyPodiumAvatar">
                               <LeaderboardAvatar profile={row.profile} />
                               <LeaderboardRankInsignia profile={row.profile} />
                             </span>
                             <span className="leaderboardWeeklyPodiumIdentity">
-                              <span className="leaderboardWeeklyPodiumRank">{row.rankLabel}</span>
+                              <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
-                                <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               </span>
                             </span>
-                            <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                            <span className="leaderboardWeeklyPodiumInsignia" aria-hidden="true">
+                            <span className="leaderboardWeeklyPodiumInsignia">
                               <LeaderboardRankInsignia profile={row.profile} />
+                              <span className="leaderboardWeeklyPodiumUserRank">{getLeaderboardRankLabel(row.profile)}</span>
                             </span>
                           </button>
                         ))}
@@ -1189,7 +1194,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Total XP</span>
+                            <span role="columnheader">Achievements</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1208,13 +1213,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 <LeaderboardAvatar profile={row.profile} small />
                                 <span className="leaderboardWeeklyPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  <span>{getLeaderboardRankLabel(row.profile)}</span>
+                                  <span className="leaderboardWeeklyUserMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                                 </span>
                               </span>
-                              <span className="leaderboardWeeklyMetricCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                              <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
                               <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
+                                <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
                               </span>
                             </button>
                           ))}
