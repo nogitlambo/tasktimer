@@ -427,6 +427,7 @@ type CreateAddTaskOptionsArgs = {
   preferencesState: MutableStore;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
+  persistPushAlertsPreference: () => void;
   loadCachedTaskUi: () => unknown;
   saveCloudTaskUi: (value: unknown) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
@@ -1263,6 +1264,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     enqueueCheckpointToast: args.enqueueCheckpointToast,
     syncSharedTaskSummariesForTask: args.syncSharedTaskSummariesForTask,
     syncSharedTaskSummariesForTasks: args.syncSharedTaskSummariesForTasks,
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerTasks>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     hasEntitlement: args.hasEntitlement,
     getCurrentPlan: args.getCurrentPlan,
     showUpgradePrompt: args.showUpgradePrompt,
@@ -1282,8 +1284,18 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     setAddTaskCustomNamesState: (value) => args.preferencesState.set("addTaskCustomNames", value),
     getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
     getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
+    getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerAddTask>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     getCheckpointAlertSoundEnabled: args.getCheckpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: args.getCheckpointAlertToastEnabled,
+    getMobilePushAlertsEnabled: () => asType<boolean>(args.preferencesState.get("mobilePushAlertsEnabled")),
+    setMobilePushAlertsEnabledState: (value) => {
+      args.preferencesState.set("mobilePushAlertsEnabled", value);
+    },
+    getWebPushAlertsEnabled: () => asType<boolean>(args.preferencesState.get("webPushAlertsEnabled")),
+    setWebPushAlertsEnabledState: (value) => {
+      args.preferencesState.set("webPushAlertsEnabled", value);
+    },
+    persistPushAlertsPreference: args.persistPushAlertsPreference,
     loadCachedTaskUi: args.loadCachedTaskUi,
     saveCloudTaskUi: args.saveCloudTaskUi,
     openOverlay: args.openOverlay,

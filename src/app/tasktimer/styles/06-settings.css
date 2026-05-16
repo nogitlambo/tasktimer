@@ -222,9 +222,13 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   color: rgba(142,242,255,.96);
   text-shadow:none;
 }
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleDefault,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleActive{
   display:none;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleDefault{
+  display:inline;
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleText{
   display:none;
@@ -1124,6 +1128,13 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #taskSettingsOverlay .modal label,
 #contactOverlay .modal{
   font-family: var(--font-readable);
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleDefault,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenuTitleActive{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailTitle{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountAvatarPlaceholder{
   width:112px;
@@ -2619,7 +2630,6 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   line-height:1.35;
 }
 /* Final Settings typography override: use one font family consistently across settings content. */
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailTitle,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailText,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSectionTitle,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .toggleRow > span,
@@ -2634,6 +2644,9 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAuthNotice,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAuthError{
   font-family: var(--font-readable) !important;
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailTitle{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 /* Final Data pane list styling: flat rows with neutral hover/focus treatment */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListStack{
@@ -4133,7 +4146,8 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 
 /* Final About pane layout and typography overrides. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsInlineSection{
-  gap: 12px;
+  gap: 8px;
+  padding: 0;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutBrandIcon{
@@ -4278,6 +4292,7 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDetailNote{
+  padding: 0 !important;
   font-size: 13px;
   line-height: 1.6;
   color: rgba(226, 242, 248, .9);
@@ -4427,6 +4442,20 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
     width:100% !important;
     max-width:none !important;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList{
+    align-items:center;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList > li{
+    display:flex;
+    justify-content:center;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList .settingsDataListItem{
+    justify-content:center !important;
+    text-align:center !important;
   }
 }
 
@@ -5575,6 +5604,32 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAct
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText{
   justify-content:flex-start !important;
   text-align:left !important;
+}
+
+@media (max-width: 980px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList{
+    align-items:center !important;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList > li{
+    display:flex !important;
+    justify-content:center !important;
+    width:100%;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList .settingsDataListItem{
+    width:auto !important;
+    max-width:100% !important;
+    margin:0 auto !important;
+    justify-content:center !important;
+    text-align:center !important;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList .settingsMenuItemText{
+    width:auto !important;
+    justify-content:center !important;
+    text-align:center !important;
+  }
 }
 
 @media (max-width: 980px){

@@ -128,6 +128,17 @@ export function getTaskScheduledDays(task: Task): ScheduleDay[] {
   return getTaskScheduledDayEntries(task).map((entry) => entry.day);
 }
 
+export function buildWeeklyPlannedStartByDay(daysRaw: readonly unknown[], plannedStartTime: unknown): TaskPlannedStartByDay | null {
+  const plannedTime = normalizeScheduleStoredTime(plannedStartTime);
+  if (!plannedTime) return null;
+  const days = daysRaw
+    .map(normalizeScheduleDayValue)
+    .filter((day): day is ScheduleDay => !!day);
+  const uniqueDays = SCHEDULE_DAY_ORDER.filter((day) => days.includes(day));
+  if (uniqueDays.length === 0) return null;
+  return Object.fromEntries(uniqueDays.map((day) => [day, plannedTime])) as TaskPlannedStartByDay;
+}
+
 export function getTaskScheduledTime(task: Task, day: ScheduleDay): string | null {
   const byDay = getTaskPlannedStartByDay(task);
   return byDay ? normalizeScheduleStoredTime(byDay[day]) : null;
@@ -155,6 +166,21 @@ export function getScheduleTaskDurationMinutes(task: Task): number {
     (task.taskType === "once-off" || task.timeGoalPeriod === "day");
   if (!hasScheduledDuration) return 0;
   return Math.min(24 * 60, Math.max(15, Math.round(goalMinutes)));
+}
+
+export function getWeeklyScheduleTaskDurationMinutes(task: Task, day: ScheduleDay): number {
+  const goalMinutes = Math.max(0, Math.floor(Number(task.timeGoalMinutes || 0)));
+  if (!task.timeGoalEnabled || task.taskType === "once-off" || task.timeGoalPeriod !== "week" || !(goalMinutes > 0)) return 0;
+  const scheduledDays = getTaskScheduledDays(task);
+  const dayIndex = scheduledDays.indexOf(day);
+  if (dayIndex < 0 || scheduledDays.length === 0) return 0;
+  const baseMinutes = Math.floor(goalMinutes / scheduledDays.length);
+  const remainder = goalMinutes % scheduledDays.length;
+  return Math.min(24 * 60, Math.max(1, baseMinutes + (dayIndex < remainder ? 1 : 0)));
+}
+
+export function getScheduleTaskDurationMinutesForDay(task: Task, day: ScheduleDay): number {
+  return getWeeklyScheduleTaskDurationMinutes(task, day) || getScheduleTaskDurationMinutes(task);
 }
 
 export type NextScheduledTaskResult = {
@@ -237,7 +263,7 @@ function getBusyScheduleIntervalsForDay(tasks: Task[], day: ScheduleDay, exclude
   for (const task of tasks) {
     const taskId = String(task.id || "").trim();
     if (excludeTaskId && taskId === excludeTaskId) continue;
-    const taskDurationMinutes = getScheduleTaskDurationMinutes(task);
+    const taskDurationMinutes = getScheduleTaskDurationMinutesForDay(task, day);
     if (!(taskDurationMinutes > 0)) continue;
 
     for (const taskEntry of getTaskScheduledDayEntries(task)) {
@@ -256,11 +282,12 @@ function scheduleSlotFits(
   busyByDay: Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>,
   days: ScheduleDay[],
   startMinutes: number,
-  durationMinutes: number
+  durationMinutes: number | ((day: ScheduleDay, index: number) => number)
 ) {
-  const endMinutes = startMinutes + durationMinutes;
-  if (endMinutes > 24 * 60) return false;
-  return days.every((day) => {
+  return days.every((day, index) => {
+    const dayDurationMinutes = typeof durationMinutes === "function" ? durationMinutes(day, index) : durationMinutes;
+    const endMinutes = startMinutes + dayDurationMinutes;
+    if (!(dayDurationMinutes > 0) || endMinutes > 24 * 60) return false;
     const intervals = busyByDay.get(day) || [];
     return intervals.every((interval) => startMinutes >= interval.endMinutes || endMinutes <= interval.startMinutes);
   });
@@ -291,14 +318,17 @@ function getOutsideProductivitySearchIntervals(startMinutes: number, endMinutes:
 function findAvailableSlotInIntervals(
   busyByDay: Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>,
   days: ScheduleDay[],
-  durationMinutes: number,
+  durationMinutes: number | ((day: ScheduleDay, index: number) => number),
   intervals: Array<{ startMinutes: number; endMinutes: number }>
 ) {
+  const maxDurationMinutes =
+    typeof durationMinutes === "function" ? Math.max(...days.map((day, index) => durationMinutes(day, index))) : durationMinutes;
+  if (!(maxDurationMinutes > 0)) return null;
   for (const interval of intervals) {
     const searchStartMinutes = snapScheduleSuggestionStartMinutes(interval.startMinutes);
     for (
       let startMinutes = searchStartMinutes;
-      startMinutes + durationMinutes <= interval.endMinutes;
+      startMinutes + maxDurationMinutes <= interval.endMinutes;
       startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
     ) {
       if (scheduleSlotFits(busyByDay, days, startMinutes, durationMinutes)) return startMinutes;
@@ -318,7 +348,6 @@ export function findFirstAvailableScheduleSlotFromProductivityWindow(
   }
 ): ProductivityWindowScheduleSlotResult | null {
   const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
-  if (!(candidateDurationMinutes > 0)) return null;
 
   const scheduledEntries = getTaskScheduledDayEntries(candidate)
     .map((entry) => ({ ...entry, startMinutes: parseScheduleTimeMinutes(entry.time) }))
@@ -326,6 +355,10 @@ export function findFirstAvailableScheduleSlotFromProductivityWindow(
   if (scheduledEntries.length === 0) return null;
 
   const days = scheduledEntries.map((entry) => entry.day);
+  const getCandidateDurationMinutes = (day: ScheduleDay) =>
+    getScheduleTaskDurationMinutesForDay(candidate, day) || candidateDurationMinutes;
+  const maxCandidateDurationMinutes = Math.max(...days.map(getCandidateDurationMinutes));
+  if (!(maxCandidateDurationMinutes > 0)) return null;
   const excludeTaskId = String(options.excludeTaskId || "").trim();
   const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
   days.forEach((day) => busyByDay.set(day, getBusyScheduleIntervalsForDay(tasks, day, excludeTaskId)));
@@ -335,7 +368,7 @@ export function findFirstAvailableScheduleSlotFromProductivityWindow(
   const inWindowSlot = findAvailableSlotInIntervals(
     busyByDay,
     days,
-    candidateDurationMinutes,
+    (day) => getCandidateDurationMinutes(day),
     getProductivitySearchIntervals(startMinutes, endMinutes)
   );
   if (inWindowSlot != null) {
@@ -352,7 +385,7 @@ export function findFirstAvailableScheduleSlotFromProductivityWindow(
   const outsideWindowSlot = findAvailableSlotInIntervals(
     busyByDay,
     days,
-    candidateDurationMinutes,
+    (day) => getCandidateDurationMinutes(day),
     getOutsideProductivitySearchIntervals(startMinutes, endMinutes)
   );
   if (outsideWindowSlot == null) return null;
@@ -368,9 +401,9 @@ export function findFirstAvailableScheduleSlotFromProductivityWindow(
 function getFirstConflictingScheduleDay(tasks: Task[], candidate: Task, options?: { excludeTaskId?: string | null }) {
   const overlap = findScheduleOverlap(tasks, candidate, options);
   if (overlap) return overlap.day;
-  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
-  if (!(candidateDurationMinutes > 0)) return null;
   for (const entry of getTaskScheduledDayEntries(candidate)) {
+    const candidateDurationMinutes = getScheduleTaskDurationMinutesForDay(candidate, entry.day);
+    if (!(candidateDurationMinutes > 0)) continue;
     const startMinutes = parseScheduleTimeMinutes(entry.time);
     if (startMinutes != null && startMinutes + candidateDurationMinutes > 24 * 60) return entry.day;
   }
@@ -383,7 +416,6 @@ export function findNextAvailableScheduleSlot(
   options?: { excludeTaskId?: string | null }
 ): NextAvailableScheduleSlotResult | null {
   const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
-  if (!(candidateDurationMinutes > 0)) return null;
 
   const scheduledEntries = getTaskScheduledDayEntries(candidate)
     .map((entry) => ({ ...entry, startMinutes: parseScheduleTimeMinutes(entry.time) }))
@@ -398,6 +430,10 @@ export function findNextAvailableScheduleSlot(
       : scheduledEntries.filter((entry) => entry.day === conflictingDay);
   const effectiveEntries = suggestionEntries.length > 0 ? suggestionEntries : [scheduledEntries[0]!];
   const days = effectiveEntries.map((entry) => entry.day);
+  const getCandidateDurationMinutes = (day: ScheduleDay) =>
+    getScheduleTaskDurationMinutesForDay(candidate, day) || candidateDurationMinutes;
+  const maxCandidateDurationMinutes = Math.max(...days.map(getCandidateDurationMinutes));
+  if (!(maxCandidateDurationMinutes > 0)) return null;
   const searchStartMinutes = snapScheduleSuggestionStartMinutes(Math.min(...effectiveEntries.map((entry) => entry.startMinutes)));
   const excludeTaskId = String(options?.excludeTaskId || "").trim();
   const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
@@ -405,10 +441,10 @@ export function findNextAvailableScheduleSlot(
 
   for (
     let startMinutes = searchStartMinutes;
-    startMinutes + candidateDurationMinutes <= 24 * 60;
+    startMinutes + maxCandidateDurationMinutes <= 24 * 60;
     startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
   ) {
-    if (scheduleSlotFits(busyByDay, days, startMinutes, candidateDurationMinutes)) {
+    if (scheduleSlotFits(busyByDay, days, startMinutes, (day) => getCandidateDurationMinutes(day))) {
       return { day: days[0]!, days, startMinutes };
     }
   }
@@ -422,20 +458,22 @@ export function findScheduleOverlap(
   options?: { excludeTaskId?: string | null }
 ): ScheduleOverlapResult | null {
   const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
-  if (!(candidateDurationMinutes > 0)) return null;
 
   const excludeTaskId = String(options?.excludeTaskId || "").trim();
   const scheduledEntries = getTaskScheduledDayEntries(candidate);
   for (const candidateEntry of scheduledEntries) {
+    const effectiveCandidateDurationMinutes =
+      getScheduleTaskDurationMinutesForDay(candidate, candidateEntry.day) || candidateDurationMinutes;
+    if (!(effectiveCandidateDurationMinutes > 0)) continue;
     const candidateStartMinutes = parseScheduleTimeMinutes(candidateEntry.time);
     if (candidateStartMinutes == null) continue;
-    const candidateEndMinutes = candidateStartMinutes + candidateDurationMinutes;
+    const candidateEndMinutes = candidateStartMinutes + effectiveCandidateDurationMinutes;
     if (candidateEndMinutes > 24 * 60) return { day: candidateEntry.day, task: null };
 
     for (const task of tasks) {
       const taskId = String(task.id || "").trim();
       if (excludeTaskId && taskId === excludeTaskId) continue;
-      const taskDurationMinutes = getScheduleTaskDurationMinutes(task);
+      const taskDurationMinutes = getScheduleTaskDurationMinutesForDay(task, candidateEntry.day);
       if (!(taskDurationMinutes > 0)) continue;
 
       for (const taskEntry of getTaskScheduledDayEntries(task)) {

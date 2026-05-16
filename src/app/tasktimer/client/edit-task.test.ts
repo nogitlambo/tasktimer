@@ -56,6 +56,35 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     expect(editDraft.plannedStartDay).toBeNull();
     expect(editDraft.plannedStartTime).toBe("10:15");
   });
+
+  it("rewrites weekly recurring schedules from optimal productivity days on edit save", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { tue: "09:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"]);
+
+    expect(editDraft.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(editDraft.plannedStartDay).toBeNull();
+  });
+
+  it("does not rewrite existing weekly schedules without an edit-save productivity day context", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { tue: "09:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft);
+
+    expect(editDraft.plannedStartByDay).toEqual({ tue: "09:00" });
+  });
 });
 
 describe("edit task schedule toggle helpers", () => {

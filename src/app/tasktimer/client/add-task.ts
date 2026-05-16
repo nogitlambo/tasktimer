@@ -12,6 +12,7 @@ import {
 } from "../lib/taskConfig";
 import { getNextAutoTaskColor, getTaskColorFamilyForColor, normalizeTaskColor, resolveNewTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
 import {
+  buildWeeklyPlannedStartByDay,
   findFirstAvailableScheduleSlotFromProductivityWindow,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
@@ -20,6 +21,7 @@ import {
   resolveNextScheduleDayDate,
   type ScheduleDay,
 } from "../lib/schedule-placement";
+import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { eventTargetClosest } from "./control-helpers";
@@ -84,6 +86,19 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskDurationValueInput?.classList.remove("isInvalid");
     els.addTaskMsArea?.classList.remove("isInvalid");
     els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
+  }
+
+  async function enablePushAlertsForCurrentRuntime() {
+    const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
+      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+      webEnabled: ctx.getWebPushAlertsEnabled(),
+    }).catch(() => ({
+      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+      webEnabled: ctx.getWebPushAlertsEnabled(),
+    }));
+    ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
+    ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
+    ctx.persistPushAlertsPreference();
   }
 
   function syncAddTaskNamePlaceholder(showHelperText: boolean) {
@@ -201,7 +216,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       plannedStartOpenEnded: false,
       plannedStartDay: taskType === "once-off" ? onceOffDay : null,
       plannedStartTime,
-      plannedStartByDay: taskType === "once-off" ? { [onceOffDay]: plannedStartTime } : null,
+      plannedStartByDay:
+        taskType === "once-off"
+          ? { [onceOffDay]: plannedStartTime }
+          : timeGoalPeriod === "week"
+            ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime)
+            : null,
     } satisfies Task;
     return draftTask;
   }
@@ -213,11 +233,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
     const productivityStartTime = normalizeScheduleStoredTime(ctx.getOptimalProductivityStartTime()) || "09:00";
     const productivityEndTime = normalizeScheduleStoredTime(ctx.getOptimalProductivityEndTime()) || "23:59";
-    if (!isOnceOffTaskType() && ctx.getAddTaskDurationPeriod() === "week") {
-      setAddTaskPlannedStartTime(productivityStartTime);
-      return;
-    }
-
     const draftTask = buildAddTaskScheduleDraft(productivityStartTime);
     const slot = findFirstAvailableScheduleSlotFromProductivityWindow(ctx.getTasks(), draftTask, {
       optimalProductivityStartTime: productivityStartTime,
@@ -787,7 +802,12 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       newTask.onceOffDay = null;
       newTask.onceOffTargetDate = null;
       newTask.plannedStartOpenEnded = false;
-      newTask.plannedStartTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
+      const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
+      newTask.plannedStartTime = plannedTime;
+      newTask.plannedStartByDay =
+        newTask.timeGoalPeriod === "week" && plannedTime
+          ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedTime)
+          : null;
     }
 
     if (findScheduleOverlap(tasks, newTask)) {
@@ -935,6 +955,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMinuteSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
+      if (!els.addTaskPlannedStartPushReminders?.checked) return;
+      void enablePushAlertsForCurrentRuntime();
+    });
     ctx.on(els.addTaskColorTrigger, "click", (event: Event) => {
       event.preventDefault?.();
       const isOpen = els.addTaskColorPopover instanceof HTMLElement && els.addTaskColorPopover.style.display === "flex";

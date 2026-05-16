@@ -148,6 +148,7 @@ function createHarness(initialValue: string) {
     getCurrentAppPage: () => "tasks",
     getOptimalProductivityStartTime: () => "09:00",
     getOptimalProductivityEndTime: () => "17:00",
+    getOptimalProductivityDays: () => ["mon", "wed", "fri"],
     jumpToTaskAndHighlight: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
@@ -268,6 +269,25 @@ describe("createTaskTimerAddTask", () => {
         timeGoalUnit: "hour",
         timeGoalPeriod: "day",
         timeGoalMinutes: 60,
+      }),
+    ]);
+  });
+
+  it("schedules weekly recurring tasks across optimal productivity days", () => {
+    const harness = createHarness("2");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+    harness.ctx.getAddTaskDurationPeriod = () => "week";
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 840,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
       }),
     ]);
   });

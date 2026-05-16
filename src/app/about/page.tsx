@@ -175,7 +175,6 @@ export default function AboutPage() {
           <div className="landingV2FooterLinks">
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/web-sign-in">Sign In</Link>
           </div>
         </footer>

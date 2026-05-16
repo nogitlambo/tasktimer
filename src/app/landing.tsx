@@ -69,7 +69,9 @@ function FeatureIcon({ icon, title }: { icon: FeatureIconName; title: string }) 
   );
 }
 
-export default function Landing({ showTitlePhase, showActions }: LandingExperimentalProps) {
+export default function Landing(props: LandingExperimentalProps) {
+  void props;
+
   const [revealStage, setRevealStage] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -92,10 +94,11 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
     const timers: number[] = [];
     const frameId = window.requestAnimationFrame(() => {
       setRevealStage(1);
-      timers.push(window.setTimeout(() => setRevealStage(2), 240));
-      timers.push(window.setTimeout(() => setRevealStage(3), 520));
-      timers.push(window.setTimeout(() => setRevealStage(4), 860));
-      timers.push(window.setTimeout(() => setRevealStage(5), 1220));
+      timers.push(window.setTimeout(() => setRevealStage(2), 300));
+      timers.push(window.setTimeout(() => setRevealStage(3), 600));
+      timers.push(window.setTimeout(() => setRevealStage(4), 900));
+      timers.push(window.setTimeout(() => setRevealStage(5), 1200));
+      timers.push(window.setTimeout(() => setRevealStage(6), 1500));
     });
 
     return () => {
@@ -104,14 +107,16 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
     };
   }, []);
 
-  const showHero = showTitlePhase && revealStage >= 2;
-  const showHeader = revealStage >= 1;
-  const showSupporting = revealStage >= 3;
-  const showLowerSections = revealStage >= 4;
-  const showFinalCta = showActions && revealStage >= 5;
+  const showHero = revealStage >= 1;
+  const showHeroActions = revealStage >= 2;
+  const showHeader = revealStage >= 3;
+  const showBackgroundImage = revealStage >= 4;
+  const showSupporting = revealStage >= 5;
+  const showLowerSections = revealStage >= 6;
+  const showFinalCta = revealStage >= 6;
 
   return (
-    <main className={`landingV2 ${showHero ? "isHeroVisible" : ""}`}>
+    <main className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}`}>
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
@@ -123,7 +128,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
 
           <div className="landingV2FooterLinks">
             <Link href="/privacy">Privacy</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/web-sign-in">Sign In</Link>
           </div>
           <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
@@ -149,7 +153,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
                 <span />
               </button>
               <Link href="/privacy">Privacy</Link>
-              <Link href="/pricing">Pricing</Link>
               <Link href="/web-sign-in">Sign In</Link>
             </div>
           </div>
@@ -172,7 +175,7 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
               energy, and motivation are inconsistent.
             </p>
 
-            <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>
+            <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>
               <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
                 Get Started
               </Link>
@@ -344,7 +347,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
           <div className="landingV2FooterLinks">
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/web-sign-in">Sign In</Link>
           </div>
         </footer>

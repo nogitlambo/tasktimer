@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
+  getScheduleTaskDurationMinutesForDay,
   type ScheduleDay,
 } from "./schedule-placement";
 import type { Task } from "./types";
@@ -102,5 +104,41 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  it("splits weekly recurring task duration evenly across scheduled days", () => {
+    const weekly = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "mon")).toBe(34);
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "wed")).toBe(33);
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "fri")).toBe(33);
+  });
+
+  it("checks conflicts using weekly per-day split durations", () => {
+    const weekly = task({
+      id: "weekly",
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+    const busy = task({
+      id: "busy",
+      plannedStartDay: "wed",
+      plannedStartTime: "09:30",
+      plannedStartByDay: { wed: "09:30" },
+      timeGoalMinutes: 15,
+    });
+
+    expect(findScheduleOverlap([busy], weekly)?.day).toBe("wed");
   });
 });

@@ -287,7 +287,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       return !!onceOffDay && onceOffDay === getScheduleDayForDate(todayMs);
     }
     const scheduledDays = getTaskScheduledDays(task);
-    if (!scheduledDays.length) return true;
+    if (!scheduledDays.length) return false;
     return scheduledDays.includes(getScheduleDayForDate(todayMs));
   }
 
@@ -662,7 +662,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }, 0);
       return sum + taskWeekMs;
     }, 0);
-    let hasPrevWeekHistoryEntries = false;
+    let hasFullPriorWeekHistory = false;
     const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
       const taskId = String(task.id || "").trim();
       if (!taskId) return sum;
@@ -670,9 +670,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const taskPrevWeekMs = entries.reduce((entrySum, entry: any) => {
         const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
         const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
         if (!Number.isFinite(ms) || ms <= 0) return entrySum;
-        hasPrevWeekHistoryEntries = true;
+        if (Number.isFinite(ts) && ts <= prevWeekStartMs) hasFullPriorWeekHistory = true;
+        if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
         return entrySum + ms;
       }, 0);
       return sum + taskPrevWeekMs;
@@ -687,8 +687,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
     let trendDeltaPct: number | null = null;
+    const canShowTrendComparison = hasFullPriorWeekHistory && prevWeekLoggedMs > 0;
     if (trendIndicatorEl) {
-      if (hasPrevWeekHistoryEntries) {
+      if (canShowTrendComparison) {
         trendIndicatorEl.style.display = "";
         trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
           showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
@@ -725,8 +726,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
     if (cardEl) {
       const trendSummary =
-        !hasPrevWeekHistoryEntries
-          ? "No previous-week history to compare yet."
+        !canShowTrendComparison
+          ? "Full prior week unavailable for comparison."
           : trendDeltaPct == null
             ? "Trend unavailable versus previous week."
             : `${trendDeltaPct >= 0 ? "+" : ""}${trendDeltaPct}% versus previous week.`;

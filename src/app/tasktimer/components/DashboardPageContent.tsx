@@ -175,7 +175,7 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                                 const centerY = 79;
                                 const markerInnerRadius = 55.5;
                                 const markerOuterRadius = 72.5;
-                                const markerValues = [25, 50, 75];
+                                const markerValues = [30, 60, 90];
                                 const labelRadius = 46;
                                 return (
                                   <g className="dashboardMomentumMarkers" aria-hidden="true">
@@ -187,9 +187,9 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                                       const y1 = centerY - Math.sin(angleRad) * markerInnerRadius;
                                       const x2 = centerX + Math.cos(angleRad) * markerOuterRadius;
                                       const y2 = centerY - Math.sin(angleRad) * markerOuterRadius;
-                                      const tierLabel = value === 25 ? "x1.2" : value === 50 ? "x1.5" : value === 75 ? "x2.0" : "";
+                                      const tierLabel = value === 30 ? "x1.2" : value === 60 ? "x1.5" : value === 90 ? "x2.0" : "";
                                       const labelX = centerX + Math.cos(angleRad) * labelRadius;
-                                      const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 50 ? 4 : 2);
+                                      const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 60 ? 4 : 2);
                                       return (
                                         <g key={`momentum-marker-${value}`}>
                                           <line

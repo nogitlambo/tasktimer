@@ -90,6 +90,11 @@ function task(overrides: Partial<Task>): Task {
   } as Task;
 }
 
+function todaySchedule() {
+  const today = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+  return { [today]: "09:00" } as Task["plannedStartByDay"];
+}
+
 function createDocumentHarness() {
   const byId = new Map<string, ElementStub>();
   const register = (id: string) => {
@@ -157,6 +162,7 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
     getHistoryByTaskId: () => options?.historyByTaskId || {},
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => "mon",
+    getOptimalProductivityDays: () => ["mon", "wed", "fri"],
     getDashboardAvgRange: () => "past7",
     setDashboardAvgRange: () => {},
     getDashboardTimelineDensity: () => "medium",
@@ -197,7 +203,15 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
 }
 
 describe("weekly goals dashboard card", () => {
-  it("hides the percent comparison until previous-week history exists", () => {
+  function expectWeeklyTrendHidden(trendEl: ElementStub | undefined) {
+    expect(trendEl?.style.display).toBe("none");
+    expect(trendEl?.textContent).toBe("");
+    expect(trendEl?.classList.contains("positive")).toBe(false);
+    expect(trendEl?.classList.contains("negative")).toBe(false);
+    expect(trendEl?.classList.contains("neutral")).toBe(false);
+  }
+
+  it("hides the percent comparison when only current-week history exists", () => {
     const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
     const tasks = [task({ id: "focus", name: "Focus" })];
     const harness = createRenderHarness(tasks, {
@@ -210,17 +224,13 @@ describe("weekly goals dashboard card", () => {
       harness.renderWeeklyGoals();
       const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
 
-      expect(trendEl?.style.display).toBe("none");
-      expect(trendEl?.textContent).toBe("");
-      expect(trendEl?.classList.contains("positive")).toBe(false);
-      expect(trendEl?.classList.contains("negative")).toBe(false);
-      expect(trendEl?.classList.contains("neutral")).toBe(false);
+      expectWeeklyTrendHidden(trendEl);
     } finally {
       harness.restore();
     }
   });
 
-  it("shows the percent comparison when previous-week history exists", () => {
+  it("hides the percent comparison when previous-week history exists without a full prior week", () => {
     const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
     const tasks = [task({ id: "focus", name: "Focus" })];
     const harness = createRenderHarness(tasks, {
@@ -236,6 +246,29 @@ describe("weekly goals dashboard card", () => {
       harness.renderWeeklyGoals();
       const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
 
+      expectWeeklyTrendHidden(trendEl);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows the percent comparison when previous-week history has a full prior week", () => {
+    const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
+    const tasks = [task({ id: "focus", name: "Focus" })];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        focus: [
+          { ts: weekStartMs + 60 * 60 * 1000, name: "Focus", ms: 30 * 60 * 1000 },
+          { ts: weekStartMs - 2 * 60 * 60 * 1000, name: "Focus", ms: 15 * 60 * 1000 },
+          { ts: weekStartMs - 8 * 24 * 60 * 60 * 1000, name: "Focus", ms: 10 * 60 * 1000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderWeeklyGoals();
+      const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
+
       expect(trendEl?.style.display).toBe("");
       expect(trendEl?.textContent).toBe("+100%");
       expect(trendEl?.classList.contains("positive")).toBe(true);
@@ -243,13 +276,36 @@ describe("weekly goals dashboard card", () => {
       harness.restore();
     }
   });
+
+  it("hides the percent comparison when a full prior week exists but previous-week logged time is zero", () => {
+    const weekStartMs = startOfCurrentWeekMs(Date.now(), "mon");
+    const tasks = [task({ id: "focus", name: "Focus" })];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        focus: [
+          { ts: weekStartMs + 60 * 60 * 1000, name: "Focus", ms: 30 * 60 * 1000 },
+          { ts: weekStartMs - 8 * 24 * 60 * 60 * 1000, name: "Focus", ms: 10 * 60 * 1000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderWeeklyGoals();
+      const trendEl = harness.byId.get("dashboardWeeklyTrendIndicator");
+
+      expectWeeklyTrendHidden(trendEl);
+    } finally {
+      harness.restore();
+    }
+  });
 });
 
 describe("dashboard completed card", () => {
-  it("adds newly created due tasks without daily goals to the donut", () => {
+  it("shows scheduled due tasks without daily goals in the donut", () => {
+    const today = todaySchedule();
     const tasks = [
-      task({ id: "goal-task", name: "Goal Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 }),
-      task({ id: "new-task", name: "New Task", timeGoalEnabled: false, timeGoalMinutes: 0 }),
+      task({ id: "goal-task", name: "Goal Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: today }),
+      task({ id: "new-task", name: "New Task", timeGoalEnabled: false, timeGoalMinutes: 0, plannedStartByDay: today }),
     ];
     const harness = createRenderHarness(tasks);
 
@@ -271,10 +327,32 @@ describe("dashboard completed card", () => {
     }
   });
 
+  it("excludes unscheduled tasks from the donut", () => {
+    const tasks = [
+      task({ id: "scheduled-task", name: "Scheduled Task", plannedStartByDay: todaySchedule() }),
+      task({ id: "unscheduled-task", name: "Unscheduled Task", timeGoalEnabled: false, timeGoalMinutes: 0 }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
+
+      expect(labelsEl?.children).toHaveLength(1);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Scheduled Task");
+      expect(labelsEl?.innerHTML).not.toContain("Unscheduled Task");
+      expect(connectorEls).toHaveLength(1);
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("shows the running task name and in-progress subtext in the donut center", () => {
     const tasks = [
-      task({ id: "running-task", name: "Deep Work", running: true, startMs: Date.now() - 1000 }),
-      task({ id: "queued-task", name: "Queued Task" }),
+      task({ id: "running-task", name: "Deep Work", running: true, startMs: Date.now() - 1000, plannedStartByDay: todaySchedule() }),
+      task({ id: "queued-task", name: "Queued Task", plannedStartByDay: todaySchedule() }),
     ];
     const harness = createRenderHarness(tasks);
 
@@ -292,8 +370,8 @@ describe("dashboard completed card", () => {
   it("shows today's completed task percentage when no task is running", () => {
     const nowValue = Date.now();
     const tasks = [
-      task({ id: "done-task", name: "Done Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 }),
-      task({ id: "open-task", name: "Open Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 }),
+      task({ id: "done-task", name: "Done Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+      task({ id: "open-task", name: "Open Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
     ];
     const harness = createRenderHarness(tasks, {
       historyByTaskId: {
@@ -314,11 +392,11 @@ describe("dashboard completed card", () => {
 
   it("renders connector paths when short time-goal labels are bunched", () => {
     const tasks = [
-      task({ id: "quick-1", name: "Quick 1", order: 1, timeGoalMinutes: 1 }),
-      task({ id: "quick-2", name: "Quick 2", order: 2, timeGoalMinutes: 1 }),
-      task({ id: "quick-3", name: "Quick 3", order: 3, timeGoalMinutes: 1 }),
-      task({ id: "quick-4", name: "Quick 4", order: 4, timeGoalMinutes: 1 }),
-      task({ id: "deep-work", name: "Deep Work", order: 5, timeGoalMinutes: 180 }),
+      task({ id: "quick-1", name: "Quick 1", order: 1, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
+      task({ id: "quick-2", name: "Quick 2", order: 2, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
+      task({ id: "quick-3", name: "Quick 3", order: 3, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
+      task({ id: "quick-4", name: "Quick 4", order: 4, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
+      task({ id: "deep-work", name: "Deep Work", order: 5, timeGoalMinutes: 180, plannedStartByDay: todaySchedule() }),
     ];
     const harness = createRenderHarness(tasks);
 

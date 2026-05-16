@@ -835,6 +835,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
       getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
+      persistPushAlertsPreference: () => {
+        try {
+          localStorage.setItem(MOBILE_PUSH_ALERTS_KEY, preferencesState.get("mobilePushAlertsEnabled") ? "true" : "false");
+          localStorage.setItem(WEB_PUSH_ALERTS_KEY, preferencesState.get("webPushAlertsEnabled") ? "true" : "false");
+        } catch {
+          // Ignore localStorage write failures.
+        }
+      },
       loadCachedTaskUi: () => cacheRuntimeState.get("cloudTaskUiCache") || workspaceRepository.loadCachedTaskUi(),
       saveCloudTaskUi: (next) => {
         cacheRuntimeState.set("cloudTaskUiCache", next as TaskUiConfig | null);
@@ -1351,6 +1359,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         // Ignore localStorage write failures.
       }
     },
+    getOptimalProductivityDays: () => preferencesState.get("optimalProductivityDays"),
     getElapsedMs,
     render,
     save: renderBindings.save,

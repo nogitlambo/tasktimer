@@ -1,6 +1,7 @@
 import type { Task } from "../lib/types";
 import {
   findScheduleOverlap,
+  getScheduleTaskDurationMinutesForDay,
   getSchedulePlacementDays,
   getScheduleTaskDurationMinutes,
   hasTaskScheduledSlots,
@@ -124,7 +125,7 @@ export function snapScheduleMinutes(totalMinutes: number) {
 }
 
 export function isScheduleRenderableTask(task: Task) {
-  return getScheduleTaskDurationMinutes(task) > 0;
+  return getTaskScheduledDayEntries(task).some((entry) => getScheduleTaskDurationMinutesForDay(task, entry.day) > 0) || getScheduleTaskDurationMinutes(task) > 0;
 }
 
 export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleRuntimeOptions) {
@@ -147,22 +148,22 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const unscheduled: TaskTimerScheduleViewModel["unscheduled"] = [];
 
     for (const task of options.getTasks()) {
-      const durationMinutes = getScheduleTaskDurationMinutes(task);
       const scheduledEntries = getTaskScheduledDayEntries(task);
       const hasRenderableSchedule =
-        durationMinutes > 0 &&
         scheduledEntries.some((entry) => {
+          const durationMinutes = getScheduleTaskDurationMinutesForDay(task, entry.day);
           const startMinutes = parseScheduleTimeMinutes(entry.time);
-          return startMinutes != null && startMinutes + durationMinutes <= 24 * 60;
+          return durationMinutes > 0 && startMinutes != null && startMinutes + durationMinutes <= 24 * 60;
         });
       if (hasRenderableSchedule) {
         scheduledEntries.forEach((entry) => {
+          const durationMinutes = getScheduleTaskDurationMinutesForDay(task, entry.day);
           const startMinutes = parseScheduleTimeMinutes(entry.time);
-          if (startMinutes == null || startMinutes + durationMinutes > 24 * 60) return;
+          if (!(durationMinutes > 0) || startMinutes == null || startMinutes + durationMinutes > 24 * 60) return;
           scheduled.push({ task, day: entry.day, startMinutes, durationMinutes });
         });
       } else {
-        unscheduled.push({ task, canDrop: durationMinutes > 0 });
+        unscheduled.push({ task, canDrop: getScheduleTaskDurationMinutes(task) > 0 });
       }
     }
 
@@ -209,7 +210,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const taskIndex = options.getTasks().findIndex((entry) => String(entry.id || "") === taskId);
     if (taskIndex < 0) return;
     const task = options.getTasks()[taskIndex]!;
-    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    const durationMinutes = getScheduleTaskDurationMinutesForDay(task, day) || getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
     const placementDays = getSchedulePlacementDays(task, day, sourceDay);
@@ -245,7 +246,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const sourceTime = getTaskScheduledTime(task, sourceDay);
     if (!sourceTime) return [];
     const startMinutes = parseScheduleTimeMinutes(sourceTime);
-    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    const durationMinutes = getScheduleTaskDurationMinutesForDay(task, sourceDay) || getScheduleTaskDurationMinutes(task);
     if (startMinutes == null || !(durationMinutes > 0)) return [];
     return getScheduleDaysForTask(task)
       .filter((day) => day !== sourceDay)
@@ -322,7 +323,8 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     if (!taskId || !dragPreviewDay || dragPreviewStartMinutes == null) return null;
     const task = options.getTasks().find((entry) => String(entry.id || "") === taskId);
     if (!task) return null;
-    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    const durationMinutes =
+      getScheduleTaskDurationMinutesForDay(task, dragPreviewDay) || getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return null;
     const placementDays = getSchedulePlacementDays(task, dragPreviewDay, dragSourceDay);
     return {

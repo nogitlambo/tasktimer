@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeMomentumSnapshot } from "./momentum";
+import { computeMomentumSnapshot, getMomentumBandLabel, getMomentumMultiplier } from "./momentum";
 import type { HistoryByTaskId, Task } from "./types";
 
 function buildTask(overrides: Partial<Task> = {}): Task {
@@ -32,6 +32,20 @@ function dayStartMs(isoDate: string) {
 function entry(ts: number, ms: number) {
   return { ts, ms, name: "Task" };
 }
+
+describe("computeMomentumSnapshot multiplier thresholds", () => {
+  it.each([
+    [29, "Low", 1],
+    [30, "Building", 1.2],
+    [59, "Building", 1.2],
+    [60, "Strong", 1.5],
+    [89, "Strong", 1.5],
+    [90, "Surging", 2],
+  ])("maps %i momentum points to %s and x%s", (score, bandLabel, multiplier) => {
+    expect(getMomentumBandLabel(score)).toBe(bandLabel);
+    expect(getMomentumMultiplier(score)).toBe(multiplier);
+  });
+});
 
 describe("computeMomentumSnapshot recent activity", () => {
   const nowValue = new Date("2026-05-05T12:00:00").getTime();

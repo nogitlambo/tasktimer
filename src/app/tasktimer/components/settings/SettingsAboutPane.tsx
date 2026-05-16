@@ -1,6 +1,5 @@
 "use client";
 
-import AppImg from "@/components/AppImg";
 import packageJson from "../../../../../package.json";
 import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
 import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
@@ -18,10 +17,6 @@ export function SettingsAboutPane({ active, exiting = false }: { active: boolean
     >
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
-          <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon settingsAboutBrandIcon" src="/logo/launch-icon-original-transparent.png" alt="" aria-hidden="true" />
-            <div className="settingsInlineSectionTitle">TaskLaunch</div>
-          </div>
           <div className="settingsDetailNote">Version: {APP_VERSION}</div>
           <div className="settingsDetailNote">Release Date: 17th May 2026</div>
           <ul className="settingsDataList settingsAboutLinkList">

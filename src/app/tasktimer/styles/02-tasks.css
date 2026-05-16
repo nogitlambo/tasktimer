@@ -2036,6 +2036,19 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   color:#ffffff !important;
   background:#1a1b20 !important;
 }
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayTab.isOptimalProductivityDay{
+  color:rgba(236,255,243,.96) !important;
+  background:
+    linear-gradient(180deg, rgba(103,255,159,.2), rgba(103,255,159,.08)),
+    rgba(10,28,18,.24) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(103,255,159,.14),
+    inset 0 -1px 0 rgba(103,255,159,.2);
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayTab.isOptimalProductivityDay:is(.isOn, [aria-selected="true"]){
+  border-color:rgba(103,255,159,.7) !important;
+  color:#ffffff !important;
+}
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleBoard,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTray{
   border:1px solid rgba(255,255,255,.08);
@@ -2075,6 +2088,15 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDays{
   display:grid;
   grid-template-columns:repeat(var(--schedule-visible-days), minmax(0, 1fr));
+}
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerDayChip.isOptimalProductivityDay{
+  color:rgba(236,255,243,.96);
+  background:
+    linear-gradient(180deg, rgba(103,255,159,.18), rgba(103,255,159,.07)),
+    rgba(10,28,18,.2);
+  box-shadow:
+    inset 0 -1px 0 rgba(103,255,159,.2),
+    inset 0 0 0 1px rgba(103,255,159,.12);
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlannerBody{
   display:grid;

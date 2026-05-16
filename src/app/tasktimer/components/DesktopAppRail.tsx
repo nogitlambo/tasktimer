@@ -358,20 +358,6 @@ function renderProfileHelpMenu() {
       <div className="desktopRailProfileSubmenuList" role="menu" aria-label="Help Center">
         <a
           className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
-          href="/privacy"
-          role="menuitem"
-          aria-label="Privacy Policy"
-        >
-          <AppImg
-            className="dashboardRailMenuIconImage desktopRailPrivacyPolicyIcon"
-            src="/icons/icons_default/privacy-policy.svg"
-            alt=""
-            aria-hidden="true"
-          />
-          <span className="dashboardRailMenuLabel">Privacy Policy</span>
-        </a>
-        <a
-          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
           href="/about"
           role="menuitem"
           aria-label="About TaskLaunch"

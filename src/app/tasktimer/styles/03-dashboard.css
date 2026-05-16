@@ -4390,7 +4390,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   left: 50% !important;
   top: 64.754098% !important;
   width: 29% !important;
-  height: 4px !important;
+  height: 2px !important;
   overflow: hidden !important;
   clip-path: none !important;
   transform-origin: 0% 50% !important;
@@ -4417,8 +4417,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   border-radius: 999px !important;
   background: linear-gradient(90deg, rgba(133,173,255,.92) 0%, rgba(106,154,255,.98) 46%, rgba(62,100,224,.98) 100%) !important;
   box-shadow:
-    0 0 8px rgba(110,153,255,.22),
-    0 0 2px rgba(200,228,255,.24) !important;
+    0 0 5px rgba(110,153,255,.18),
+    0 0 1px rgba(200,228,255,.2) !important;
   pointer-events: none !important;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard.isPlanLocked .dashboardMomentumDial{

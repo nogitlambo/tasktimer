@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { trackScreen } from "@/lib/firebaseTelemetry";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
@@ -25,7 +27,16 @@ import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
-import { ACCOUNT_AVATAR_UPDATED_EVENT } from "./lib/accountProfileStorage";
+import { AVATAR_CATALOG } from "./lib/avatarCatalog";
+import {
+  ACCOUNT_AVATAR_UPDATED_EVENT,
+  ACCOUNT_PROFILE_UPDATED_EVENT,
+  findStoredCustomAvatarUploadSrc,
+  googleAvatarIdForUid,
+  isCustomAvatarIdForUid,
+  readStoredAvatarId,
+  readStoredCustomAvatarSrc,
+} from "./lib/accountProfileStorage";
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
@@ -125,6 +136,46 @@ function formatLeaderboardMemberSince(memberSinceMs: number | null | undefined):
 
 function getLeaderboardLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
+}
+
+function labelFromUser(user: User | null) {
+  const email = String(user?.email || "").trim() || user?.providerData
+    ?.map((provider) => String(provider.email || "").trim())
+    .find(Boolean);
+  if (email) return email.split("@")[0] || email;
+  return "User";
+}
+
+function resolveCurrentUserAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
+  const normalizedAvatarId = String(avatarId || "").trim();
+  if (normalizedAvatarId && isCustomAvatarIdForUid(uid, normalizedAvatarId)) {
+    return (
+      findStoredCustomAvatarUploadSrc(uid, normalizedAvatarId) ||
+      String(avatarCustomSrc || "").trim() ||
+      readStoredCustomAvatarSrc(uid)
+    );
+  }
+  if (normalizedAvatarId && normalizedAvatarId === googleAvatarIdForUid(uid) && googlePhotoUrl) return googlePhotoUrl;
+  if (normalizedAvatarId) {
+    const match = AVATAR_CATALOG.find((avatar) => avatar.id === normalizedAvatarId);
+    if (match?.src) return match.src;
+  }
+  return googlePhotoUrl;
+}
+
+function withCurrentUserProfileHydration(
+  profile: LeaderboardProfile | null,
+  hydratedProfile: Pick<LeaderboardProfile, "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"> | null
+): LeaderboardProfile | null {
+  if (!profile || !hydratedProfile || profile.uid !== hydratedProfile.uid) return profile;
+  return {
+    ...profile,
+    username: hydratedProfile.username || profile.username,
+    displayLabel: hydratedProfile.displayLabel || profile.displayLabel,
+    avatarId: hydratedProfile.avatarId || profile.avatarId,
+    avatarCustomSrc: hydratedProfile.avatarCustomSrc || profile.avatarCustomSrc,
+    googlePhotoUrl: hydratedProfile.googlePhotoUrl || profile.googlePhotoUrl,
+  };
 }
 
 function getLeaderboardRankLabel(profile: LeaderboardProfile): string {
@@ -235,6 +286,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
+  const [hydratedCurrentUserProfile, setHydratedCurrentUserProfile] = useState<Pick<
+    LeaderboardProfile,
+    "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
+  > | null>(null);
   const leaderboardStateRef = useRef<LeaderboardLoadState>("error");
   const displayedXpRef = useRef(displayedXp);
   const previousActiveAwardRef = useRef<PendingXpAward | null>(null);
@@ -546,6 +601,83 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (!auth) return;
 
     let cancelled = false;
+
+    const syncCurrentUserProfile = async (user: User | null) => {
+      const uid = String(user?.uid || "").trim();
+      const fallbackLabel = labelFromUser(user);
+      const googlePhotoUrl = String(user?.photoURL || "").trim();
+
+      if (!uid) {
+        setHydratedCurrentUserProfile(null);
+        return;
+      }
+
+      const storedAvatarId = readStoredAvatarId(uid);
+      const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
+      setHydratedCurrentUserProfile({
+        uid,
+        username: null,
+        displayLabel: fallbackLabel,
+        avatarId: storedAvatarId || null,
+        avatarCustomSrc: storedCustomAvatarSrc || null,
+        googlePhotoUrl: googlePhotoUrl || null,
+      });
+
+      const db = getFirebaseFirestoreClient();
+      if (!db) return;
+
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (cancelled) return;
+        const username = snap.exists() ? String(snap.get("username") || snap.get("alias") || "").trim() : "";
+        const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
+        const avatarCustomSrc = String((snap.exists() ? snap.get("avatarCustomSrc") : "") || storedCustomAvatarSrc).trim();
+        const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || googlePhotoUrl).trim();
+        const resolvedAvatarSrc = resolveCurrentUserAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl);
+        const isCustomAvatar = isCustomAvatarIdForUid(uid, avatarId);
+        setHydratedCurrentUserProfile({
+          uid,
+          username: username || null,
+          displayLabel: username || fallbackLabel,
+          avatarId: avatarId || null,
+          avatarCustomSrc: (isCustomAvatar ? resolvedAvatarSrc || avatarCustomSrc : avatarCustomSrc) || null,
+          googlePhotoUrl: remoteGooglePhotoUrl || null,
+        });
+      } catch {
+        // Keep the local/auth profile fallback when cloud profile hydration fails.
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      void syncCurrentUserProfile(user);
+    });
+    const refreshProfile = () => {
+      void syncCurrentUserProfile(auth.currentUser);
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, refreshProfile);
+      window.addEventListener(ACCOUNT_PROFILE_UPDATED_EVENT, refreshProfile);
+    }
+
+    if (auth.currentUser) {
+      void syncCurrentUserProfile(auth.currentUser);
+    }
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+      if (typeof window !== "undefined") {
+        window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, refreshProfile);
+        window.removeEventListener(ACCOUNT_PROFILE_UPDATED_EVENT, refreshProfile);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+
+    let cancelled = false;
     let activeUid = String(auth.currentUser?.uid || "").trim();
     let refreshTimer: number | null = null;
 
@@ -632,34 +764,55 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     };
   }, []);
 
+  const hydratedCurrentUserEntry = useMemo(
+    () => withCurrentUserProfileHydration(leaderboardData.currentUserEntry, hydratedCurrentUserProfile),
+    [hydratedCurrentUserProfile, leaderboardData.currentUserEntry]
+  );
+  const hydratedCurrentUserWeeklyEntry = useMemo(
+    () => withCurrentUserProfileHydration(leaderboardData.currentUserWeeklyEntry, hydratedCurrentUserProfile),
+    [hydratedCurrentUserProfile, leaderboardData.currentUserWeeklyEntry]
+  );
+  const hydratedTopEntries = useMemo(
+    () => leaderboardData.topEntries.map((profile) => withCurrentUserProfileHydration(profile, hydratedCurrentUserProfile) || profile),
+    [hydratedCurrentUserProfile, leaderboardData.topEntries]
+  );
+  const hydratedWeeklyEntries = useMemo(
+    () => leaderboardData.weeklyEntries.map((profile) => withCurrentUserProfileHydration(profile, hydratedCurrentUserProfile) || profile),
+    [hydratedCurrentUserProfile, leaderboardData.weeklyEntries]
+  );
+  const hydratedRivalEntries = useMemo(
+    () => leaderboardData.rivalEntries.map((profile) => withCurrentUserProfileHydration(profile, hydratedCurrentUserProfile) || profile),
+    [hydratedCurrentUserProfile, leaderboardData.rivalEntries]
+  );
+
   const weeklyRows = useMemo(
     () =>
       buildWeeklyLeaderboardRows({
-        weeklyEntries: leaderboardData.weeklyEntries,
-        currentUserEntry: leaderboardData.currentUserWeeklyEntry,
+        weeklyEntries: hydratedWeeklyEntries,
+        currentUserEntry: hydratedCurrentUserWeeklyEntry,
         currentUserWeeklyRank: leaderboardData.currentUserWeeklyRank,
       }),
-    [leaderboardData.currentUserWeeklyEntry, leaderboardData.currentUserWeeklyRank, leaderboardData.weeklyEntries]
+    [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank]
   );
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const weeklyTableRows = weeklyRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
-      topEntries: leaderboardData.topEntries,
-      currentUserEntry: leaderboardData.currentUserEntry,
+      topEntries: hydratedTopEntries,
+      currentUserEntry: hydratedCurrentUserEntry,
       currentUserRank: leaderboardData.currentUserRank,
     });
-  }, [leaderboardData.currentUserEntry, leaderboardData.currentUserRank, leaderboardData.topEntries]);
+  }, [hydratedCurrentUserEntry, hydratedTopEntries, leaderboardData.currentUserRank]);
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const globalTableRows = globalRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
   const rivalRows = useMemo(
     () =>
       buildRivalLeaderboardRows({
-        rivalEntries: leaderboardData.rivalEntries,
-        currentUserEntry: leaderboardData.currentUserEntry,
+        rivalEntries: hydratedRivalEntries,
+        currentUserEntry: hydratedCurrentUserEntry,
         currentUserRivalRank: leaderboardData.currentUserRivalRank,
       }),
-    [leaderboardData.currentUserEntry, leaderboardData.currentUserRivalRank, leaderboardData.rivalEntries]
+    [hydratedCurrentUserEntry, hydratedRivalEntries, leaderboardData.currentUserRivalRank]
   );
   const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const rivalTableRows = rivalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
@@ -673,10 +826,18 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const selectedGlobalRankLabel = selectedGlobalRow?.rankLabel || "--";
   const selectedWeeklyRankLabel = selectedWeeklyRow?.rankLabel || "--";
   const selectedRivalRankLabel = selectedRivalRow?.rankLabel || "--";
-  const currentUserAvatarSrc = leaderboardData.currentUserEntry ? getLeaderboardAvatarRenderSrc(leaderboardData.currentUserEntry) : "";
-  const currentUserAvatarInitials = leaderboardData.currentUserEntry ? getLeaderboardInitials(getLeaderboardLabel(leaderboardData.currentUserEntry)) : "U";
-  const currentUserLabel = leaderboardData.currentUserEntry ? getLeaderboardLabel(leaderboardData.currentUserEntry) : "User";
-  const currentUserRankLabel = leaderboardData.currentUserEntry ? getLeaderboardRankLabel(leaderboardData.currentUserEntry) : "your rank";
+  const hydratedCurrentUserProfileAvatarSrc = hydratedCurrentUserProfile
+    ? getLeaderboardAvatarRenderSrc(hydratedCurrentUserProfile as LeaderboardProfile)
+    : "";
+  const hydratedCurrentUserProfileLabel = String(hydratedCurrentUserProfile?.username || hydratedCurrentUserProfile?.displayLabel || "").trim();
+  const currentUserAvatarSrc = hydratedCurrentUserEntry
+    ? getLeaderboardAvatarRenderSrc(hydratedCurrentUserEntry)
+    : hydratedCurrentUserProfileAvatarSrc;
+  const currentUserAvatarInitials = hydratedCurrentUserEntry
+    ? getLeaderboardInitials(getLeaderboardLabel(hydratedCurrentUserEntry))
+    : getLeaderboardInitials(hydratedCurrentUserProfileLabel || "User");
+  const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
+  const currentUserRankLabel = hydratedCurrentUserEntry ? getLeaderboardRankLabel(hydratedCurrentUserEntry) : "your rank";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);

@@ -425,8 +425,8 @@ canvas {
   --landing-feature-position: right top;
   --landing-feature-width: max(100vw, 177.8svh);
   --landing-feature-right: 0px;
-  --landing-feature-start-opacity: 0.42;
-  --landing-feature-visible-opacity: 1;
+  --landing-feature-start-opacity: 0;
+  --landing-feature-visible-opacity: 0.7;
   min-height: 100svh;
   position: relative;
   overflow-x: clip;
@@ -444,7 +444,7 @@ canvas {
   width: var(--landing-feature-width);
   pointer-events: none;
   opacity: var(--landing-feature-start-opacity);
-  transition: opacity 900ms ease;
+  transition: opacity 1s ease;
   background: var(--landing-feature-bg) var(--landing-feature-position) / 100% auto no-repeat;
 }
 
@@ -502,15 +502,18 @@ canvas {
 .landingV2 .landingV2Header > .landingV2FooterBrand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.64rem;
+  min-width: 0;
+  gap: clamp(7px, 1.1vw, 10px);
+  font-size: clamp(1.08rem, 3.2vw, 1.64rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .landingV2 .landingV2HeaderBrandIcon {
   display: block;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
+  width: clamp(30px, 7vw, 44px);
+  height: clamp(30px, 7vw, 44px);
+  flex: 0 0 clamp(30px, 7vw, 44px);
   object-fit: contain;
 }
 
@@ -638,9 +641,7 @@ canvas {
   padding: 28px 48px 42px;
   overflow: hidden;
   isolation: isolate;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 46%, rgba(0, 0, 0, 0.08) 100%),
-    linear-gradient(180deg, rgba(18, 18, 18, 0.08) 0%, rgba(18, 18, 18, 0.64) 100%);
+  background: transparent;
 }
 
 .landingV2 .landingV2HeroMain {
@@ -1828,7 +1829,6 @@ canvas {
 @media (max-width: 1180px) {
   .landingV2 {
     --landing-feature-right: -6vw;
-    --landing-feature-visible-opacity: 0.88;
   }
 
   .landingV2 .landingV2Hero,
@@ -1871,7 +1871,6 @@ canvas {
 @media (max-width: 860px) {
   .landingV2 {
     --landing-feature-right: -28vw;
-    --landing-feature-visible-opacity: 0.74;
   }
 
   .landingV2 .landingV2Header {
@@ -1954,7 +1953,6 @@ canvas {
 @media (max-width: 560px) {
   .landingV2 {
     --landing-feature-right: -72vw;
-    --landing-feature-visible-opacity: 0.54;
   }
 
   .landingV2 .landingV2Header {

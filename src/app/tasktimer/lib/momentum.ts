@@ -37,9 +37,9 @@ type MomentumComputationContext = {
 };
 
 const MOMENTUM_THRESHOLDS = {
-  building: 25,
-  strong: 50,
-  surging: 75,
+  building: 30,
+  strong: 60,
+  surging: 90,
 } as const;
 const RECENT_ACTIVITY_DAY_WEIGHTS: readonly [number, number, number] = [1, 0.65, 0.35];
 const RECENT_ACTIVITY_MIN_SESSION_MS = 5 * 60 * 1000;
@@ -64,7 +64,7 @@ export function getMomentumBandLabel(score: number): string {
   return "Low";
 }
 
-function getMomentumMultiplier(score: number): number {
+export function getMomentumMultiplier(score: number): number {
   if (score >= MOMENTUM_THRESHOLDS.surging) return 2;
   if (score >= MOMENTUM_THRESHOLDS.strong) return 1.5;
   if (score >= MOMENTUM_THRESHOLDS.building) return 1.2;

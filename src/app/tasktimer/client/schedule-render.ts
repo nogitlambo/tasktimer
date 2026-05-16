@@ -172,7 +172,12 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
     <div class="schedulePlannerHead">
       <div class="schedulePlannerCorner">Time</div>
       <div class="schedulePlannerDays">${visibleDays
-        .map((day) => `<div class="schedulePlannerDayChip">${ctx.escapeHtmlUI(SCHEDULE_DAY_LABELS[day])}</div>`)
+        .map((day) => {
+          const productivityClass = productivityDays.has(day) ? " isOptimalProductivityDay" : "";
+          return `<div class="schedulePlannerDayChip${productivityClass}" data-schedule-day="${day}">${ctx.escapeHtmlUI(
+            SCHEDULE_DAY_LABELS[day]
+          )}</div>`;
+        })
         .join("")}</div>
     </div>
     <div class="schedulePlannerBody">
@@ -208,10 +213,12 @@ export function renderTaskTimerSchedulePage(ctx: TaskTimerScheduleRenderContext)
 
   if (ctx.els.scheduleMobileDayTabs) {
     const selectedDay = normalizeScheduleDay(ctx.state.get("selectedDay")) || "mon";
+    const productivityDays = new Set(normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()));
     Array.from(ctx.els.scheduleMobileDayTabs.querySelectorAll<HTMLElement>("[data-schedule-day]")).forEach((button) => {
       const day = normalizeScheduleDay(button.dataset.scheduleDay);
       const isSelected = day === selectedDay;
       button.classList.toggle("isOn", isSelected);
+      button.classList.toggle("isOptimalProductivityDay", !!day && productivityDays.has(day));
       button.setAttribute("aria-selected", String(isSelected));
       button.setAttribute("tabindex", isSelected ? "0" : "-1");
     });

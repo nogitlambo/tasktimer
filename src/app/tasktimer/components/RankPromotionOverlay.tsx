@@ -15,6 +15,7 @@ const RANK_PROMOTION_DIM_DURATION_MS = 1000;
 const RANK_PROMOTION_INTRO_DELAY_MS = 200;
 const RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS = 1000;
 const RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 200;
+const RANK_PROMOTION_CHIME_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 600;
 const RANK_PROMOTION_POST_IMPACT_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 100;
 const RANK_PROMOTION_BLOOM_HOLD_MS = 100;
 const RANK_PROMOTION_SETTLE_MS = 800;
@@ -26,6 +27,9 @@ const RANK_PROMOTION_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
 const RANK_PROMOTION_INTRO_AUDIO_SRC = "/promotion_intro.mp3";
 const RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC = "/promotion_boom2.mp3";
 const RANK_PROMOTION_HIT_AUDIO_SRC = "/promotion_hit.mp3";
+const RANK_PROMOTION_CHIME_AUDIO_SRC = "/promotion_chime.mp3";
+const RANK_PROMOTION_CHIME_PLAYBACK_RATE = 0.75;
+const RANK_PROMOTION_CHIME_VOLUME = 0.375;
 const RANK_PROMOTION_POST_IMPACT_AUDIO_SRC = "/promotion_post-impact.mp3";
 const RANK_PROMOTION_FRAGMENT_COLUMNS = 15;
 const RANK_PROMOTION_FRAGMENT_ROWS = 14;
@@ -38,10 +42,12 @@ type RankPromotionFragment = {
   style: CSSProperties;
 };
 
-function playPromotionAudio(src: string) {
+function playPromotionAudio(src: string, playbackRate = 1, volume = 1) {
   try {
     const audio = new Audio(src);
     audio.preload = "auto";
+    audio.playbackRate = playbackRate;
+    audio.volume = volume;
     audio.currentTime = 0;
     const playback = audio.play();
     if (playback && typeof playback.catch === "function") playback.catch(() => {});
@@ -159,12 +165,20 @@ export default function RankPromotionOverlay({
     const boomTwoTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
     }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
+    const chimeTimer = window.setTimeout(() => {
+      playPromotionAudio(
+        RANK_PROMOTION_CHIME_AUDIO_SRC,
+        RANK_PROMOTION_CHIME_PLAYBACK_RATE,
+        RANK_PROMOTION_CHIME_VOLUME,
+      );
+    }, RANK_PROMOTION_CHIME_DELAY_MS);
     const postImpactTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_POST_IMPACT_AUDIO_SRC);
     }, RANK_PROMOTION_POST_IMPACT_DELAY_MS);
 
     return () => {
       window.clearTimeout(boomTwoTimer);
+      window.clearTimeout(chimeTimer);
       window.clearTimeout(postImpactTimer);
     };
   }, [phase]);

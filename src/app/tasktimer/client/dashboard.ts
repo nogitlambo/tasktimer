@@ -416,6 +416,28 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     });
   }
 
+  function getRenderedDashboardCardPlacements() {
+    const grid = getDashboardGridEl();
+    const out: Record<string, { col: number; row: number }> = {};
+    if (!grid) return out;
+    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
+      const card = el as HTMLElement;
+      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
+      const col = Math.max(1, Math.floor(Number(card.dataset.dashboardCol) || 0));
+      const row = Math.max(1, Math.floor(Number(card.dataset.dashboardRow) || 0));
+      if (!cardId || !Number.isFinite(col) || !Number.isFinite(row)) return;
+      out[cardId] = { col, row };
+    });
+    return out;
+  }
+
+  function commitRenderedDashboardCardPlacements() {
+    const placements = sanitizeDashboardCardPlacements(getRenderedDashboardCardPlacements());
+    if (Object.keys(placements).length) {
+      ctx.setDashboardCardPlacements(placements);
+    }
+  }
+
   function ensureDashboardCardSizeControls() {
     const grid = getDashboardGridEl();
     if (!grid) return;
@@ -581,6 +603,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function commitDashboardEditMode() {
     if (!ctx.getDashboardEditMode()) return;
+    commitRenderedDashboardCardPlacements();
     saveDashboardOrder();
     ctx.setDashboardEditMode(false);
     ctx.setDashboardOrderDraftBeforeEdit(null);
@@ -812,6 +835,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       if (!card || !cardId || !nextSize) return;
       ctx.setDashboardCardSizes({ ...ctx.getDashboardCardSizes(), [cardId]: nextSize });
       applyDashboardCardSizes();
+      commitRenderedDashboardCardPlacements();
       closeDashboardCardSizeMenus();
       if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
       e.preventDefault();
@@ -882,6 +906,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const drag = dashboardPointerDrag;
     if (!drag) return;
     if (Number(e.pointerId) !== drag.pointerId) return;
+    commitRenderedDashboardCardPlacements();
     finishDashboardPointerDrag();
     saveDashboardOrder();
     if (ctx.getCurrentAppPage() === "dashboard") {

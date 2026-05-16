@@ -9,6 +9,7 @@ import {
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
 import {
+  buildWeeklyPlannedStartByDay,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
@@ -37,7 +38,7 @@ import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from ".
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?: Task | null) {
+export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?: Task | null, optimalProductivityDays?: readonly unknown[]) {
   if (task.taskType !== "recurring") return;
 
   const normalizedByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
@@ -51,6 +52,14 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
   if (!normalizedPlannedStartTime) {
     if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
     return;
+  }
+
+  if (task.timeGoalEnabled && task.timeGoalPeriod === "week" && Number(task.timeGoalMinutes || 0) > 0) {
+    const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
+    if (nextByDay) {
+      syncLegacyPlannedStartFields(task, nextByDay);
+      return;
+    }
   }
 
   const sourceHasLegacyDailySchedule =
@@ -770,6 +779,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return normalizeTaskColor(task?.color) || "#58e1ff";
   }
 
+  async function enablePushAlertsForCurrentRuntime() {
+    const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
+      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+      webEnabled: ctx.getWebPushAlertsEnabled(),
+    }).catch(() => ({
+      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
+      webEnabled: ctx.getWebPushAlertsEnabled(),
+    }));
+    ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
+    ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
+    ctx.persistPushAlertsPreference();
+  }
+
   function renderMilestoneEditor(t: Task) {
     if (!els.msList) return;
     els.msList.innerHTML = "";
@@ -818,16 +840,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.on(bell, "click", async () => {
         const enablingAlerts = m.alertsEnabled === false;
         if (enablingAlerts) {
-          const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
-            mobileEnabled: ctx.getMobilePushAlertsEnabled(),
-            webEnabled: ctx.getWebPushAlertsEnabled(),
-          }).catch(() => ({
-            mobileEnabled: ctx.getMobilePushAlertsEnabled(),
-            webEnabled: ctx.getWebPushAlertsEnabled(),
-          }));
-          ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
-          ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
-          ctx.persistPushAlertsPreference();
+          await enablePushAlertsForCurrentRuntime();
         }
         m.alertsEnabled = enablingAlerts;
         t.milestones = ms;
@@ -907,7 +920,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     } else {
       t.onceOffDay = null;
       t.onceOffTargetDate = null;
-      normalizeRecurringScheduleFieldsForSave(t, sourceTask);
+      normalizeRecurringScheduleFieldsForSave(t, sourceTask, ctx.getOptimalProductivityDays());
     }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
@@ -1502,9 +1515,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
-    ctx.on(els.editPlannedStartPushReminders, "change", () => {
+    ctx.on(els.editPlannedStartPushReminders, "change", async () => {
       const t = getCurrentEditTask();
       if (!t) return;
+      if (els.editPlannedStartPushReminders?.checked) {
+        await enablePushAlertsForCurrentRuntime();
+      }
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       syncEditPlannedStartSelectors(t);
       syncEditSaveAvailability(t);
