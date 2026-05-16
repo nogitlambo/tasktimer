@@ -1208,9 +1208,9 @@ canvas {
 }
 
 .landingV2 .landingV2Footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   padding: 28px 48px 36px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -1218,16 +1218,31 @@ canvas {
 }
 
 .landingV2 .landingV2FooterBrand {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 9px;
   color: var(--landing-text);
   font-size: 0.82rem;
   letter-spacing: 0.16em;
+  line-height: 1;
   text-transform: uppercase;
   text-decoration: none;
+}
+
+.landingV2 .landingV2FooterBrandIcon {
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  object-fit: contain;
 }
 
 .landingV2 .landingV2FooterLinks {
   display: flex;
   align-items: center;
+  justify-content: center;
+  justify-self: center;
   gap: 24px;
 }
 

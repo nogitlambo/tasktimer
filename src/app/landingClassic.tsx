@@ -68,7 +68,7 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
   }
 
   return (
-    <main className="landingV2 landingV2ComingSoon" style={{ backgroundColor: "#121212" }}>
+    <main className="landingV2 landingV2ComingSoon isHeroVisible" style={{ backgroundColor: "#121212" }}>
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}

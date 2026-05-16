@@ -170,12 +170,12 @@ export default function AboutPage() {
 
         <footer className="landingV2Footer">
           <Link href="/" className="landingV2FooterBrand displayFont">
-            TaskLaunch
+            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2FooterBrandIcon" />
+            <span>TaskLaunch</span>
           </Link>
           <div className="landingV2FooterLinks">
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
-            <Link href="/web-sign-in">Sign In</Link>
           </div>
         </footer>
       </div>
