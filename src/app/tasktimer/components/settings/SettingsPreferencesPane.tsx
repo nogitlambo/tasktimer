@@ -14,11 +14,17 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <div className="settingsInlineSectionTitle">Task Settings</div>
           </div>
           <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
-            <span>Auto switch to Focus Mode on launch</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Auto switch to Focus Mode on launch</span>
+              <span className="settingsPreferenceControlHelp">Open Tasks directly in Focus Mode when TaskLaunch starts, so the timer is ready for focused work.</span>
+            </div>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
           </div>
           <div className="unitRow" id="taskStartupModuleRow">
-            <span>Load Module on App Startup</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Load Module on App Startup</span>
+              <span className="settingsPreferenceControlHelp">Choose which main area opens first after sign-in or app launch.</span>
+            </div>
             <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Load module on app startup">
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
@@ -27,7 +33,10 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             </SettingsDownwardSelect>
           </div>
           <div className="unitRow" id="taskWeekStartingRow">
-            <span>Week Starts On</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Week Starts On</span>
+              <span className="settingsPreferenceControlHelp">Set the first day used for weekly dashboard totals, streaks, and history summaries.</span>
+            </div>
             <SettingsDownwardSelect id="taskWeekStartingSelect" aria-label="Week start">
               <option value="sun">Sunday</option>
               <option value="mon">Monday</option>
@@ -43,7 +52,10 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <div className="settingsInlineSectionTitle">Productivity Optimisation</div>
           </div>
           <div className="unitRow optimalProductivityDaysRow" id="optimalProductivityDaysRow">
-            <span>Optimal Productivity Days</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Optimal Productivity Days</span>
+              <span className="settingsPreferenceControlHelp">Choose which days count toward productivity streaks, rewards, and dashboard insights.</span>
+            </div>
             <div className="optimalProductivityDaysField">
               <div className="optimalProductivityDaysMenu" id="optimalProductivityDaysMenu" role="group" aria-label="Optimal productivity days">
                 <label className="chkRow" htmlFor="optimalProductivityDayMon">
@@ -78,7 +90,10 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             </div>
           </div>
           <div className="unitRow optimalProductivityPeriodRow" id="optimalProductivityPeriodRow">
-            <span>Optimal Productivity Period</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Optimal Productivity Period</span>
+              <span className="settingsPreferenceControlHelp">Set the time window TaskLaunch treats as your best focus period when planning and scoring work.</span>
+            </div>
             <div className="optimalProductivityPeriodInputs" aria-label="Optimal productivity period">
               <label>
                 <span>Start</span>

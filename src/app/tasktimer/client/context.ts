@@ -49,6 +49,7 @@ export type TaskTimerCachedPreferences = {
   dynamicColorsEnabled?: unknown;
   mobilePushAlertsEnabled?: unknown;
   webPushAlertsEnabled?: unknown;
+  interactionClickSoundEnabled?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   optimalProductivityStartTime?: unknown;
@@ -856,6 +857,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
+    INTERACTION_CLICK_SOUND_KEY: string;
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -883,6 +885,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setMobilePushAlertsEnabledState: (value: boolean) => void;
   getWebPushAlertsEnabled: () => boolean;
   setWebPushAlertsEnabledState: (value: boolean) => void;
+  getInteractionClickSoundEnabled: () => boolean;
+  setInteractionClickSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;

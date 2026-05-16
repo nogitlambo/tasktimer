@@ -541,6 +541,13 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   justify-content:flex-start !important;
   gap:2px !important;
 }
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataList{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:2px !important;
+}
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataList{
   display:flex !important;
   flex-direction:column !important;
@@ -1438,6 +1445,11 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile .settingsNavItemIcon{
   display: none !important;
+}
+@media (min-width: 641px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #commandCenterHelpCenterBtn{
+    display: none !important;
+  }
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible{
@@ -2400,7 +2412,7 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointToastModeField{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:16px;
 }
@@ -2623,7 +2635,7 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAuthError{
   font-family: var(--font-readable) !important;
 }
-/* Final Data pane list styling: flat rows with theme-accent hover/focus treatment */
+/* Final Data pane list styling: flat rows with neutral hover/focus treatment */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListStack{
   display:flex;
   flex-direction:column;
@@ -2660,7 +2672,7 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   display:none !important;
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem .settingsMenuItemText{
-  font-family:var(--font-readable);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size:12px;
   font-weight:700;
   letter-spacing:.04em;
@@ -2673,6 +2685,18 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   min-height:24px;
   text-align:left;
   transform:translateY(-1px);
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem .settingsMenuItemText:has(.settingsMenuItemHelper){
+  flex-direction:column;
+  align-items:flex-start;
+  gap:3px;
+}
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem .settingsMenuItemHelper{
+  font-size:11px;
+  font-weight:400;
+  line-height:1.35;
+  letter-spacing:0;
+  color:rgba(154,164,180,.82);
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemLocked .settingsMenuItemText{
   width:auto;
@@ -2695,8 +2719,8 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:focus-visible{
-  border-color: rgba(53,232,255,.48) !important;
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
@@ -2714,22 +2738,22 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger:active,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger[aria-pressed="true"]{
-  border-color: rgba(255,77,77,.48) !important;
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger:focus-visible{
-  border-color: rgba(255,77,77,.48) !important;
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:hover,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:focus-visible{
-  border-color: rgba(209,118,247,.48) !important;
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
@@ -2741,7 +2765,8 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger:focus-visible,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger:active,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemDanger[aria-pressed="true"]{
-  background: transparent !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
   background-image: none !important;
   box-shadow: none !important;
 }
@@ -3666,9 +3691,39 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   }
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow{
-  align-items: center;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #taskAutoFocusOnLaunchToggleRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #taskStartupModuleRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #taskWeekStartingRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityPeriodRow{
+  align-items: flex-start;
   justify-content: space-between;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPreferenceControlCopy{
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPreferenceControlLabel{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: rgba(255,255,255,.62);
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPreferenceControlHelp{
+  max-width: 44ch;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(154,164,180,.82);
+  letter-spacing: 0;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysField{
@@ -3751,15 +3806,15 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 
 @media (max-width: 640px){
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow{
-    align-items: center;
-    flex-wrap: nowrap;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow > span{
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow .settingsPreferenceControlCopy{
     flex: 1 1 auto;
     min-width: 0;
-    max-width: calc(100% - 174px);
+    max-width: none;
     line-height: 1.2;
   }
 
@@ -3950,7 +4005,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:hover,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem:focus-visible{
-  border-color: rgba(241,255,151,.46) !important;
+  border-color: transparent !important;
+  background: rgba(255,255,255,.08) !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPlanCapabilityItem{
   border-color: rgba(219,255,79,.18);
@@ -4053,19 +4111,9 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .toggleRow{
+  align-items: flex-start;
+  justify-content: space-between;
   padding: 8px 0;
-}
-
-@media (min-width: 981px){
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskMobilePushAlertsToggleRow{
-    display: none;
-  }
-}
-
-@media (max-width: 980px){
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskWebPushAlertsToggleRow{
-    display: none;
-  }
 }
 
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .settingsDetailText{
@@ -4086,6 +4134,10 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
 /* Final About pane layout and typography overrides. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsInlineSection{
   gap: 12px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutBrandIcon{
+  filter: none !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDetailText{
@@ -4231,6 +4283,37 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   color: rgba(226, 242, 248, .9);
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+  padding:0;
+  margin:0;
+  list-style:none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList > li{
+  display:block;
+  width:100%;
+  margin:0;
+  padding:0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem .settingsMenuItemIcon{
+  display:block !important;
+  width:22px !important;
+  height:22px !important;
+  flex:0 0 22px !important;
+  margin:0 !important;
+  filter:none !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem .settingsMenuItemText,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem .settingsMenuItemText > span{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutRouteList{
   display: grid;
   gap: 10px;
@@ -4314,6 +4397,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 /* Migrated from tasktimer.css tail: settings detail list authority rules. */
 /* Final Settings right-pane Help Center and Data option rows: standard list buttons, not tiles. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
   width:min(100%, 252px) !important;
   max-width:252px !important;
@@ -4334,10 +4418,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   background-image:none !important;
   box-shadow:none !important;
   text-align:left !important;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
 @media (max-width: 900px){
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
     width:100% !important;
     max-width:none !important;
@@ -4358,6 +4444,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem .settingsMenuItemText,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
   width:100% !important;
   min-width:0 !important;
@@ -4365,7 +4452,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   display:flex !important;
   align-items:center !important;
   min-height:24px !important;
-  font-family:var(--font-readable) !important;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:12px !important;
   font-weight:700 !important;
   line-height:1.2 !important;
@@ -4394,10 +4481,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDataListItem:focus-visible,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
-  border-color:rgba(53,232,255,.48) !important;
-  background:transparent !important;
+  border-color:transparent !important;
+  background:rgba(255,255,255,.08) !important;
   background-image:none !important;
   box-shadow:none !important;
 }
@@ -4408,14 +4497,20 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemDanger:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemDanger:focus-visible{
-  border-color:rgba(255,77,77,.48) !important;
+  border-color:transparent !important;
+  background:rgba(255,255,255,.08) !important;
+  background-image:none !important;
+  box-shadow:none !important;
 }
 
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
-  border-color:rgba(209,118,247,.48) !important;
+  border-color:transparent !important;
+  background:rgba(255,255,255,.08) !important;
+  background-image:none !important;
+  box-shadow:none !important;
 }
 body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsPlanLockIcon{
   color:rgba(224,154,255,.9) !important;
@@ -4435,7 +4530,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:focus-visible,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:hover,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem:focus-visible{
-  border-color:rgba(219,255,79,.48) !important;
+  border-color:transparent !important;
+  background:rgba(255,255,255,.08) !important;
+  background-image:none !important;
+  box-shadow:none !important;
 }
 
 /* Responsive Settings shell authority migrated from 10-responsive.css. */
@@ -5463,6 +5561,10 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAct
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 

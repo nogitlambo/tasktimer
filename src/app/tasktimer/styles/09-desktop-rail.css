@@ -1154,16 +1154,24 @@
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger:active,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger[aria-expanded="true"],
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuTrigger:active,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuTrigger[aria-expanded="true"],
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger:active,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger[aria-expanded="true"],
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger:hover,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger:active,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger:focus-visible,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuTrigger[aria-expanded="true"],
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenu[open]:not([data-closing="true"]) .desktopRailProfileMenuTrigger{
     background: #282828 !important;
   }

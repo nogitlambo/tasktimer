@@ -4,11 +4,14 @@ import type React from "react";
 import AppImg from "@/components/AppImg";
 import type { SettingsNavItem } from "./types";
 
-export function MenuIconLabel({ icon, label }: { icon: string; label: string }) {
+export function MenuIconLabel({ icon, label, helper }: { icon: string; label: string; helper?: string }) {
   return (
     <>
       <AppImg className="settingsMenuItemIcon" src={icon} alt="" aria-hidden="true" />
-      <span className="settingsMenuItemText">{label}</span>
+      <span className="settingsMenuItemText">
+        <span>{label}</span>
+        {helper ? <span className="settingsMenuItemHelper">{helper}</span> : null}
+      </span>
     </>
   );
 }
@@ -32,6 +35,7 @@ function SettingsNavTile({
       id={id}
       className={`menuItem settingsNavTile${active ? " isActive" : ""}`}
       aria-pressed={active}
+      aria-label={label}
       onClick={onClick}
     >
       <AppImg className="settingsMenuItemIcon settingsNavItemIcon" src={icon} alt="" aria-hidden="true" />

@@ -80,6 +80,21 @@ export function buildOptimalProductivityDaysSummary(days: OptimalProductivityDay
     .join(", ");
 }
 
+export function buildOptimalProductivityDaysShortList(days: OptimalProductivityDays): string {
+  const shortLabels: Record<DashboardWeekStart, string> = {
+    sun: "Su",
+    mon: "Mo",
+    tue: "Tu",
+    wed: "We",
+    thu: "Th",
+    fri: "Fr",
+    sat: "Sa",
+  };
+  return normalizeOptimalProductivityDays(days)
+    .map((day) => shortLabels[day])
+    .join(", ");
+}
+
 export function timeOfDayToMinutes(value: unknown, fallback: string): number {
   const normalized = normalizeTimeOfDay(value, fallback);
   const [hourRaw, minuteRaw] = normalized.split(":");

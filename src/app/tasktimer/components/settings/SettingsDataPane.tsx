@@ -18,7 +18,7 @@ export function SettingsDataPane({ active, exiting = false }: { active: boolean;
   const showBackupLock = currentPlan === "free";
 
   return (
-    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsDataPane" title="Data" subtitle="Manage history, export or import backups, and reset local data.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsDataPane" title="Data" subtitle="Manage history entries, export or import backups, and reset your account data.">
       <div className="settingsInlineStack settingsDataListStack">
         <section className="settingsInlineSection">
           <div className="settingsDataList">

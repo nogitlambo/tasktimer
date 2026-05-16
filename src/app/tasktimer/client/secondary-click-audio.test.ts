@@ -3,11 +3,14 @@ import * as clickAudioPlayerModule from "./click-audio-player";
 
 import {
   CANCEL_CLICK_AUDIO_SRC,
+  CHECKBOX_CLICK_AUDIO_SRC,
   CLOSE_CLICK_AUDIO_SRC,
+  getCheckboxClickTarget,
   getCancelClickTarget,
   getCloseClickTarget,
   getSecondaryClickTarget,
   playCancelClickAudio,
+  playCheckboxClickAudio,
   playCloseClickAudio,
   playSecondaryClickAudio,
   registerSecondaryClickAudio,
@@ -44,8 +47,6 @@ describe("secondary click audio", () => {
     const directSelectors = [
       ".switch",
       '[role="switch"]',
-      'input[type="checkbox"]',
-      '[role="checkbox"]',
       "#closeMenuBtn",
       "#menuIcon",
       "[data-nav-page]",
@@ -64,6 +65,17 @@ describe("secondary click audio", () => {
     for (const selector of directSelectors) {
       const element = makeElement({ selectorMatches: { [combinedSelector]: true, [selector]: true } });
       expect(getSecondaryClickTarget(element)).toBe(element);
+    }
+  });
+
+  it("matches checkbox controls for dedicated checkbox audio", () => {
+    const checkboxSelectors = ['input[type="checkbox"]', '[role="checkbox"]'];
+    const combinedSelector = checkboxSelectors.join(",");
+
+    for (const selector of checkboxSelectors) {
+      const element = makeElement({ selectorMatches: { [combinedSelector]: true, [selector]: true } });
+      expect(getCheckboxClickTarget(element)).toBe(element);
+      expect(getSecondaryClickTarget(element)).toBeNull();
     }
   });
 
@@ -131,7 +143,7 @@ describe("secondary click audio", () => {
   });
 
   it("ignores unrelated and disabled controls", () => {
-    const directSelector = ".switch,[role=\"switch\"],input[type=\"checkbox\"],[role=\"checkbox\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
@@ -145,7 +157,7 @@ describe("secondary click audio", () => {
   });
 
   it("does not blanket-exclude accent controls from default secondary audio", () => {
-    const directSelector = ".switch,[role=\"switch\"],input[type=\"checkbox\"],[role=\"checkbox\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
       textContent: "Done",
@@ -184,6 +196,16 @@ describe("secondary click audio", () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
+  it("plays the configured checkbox audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playCheckboxClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(CHECKBOX_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
   it("registers one scoped app click listener and skips already-prevented clicks", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
@@ -197,12 +219,34 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#menuIcon": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    const directSelector = ".switch,[role=\"switch\"],input[type=\"checkbox\"],[role=\"checkbox\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes checkbox controls to the dedicated checkbox audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playCheckboxAudio = vi.fn();
+    const checkboxSelector = 'input[type="checkbox"],[role="checkbox"]';
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playCheckboxAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [checkboxSelector]: true } }) } as unknown as Event);
+
+    expect(playCheckboxAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
   });
 
   it("routes close controls to the dedicated close audio callback", () => {

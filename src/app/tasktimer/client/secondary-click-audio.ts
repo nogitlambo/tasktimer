@@ -3,6 +3,7 @@ import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-pl
 export const SECONDARY_CLICK_AUDIO_SRC = "/click-secondary.mp3";
 export const CANCEL_CLICK_AUDIO_SRC = "/click_cancel_button.mp3";
 export const CLOSE_CLICK_AUDIO_SRC = "/click_close_button.mp3";
+export const CHECKBOX_CLICK_AUDIO_SRC = "/click_checkbox.mp3";
 const CLICK_AUDIO_SYNC_TIMEOUT_MS = 120;
 
 type ClosestCapable = {
@@ -12,8 +13,6 @@ type ClosestCapable = {
 const SECONDARY_CLICK_DIRECT_SELECTOR = [
   ".switch",
   '[role="switch"]',
-  'input[type="checkbox"]',
-  '[role="checkbox"]',
   "#closeMenuBtn",
   "#menuIcon",
   "[data-nav-page]",
@@ -28,6 +27,7 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   "#openFriendRequestModalBtn",
 ].join(",");
 
+const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]'].join(",");
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
   "save",
@@ -78,6 +78,8 @@ function isCloseClickControl(element: HTMLElement): boolean {
 }
 
 export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement | null {
+  if (getCheckboxClickTarget(target)) return null;
+
   const directTarget = getClosestElement(target, SECONDARY_CLICK_DIRECT_SELECTOR);
   if (directTarget) {
     if (isDisabledControl(directTarget) || isSecondaryClickExcludedControl(directTarget)) return null;
@@ -87,6 +89,12 @@ export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement
   const textTarget = getClosestElement(target, SECONDARY_CLICK_TEXT_SELECTOR);
   if (!textTarget || isSecondaryClickExcludedControl(textTarget)) return null;
   return isDisabledControl(textTarget) ? null : textTarget;
+}
+
+export function getCheckboxClickTarget(target: EventTarget | null): HTMLElement | null {
+  const checkboxTarget = getClosestElement(target, CHECKBOX_CLICK_SELECTOR);
+  if (!checkboxTarget) return null;
+  return isDisabledControl(checkboxTarget) ? null : checkboxTarget;
 }
 
 export function getCancelClickTarget(target: EventTarget | null): HTMLElement | null {
@@ -119,6 +127,12 @@ export function playCloseClickAudio(audioFactory?: ClickAudioFactory) {
   createClickAudioPlayer(CLOSE_CLICK_AUDIO_SRC, audioFactory).play();
 }
 
+export function playCheckboxClickAudio(audioFactory?: ClickAudioFactory) {
+  if (typeof window === "undefined" && !audioFactory) return;
+
+  createClickAudioPlayer(CHECKBOX_CLICK_AUDIO_SRC, audioFactory).play();
+}
+
 export function registerSecondaryClickAudio(options: {
   on: (
     el: EventTarget | null | undefined,
@@ -130,24 +144,30 @@ export function registerSecondaryClickAudio(options: {
   playAudio?: () => void;
   playCancelAudio?: () => void;
   playCloseAudio?: () => void;
+  playCheckboxAudio?: () => void;
+  isEnabled?: () => boolean;
 }) {
   const player = options.playAudio ? null : createClickAudioPlayer(SECONDARY_CLICK_AUDIO_SRC);
   const cancelPlayer = options.playCancelAudio ? null : createClickAudioPlayer(CANCEL_CLICK_AUDIO_SRC);
   const closePlayer = options.playCloseAudio ? null : createClickAudioPlayer(CLOSE_CLICK_AUDIO_SRC);
+  const checkboxPlayer = options.playCheckboxAudio ? null : createClickAudioPlayer(CHECKBOX_CLICK_AUDIO_SRC);
   const replayTargets = new WeakSet<HTMLElement>();
   player?.warm();
   cancelPlayer?.warm();
   closePlayer?.warm();
+  checkboxPlayer?.warm();
 
   options.on(
     options.documentRef,
     "click",
     (event: Event) => {
+      if (options.isEnabled && !options.isEnabled()) return;
       if (event.defaultPrevented) return;
       const closeTarget = getCloseClickTarget(event.target);
       const cancelTarget = closeTarget ? null : getCancelClickTarget(event.target);
-      const secondaryTarget = closeTarget || cancelTarget ? null : getSecondaryClickTarget(event.target);
-      const target = closeTarget || cancelTarget || secondaryTarget;
+      const checkboxTarget = closeTarget || cancelTarget ? null : getCheckboxClickTarget(event.target);
+      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget ? null : getSecondaryClickTarget(event.target);
+      const target = closeTarget || cancelTarget || checkboxTarget || secondaryTarget;
       if (!target) return;
       if (replayTargets.has(target)) {
         replayTargets.delete(target);
@@ -155,12 +175,20 @@ export function registerSecondaryClickAudio(options: {
       }
       if ("isTrusted" in event && event.isTrusted === false) return;
 
-      const activePlayer = closeTarget ? closePlayer : cancelTarget ? cancelPlayer : player;
+      const activePlayer = closeTarget
+        ? closePlayer
+        : cancelTarget
+          ? cancelPlayer
+          : checkboxTarget
+            ? checkboxPlayer
+            : player;
       const playAudio = closeTarget
         ? options.playCloseAudio || (() => closePlayer?.play())
         : cancelTarget
           ? options.playCancelAudio || (() => cancelPlayer?.play())
-          : options.playAudio || (() => player?.play());
+          : checkboxTarget
+            ? options.playCheckboxAudio || (() => checkboxPlayer?.play())
+            : options.playAudio || (() => player?.play());
 
       if (!activePlayer || activePlayer.isReady()) {
         playAudio();

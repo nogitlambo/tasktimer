@@ -31,6 +31,7 @@ function createScheduleRenderContext(weekStarting: "sun" | "mon" | "tue" | "wed"
     getWeekStarting: () => weekStarting,
     getOptimalProductivityStartTime: () => "09:00",
     getOptimalProductivityEndTime: () => "17:00",
+    getOptimalProductivityDays: () => ["mon", "wed"],
   } as unknown) as Parameters<typeof buildTaskTimerScheduleGridHtml>[0];
 }
 
@@ -48,5 +49,11 @@ describe("schedule render", () => {
     const html = buildTaskTimerScheduleGridHtml(createScheduleRenderContext("sun"));
 
     expect(extractPlannerDayLabels(html)).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+  });
+
+  it("renders optimal productivity shading only on selected days", () => {
+    const html = buildTaskTimerScheduleGridHtml(createScheduleRenderContext("sun"));
+
+    expect(html.match(/scheduleProductivityHighlightBand/g)).toHaveLength(2);
   });
 });

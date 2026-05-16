@@ -70,6 +70,7 @@ type RegisterRootEventsOptions = {
   registerTaskListUiEvents: () => void;
   registerDashboardEvents: () => void;
   registerPreferenceEvents: (args: { handleAppBackNavigation: () => boolean }) => void;
+  getInteractionClickSoundEnabled: () => boolean;
   normalizedPathname: () => string;
   normalizeTaskTimerRoutePath: (path: string) => string;
   appPathForPage: (page: AppPage) => string;
@@ -120,8 +121,8 @@ type StartRootLifecycleOptions = {
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
 
-  registerPrimaryClickAudio({ on, documentRef });
-  registerSecondaryClickAudio({ on, documentRef });
+  registerPrimaryClickAudio({ on, documentRef, isEnabled: options.getInteractionClickSoundEnabled });
+  registerSecondaryClickAudio({ on, documentRef, isEnabled: options.getInteractionClickSoundEnabled });
 
   options.registerAppShellEvents();
 

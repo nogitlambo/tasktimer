@@ -167,9 +167,9 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             </h1>
 
             <p className="landingV2HeroCopy">
-              Flexible task management to support neurodivergent minds by directing scattered energy into sustainable
+              Flexible task management supporting neurodivergent minds by directing scattered energy into sustainable
               momentum so you can recover quickly after difficult days and continue making progress even when focus,
-              energy, and motivation fluctuate.
+              energy, and motivation are inconsistent.
             </p>
 
             <div className={`landingV2Actions ${showActions ? "isVisible" : ""}`}>

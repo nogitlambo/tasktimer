@@ -800,9 +800,6 @@ export async function syncTaskTimerPushNotificationsEnabled(
   enabled: boolean | Partial<PushChannelPreference>
 ): Promise<PushChannelPreference> {
   desiredPushEnabled = normalizePushChannelPreference(enabled);
-  if (!firebaseWebPushVapidKey) {
-    desiredPushEnabled = { ...desiredPushEnabled, webEnabled: false };
-  }
   syncPromise = syncPromise
     .catch(() => ({ mobileEnabled: false, webEnabled: false }))
     .then(async () => {
@@ -813,6 +810,9 @@ export async function syncTaskTimerPushNotificationsEnabled(
         : webRuntime
           ? desiredPushEnabled.webEnabled
           : desiredPushEnabled.mobileEnabled || desiredPushEnabled.webEnabled;
+      if (!nativeRuntime && !webRuntime && desiredPushEnabled.webEnabled && !desiredPushEnabled.mobileEnabled) {
+        return desiredPushEnabled;
+      }
       if (currentRuntimeEnabled) {
         const active = await enableTaskTimerPushRuntime();
         if (!active) {

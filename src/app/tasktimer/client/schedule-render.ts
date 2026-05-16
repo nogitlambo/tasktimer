@@ -2,10 +2,12 @@ import type { TaskTimerElements } from "./elements";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import {
+  normalizeOptimalProductivityDays,
   normalizeOptimalProductivityPeriod,
   timeOfDayToMinutes,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
+  type OptimalProductivityDays,
 } from "../lib/productivityPeriod";
 import { normalizeTaskColor } from "../lib/taskColors";
 import {
@@ -31,6 +33,7 @@ type TaskTimerScheduleRenderContext = {
   getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
 };
 
 type ProductivityHighlightSegment = {
@@ -94,6 +97,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
   const { scheduled } = ctx.scheduleRuntime.buildViewModel();
   const dragPreview = ctx.scheduleRuntime.getDragPreview(ctx.state.get("dragTaskId"));
   const productivitySegments = buildScheduleProductivityHighlightSegments(ctx);
+  const productivityDays = new Set(normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()));
   const timeLabels = Array.from({ length: 24 * 60 / SCHEDULE_LABEL_MINUTES }, (_, index) => {
     const minutes = index * SCHEDULE_LABEL_MINUTES;
     return `<div class="scheduleTimeLabel" style="height:${SCHEDULE_LABEL_MINUTES * SCHEDULE_MINUTE_PX}px">${ctx.escapeHtmlUI(
@@ -145,12 +149,14 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
       const slots = Array.from({ length: 24 * 60 / SCHEDULE_SNAP_MINUTES }, () => {
         return `<div class="scheduleSlot" style="height:${SCHEDULE_SNAP_MINUTES * SCHEDULE_MINUTE_PX}px"></div>`;
       }).join("");
-      const productivityHighlight = `<div class="scheduleProductivityHighlight" aria-hidden="true">${productivitySegments
-        .map(
-          (segment) =>
-            `<div class="scheduleProductivityHighlightBand" style="top:${segment.topPx}px;height:${segment.heightPx}px"></div>`
-        )
-        .join("")}</div>`;
+      const productivityHighlight = productivityDays.has(day)
+        ? `<div class="scheduleProductivityHighlight" aria-hidden="true">${productivitySegments
+            .map(
+              (segment) =>
+                `<div class="scheduleProductivityHighlightBand" style="top:${segment.topPx}px;height:${segment.heightPx}px"></div>`
+            )
+            .join("")}</div>`
+        : "";
       return `<section class="scheduleDayColumn${dragPreview && dragPreview.day === day ? " isDropActive" : ""}" data-schedule-drop-day="${day}">
         <div class="scheduleDayBody">
           ${productivityHighlight}

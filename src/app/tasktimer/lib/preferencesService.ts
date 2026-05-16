@@ -23,6 +23,7 @@ type TaskTimerPreferenceStorageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
+  INTERACTION_CLICK_SOUND_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -39,6 +40,7 @@ type PreferencesStateSnapshot = {
   dynamicColorsEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
+  interactionClickSoundEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
@@ -116,6 +118,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       dynamicColorsEnabled: state.dynamicColorsEnabled,
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
       webPushAlertsEnabled: state.webPushAlertsEnabled,
+      interactionClickSoundEnabled: state.interactionClickSoundEnabled,
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
       checkpointAlertSoundMode: state.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
@@ -148,6 +151,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.WEB_PUSH_ALERTS_KEY,
       snapshot.webPushAlertsEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.INTERACTION_CLICK_SOUND_KEY,
+      snapshot.interactionClickSoundEnabled !== false ? "true" : "false",
     );
     safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
     safeWriteLocalStorage(
@@ -240,6 +247,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return loadMobilePushAlertsEnabled();
   }
 
+  function loadInteractionClickSoundEnabled(): boolean {
+    const cloudValue = getStoredOrCachedPreferences().interactionClickSoundEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const raw = safeReadLocalStorage(storageKeys.INTERACTION_CLICK_SOUND_KEY).toLowerCase();
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    return true;
+  }
+
   function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled" | "checkpointAlertSoundMode" | "checkpointAlertToastMode"> {
     const prefs = getStoredOrCachedPreferences();
     return {
@@ -285,6 +301,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadDynamicColorsEnabled,
     loadMobilePushAlertsEnabled,
     loadWebPushAlertsEnabled,
+    loadInteractionClickSoundEnabled,
     loadCheckpointAlerts,
     loadOptimalProductivityPeriod,
     loadOptimalProductivityDays,

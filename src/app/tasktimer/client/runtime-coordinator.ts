@@ -2,6 +2,7 @@ import type { Task } from "../lib/types";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeOptimalProductivityPeriod,
+  type OptimalProductivityDays,
   timeOfDayToMinutes,
 } from "../lib/productivityPeriod";
 import { renderTaskTimerSchedulePage } from "./schedule-render";
@@ -26,6 +27,7 @@ type CreateTaskTimerRuntimeCoordinatorOptions = {
   getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
   renderTasksPage: () => void;
   getCloudSyncApi: () =>
     | {
@@ -344,6 +346,7 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
       getWeekStarting: options.getWeekStarting,
       getOptimalProductivityStartTime: options.getOptimalProductivityStartTime,
       getOptimalProductivityEndTime: options.getOptimalProductivityEndTime,
+      getOptimalProductivityDays: options.getOptimalProductivityDays,
     });
     const resolvedScroller = resolveScheduleScrollContainer(options.els.scheduleGridScroller, options.els.scheduleGrid);
     if (!(pendingScheduleEntryScroll || scheduleOpenFocusLockActive()) || !resolvedScroller) return;

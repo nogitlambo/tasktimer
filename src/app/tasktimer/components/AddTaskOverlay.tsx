@@ -55,6 +55,9 @@ export default function AddTaskOverlay() {
                   Once-Off
                 </button>
               </div>
+              <p className="taskScheduleDaysHelper" id="addTaskOptimalProductivityDaysHelper">
+                Scheduled recurring tasks are added only to your optimal productivity days: Su, Mo, Tu, We, Th, Fr, Sa
+              </p>
 
               <div className="field editTaskTimeGoalField">
                 <div className="editTaskTimeGoalHeader" id="addTaskTimeGoalToggleRow">

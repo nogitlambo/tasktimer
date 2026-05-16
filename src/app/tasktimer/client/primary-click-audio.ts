@@ -59,6 +59,7 @@ export function playTaskLaunchClickAudio(audioFactory?: ClickAudioFactory) {
 export function registerPrimaryClickAudio(options: {
   on: (el: EventTarget | null | undefined, type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => void;
   documentRef: Document;
+  isEnabled?: () => boolean;
   playAudio?: () => void;
 }) {
   const player = options.playAudio ? null : createClickAudioPlayer(PRIMARY_CLICK_AUDIO_SRC);
@@ -70,6 +71,7 @@ export function registerPrimaryClickAudio(options: {
   taskStopPlayer?.warm();
 
   options.on(options.documentRef, "click", (event: Event) => {
+    if (options.isEnabled && !options.isEnabled()) return;
     if (event.defaultPrevented) return;
     const taskStopTarget = getTaskStopClickTarget(event.target);
     const taskLaunchTarget = taskStopTarget ? null : getTaskLaunchClickTarget(event.target);

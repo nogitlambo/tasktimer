@@ -27,7 +27,7 @@ const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
   general: "Account",
   preferences: "Preferences",
   appearance: "Appearance",
-  notifications: "Notifications",
+  notifications: "Sounds & Alerts",
   privacy: "Privacy Policy",
   help: "Help Center",
   about: "About",
@@ -41,7 +41,7 @@ const SETTINGS_DETAIL_SUBTITLES: Partial<Record<SettingsPaneKey, string>> = {
   notifications: "Manage push notifications, in-app sounds and toast alerts.",
   privacy: "Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information.",
   help: "Open privacy and feedback resources.",
-  about: "Open the public About page for TaskLaunch's mission, philosophy, features, and neurodivergent-friendly productivity approach.",
+  about: "TaskLaunch version and current build information",
   feedback: "Share product feedback and suggestions.",
   data: "Manage history, export or import backups, and reset local data.",
 };

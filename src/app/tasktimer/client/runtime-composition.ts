@@ -97,10 +97,12 @@ export function createTaskTimerRuntimeComposition(
     autoFocusOnTaskLaunchEnabled: initialState.autoFocusOnTaskLaunchEnabled,
     mobilePushAlertsEnabled: initialState.mobilePushAlertsEnabled,
     webPushAlertsEnabled: initialState.webPushAlertsEnabled,
+    interactionClickSoundEnabled: initialState.interactionClickSoundEnabled,
     checkpointAlertSoundEnabled: initialState.checkpointAlertSoundEnabled,
     checkpointAlertToastEnabled: initialState.checkpointAlertToastEnabled,
     optimalProductivityStartTime: initialState.optimalProductivityStartTime,
     optimalProductivityEndTime: initialState.optimalProductivityEndTime,
+    optimalProductivityDays: initialState.optimalProductivityDays,
   });
   const sessionRuntimeState = createTaskTimerMutableStore({
     deferredFocusModeTimeGoalModals: [] as Array<{

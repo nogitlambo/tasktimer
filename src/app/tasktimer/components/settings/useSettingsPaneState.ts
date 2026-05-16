@@ -97,7 +97,7 @@ export function getSettingsNavItems(): SettingsNavItem[] {
   return [
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
-    { key: "notifications", label: "Notifications", icon: "/Settings.svg" },
+    { key: "notifications", label: "Sounds & Alerts", icon: "/Settings.svg" },
     { key: "help", label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
     { key: "data", label: "Data", icon: "/History_Manager.svg" },
     { key: "about", label: "About", icon: "/About.svg" },

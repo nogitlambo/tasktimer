@@ -3,6 +3,7 @@ import type { MainMode, TaskOrderBy } from "./types";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
+  buildOptimalProductivityDaysShortList,
   buildOptimalProductivityDaysSummary,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
@@ -40,6 +41,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function canUseAdvancedTaskConfig() {
     return ctx.hasEntitlement("advancedTaskConfig");
+  }
+
+  function isDesktopSettingsViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(min-width: 981px)").matches;
+  }
+
+  function isMobileSettingsViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 980px)").matches;
   }
 
   function syncThemeAvailabilityUi() {
@@ -111,6 +120,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
+      interactionClickSoundEnabled: ctx.getInteractionClickSoundEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
       checkpointAlertSoundMode: ctx.getCheckpointAlertSoundMode(),
@@ -310,6 +320,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
+    ctx.toggleSwitchElement(els.taskInteractionClickSoundToggle as HTMLElement | null, ctx.getInteractionClickSoundEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     if (els.taskCheckpointSoundModeSelect) {
@@ -342,6 +353,20 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskDynamicColorsToggle.setAttribute("aria-disabled", String(lockAdvancedTaskConfig));
       els.taskDynamicColorsToggle.title = lockAdvancedTaskConfig ? "Pro feature: Dynamic colors" : "";
     }
+    const lockMobilePushAlerts = isDesktopSettingsViewport();
+    if (els.taskMobilePushAlertsToggle) {
+      (els.taskMobilePushAlertsToggle as HTMLButtonElement).disabled = lockMobilePushAlerts;
+      els.taskMobilePushAlertsToggle.setAttribute("aria-disabled", String(lockMobilePushAlerts));
+      els.taskMobilePushAlertsToggle.title = lockMobilePushAlerts ? "Use the mobile app to change mobile push alerts." : "";
+    }
+    els.taskMobilePushAlertsToggleRow?.classList.toggle("isDisabled", lockMobilePushAlerts);
+    const lockWebPushAlerts = isMobileSettingsViewport();
+    if (els.taskWebPushAlertsToggle) {
+      (els.taskWebPushAlertsToggle as HTMLButtonElement).disabled = lockWebPushAlerts;
+      els.taskWebPushAlertsToggle.setAttribute("aria-disabled", String(lockWebPushAlerts));
+      els.taskWebPushAlertsToggle.title = lockWebPushAlerts ? "Use desktop web to change web push alerts." : "";
+    }
+    els.taskWebPushAlertsToggleRow?.classList.toggle("isDisabled", lockWebPushAlerts);
     if (els.taskCheckpointSoundToggle) {
       (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = false;
       els.taskCheckpointSoundToggle.setAttribute("aria-disabled", "false");
@@ -358,6 +383,22 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function loadDynamicColorsSetting() {
     ctx.setDynamicColorsEnabledState(preferenceService.loadDynamicColorsEnabled());
+  }
+
+  function loadInteractionClickSoundSetting() {
+    ctx.setInteractionClickSoundEnabledState(preferenceService.loadInteractionClickSoundEnabled());
+  }
+
+  function saveInteractionClickSoundSetting() {
+    try {
+      localStorage.setItem(
+        ctx.storageKeys.INTERACTION_CLICK_SOUND_KEY,
+        ctx.getInteractionClickSoundEnabled() ? "true" : "false"
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
   }
 
   function loadMobilePushAlertsSetting() {
@@ -472,6 +513,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
     if (els.optimalProductivityDaysSummary) {
       els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
+    }
+    const taskScheduleDaysHelperText = `Scheduled recurring tasks are added only to your optimal productivity days: ${buildOptimalProductivityDaysShortList(days)}`;
+    if (els.addTaskOptimalProductivityDaysHelper) {
+      els.addTaskOptimalProductivityDaysHelper.textContent = taskScheduleDaysHelperText;
+    }
+    if (els.editTaskOptimalProductivityDaysHelper) {
+      els.editTaskOptimalProductivityDaysHelper.textContent = taskScheduleDaysHelperText;
     }
     if (els.optimalProductivityDaysTrigger) {
       const expanded = !els.optimalProductivityDaysMenu?.hasAttribute("hidden");
@@ -648,6 +696,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       row: els.taskMobilePushAlertsToggleRow,
       ignoreSelector: "#taskMobilePushAlertsToggle",
       handleToggle: () => {
+        if (isDesktopSettingsViewport()) return;
         void applyMobilePushAlertsPreference(!ctx.getMobilePushAlertsEnabled());
       },
     });
@@ -657,7 +706,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       row: els.taskWebPushAlertsToggleRow,
       ignoreSelector: "#taskWebPushAlertsToggle",
       handleToggle: () => {
+        if (isMobileSettingsViewport()) return;
         void applyWebPushAlertsPreference(!ctx.getWebPushAlertsEnabled());
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskInteractionClickSoundToggle,
+      row: els.taskInteractionClickSoundToggleRow,
+      ignoreSelector: "#taskInteractionClickSoundToggle",
+      handleToggle: () => {
+        ctx.setInteractionClickSoundEnabledState(!ctx.getInteractionClickSoundEnabled());
+        syncTaskSettingsUi();
+        saveInteractionClickSoundSetting();
       },
     });
     bindToggleRow({
@@ -710,6 +771,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveOptimalProductivityPeriodPreference();
       ctx.render();
     });
+    ctx.on(window, "resize", () => {
+      syncTaskSettingsUi();
+    });
     ctx.on(els.optimalProductivityDaysTrigger, "click", () => {
       toggleOptimalProductivityDaysMenu();
     });
@@ -740,6 +804,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
+      saveInteractionClickSoundSetting();
       saveCheckpointAlertSettings();
       saveOptimalProductivityPeriodPreference();
       saveOptimalProductivityDaysPreference();
@@ -781,8 +846,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     isSwitchOn: ctx.isSwitchOn,
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
+    loadInteractionClickSoundSetting,
     loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
+    saveInteractionClickSoundSetting,
     loadCheckpointAlertSettings,
     saveMobilePushAlertsSetting,
     saveCheckpointAlertSettings,

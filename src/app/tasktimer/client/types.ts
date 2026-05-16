@@ -92,6 +92,7 @@ export type TaskTimerMutableState = {
   autoFocusOnTaskLaunchEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
+  interactionClickSoundEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";

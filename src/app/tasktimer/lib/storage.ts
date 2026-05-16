@@ -1269,6 +1269,7 @@ export function buildDefaultCloudPreferences() {
     autoFocusOnTaskLaunchEnabled: false,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
+    interactionClickSoundEnabled: true,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     checkpointAlertSoundMode: "once" as const,

@@ -2123,11 +2123,11 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   left:0;
   right:0;
   background:
-    linear-gradient(180deg, rgba(114,235,161,.14), rgba(114,235,161,.08)),
-    linear-gradient(90deg, rgba(114,235,161,.12), rgba(114,235,161,0));
+    linear-gradient(180deg, rgba(103,255,159,.16), rgba(103,255,159,.09)),
+    linear-gradient(90deg, rgba(103,255,159,.14), rgba(103,255,159,0));
   box-shadow:
-    inset 0 1px 0 rgba(188,255,210,.1),
-    inset 0 -1px 0 rgba(92,191,126,.1);
+    inset 0 1px 0 rgba(103,255,159,.14),
+    inset 0 -1px 0 rgba(103,255,159,.12);
 }
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDaySlots{
   position:relative;
@@ -2408,11 +2408,11 @@ body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch 
 }
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleProductivityHighlightBand{
   background:
-    linear-gradient(180deg, rgba(132,219,154,.13), rgba(132,219,154,.07)),
-    linear-gradient(90deg, rgba(132,219,154,.11), rgba(132,219,154,0));
+    linear-gradient(180deg, rgba(103,255,159,.16), rgba(103,255,159,.09)),
+    linear-gradient(90deg, rgba(103,255,159,.14), rgba(103,255,159,0));
   box-shadow:
-    inset 0 1px 0 rgba(216,255,226,.08),
-    inset 0 -1px 0 rgba(86,150,102,.12);
+    inset 0 1px 0 rgba(103,255,159,.14),
+    inset 0 -1px 0 rgba(103,255,159,.12);
 }
 body[data-theme="purple"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDropPreview.isBlocked{
   border-color:rgba(255,150,174,.58);
@@ -2443,11 +2443,11 @@ body[data-theme="cyan"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
 }
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleProductivityHighlightBand{
   background:
-    linear-gradient(180deg, rgba(142,239,160,.22), rgba(142,239,160,.12)),
-    linear-gradient(90deg, rgba(142,239,160,.18), rgba(142,239,160,0));
+    linear-gradient(180deg, rgba(103,255,159,.22), rgba(103,255,159,.12)),
+    linear-gradient(90deg, rgba(103,255,159,.18), rgba(103,255,159,0));
   box-shadow:
-    inset 0 1px 0 rgba(236,255,228,.14),
-    inset 0 -1px 0 rgba(88,188,110,.12);
+    inset 0 1px 0 rgba(103,255,159,.18),
+    inset 0 -1px 0 rgba(103,255,159,.14);
 }
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleDayColumn.isDropActive{
   background:

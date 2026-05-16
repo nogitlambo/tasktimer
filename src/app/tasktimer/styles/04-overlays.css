@@ -6213,6 +6213,15 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   display:none;
 }
 
+#editOverlay .taskScheduleDaysHelper,
+#addTaskOverlay .taskScheduleDaysHelper{
+  margin: 6px 0 0;
+  color: rgba(245,248,244,.56);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 body[data-theme="purple"] #editOverlay .unitBtn.isOn,
 body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
   border-color: rgba(255,255,255,.86) !important;
