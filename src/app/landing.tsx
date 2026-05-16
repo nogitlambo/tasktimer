@@ -111,7 +111,7 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
   const showFinalCta = showActions && revealStage >= 5;
 
   return (
-    <main className="landingV2" style={{ backgroundColor: "#121212" }}>
+    <main className={`landingV2 ${showHero ? "isHeroVisible" : ""}`}>
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
@@ -182,15 +182,6 @@ export default function Landing({ showTitlePhase, showActions }: LandingExperime
             </div>
           </div>
 
-          <div className="landingV2HeroVisual" aria-hidden="true">
-            <AppImg
-              src="/landing/broken-dial-transparent.png"
-              alt=""
-              className="landingV2HeroImage"
-              width={1280}
-              height={1280}
-            />
-          </div>
         </section>
 
         <div className={`landingV2Ticker ${showSupporting ? "isVisible" : ""}`} aria-hidden={!showSupporting}>

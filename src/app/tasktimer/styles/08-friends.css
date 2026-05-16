@@ -1238,7 +1238,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
   color:#ffffff !important;
-  background:transparent !important;
+  background:#1a1b20 !important;
   border-color:transparent !important;
 }
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyBoard{
@@ -1993,7 +1993,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .l
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
   color:#ffffff !important;
-  background:transparent !important;
+  background:#1a1b20 !important;
   border-color:transparent !important;
 }
 body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodium::before{
@@ -2009,7 +2009,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard 
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
   color:#ffffff !important;
-  background:transparent !important;
+  background:#1a1b20 !important;
   border-color:transparent !important;
 }
 body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodium::before{

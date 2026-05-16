@@ -89,11 +89,6 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               </label>
             </div>
           </div>
-          <div className="settingsInlineFooter">
-            <button className="btn btn-ghost" id="preferencesLoadDefaultsBtn" type="button">
-              Load Defaults
-            </button>
-          </div>
         </section>
       </div>
     </SettingsDetailPane>

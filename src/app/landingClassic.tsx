@@ -115,7 +115,9 @@ export default function LandingClassic({ showTitlePhase }: LandingClassicProps) 
               <span>Progress over perfection</span>
             </div>
 
-            <h1 className="landingV2HeroTitle displayFont">Break free from guilt-driven productivity systems</h1>
+            <h1 className="landingV2HeroTitle displayFont">
+              <span className="landingV2HeroTitleGradient">Break free</span> from guilt-driven productivity systems
+            </h1>
 
             <p className="landingV2HeroCopy">
               Flexible task management to support neurodivergent minds by directing scattered energy into sustainable

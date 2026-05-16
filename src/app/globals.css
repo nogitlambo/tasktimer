@@ -49,6 +49,7 @@ body.webSignInRoute {
 }
 
 body.landingRoute {
+  background: #000;
   padding: 0;
 }
 
@@ -411,7 +412,7 @@ canvas {
   --landing-ink: #02060d;
   --landing-panel: #050910;
   --landing-panel-soft: #0a1512;
-  --landing-text: #f5f8f4;
+  --landing-text: #f8f8ff;
   --landing-muted: rgba(245, 248, 244, 0.74);
   --landing-line: rgba(201, 255, 36, 0.78);
   --landing-safe-top: max(22px, env(safe-area-inset-top, 0px));
@@ -420,12 +421,50 @@ canvas {
   --landing-hero-pad-top: clamp(18px, 5svh, 42px);
   --landing-copy-gap: clamp(24px, 7svh, 90px);
   --landing-action-gap: clamp(24px, 7svh, 90px);
+  --landing-feature-bg: url("/landing_feature_wide-768.webp");
+  --landing-feature-position: right top;
+  --landing-feature-width: max(100vw, 177.8svh);
+  --landing-feature-right: 0px;
+  --landing-feature-start-opacity: 0.42;
+  --landing-feature-visible-opacity: 1;
   min-height: 100svh;
+  position: relative;
+  overflow-x: clip;
   background: #000;
   font-family: var(--font-display-ui);
 }
 
+.landingV2::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: var(--landing-feature-right);
+  bottom: auto;
+  height: 100svh;
+  width: var(--landing-feature-width);
+  pointer-events: none;
+  opacity: var(--landing-feature-start-opacity);
+  transition: opacity 900ms ease;
+  background: var(--landing-feature-bg) var(--landing-feature-position) / 100% auto no-repeat;
+}
+
+.landingV2.isHeroVisible::before {
+  opacity: var(--landing-feature-visible-opacity);
+}
+
+.landingV2::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 100svh;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000 100%);
+}
+
 .landingV2 .landingV2Shell {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-height: 100svh;
   margin: 0;
@@ -442,7 +481,7 @@ canvas {
   min-height: 68px;
   padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 48px 18px;
   border-bottom: 0;
-  background: #1a1b20;
+  background: #000;
   backdrop-filter: blur(16px);
   opacity: 0;
   transform: translateY(-16px);
@@ -571,7 +610,7 @@ canvas {
   line-height: 1.1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--landing-text);
+  color: #f8f8ff;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.38), 0 0 22px rgba(255, 255, 255, 0.08);
 }
 
@@ -585,7 +624,7 @@ canvas {
 .landingV2 .landingV2HeroCopy {
   max-width: 660px;
   margin: 0;
-  color: var(--landing-muted);
+  color: #f8f8ff;
   font-family: var(--font-readable);
   font-size: 1rem;
   line-height: 1.9;
@@ -593,65 +632,26 @@ canvas {
 
 .landingV2 .landingV2Hero {
   min-height: calc(100svh - 86px);
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-  gap: 48px;
-  align-items: end;
-  padding: 56px 48px 42px;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 28px 48px 42px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 46%, rgba(0, 0, 0, 0.08) 100%),
+    linear-gradient(180deg, rgba(18, 18, 18, 0.08) 0%, rgba(18, 18, 18, 0.64) 100%);
 }
 
 .landingV2 .landingV2HeroMain {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 34px;
   min-height: 100%;
-  padding: 68px 0 20px;
-}
-
-.landingV2 .landingV2HeroVisual {
-  position: relative;
-  align-self: stretch;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  min-height: clamp(520px, 72svh, 820px);
-  isolation: isolate;
-}
-
-.landingV2 .landingV2HeroVisual::before {
-  content: "";
-  position: absolute;
-  inset: 14% 2% 3% 5%;
-  z-index: -1;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 52% 25%, rgba(201, 255, 36, 0.18), transparent 34%),
-    radial-gradient(circle at 52% 58%, rgba(67, 221, 196, 0.18), transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 64%);
-  filter: blur(34px);
-  opacity: 0.9;
-}
-
-.landingV2 .landingV2HeroVisual::after {
-  content: "";
-  position: absolute;
-  right: 4%;
-  bottom: 0;
-  left: 4%;
-  z-index: -1;
-  height: 28%;
-  background: linear-gradient(180deg, transparent, #121212 76%);
-  pointer-events: none;
-}
-
-.landingV2 .landingV2HeroImage {
-  display: block;
-  width: min(100%, 620px);
-  height: auto;
-  max-height: min(78svh, 820px);
-  object-fit: contain;
-  filter: drop-shadow(0 0 28px rgba(201, 255, 36, 0.16)) drop-shadow(0 28px 60px rgba(0, 0, 0, 0.48));
+  padding: 22px 0 20px;
 }
 
 .landingV2 .landingV2HeroTag {
@@ -1813,7 +1813,24 @@ canvas {
   }
 }
 
+@media (min-width: 700px) {
+  .landingV2 {
+    --landing-feature-bg: url("/landing_feature_wide-1440.webp");
+  }
+}
+
+@media (min-width: 1280px) {
+  .landingV2 {
+    --landing-feature-bg: url("/landing_feature_wide-2048.webp");
+  }
+}
+
 @media (max-width: 1180px) {
+  .landingV2 {
+    --landing-feature-right: -6vw;
+    --landing-feature-visible-opacity: 0.88;
+  }
+
   .landingV2 .landingV2Hero,
   .landingV2 .landingV2Section,
   .landingV2 .landingV2Cta {
@@ -1824,20 +1841,6 @@ canvas {
   .landingV2 .landingV2Header {
     padding-right: 34px;
     padding-left: 34px;
-  }
-
-  .landingV2 .landingV2Hero {
-    grid-template-columns: 1fr;
-  }
-
-  .landingV2 .landingV2HeroVisual {
-    min-height: clamp(360px, 58svh, 620px);
-    align-self: center;
-  }
-
-  .landingV2 .landingV2HeroImage {
-    width: min(86vw, 560px);
-    max-height: 620px;
   }
 
   .landingV2 .landingV2HeroProof {
@@ -1866,6 +1869,11 @@ canvas {
 }
 
 @media (max-width: 860px) {
+  .landingV2 {
+    --landing-feature-right: -28vw;
+    --landing-feature-visible-opacity: 0.74;
+  }
+
   .landingV2 .landingV2Header {
     grid-template-columns: 1fr auto;
     gap: 18px;
@@ -1884,21 +1892,8 @@ canvas {
   .landingV2 .landingV2Hero {
     min-height: auto;
     gap: 30px;
-    padding: 40px 24px 34px;
-  }
-
-  .landingV2 .landingV2HeroVisual {
-    min-height: clamp(300px, 56svh, 520px);
-  }
-
-  .landingV2 .landingV2HeroVisual::before {
-    inset: 12% 7% 5%;
-    filter: blur(26px);
-  }
-
-  .landingV2 .landingV2HeroImage {
-    width: min(88vw, 460px);
-    max-height: 520px;
+    padding: 20px 24px 34px;
+    background-position: center;
   }
 
   .landingV2 .landingV2HeroTitle {
@@ -1906,7 +1901,7 @@ canvas {
   }
 
   .landingV2 .landingV2HeroMain {
-    padding-top: 24px;
+    padding-top: 0;
   }
 
   .landingV2 .landingV2HeroProof {
@@ -1957,6 +1952,11 @@ canvas {
 }
 
 @media (max-width: 560px) {
+  .landingV2 {
+    --landing-feature-right: -72vw;
+    --landing-feature-visible-opacity: 0.54;
+  }
+
   .landingV2 .landingV2Header {
     --landing-mobile-header-pad: 18px;
     grid-template-columns: 1fr auto;
@@ -1985,15 +1985,6 @@ canvas {
   .landingV2 .landingV2Footer {
     padding-right: 18px;
     padding-left: 18px;
-  }
-
-  .landingV2 .landingV2HeroVisual {
-    min-height: 320px;
-  }
-
-  .landingV2 .landingV2HeroImage {
-    width: min(96vw, 360px);
-    max-height: 380px;
   }
 
   .landingV2 .landingV2PreviewTopbar,
@@ -2064,5 +2055,9 @@ canvas {
     transition: none;
     animation: none;
     transform: none;
+  }
+
+  .landingV2::before {
+    transition: none;
   }
 }

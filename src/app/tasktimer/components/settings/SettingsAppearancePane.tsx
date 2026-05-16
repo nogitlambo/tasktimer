@@ -53,11 +53,6 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
               </button>
             </div>
           </div>
-          <div className="settingsInlineFooter">
-            <button className="btn btn-ghost" id="appearanceLoadDefaultsBtn" type="button">
-              Load Defaults
-            </button>
-          </div>
         </section>
       </div>
     </SettingsDetailPane>

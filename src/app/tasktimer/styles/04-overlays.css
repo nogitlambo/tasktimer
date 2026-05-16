@@ -2368,33 +2368,35 @@ body[data-theme="purple"] .rewardsInfoText{
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn{
   border-color: rgba(165, 172, 182, .66);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
-  font-family: var(--font-readable);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn{
   background: rgba(201, 255, 36, .08);
-  border-color: #c9ff24;
+  border-color: rgba(165, 172, 182, .66) !important;
   color: #c9ff24;
   box-shadow:
-    inset 0 0 0 1px rgba(201, 255, 36, .1),
-    0 0 14px rgba(201, 255, 36, .18);
+    inset 0 0 0 1px rgba(255, 255, 255, .035),
+    0 0 14px rgba(165, 172, 182, .12);
 }
 
 #confirmOverlay.isResetTaskConfirm #confirmCancelBtn:hover:not(:disabled),
 #confirmOverlay.isResetTaskConfirm #confirmCancelBtn:focus-visible:not(:disabled),
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn:hover:not(:disabled),
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn:focus-visible:not(:disabled){
-  border-color: rgba(194, 201, 211, .86);
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, .05),
-    0 0 0 1px rgba(194, 201, 211, .18);
+    inset 0 0 0 1px rgba(201, 255, 36, .16),
+    0 0 0 1px rgba(201, 255, 36, .2),
+    0 0 18px rgba(201, 255, 36, .24);
 }
 
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn:hover:not(:disabled),
 #confirmOverlay.isResetTaskConfirm #confirmOkBtn:focus-visible:not(:disabled){
   background: rgba(201, 255, 36, .14);
-  border-color: #c9ff24;
-  color: #c9ff24;
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
   box-shadow:
     inset 0 0 0 1px rgba(201, 255, 36, .16),
     0 0 0 1px rgba(201, 255, 36, .2),
@@ -5943,9 +5945,9 @@ body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover
 body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible{
   background: rgba(255,255,255,.05) !important;
   background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(202,210,218,.62) !important;
-  box-shadow: 0 0 0 1px rgba(202,210,218,.12) inset !important;
+  color: #c9ff24 !important;
+  border-color: #c9ff24 !important;
+  box-shadow: 0 0 0 1px rgba(201,255,36,.18) inset !important;
 }
 
 #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,

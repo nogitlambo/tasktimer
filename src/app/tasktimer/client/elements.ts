@@ -286,8 +286,6 @@ const els = {
   optimalProductivityDayFri: documentRef.getElementById("optimalProductivityDayFri") as HTMLInputElement | null,
   optimalProductivityDaySat: documentRef.getElementById("optimalProductivityDaySat") as HTMLInputElement | null,
   taskSettingsSaveBtn: documentRef.getElementById("taskSettingsSaveBtn"),
-  preferencesLoadDefaultsBtn: documentRef.getElementById("preferencesLoadDefaultsBtn"),
-  appearanceLoadDefaultsBtn: documentRef.getElementById("appearanceLoadDefaultsBtn"),
   themeToggleRow: documentRef.getElementById("themeToggleRow"),
   themeSelect: documentRef.getElementById("themeSelect") as HTMLSelectElement | null,
   themePurpleBtn: documentRef.getElementById("themePurpleBtn") as HTMLButtonElement | null,

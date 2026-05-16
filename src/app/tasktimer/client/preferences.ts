@@ -4,7 +4,6 @@ import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
   buildOptimalProductivityDaysSummary,
-  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeOptimalProductivityDays,
@@ -584,28 +583,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.menuButtonStyleSelect, "change", () => {
       setMenuButtonStyle(els.menuButtonStyleSelect?.value === "parallelogram" ? "parallelogram" : "square");
-    });
-    ctx.on(els.preferencesLoadDefaultsBtn, "click", () => {
-      applyWeekStartingPreference("mon");
-      applyStartupModulePreference("dashboard");
-      ctx.setAutoFocusOnTaskLaunchEnabledState(false);
-      ctx.setTaskViewState("tile");
-      applyTaskOrderByPreference("custom");
-      ctx.setDynamicColorsEnabledState(true);
-      ctx.setMobilePushAlertsEnabledState(false);
-      ctx.setWebPushAlertsEnabledState(false);
-      applyOptimalProductivityPeriodPreference(
-        DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
-        DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-      );
-      applyOptimalProductivityDaysPreference(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
-      syncTaskSettingsUi();
-      persistInlineTaskSettingsImmediate();
-      void syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: false });
-    });
-    ctx.on(els.appearanceLoadDefaultsBtn, "click", () => {
-      setThemeMode("lime");
-      setMenuButtonStyle("square");
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
       syncThemeAvailabilityUi();
