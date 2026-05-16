@@ -53,7 +53,6 @@ function AboutSection({
     <section className="privacyLandingSection" id={id}>
       <div className="landingV2SectionLabel">
         <span className="landingV2SectionIndex displayFont">{String(number).padStart(2, "0")}</span>
-        <span className="landingV2SectionLine" />
         <span className="landingV2SectionName">{title}</span>
       </div>
       <div className="privacyLandingContent">{children}</div>
@@ -95,32 +94,6 @@ export default function AboutPage() {
 
             <p className="landingV2HeroCopy">PRODUCTIVITY THAT FEELS REALISTIC, SUPPORTIVE, AND HUMAN</p>
           </div>
-        </section>
-
-        <section className="privacyLandingSection">
-          <div className="landingV2SectionLabel">
-            <span className="landingV2SectionIndex displayFont">00</span>
-            <span className="landingV2SectionLine" />
-            <span className="landingV2SectionName">Table of contents</span>
-          </div>
-          <ul className="privacyLandingToc">
-            {[
-              ["#mission", "01", "Mission"],
-              ["#cycle", "02", "The cycle it breaks"],
-              ["#different-way", "03", "A different way forward"],
-              ["#helps-you", "04", "How TaskLaunch helps"],
-              ["#features", "05", "Features"],
-              ["#philosophy", "06", "Philosophy"],
-            ].map(([href, number, label]) => (
-              <li key={href}>
-                <a href={href} className="privacyLandingTocLink">
-                  <span className="landingV2SectionIndex displayFont">{number}</span>
-                  <span className="landingV2SectionLine" />
-                  <span className="landingV2SectionName">{label}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
         </section>
 
         <div className="privacyLandingBody">
@@ -194,6 +167,18 @@ export default function AboutPage() {
             </p>
           </AboutSection>
         </div>
+
+        <footer className="landingV2Footer">
+          <Link href="/" className="landingV2FooterBrand displayFont">
+            TaskLaunch
+          </Link>
+          <div className="landingV2FooterLinks">
+            <Link href="/about">About</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/web-sign-in">Sign In</Link>
+          </div>
+        </footer>
       </div>
     </main>
   );

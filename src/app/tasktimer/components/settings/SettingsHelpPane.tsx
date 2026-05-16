@@ -14,14 +14,7 @@ export function SettingsHelpPane({ active, exiting = false }: { active: boolean;
               href={resolveTaskTimerRouteHref("/privacy")}
               aria-label="Privacy Policy"
             >
-              <MenuIconLabel icon="/About.svg" label="Privacy Policy" />
-            </a>
-            <a
-              className="menuItem settingsDataListItem"
-              href={resolveTaskTimerRouteHref("/about")}
-              aria-label="About TaskLaunch"
-            >
-              <MenuIconLabel icon="/About.svg" label="About" />
+              <MenuIconLabel icon="/icons/icons_default/privacy-policy.svg" label="Privacy Policy" />
             </a>
             <a
               className="menuItem settingsDataListItem"
@@ -29,7 +22,7 @@ export function SettingsHelpPane({ active, exiting = false }: { active: boolean;
               href={resolveTaskTimerRouteHref("/feedback")}
               aria-label="Feedback"
             >
-              <MenuIconLabel icon="/About.svg" label="Feedback" />
+              <MenuIconLabel icon="/icons/icons_default/message.svg" label="Feedback" />
             </a>
           </div>
         </section>

@@ -7,6 +7,7 @@ export function SettingsPrivacyPane({ active, exiting = false }: { active: boole
     <SettingsDetailPane
       active={active}
       exiting={exiting}
+      paneClassName="settingsPrivacyPane"
       title="Privacy Policy"
       subtitle="Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information."
     >

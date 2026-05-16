@@ -468,6 +468,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     getOptimalProductivityDayInputs().forEach((input) => {
       input.checked = days.includes(normalizeDashboardWeekStart(input.value));
     });
+    if (!els.optimalProductivityDaysTrigger) {
+      els.optimalProductivityDaysMenu?.removeAttribute("hidden");
+    }
     if (els.optimalProductivityDaysSummary) {
       els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
     }
@@ -478,6 +481,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function closeOptimalProductivityDaysMenu() {
+    if (!els.optimalProductivityDaysTrigger) return;
     if (els.optimalProductivityDaysMenu) els.optimalProductivityDaysMenu.setAttribute("hidden", "");
     if (els.optimalProductivityDaysTrigger) els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", "false");
   }

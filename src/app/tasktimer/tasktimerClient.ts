@@ -313,11 +313,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   function closeMobileDetailPanelIfOpen() {
-    const mobileBackBtn = document.querySelector(
-      ".settingsDetailPanel.isMobileOpen .settingsMobileBackBtn"
-    ) as HTMLButtonElement | null;
-    if (!mobileBackBtn || mobileBackBtn.disabled) return false;
-    mobileBackBtn.click();
+    const mobileDetailPanel = document.querySelector(".settingsDetailPanel.isMobileOpen");
+    if (!mobileDetailPanel) return false;
+    window.dispatchEvent(new Event("tasktimer:closeSettingsMobileDetail"));
     return true;
   }
 

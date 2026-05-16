@@ -17,7 +17,7 @@ export function SettingsFeedbackPane({
   canSubmitFeedback: boolean;
 }) {
   return (
-    <SettingsDetailPane active={active} exiting={exiting} title="Feedback" subtitle="Share product feedback and suggestions.">
+    <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsFeedbackPane" title="Feedback" subtitle="Share product feedback and suggestions.">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">

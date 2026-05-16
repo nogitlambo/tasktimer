@@ -16,15 +16,6 @@ const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
   "reset",
 ];
 
-const SETTINGS_VISIBLE_PANE_KEYS: SettingsPaneKey[] = [
-  "preferences",
-  "appearance",
-  "notifications",
-  "help",
-  "data",
-  "about",
-];
-
 const SETTINGS_PANE_TRANSITION_MS = 220;
 
 type SettingsPaneSlideDirection = "forward" | "backward";
@@ -75,11 +66,6 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
     }, SETTINGS_PANE_TRANSITION_MS);
   }
 
-  function paneIndex(pane: SettingsPaneKey | null) {
-    if (!pane) return -1;
-    return SETTINGS_VISIBLE_PANE_KEYS.indexOf(pane);
-  }
-
   return {
     activePane,
     setActivePane,
@@ -87,17 +73,18 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
     setMobileDetailOpen,
     paneSlideDirection,
     exitingPane,
+    closeMobileDetail: () => {
+      setPaneSlideDirection("backward");
+      setMobileDetailOpen(false);
+    },
     selectPane: (pane: SettingsPaneKey) => {
       if (pane === activePane) {
+        setPaneSlideDirection("forward");
         setMobileDetailOpen(true);
         return;
       }
       const previousPane = activePane;
-      const previousIndex = paneIndex(previousPane);
-      const nextIndex = paneIndex(pane);
-      const direction: SettingsPaneSlideDirection =
-        previousIndex >= 0 && nextIndex >= 0 && nextIndex < previousIndex ? "backward" : "forward";
-      setPaneSlideDirection(direction);
+      setPaneSlideDirection("forward");
       setExitingPane(previousPane);
       setActivePane(pane);
       setMobileDetailOpen(true);

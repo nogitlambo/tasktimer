@@ -16,7 +16,7 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">
             <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
-            <div className="settingsInlineSectionTitle">Alerts</div>
+            <div className="settingsInlineSectionTitle">Push Notifications</div>
           </div>
           <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
             <div className="toggleRow" id="taskMobilePushAlertsToggleRow">
@@ -26,6 +26,10 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
             <div className="toggleRow" id="taskWebPushAlertsToggleRow">
               <span>Enable Web Push Notifications</span>
               <button className="switch" id="taskWebPushAlertsToggle" type="button" role="switch" aria-checked="false" />
+            </div>
+            <div className="settingsInlineSectionHead">
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.png" alt="" aria-hidden="true" />
+              <div className="settingsInlineSectionTitle">Sounds</div>
             </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <span>Checkpoint Sound</span>
