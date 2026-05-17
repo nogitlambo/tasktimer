@@ -1,9 +1,4 @@
-export type LandingExperimentalProps = {
-  showTitlePhase: boolean;
-  showActions: boolean;
-};
-
-export type LandingClassicProps = {
+export type LandingProps = {
   showTitlePhase: boolean;
   showActions: boolean;
 };

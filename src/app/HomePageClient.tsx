@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/lib/startupModule";
-import LandingClassic from "./landingClassic";
-import LandingExperimental from "./landing";
-import type { LandingClassicProps, LandingExperimentalProps } from "./landing.types";
+import Landing from "./landing";
+import type { LandingProps } from "./landing.types";
 import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
 const LOGO_PHASE_MS = 1200;
@@ -70,35 +69,10 @@ function logFirebaseAuthError(stage: string, err: unknown) {
 
 function HomeContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
-  const [resolvedLanding, setResolvedLanding] = useState<"classic" | "v2" | null>(null);
-
-  const landingParam = String(searchParams.get("landing") || "").trim().toLowerCase();
-  const hasLandingOverride = landingParam === "classic" || landingParam === "v2";
-  const effectiveLanding = hasLandingOverride ? (landingParam as "classic" | "v2") : resolvedLanding;
-  const isExperimentalLanding = effectiveLanding === "v2";
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const timer = window.setTimeout(() => {
-      if (landingParam === "classic") {
-        setResolvedLanding("classic");
-        return;
-      }
-      if (landingParam === "v2") {
-        setResolvedLanding("v2");
-        return;
-      }
-      const hostname = window.location.hostname;
-      const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
-      setResolvedLanding(isLocalHost ? "v2" : "classic");
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [landingParam]);
 
   useEffect(() => {
     const titleTimer = window.setTimeout(() => setShowTitlePhase(true), LOGO_PHASE_MS);
@@ -200,25 +174,14 @@ function HomeContent() {
     };
   }, []);
 
-  const experimentalLandingProps: LandingExperimentalProps = {
+  const landingProps: LandingProps = {
     showTitlePhase,
     showActions,
   };
 
-  const classicLandingProps: LandingClassicProps = {
-    showTitlePhase,
-    showActions,
-  };
-
-  if (!effectiveLanding) return null;
-
-  return isExperimentalLanding ? (
-    <LandingExperimental
-      {...experimentalLandingProps}
-    />
-  ) : (
-    <LandingClassic
-      {...classicLandingProps}
+  return (
+    <Landing
+      {...landingProps}
     />
   );
 }

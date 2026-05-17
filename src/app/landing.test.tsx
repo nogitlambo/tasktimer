@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Landing from "./landing";
-import LandingClassic from "./landingClassic";
 
 describe("Landing", () => {
   it("renders the landing hero without removing the primary actions", () => {
@@ -16,11 +15,5 @@ describe("Landing", () => {
     expect(html).toContain('aria-label="Open navigation menu"');
     expect(html).toContain('aria-label="Close navigation menu"');
     expect(html).not.toContain("Continue without account");
-  });
-
-  it("renders the classic landing with the shared hero background visible", () => {
-    const html = renderToStaticMarkup(<LandingClassic showTitlePhase={true} showActions={true} />);
-
-    expect(html).toContain('class="landingV2 landingV2ComingSoon isHeroVisible"');
   });
 });

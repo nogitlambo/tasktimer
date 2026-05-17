@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       {
         email,
         emailNormalized,
-        source: "landingClassic",
+        source: "landing",
         userAgent,
         referer,
         updatedAt: FieldValue.serverTimestamp(),

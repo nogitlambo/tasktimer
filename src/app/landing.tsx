@@ -3,7 +3,7 @@
 import Link from "next/link";
 import AppImg from "../components/AppImg";
 import { useEffect, useState } from "react";
-import type { LandingExperimentalProps } from "./landing.types";
+import type { LandingProps } from "./landing.types";
 
 const demoHref = "https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu-0b/view?usp=drive_link";
 
@@ -69,7 +69,7 @@ function FeatureIcon({ icon, title }: { icon: FeatureIconName; title: string }) 
   );
 }
 
-export default function Landing(props: LandingExperimentalProps) {
+export default function Landing(props: LandingProps) {
   void props;
 
   const [revealStage, setRevealStage] = useState(0);

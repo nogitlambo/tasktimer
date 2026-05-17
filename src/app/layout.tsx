@@ -10,40 +10,45 @@ const orbitron = Orbitron({
   display: "swap",
 });
 
+const siteTitle = "Flexible Task Management";
+const siteDescription = "Break free from guilt-driven productivity systems.";
+const launchIcon = "/logo/launch-icon-original-transparent.png";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://tasklaunch.app"),
   title: {
-    default: "TaskLaunch",
+    default: siteTitle,
     template: "%s | TaskLaunch",
   },
-  description: "TaskLaunch helps you track tasks, focus time, progress history, and productivity in one place.",
+  description: siteDescription,
   applicationName: "TaskLaunch",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "TaskLaunch",
-    description: "TaskLaunch helps you track tasks, focus time, progress history, and productivity in one place.",
+    title: siteTitle,
+    description: siteDescription,
     url: "https://tasklaunch.app",
     siteName: "TaskLaunch",
     type: "website",
     images: [
       {
-        url: "/logo/tasklaunch-logo-v2.png",
-        width: 1868,
-        height: 422,
+        url: launchIcon,
+        width: 485,
+        height: 442,
         alt: "TaskLaunch",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "TaskLaunch",
-    description: "TaskLaunch helps you track tasks, focus time, progress history, and productivity in one place.",
-    images: ["/logo/tasklaunch-logo-v2.png"],
+    card: "summary",
+    title: siteTitle,
+    description: siteDescription,
+    images: [launchIcon],
   },
   icons: {
     icon: [
+      { url: launchIcon, type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
