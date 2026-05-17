@@ -60,6 +60,7 @@ export type UserPreferencesV1 = {
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
+  interactionHapticsEnabled: boolean;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
@@ -1474,6 +1475,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             ? asBool(prefSnap.get("webPushAlertsEnabled"), false)
             : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         interactionClickSoundEnabled: asBool(prefSnap.get("interactionClickSoundEnabled"), true),
+        interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
         checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
@@ -2068,6 +2070,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         ? asBool(data.webPushAlertsEnabled, false)
         : asBool(data.mobilePushAlertsEnabled, false),
     interactionClickSoundEnabled: asBool(data.interactionClickSoundEnabled, true),
+    interactionHapticsEnabled: asBool(data.interactionHapticsEnabled, true),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
     checkpointAlertSoundMode: data.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",

@@ -1270,6 +1270,7 @@ export function buildDefaultCloudPreferences() {
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
+    interactionHapticsEnabled: true,
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     checkpointAlertSoundMode: "once" as const,

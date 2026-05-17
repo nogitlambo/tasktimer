@@ -45,6 +45,13 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               </div>
               <button className="switch on" id="taskInteractionClickSoundToggle" type="button" role="switch" aria-checked="true" />
             </div>
+            <div className="toggleRow" id="taskInteractionHapticsToggleRow" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Interaction haptics</span>
+                <span className="settingsPreferenceControlHelp">Use subtle device feedback for navigation, buttons, switches, and checkbox interactions.</span>
+              </div>
+              <button className="switch on" id="taskInteractionHapticsToggle" type="button" role="switch" aria-checked="true" />
+            </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <div className="settingsPreferenceControlCopy">
                 <span className="settingsPreferenceControlLabel">Checkpoint Sound</span>

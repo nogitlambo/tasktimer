@@ -123,6 +123,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       mobilePushAlertsEnabled: false,
       webPushAlertsEnabled: false,
       interactionClickSoundEnabled: true,
+      interactionHapticsEnabled: true,
       checkpointAlertSoundEnabled: true,
       checkpointAlertToastEnabled: true,
       checkpointAlertSoundMode: "once",

@@ -13,6 +13,7 @@ import {
 } from "./tasktimer-bootstrap";
 import { registerPrimaryClickAudio } from "./primary-click-audio";
 import { registerSecondaryClickAudio } from "./secondary-click-audio";
+import { registerInteractionHaptics } from "./interaction-haptics";
 import type { AppPage } from "./types";
 
 type ScheduleDay = Task["plannedStartDay"];
@@ -71,6 +72,7 @@ type RegisterRootEventsOptions = {
   registerDashboardEvents: () => void;
   registerPreferenceEvents: (args: { handleAppBackNavigation: () => boolean }) => void;
   getInteractionClickSoundEnabled: () => boolean;
+  getInteractionHapticsEnabled: () => boolean;
   normalizedPathname: () => string;
   normalizeTaskTimerRoutePath: (path: string) => string;
   appPathForPage: (page: AppPage) => string;
@@ -121,6 +123,7 @@ type StartRootLifecycleOptions = {
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
 
+  registerInteractionHaptics({ on, documentRef, isEnabled: options.getInteractionHapticsEnabled });
   registerPrimaryClickAudio({ on, documentRef, isEnabled: options.getInteractionClickSoundEnabled });
   registerSecondaryClickAudio({ on, documentRef, isEnabled: options.getInteractionClickSoundEnabled });
 

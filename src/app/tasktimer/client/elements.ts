@@ -266,6 +266,8 @@ const els = {
   taskWebPushAlertsToggle: documentRef.getElementById("taskWebPushAlertsToggle"),
   taskInteractionClickSoundToggleRow: documentRef.getElementById("taskInteractionClickSoundToggleRow"),
   taskInteractionClickSoundToggle: documentRef.getElementById("taskInteractionClickSoundToggle"),
+  taskInteractionHapticsToggleRow: documentRef.getElementById("taskInteractionHapticsToggleRow"),
+  taskInteractionHapticsToggle: documentRef.getElementById("taskInteractionHapticsToggle"),
   taskCheckpointSoundToggleRow: documentRef.getElementById("taskCheckpointSoundToggleRow"),
   taskCheckpointSoundToggle: documentRef.getElementById("taskCheckpointSoundToggle"),
   taskCheckpointToastToggleRow: documentRef.getElementById("taskCheckpointToastToggleRow"),

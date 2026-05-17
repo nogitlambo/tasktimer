@@ -50,6 +50,7 @@ export type TaskTimerCachedPreferences = {
   mobilePushAlertsEnabled?: unknown;
   webPushAlertsEnabled?: unknown;
   interactionClickSoundEnabled?: unknown;
+  interactionHapticsEnabled?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   optimalProductivityStartTime?: unknown;
@@ -866,6 +867,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
     INTERACTION_CLICK_SOUND_KEY: string;
+    INTERACTION_HAPTICS_KEY: string;
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -895,6 +897,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setWebPushAlertsEnabledState: (value: boolean) => void;
   getInteractionClickSoundEnabled: () => boolean;
   setInteractionClickSoundEnabledState: (value: boolean) => void;
+  getInteractionHapticsEnabled: () => boolean;
+  setInteractionHapticsEnabledState: (value: boolean) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;

@@ -49,6 +49,7 @@
     "@capacitor-firebase/authentication": "^8.1.0",
     "@capacitor-firebase/crashlytics": "^8.2.0",
     "@capacitor/app": "^8.1.0",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/push-notifications": "^8.0.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",

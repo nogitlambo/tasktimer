@@ -138,6 +138,7 @@ type CreatePersistenceOptionsArgs = {
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
+  loadInteractionHapticsSetting: () => void;
   loadCheckpointAlertSettings: () => void;
   loadOptimalProductivityPeriodPreference: () => void;
   loadOptimalProductivityDaysPreference: () => void;
@@ -882,6 +883,10 @@ export function createTaskTimerPreferencesContext(
     setInteractionClickSoundEnabledState: (value) => {
       args.preferencesState.set("interactionClickSoundEnabled", value);
     },
+    getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
+    setInteractionHapticsEnabledState: (value) => {
+      args.preferencesState.set("interactionHapticsEnabled", value);
+    },
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     setCheckpointAlertSoundEnabledState: (value) => {
       args.preferencesState.set("checkpointAlertSoundEnabled", value);
@@ -1001,6 +1006,7 @@ export function createTaskTimerPersistenceContext(
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
+    loadInteractionHapticsSetting: args.loadInteractionHapticsSetting,
     loadCheckpointAlertSettings: args.loadCheckpointAlertSettings,
     loadOptimalProductivityPeriodPreference: args.loadOptimalProductivityPeriodPreference,
     loadOptimalProductivityDaysPreference: args.loadOptimalProductivityDaysPreference,

@@ -14,6 +14,7 @@ import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } fr
 import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { bindToggleRow } from "./control-helpers";
+import { isInteractionHapticsRuntimeAvailable } from "./interaction-haptics";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -121,6 +122,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       interactionClickSoundEnabled: ctx.getInteractionClickSoundEnabled(),
+      interactionHapticsEnabled: ctx.getInteractionHapticsEnabled(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
       checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
       checkpointAlertSoundMode: ctx.getCheckpointAlertSoundMode(),
@@ -321,6 +323,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskInteractionClickSoundToggle as HTMLElement | null, ctx.getInteractionClickSoundEnabled());
+    ctx.toggleSwitchElement(els.taskInteractionHapticsToggle as HTMLElement | null, ctx.getInteractionHapticsEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
     ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
     if (els.taskCheckpointSoundModeSelect) {
@@ -367,6 +370,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskWebPushAlertsToggle.title = lockWebPushAlerts ? "Use desktop web to change web push alerts." : "";
     }
     els.taskWebPushAlertsToggleRow?.classList.toggle("isDisabled", lockWebPushAlerts);
+    const showInteractionHaptics = isInteractionHapticsRuntimeAvailable();
+    if (els.taskInteractionHapticsToggleRow) {
+      (els.taskInteractionHapticsToggleRow as HTMLElement).hidden = !showInteractionHaptics;
+    }
+    if (els.taskInteractionHapticsToggle) {
+      (els.taskInteractionHapticsToggle as HTMLButtonElement).disabled = !showInteractionHaptics;
+      els.taskInteractionHapticsToggle.setAttribute("aria-disabled", String(!showInteractionHaptics));
+      els.taskInteractionHapticsToggle.title = showInteractionHaptics ? "" : "Use the mobile app to change interaction haptics.";
+    }
     if (els.taskCheckpointSoundToggle) {
       (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = false;
       els.taskCheckpointSoundToggle.setAttribute("aria-disabled", "false");
@@ -389,11 +401,27 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setInteractionClickSoundEnabledState(preferenceService.loadInteractionClickSoundEnabled());
   }
 
+  function loadInteractionHapticsSetting() {
+    ctx.setInteractionHapticsEnabledState(preferenceService.loadInteractionHapticsEnabled());
+  }
+
   function saveInteractionClickSoundSetting() {
     try {
       localStorage.setItem(
         ctx.storageKeys.INTERACTION_CLICK_SOUND_KEY,
         ctx.getInteractionClickSoundEnabled() ? "true" : "false"
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
+  function saveInteractionHapticsSetting() {
+    try {
+      localStorage.setItem(
+        ctx.storageKeys.INTERACTION_HAPTICS_KEY,
+        ctx.getInteractionHapticsEnabled() ? "true" : "false"
       );
     } catch {
       // ignore localStorage write failures
@@ -596,6 +624,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveDynamicColorsSetting();
     saveMobilePushAlertsSetting();
     saveCheckpointAlertSettings();
+    saveInteractionHapticsSetting();
     saveOptimalProductivityPeriodPreference();
     saveOptimalProductivityDaysPreference();
     ctx.render();
@@ -723,6 +752,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     bindToggleRow({
       on: ctx.on,
+      control: els.taskInteractionHapticsToggle,
+      row: els.taskInteractionHapticsToggleRow,
+      ignoreSelector: "#taskInteractionHapticsToggle",
+      handleToggle: () => {
+        if (!isInteractionHapticsRuntimeAvailable()) return;
+        ctx.setInteractionHapticsEnabledState(!ctx.getInteractionHapticsEnabled());
+        syncTaskSettingsUi();
+        saveInteractionHapticsSetting();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
       control: els.taskCheckpointSoundToggle,
       row: els.taskCheckpointSoundToggleRow,
       ignoreSelector: "#taskCheckpointSoundToggle",
@@ -805,6 +846,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
       saveInteractionClickSoundSetting();
+      saveInteractionHapticsSetting();
       saveCheckpointAlertSettings();
       saveOptimalProductivityPeriodPreference();
       saveOptimalProductivityDaysPreference();
@@ -847,9 +889,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadInteractionClickSoundSetting,
+    loadInteractionHapticsSetting,
     loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
     saveInteractionClickSoundSetting,
+    saveInteractionHapticsSetting,
     loadCheckpointAlertSettings,
     saveMobilePushAlertsSetting,
     saveCheckpointAlertSettings,

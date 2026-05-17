@@ -1,6 +1,7 @@
 /// <reference types="@capacitor-firebase/authentication" />
 /// <reference types="@capacitor-firebase/analytics" />
 /// <reference types="@capacitor-firebase/crashlytics" />
+/// <reference types="@capacitor/haptics" />
 /// <reference types="@capacitor/push-notifications" />
 
 import type { CapacitorConfig } from '@capacitor/cli';
