@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Orbitron } from "next/font/google";
 import TelemetryBootstrap from "./TelemetryBootstrap";
 import ThemeBootstrap from "./ThemeBootstrap";
+import { canonicalUrl, seoConfig } from "./seo";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -10,45 +11,41 @@ const orbitron = Orbitron({
   display: "swap",
 });
 
-const siteTitle = "Flexible Task Management";
-const siteDescription = "Break free from guilt-driven productivity systems.";
-const launchIcon = "/logo/launch-icon-original-transparent.png";
-
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tasklaunch.app"),
+  metadataBase: new URL(seoConfig.siteUrl),
   title: {
-    default: siteTitle,
-    template: "%s | TaskLaunch",
+    default: seoConfig.defaultTitle,
+    template: seoConfig.titleTemplate,
   },
-  description: siteDescription,
-  applicationName: "TaskLaunch",
+  description: seoConfig.defaultDescription,
+  applicationName: seoConfig.appName,
   alternates: {
-    canonical: "/",
+    canonical: canonicalUrl("/"),
   },
   openGraph: {
-    title: siteTitle,
-    description: siteDescription,
-    url: "https://tasklaunch.app",
-    siteName: "TaskLaunch",
+    title: seoConfig.defaultTitle,
+    description: seoConfig.defaultDescription,
+    url: seoConfig.siteUrl,
+    siteName: seoConfig.appName,
     type: "website",
     images: [
       {
-        url: launchIcon,
-        width: 485,
-        height: 442,
-        alt: "TaskLaunch",
+        url: seoConfig.ogImagePath,
+        width: 1200,
+        height: 630,
+        alt: "TaskLaunch neurodivergent-friendly productivity app preview",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: siteTitle,
-    description: siteDescription,
-    images: [launchIcon],
+    card: "summary_large_image",
+    title: seoConfig.defaultTitle,
+    description: seoConfig.defaultDescription,
+    images: [seoConfig.twitterImagePath],
   },
   icons: {
     icon: [
-      { url: launchIcon, type: "image/png" },
+      { url: seoConfig.logoPath, type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },

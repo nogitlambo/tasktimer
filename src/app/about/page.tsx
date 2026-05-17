@@ -3,15 +3,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import AboutBackButton from "./AboutBackButton";
+import { buildPageMetadata, jsonLdScript, organizationJsonLd, softwareApplicationJsonLd } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "About TaskLaunch",
   description:
-    "Learn how TaskLaunch supports neurodivergent productivity, sustainable momentum, recovery after setbacks, and progress without perfectionism.",
-  alternates: {
-    canonical: "/about",
-  },
-};
+    "Learn how TaskLaunch supports neurodivergent productivity, ADHD-friendly workflows, sustainable momentum, and progress without perfectionism.",
+  path: "/about/",
+});
 
 const HELP_POINTS = [
   "Restart quickly after setbacks instead of spiralling into guilt.",
@@ -76,6 +75,10 @@ function AboutList({ items }: { items: string[] }) {
 export default function AboutPage() {
   return (
     <main className="landingV2 privacyLandingPage">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript([organizationJsonLd(), softwareApplicationJsonLd()])}
+      />
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">

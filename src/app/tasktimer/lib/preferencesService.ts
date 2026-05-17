@@ -102,6 +102,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       (repository.buildDefaultPreferences() as StoredPreferences)) as StoredPreferences;
   }
 
+  function getStoredPreferencesWithoutDefaults() {
+    return (options.getCloudPreferencesCache() || repository.loadCachedPreferences() || null) as StoredPreferences | null;
+  }
+
   function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
     const value = String(raw || "").trim().toLowerCase();
     if (value === "lime") return "lime";
@@ -245,7 +249,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadMobilePushAlertsEnabled(): boolean {
-    const cloudValue = getStoredOrCachedPreferences().mobilePushAlertsEnabled;
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.mobilePushAlertsEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
     const raw = safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY).toLowerCase();
     if (raw === "true" || raw === "1" || raw === "on") return true;
@@ -254,8 +258,8 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadWebPushAlertsEnabled(): boolean {
-    const prefs = getStoredOrCachedPreferences();
-    if (typeof prefs.webPushAlertsEnabled === "boolean") return prefs.webPushAlertsEnabled;
+    const prefs = getStoredPreferencesWithoutDefaults();
+    if (typeof prefs?.webPushAlertsEnabled === "boolean") return prefs.webPushAlertsEnabled;
     const raw = safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY).toLowerCase();
     if (raw === "true" || raw === "1" || raw === "on") return true;
     if (raw === "false" || raw === "0" || raw === "off") return false;

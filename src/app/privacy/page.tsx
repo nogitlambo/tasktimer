@@ -3,15 +3,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import PrivacyBackButton from "./PrivacyBackButton";
+import { buildPageMetadata, jsonLdScript, organizationJsonLd } from "../seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy",
   description:
-    "Read the TaskLaunch privacy policy, including how account data, app data, billing data, push notifications, feedback, and launch-update subscriptions are handled.",
-  alternates: {
-    canonical: "/privacy",
-  },
-};
+    "Read the TaskLaunch privacy policy for account data, productivity app data, billing data, push notifications, feedback, and launch-update subscriptions.",
+  path: "/privacy/",
+});
 
 function PolicySection({
   id,
@@ -54,6 +53,7 @@ function Clause({
 export default function PrivacyPolicyPage() {
   return (
     <main className="landingV2 privacyLandingPage">
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(organizationJsonLd())} />
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">

@@ -34,7 +34,7 @@ const featureCards: Array<{
     icon: "insight",
     title: "Insight-led Refinement",
     description:
-      "AI continuously interprets your patterns and progress to surface what’s working, eliminate drag, and guide smarter next moves without disrupting your flow.",
+      "AI continuously interprets your patterns and progress to surface what's working, eliminate drag, and guide smarter next moves without disrupting your flow.",
   },
 ];
 
@@ -127,6 +127,7 @@ export default function Landing(props: LandingProps) {
           </Link>
 
           <div className="landingV2FooterLinks">
+            <Link href="/pricing">Pricing</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/web-sign-in">Sign In</Link>
           </div>
@@ -153,6 +154,7 @@ export default function Landing(props: LandingProps) {
                 <span />
               </button>
               <Link href="/privacy">Privacy</Link>
+              <Link href="/pricing">Pricing</Link>
               <Link href="/web-sign-in">Sign In</Link>
             </div>
           </div>
@@ -347,6 +349,7 @@ export default function Landing(props: LandingProps) {
           </Link>
           <div className="landingV2FooterLinks">
             <Link href="/about">About</Link>
+            <Link href="/pricing">Pricing</Link>
             <Link href="/privacy">Privacy</Link>
           </div>
         </footer>

@@ -1,34 +1,20 @@
 import type { MetadataRoute } from "next";
+import { canonicalUrl, seoConfig } from "./seo";
 
 export const dynamic = "force-static";
 
-const siteUrl = "https://tasklaunch.app";
+const lastModifiedByPath: Record<string, Date> = {
+  "/": new Date(),
+  "/pricing/": new Date(),
+  "/about/": new Date("2026-05-16"),
+  "/privacy/": new Date("2026-04-21"),
+};
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: `${siteUrl}/`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: `${siteUrl}/pricing`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${siteUrl}/privacy`,
-      lastModified: new Date("2026-03-20"),
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
-    {
-      url: `${siteUrl}/about`,
-      lastModified: new Date("2026-05-16"),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-  ];
+  return seoConfig.publicRoutes.map((route) => ({
+    url: canonicalUrl(route.path),
+    lastModified: lastModifiedByPath[route.path] || new Date(),
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+  }));
 }

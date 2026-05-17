@@ -17,6 +17,13 @@ type ClosestCapable = {
 
 type HapticsAdapter = {
   impact: (options: { style: ImpactStyle }) => Promise<void>;
+  vibrate?: (options: { duration: number }) => Promise<void>;
+};
+
+const ANDROID_INTENSITY_DURATIONS_MS: Record<InteractionHapticImpact, number> = {
+  light: 18,
+  medium: 42,
+  heavy: 75,
 };
 
 const DESTRUCTIVE_CONFIRM_SELECTOR = [
@@ -57,9 +64,17 @@ export function applyInteractionHapticsIntensity(
   intensity: InteractionHapticsIntensity
 ): InteractionHapticImpact {
   const normalizedIntensity = normalizeInteractionHapticsIntensity(intensity);
-  if (normalizedIntensity === "max") return impact;
   if (normalizedIntensity === "low") return "light";
-  return impact === "heavy" ? "medium" : impact;
+  if (normalizedIntensity === "medium") return "medium";
+  return "heavy";
+}
+
+function isAndroidHapticsRuntime(): boolean {
+  try {
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform?.() === "android";
+  } catch {
+    return false;
+  }
 }
 
 export function playInteractionHaptic(
@@ -69,6 +84,10 @@ export function playInteractionHaptic(
 ): void {
   if (!isInteractionHapticsRuntimeAvailable()) return;
   const resolvedImpact = applyInteractionHapticsIntensity(impact, intensity);
+  if (isAndroidHapticsRuntime() && haptics.vibrate) {
+    void haptics.vibrate({ duration: ANDROID_INTENSITY_DURATIONS_MS[resolvedImpact] }).catch(() => {});
+    return;
+  }
   const style = resolvedImpact === "heavy" ? ImpactStyle.Heavy : resolvedImpact === "medium" ? ImpactStyle.Medium : ImpactStyle.Light;
   void haptics.impact({ style }).catch(() => {});
 }

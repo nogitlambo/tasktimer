@@ -1,16 +1,33 @@
 import type { Metadata } from "next";
 import HomePageClient from "./HomePageClient";
+import {
+  buildPageMetadata,
+  jsonLdScript,
+  organizationJsonLd,
+  seoConfig,
+  softwareApplicationJsonLd,
+  websiteJsonLd,
+} from "./seo";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "Flexible Task Management",
-  },
-  description: "Break free from guilt-driven productivity systems.",
-  alternates: {
-    canonical: "/",
-  },
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: seoConfig.defaultTitle,
+  description: seoConfig.defaultDescription,
+  path: "/",
+  absoluteTitle: true,
+});
 
 export default function Home() {
-  return <HomePageClient />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript([
+          organizationJsonLd(),
+          websiteJsonLd(),
+          softwareApplicationJsonLd(),
+        ])}
+      />
+      <HomePageClient />
+    </>
+  );
 }

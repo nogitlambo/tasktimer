@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@capacitor/core", () => ({
   Capacitor: {
     isNativePlatform: vi.fn(() => true),
+    getPlatform: vi.fn(() => "ios"),
   },
 }));
 
 vi.mock("@capacitor/haptics", () => ({
   Haptics: {
     impact: vi.fn(() => Promise.resolve()),
+    vibrate: vi.fn(() => Promise.resolve()),
   },
   ImpactStyle: {
     Heavy: "HEAVY",
@@ -62,6 +64,7 @@ describe("interaction haptics", () => {
     vi.clearAllMocks();
     vi.stubGlobal("window", { location: { protocol: "capacitor:" } });
     vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.mocked(Capacitor.getPlatform).mockReturnValue("ios");
   });
 
   it("classifies destructive confirmations as heavy", () => {
@@ -95,24 +98,39 @@ describe("interaction haptics", () => {
     expect(isInteractionHapticsRuntimeAvailable()).toBe(true);
   });
 
-  it("plays matching Capacitor impact styles and swallows failures", () => {
+  it("plays selected Capacitor impact intensity and swallows failures", () => {
     vi.mocked(Haptics.impact).mockRejectedValueOnce(new Error("unavailable"));
 
     expect(() => playInteractionHaptic("heavy")).not.toThrow();
-    playInteractionHaptic("medium");
-    playInteractionHaptic("light");
+    playInteractionHaptic("medium", Haptics, "medium");
+    playInteractionHaptic("heavy", Haptics, "low");
 
     expect(Haptics.impact).toHaveBeenNthCalledWith(1, { style: ImpactStyle.Heavy });
     expect(Haptics.impact).toHaveBeenNthCalledWith(2, { style: ImpactStyle.Medium });
     expect(Haptics.impact).toHaveBeenNthCalledWith(3, { style: ImpactStyle.Light });
   });
 
-  it("caps haptic impact by the selected intensity", () => {
+  it("applies the selected intensity as the emitted haptic level", () => {
     expect(applyInteractionHapticsIntensity("heavy", "max")).toBe("heavy");
     expect(applyInteractionHapticsIntensity("heavy", "medium")).toBe("medium");
     expect(applyInteractionHapticsIntensity("medium", "medium")).toBe("medium");
+    expect(applyInteractionHapticsIntensity("light", "medium")).toBe("medium");
     expect(applyInteractionHapticsIntensity("heavy", "low")).toBe("light");
     expect(applyInteractionHapticsIntensity("medium", "low")).toBe("light");
+    expect(applyInteractionHapticsIntensity("light", "max")).toBe("heavy");
+  });
+
+  it("uses explicit Android vibration durations for the selected intensity", () => {
+    vi.mocked(Capacitor.getPlatform).mockReturnValue("android");
+
+    playInteractionHaptic("light", Haptics, "max");
+    playInteractionHaptic("heavy", Haptics, "medium");
+    playInteractionHaptic("heavy", Haptics, "low");
+
+    expect(Haptics.vibrate).toHaveBeenNthCalledWith(1, { duration: 75 });
+    expect(Haptics.vibrate).toHaveBeenNthCalledWith(2, { duration: 42 });
+    expect(Haptics.vibrate).toHaveBeenNthCalledWith(3, { duration: 18 });
+    expect(Haptics.impact).not.toHaveBeenCalled();
   });
 
   it("registers one trusted-click listener gated by the haptics preference", () => {

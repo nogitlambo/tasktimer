@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AppImg from "@/components/AppImg";
+import { buildPageMetadata, jsonLdScript, pricingProductJsonLd, softwareApplicationJsonLd } from "../seo";
 import PricingSection from "./PricingSection";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Pricing",
-  description: "Compare TaskLaunch plans and pricing for solo task tracking and advanced productivity features.",
-  alternates: {
-    canonical: "/pricing",
-  },
-};
+  description:
+    "Compare TaskLaunch Free and Pro plans for neurodivergent-friendly task tracking, flexible productivity, AI-guided workflow insights, and advanced history.",
+  path: "/pricing/",
+});
 
 export default function PricingPage() {
   return (
     <main className="landingV2 pricingPageV2">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript([softwareApplicationJsonLd(), pricingProductJsonLd()])}
+      />
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
