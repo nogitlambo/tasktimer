@@ -1968,18 +1968,31 @@ canvas {
 @media (max-width: 560px) {
   .landingV2 {
     --landing-feature-right: -72vw;
+    --landing-native-nav-offset: 0px;
   }
 
   .landingV2 .landingV2Header {
     --landing-mobile-header-pad: 18px;
     grid-template-columns: 1fr auto;
     justify-items: stretch;
-    padding: calc(max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 18px 16px;
+    min-height: 58px;
+    padding: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 18px 12px;
+  }
+
+  .landingV2 .landingV2HeaderFooter .landingV2FooterBrand,
+  .landingV2 .landingV2Header > .landingV2FooterBrand {
+    font-size: clamp(0.92rem, 4.2vw, 1.12rem);
+  }
+
+  .landingV2 .landingV2HeaderBrandIcon {
+    width: clamp(28px, 7.2vw, 34px);
+    height: clamp(28px, 7.2vw, 34px);
+    flex-basis: clamp(28px, 7.2vw, 34px);
   }
 
   .landingV2 .landingV2MobileMenuLinks {
-    top: calc((max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
-    padding-top: calc(max(16px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 68px);
+    top: calc((max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
+    padding-top: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 62px);
   }
 
   .landingV2 .landingV2HeaderActions {
@@ -1988,8 +2001,47 @@ canvas {
   }
 
   .landingV2 .landingV2Actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
+    gap: 10px;
+  }
+
+  .landingV2 .landingV2Hero {
+    min-height: calc(100svh - 70px);
+    padding-top: clamp(10px, 2.8svh, 18px);
+    padding-bottom: clamp(18px, 4svh, 28px);
+  }
+
+  .landingV2 .landingV2HeroMain {
+    gap: clamp(14px, 3.1svh, 22px);
+    padding: 0;
+  }
+
+  .landingV2 .landingV2HeroTag {
+    gap: 8px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+  }
+
+  .landingV2 .landingV2HeroTitle {
+    margin-top: 0;
+    max-width: 11ch;
+    font-size: clamp(1.8rem, 8.3vw, 2.75rem);
+    line-height: 1.04;
+  }
+
+  .landingV2 .landingV2HeroCopy {
+    font-size: clamp(0.76rem, 2.55vw, 0.9rem);
+    line-height: 1.48;
+  }
+
+  .landingV2 .landingV2PrimaryBtn,
+  .landingV2 .landingV2SecondaryBtn {
+    min-height: 42px;
+    padding: 0 10px;
+    font-size: clamp(0.56rem, 2.35vw, 0.68rem);
+    letter-spacing: 0.1em;
   }
 
   .landingV2 .landingV2Hero,

@@ -2794,8 +2794,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   width:100%;
   max-width:100%;
   gap:8px;
-  overflow-x:auto;
-  overflow-y:visible;
+  overflow:visible;
   padding-bottom:2px;
   -ms-overflow-style:none;
   scrollbar-width:none;
