@@ -1,6 +1,7 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { LiveSessionsByTaskId } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
+import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { RewardProgressV1 } from "../lib/rewards";
@@ -886,6 +887,11 @@ export function createTaskTimerPreferencesContext(
     getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
     setInteractionHapticsEnabledState: (value) => {
       args.preferencesState.set("interactionHapticsEnabled", value);
+    },
+    getInteractionHapticsIntensity: () =>
+      normalizeInteractionHapticsIntensity(args.preferencesState.get("interactionHapticsIntensity")),
+    setInteractionHapticsIntensityState: (value: InteractionHapticsIntensity) => {
+      args.preferencesState.set("interactionHapticsIntensity", normalizeInteractionHapticsIntensity(value));
     },
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     setCheckpointAlertSoundEnabledState: (value) => {

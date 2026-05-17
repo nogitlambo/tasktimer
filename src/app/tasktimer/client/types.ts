@@ -3,6 +3,7 @@ import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { OptimalProductivityDays } from "../lib/productivityPeriod";
+import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 
 export type AppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 export type MainMode = "mode1";
@@ -94,6 +95,7 @@ export type TaskTimerMutableState = {
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
   interactionHapticsEnabled: boolean;
+  interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";

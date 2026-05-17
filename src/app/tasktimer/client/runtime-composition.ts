@@ -99,6 +99,7 @@ export function createTaskTimerRuntimeComposition(
     webPushAlertsEnabled: initialState.webPushAlertsEnabled,
     interactionClickSoundEnabled: initialState.interactionClickSoundEnabled,
     interactionHapticsEnabled: initialState.interactionHapticsEnabled,
+    interactionHapticsIntensity: initialState.interactionHapticsIntensity,
     checkpointAlertSoundEnabled: initialState.checkpointAlertSoundEnabled,
     checkpointAlertToastEnabled: initialState.checkpointAlertToastEnabled,
     optimalProductivityStartTime: initialState.optimalProductivityStartTime,

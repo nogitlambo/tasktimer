@@ -14,6 +14,7 @@ type TaskTimerStorageKeys = {
   WEB_PUSH_ALERTS_KEY: string;
   INTERACTION_CLICK_SOUND_KEY: string;
   INTERACTION_HAPTICS_KEY: string;
+  INTERACTION_HAPTICS_INTENSITY_KEY: string;
   CHECKPOINT_ALERT_SOUND_KEY: string;
   CHECKPOINT_ALERT_TOAST_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
@@ -43,6 +44,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     WEB_PUSH_ALERTS_KEY: `${storageKey}:webPushAlertsEnabled`,
     INTERACTION_CLICK_SOUND_KEY: `${storageKey}:interactionClickSoundEnabled`,
     INTERACTION_HAPTICS_KEY: `${storageKey}:interactionHapticsEnabled`,
+    INTERACTION_HAPTICS_INTENSITY_KEY: `${storageKey}:interactionHapticsIntensity`,
     CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
     CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: `${storageKey}:optimalProductivityStartTime`,
@@ -81,6 +83,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
     interactionHapticsEnabled: true,
+    interactionHapticsIntensity: "max",
     checkpointAlertSoundEnabled: true,
     checkpointAlertToastEnabled: true,
     checkpointAlertSoundMode: "once",

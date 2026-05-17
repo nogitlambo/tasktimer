@@ -118,6 +118,7 @@ import {
 } from "./client/runtime-coordinator";
 import { createTaskTimerRuntimeFacade } from "./client/runtime-facade";
 import { createTaskTimerRuntimeComposition } from "./client/runtime-composition";
+import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
@@ -137,6 +138,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       WEB_PUSH_ALERTS_KEY,
       INTERACTION_CLICK_SOUND_KEY,
       INTERACTION_HAPTICS_KEY,
+      INTERACTION_HAPTICS_INTENSITY_KEY,
       THEME_KEY,
       MENU_BUTTON_STYLE_KEY,
       WEEK_STARTING_KEY,
@@ -1256,6 +1258,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         WEB_PUSH_ALERTS_KEY,
         INTERACTION_CLICK_SOUND_KEY,
         INTERACTION_HAPTICS_KEY,
+        INTERACTION_HAPTICS_INTENSITY_KEY,
         OPTIMAL_PRODUCTIVITY_START_TIME_KEY,
         OPTIMAL_PRODUCTIVITY_END_TIME_KEY,
         OPTIMAL_PRODUCTIVITY_DAYS_KEY,
@@ -1573,6 +1576,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       registerPreferenceEvents,
       getInteractionClickSoundEnabled: () => preferencesState.get("interactionClickSoundEnabled") !== false,
       getInteractionHapticsEnabled: () => preferencesState.get("interactionHapticsEnabled") !== false,
+      getInteractionHapticsIntensity: () => normalizeInteractionHapticsIntensity(preferencesState.get("interactionHapticsIntensity")),
       normalizedPathname,
       normalizeTaskTimerRoutePath,
       appPathForPage,

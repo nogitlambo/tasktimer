@@ -837,7 +837,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection{
   border:none;
   background: transparent;
-  padding:10px;
+  padding:10px 0;
   display:flex;
   flex-direction:column;
   gap:10px;
@@ -3747,6 +3747,20 @@ body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-labe
   margin-left: auto;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .interactionHapticsIntensityField{
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .hapticsIntensityControls{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
   display: inline-flex !important;
   align-items: center;
@@ -4614,6 +4628,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     --settings-dashboard-shell-padding: 10px;
     --settings-dashboard-shell-padding-left: 0px;
     --settings-dashboard-shell-padding-right: 0px;
+    --settings-detail-panel-padding-inline: 0px;
     --settings-page-list-padding-bottom: calc(16px + var(--safe-bottom));
     --settings-nav-panel-position: static;
     --settings-nav-panel-top: auto;
@@ -4760,6 +4775,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMenuTitleActive{
     display:block;
+    font-size:18px;
   }
 
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMenuTitleText{

@@ -20,6 +20,7 @@ vi.mock("@capacitor/haptics", () => ({
 import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import {
+  applyInteractionHapticsIntensity,
   getInteractionHapticImpact,
   isInteractionHapticsRuntimeAvailable,
   playInteractionHaptic,
@@ -106,6 +107,14 @@ describe("interaction haptics", () => {
     expect(Haptics.impact).toHaveBeenNthCalledWith(3, { style: ImpactStyle.Light });
   });
 
+  it("caps haptic impact by the selected intensity", () => {
+    expect(applyInteractionHapticsIntensity("heavy", "max")).toBe("heavy");
+    expect(applyInteractionHapticsIntensity("heavy", "medium")).toBe("medium");
+    expect(applyInteractionHapticsIntensity("medium", "medium")).toBe("medium");
+    expect(applyInteractionHapticsIntensity("heavy", "low")).toBe("light");
+    expect(applyInteractionHapticsIntensity("medium", "low")).toBe("light");
+  });
+
   it("registers one trusted-click listener gated by the haptics preference", () => {
     const on = vi.fn();
     const playHaptic = vi.fn();
@@ -130,5 +139,21 @@ describe("interaction haptics", () => {
 
     expect(playHaptic).toHaveBeenCalledTimes(1);
     expect(playHaptic).toHaveBeenCalledWith("medium");
+  });
+
+  it("uses the configured intensity when playing registered clicks", () => {
+    const on = vi.fn();
+
+    registerInteractionHaptics({
+      on,
+      documentRef: {} as Document,
+      isEnabled: () => true,
+      getIntensity: () => "low",
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+    handler({ defaultPrevented: false, isTrusted: true, target: makeElement({ selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true } }) } as unknown as Event);
+
+    expect(Haptics.impact).toHaveBeenCalledWith({ style: ImpactStyle.Light });
   });
 });

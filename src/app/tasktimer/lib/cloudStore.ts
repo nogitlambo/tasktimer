@@ -47,6 +47,7 @@ import {
   normalizeTimeOfDay,
 } from "./productivityPeriod";
 import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
+import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./interactionHapticsIntensity";
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
@@ -61,6 +62,7 @@ export type UserPreferencesV1 = {
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
   interactionHapticsEnabled: boolean;
+  interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
@@ -1476,6 +1478,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         interactionClickSoundEnabled: asBool(prefSnap.get("interactionClickSoundEnabled"), true),
         interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
+        interactionHapticsIntensity: normalizeInteractionHapticsIntensity(prefSnap.get("interactionHapticsIntensity")),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
         checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
         checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
@@ -2071,6 +2074,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         : asBool(data.mobilePushAlertsEnabled, false),
     interactionClickSoundEnabled: asBool(data.interactionClickSoundEnabled, true),
     interactionHapticsEnabled: asBool(data.interactionHapticsEnabled, true),
+    interactionHapticsIntensity: normalizeInteractionHapticsIntensity(data.interactionHapticsIntensity),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
     checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
     checkpointAlertSoundMode: data.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",

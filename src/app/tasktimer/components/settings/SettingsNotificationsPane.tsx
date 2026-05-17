@@ -52,6 +52,23 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               </div>
               <button className="switch on" id="taskInteractionHapticsToggle" type="button" role="switch" aria-checked="true" />
             </div>
+            <div className="field interactionHapticsIntensityField" id="taskInteractionHapticsIntensityField" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Haptics intensity</span>
+                <span className="settingsPreferenceControlHelp">Choose how strong interaction feedback feels on this device.</span>
+              </div>
+              <div className="hapticsIntensityControls" role="group" aria-label="Haptics intensity">
+                <button className="btn btn-ghost small unitBtn isOn" id="taskInteractionHapticsIntensityMax" type="button" data-haptics-intensity="max" aria-pressed="true">
+                  Max
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="taskInteractionHapticsIntensityMed" type="button" data-haptics-intensity="medium" aria-pressed="false">
+                  Med
+                </button>
+                <button className="btn btn-ghost small unitBtn" id="taskInteractionHapticsIntensityLow" type="button" data-haptics-intensity="low" aria-pressed="false">
+                  Low
+                </button>
+              </div>
+            </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <div className="settingsPreferenceControlCopy">
                 <span className="settingsPreferenceControlLabel">Checkpoint Sound</span>

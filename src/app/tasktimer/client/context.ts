@@ -22,6 +22,7 @@ import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskOrderBy } from "./types";
 import type { OptimalProductivityDays } from "../lib/productivityPeriod";
+import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
@@ -51,6 +52,7 @@ export type TaskTimerCachedPreferences = {
   webPushAlertsEnabled?: unknown;
   interactionClickSoundEnabled?: unknown;
   interactionHapticsEnabled?: unknown;
+  interactionHapticsIntensity?: unknown;
   checkpointAlertSoundEnabled?: unknown;
   checkpointAlertToastEnabled?: unknown;
   optimalProductivityStartTime?: unknown;
@@ -868,6 +870,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     WEB_PUSH_ALERTS_KEY: string;
     INTERACTION_CLICK_SOUND_KEY: string;
     INTERACTION_HAPTICS_KEY: string;
+    INTERACTION_HAPTICS_INTENSITY_KEY: string;
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -899,6 +902,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setInteractionClickSoundEnabledState: (value: boolean) => void;
   getInteractionHapticsEnabled: () => boolean;
   setInteractionHapticsEnabledState: (value: boolean) => void;
+  getInteractionHapticsIntensity: () => InteractionHapticsIntensity;
+  setInteractionHapticsIntensityState: (value: InteractionHapticsIntensity) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
   getCheckpointAlertToastEnabled: () => boolean;

@@ -124,6 +124,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       webPushAlertsEnabled: false,
       interactionClickSoundEnabled: true,
       interactionHapticsEnabled: true,
+      interactionHapticsIntensity: "max",
       checkpointAlertSoundEnabled: true,
       checkpointAlertToastEnabled: true,
       checkpointAlertSoundMode: "once",

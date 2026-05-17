@@ -7,6 +7,7 @@ import {
   getCloseClickTarget,
   getSecondaryClickTarget,
 } from "./secondary-click-audio";
+import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 
 export type InteractionHapticImpact = "light" | "medium" | "heavy";
 
@@ -51,9 +52,24 @@ export function getInteractionHapticImpact(target: EventTarget | null): Interact
   return null;
 }
 
-export function playInteractionHaptic(impact: InteractionHapticImpact, haptics: HapticsAdapter = Haptics): void {
+export function applyInteractionHapticsIntensity(
+  impact: InteractionHapticImpact,
+  intensity: InteractionHapticsIntensity
+): InteractionHapticImpact {
+  const normalizedIntensity = normalizeInteractionHapticsIntensity(intensity);
+  if (normalizedIntensity === "max") return impact;
+  if (normalizedIntensity === "low") return "light";
+  return impact === "heavy" ? "medium" : impact;
+}
+
+export function playInteractionHaptic(
+  impact: InteractionHapticImpact,
+  haptics: HapticsAdapter = Haptics,
+  intensity: InteractionHapticsIntensity = "max"
+): void {
   if (!isInteractionHapticsRuntimeAvailable()) return;
-  const style = impact === "heavy" ? ImpactStyle.Heavy : impact === "medium" ? ImpactStyle.Medium : ImpactStyle.Light;
+  const resolvedImpact = applyInteractionHapticsIntensity(impact, intensity);
+  const style = resolvedImpact === "heavy" ? ImpactStyle.Heavy : resolvedImpact === "medium" ? ImpactStyle.Medium : ImpactStyle.Light;
   void haptics.impact({ style }).catch(() => {});
 }
 
@@ -61,6 +77,7 @@ export function registerInteractionHaptics(options: {
   on: (el: EventTarget | null | undefined, type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => void;
   documentRef: Document;
   isEnabled?: () => boolean;
+  getIntensity?: () => InteractionHapticsIntensity;
   playHaptic?: (impact: InteractionHapticImpact) => void;
 }) {
   options.on(
@@ -72,7 +89,11 @@ export function registerInteractionHaptics(options: {
       if ("isTrusted" in event && event.isTrusted === false) return;
       const impact = getInteractionHapticImpact(event.target);
       if (!impact) return;
-      (options.playHaptic || playInteractionHaptic)(impact);
+      if (options.playHaptic) {
+        options.playHaptic(impact);
+        return;
+      }
+      playInteractionHaptic(impact, Haptics, normalizeInteractionHapticsIntensity(options.getIntensity?.()));
     },
     { capture: true }
   );

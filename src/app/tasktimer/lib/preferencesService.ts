@@ -12,6 +12,7 @@ import {
   type OptimalProductivityDays,
   type OptimalProductivityPeriod,
 } from "./productivityPeriod";
+import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./interactionHapticsIntensity";
 
 type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
@@ -25,6 +26,7 @@ type TaskTimerPreferenceStorageKeys = {
   WEB_PUSH_ALERTS_KEY: string;
   INTERACTION_CLICK_SOUND_KEY: string;
   INTERACTION_HAPTICS_KEY: string;
+  INTERACTION_HAPTICS_INTENSITY_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -43,6 +45,7 @@ type PreferencesStateSnapshot = {
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
   interactionHapticsEnabled: boolean;
+  interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
   checkpointAlertToastEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
@@ -122,6 +125,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       webPushAlertsEnabled: state.webPushAlertsEnabled,
       interactionClickSoundEnabled: state.interactionClickSoundEnabled,
       interactionHapticsEnabled: state.interactionHapticsEnabled,
+      interactionHapticsIntensity: normalizeInteractionHapticsIntensity(state.interactionHapticsIntensity),
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
       checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
       checkpointAlertSoundMode: state.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
@@ -162,6 +166,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.INTERACTION_HAPTICS_KEY,
       snapshot.interactionHapticsEnabled !== false ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.INTERACTION_HAPTICS_INTENSITY_KEY,
+      normalizeInteractionHapticsIntensity(snapshot.interactionHapticsIntensity),
     );
     safeWriteLocalStorage(storageKeys.WEEK_STARTING_KEY, String(snapshot.weekStarting || "mon"));
     safeWriteLocalStorage(
@@ -272,6 +280,12 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return true;
   }
 
+  function loadInteractionHapticsIntensity(): InteractionHapticsIntensity {
+    const cloudValue = getStoredOrCachedPreferences().interactionHapticsIntensity;
+    const localValue = safeReadLocalStorage(storageKeys.INTERACTION_HAPTICS_INTENSITY_KEY);
+    return normalizeInteractionHapticsIntensity(cloudValue || localValue);
+  }
+
   function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled" | "checkpointAlertSoundMode" | "checkpointAlertToastMode"> {
     const prefs = getStoredOrCachedPreferences();
     return {
@@ -319,6 +333,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadWebPushAlertsEnabled,
     loadInteractionClickSoundEnabled,
     loadInteractionHapticsEnabled,
+    loadInteractionHapticsIntensity,
     loadCheckpointAlerts,
     loadOptimalProductivityPeriod,
     loadOptimalProductivityDays,
