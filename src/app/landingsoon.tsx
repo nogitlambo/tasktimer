@@ -8,7 +8,7 @@ import type { LandingProps } from "./landing.types";
 
 const rocketVideoFadeOutMs = 1200;
 const rocketVideoFadeInMs = 2000;
-const earlyAccessCountdownTarget = new Date("2026-06-08T10:00:00+10:00");
+const earlyAccessCountdownTarget = new Date("2026-05-25T10:00:00+10:00");
 
 type SubscribeState =
   | { status: "idle"; message: string }
@@ -30,11 +30,11 @@ export default function LandingSoon(props: LandingProps) {
   void props;
 
   const [revealStage, setRevealStage] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
+  const [isRocketVideoHighlighted, setIsRocketVideoHighlighted] = useState(false);
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<SubscribeState>({ status: "idle", message: "" });
-  const [countdown, setCountdown] = useState(() => getCountdownParts(new Date()));
+  const [countdown, setCountdown] = useState<ReturnType<typeof getCountdownParts> | null>(null);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
   const hasTriggeredRocketVideoRef = useRef(false);
   const isRocketVideoResettingRef = useRef(false);
@@ -206,12 +206,18 @@ export default function LandingSoon(props: LandingProps) {
   const showHeroActions = revealStage >= 2;
   const showHeader = revealStage >= 3;
   const showBackgroundImage = revealStage >= 1;
+  const countdownText =
+    countdown === null
+      ? "Loading..."
+      : countdown.isComplete
+      ? "Open now"
+      : `${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`;
 
   return (
     <main
       className={`landingV2 landingSoonV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
         isRocketVideoResetting ? " isRocketVideoResetting" : ""
-      }`}
+      }${isRocketVideoHighlighted ? " isRocketVideoHighlighted" : ""}`}
     >
       <video
         ref={backgroundVideoRef}
@@ -229,7 +235,11 @@ export default function LandingSoon(props: LandingProps) {
         className="landingV2RocketHotspot"
         aria-label="Play rocket animation"
         onMouseEnter={playRocketVideo}
+        onMouseOver={() => setIsRocketVideoHighlighted(true)}
+        onMouseLeave={() => setIsRocketVideoHighlighted(false)}
         onFocus={playRocketVideo}
+        onFocusCapture={() => setIsRocketVideoHighlighted(true)}
+        onBlur={() => setIsRocketVideoHighlighted(false)}
       />
       <div className="landingV2Shell">
         <header className={`landingV2Header landingV2HeaderFooter landingSoonV2Header ${showHeader ? "isVisible" : ""}`}>
@@ -240,36 +250,11 @@ export default function LandingSoon(props: LandingProps) {
 
           <div className="landingSoonV2Countdown" aria-live="polite">
             <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
-            <span className="landingSoonV2CountdownValue displayFont">
-              {countdown.isComplete
-                ? "Open now"
-                : `${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`}
-            </span>
+            <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
           </div>
-          <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
-            <button
-              type="button"
-              className="landingV2MobileMenuButton"
-              aria-label="Open navigation menu"
-              aria-expanded={mobileMenuOpen ? "true" : "false"}
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            <div className="landingV2MobileMenuLinks" aria-hidden={mobileMenuOpen ? "false" : "true"}>
-              <button
-                type="button"
-                className="landingV2MobileMenuClose"
-                aria-label="Close navigation menu"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span />
-                <span />
-              </button>
-            </div>
-          </div>
+          <Link href="/about" className="landingSoonV2AboutLink displayFont">
+            About
+          </Link>
         </header>
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
@@ -284,10 +269,15 @@ export default function LandingSoon(props: LandingProps) {
             </h1>
 
             <p className="landingV2HeroCopy">
-              Flexible task management supporting neurodivergent minds by directing scattered energy into sustainable
-              momentum so you can recover quickly after difficult days and continue making progress even when focus,
-              energy, and motivation are inconsistent.
+              Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods to build
+              sustainable discipline over time, supporting inconsistency instead of punishing it, helping you rebuild
+              momentum quickly, and make progress without perfectionism.
             </p>
+
+            <div className="landingSoonV2Countdown landingSoonV2CountdownMobile" aria-live="polite">
+              <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+              <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
+            </div>
 
             <form className={`landingV2Actions landingSoonV2Form ${showHeroActions ? "isVisible" : ""}`} onSubmit={handleSubmit}>
               <label className="landingSoonV2Field" htmlFor="landingSoonEmail">
@@ -301,8 +291,11 @@ export default function LandingSoon(props: LandingProps) {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  onFocus={() => {
+                    setSubscribeState((current) => (current.message ? { status: "idle", message: "" } : current));
+                  }}
                   className="landingSoonV2Input"
-                  aria-describedby="landingSoonStatus"
+                  aria-describedby={subscribeState.message ? "landingSoonStatus" : undefined}
                 />
               </label>
               <button
@@ -314,14 +307,16 @@ export default function LandingSoon(props: LandingProps) {
               </button>
             </form>
 
-            <p
-              id="landingSoonStatus"
-              className={`landingSoonV2Status is-${subscribeState.status}`}
-              aria-live="polite"
-              role={subscribeState.status === "error" ? "alert" : undefined}
-            >
-              {subscribeState.message}
-            </p>
+            {subscribeState.message ? (
+              <p
+                id="landingSoonStatus"
+                className={`landingSoonV2Status is-${subscribeState.status}`}
+                aria-live="polite"
+                role={subscribeState.status === "error" ? "alert" : undefined}
+              >
+                {subscribeState.message}
+              </p>
+            ) : null}
           </div>
         </section>
       </div>

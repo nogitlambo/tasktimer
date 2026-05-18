@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
 import { ApiRateLimitError, buildPublicRateLimitActorKey, enforcePublicRateLimit, extractClientIp } from "../shared/rateLimit";
+import { sendEarlyAccessConfirmationEmail } from "@/lib/earlyAccessEmail";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -51,19 +52,52 @@ export async function POST(req: Request) {
     const db = getFirebaseAdminDb();
     const ref = db.collection("coming_soon_subscriptions").doc(emailNormalized);
     const existingSnap = await ref.get();
+    const existingStatus = String(existingSnap.exists ? existingSnap.get("status") || "" : "").trim().toLowerCase();
+    const shouldSendConfirmation = !existingSnap.exists || existingStatus === "unsubscribed";
 
     await ref.set(
       {
         email,
         emailNormalized,
+        status: "subscribed",
         source: "landing",
         userAgent,
         referer,
         updatedAt: FieldValue.serverTimestamp(),
-        createdAt: FieldValue.serverTimestamp(),
+        unsubscribedAt: null,
+        ...(existingSnap.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
       },
       { merge: true }
     );
+
+    if (shouldSendConfirmation) {
+      try {
+        await ref.set(
+          {
+            confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
+            confirmationEmailLastError: null,
+          },
+          { merge: true }
+        );
+        await sendEarlyAccessConfirmationEmail({ email });
+        await ref.set(
+          {
+            confirmationEmailSentAt: FieldValue.serverTimestamp(),
+            confirmationEmailLastError: null,
+          },
+          { merge: true }
+        );
+      } catch (emailError: unknown) {
+        await ref.set(
+          {
+            confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
+            confirmationEmailLastError:
+              emailError instanceof Error && emailError.message ? emailError.message.slice(0, 500) : "Email send failed.",
+          },
+          { merge: true }
+        );
+      }
+    }
 
     return NextResponse.json({ ok: true, alreadySubscribed: existingSnap.exists });
   } catch (error: unknown) {

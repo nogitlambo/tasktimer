@@ -12,7 +12,7 @@ describe("LandingSoon", () => {
     expect(html).toContain("Early Access Countdown");
     expect(html).toContain("Progress over perfection");
     expect(html).toContain("Break free");
-    expect(html).toContain("Flexible task management supporting neurodivergent minds");
+    expect(html).toContain("Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods");
     expect(html).toContain("Request Early Access");
     expect(html).not.toContain('href="/privacy"');
     expect(html).not.toContain('href="/login"');

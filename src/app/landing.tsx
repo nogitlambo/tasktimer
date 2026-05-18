@@ -76,8 +76,8 @@ export default function Landing(props: LandingProps) {
   void props;
 
   const [revealStage, setRevealStage] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
+  const [isRocketVideoHighlighted, setIsRocketVideoHighlighted] = useState(false);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
   const hasTriggeredRocketVideoRef = useRef(false);
   const isRocketVideoResettingRef = useRef(false);
@@ -218,7 +218,7 @@ export default function Landing(props: LandingProps) {
     <main
       className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
         isRocketVideoResetting ? " isRocketVideoResetting" : ""
-      }`}
+      }${isRocketVideoHighlighted ? " isRocketVideoHighlighted" : ""}`}
     >
       <video
         ref={backgroundVideoRef}
@@ -236,7 +236,11 @@ export default function Landing(props: LandingProps) {
         className="landingV2RocketHotspot"
         aria-label="Play rocket animation"
         onMouseEnter={playRocketVideo}
+        onMouseOver={() => setIsRocketVideoHighlighted(true)}
+        onMouseLeave={() => setIsRocketVideoHighlighted(false)}
         onFocus={playRocketVideo}
+        onFocusCapture={() => setIsRocketVideoHighlighted(true)}
+        onBlur={() => setIsRocketVideoHighlighted(false)}
       />
       <div className="landingV2Shell">
         <header
@@ -252,33 +256,6 @@ export default function Landing(props: LandingProps) {
             <Link href="/privacy">Privacy</Link>
             <Link href="/login">Sign In</Link>
           </div>
-          <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
-            <button
-              type="button"
-              className="landingV2MobileMenuButton"
-              aria-label="Open navigation menu"
-              aria-expanded={mobileMenuOpen ? "true" : "false"}
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            <div className="landingV2MobileMenuLinks" aria-hidden={mobileMenuOpen ? "false" : "true"}>
-              <button
-                type="button"
-                className="landingV2MobileMenuClose"
-                aria-label="Close navigation menu"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span />
-                <span />
-              </button>
-              <Link href="/landingsoon">Landing Soon</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/login">Sign In</Link>
-            </div>
-          </div>
         </header>
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
@@ -293,9 +270,9 @@ export default function Landing(props: LandingProps) {
             </h1>
 
             <p className="landingV2HeroCopy">
-              Flexible task management supporting neurodivergent minds by directing scattered energy into sustainable
-              momentum so you can recover quickly after difficult days and continue making progress even when focus,
-              energy, and motivation are inconsistent.
+              Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods to build
+              sustainable discipline over time, supporting inconsistency instead of punishing it, helping you rebuild
+              momentum quickly, and make progress without perfectionism.
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>

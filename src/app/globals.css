@@ -465,13 +465,19 @@ canvas {
   object-fit: cover;
   object-position: var(--landing-feature-position);
   opacity: var(--landing-feature-start-opacity);
+  filter: brightness(1);
   pointer-events: none;
-  transition: opacity 2s ease;
+  transition: opacity 2s ease, filter 480ms ease;
 }
 
 .landingV2.isRocketVideoResetting .landingV2BackgroundVideo {
   opacity: 0;
   transition-duration: 1.2s;
+}
+
+.landingV2.isRocketVideoHighlighted .landingV2BackgroundVideo {
+  opacity: 1;
+  filter: brightness(1.5);
 }
 
 .landingV2 .landingV2RocketHotspot {
@@ -1311,6 +1317,10 @@ canvas {
   text-align: center;
 }
 
+.landingV2 .landingSoonV2CountdownMobile {
+  display: none;
+}
+
 .landingV2 .landingSoonV2CountdownLabel {
   font-size: 0.58rem;
   letter-spacing: 0.18em;
@@ -1405,104 +1415,18 @@ canvas {
   text-decoration: none;
 }
 
-.landingV2 .landingV2MobileMenu {
-  display: none;
-  position: relative;
-}
-
-.landingV2 .landingV2MobileMenuButton {
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 5px;
-  border: 0;
-  background: transparent;
-  color: var(--landing-text);
-  cursor: pointer;
-  list-style: none;
-}
-
-.landingV2 .landingV2MobileMenuButton::-webkit-details-marker {
-  display: none;
-}
-
-.landingV2 .landingV2MobileMenuButton span {
-  display: block;
-  width: 18px;
-  height: 1px;
-  background: currentColor;
-}
-
-.landingV2 .landingV2MobileMenuLinks {
-  position: absolute;
-  top: calc((max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
-  right: calc(var(--landing-mobile-header-pad, 24px) * -1);
-  display: grid;
-  width: 100vw;
-  padding: calc(max(18px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 68px) var(--landing-mobile-header-pad, 24px) 18px;
-  background: #08090a;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-14px);
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.landingV2 .landingV2MobileMenu.isOpen .landingV2MobileMenuLinks {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.landingV2 .landingV2MobileMenuClose {
-  display: inline-flex;
-  border: 0;
-  background: transparent;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  position: relative;
-  margin-bottom: 6px;
-  color: var(--landing-text);
-  cursor: pointer;
-  list-style: none;
-}
-
-.landingV2 .landingV2MobileMenuClose::-webkit-details-marker {
-  display: none;
-}
-
-.landingV2 .landingV2MobileMenuClose span {
-  position: absolute;
-  width: 20px;
-  height: 1px;
-  background: currentColor;
-}
-
-.landingV2 .landingV2MobileMenuClose span:first-child {
-  transform: rotate(45deg);
-}
-
-.landingV2 .landingV2MobileMenuClose span:last-child {
-  transform: rotate(-45deg);
-}
-
-.landingV2 .landingV2MobileMenuLinks a {
-  padding: 13px 0;
+.landingV2 .landingSoonV2AboutLink {
   color: var(--landing-muted);
-  font-family: var(--font-readable);
-  font-size: 0.92rem;
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   line-height: 1.4;
-  text-align: center;
   text-decoration: none;
+  justify-self: end;
+  text-align: right;
 }
 
-.landingV2 .landingV2MobileMenuLinks a:hover {
+.landingV2 .landingSoonV2AboutLink:hover {
   color: var(--landing-text);
 }
 
@@ -2124,9 +2048,6 @@ canvas {
     display: none;
   }
 
-  .landingV2 .landingV2MobileMenu {
-    display: block;
-  }
 }
 
 @media (max-width: 560px) {
@@ -2148,7 +2069,7 @@ canvas {
     grid-template-columns: 1fr auto;
     justify-items: stretch;
     min-height: 58px;
-    padding: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 18px 12px;
+    padding: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 0 12px 18px;
   }
 
   .landingV2 .landingV2HeaderFooter .landingV2FooterBrand,
@@ -2160,11 +2081,6 @@ canvas {
     width: clamp(28px, 7.2vw, 34px);
     height: clamp(28px, 7.2vw, 34px);
     flex-basis: clamp(28px, 7.2vw, 34px);
-  }
-
-  .landingV2 .landingV2MobileMenuLinks {
-    top: calc((max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) * -1);
-    padding-top: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset) + 62px);
   }
 
   .landingV2 .landingV2HeaderActions {
@@ -2185,6 +2101,16 @@ canvas {
 
   .landingV2 .landingSoonV2Header {
     grid-template-columns: auto 1fr auto;
+  }
+
+  .landingV2 .landingSoonV2Header .landingSoonV2Countdown {
+    display: none;
+  }
+
+  .landingV2 .landingSoonV2CountdownMobile {
+    display: grid;
+    justify-self: start;
+    text-align: left;
   }
 
   .landingV2 .landingV2Hero {

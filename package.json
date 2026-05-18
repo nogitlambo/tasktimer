@@ -59,6 +59,7 @@
     "firebase-admin": "^13.9.0",
     "material-design-inspired-color-picker": "^1.7.2",
     "next": "^16.2.6",
+    "nodemailer": "^8.0.7",
     "phaser": "^4.1.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
