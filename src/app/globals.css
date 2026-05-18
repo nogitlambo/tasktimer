@@ -138,6 +138,45 @@ body.webSignInRoute .webSignInPage {
   padding: 48px 48px 96px;
 }
 
+.webSignInSplitContainer {
+  align-items: stretch;
+  padding: 0;
+}
+
+.webSignInSplit {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.14fr);
+  min-height: 100svh;
+  width: 100%;
+}
+
+.webSignInAuthColumn,
+.webSignInVisualColumn {
+  position: relative;
+  min-height: 100svh;
+}
+
+.webSignInAuthColumn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 44px 96px;
+  background: linear-gradient(180deg, rgba(6, 7, 10, 0.98) 0%, rgba(5, 6, 8, 0.98) 100%);
+}
+
+.webSignInVisualColumn {
+  overflow: hidden;
+  background: #000;
+}
+
+.webSignInLandingImage {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
+    url("/landing_feature_wide-768.webp") right top / auto 100svh no-repeat;
+}
+
 .webSignInAuthFrame,
 .webSignInLaunchPanel {
   position: relative;
@@ -367,10 +406,53 @@ body.webSignInRoute .webSignInPage {
   .webSignInLaunchPanel {
     width: 100%;
   }
+
+  .webSignInAuthFrame {
+    max-width: 420px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .webSignInLandingImage {
+    background:
+      linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
+      url("/landing_feature_wide-1440.webp") right top / auto 100svh no-repeat;
+  }
+}
+
+@media (min-width: 1800px) {
+  .webSignInLandingImage {
+    background:
+      linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
+      url("/landing_feature_wide-2048.webp") right top / auto 100svh no-repeat;
+  }
+}
+
+@media (max-width: 899px) {
+  .webSignInSplit {
+    display: block;
+  }
+
+  .webSignInAuthColumn {
+    min-height: 100svh;
+    padding: 48px 28px 96px;
+  }
+
+  .webSignInVisualColumn {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
   .webSignInContainer {
+    padding: 32px 22px 92px;
+  }
+
+  .webSignInSplitContainer {
+    padding: 0;
+  }
+
+  .webSignInAuthColumn {
     padding: 32px 22px 92px;
   }
 
@@ -386,6 +468,14 @@ body.webSignInRoute .webSignInPage {
 
 @media (max-width: 420px) {
   .webSignInContainer {
+    padding: 28px 16px 88px;
+  }
+
+  .webSignInSplitContainer {
+    padding: 0;
+  }
+
+  .webSignInAuthColumn {
     padding: 28px 16px 88px;
   }
 
@@ -473,11 +563,6 @@ canvas {
 .landingV2.isRocketVideoResetting .landingV2BackgroundVideo {
   opacity: 0;
   transition-duration: 1.2s;
-}
-
-.landingV2.isRocketVideoHighlighted .landingV2BackgroundVideo {
-  opacity: 1;
-  filter: brightness(1.5);
 }
 
 .landingV2 .landingV2RocketHotspot {
@@ -2055,7 +2140,7 @@ canvas {
     --landing-feature-right: -72vw;
     --landing-native-nav-offset: 0px;
     background:
-      url("/rocket_breaking_chains3_poster.jpg") center top / auto 100svh no-repeat,
+      url("/rocket_breaking_chains4_opticalflow_60fps_50pct_poster.jpg") center top / auto 100svh no-repeat,
       #000;
   }
 

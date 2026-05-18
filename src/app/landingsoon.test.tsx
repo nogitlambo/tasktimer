@@ -6,7 +6,7 @@ describe("LandingSoon", () => {
   it("renders the early access hero without below-the-fold sections", () => {
     const html = renderToStaticMarkup(<LandingSoon showTitlePhase={true} showActions={true} />);
 
-    expect(html).toContain('src="/rocket_breaking_chains4.mp4"');
+    expect(html).toContain('src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"');
     expect(html).toContain('class="landingV2RocketHotspot"');
     expect(html).toContain('type="email"');
     expect(html).toContain("Early Access Countdown");
@@ -19,6 +19,6 @@ describe("LandingSoon", () => {
     expect(html).not.toContain("Watch Demo");
     expect(html).not.toContain("Core capabilities");
     expect(html).not.toContain("Interface preview");
-    expect(html).not.toContain("About");
+    expect(html).toContain('href="/about"');
   });
 });

@@ -31,7 +31,6 @@ export default function LandingSoon(props: LandingProps) {
 
   const [revealStage, setRevealStage] = useState(0);
   const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
-  const [isRocketVideoHighlighted, setIsRocketVideoHighlighted] = useState(false);
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<SubscribeState>({ status: "idle", message: "" });
   const [countdown, setCountdown] = useState<ReturnType<typeof getCountdownParts> | null>(null);
@@ -217,12 +216,12 @@ export default function LandingSoon(props: LandingProps) {
     <main
       className={`landingV2 landingSoonV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
         isRocketVideoResetting ? " isRocketVideoResetting" : ""
-      }${isRocketVideoHighlighted ? " isRocketVideoHighlighted" : ""}`}
+      }`}
     >
       <video
         ref={backgroundVideoRef}
         className="landingV2BackgroundVideo"
-        src="/rocket_breaking_chains4.mp4"
+        src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"
         muted
         preload="auto"
         playsInline
@@ -235,11 +234,7 @@ export default function LandingSoon(props: LandingProps) {
         className="landingV2RocketHotspot"
         aria-label="Play rocket animation"
         onMouseEnter={playRocketVideo}
-        onMouseOver={() => setIsRocketVideoHighlighted(true)}
-        onMouseLeave={() => setIsRocketVideoHighlighted(false)}
         onFocus={playRocketVideo}
-        onFocusCapture={() => setIsRocketVideoHighlighted(true)}
-        onBlur={() => setIsRocketVideoHighlighted(false)}
       />
       <div className="landingV2Shell">
         <header className={`landingV2Header landingV2HeaderFooter landingSoonV2Header ${showHeader ? "isVisible" : ""}`}>

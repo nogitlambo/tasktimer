@@ -77,7 +77,6 @@ export default function Landing(props: LandingProps) {
 
   const [revealStage, setRevealStage] = useState(0);
   const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
-  const [isRocketVideoHighlighted, setIsRocketVideoHighlighted] = useState(false);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
   const hasTriggeredRocketVideoRef = useRef(false);
   const isRocketVideoResettingRef = useRef(false);
@@ -218,12 +217,12 @@ export default function Landing(props: LandingProps) {
     <main
       className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
         isRocketVideoResetting ? " isRocketVideoResetting" : ""
-      }${isRocketVideoHighlighted ? " isRocketVideoHighlighted" : ""}`}
+      }`}
     >
       <video
         ref={backgroundVideoRef}
         className="landingV2BackgroundVideo"
-        src="/rocket_breaking_chains4.mp4"
+        src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"
         muted
         preload="auto"
         playsInline
@@ -236,11 +235,7 @@ export default function Landing(props: LandingProps) {
         className="landingV2RocketHotspot"
         aria-label="Play rocket animation"
         onMouseEnter={playRocketVideo}
-        onMouseOver={() => setIsRocketVideoHighlighted(true)}
-        onMouseLeave={() => setIsRocketVideoHighlighted(false)}
         onFocus={playRocketVideo}
-        onFocusCapture={() => setIsRocketVideoHighlighted(true)}
-        onBlur={() => setIsRocketVideoHighlighted(false)}
       />
       <div className="landingV2Shell">
         <header

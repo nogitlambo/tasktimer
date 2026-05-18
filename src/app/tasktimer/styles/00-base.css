@@ -1687,20 +1687,33 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
-.focusInsights{
+.focusInsightsRow{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:14px;
   grid-area: focusStats;
+  align-self:stretch;
+  width:100%;
+  max-width:620px;
+  margin:0;
+  min-height:0;
+}
+.focusInsights{
   align-self:start;
-  max-height:100%;
-  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 .focusInsightsTitle{
   margin-bottom:8px;
   color: rgba(228,244,255,.95);
-  font-family:var(--font-tight);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size:13px;
   font-weight:700;
   letter-spacing:.04em;
   text-transform:uppercase;
+  text-align:center;
 }
 .focusInsightRow{
   display:flex;
@@ -1713,10 +1726,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color: rgba(182,225,240,.88);
   font-size:12px;
   letter-spacing:.03em;
+  text-align:left;
 }
 .focusInsightValue{
   color: rgba(230,245,255,.96);
-  font-family:var(--font-tight);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size:12px;
   font-weight:700;
   text-align:right;
@@ -1739,6 +1753,10 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusSessionNotes{
   margin-top: 0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  align-self:start;
 }
 .focusSessionNotesSummary{
   list-style: none;
@@ -1804,6 +1822,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 .focusSessionNotesBody{
   display:grid;
+  align-content:start;
   gap:8px;
 }
 .focusSessionNotesSavedText{
@@ -1934,7 +1953,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
 }
 body.isFocusModeOpen #focusModeScreen{
   display:grid !important;
-  grid-template-columns:minmax(0, min(620px, 100%));
+  grid-template-columns:minmax(0, min(920px, 100%));
   grid-template-rows:auto auto minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
   grid-template-areas:
     "focusHead"
@@ -1969,13 +1988,56 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHe
   }
 }
 @media (min-width: 981px){
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appShellHeader{
+    display:none !important;
+  }
+
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages{
+    flex:1 1 0;
+    height:100%;
+    min-height:0;
+    overflow:hidden !important;
+  }
+
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View{
+    position:relative;
+    min-height:100%;
+    height:100%;
+    padding:0 !important;
+    overflow:hidden;
+  }
+
   body.isFocusModeOpen #focusModeScreen{
-    left: calc(var(--desktop-shell-margin, 18px) + var(--desktop-rail-column, 388px) + var(--desktop-shell-gap, 18px));
-    top: var(--desktop-shell-margin, 18px);
-    right: var(--desktop-shell-margin, 18px);
-    bottom: auto;
-    height: calc(100dvh - (var(--desktop-shell-margin, 18px) * 2));
-    max-height: calc(100dvh - (var(--desktop-shell-margin, 18px) * 2));
+    position:absolute;
+    inset:0;
+    width:auto;
+    height:auto;
+    max-height: none;
+    padding: 10px 12px 12px;
+    grid-template-columns:minmax(0, 1fr);
+    justify-content:stretch;
+    align-content:start;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+
+  body.isFocusModeOpen #focusModeScreen .focusModeHead,
+  body.isFocusModeOpen #focusModeScreen .focusTaskTitle,
+  body.isFocusModeOpen #focusModeScreen .focusDialWrap,
+  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop,
+  body.isFocusModeOpen #focusModeScreen .focusInsightsRow{
+    width:100%;
+    max-width:none;
+    justify-self:stretch;
+  }
+
+  body.isFocusModeOpen #focusModeScreen .focusDialWrap{
+    padding: 0 0 14px;
+  }
+
+  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
+    align-self:stretch;
   }
 }
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,
@@ -2782,12 +2844,16 @@ body[data-theme="lime"] .settingsNavItemIcon{
   }
 
   .focusCheckpointToggleTop,
-  .focusInsights{
+  .focusInsightsRow{
     align-self:start;
   }
 
   .focusCheckpointToggleTop{
     gap:6px;
+  }
+
+  .focusInsightsRow{
+    gap:8px;
   }
 
   .focusCheckpointToggleRow{
@@ -2886,6 +2952,10 @@ body[data-theme="lime"] .settingsNavItemIcon{
 
   .focusCheckpointToggleTop{
     margin: 0;
+  }
+
+  .focusInsightsRow{
+    grid-template-columns:minmax(0, 1fr);
   }
 
   .focusTaskTitle{

@@ -1304,12 +1304,13 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
-  border-color: rgba(98, 228, 255, .72);
+  border-color: rgba(98, 228, 255, .82);
   box-shadow:
     0 16px 38px rgba(0,0,0,.34),
-    inset 0 0 0 1px rgba(98, 228, 255, .22),
-    0 0 0 1px rgba(98, 228, 255, .18),
-    0 0 18px rgba(40, 195, 255, .14);
+    inset 0 0 0 1px rgba(98, 228, 255, .28),
+    0 0 0 1px rgba(98, 228, 255, .24),
+    0 0 22px rgba(40, 195, 255, .22),
+    0 0 42px rgba(40, 195, 255, .12);
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
   border:1px solid transparent;
@@ -1349,12 +1350,13 @@ body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App
 }
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
 body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
-  border-color: rgba(214, 132, 255, .74);
+  border-color: rgba(98, 228, 255, .82);
   box-shadow:
     0 16px 38px rgba(0,0,0,.36),
-    inset 0 0 0 1px rgba(214, 132, 255, .22),
-    0 0 0 1px rgba(214, 132, 255, .18),
-    0 0 18px rgba(180, 92, 255, .16);
+    inset 0 0 0 1px rgba(98, 228, 255, .28),
+    0 0 0 1px rgba(98, 228, 255, .24),
+    0 0 22px rgba(40, 195, 255, .22),
+    0 0 42px rgba(40, 195, 255, .12);
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBack{
   min-height:100%;
@@ -1883,9 +1885,49 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.12) !important;
   background: #17191d !important;
   box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskRunning) .taskFaceShellFront,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskRunning) .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: none !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(98, 228, 255, .72);
+  border-color: rgba(98, 228, 255, .82) !important;
+  box-shadow:
+    0 16px 38px rgba(0,0,0,.34),
+    inset 0 0 0 1px rgba(98, 228, 255, .28),
+    0 0 0 1px rgba(98, 228, 255, .24),
+    0 0 22px rgba(40, 195, 255, .22),
+    0 0 42px rgba(40, 195, 255, .12) !important;
+}
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
+body[data-theme="purple"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(233, 134, 245, .7);
+  border-color: rgba(233, 134, 245, .82) !important;
+  box-shadow:
+    0 16px 38px rgba(0,0,0,.36),
+    inset 0 0 0 1px rgba(233, 134, 245, .3),
+    0 0 0 1px rgba(233, 134, 245, .24),
+    0 0 22px rgba(214, 96, 229, .24),
+    0 0 42px rgba(214, 96, 229, .14) !important;
+}
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(219, 255, 79, .7);
+  border-color: rgba(219, 255, 79, .78) !important;
+  box-shadow:
+    0 16px 38px rgba(0,0,0,.34),
+    inset 0 0 0 1px rgba(219, 255, 79, .26),
+    0 0 0 1px rgba(219, 255, 79, .22),
+    0 0 22px rgba(196, 255, 74, .2),
+    0 0 42px rgba(196, 255, 74, .12) !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressWrap{
   border: 0 !important;

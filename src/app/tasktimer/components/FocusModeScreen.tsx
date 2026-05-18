@@ -43,7 +43,7 @@ export default function FocusModeScreen() {
           </button>
         </div>
       </div>
-      <div className="focusCheckpointToggleTop">
+      <div className="focusInsightsRow">
         <div className="focusSessionNotes" id="focusSessionNotesSection">
           <div className="focusInsightsTitle">Session Notes</div>
           <div className="focusSessionNotesBody">
@@ -56,44 +56,44 @@ export default function FocusModeScreen() {
             <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
           </div>
         </div>
-      </div>
-      <div className="focusInsights" id="focusInsights">
-        <div className="focusInsightsTitle">Quick Stats</div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">Highest logged time</span>
-          <span className="focusInsightValue" id="focusInsightBest">
-            --
-          </span>
-        </div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">Top optimal-day weekday</span>
-          <span className="focusInsightValue" id="focusInsightWeekday">
-            No logged sessions yet
-          </span>
-        </div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">Today vs yesterday</span>
-          <span className="focusInsightValue" id="focusInsightTodayDelta">
-            --
-          </span>
-        </div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">This week vs last week</span>
-          <span className="focusInsightValue" id="focusInsightWeekDelta">
-            --
-          </span>
-        </div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">Recent challenge level</span>
-          <span className="focusInsightValue" id="focusInsightDifficulty">
-            No challenge ratings yet
-          </span>
-        </div>
-        <div className="focusInsightRow">
-          <span className="focusInsightLabel">In productivity period on optimal days</span>
-          <span className="focusInsightValue" id="focusInsightProductivityPeriod">
-            --
-          </span>
+        <div className="focusInsights" id="focusInsights">
+          <div className="focusInsightsTitle">Quick Stats</div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">Highest logged time</span>
+            <span className="focusInsightValue" id="focusInsightBest">
+              --
+            </span>
+          </div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">Top optimal-day weekday</span>
+            <span className="focusInsightValue" id="focusInsightWeekday">
+              No logged sessions yet
+            </span>
+          </div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">Today vs yesterday</span>
+            <span className="focusInsightValue" id="focusInsightTodayDelta">
+              --
+            </span>
+          </div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">This week vs last week</span>
+            <span className="focusInsightValue" id="focusInsightWeekDelta">
+              --
+            </span>
+          </div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">Recent challenge level</span>
+            <span className="focusInsightValue" id="focusInsightDifficulty">
+              No challenge ratings yet
+            </span>
+          </div>
+          <div className="focusInsightRow">
+            <span className="focusInsightLabel">In productivity period on optimal days</span>
+            <span className="focusInsightValue" id="focusInsightProductivityPeriod">
+              --
+            </span>
+          </div>
         </div>
       </div>
     </section>

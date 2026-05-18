@@ -21,6 +21,7 @@
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
     "security:check": "node scripts/security-check.mjs",
+    "media:landing-video": "node scripts/generate-landing-video.mjs",
     "fonts:check": "node scripts/check-font-contract.mjs",
     "css:audit:tasktimer": "node scripts/audit-tasktimer-css.mjs",
     "css:audit:tasktimer:duplicates": "node scripts/audit-tasktimer-css.mjs --focus=duplicates",

@@ -8,7 +8,7 @@ describe("Landing", () => {
 
     expect(html).not.toContain('class="landingV2HeroVisual"');
     expect(html).not.toContain('src="/landing_feature_wide.png"');
-    expect(html).toContain('src="/rocket_breaking_chains4.mp4"');
+    expect(html).toContain('src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"');
     expect(html).not.toContain('poster="/rocket_breaking_chains3_poster.jpg"');
     expect(html).not.toContain("autoPlay");
     expect(html).toContain('preload="auto"');
@@ -19,9 +19,6 @@ describe("Landing", () => {
     expect(html).toContain('href="/login"');
     expect(html).toContain("Get Started");
     expect(html).toContain("Watch Demo");
-    expect(html).toContain('class="landingV2MobileMenu"');
-    expect(html).toContain('aria-label="Open navigation menu"');
-    expect(html).toContain('aria-label="Close navigation menu"');
     expect(html).toContain('href="/landingsoon"');
     expect(html).toContain("Landing Soon");
     expect(html).not.toContain("Continue without account");
