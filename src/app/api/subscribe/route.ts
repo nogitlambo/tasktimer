@@ -53,7 +53,18 @@ export async function POST(req: Request) {
     const ref = db.collection("coming_soon_subscriptions").doc(emailNormalized);
     const existingSnap = await ref.get();
     const existingStatus = String(existingSnap.exists ? existingSnap.get("status") || "" : "").trim().toLowerCase();
-    const shouldSendConfirmation = !existingSnap.exists || existingStatus === "unsubscribed";
+    const isConfirmationResend = existingSnap.exists && existingStatus !== "unsubscribed";
+
+    if (isConfirmationResend) {
+      await enforcePublicRateLimit({
+        namespace: "subscribe-email-resend",
+        actorKey: buildPublicRateLimitActorKey({ ip: "email", secondaryKey: emailNormalized }),
+        windowMs: 60 * 60 * 1000,
+        maxEvents: 1,
+        code: "subscribe/resend-rate-limited",
+        message: "A confirmation email was already sent recently. Please wait before requesting another.",
+      });
+    }
 
     await ref.set(
       {
@@ -70,33 +81,31 @@ export async function POST(req: Request) {
       { merge: true }
     );
 
-    if (shouldSendConfirmation) {
-      try {
-        await ref.set(
-          {
-            confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
-            confirmationEmailLastError: null,
-          },
-          { merge: true }
-        );
-        await sendEarlyAccessConfirmationEmail({ email });
-        await ref.set(
-          {
-            confirmationEmailSentAt: FieldValue.serverTimestamp(),
-            confirmationEmailLastError: null,
-          },
-          { merge: true }
-        );
-      } catch (emailError: unknown) {
-        await ref.set(
-          {
-            confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
-            confirmationEmailLastError:
-              emailError instanceof Error && emailError.message ? emailError.message.slice(0, 500) : "Email send failed.",
-          },
-          { merge: true }
-        );
-      }
+    try {
+      await ref.set(
+        {
+          confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
+          confirmationEmailLastError: null,
+        },
+        { merge: true }
+      );
+      await sendEarlyAccessConfirmationEmail({ email });
+      await ref.set(
+        {
+          confirmationEmailSentAt: FieldValue.serverTimestamp(),
+          confirmationEmailLastError: null,
+        },
+        { merge: true }
+      );
+    } catch (emailError: unknown) {
+      await ref.set(
+        {
+          confirmationEmailLastAttemptAt: FieldValue.serverTimestamp(),
+          confirmationEmailLastError:
+            emailError instanceof Error && emailError.message ? emailError.message.slice(0, 500) : "Email send failed.",
+        },
+        { merge: true }
+      );
     }
 
     return NextResponse.json({ ok: true, alreadySubscribed: existingSnap.exists });

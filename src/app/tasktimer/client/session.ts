@@ -1155,7 +1155,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function ensureTimeGoalCompleteClickAudio() {
     if (timeGoalCompleteClickAudio) return timeGoalCompleteClickAudio;
     try {
-      const audio = new Audio("/click.mp3");
+      const audio = new Audio("/click-secondary.mp3");
       audio.preload = "auto";
       timeGoalCompleteClickAudio = audio;
       return audio;

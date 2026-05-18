@@ -44,7 +44,7 @@ describe("click audio player", () => {
     vi.stubGlobal("window", {});
     vi.stubGlobal("Audio", AudioMock);
 
-    const player = createClickAudioPlayer("/click.mp3");
+    const player = createClickAudioPlayer("/click-secondary.mp3");
     player.warm();
     player.play();
     player.play();
@@ -52,7 +52,7 @@ describe("click audio player", () => {
     player.play();
 
     expect(AudioMock).toHaveBeenCalledTimes(3);
-    expect(AudioMock).toHaveBeenCalledWith("/click.mp3");
+    expect(AudioMock).toHaveBeenCalledWith("/click-secondary.mp3");
     expect(load).toHaveBeenCalledTimes(3);
     expect(play).toHaveBeenCalledTimes(4);
     expect(created.map((audio) => audio.preload)).toEqual(["auto", "auto", "auto"]);
@@ -62,7 +62,7 @@ describe("click audio player", () => {
     const play = vi.fn();
     const audioFactory = vi.fn(() => ({ currentTime: 4, play }));
 
-    const player = createClickAudioPlayer("/click.mp3", audioFactory);
+    const player = createClickAudioPlayer("/click-secondary.mp3", audioFactory);
     player.play();
     player.play();
 
@@ -78,7 +78,7 @@ describe("click audio player", () => {
     vi.stubGlobal("window", {});
     vi.stubGlobal("Audio", AudioMock);
 
-    const player = createClickAudioPlayer("/click.mp3");
+    const player = createClickAudioPlayer("/click-secondary.mp3");
     player.warm();
 
     expect(player.isReady()).toBe(true);
@@ -88,7 +88,7 @@ describe("click audio player", () => {
     vi.useFakeTimers();
     vi.stubGlobal("window", { setTimeout, clearTimeout });
     const audio = makeAudioMock();
-    const player = createClickAudioPlayer("/click.mp3", vi.fn(() => audio));
+    const player = createClickAudioPlayer("/click-secondary.mp3", vi.fn(() => audio));
 
     player.warm();
     const playback = player.playWhenReady(120);
@@ -102,7 +102,7 @@ describe("click audio player", () => {
     vi.useFakeTimers();
     vi.stubGlobal("window", { setTimeout, clearTimeout });
     const audio = makeAudioMock();
-    const player = createClickAudioPlayer("/click.mp3", vi.fn(() => audio));
+    const player = createClickAudioPlayer("/click-secondary.mp3", vi.fn(() => audio));
 
     player.warm();
     const playback = player.playWhenReady(120);
@@ -113,7 +113,7 @@ describe("click audio player", () => {
   });
 
   it("returns unavailable when audio cannot be created", async () => {
-    const player = createClickAudioPlayer("/click.mp3", vi.fn(() => {
+    const player = createClickAudioPlayer("/click-secondary.mp3", vi.fn(() => {
       throw new Error("boom");
     }));
 
