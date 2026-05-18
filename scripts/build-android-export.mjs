@@ -82,7 +82,7 @@ try {
   apiDirMoved = await stageApiDir();
 
   const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
-  const result = spawnSync(process.execPath, [nextBin, "build"], {
+  const result = spawnSync(process.execPath, [nextBin, "build", "--webpack"], {
     cwd: root,
     env: {
       ...process.env,
