@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
-import { shouldUseLandingSoon } from "./landingHost";
-import { shouldRedirectMobileLanding } from "./mobileLandingRedirect";
+import { resolveHomeEntry } from "./homeEntry";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/lib/startupModule";
 import Landing from "./landing";
@@ -84,11 +83,16 @@ function HomeContent({ variant = "landing" }: HomePageClientProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (shouldRedirectMobileLanding(window.navigator.userAgent)) {
+    const entry = resolveHomeEntry({
+      host: window.location.host,
+      userAgent: window.navigator.userAgent,
+      isNativeRuntime: isNativeOrFileRuntime(),
+    });
+    if (entry.action === "redirect") {
       router.replace("/login");
       return;
     }
-    setResolvedVariant(shouldUseLandingSoon(window.location.host) ? "landingsoon" : "landing");
+    setResolvedVariant(entry.variant);
   }, [router]);
 
   useEffect(() => {
