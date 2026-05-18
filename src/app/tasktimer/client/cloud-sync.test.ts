@@ -125,6 +125,7 @@ describe("task timer cloud sync", () => {
     vi.stubGlobal("window", {
       setTimeout,
       clearTimeout,
+      location: { protocol: "https:" },
     });
   });
 
@@ -146,5 +147,14 @@ describe("task timer cloud sync", () => {
     await harness.cloudRefreshInFlight.get();
 
     expect(harness.hydrateFromCloud).toHaveBeenCalledWith({ force: true });
+  });
+
+  it("does not subscribe live-session docs for cloud refresh sync", () => {
+    const harness = createHarness({ hasPendingTaskOrHistorySync: false });
+
+    harness.api.initCloudRefreshSync();
+
+    expect(harness.workspaceRepository.subscribeTaskCollection).toHaveBeenCalledWith("user-1", expect.any(Function));
+    expect(harness.workspaceRepository.subscribeTaskLiveSessions).not.toHaveBeenCalled();
   });
 });

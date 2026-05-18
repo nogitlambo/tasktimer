@@ -12,7 +12,7 @@ import { isOverlayVisible } from "./overlay-visibility";
 type CreateTaskTimerCloudSyncOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
-    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection" | "subscribeTaskLiveSessions"
+    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection"
   >;
   runtime: TaskTimerRuntime;
   on: (target: EventTarget | null | undefined, type: string, handler: EventListenerOrEventListenerObject) => void;
@@ -209,14 +209,8 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
       refreshCloudStateIfStale(1500);
     };
     const removeTaskCollectionListener = options.workspaceRepository.subscribeTaskCollection(uid, handleCloudActivity);
-    const removeTaskLiveSessionListener = options.workspaceRepository.subscribeTaskLiveSessions(
-      uid,
-      options.getTasks().map((task) => String(task?.id || "").trim()).filter(Boolean),
-      handleCloudActivity
-    );
     options.runtime.removeCloudTaskCollectionListener = () => {
       removeTaskCollectionListener();
-      removeTaskLiveSessionListener();
     };
   }
 
