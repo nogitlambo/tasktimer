@@ -791,11 +791,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           : 0;
       const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
       const y = drawH > 0 ? Math.max(padT, padT + innerH - drawH) : padT + innerH;
-      const barBottomY = padT + innerH;
-      const goalY =
-        timeGoalMs > 0
-          ? Math.max(padT, Math.min(barBottomY - 1, barBottomY - Math.floor(innerH * Math.min(1, timeGoalMs / scaleMaxMs))))
-          : y;
 
       if (drawH > 0) {
         draw.save();

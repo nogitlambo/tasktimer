@@ -160,7 +160,12 @@ export function buildTimeGoalCompleteNextTaskOptions(
       sourceIndex: index,
     }))
     .sort((a, b) => a.scheduleSortMinutes - b.scheduleSortMinutes || a.sourceIndex - b.sourceIndex)
-    .map(({ scheduleSortMinutes, sourceIndex, ...task }) => task);
+    .map((task) => ({
+      id: task.id,
+      name: task.name,
+      color: task.color,
+      scheduleText: task.scheduleText,
+    }));
 }
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
