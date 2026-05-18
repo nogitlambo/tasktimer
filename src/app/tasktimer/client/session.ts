@@ -17,6 +17,7 @@ import type { TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
@@ -388,7 +389,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function startTimeGoalCompleteConfetti() {
-    startTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
+    const started = startTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
+    if (!started) return;
+    playTaskCompleteConfettiHaptic({
+      isEnabled: ctx.getInteractionHapticsEnabled,
+      getIntensity: ctx.getInteractionHapticsIntensity,
+    });
   }
 
   function stopTimeGoalCompleteConfetti() {

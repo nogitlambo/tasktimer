@@ -9,6 +9,7 @@ import type { LandingProps } from "./landing.types";
 const rocketVideoFadeOutMs = 1200;
 const rocketVideoFadeInMs = 2000;
 const earlyAccessCountdownTarget = new Date("2026-05-25T10:00:00+10:00");
+const earlyAccessCountdownTargetLabel = "25th May 2026";
 
 type SubscribeState =
   | { status: "idle"; message: string }
@@ -244,7 +245,10 @@ export default function LandingSoon(props: LandingProps) {
           </Link>
 
           <div className="landingSoonV2Countdown" aria-live="polite">
-            <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+            <div className="landingSoonV2CountdownInfo">
+              <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+              <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
+            </div>
             <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
           </div>
           <Link href="/about" className="landingSoonV2AboutLink displayFont">
@@ -270,7 +274,10 @@ export default function LandingSoon(props: LandingProps) {
             </p>
 
             <div className="landingSoonV2Countdown landingSoonV2CountdownMobile" aria-live="polite">
-              <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+              <div className="landingSoonV2CountdownInfo">
+                <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+                <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
+              </div>
               <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
             </div>
 

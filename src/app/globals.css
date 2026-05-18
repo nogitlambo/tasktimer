@@ -1396,10 +1396,18 @@ canvas {
 
 .landingV2 .landingSoonV2Countdown {
   display: grid;
-  justify-items: center;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.landingV2 .landingSoonV2CountdownInfo {
+  display: grid;
   gap: 4px;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 
 .landingV2 .landingSoonV2CountdownMobile {
@@ -1411,6 +1419,12 @@ canvas {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--landing-muted);
+}
+
+.landingV2 .landingSoonV2CountdownDate {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .landingV2 .landingSoonV2CountdownValue {
@@ -2255,6 +2269,11 @@ canvas {
   .landingV2 .landingSoonV2CountdownLabel {
     font-size: 0.5rem;
     letter-spacing: 0.14em;
+  }
+
+  .landingV2 .landingSoonV2CountdownDate {
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
   }
 
   .landingV2 .landingSoonV2CountdownValue {

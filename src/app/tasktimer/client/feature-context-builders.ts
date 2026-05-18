@@ -1377,6 +1377,9 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getCheckpointFiredKeysByTaskId: args.getCheckpointFiredKeysByTaskId,
     getCheckpointBaselineSecByTaskId: args.getCheckpointBaselineSecByTaskId,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
+    getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
+    getInteractionHapticsIntensity: () =>
+      normalizeInteractionHapticsIntensity(args.preferencesState.get("interactionHapticsIntensity")),
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     getCheckpointAlertToastEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertToastEnabled")),
     getCheckpointAlertSoundMode: () =>

@@ -25,6 +25,7 @@ import {
   applyInteractionHapticsIntensity,
   getInteractionHapticImpact,
   isInteractionHapticsRuntimeAvailable,
+  playTaskCompleteConfettiHaptic,
   playInteractionHaptic,
   registerInteractionHaptics,
 } from "./interaction-haptics";
@@ -131,6 +132,32 @@ describe("interaction haptics", () => {
     expect(Haptics.vibrate).toHaveBeenNthCalledWith(2, { duration: 42 });
     expect(Haptics.vibrate).toHaveBeenNthCalledWith(3, { duration: 18 });
     expect(Haptics.impact).not.toHaveBeenCalled();
+  });
+
+  it("plays task-complete confetti haptics only when enabled and available", () => {
+    playTaskCompleteConfettiHaptic({
+      isEnabled: () => false,
+      getIntensity: () => "max",
+    });
+    expect(Haptics.impact).not.toHaveBeenCalled();
+
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
+    vi.stubGlobal("window", { location: { protocol: "https:" } });
+    playTaskCompleteConfettiHaptic({
+      isEnabled: () => true,
+      getIntensity: () => "max",
+    });
+    expect(Haptics.impact).not.toHaveBeenCalled();
+
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+    vi.stubGlobal("window", { location: { protocol: "capacitor:" } });
+    playTaskCompleteConfettiHaptic({
+      isEnabled: () => true,
+      getIntensity: () => "medium",
+    });
+
+    expect(Haptics.impact).toHaveBeenCalledTimes(1);
+    expect(Haptics.impact).toHaveBeenCalledWith({ style: ImpactStyle.Medium });
   });
 
   it("registers one trusted-click listener gated by the haptics preference", () => {

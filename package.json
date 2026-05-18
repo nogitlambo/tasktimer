@@ -5,8 +5,8 @@
   "scripts": {
     "clean:next": "node -e \"require('node:fs').rmSync('.next', { recursive: true, force: true })\"",
     "clean:next:dev": "node -e \"require('node:fs').rmSync('.next/dev', { recursive: true, force: true })\"",
-    "dev": "node scripts/ensure-port-free.mjs 3000 && next dev --webpack",
-    "dev:turbo": "next dev",
+    "dev": "node scripts/ensure-port-free.mjs 3000 && next dev",
+    "dev:turbo": "next dev --turbo",
     "dev:reset": "npm run clean:next:dev && npm run dev",
     "guard:no-dev": "node scripts/ensure-no-active-dev-server.mjs",
     "build": "npm run guard:no-dev && npm run clean:next && next build",

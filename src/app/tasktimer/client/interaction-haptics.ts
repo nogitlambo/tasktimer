@@ -92,6 +92,14 @@ export function playInteractionHaptic(
   void haptics.impact({ style }).catch(() => {});
 }
 
+export function playTaskCompleteConfettiHaptic(options: {
+  isEnabled?: () => boolean;
+  getIntensity?: () => InteractionHapticsIntensity;
+}): void {
+  if (options.isEnabled && !options.isEnabled()) return;
+  playInteractionHaptic("heavy", Haptics, normalizeInteractionHapticsIntensity(options.getIntensity?.()));
+}
+
 export function registerInteractionHaptics(options: {
   on: (el: EventTarget | null | undefined, type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => void;
   documentRef: Document;

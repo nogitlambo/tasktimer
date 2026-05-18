@@ -10,6 +10,7 @@ describe("LandingSoon", () => {
     expect(html).toContain('class="landingV2RocketHotspot"');
     expect(html).toContain('type="email"');
     expect(html).toContain("Early Access Countdown");
+    expect(html).toContain("25th May 2026");
     expect(html).toContain("Progress over perfection");
     expect(html).toContain("Break free");
     expect(html).toContain("Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods");

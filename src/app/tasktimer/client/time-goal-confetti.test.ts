@@ -18,21 +18,23 @@ describe("time goal confetti", () => {
   it("starts the confetti stage", () => {
     const stage = elementStub();
 
-    startTimeGoalConfetti(stage);
+    expect(startTimeGoalConfetti(stage)).toBe(true);
 
     expect(stage.classList.contains("isPlaying")).toBe(true);
     expect(stage.dataset.confettiState).toBe("playing");
   });
 
-  it("restarts an already playing confetti stage", () => {
+  it("does not restart an already playing confetti stage", () => {
     const stage = elementStub();
     stage.classList.add("isPlaying");
     stage.dataset.confettiState = "playing";
+    stage.offsetWidth = 0;
 
-    startTimeGoalConfetti(stage);
+    expect(startTimeGoalConfetti(stage)).toBe(false);
 
     expect(stage.classList.contains("isPlaying")).toBe(true);
     expect(stage.dataset.confettiState).toBe("playing");
+    expect(stage.offsetWidth).toBe(0);
   });
 
   it("stops the confetti stage", () => {

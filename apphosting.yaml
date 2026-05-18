@@ -80,6 +80,30 @@ env:
     secret: JIRA_EMAIL
     availability:
       - RUNTIME
+  - variable: SMTP_HOST
+    value: "smtp.hostinger.com"
+    availability:
+      - RUNTIME
+  - variable: SMTP_PORT
+    value: "465"
+    availability:
+      - RUNTIME
+  - variable: SMTP_SECURE
+    value: "true"
+    availability:
+      - RUNTIME
+  - variable: SMTP_USER
+    value: "support@tasklaunch.app"
+    availability:
+      - RUNTIME
+  - variable: EARLY_ACCESS_EMAIL_FROM
+    value: "TaskLaunch <support@tasklaunch.app>"
+    availability:
+      - RUNTIME
+  - variable: EARLY_ACCESS_EMAIL_REPLY_TO
+    value: "support@tasklaunch.app"
+    availability:
+      - RUNTIME
 
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
@@ -93,5 +117,13 @@ env:
       - RUNTIME
   - variable: JIRA_API_TOKEN
     secret: JIRA_API_TOKEN
+    availability:
+      - RUNTIME
+  - variable: SMTP_PASS
+    secret: SMTP_PASS
+    availability:
+      - RUNTIME
+  - variable: EARLY_ACCESS_UNSUBSCRIBE_SECRET
+    secret: EARLY_ACCESS_UNSUBSCRIBE_SECRET
     availability:
       - RUNTIME
