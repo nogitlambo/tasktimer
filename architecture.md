@@ -33,7 +33,7 @@
 - `/settings`
 - `/signed-out`
 - `/tasklaunch`
-- `/web-sign-in`
+- `/login`
 
 ### TaskLaunch Routes
 - `/dashboard`

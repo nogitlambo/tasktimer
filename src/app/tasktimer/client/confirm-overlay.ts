@@ -4,6 +4,7 @@ import { createTaskTimerOverlayLifecycle } from "./overlay-lifecycle";
 export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContext) {
   const { els } = ctx;
   let confirmDangerMatchValue = "";
+  let confirmOverlayClassName = "";
   const overlayLifecycle = createTaskTimerOverlayLifecycle({
     documentRef: document,
     closeEdit: ctx.closeEdit,
@@ -12,6 +13,13 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     closeTaskExportModal: ctx.closeTaskExportModal,
     closeShareTaskModal: ctx.closeShareTaskModal,
   });
+
+  function resetConfirmActionButtonClasses() {
+    els.confirmOkBtn?.classList.remove("btn-accent", "btn-warn", "btn-ghost");
+    els.confirmAltBtn?.classList.remove("btn-accent", "btn-warn", "btn-ghost");
+    els.confirmOkBtn?.classList.add("btn-accent");
+    els.confirmAltBtn?.classList.add("btn-warn");
+  }
 
   function syncConfirmPrimaryToggleUi() {
     const toggle = document.getElementById("confirmDeleteAllSwitch");
@@ -36,6 +44,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     ctx.setConfirmActionAlt(opts?.onAlt || null);
     ctx.setConfirmActionCancel(opts?.onCancel || null);
     confirmDangerMatchValue = String(opts?.dangerInputMatch || "").trim();
+    confirmOverlayClassName = String(opts?.overlayClassName || "").trim();
 
     const okLabel = opts?.okLabel || "OK";
     const cancelLabel = opts?.cancelLabel || "Cancel";
@@ -45,11 +54,15 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
       els.confirmOkBtn.textContent = okLabel;
       (els.confirmOkBtn as HTMLElement).style.display = "inline-flex";
       (els.confirmOkBtn as HTMLButtonElement).disabled = false;
-      els.confirmOkBtn.classList.remove("btn-warn");
-      els.confirmOkBtn.classList.add("btn-accent");
+      resetConfirmActionButtonClasses();
       if (String(okLabel).toLowerCase() === "delete") {
         els.confirmOkBtn.classList.remove("btn-accent");
         els.confirmOkBtn.classList.add("btn-warn");
+      }
+      const okButtonClassName = String(opts?.okButtonClassName || "").trim();
+      if (okButtonClassName) {
+        els.confirmOkBtn.classList.remove("btn-accent", "btn-warn", "btn-ghost");
+        okButtonClassName.split(/\s+/).filter(Boolean).forEach((token) => els.confirmOkBtn?.classList.add(token));
       }
     }
 
@@ -62,6 +75,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
         els.confirmAltBtn.textContent = altLabel;
         (els.confirmAltBtn as HTMLElement).style.display = "inline-flex";
         (els.confirmAltBtn as HTMLButtonElement).disabled = false;
+        const altButtonClassName = String(opts?.altButtonClassName || "").trim();
+        if (altButtonClassName) {
+          els.confirmAltBtn.classList.remove("btn-accent", "btn-warn", "btn-ghost");
+          altButtonClassName.split(/\s+/).filter(Boolean).forEach((token) => els.confirmAltBtn?.classList.add(token));
+        }
       } else {
         (els.confirmAltBtn as HTMLElement).style.display = "none";
         els.confirmAltBtn.textContent = "";
@@ -116,6 +134,9 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
 
     syncConfirmDangerInputUi();
 
+    if (confirmOverlayClassName && els.confirmOverlay) {
+      (els.confirmOverlay as HTMLElement).classList.add(confirmOverlayClassName);
+    }
     overlayLifecycle.openOverlay(els.confirmOverlay as HTMLElement | null);
   }
 
@@ -124,19 +145,21 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
+    if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isArchiveTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isResetAllDeleteConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isApplySharedScheduleConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isClearTaskScheduleConfirm");
+    if (confirmOverlayClassName && els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove(confirmOverlayClassName);
     ctx.setConfirmAction(null);
     ctx.setConfirmActionAlt(null);
     ctx.setConfirmActionCancel(null);
     confirmDangerMatchValue = "";
+    confirmOverlayClassName = "";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
     if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
     if (els.confirmOkBtn) {
       (els.confirmOkBtn as HTMLButtonElement).disabled = false;
-      els.confirmOkBtn.classList.remove("btn-warn");
-      els.confirmOkBtn.classList.add("btn-accent");
+      resetConfirmActionButtonClasses();
     }
     if (els.confirmCancelBtn) (els.confirmCancelBtn as HTMLButtonElement).disabled = false;
     if (els.confirmDeleteAll) els.confirmDeleteAll.disabled = false;

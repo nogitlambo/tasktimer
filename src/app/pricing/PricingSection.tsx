@@ -28,7 +28,7 @@ const pricingTiers = [
     price: "$3.99",
     accent: "magenta" as const,
     cta: "GET PRO - 7-DAY FREE TRIAL",
-    href: "/web-sign-in?checkout=pro",
+    href: "/login?checkout=pro",
     badge: "7-day free trial",
     description: "Advanced tools for power users",
     billingLabel: "Per month",
@@ -64,7 +64,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
     const user = auth?.currentUser || null;
     const uid = String(user?.uid || "").trim();
     if (!uid || !user) {
-      router.push("/web-sign-in?checkout=pro");
+      router.push("/login?checkout=pro");
       return;
     }
 

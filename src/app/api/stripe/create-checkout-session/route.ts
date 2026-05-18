@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appBaseUrl}/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appBaseUrl}/web-sign-in?checkout=cancelled`,
+      cancel_url: `${appBaseUrl}/login?checkout=cancelled`,
       customer: existingCustomerId || undefined,
       customer_email: existingCustomerId ? undefined : email || undefined,
       client_reference_id: uid,

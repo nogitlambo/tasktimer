@@ -478,7 +478,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   async function applyMobilePushAlertsPreference(nextEnabled: boolean) {
     if (!ctx.currentUid()) {
-      window.location.assign("/web-sign-in");
+      window.location.assign("/login");
       return;
     }
     ctx.setMobilePushAlertsEnabledState(nextEnabled);
@@ -496,7 +496,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   async function applyWebPushAlertsPreference(nextEnabled: boolean) {
     if (!ctx.currentUid()) {
-      window.location.assign("/web-sign-in");
+      window.location.assign("/login");
       return;
     }
     ctx.setWebPushAlertsEnabledState(nextEnabled);

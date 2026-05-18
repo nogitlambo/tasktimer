@@ -3243,7 +3243,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageTasks :is(.tas
 /* Task progress bar clipping. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressTrack{
   --task-progress-cut: 6px;
-  overflow: hidden !important;
+  overflow: visible !important;
   clip-path: none !important;
   border: 0 !important;
   box-shadow: none !important;

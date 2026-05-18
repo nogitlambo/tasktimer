@@ -13,6 +13,7 @@ import {
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
+  formatScheduleStoredTimeFromMinutes,
   getTaskScheduledDays,
   hasTaskMixedScheduleTimes,
   isRecurringDailyScheduleTask,
@@ -20,7 +21,9 @@ import {
   normalizeTaskPlannedStartByDay,
   resolveNextScheduleDayDate,
   SCHEDULE_DAY_ORDER,
+  setTaskScheduledTimeForDay,
   type ScheduleDay,
+  swapTaskScheduleSlotsForDay,
   syncLegacyPlannedStartFields,
 } from "../lib/schedule-placement";
 import { getTaskColorFamilyForColor, normalizeTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
@@ -652,6 +655,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
+  function formatScheduleConflictMessage(conflictingTaskName: string) {
+    return `Do you want to schedule the task to the next available time slot, or switch ${conflictingTaskName} with this task?`;
+  }
+
   function setMilestoneUnitUi(unit: "hour" | "minute") {
     els.elapsedPadUnitHourBtn?.classList.toggle("isOn", unit === "hour");
     els.elapsedPadUnitMinuteBtn?.classList.toggle("isOn", unit === "minute");
@@ -925,9 +932,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
     const sourceTaskId = String(sourceTask.id || "");
-    if (findScheduleOverlap(ctx.getTasks(), t, { excludeTaskId: sourceTaskId })) {
+    const overlap = findScheduleOverlap(ctx.getTasks(), t, { excludeTaskId: sourceTaskId });
+    if (overlap) {
       ctx.syncEditSaveAvailability(t);
-      ctx.showEditValidationError(t, formatPlannedStartOverlapMessage(ctx.getTasks(), t, sourceTaskId));
+      openEditScheduleConflictModal(sourceTask, t, overlap);
       return false;
     }
     delete (t as Task & { mode?: string }).mode;
@@ -936,6 +944,79 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
     return true;
+  }
+
+  function persistResolvedEditSave(sourceTask: Task, resolvedTask: Task) {
+    delete (resolvedTask as Task & { mode?: string }).mode;
+    Object.assign(sourceTask, ctx.cloneTaskForEdit(resolvedTask));
+    ctx.closeConfirm();
+    ctx.save();
+    void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
+    ctx.render();
+  }
+
+  function openEditScheduleConflictModal(
+    sourceTask: Task,
+    draftTask: Task,
+    overlap: NonNullable<ReturnType<typeof findScheduleOverlap>>
+  ) {
+    const conflictingTask = overlap.task || null;
+    const sourceTaskId = String(sourceTask.id || "");
+    if (!conflictingTask || overlap.candidateStartMinutes == null || overlap.conflictingStartMinutes == null) {
+      ctx.showEditValidationError(draftTask, formatPlannedStartOverlapMessage(ctx.getTasks(), draftTask, sourceTaskId));
+      return;
+    }
+    const candidateStartMinutes = overlap.candidateStartMinutes;
+    const conflictingStartMinutes = overlap.conflictingStartMinutes;
+
+    const openNoSlotMessage = () => {
+      ctx.confirm("Schedule conflict", "No next available time slot was found for this task. Adjust the schedule or choose Switch.", {
+        cancelLabel: "Cancel",
+        okLabel: "Move",
+        altLabel: "Switch",
+        okButtonClassName: "btn btn-ghost",
+        altButtonClassName: "btn btn-ghost",
+        overlayClassName: "isScheduleConflictConfirm",
+        onOk: handleMove,
+        onAlt: handleSwitch,
+        onCancel: () => ctx.closeConfirm(),
+      });
+    };
+
+    const handleMove = () => {
+      const suggestion = findNextAvailableScheduleSlot(ctx.getTasks(), draftTask, { excludeTaskId: sourceTaskId });
+      if (!suggestion) {
+        openNoSlotMessage();
+        return;
+      }
+      suggestion.days.forEach((day) => {
+        setTaskScheduledTimeForDay(draftTask, day, formatScheduleStoredTimeFromMinutes(suggestion.startMinutes));
+      });
+      persistResolvedEditSave(sourceTask, draftTask);
+    };
+
+    const handleSwitch = () => {
+      swapTaskScheduleSlotsForDay(
+        draftTask,
+        conflictingTask,
+        overlap.day,
+        candidateStartMinutes,
+        conflictingStartMinutes
+      );
+      persistResolvedEditSave(sourceTask, draftTask);
+    };
+
+    ctx.confirm("Schedule conflict", formatScheduleConflictMessage(String(conflictingTask.name || "Task") || "Task"), {
+      cancelLabel: "Cancel",
+      okLabel: "Move",
+      altLabel: "Switch",
+      okButtonClassName: "btn btn-ghost",
+      altButtonClassName: "btn btn-ghost",
+      overlayClassName: "isScheduleConflictConfirm",
+      onOk: handleMove,
+      onAlt: handleSwitch,
+      onCancel: () => ctx.closeConfirm(),
+    });
   }
 
   function finalizeUnscheduledEditSave(sourceTask: Task, t: Task) {

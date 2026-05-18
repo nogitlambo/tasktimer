@@ -4,6 +4,7 @@ import {
   findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
   getScheduleTaskDurationMinutesForDay,
+  swapTaskScheduleSlotsForDay,
   type ScheduleDay,
 } from "./schedule-placement";
 import type { Task } from "./types";
@@ -140,5 +141,57 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
     });
 
     expect(findScheduleOverlap([busy], weekly)?.day).toBe("wed");
+  });
+
+  it("returns overlap timing details for the first conflicting task", () => {
+    const busy = task({
+      id: "busy",
+      name: "Busy Task",
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      timeGoalMinutes: 60,
+    });
+    const overlap = findScheduleOverlap(
+      [busy],
+      task({
+        id: "candidate",
+        plannedStartDay: "mon",
+        plannedStartTime: "09:30",
+        plannedStartByDay: { mon: "09:30" },
+        timeGoalMinutes: 60,
+      })
+    );
+
+    expect(overlap).toMatchObject({
+      day: "mon",
+      candidateStartMinutes: 570,
+      candidateEndMinutes: 630,
+      conflictingStartMinutes: 540,
+      conflictingEndMinutes: 600,
+      task: expect.objectContaining({ id: "busy" }),
+    });
+  });
+
+  it("swaps only the conflicting day slot between two tasks", () => {
+    const first = task({
+      id: "first",
+      taskType: "recurring",
+      plannedStartDay: null,
+      plannedStartTime: null,
+      plannedStartByDay: { mon: "09:30", wed: "09:30" },
+    });
+    const second = task({
+      id: "second",
+      taskType: "recurring",
+      plannedStartDay: null,
+      plannedStartTime: null,
+      plannedStartByDay: { mon: "09:00", fri: "11:00" },
+    });
+
+    swapTaskScheduleSlotsForDay(first, second, "mon", 570, 540);
+
+    expect(first.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:30" });
+    expect(second.plannedStartByDay).toEqual({ mon: "09:30", fri: "11:00" });
   });
 });

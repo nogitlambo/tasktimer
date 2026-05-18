@@ -6,6 +6,22 @@
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
 }
+#shareTaskModal .modal{
+  border-color: rgba(170, 178, 190, .48);
+  box-shadow: inset 0 0 0 1px rgba(170, 178, 190, .14), var(--shadow);
+}
+#shareTaskModal .modal :where(.modalSubtext, .field, label, select, option, .text, .settingsDetailNote, #shareTaskFriendsList, .shareTaskFriendOption, .shareTaskFriendOptionLabel, .shareTaskFriendOptionState){
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+}
+#shareTaskModal .footerBtns .btn{
+  border-color: rgba(170, 178, 190, .58);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+}
+#shareTaskModal .footerBtns .btn:hover:not(:disabled),
+#shareTaskModal .footerBtns .btn:focus-visible{
+  border-color: rgba(200, 207, 216, .72);
+}
 #friendRequestModal .field{
   margin-top: 8px;
 }
@@ -758,7 +774,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
-/* Friends list ladder rows: mirror the global ladder row treatment while preserving details disclosure. */
+/* Friends list rows: preserve details disclosure while matching the app row treatment. */
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
   display: grid;
   gap: 10px;
@@ -799,7 +815,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   font: inherit;
   text-align: inherit;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardAvatarButton,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendAvatarButton,
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatarWrap{
   width: 54px;
   height: 54px;
@@ -850,7 +866,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   gap: 4px;
   text-align: right;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankInsignia,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsignia,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsignia{
   width: 40px;
   height: 40px;
@@ -860,7 +876,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   flex: 0 0 auto;
   overflow: hidden;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankInsigniaImg,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsigniaImg,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsigniaImg{
   width: 100%;
   height: 100%;
@@ -868,7 +884,7 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   object-fit: contain;
   object-position: center;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankInsigniaPlaceholder,
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsigniaPlaceholder,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsigniaPlaceholder{
   border: 1px solid rgba(255,255,255,.16);
   background: rgba(255,255,255,.04);
@@ -878,14 +894,16 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardStatPrimary{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendStatPrimary{
   display: grid;
   align-items: center;
   justify-content: flex-end;
+  justify-items: end;
   gap: 3px;
   min-width: 0;
+  text-align: right;
 }
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankLabel{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankLabel{
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -893,8 +911,9 @@ body[data-theme="purple"] .friendSharedTaskCard.friendSharedTaskCardState-runnin
   white-space: nowrap;
 }
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksCountText{
-  display: inline;
+  display: block;
   min-width: 0;
+  justify-self: end;
   text-align: right;
   font-size: 12px;
   font-weight: 700;
@@ -2230,7 +2249,7 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
     padding: 2px 12px;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardRankInsignia,
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsignia,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsignia{
     width: 34px;
     height: 34px;
@@ -2241,7 +2260,7 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
     display: none !important;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .leaderboardAvatarButton,
+  #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendAvatarButton,
   #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAvatarWrap{
     width: 42px;
     height: 42px;
@@ -2399,7 +2418,7 @@ body[data-theme="lime"] #leaderboardPositionOverlay .leaderboardMiniRow{
   }
 }
 
-/* Friends and leaderboard mobile shell ownership. */
+/* Mobile shell ownership for social app pages. */
 /* Mobile width override for main app pages (Tasks/Friends shared shell paths). */
 
 @media (max-width: 640px){

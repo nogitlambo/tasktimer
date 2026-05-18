@@ -1953,15 +1953,29 @@ body.isFocusModeOpen{
   overflow:hidden;
 }
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar,
-body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appShellHeader,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
   opacity:0;
   visibility:hidden;
   pointer-events:none;
 }
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
+  display:none !important;
+}
 @media (max-width: 980px){
   body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     display:none !important;
+  }
+}
+@media (min-width: 981px){
+  body.isFocusModeOpen #focusModeScreen{
+    left: calc(var(--desktop-shell-margin, 18px) + var(--desktop-rail-column, 388px) + var(--desktop-shell-gap, 18px));
+    top: var(--desktop-shell-margin, 18px);
+    right: var(--desktop-shell-margin, 18px);
+    bottom: auto;
+    height: calc(100dvh - (var(--desktop-shell-margin, 18px) * 2));
+    max-height: calc(100dvh - (var(--desktop-shell-margin, 18px) * 2));
   }
 }
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,

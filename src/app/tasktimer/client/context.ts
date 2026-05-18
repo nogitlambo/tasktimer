@@ -67,6 +67,9 @@ export type TaskTimerConfirmOptions = {
   okLabel?: string;
   cancelLabel?: string;
   altLabel?: string | null;
+  overlayClassName?: string | null;
+  okButtonClassName?: string | null;
+  altButtonClassName?: string | null;
   checkboxLabel?: string;
   checkboxChecked?: boolean;
   checkboxDisabled?: boolean;
@@ -648,6 +651,8 @@ export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
   closeOverlay: (overlay: HTMLElement | null) => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   render: () => void;
+  confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
+  closeConfirm: () => void;
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   jumpToTaskAndHighlight: (taskId: string) => void;

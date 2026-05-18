@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { shouldUseLandingSoon } from "./landingHost";
+import { shouldRedirectMobileLanding } from "./mobileLandingRedirect";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
 import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/lib/startupModule";
 import Landing from "./landing";
+import LandingSoon from "./landingsoon";
 import type { LandingProps } from "./landing.types";
 import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -67,12 +70,26 @@ function logFirebaseAuthError(stage: string, err: unknown) {
   });
 }
 
-function HomeContent() {
+type HomePageClientProps = {
+  variant?: "landing" | "landingsoon";
+};
+
+function HomeContent({ variant = "landing" }: HomePageClientProps) {
   const router = useRouter();
+  const [resolvedVariant, setResolvedVariant] = useState<"landing" | "landingsoon">(variant);
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (shouldRedirectMobileLanding(window.navigator.userAgent)) {
+      router.replace("/login");
+      return;
+    }
+    setResolvedVariant(shouldUseLandingSoon(window.location.host) ? "landingsoon" : "landing");
+  }, [router]);
 
   useEffect(() => {
     const titleTimer = window.setTimeout(() => setShowTitlePhase(true), LOGO_PHASE_MS);
@@ -179,17 +196,13 @@ function HomeContent() {
     showActions,
   };
 
-  return (
-    <Landing
-      {...landingProps}
-    />
-  );
+  return resolvedVariant === "landingsoon" ? <LandingSoon {...landingProps} /> : <Landing {...landingProps} />;
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ variant = "landing" }: HomePageClientProps) {
   return (
     <Suspense fallback={null}>
-      <HomeContent />
+      <HomeContent variant={variant} />
     </Suspense>
   );
 }

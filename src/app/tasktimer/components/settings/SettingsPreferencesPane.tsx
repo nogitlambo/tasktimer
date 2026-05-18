@@ -92,7 +92,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
           <div className="unitRow optimalProductivityPeriodRow" id="optimalProductivityPeriodRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Optimal Productivity Period</span>
-              <span className="settingsPreferenceControlHelp">Set the time window TaskLaunch treats as your best focus period when planning and scoring work.</span>
+              <span className="settingsPreferenceControlHelp">Time block you are at your most productive on a given day.</span>
             </div>
             <div className="optimalProductivityPeriodInputs" aria-label="Optimal productivity period">
               <label>

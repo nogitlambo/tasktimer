@@ -400,11 +400,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function renderRankInsigniaMarkup(rankIdRaw: string): string {
     const rankThumbnail = getRankThumbnailDescriptor(rankIdRaw);
     if (rankThumbnail.kind === "image") {
-      return `<span class="leaderboardRankInsignia" aria-hidden="true"><img class="leaderboardRankInsigniaImg" src="${ctx.escapeHtmlUI(
+      return `<span class="friendRankInsignia" aria-hidden="true"><img class="friendRankInsigniaImg" src="${ctx.escapeHtmlUI(
         rankThumbnail.src
       )}" alt="" /></span>`;
     }
-    return `<span class="leaderboardRankInsignia leaderboardRankInsigniaPlaceholder" aria-hidden="true">${ctx.escapeHtmlUI(
+    return `<span class="friendRankInsignia friendRankInsigniaPlaceholder" aria-hidden="true">${ctx.escapeHtmlUI(
       rankThumbnail.label
     )}</span>`;
   }
@@ -1106,23 +1106,23 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const rankInsigniaHtml = renderRankInsigniaMarkup(resolvedRank.id);
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
-            <summary class="settingsDetailNote friendIdentityRow leaderboardRow">
-              <div class="leaderboardRank friendIdentityRank">${index + 1}</div>
-              <button class="friendIdentityBtn leaderboardAvatarButton" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}" aria-label="Open ${ctx.escapeHtmlUI(row.alias)} profile">
-                <span class="leaderboardAvatar friendIdentityAvatarWrap" aria-hidden="true">
-                  <img class="leaderboardAvatarImg friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" />
+            <summary class="settingsDetailNote friendIdentityRow">
+              <div class="friendIdentityRank">${index + 1}</div>
+              <button class="friendIdentityBtn friendAvatarButton" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}" aria-label="Open ${ctx.escapeHtmlUI(row.alias)} profile">
+                <span class="friendAvatar friendIdentityAvatarWrap" aria-hidden="true">
+                  <img class="friendAvatarImg friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" />
                 </span>
               </button>
-              <div class="friendIdentityText leaderboardIdentity">
+              <div class="friendIdentityText">
                 <button class="friendIdentityBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
-                  <strong class="leaderboardName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
+                  <strong class="friendName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
                 </button>
-                <span class="leaderboardMeta friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
+                <span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
               </div>
-              <div class="leaderboardStats friendIdentityStats">
-                <span class="leaderboardStatPrimary">
-                  <span class="leaderboardRankLabel">${ctx.escapeHtmlUI(rankLabel)}</span>
-                  <span class="leaderboardXp friendSharedTasksCountText">${ctx.escapeHtmlUI(totalXpLabel)}</span>
+              <div class="friendIdentityStats">
+                <span class="friendStatPrimary">
+                  <span class="friendRankLabel">${ctx.escapeHtmlUI(rankLabel)}</span>
+                  <span class="friendXp friendSharedTasksCountText">${ctx.escapeHtmlUI(totalXpLabel)}</span>
                 </span>
               </div>
               ${rankInsigniaHtml}

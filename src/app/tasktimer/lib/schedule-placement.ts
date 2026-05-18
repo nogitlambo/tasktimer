@@ -230,6 +230,10 @@ export function findNextScheduledTaskAfterLocalTime(
 
 export type ScheduleOverlapResult = {
   day: ScheduleDay;
+  candidateStartMinutes: number | null;
+  candidateEndMinutes: number | null;
+  conflictingStartMinutes: number | null;
+  conflictingEndMinutes: number | null;
   task: Task | null;
 };
 
@@ -251,7 +255,7 @@ function snapScheduleSuggestionStartMinutes(totalMinutes: number) {
   return Math.ceil(safeMinutes / SCHEDULE_SUGGESTION_STEP_MINUTES) * SCHEDULE_SUGGESTION_STEP_MINUTES;
 }
 
-function formatScheduleStoredTimeFromMinutes(totalMinutes: number) {
+export function formatScheduleStoredTimeFromMinutes(totalMinutes: number) {
   const safeMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.floor(Number(totalMinutes) || 0)));
   const hours = Math.floor(safeMinutes / 60);
   const minutes = safeMinutes % 60;
@@ -468,7 +472,16 @@ export function findScheduleOverlap(
     const candidateStartMinutes = parseScheduleTimeMinutes(candidateEntry.time);
     if (candidateStartMinutes == null) continue;
     const candidateEndMinutes = candidateStartMinutes + effectiveCandidateDurationMinutes;
-    if (candidateEndMinutes > 24 * 60) return { day: candidateEntry.day, task: null };
+    if (candidateEndMinutes > 24 * 60) {
+      return {
+        day: candidateEntry.day,
+        candidateStartMinutes,
+        candidateEndMinutes,
+        conflictingStartMinutes: null,
+        conflictingEndMinutes: null,
+        task: null,
+      };
+    }
 
     for (const task of tasks) {
       const taskId = String(task.id || "").trim();
@@ -483,7 +496,14 @@ export function findScheduleOverlap(
         const taskEndMinutes = taskStartMinutes + taskDurationMinutes;
         if (taskEndMinutes > 24 * 60) continue;
         if (candidateStartMinutes < taskEndMinutes && candidateEndMinutes > taskStartMinutes) {
-          return { day: candidateEntry.day, task };
+          return {
+            day: candidateEntry.day,
+            candidateStartMinutes,
+            candidateEndMinutes,
+            conflictingStartMinutes: taskStartMinutes,
+            conflictingEndMinutes: taskEndMinutes,
+            task,
+          };
         }
       }
     }
@@ -542,4 +562,28 @@ export function syncLegacyPlannedStartFields(task: Task, byDayRaw?: TaskPlannedS
 
   task.plannedStartDay = null;
   task.plannedStartTime = null;
+}
+
+export function setTaskScheduledTimeForDay(task: Task, day: ScheduleDay, rawTime: unknown) {
+  const nextTime = normalizeScheduleStoredTime(rawTime);
+  const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
+  if (nextTime) nextByDay[day] = nextTime;
+  else delete nextByDay[day];
+  syncLegacyPlannedStartFields(task, Object.keys(nextByDay).length > 0 ? nextByDay : null);
+  if (task.taskType === "once-off") {
+    task.onceOffDay = day;
+    task.onceOffTargetDate = resolveNextScheduleDayDate(day);
+    task.plannedStartOpenEnded = false;
+  }
+}
+
+export function swapTaskScheduleSlotsForDay(
+  firstTask: Task,
+  secondTask: Task,
+  day: ScheduleDay,
+  firstStartMinutes: number,
+  secondStartMinutes: number
+) {
+  setTaskScheduledTimeForDay(firstTask, day, formatScheduleStoredTimeFromMinutes(secondStartMinutes));
+  setTaskScheduledTimeForDay(secondTask, day, formatScheduleStoredTimeFromMinutes(firstStartMinutes));
 }

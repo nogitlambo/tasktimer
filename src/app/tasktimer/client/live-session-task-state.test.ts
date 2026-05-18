@@ -56,4 +56,27 @@ describe("applyLiveSessionsToTasks", () => {
 
     expect(applyLiveSessionsToTasks([source], liveSessionsByTaskId, () => 5000)[0]).toBe(source);
   });
+
+  it("does not restart a task that already completed its time goal today", () => {
+    const source = task({
+      timeGoalCompletedDayKey: "1970-01-01",
+      timeGoalCompletedAtMs: 3000,
+      timeGoalCompletedReason: "goal",
+      running: false,
+      startMs: null,
+    });
+    const liveSessionsByTaskId: LiveSessionsByTaskId = {
+      "task-1": {
+        sessionId: "task-1:1000",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: 1000,
+        updatedAtMs: 4000,
+        elapsedMs: 3000,
+        status: "running",
+      },
+    };
+
+    expect(applyLiveSessionsToTasks([source], liveSessionsByTaskId, () => 5000)[0]).toBe(source);
+  });
 });

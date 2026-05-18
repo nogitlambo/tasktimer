@@ -159,6 +159,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.confirm("Archive Task", `Archive "${getTaskDisplayName(task)}"?`, {
       okLabel: "Archive",
       cancelLabel: "Cancel",
+      overlayClassName: "isArchiveTaskConfirm",
       onOk: () => {
         const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
         const nextDeletedTaskMeta = {

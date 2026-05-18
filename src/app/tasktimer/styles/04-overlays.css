@@ -2618,6 +2618,17 @@ body[data-theme="purple"] .rewardsInfoText{
   font-weight: 800;
 }
 
+#confirmOverlay.isScheduleConflictConfirm .confirmBtns{
+  justify-content: space-between;
+}
+
+#confirmOverlay.isScheduleConflictConfirm #confirmCancelBtn,
+#confirmOverlay.isScheduleConflictConfirm #confirmAltBtn,
+#confirmOverlay.isScheduleConflictConfirm #confirmOkBtn{
+  flex: 1 1 0;
+  justify-content: center;
+}
+
 #addTaskOverlay .addTaskWizardProgress{
   margin: 4px 0 2px;
   font-family: var(--font-tight);
@@ -4492,6 +4503,55 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
 #confirmOverlay.isTaskAlreadyRunningConfirm #confirmOkBtn{
   min-width: 92px;
   justify-content: center;
+}
+
+#confirmOverlay.isArchiveTaskConfirm .modal{
+  background: #0d0f13;
+  border: 1px solid rgba(165, 172, 182, .66);
+  border-radius: 0;
+  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+  box-shadow:
+    0 24px 56px rgba(0,0,0,.52),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+}
+
+#confirmOverlay.isArchiveTaskConfirm .confirmText,
+#confirmOverlay.isArchiveTaskConfirm .confirmChkNote,
+#confirmOverlay.isArchiveTaskConfirm .confirmDangerInputLabel{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(226,232,240,.92);
+}
+
+#confirmOverlay.isArchiveTaskConfirm .confirmBtns{
+  margin-top: 8px;
+  gap: 8px;
+}
+
+#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn,
+#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn,
+#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn{
+  min-width: 92px;
+  justify-content: center;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  border-color: rgba(165, 172, 182, .66) !important;
+}
+
+#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn:hover:not(:disabled),
+#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn:focus-visible:not(:disabled),
+#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn:hover:not(:disabled),
+#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn:focus-visible:not(:disabled),
+#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn:focus-visible:not(:disabled){
+  border-color: rgba(194, 201, 211, .86) !important;
+}
+
+body[data-theme="purple"] #confirmOverlay.isArchiveTaskConfirm .modal{
+  border-color: rgba(165, 172, 182, .66);
+  box-shadow:
+    0 24px 56px rgba(0,0,0,.52),
+    inset 0 0 0 1px rgba(255,255,255,.04);
 }
 
 body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .modal{

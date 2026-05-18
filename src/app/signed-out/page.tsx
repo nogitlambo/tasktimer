@@ -114,7 +114,7 @@ export default function SignedOutPage() {
 
             <div className="flex flex-wrap items-center gap-5">
               <Link
-                href="/web-sign-in"
+                href="/login"
                 className="flex min-h-[56px] items-center justify-center border border-[#58e7ff]/70 bg-gradient-to-r from-[#2ea7ff] via-[#35e8ff] to-[#00cfc8] px-8 text-sm font-extrabold uppercase tracking-[0.14em] text-[#04131c] transition hover:brightness-110"
               >
                 Sign In Again

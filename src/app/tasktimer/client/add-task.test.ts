@@ -3,7 +3,7 @@ import { createTaskTimerAddTask } from "./add-task";
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
-function createHarness(initialValue: string) {
+function createHarness(initialValue: string, overrides?: { tasks?: Array<Record<string, unknown>> }) {
   const handlers = new Map<object, HandlerMap>();
   const documentStub = {};
   vi.stubGlobal("document", documentStub);
@@ -137,6 +137,8 @@ function createHarness(initialValue: string) {
     getAddTaskPlannedStartTime: () => "09:00",
     setAddTaskPlannedStartTimeState: vi.fn(),
     getTasks: () => [],
+    confirm: vi.fn(),
+    closeConfirm: vi.fn(),
     setTasks: vi.fn(),
     sortMilestones: (value: unknown[]) => value,
     save: vi.fn(),
@@ -151,6 +153,10 @@ function createHarness(initialValue: string) {
     getOptimalProductivityDays: () => ["mon", "wed", "fri"],
     jumpToTaskAndHighlight: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
+
+  if (overrides?.tasks) {
+    ctx.getTasks = () => overrides.tasks as never;
+  }
 
   const api = createTaskTimerAddTask(ctx);
   api.registerAddTaskEvents();
@@ -302,5 +308,96 @@ describe("createTaskTimerAddTask", () => {
 
     expect(setTasksMock).not.toHaveBeenCalled();
     expect(harness.addTaskDurationValueInput.classList.toggle).toHaveBeenCalledWith("isInvalid", true);
+  });
+
+  it("opens a conflict modal with the conflicting task name for scheduled add-task overlaps", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("1", { tasks: [existingTask] });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Schedule conflict",
+      expect.stringContaining("switch Deep Work with this task?"),
+      expect.objectContaining({
+        okLabel: "Move",
+        altLabel: "Switch",
+        okButtonClassName: "btn btn-ghost",
+        altButtonClassName: "btn btn-ghost",
+      })
+    );
+    expect(harness.ctx.setTasks).not.toHaveBeenCalled();
+  });
+
+  it("moves the new task to the next available slot when conflict modal Move is chosen", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const tasks = [existingTask];
+    const harness = createHarness("1", { tasks });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onOk?.();
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      existingTask,
+      expect.objectContaining({
+        plannedStartTime: "10:00",
+        plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
+      }),
+    ]);
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
   });
 });

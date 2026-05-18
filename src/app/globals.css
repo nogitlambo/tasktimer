@@ -426,7 +426,7 @@ canvas {
   --landing-feature-width: max(100vw, 177.8svh);
   --landing-feature-right: 0px;
   --landing-feature-start-opacity: 0;
-  --landing-feature-visible-opacity: 0.7;
+  --landing-feature-visible-opacity: 0.9;
   min-height: 100svh;
   position: relative;
   overflow-x: clip;
@@ -444,12 +444,65 @@ canvas {
   width: var(--landing-feature-width);
   pointer-events: none;
   opacity: var(--landing-feature-start-opacity);
-  transition: opacity 1s ease;
+  transition: opacity 2s ease;
   background: var(--landing-feature-bg) var(--landing-feature-position) / 100% auto no-repeat;
+  display: none;
 }
 
-.landingV2.isHeroVisible::before {
+.landingV2.isHeroVisible::before,
+.landingV2.isHeroVisible .landingV2BackgroundVideo {
   opacity: var(--landing-feature-visible-opacity);
+}
+
+.landingV2 .landingV2BackgroundVideo {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: var(--landing-feature-right);
+  max-width: none;
+  width: var(--landing-feature-width);
+  height: 100svh;
+  object-fit: cover;
+  object-position: var(--landing-feature-position);
+  opacity: var(--landing-feature-start-opacity);
+  pointer-events: none;
+  transition: opacity 2s ease;
+}
+
+.landingV2.isRocketVideoResetting .landingV2BackgroundVideo {
+  opacity: 0;
+  transition-duration: 1.2s;
+}
+
+.landingV2 .landingV2RocketHotspot {
+  display: none;
+  appearance: none;
+  position: absolute;
+  z-index: 2;
+  top: clamp(96px, 15svh, 160px);
+  right: clamp(18px, 7vw, 118px);
+  width: clamp(220px, 34vw, 520px);
+  height: clamp(260px, 58svh, 620px);
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.landingV2 .landingV2RocketHotspot:focus {
+  outline: none;
+}
+
+.landingV2 .landingV2RocketHotspot:focus-visible {
+  outline: 2px solid var(--landing-lime);
+  outline-offset: 6px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landingV2 .landingV2RocketHotspot {
+    display: block;
+  }
 }
 
 .landingV2::after {
@@ -1173,6 +1226,106 @@ canvas {
   padding-top: 24px;
 }
 
+.landingV2 .landingSoonV2Form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  max-width: 720px;
+}
+
+.landingV2 .landingSoonV2Field {
+  display: grid;
+  gap: 10px;
+}
+
+.landingV2 .landingSoonV2FieldLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landingV2 .landingSoonV2Input {
+  width: 100%;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 10, 14, 0.78);
+  color: var(--landing-text);
+  font-family: var(--font-readable);
+  font-size: 1rem;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.landingV2 .landingSoonV2Input::placeholder {
+  color: rgba(248, 248, 255, 0.46);
+}
+
+.landingV2 .landingSoonV2Input:focus {
+  border-color: rgba(201, 255, 36, 0.7);
+  box-shadow: 0 0 0 3px rgba(201, 255, 36, 0.14);
+}
+
+.landingV2 .landingSoonV2Submit {
+  min-width: 248px;
+}
+
+.landingV2 .landingSoonV2Submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.landingV2 .landingSoonV2Status {
+  min-height: 24px;
+  margin: -18px 0 0;
+  font-family: var(--font-readable);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--landing-muted);
+}
+
+.landingV2 .landingSoonV2Status.is-success {
+  color: #d6ff6a;
+}
+
+.landingV2 .landingSoonV2Status.is-error {
+  color: #ff9b97;
+}
+
+.landingV2 .landingSoonV2Header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.landingV2 .landingSoonV2Countdown {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  text-align: center;
+}
+
+.landingV2 .landingSoonV2CountdownLabel {
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landingV2 .landingSoonV2CountdownValue {
+  font-size: clamp(0.92rem, 2vw, 1.16rem);
+  letter-spacing: 0.14em;
+  text-transform: none;
+  color: var(--landing-lime);
+  white-space: nowrap;
+}
+
 .landingV2 .landingV2PrimaryBtn,
 .landingV2 .landingV2SecondaryBtn {
   display: inline-flex;
@@ -1247,6 +1400,7 @@ canvas {
 }
 
 .landingV2 .landingV2FooterLinks a {
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 0.72rem;
   text-decoration: none;
 }
@@ -1846,6 +2000,11 @@ canvas {
     --landing-feature-right: -6vw;
   }
 
+  .landingV2 .landingV2RocketHotspot {
+    right: clamp(0px, 3vw, 36px);
+    width: clamp(220px, 40vw, 460px);
+  }
+
   .landingV2 .landingV2Hero,
   .landingV2 .landingV2Section,
   .landingV2 .landingV2Cta {
@@ -1886,6 +2045,11 @@ canvas {
 @media (max-width: 860px) {
   .landingV2 {
     --landing-feature-right: -28vw;
+  }
+
+  .landingV2 .landingV2RocketHotspot {
+    right: -18vw;
+    width: 56vw;
   }
 
   .landingV2 .landingV2Header {
@@ -1969,6 +2133,14 @@ canvas {
   .landingV2 {
     --landing-feature-right: -72vw;
     --landing-native-nav-offset: 0px;
+    background:
+      url("/rocket_breaking_chains3_poster.jpg") center top / auto 100svh no-repeat,
+      #000;
+  }
+
+  .landingV2::after {
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, #000 100%);
   }
 
   .landingV2 .landingV2Header {
@@ -2007,6 +2179,14 @@ canvas {
     gap: 10px;
   }
 
+  .landingV2 .landingSoonV2Form {
+    grid-template-columns: 1fr;
+  }
+
+  .landingV2 .landingSoonV2Header {
+    grid-template-columns: auto 1fr auto;
+  }
+
   .landingV2 .landingV2Hero {
     min-height: calc(100svh - 70px);
     padding-top: clamp(10px, 2.8svh, 18px);
@@ -2015,7 +2195,19 @@ canvas {
 
   .landingV2 .landingV2HeroMain {
     gap: clamp(14px, 3.1svh, 22px);
-    padding: 0;
+    max-width: min(100%, 24rem);
+    padding: clamp(14px, 4vw, 18px);
+  }
+
+  .landingV2 .landingV2HeroMain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.62) 100%);
+    box-shadow: 0 0 34px rgba(0, 0, 0, 0.34);
   }
 
   .landingV2 .landingV2HeroTag {
@@ -2041,6 +2233,21 @@ canvas {
     min-height: 42px;
     padding: 0 10px;
     font-size: clamp(0.56rem, 2.35vw, 0.68rem);
+    letter-spacing: 0.1em;
+  }
+
+  .landingV2 .landingSoonV2Submit {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .landingV2 .landingSoonV2CountdownLabel {
+    font-size: 0.5rem;
+    letter-spacing: 0.14em;
+  }
+
+  .landingV2 .landingSoonV2CountdownValue {
+    font-size: clamp(0.68rem, 2.8vw, 0.84rem);
     letter-spacing: 0.1em;
   }
 

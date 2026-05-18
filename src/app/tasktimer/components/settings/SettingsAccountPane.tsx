@@ -240,7 +240,7 @@ export function SettingsAccountPane({
           ) : (
             <div className="settingsDetailNote">
               Account details, cloud sync, and subscriptions are available after signing in.{" "}
-              <a href="/web-sign-in">Sign in or create an account</a>. <a href="/privacy">Privacy Policy</a>
+              <a href="/login">Sign in or create an account</a>. <a href="/privacy">Privacy Policy</a>
             </div>
           )}
         </section>

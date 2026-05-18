@@ -436,6 +436,8 @@ type CreateAddTaskOptionsArgs = {
   closeOverlay: (overlay: HTMLElement | null) => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   render: () => void;
+  confirm: Parameters<typeof createTaskTimerAddTask>[0]["confirm"];
+  closeConfirm: Parameters<typeof createTaskTimerAddTask>[0]["closeConfirm"];
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   jumpToTaskAndHighlight: (taskId: string) => void;
@@ -1314,6 +1316,8 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     closeOverlay: args.closeOverlay,
     save: args.save,
     render: args.render,
+    confirm: args.confirm,
+    closeConfirm: args.closeConfirm,
     escapeHtmlUI: args.escapeHtmlUI,
     sortMilestones: args.sortMilestones,
     jumpToTaskAndHighlight: args.jumpToTaskAndHighlight,

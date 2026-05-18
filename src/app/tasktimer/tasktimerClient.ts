@@ -855,6 +855,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeOverlay: overlayBindings.closeOverlay,
       save: renderBindings.save,
       render,
+      confirm,
+      closeConfirm,
       escapeHtmlUI,
       sortMilestones,
       jumpToTaskAndHighlight,

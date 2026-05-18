@@ -17,8 +17,11 @@ import {
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
+  formatScheduleStoredTimeFromMinutes,
   normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
+  setTaskScheduledTimeForDay,
+  swapTaskScheduleSlotsForDay,
   type ScheduleDay,
 } from "../lib/schedule-placement";
 import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
@@ -594,6 +597,86 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
+  function formatScheduleConflictMessage(conflictingTaskName: string) {
+    return `Do you want to schedule the task to the next available time slot, or switch ${conflictingTaskName} with this task?`;
+  }
+
+  function finishScheduledTaskCreate(tasks: Task[], newTask: Task) {
+    ctx.setTasks([...tasks, newTask]);
+    ctx.render();
+    closeAddTaskModal();
+    ctx.save();
+    void trackEvent("task_created", {
+      source_page: ctx.getCurrentAppPage(),
+      has_time_goal: Boolean(newTask.timeGoalEnabled && (newTask.timeGoalMinutes || 0) > 0),
+      task_has_elapsed: false,
+      plan_tier: getTelemetryPlanTier(),
+    });
+    ctx.jumpToTaskAndHighlight(String(newTask.id || ""));
+  }
+
+  function openScheduleConflictModal(tasks: Task[], newTask: Task) {
+    const overlap = findScheduleOverlap(tasks, newTask);
+    const conflictingTask = overlap?.task || null;
+    if (!overlap || !conflictingTask || overlap.candidateStartMinutes == null || overlap.conflictingStartMinutes == null) {
+      showAddTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask));
+      return;
+    }
+    const candidateStartMinutes = overlap.candidateStartMinutes;
+    const conflictingStartMinutes = overlap.conflictingStartMinutes;
+
+    const openNoSlotMessage = () => {
+      ctx.confirm("Schedule conflict", "No next available time slot was found for this task. Adjust the schedule or choose Switch.", {
+        cancelLabel: "Cancel",
+        okLabel: "Move",
+        altLabel: "Switch",
+        okButtonClassName: "btn btn-ghost",
+        altButtonClassName: "btn btn-ghost",
+        overlayClassName: "isScheduleConflictConfirm",
+        onOk: handleMove,
+        onAlt: handleSwitch,
+        onCancel: () => ctx.closeConfirm(),
+      });
+    };
+
+    const handleMove = () => {
+      const suggestion = findNextAvailableScheduleSlot(tasks, newTask);
+      if (!suggestion) {
+        openNoSlotMessage();
+        return;
+      }
+      suggestion.days.forEach((day) => {
+        setTaskScheduledTimeForDay(newTask, day, formatScheduleStoredTimeFromMinutes(suggestion.startMinutes));
+      });
+      ctx.closeConfirm();
+      finishScheduledTaskCreate(tasks, newTask);
+    };
+
+    const handleSwitch = () => {
+      swapTaskScheduleSlotsForDay(
+        newTask,
+        conflictingTask,
+        overlap.day,
+        candidateStartMinutes,
+        conflictingStartMinutes
+      );
+      ctx.closeConfirm();
+      finishScheduledTaskCreate(tasks, newTask);
+    };
+
+    ctx.confirm("Schedule conflict", formatScheduleConflictMessage(String(conflictingTask.name || "Task") || "Task"), {
+      cancelLabel: "Cancel",
+      okLabel: "Move",
+      altLabel: "Switch",
+      okButtonClassName: "btn btn-ghost",
+      altButtonClassName: "btn btn-ghost",
+      overlayClassName: "isScheduleConflictConfirm",
+      onOk: handleMove,
+      onAlt: handleSwitch,
+      onCancel: () => ctx.closeConfirm(),
+    });
+  }
+
   function syncAddTaskColorPalette() {
     if (els.addTaskColorTrigger) {
       els.addTaskColorTrigger.classList.toggle("editTaskColorSwatchNone", !selectedColor);
@@ -811,21 +894,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }
 
     if (findScheduleOverlap(tasks, newTask)) {
-      showAddTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask));
+      openScheduleConflictModal(tasks, newTask);
       return;
     }
 
-    ctx.setTasks([...tasks, newTask]);
-    ctx.render();
-    closeAddTaskModal();
-    ctx.save();
-    void trackEvent("task_created", {
-      source_page: ctx.getCurrentAppPage(),
-      has_time_goal: newTask.timeGoalEnabled && newTask.timeGoalMinutes > 0,
-      task_has_elapsed: false,
-      plan_tier: getTelemetryPlanTier(),
-    });
-    ctx.jumpToTaskAndHighlight(String(newTask.id || ""));
+    finishScheduledTaskCreate(tasks, newTask);
   }
 
   function registerAddTaskEvents() {

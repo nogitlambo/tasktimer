@@ -31,7 +31,7 @@ export default function PricingPage() {
             <Link href="/" className="landingV2HeaderLink">
               Home
             </Link>
-            <Link href="/web-sign-in" className="landingV2LoginLink">
+            <Link href="/login" className="landingV2LoginLink">
               Login
             </Link>
           </div>

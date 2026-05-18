@@ -1,4 +1,5 @@
 import type { LiveSessionsByTaskId, Task } from "../lib/types";
+import { isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
 
 export function applyLiveSessionsToTasks(
   tasks: Task[],
@@ -14,6 +15,8 @@ export function applyLiveSessionsToTasks(
     const taskId = String(task?.id || "").trim();
     const liveSession = taskId ? liveSessions[taskId] : null;
     if (!task || !liveSession || String(liveSession.taskId || "").trim() !== taskId) return task;
+    if (liveSession.status && liveSession.status !== "running") return task;
+    if (isTaskTimeGoalStartLockedToday(task, nowValue)) return task;
 
     const updatedAtMs = Math.max(
       0,

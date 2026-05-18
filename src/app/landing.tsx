@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import AppImg from "../components/AppImg";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LandingProps } from "./landing.types";
 
 const demoHref = "https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu-0b/view?usp=drive_link";
+const getStartedHref = "/login";
+const rocketVideoFadeOutMs = 1200;
+const rocketVideoFadeInMs = 2000;
 
 type FeatureIconName = "flow" | "automation" | "insight";
 
@@ -74,6 +77,12 @@ export default function Landing(props: LandingProps) {
 
   const [revealStage, setRevealStage] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
+  const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
+  const hasTriggeredRocketVideoRef = useRef(false);
+  const isRocketVideoResettingRef = useRef(false);
+  const rocketFadeOutTimerRef = useRef<number | null>(null);
+  const rocketFadeInTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const applyLandingRouteBodyState = () => {
@@ -107,16 +116,128 @@ export default function Landing(props: LandingProps) {
     };
   }, []);
 
+  const playRocketVideo = () => {
+    const video = backgroundVideoRef.current;
+    if (!video) return;
+
+    if (hasTriggeredRocketVideoRef.current) return;
+    if (isRocketVideoResettingRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    hasTriggeredRocketVideoRef.current = true;
+    video.currentTime = 0;
+    void video.play().catch(() => {
+      hasTriggeredRocketVideoRef.current = false;
+    });
+  };
+
+  useEffect(() => {
+    const video = backgroundVideoRef.current;
+    if (!video) return;
+
+    const resetVideo = () => {
+      video.pause();
+      video.currentTime = 0;
+      hasTriggeredRocketVideoRef.current = false;
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      resetVideo();
+    }
+
+    return () => {
+      if (rocketFadeOutTimerRef.current !== null) {
+        window.clearTimeout(rocketFadeOutTimerRef.current);
+      }
+
+      if (rocketFadeInTimerRef.current !== null) {
+        window.clearTimeout(rocketFadeInTimerRef.current);
+      }
+    };
+  }, []);
+
+  const startRocketVideoReset = () => {
+    const video = backgroundVideoRef.current;
+    if (!video) return;
+    if (isRocketVideoResettingRef.current) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      video.pause();
+      video.currentTime = 0;
+      hasTriggeredRocketVideoRef.current = false;
+      isRocketVideoResettingRef.current = false;
+      setIsRocketVideoResetting(false);
+      return;
+    }
+
+    isRocketVideoResettingRef.current = true;
+    setIsRocketVideoResetting(true);
+
+    if (rocketFadeOutTimerRef.current !== null) {
+      window.clearTimeout(rocketFadeOutTimerRef.current);
+    }
+
+    if (rocketFadeInTimerRef.current !== null) {
+      window.clearTimeout(rocketFadeInTimerRef.current);
+    }
+
+    rocketFadeOutTimerRef.current = window.setTimeout(() => {
+      video.pause();
+      video.currentTime = 0;
+      setIsRocketVideoResetting(false);
+
+      rocketFadeInTimerRef.current = window.setTimeout(() => {
+        hasTriggeredRocketVideoRef.current = false;
+        isRocketVideoResettingRef.current = false;
+      }, rocketVideoFadeInMs);
+    }, rocketVideoFadeOutMs);
+  };
+
+  const handleRocketVideoTimeUpdate = () => {
+    const video = backgroundVideoRef.current;
+    if (!video) return;
+    if (isRocketVideoResettingRef.current) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+    if (video.duration - video.currentTime > rocketVideoFadeOutMs / 1000) return;
+    startRocketVideoReset();
+  };
+
+  const resetRocketVideoAfterPlayback = () => {
+    startRocketVideoReset();
+  };
+
   const showHero = revealStage >= 1;
   const showHeroActions = revealStage >= 2;
   const showHeader = revealStage >= 3;
-  const showBackgroundImage = revealStage >= 4;
+  const showBackgroundImage = revealStage >= 1;
   const showSupporting = revealStage >= 5;
   const showLowerSections = revealStage >= 6;
   const showFinalCta = revealStage >= 6;
 
   return (
-    <main className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}`}>
+    <main
+      className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
+        isRocketVideoResetting ? " isRocketVideoResetting" : ""
+      }`}
+    >
+      <video
+        ref={backgroundVideoRef}
+        className="landingV2BackgroundVideo"
+        src="/rocket_breaking_chains4.mp4"
+        muted
+        preload="auto"
+        playsInline
+        aria-hidden="true"
+        onTimeUpdate={handleRocketVideoTimeUpdate}
+        onEnded={resetRocketVideoAfterPlayback}
+      />
+      <button
+        type="button"
+        className="landingV2RocketHotspot"
+        aria-label="Play rocket animation"
+        onMouseEnter={playRocketVideo}
+        onFocus={playRocketVideo}
+      />
       <div className="landingV2Shell">
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
@@ -127,9 +248,9 @@ export default function Landing(props: LandingProps) {
           </Link>
 
           <div className="landingV2FooterLinks">
-            <Link href="/pricing">Pricing</Link>
+            <Link href="/landingsoon">Landing Soon</Link>
             <Link href="/privacy">Privacy</Link>
-            <Link href="/web-sign-in">Sign In</Link>
+            <Link href="/login">Sign In</Link>
           </div>
           <div className={mobileMenuOpen ? "landingV2MobileMenu isOpen" : "landingV2MobileMenu"}>
             <button
@@ -153,9 +274,9 @@ export default function Landing(props: LandingProps) {
                 <span />
                 <span />
               </button>
+              <Link href="/landingsoon">Landing Soon</Link>
               <Link href="/privacy">Privacy</Link>
-              <Link href="/pricing">Pricing</Link>
-              <Link href="/web-sign-in">Sign In</Link>
+              <Link href="/login">Sign In</Link>
             </div>
           </div>
         </header>
@@ -178,7 +299,7 @@ export default function Landing(props: LandingProps) {
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>
-              <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
+              <Link href={getStartedHref} className="landingV2PrimaryBtn displayFont">
                 Get Started
               </Link>
               <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
@@ -333,7 +454,7 @@ export default function Landing(props: LandingProps) {
             <em>Make progress easier to start, easier to sustain, and easier to trust</em>
           </h2>
           <div className={`landingV2Actions landingV2ActionsCentered ${showFinalCta ? "isVisible" : ""}`}>
-            <Link href="/web-sign-in" className="landingV2PrimaryBtn displayFont">
+            <Link href={getStartedHref} className="landingV2PrimaryBtn displayFont">
               Get Started
             </Link>
             <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
@@ -348,8 +469,8 @@ export default function Landing(props: LandingProps) {
             <span>TaskLaunch</span>
           </Link>
           <div className="landingV2FooterLinks">
+            <Link href="/landingsoon">Landing Soon</Link>
             <Link href="/about">About</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/privacy">Privacy</Link>
           </div>
         </footer>
