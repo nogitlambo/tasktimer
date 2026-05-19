@@ -80,7 +80,7 @@ import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
   buildRankPromotionTestPayload,
-  getRankPromotion,
+  TASKTIMER_RANK_PROMOTION_EVENT,
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   startRankPromotionCelebration,
@@ -267,7 +267,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
-  const [rewardProgressHydrated, setRewardProgressHydrated] = useState(false);
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
   const [xpAwardFx, setXpAwardFx] = useState<{
     visible: boolean;
@@ -298,7 +297,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpCountAnimationStartedRef = useRef(false);
   const xpIncreaseAudioRef = useRef<HTMLAudioElement | null>(null);
-  const lastObservedRankIdRef = useRef<string | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -359,23 +357,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
-      setRewardProgressHydrated(true);
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!rewardProgressHydrated) return;
-    const nextRankId = String(rewardProgress.currentRankId || "").trim();
-    const previousRankId = lastObservedRankIdRef.current;
-    if (!previousRankId) {
-      lastObservedRankIdRef.current = nextRankId;
-      return;
-    }
-    const promotion = getRankPromotion(previousRankId, nextRankId);
-    lastObservedRankIdRef.current = nextRankId;
-    if (promotion) setPendingRankPromotion(promotion);
-  }, [rewardProgress.currentRankId, rewardProgressHydrated]);
 
   useEffect(() => {
     if (!pendingRankPromotion || activeRankPromotion || typeof document === "undefined") return;
@@ -402,6 +386,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const handleRankPromotion = (event: Event) => {
+      const promotion = (event as CustomEvent<RankPromotion>).detail;
+      if (!promotion) return;
+      setPendingRankPromotion(promotion);
+      setPromotionOverlayRetrySeq((current) => current + 1);
+    };
     const handlePendingAward = (event: Event) => {
       const detail = (event as CustomEvent<PendingXpAward>).detail;
       if (!detail) return;
@@ -417,9 +407,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, overlayId));
       setPromotionOverlayRetrySeq((current) => current + 1);
     };
+    window.addEventListener(TASKTIMER_RANK_PROMOTION_EVENT, handleRankPromotion as EventListener);
     window.addEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
     window.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
     return () => {
+      window.removeEventListener(TASKTIMER_RANK_PROMOTION_EVENT, handleRankPromotion as EventListener);
       window.removeEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
       window.removeEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
     };

@@ -576,6 +576,8 @@ type CreateAppShellOptionsArgs = {
   renderGroupsPage: () => void;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
   getOpenHistoryTaskIds: () => Iterable<string>;
+  getFocusModeTaskId: () => string | null;
+  closeFocusMode: () => void;
   closeTopOverlayIfOpen: () => boolean;
   closeMobileDetailPanelIfOpen: () => boolean;
   showExitAppConfirm: () => void;
@@ -1456,6 +1458,8 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     renderGroupsPage: args.renderGroupsPage,
     refreshGroupsData: args.refreshGroupsData,
     getOpenHistoryTaskIds: args.getOpenHistoryTaskIds,
+    getFocusModeTaskId: args.getFocusModeTaskId,
+    closeFocusMode: args.closeFocusMode,
     closeTopOverlayIfOpen: args.closeTopOverlayIfOpen,
     closeMobileDetailPanelIfOpen: args.closeMobileDetailPanelIfOpen,
     showExitAppConfirm: args.showExitAppConfirm,

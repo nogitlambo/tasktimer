@@ -191,7 +191,7 @@ export default function LandingSoon(props: LandingProps) {
         status: "success",
         message: payload.alreadySubscribed
           ? "You're already on the early access list."
-          : "You're on the early access list.",
+          : "You've subscribed to the early access list",
       });
       setEmail("");
     } catch (error: unknown) {
@@ -304,8 +304,20 @@ export default function LandingSoon(props: LandingProps) {
                 type="submit"
                 className="landingV2PrimaryBtn displayFont landingSoonV2Submit"
                 disabled={subscribeState.status === "loading"}
+                aria-label={subscribeState.status === "loading" ? "Submitting early access request" : "Request early access"}
               >
-                {subscribeState.status === "loading" ? "Submitting..." : "Request Early Access"}
+                {subscribeState.status === "loading" ? (
+                  "Submitting..."
+                ) : (
+                  <span className="landingSoonV2SubmitIcon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path
+                        d="M12 3.25a4.75 4.75 0 0 0-4.75 4.75v2.44c0 .7-.24 1.38-.68 1.93l-1.37 1.71a1.75 1.75 0 0 0 1.37 2.84h10.86a1.75 1.75 0 0 0 1.37-2.84l-1.37-1.71a3.1 3.1 0 0 1-.68-1.93V8A4.75 4.75 0 0 0 12 3.25Zm0 17.5a2.61 2.61 0 0 1-2.45-1.69.75.75 0 0 1 1.41-.5 1.1 1.1 0 0 0 2.08 0 .75.75 0 0 1 1.41.5A2.61 2.61 0 0 1 12 20.75Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </span>
+                )}
               </button>
             </form>
 

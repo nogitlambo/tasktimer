@@ -77,8 +77,9 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(1);
-    expect(result.next.totalXp).toBe(2);
+    expect(result.amount).toBe(0.5);
+    expect(result.next.totalXpPrecise).toBe(1.5);
+    expect(result.next.totalXp).toBe(1);
     expect(result.next.completedSessions).toBe(2);
   });
 
@@ -127,8 +128,9 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(1);
-    expect(result.next.totalXp).toBe(13);
+    expect(result.amount).toBe(0.5);
+    expect(result.next.totalXpPrecise).toBe(12.5);
+    expect(result.next.totalXp).toBe(12);
     expect(result.next.completedSessions).toBe(13);
   });
 
@@ -148,15 +150,17 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(1);
-    expect(result.next.totalXp).toBe(1);
+    expect(result.amount).toBe(0.5);
+    expect(result.next.totalXpPrecise).toBe(0.5);
+    expect(result.next.totalXp).toBe(0);
     expect(result.next.completedSessions).toBe(1);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
       taskId: "task-1",
       eligibleMs: MINUTE_MS,
-      baseXp: 1,
+      baseXp: 0.5,
       multiplier: 1,
+      xp: 0.5,
     });
   });
 
@@ -203,11 +207,12 @@ describe("awardCompletedSessionXp", () => {
       .filter((entry) => entry.reason === "session")
       .reduce((sum, entry) => sum + entry.eligibleMs, 0);
     expect(sessionEligibleMs).toBe(60 * MINUTE_MS);
-    expect(result.next.totalXp).toBe(60);
+    expect(result.next.totalXpPrecise).toBe(30);
+    expect(result.next.totalXp).toBe(30);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
       eligibleMs: 60 * MINUTE_MS,
-      baseXp: 60,
+      baseXp: 30,
       multiplier: 1,
     });
   });
@@ -229,12 +234,12 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(30);
-    expect(result.next.totalXp).toBe(30);
+    expect(result.amount).toBe(15);
+    expect(result.next.totalXp).toBe(15);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
       eligibleMs: 30 * MINUTE_MS,
-      baseXp: 30,
+      baseXp: 15,
     });
   });
 
@@ -259,7 +264,7 @@ describe("awardCompletedSessionXp", () => {
       .filter((entry) => entry.reason === "session")
       .reduce((sum, entry) => sum + entry.eligibleMs, 0);
     expect(sessionEligibleMs).toBe(60 * MINUTE_MS);
-    expect(result.next.totalXp).toBeGreaterThanOrEqual(60);
+    expect(result.next.totalXp).toBeGreaterThanOrEqual(30);
   });
 
   it("persists extra logged time after the cap without awarding more session XP", () => {
@@ -292,7 +297,7 @@ describe("awardCompletedSessionXp", () => {
     });
 
     expect(result.amount).toBe(0);
-    expect(result.next.totalXp).toBe(60);
+    expect(result.next.totalXp).toBe(30);
     expect(result.next.completedSessions).toBe(1);
   });
 
@@ -303,9 +308,9 @@ describe("awardCompletedSessionXp", () => {
     const awardedAt = Date.now();
     const historyByTaskId = {
       "task-1": Array.from({ length: 5 }, (_, index) => ({
-        ts: awardedAt - index * DAY_MS,
+        ts: awardedAt - index * DAY_MS - (index === 0 ? MINUTE_MS : 0),
         name: "Focus",
-        ms: index === 0 ? MINUTE_MS : 5 * MINUTE_MS,
+        ms: 5 * MINUTE_MS,
       })),
     };
 
@@ -319,15 +324,45 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(1.5);
-    expect(result.next.totalXpPrecise).toBe(1.5);
-    expect(result.next.totalXp).toBe(1);
+    expect(result.amount).toBe(0.75);
+    expect(result.next.totalXpPrecise).toBe(0.75);
+    expect(result.next.totalXp).toBe(0);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
-      baseXp: 1,
+      baseXp: 0.5,
       multiplier: 1.5,
-      xp: 1.5,
+      xp: 0.75,
     });
+  });
+
+  it("scales session XP from the base rate across the multiplier table", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const awardedAt = Date.now();
+    const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt,
+      elapsedMs: 4 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: awardedAt, name: "Focus", ms: 4 * MINUTE_MS }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+      sessionSegments: [
+        { startMs: awardedAt - 4 * MINUTE_MS, endMs: awardedAt - 3 * MINUTE_MS, multiplier: 1 },
+        { startMs: awardedAt - 3 * MINUTE_MS, endMs: awardedAt - 2 * MINUTE_MS, multiplier: 1.2 },
+        { startMs: awardedAt - 2 * MINUTE_MS, endMs: awardedAt - MINUTE_MS, multiplier: 1.5 },
+        { startMs: awardedAt - MINUTE_MS, endMs: awardedAt, multiplier: 2 },
+      ],
+    });
+
+    expect(result.next.awardLedger.map((entry) => entry.xp)).toEqual([0.5, 0.6, 0.75, 1]);
+    expect(result.next.awardLedger.map((entry) => entry.multiplier)).toEqual([1, 1.2, 1.5, 2]);
+    expect(result.amount).toBe(2.85);
+    expect(result.next.totalXpPrecise).toBe(2.85);
+    expect(result.next.totalXp).toBe(2);
   });
 });
 

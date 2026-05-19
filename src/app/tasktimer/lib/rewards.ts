@@ -106,6 +106,7 @@ type RewardMomentumContext = {
 export const XP_PER_TASK_LAUNCH = 5;
 export const MIN_REWARD_ELIGIBLE_SESSION_MS = 1 * 60 * 1000;
 export const SESSION_XP_INTERVAL_MS = 1 * 60 * 1000;
+export const SESSION_BASE_XP_PER_INTERVAL = 0.5;
 export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;
 export const QUALIFIED_DAY_MIN_SESSION_COUNT = 2;
 export const QUALIFIED_DAY_MIN_SPAN_MS = 2 * 60 * 60 * 1000;
@@ -626,7 +627,7 @@ function buildScaledSessionLedgerEntries(
       consumedSessionMs += segmentDurationMs;
       continue;
     }
-    const baseXp = allocatableMs / SESSION_XP_INTERVAL_MS;
+    const baseXp = (allocatableMs / SESSION_XP_INTERVAL_MS) * SESSION_BASE_XP_PER_INTERVAL;
     const sourceKey = `session:${taskId || "none"}:${awardedAt}:${index}:${segment.startMs}:${segment.endMs}:${allocatableMs}:${segment.multiplier}`;
     entries.push(buildSessionLedgerEntry(taskId, awardedAt, allocatableMs, baseXp, segment.multiplier, sourceKey));
     remainingMs -= allocatableMs;

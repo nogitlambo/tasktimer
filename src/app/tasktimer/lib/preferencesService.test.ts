@@ -64,14 +64,16 @@ function createService() {
 }
 
 describe("createTaskTimerPreferencesService", () => {
+  let localStorageMap: Map<string, string>;
+
   beforeEach(() => {
     vi.unstubAllGlobals();
-    const localStorage = new Map<string, string>();
+    localStorageMap = new Map<string, string>();
     vi.stubGlobal("window", {
       localStorage: {
-        getItem: vi.fn((key: string) => localStorage.get(key) ?? null),
+        getItem: vi.fn((key: string) => localStorageMap.get(key) ?? null),
         setItem: vi.fn((key: string, value: string) => {
-          localStorage.set(key, value);
+          localStorageMap.set(key, value);
         }),
       },
     });
@@ -87,5 +89,33 @@ describe("createTaskTimerPreferencesService", () => {
     window.localStorage.setItem(storageKeys.WEB_PUSH_ALERTS_KEY, "true");
 
     expect(createService().loadWebPushAlertsEnabled()).toBe(true);
+  });
+
+  it("persists and reloads task order by from local storage", () => {
+    const savePreferences = vi.fn();
+    const setCloudPreferencesCache = vi.fn();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      repository: {
+        loadCachedPreferences: () => null,
+        buildDefaultPreferences,
+        savePreferences,
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      taskOrderBy: "schedule",
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("schedule");
+    expect(service.loadTaskOrderBy()).toBe("schedule");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
+    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
   });
 });

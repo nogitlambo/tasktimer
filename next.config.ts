@@ -5,6 +5,12 @@ const isAndroidExportBuild = process.env.NEXT_ANDROID_EXPORT === "1";
 const nextConfig: NextConfig = {
   output: isAndroidExportBuild ? "export" : "standalone",
   trailingSlash: true,
+  turbopack: {
+    resolveAlias: {
+      // Turbopack aliases to a shim module instead of supporting webpack's `false`.
+      "@opentelemetry/exporter-jaeger": "./src/shims/empty-module.js",
+    },
+  },
   async headers() {
     const contentSecurityPolicy = [
       "default-src 'self'",

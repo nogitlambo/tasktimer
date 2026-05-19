@@ -5,6 +5,7 @@ import type { HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import { createTaskTimerRewardsHistory } from "./rewards-history";
 import type { TaskTimerRewardsHistoryContext } from "./context";
+import { TASKTIMER_RANK_PROMOTION_EVENT } from "./rank-promotion";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -129,6 +130,7 @@ function createHarness(
 describe("task timer rewards history", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("awards session XP and appends history without a live-session record", () => {
@@ -213,6 +215,34 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.calls.filter((call) => call.startsWith("append-history:task-1:"))).toHaveLength(1);
     expect(harness.calls.filter((call) => call.startsWith("save-preferences:"))).toEqual(["save-preferences:1"]);
+  });
+
+  it("dispatches a rank promotion event only when a real session award promotes the rank", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const listener = vi.fn();
+    const windowRef = new EventTarget();
+    vi.stubGlobal("window", windowRef);
+    vi.stubGlobal("CustomEvent", class<T = unknown> extends Event {
+      detail: T;
+      constructor(type: string, init?: CustomEventInit<T>) {
+        super(type);
+        this.detail = init?.detail as T;
+      }
+    });
+    windowRef.addEventListener(TASKTIMER_RANK_PROMOTION_EVENT, listener);
+    const harness = createHarness({ elapsedMs: 10 * MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: 10 * MIN_REWARD_ELIGIBLE_SESSION_MS });
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+    windowRef.removeEventListener(TASKTIMER_RANK_PROMOTION_EVENT, listener);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      previousRankId: "unranked",
+      previousRankLabel: "Unranked",
+      nextRankId: "initiate",
+      nextRankLabel: "Initiate",
+    });
   });
 
   it("updates the same same-day history row on resumed stops and awards only the elapsed delta", () => {

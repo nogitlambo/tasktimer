@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildRankPromotionTestPayload,
+  dispatchRankPromotionEvent,
   getRankPromotion,
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   RANK_PROMOTION_AUDIO_SRC,
   RANK_PROMOTION_OVERLAY_ID,
+  TASKTIMER_RANK_PROMOTION_EVENT,
   startRankPromotionCelebration,
   stopRankPromotionCelebration,
 } from "./rank-promotion";
@@ -62,6 +64,35 @@ describe("rank promotion celebration", () => {
       nextRankLabel: "Unranked",
     });
     expect(buildRankPromotionTestPayload("unknown")).toBeNull();
+  });
+
+  it("dispatches the shared rank promotion event with the promotion payload", () => {
+    const listener = vi.fn();
+    const windowRef = new EventTarget();
+    vi.stubGlobal("CustomEvent", class<T = unknown> extends Event {
+      detail: T;
+      constructor(type: string, init?: CustomEventInit<T>) {
+        super(type);
+        this.detail = init?.detail as T;
+      }
+    });
+
+    windowRef.addEventListener(TASKTIMER_RANK_PROMOTION_EVENT, listener);
+    dispatchRankPromotionEvent(windowRef as unknown as Window, {
+      previousRankId: "initiate",
+      previousRankLabel: "Initiate",
+      nextRankId: "operator",
+      nextRankLabel: "Operator",
+    });
+    windowRef.removeEventListener(TASKTIMER_RANK_PROMOTION_EVENT, listener);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect((listener.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      previousRankId: "initiate",
+      previousRankLabel: "Initiate",
+      nextRankId: "operator",
+      nextRankLabel: "Operator",
+    });
   });
 
   it("waits while another visible overlay is blocking the promotion modal", () => {

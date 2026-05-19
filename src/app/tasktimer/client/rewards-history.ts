@@ -6,6 +6,7 @@ import { nowMs } from "../lib/time";
 import type { HistoryEntry, LiveTaskSession, Task } from "../lib/types";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import { ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS } from "../lib/storage";
+import { dispatchRankPromotionEvent, getRankPromotion } from "./rank-promotion";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 
 type RewardSessionTracker = {
@@ -552,6 +553,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       completedSessionsDelta: historyResult.isNewEntry ? 1 : 0,
     });
     ctx.setRewardProgress(nextAward.next);
+    const promotion =
+      typeof window !== "undefined"
+        ? getRankPromotion(nextAward.previous.currentRankId, nextAward.next.currentRankId)
+        : null;
     clearRewardSessionTracker(taskId);
     const nextPrefs = {
       ...(ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences()),
@@ -565,6 +570,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
         .catch(() => {});
     }
+    if (promotion && typeof window !== "undefined") dispatchRankPromotionEvent(window, promotion);
   }
 
   function finalizeLiveSession(

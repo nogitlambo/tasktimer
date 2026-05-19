@@ -1009,6 +1009,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderGroupsPage,
       refreshGroupsData,
       getOpenHistoryTaskIds: () => openHistoryTaskIds,
+      getFocusModeTaskId: () => focusState.get("focusModeTaskId") as string | null,
+      closeFocusMode: () => sessionApi?.closeFocusMode(),
       closeTopOverlayIfOpen,
       closeMobileDetailPanelIfOpen,
       showExitAppConfirm,

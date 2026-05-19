@@ -1364,6 +1364,20 @@ canvas {
 
 .landingV2 .landingSoonV2Submit {
   min-width: 248px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landingV2 .landingSoonV2SubmitIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landingV2 .landingSoonV2SubmitIcon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .landingV2 .landingSoonV2Submit:disabled {

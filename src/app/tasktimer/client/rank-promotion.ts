@@ -4,6 +4,7 @@ import { dispatchOverlayClosedEvent } from "./xp-award-events";
 
 export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
+export const TASKTIMER_RANK_PROMOTION_EVENT = "tasktimer:rank-promotion";
 
 export type RankPromotion = {
   previousRankId: string;
@@ -59,6 +60,13 @@ export function buildRankPromotionTestPayload(rankId: string | null | undefined)
         nextRankLabel: nextRank.label,
       }
     : null;
+}
+
+export function dispatchRankPromotionEvent(
+  windowRef: Pick<Window, "dispatchEvent">,
+  promotion: RankPromotion
+) {
+  windowRef.dispatchEvent(new CustomEvent<RankPromotion>(TASKTIMER_RANK_PROMOTION_EVENT, { detail: promotion }));
 }
 
 export function hasBlockingPromotionOverlay(documentRef: Pick<Document, "querySelectorAll">): boolean {

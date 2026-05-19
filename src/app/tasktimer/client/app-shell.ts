@@ -476,6 +476,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function handleAppBackNavigation(): boolean {
+    if (ctx.getFocusModeTaskId()) {
+      ctx.closeFocusMode();
+      return true;
+    }
     if (ctx.closeTopOverlayIfOpen()) return true;
     if (ctx.closeMobileDetailPanelIfOpen()) return true;
 

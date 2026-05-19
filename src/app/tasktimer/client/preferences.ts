@@ -888,6 +888,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();
       saveStartupModulePreference();
+      saveTaskOrderByPreference();
       saveAutoFocusOnTaskLaunchSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();

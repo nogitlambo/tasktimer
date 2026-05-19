@@ -14,7 +14,8 @@ describe("LandingSoon", () => {
     expect(html).toContain("Progress over perfection");
     expect(html).toContain("Break free");
     expect(html).toContain("Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods");
-    expect(html).toContain("Request Early Access");
+    expect(html).toContain('aria-label="Request early access"');
+    expect(html).toContain('class="landingSoonV2SubmitIcon"');
     expect(html).not.toContain('href="/privacy"');
     expect(html).not.toContain('href="/login"');
     expect(html).not.toContain("Watch Demo");
