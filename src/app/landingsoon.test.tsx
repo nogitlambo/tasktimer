@@ -1,4 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import LandingSoon from "./landingsoon";
 
@@ -22,5 +24,16 @@ describe("LandingSoon", () => {
     expect(html).not.toContain("Core capabilities");
     expect(html).not.toContain("Interface preview");
     expect(html).toContain('href="/about"');
+  });
+
+  it("keeps the email field visible in the narrow mobile form layout", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const mobileBlock = css.match(/@media \(max-width: 560px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
+
+    expect(mobileBlock).toContain(".landingV2 .landingSoonV2Input");
+    expect(mobileBlock).toContain("padding: 0 14px;");
+    expect(mobileBlock).toContain(".landingV2 .landingSoonV2Submit");
+    expect(mobileBlock).toContain("position: static;");
+    expect(mobileBlock).toContain("width: 100%;");
   });
 });

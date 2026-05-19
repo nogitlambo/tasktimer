@@ -839,6 +839,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
       getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
       persistPushAlertsPreference: () => {
+        if (preferencesApi) {
+          preferencesApi.saveMobilePushAlertsSetting();
+          return;
+        }
         try {
           localStorage.setItem(MOBILE_PUSH_ALERTS_KEY, preferencesState.get("mobilePushAlertsEnabled") ? "true" : "false");
           localStorage.setItem(WEB_PUSH_ALERTS_KEY, preferencesState.get("webPushAlertsEnabled") ? "true" : "false");
@@ -1362,6 +1366,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       preferencesState.set("webPushAlertsEnabled", value);
     },
     persistPushAlertsPreference: () => {
+      if (preferencesApi) {
+        preferencesApi.saveMobilePushAlertsSetting();
+        return;
+      }
       try {
         localStorage.setItem(MOBILE_PUSH_ALERTS_KEY, preferencesState.get("mobilePushAlertsEnabled") ? "true" : "false");
         localStorage.setItem(WEB_PUSH_ALERTS_KEY, preferencesState.get("webPushAlertsEnabled") ? "true" : "false");

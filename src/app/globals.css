@@ -2312,6 +2312,14 @@ canvas {
     grid-template-columns: 1fr;
   }
 
+  .landingV2 .landingSoonV2InputShell {
+    gap: 10px;
+  }
+
+  .landingV2 .landingSoonV2Input {
+    padding: 0 14px;
+  }
+
   .landingV2 .landingSoonV2Header {
     grid-template-columns: auto 1fr auto;
   }
@@ -2376,8 +2384,9 @@ canvas {
   }
 
   .landingV2 .landingSoonV2Submit {
-    width: 222px;
-    min-width: 222px;
+    position: static;
+    min-width: 0;
+    width: 100%;
   }
 
   .landingV2 .landingSoonV2CountdownLabel {

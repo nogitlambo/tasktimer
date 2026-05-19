@@ -93,6 +93,13 @@ function safeWriteLocalStorage(key: string, value: string): void {
   }
 }
 
+function parseStoredBoolean(raw: string): boolean | null {
+  const value = raw.trim().toLowerCase();
+  if (value === "true" || value === "1" || value === "on") return true;
+  if (value === "false" || value === "0" || value === "off") return false;
+  return null;
+}
+
 export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
   const { storageKeys, repository } = options;
 
@@ -249,20 +256,18 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadMobilePushAlertsEnabled(): boolean {
+    const localValue = parseStoredBoolean(safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY));
+    if (typeof localValue === "boolean") return localValue;
     const cloudValue = getStoredPreferencesWithoutDefaults()?.mobilePushAlertsEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
-    const raw = safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY).toLowerCase();
-    if (raw === "true" || raw === "1" || raw === "on") return true;
-    if (raw === "false" || raw === "0" || raw === "off") return false;
     return false;
   }
 
   function loadWebPushAlertsEnabled(): boolean {
+    const localValue = parseStoredBoolean(safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY));
+    if (typeof localValue === "boolean") return localValue;
     const prefs = getStoredPreferencesWithoutDefaults();
     if (typeof prefs?.webPushAlertsEnabled === "boolean") return prefs.webPushAlertsEnabled;
-    const raw = safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY).toLowerCase();
-    if (raw === "true" || raw === "1" || raw === "on") return true;
-    if (raw === "false" || raw === "0" || raw === "off") return false;
     return loadMobilePushAlertsEnabled();
   }
 

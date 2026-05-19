@@ -26,6 +26,7 @@ function buildDefaultPreferences() {
     schemaVersion: 1 as const,
     theme: "lime" as const,
     menuButtonStyle: "square" as const,
+    weekStarting: "mon" as const,
     startupModule: "dashboard" as const,
     taskView: "tile" as const,
     taskOrderBy: "custom" as const,
@@ -48,11 +49,13 @@ function buildDefaultPreferences() {
   };
 }
 
-function createService() {
+function createService(overrides?: {
+  cachedPreferences?: ReturnType<typeof buildDefaultPreferences> | null;
+}) {
   return createTaskTimerPreferencesService({
     storageKeys,
     repository: {
-      loadCachedPreferences: () => null,
+      loadCachedPreferences: () => overrides?.cachedPreferences ?? null,
       buildDefaultPreferences,
       savePreferences: vi.fn(),
     },
@@ -89,6 +92,22 @@ describe("createTaskTimerPreferencesService", () => {
     window.localStorage.setItem(storageKeys.WEB_PUSH_ALERTS_KEY, "true");
 
     expect(createService().loadWebPushAlertsEnabled()).toBe(true);
+  });
+
+  it("keeps an explicit local mobile push preference when cached preferences are stale", () => {
+    window.localStorage.setItem(storageKeys.MOBILE_PUSH_ALERTS_KEY, "true");
+
+    expect(
+      createService({ cachedPreferences: { ...buildDefaultPreferences(), mobilePushAlertsEnabled: false } }).loadMobilePushAlertsEnabled()
+    ).toBe(true);
+  });
+
+  it("keeps an explicit local web push preference when cached preferences are stale", () => {
+    window.localStorage.setItem(storageKeys.WEB_PUSH_ALERTS_KEY, "true");
+
+    expect(
+      createService({ cachedPreferences: { ...buildDefaultPreferences(), webPushAlertsEnabled: false } }).loadWebPushAlertsEnabled()
+    ).toBe(true);
   });
 
   it("persists and reloads task order by from local storage", () => {
