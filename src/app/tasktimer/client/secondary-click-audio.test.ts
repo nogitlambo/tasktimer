@@ -114,6 +114,32 @@ describe("secondary click audio", () => {
     }
   });
 
+  it("excludes controls handled by primary click audio selectors", () => {
+    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
+    const taskLaunchSelector =
+      'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+    const taskStopSelector = 'button[data-action="stop"][title="Stop"]';
+
+    const saveButton = makeElement({
+      selectorMatches: { [primarySelector]: true, "button,a": true },
+      textContent: "Save",
+    });
+    const resumeButton = makeElement({
+      selectorMatches: { [taskLaunchSelector]: true, "button,a": true },
+      textContent: "Resume",
+      attributes: { title: "Resume" },
+    });
+    const stopButton = makeElement({
+      selectorMatches: { [taskStopSelector]: true, "button,a": true },
+      textContent: "Stop",
+      attributes: { title: "Stop" },
+    });
+
+    expect(getSecondaryClickTarget(saveButton)).toBeNull();
+    expect(getSecondaryClickTarget(resumeButton)).toBeNull();
+    expect(getSecondaryClickTarget(stopButton)).toBeNull();
+  });
+
   it("matches cancel controls for dedicated cancel audio", () => {
     const textSelector = "button,a";
     const cancelByText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" });

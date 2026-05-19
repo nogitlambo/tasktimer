@@ -28,8 +28,8 @@ function award(overrides: Partial<PendingXpAward> = {}): PendingXpAward {
 }
 
 describe("xp award animation state", () => {
-  it("uses a fixed two-second count animation duration", () => {
-    expect(XP_AWARD_COUNT_DURATION_MS).toBe(2000);
+  it("uses a fixed 300ms count animation duration", () => {
+    expect(XP_AWARD_COUNT_DURATION_MS).toBe(300);
   });
 
   it("keeps the xp payload visible before the count animation starts", () => {

@@ -5,6 +5,7 @@ import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
   getTimeGoalCompleteMetaMessage,
+  shouldOpenFocusModeForTimeGoalNextTask,
   shouldKeepTimeGoalCompletionFlowForTask,
   shiftValidDeferredTimeGoalModal,
 } from "./session";
@@ -186,5 +187,11 @@ describe("time goal complete next task launcher", () => {
     expect(getTimeGoalCompleteMetaMessage(undefined, [])).toBe("");
     expect(getTimeGoalCompleteMetaMessage(3, [{ id: "next", name: "Next", color: "#35e8ff", scheduleText: "9:00 AM" }])).toBe("");
     expect(getTimeGoalCompleteMetaMessage(3, [])).toBe("All tasks completed for today!");
+  });
+
+  it("reopens focus mode for the chosen next task only when the completed task was focused", () => {
+    expect(shouldOpenFocusModeForTimeGoalNextTask("task-1", "task-1")).toBe(true);
+    expect(shouldOpenFocusModeForTimeGoalNextTask("task-2", "task-1")).toBe(false);
+    expect(shouldOpenFocusModeForTimeGoalNextTask(null, "task-1")).toBe(false);
   });
 });

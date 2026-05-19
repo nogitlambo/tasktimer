@@ -1,4 +1,5 @@
 import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-player";
+import { getPrimaryClickTarget, getTaskLaunchClickTarget, getTaskStopClickTarget } from "./primary-click-audio";
 
 export const SECONDARY_CLICK_AUDIO_SRC = "/click-secondary.mp3";
 export const CANCEL_CLICK_AUDIO_SRC = "/click_cancel_button.mp3";
@@ -79,6 +80,7 @@ function isCloseClickControl(element: HTMLElement): boolean {
 
 export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement | null {
   if (getCheckboxClickTarget(target)) return null;
+  if (getTaskStopClickTarget(target) || getTaskLaunchClickTarget(target) || getPrimaryClickTarget(target)) return null;
 
   const directTarget = getClosestElement(target, SECONDARY_CLICK_DIRECT_SELECTOR);
   if (directTarget) {

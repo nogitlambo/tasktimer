@@ -21,7 +21,7 @@ export type XpAwardAnimationState = {
   active: PendingXpAward | null;
 };
 
-export const XP_AWARD_COUNT_DURATION_MS = 2000;
+export const XP_AWARD_COUNT_DURATION_MS = 300;
 export const XP_AWARD_FX_DURATION_MS = 1600;
 
 function normalizeAward(input: PendingXpAward): PendingXpAward {

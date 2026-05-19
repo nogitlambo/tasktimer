@@ -65,6 +65,15 @@ export function getTimeGoalCompleteMetaMessage(
     : "";
 }
 
+export function shouldOpenFocusModeForTimeGoalNextTask(
+  activeFocusTaskIdRaw: unknown,
+  completedTaskIdRaw: unknown
+): boolean {
+  const activeFocusTaskId = String(activeFocusTaskIdRaw || "").trim();
+  const completedTaskId = String(completedTaskIdRaw || "").trim();
+  return !!activeFocusTaskId && !!completedTaskId && activeFocusTaskId === completedTaskId;
+}
+
 export function shouldKeepTimeGoalCompletionFlowForTask(
   task: Task | null | undefined,
   opts: {
@@ -691,6 +700,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
     return true;
+  }
+
+  function launchNextTaskFromTimeGoalCompletion(nextTaskIdRaw: unknown) {
+    const nextTaskId = String(nextTaskIdRaw || "").trim();
+    if (!nextTaskId) return;
+    const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
+    if (nextIndex < 0) return;
+    const shouldReopenFocusMode = shouldOpenFocusModeForTimeGoalNextTask(ctx.getFocusModeTaskId(), getActiveTimeGoalModalTaskId());
+    ctx.startTask(nextIndex);
+    if (shouldReopenFocusMode) {
+      openFocusMode(nextIndex);
+    }
   }
 
   function notifyTimeGoalCompleteOverlayClosedForXpAward() {
@@ -1637,8 +1658,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!task || !nextTaskId) return;
       const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
       if (!completed) return;
-      const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
-      if (nextIndex >= 0) ctx.startTask(nextIndex);
+      launchNextTaskFromTimeGoalCompletion(nextTaskId);
       notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteNextTaskGrid, "click", async (event: Event) => {
@@ -1649,8 +1669,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!task) return;
       const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
       if (!completed) return;
-      const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
-      if (nextIndex >= 0) ctx.startTask(nextIndex);
+      launchNextTaskFromTimeGoalCompletion(nextTaskId);
       notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteDifficultyGroup, "click", (event: Event) => {

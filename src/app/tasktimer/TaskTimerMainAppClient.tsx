@@ -76,6 +76,8 @@ import {
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
 } from "./client/xp-award-animation";
+import { playXpAwardDeliveryHaptic, shouldPlayXpAwardDeliveryHaptic } from "./client/xp-award-feedback";
+import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
@@ -245,16 +247,6 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
   );
 }
 
-function stopXpIncreaseAudio(audio: HTMLAudioElement | null) {
-  if (!audio) return;
-  try {
-    audio.pause();
-    audio.currentTime = 0;
-  } catch {
-    // Ignore audio stop failures.
-  }
-}
-
 function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
   if (typeof document === "undefined") return undefined;
   const overlay = document.getElementById(overlayId) as HTMLElement | null;
@@ -267,6 +259,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [interactionHapticsEnabled, setInteractionHapticsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().interactionHapticsEnabled !== false);
+  const [interactionHapticsIntensity, setInteractionHapticsIntensity] = useState<InteractionHapticsIntensity>(() =>
+    normalizeInteractionHapticsIntensity(workspaceRepository.buildDefaultPreferences().interactionHapticsIntensity)
+  );
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
   const [xpAwardFx, setXpAwardFx] = useState<{
     visible: boolean;
@@ -296,7 +292,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpCountAnimationStartedRef = useRef(false);
-  const xpIncreaseAudioRef = useRef<HTMLAudioElement | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -357,6 +352,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+      setInteractionHapticsEnabled(prefs?.interactionHapticsEnabled !== false);
+      setInteractionHapticsIntensity(normalizeInteractionHapticsIntensity(prefs?.interactionHapticsIntensity));
     });
     return () => unsubscribe();
   }, []);
@@ -371,18 +368,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }, 0);
     return () => window.clearTimeout(openTimer);
   }, [activeRankPromotion, pendingRankPromotion, promotionOverlayRetrySeq, xpAnimationState]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const audio = new Audio("/increase.wav");
-    audio.preload = "auto";
-    xpIncreaseAudioRef.current = audio;
-    return () => {
-      const currentAudio = xpIncreaseAudioRef.current;
-      xpIncreaseAudioRef.current = null;
-      stopXpIncreaseAudio(currentAudio);
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -426,14 +411,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
       xpCountAnimationStartedRef.current = false;
-      stopXpIncreaseAudio(xpIncreaseAudioRef.current);
       return;
     }
 
     if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
-    stopXpIncreaseAudio(xpIncreaseAudioRef.current);
     const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
@@ -482,17 +465,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
-      const audio = xpIncreaseAudioRef.current;
-      if (audio) {
-        try {
-          audio.currentTime = 0;
-          const playback = audio.play();
-          if (playback && typeof playback.catch === "function") {
-            playback.catch(() => {});
-          }
-        } catch {
-          // Ignore playback failures from browser autoplay rules.
-        }
+      if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
+        playXpAwardDeliveryHaptic({
+          isEnabled: interactionHapticsEnabled,
+          intensity: interactionHapticsIntensity,
+        });
       }
       const durationMs = XP_AWARD_COUNT_DURATION_MS;
       const startedAt = performance.now();
@@ -505,7 +482,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         setDisplayedXp(nextXp);
         if (progress >= 1) {
           xpCountAnimationStartedRef.current = false;
-          stopXpIncreaseAudio(xpIncreaseAudioRef.current);
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
           setIsXpCountAnimating(false);
@@ -540,9 +516,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         wasStartedBeforeEffect: countAnimationStarted,
         startedDuringEffect: countAnimationStartedDuringEffect,
       });
-      stopXpIncreaseAudio(xpIncreaseAudioRef.current);
     };
-  }, [xpAnimationState.active]);
+  }, [interactionHapticsEnabled, interactionHapticsIntensity, xpAnimationState.active]);
 
   useEffect(() => {
     if (!isXpAwardSpotlightActive || typeof window === "undefined") return;
@@ -1159,7 +1134,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Achievements</span>
+                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1253,7 +1228,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Achievements</span>
+                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1347,7 +1322,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Achievements</span>
+                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Time</span>
                             <span role="columnheader">Rank</span>
                           </div>
