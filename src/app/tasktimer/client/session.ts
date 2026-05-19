@@ -141,6 +141,29 @@ export function didElapsedReachTimeGoalFromBaseline(
   return !Number.isFinite(prevBaselineSec) || prevBaselineSec < timeGoalSec;
 }
 
+export function resetFocusModeScrollPosition(focusModeScreen: HTMLElement | null | undefined): void {
+  const screen = focusModeScreen || null;
+  if (screen) {
+    screen.scrollTop = 0;
+    screen.scrollLeft = 0;
+  }
+
+  const doc = screen?.ownerDocument ?? (typeof document !== "undefined" ? document : null);
+  if (doc?.documentElement) {
+    doc.documentElement.scrollTop = 0;
+    doc.documentElement.scrollLeft = 0;
+  }
+  if (doc?.body) {
+    doc.body.scrollTop = 0;
+    doc.body.scrollLeft = 0;
+  }
+
+  const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
+  if (typeof windowRef?.scrollTo === "function") {
+    windowRef.scrollTo(0, 0);
+  }
+}
+
 function formatTimeGoalCompleteNextTaskSchedule(task: Task, nowDate = new Date()) {
   const entries = getTaskScheduledDayEntries(task);
   if (!entries.length) return "Unscheduled";
@@ -1017,10 +1040,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.focusModeScreen as HTMLElement).setAttribute("aria-hidden", "false");
     }
     document.body.classList.add("isFocusModeOpen");
+    resetFocusModeScrollPosition(els.focusModeScreen as HTMLElement | null);
     updateFocusDial(task);
     window.requestAnimationFrame(() => {
       const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
       if (!activeTaskId || activeTaskId !== String(task.id || "").trim()) return;
+      resetFocusModeScrollPosition(els.focusModeScreen as HTMLElement | null);
       updateFocusDial(task);
     });
     syncFocusSessionNotesInput(String(task.id || ""));

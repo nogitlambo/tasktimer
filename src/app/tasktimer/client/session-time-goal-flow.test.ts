@@ -5,6 +5,7 @@ import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
   getTimeGoalCompleteMetaMessage,
+  resetFocusModeScrollPosition,
   shouldOpenFocusModeForTimeGoalNextTask,
   shouldKeepTimeGoalCompletionFlowForTask,
   shiftValidDeferredTimeGoalModal,
@@ -43,6 +44,34 @@ function liveSession(overrides: Partial<LiveTaskSession> = {}): LiveTaskSession 
 }
 
 describe("time goal completion flow guard", () => {
+  it("resets focus mode and page scroll positions before showing the focus screen", () => {
+    const scrollCalls: Array<[number, number]> = [];
+    const doc = {
+      documentElement: { scrollTop: 250, scrollLeft: 9 },
+      body: { scrollTop: 140, scrollLeft: 4 },
+      defaultView: {
+        scrollTo: (left: number, top: number) => {
+          scrollCalls.push([left, top]);
+        },
+      },
+    };
+    const focusModeScreen = {
+      scrollTop: 320,
+      scrollLeft: 18,
+      ownerDocument: doc,
+    } as unknown as HTMLElement;
+
+    resetFocusModeScrollPosition(focusModeScreen);
+
+    expect(focusModeScreen.scrollTop).toBe(0);
+    expect(focusModeScreen.scrollLeft).toBe(0);
+    expect(doc.documentElement.scrollTop).toBe(0);
+    expect(doc.documentElement.scrollLeft).toBe(0);
+    expect(doc.body.scrollTop).toBe(0);
+    expect(doc.body.scrollLeft).toBe(0);
+    expect(scrollCalls).toEqual([[0, 0]]);
+  });
+
   it("detects a time goal when the first observed baseline is already over the goal", () => {
     expect(didElapsedReachTimeGoalFromBaseline(undefined, 75, 60)).toBe(true);
   });

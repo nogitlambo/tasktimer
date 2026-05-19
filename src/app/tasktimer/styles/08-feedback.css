@@ -381,6 +381,13 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardM
 
 .dashboardHeatFlipBackBtn {
   flex: 0 0 auto;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboardHeatFlipBackBtn:hover,
+.dashboardHeatFlipBackBtn:focus-visible {
+  border-color: transparent !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatFaceFront .dashboardHeatCalendarGrid {
@@ -455,9 +462,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   border-bottom: 0;
 }
 
-.dashboardHeatSummaryTask {
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatSummaryTask {
   min-width: 0;
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 14px;
   font-weight: 700;
   color: rgba(230, 245, 255, 0.94);
@@ -477,8 +484,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color: rgba(211, 229, 240, 0.7);
 }
 
-.dashboardHeatSummaryTime {
-  font-family: var(--font-tight);
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatSummaryTime {
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;

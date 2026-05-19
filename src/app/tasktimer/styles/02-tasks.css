@@ -349,7 +349,16 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 0 164 21' preserveAspectRatio='none'%3E%3Cpath d='M-2 21 H0 L28 0 H132 L160 21 H162' fill='none' stroke='%23fff' stroke-opacity='.12' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   filter: drop-shadow(0 -1px 0 rgba(0,0,0,.65));
   pointer-events: none;
-  z-index: 0;
+  z-index: 3;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskHistoryReveal::after{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 0 164 21' preserveAspectRatio='none'%3E%3Cpath d='M-2 21 H0 L28 0 H132 L160 21 H162' fill='none' stroke='%2362e4ff' stroke-opacity='.82' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+  filter:
+    drop-shadow(0 -1px 0 rgba(0,0,0,.65))
+    drop-shadow(0 0 5px rgba(40,195,255,.32));
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskHistoryReveal:not(.isOpen):not(.isOpening):not(.isClosing)::before{
+  background: #050708;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal:hover::before,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal:focus-visible::before{
@@ -370,7 +379,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   text-transform: uppercase;
   position: relative;
   top: 1px;
-  z-index: 2;
+  z-index: 4;
   transition: color .16s ease;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal:hover .taskHistoryRevealText,
@@ -1414,15 +1423,20 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   width:42px;
   height:42px;
   flex:0 0 42px;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:0;
   min-width:0;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItem{
   width:100%;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete{
+  margin-top:0;
 }
 body[data-theme="cyan"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackTitle{
   color:#eafcff;
@@ -2001,6 +2015,10 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 }
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn{
   border-color: rgba(214,246,116,.28);
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn.taskFlipBackBtn{
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{
   border-color: transparent !important;
@@ -3667,10 +3685,34 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
   --task-card-bottom-border-color: rgba(255,255,255,.12);
+  --task-card-outline-color: rgba(255,255,255,.12);
   border-bottom-color: transparent !important;
 }
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellBack{
+  --task-card-bottom-border-color: rgba(98, 228, 255, .82);
+  --task-card-outline-color: rgba(98, 228, 255, .82);
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskFaceShellFront{
+  border-color: transparent !important;
+  border-bottom-color: transparent !important;
+  box-shadow: 0 16px 38px rgba(0,0,0,.34) !important;
+}
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
-  --task-card-tab-border-gap: var(--task-history-tab-border-gap, 160px);
+  --task-card-tab-border-gap: calc(var(--task-history-tab-border-gap, 160px) + 8px);
+  border-color: transparent !important;
+}
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront::before{
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) top / 100% 1px no-repeat,
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) left / 1px 100% no-repeat,
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) right / 1px 100% no-repeat;
+  pointer-events: none;
+  z-index: 4;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront::after,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack::after{
@@ -3692,7 +3734,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack::after{
   background: var(--task-card-bottom-border-color);
 }
-
 /* Task action sizing ownership. */
 /* Task action sizing: keep secondary buttons rectangular after responsive rules. */
 #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions,
