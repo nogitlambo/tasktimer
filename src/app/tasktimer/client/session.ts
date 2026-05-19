@@ -120,6 +120,18 @@ export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs
   markTaskTimeGoalCompleted(task, completedAtMs, { reason: "goal", elapsedMs });
 }
 
+export function didElapsedReachTimeGoalFromBaseline(
+  prevBaselineSecRaw: unknown,
+  elapsedWholeSecRaw: unknown,
+  timeGoalSecRaw: unknown
+): boolean {
+  const elapsedWholeSec = Math.floor(Math.max(0, Number(elapsedWholeSecRaw) || 0));
+  const timeGoalSec = Math.round(Math.max(0, Number(timeGoalSecRaw) || 0));
+  if (timeGoalSec <= 0 || elapsedWholeSec < timeGoalSec) return false;
+  const prevBaselineSec = Number(prevBaselineSecRaw);
+  return !Number.isFinite(prevBaselineSec) || prevBaselineSec < timeGoalSec;
+}
+
 function formatTimeGoalCompleteNextTaskSchedule(task: Task, nowDate = new Date()) {
   const entries = getTaskScheduledDayEntries(task);
   if (!entries.length) return "Unscheduled";
@@ -1427,12 +1439,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
     });
     const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Math.round(Number(task.timeGoalMinutes || 0) * 60) : 0;
-    if (
-      timeGoalSec > 0 &&
-      prevBaseline < timeGoalSec &&
-      elapsedWholeSec >= timeGoalSec &&
-      ctx.getTimeGoalModalTaskId() !== taskId
-    ) {
+    if (didElapsedReachTimeGoalFromBaseline(prevBaseline, elapsedWholeSec, timeGoalSec) && ctx.getTimeGoalModalTaskId() !== taskId) {
       shouldOpenTimeGoalModal = true;
     }
     if (

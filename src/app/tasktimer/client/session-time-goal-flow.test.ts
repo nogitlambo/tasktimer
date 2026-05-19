@@ -3,6 +3,7 @@ import type { LiveTaskSession, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import {
   buildTimeGoalCompleteNextTaskOptions,
+  didElapsedReachTimeGoalFromBaseline,
   getTimeGoalCompleteMetaMessage,
   shouldKeepTimeGoalCompletionFlowForTask,
   shiftValidDeferredTimeGoalModal,
@@ -41,6 +42,22 @@ function liveSession(overrides: Partial<LiveTaskSession> = {}): LiveTaskSession 
 }
 
 describe("time goal completion flow guard", () => {
+  it("detects a time goal when the first observed baseline is already over the goal", () => {
+    expect(didElapsedReachTimeGoalFromBaseline(undefined, 75, 60)).toBe(true);
+  });
+
+  it("detects a time goal when elapsed crosses the goal after an earlier baseline", () => {
+    expect(didElapsedReachTimeGoalFromBaseline(59, 60, 60)).toBe(true);
+  });
+
+  it("does not repeatedly detect a time goal after the baseline is already past the goal", () => {
+    expect(didElapsedReachTimeGoalFromBaseline(75, 76, 60)).toBe(false);
+  });
+
+  it("does not detect a time goal before elapsed reaches the goal", () => {
+    expect(didElapsedReachTimeGoalFromBaseline(undefined, 59, 60)).toBe(false);
+  });
+
   it("keeps completion available for an active running live session over its goal", () => {
     expect(
       shouldKeepTimeGoalCompletionFlowForTask(timeGoalTask(), {

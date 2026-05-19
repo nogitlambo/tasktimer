@@ -19,6 +19,25 @@ type WebSignInProps = {
   onAuthEmailChange: (value: string) => void;
 };
 
+function RecaptchaDisclaimer() {
+  return (
+    <footer className="webSignInFooter" aria-label="Security disclaimer">
+      <p className="webSignInFooterText">
+        This site is protected by reCAPTCHA Enterprise and the TaskLaunch{" "}
+        <a
+          className="webSignInFooterLink"
+          href="https://tasklaunch.app/privacy"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Privacy Policy
+        </a>{" "}
+        and Terms of Service apply.
+      </p>
+    </footer>
+  );
+}
+
 export default function WebSignIn(props: WebSignInProps) {
   const {
     authUserEmail,
@@ -51,20 +70,7 @@ export default function WebSignIn(props: WebSignInProps) {
             />
           </section>
         </div>
-        <footer className="webSignInFooter" aria-label="Security disclaimer">
-          <p className="webSignInFooterText">
-            This site is protected by reCAPTCHA Enterprise and the TaskLaunch{" "}
-            <a
-              className="webSignInFooterLink"
-              href="https://tasklaunch.app/privacy"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Privacy Policy
-            </a>{" "}
-            and Terms of Service apply.
-          </p>
-        </footer>
+        <RecaptchaDisclaimer />
       </main>
     );
   }
@@ -216,6 +222,8 @@ export default function WebSignIn(props: WebSignInProps) {
                   </div>
                 )}
               </section>
+
+              <RecaptchaDisclaimer />
             </div>
           </section>
 
@@ -224,20 +232,6 @@ export default function WebSignIn(props: WebSignInProps) {
           </section>
         </div>
       </div>
-      <footer className="webSignInFooter" aria-label="Security disclaimer">
-        <p className="webSignInFooterText">
-          This site is protected by reCAPTCHA Enterprise and the TaskLaunch{" "}
-          <a
-            className="webSignInFooterLink"
-            href="https://tasklaunch.app/privacy"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Privacy Policy
-          </a>{" "}
-          and Terms of Service apply.
-        </p>
-      </footer>
     </main>
   );
 }

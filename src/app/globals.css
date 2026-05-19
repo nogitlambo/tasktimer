@@ -104,7 +104,13 @@ body.landingRoute {
   margin: 0;
   max-width: none;
   isolation: isolate;
-  background: linear-gradient(180deg, #06070a 0%, #050608 100%);
+  --web-sign-in-bg-image: url("/landing_feature_wide-768.webp");
+  --web-sign-in-bg-position: right center;
+  --web-sign-in-bg-size: cover;
+  background:
+    linear-gradient(90deg, rgba(5, 6, 8, 0.18) 0%, rgba(5, 6, 8, 0.08) 46%, rgba(5, 6, 8, 0.12) 100%),
+    var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / var(--web-sign-in-bg-size) no-repeat,
+    #050608;
   color: rgba(248, 250, 252, 0.96);
   font-family: var(--font-readable);
 }
@@ -119,7 +125,7 @@ body.webSignInRoute .webSignInPage {
   position: absolute;
   inset: 0;
   z-index: -2;
-  opacity: 0.42;
+  opacity: 0.18;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
@@ -144,14 +150,12 @@ body.webSignInRoute .webSignInPage {
 }
 
 .webSignInSplit {
-  display: grid;
-  grid-template-columns: minmax(360px, 0.86fr) minmax(0, 1.14fr);
+  display: block;
   min-height: 100svh;
   width: 100%;
 }
 
-.webSignInAuthColumn,
-.webSignInVisualColumn {
+.webSignInAuthColumn {
   position: relative;
   min-height: 100svh;
 }
@@ -159,22 +163,13 @@ body.webSignInRoute .webSignInPage {
 .webSignInAuthColumn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 48px 44px 96px;
-  background: linear-gradient(180deg, rgba(6, 7, 10, 0.98) 0%, rgba(5, 6, 8, 0.98) 100%);
+  justify-content: flex-start;
+  padding: 0;
+  background: transparent;
 }
 
 .webSignInVisualColumn {
-  overflow: hidden;
-  background: #000;
-}
-
-.webSignInLandingImage {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
-    url("/landing_feature_wide-768.webp") right top / auto 100svh no-repeat;
+  display: none;
 }
 
 .webSignInAuthFrame,
@@ -187,6 +182,20 @@ body.webSignInRoute .webSignInPage {
   justify-content: center;
   gap: 16px;
   text-align: center;
+}
+
+.webSignInAuthFrame {
+  width: 460px;
+  max-width: 100%;
+  min-height: 100svh;
+  padding: 48px 32px 96px;
+  background:
+    linear-gradient(180deg, rgba(6, 7, 10, 0.5) 0%, rgba(5, 6, 8, 0.5) 100%),
+    rgba(5, 6, 8, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-width: 0 1px 0 0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(10px);
 }
 
 .webSignInLogo {
@@ -220,7 +229,7 @@ body.webSignInRoute .webSignInPage {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: transparent;
   color: rgba(248, 250, 252, 0.96);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-display-ui);
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.16em;
@@ -381,6 +390,13 @@ body.webSignInRoute .webSignInPage {
   text-align: center;
 }
 
+.webSignInAuthFrame > .webSignInFooter {
+  left: 32px;
+  right: 32px;
+  width: auto;
+  transform: none;
+}
+
 .webSignInFooterText {
   margin: 0;
   color: rgba(248, 250, 252, 0.58);
@@ -402,44 +418,75 @@ body.webSignInRoute .webSignInPage {
 }
 
 @media (min-width: 900px) {
-  .webSignInAuthFrame,
   .webSignInLaunchPanel {
     width: 100%;
   }
 
   .webSignInAuthFrame {
-    max-width: 420px;
+    width: 460px;
+    max-width: none;
   }
 }
 
 @media (min-width: 1200px) {
-  .webSignInLandingImage {
-    background:
-      linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
-      url("/landing_feature_wide-1440.webp") right top / auto 100svh no-repeat;
+  .webSignInPage {
+    --web-sign-in-bg-image: url("/landing_feature_wide-1440.webp");
+    --web-sign-in-bg-size: cover;
   }
 }
 
 @media (min-width: 1800px) {
-  .webSignInLandingImage {
-    background:
-      linear-gradient(90deg, rgba(5, 6, 8, 0.82) 0%, rgba(5, 6, 8, 0.18) 26%, rgba(5, 6, 8, 0) 56%),
-      url("/landing_feature_wide-2048.webp") right top / auto 100svh no-repeat;
+  .webSignInPage {
+    --web-sign-in-bg-image: url("/landing_feature_wide-2048.webp");
+  }
+}
+
+@media (max-width: 1199px) {
+  .webSignInPage {
+    --web-sign-in-bg-position: right center;
+    --web-sign-in-bg-size: auto 100dvh;
   }
 }
 
 @media (max-width: 899px) {
-  .webSignInSplit {
-    display: block;
+  .webSignInPage {
+    --web-sign-in-bg-image: url("/landing_feature-768.webp");
+    --web-sign-in-bg-position: center top;
+    --web-sign-in-bg-size: min(100vw, 768px) auto;
+    background:
+      var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / var(--web-sign-in-bg-size) no-repeat,
+      #050608;
   }
 
   .webSignInAuthColumn {
     min-height: 100svh;
-    padding: 48px 28px 96px;
+    justify-content: center;
+    padding: 0;
   }
 
-  .webSignInVisualColumn {
-    display: none;
+  .webSignInAuthFrame {
+    width: 100%;
+    min-width: 0;
+    min-height: 100svh;
+    padding: 48px 28px 96px;
+    background:
+      linear-gradient(180deg, rgba(6, 7, 10, 0.25) 0%, rgba(5, 6, 8, 0.25) 100%),
+      rgba(5, 6, 8, 0.25);
+    border-width: 0;
+  }
+}
+
+@media (max-width: 899px) and (orientation: landscape) {
+  .webSignInPage {
+    --web-sign-in-bg-image: url("/landing_feature_wide-768.webp");
+    --web-sign-in-bg-position: right center;
+    --web-sign-in-bg-size: auto 100dvh;
+  }
+}
+
+@media (max-width: 640px) {
+  .webSignInPage {
+    --web-sign-in-bg-size: 100vw auto;
   }
 }
 
@@ -453,16 +500,26 @@ body.webSignInRoute .webSignInPage {
   }
 
   .webSignInAuthColumn {
-    padding: 32px 22px 92px;
+    padding: 0;
   }
 
   .webSignInLogo {
     width: 280px;
   }
 
+  .webSignInAuthFrame {
+    padding: 32px 22px 92px;
+  }
+
   .webSignInFooter {
     bottom: 18px;
     width: min(560px, calc(100% - 24px));
+  }
+
+  .webSignInAuthFrame > .webSignInFooter {
+    left: 22px;
+    right: 22px;
+    width: auto;
   }
 }
 
@@ -476,11 +533,20 @@ body.webSignInRoute .webSignInPage {
   }
 
   .webSignInAuthColumn {
-    padding: 28px 16px 88px;
+    padding: 0;
   }
 
   .webSignInLogo {
     width: 230px;
+  }
+
+  .webSignInAuthFrame {
+    padding: 28px 16px 88px;
+  }
+
+  .webSignInAuthFrame > .webSignInFooter {
+    left: 16px;
+    right: 16px;
   }
 }
 
