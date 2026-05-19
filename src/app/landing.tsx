@@ -215,7 +215,7 @@ export default function Landing(props: LandingProps) {
 
   return (
     <main
-      className={`landingV2 ${showBackgroundImage ? "isHeroVisible" : ""}${
+      className={`landingV2 landingV2LandingPage ${showBackgroundImage ? "isHeroVisible" : ""}${
         isRocketVideoResetting ? " isRocketVideoResetting" : ""
       }`}
     >

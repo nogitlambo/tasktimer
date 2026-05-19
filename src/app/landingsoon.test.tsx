@@ -28,7 +28,7 @@ describe("LandingSoon", () => {
 
   it("keeps the email field visible in the narrow mobile form layout", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-    const mobileBlock = css.match(/@media \(max-width: 560px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
+    const mobileBlock = css.match(/@media \(max-width: 700px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
 
     expect(mobileBlock).toContain(".landingV2 .landingSoonV2Input");
     expect(mobileBlock).toContain("padding: 0 14px;");

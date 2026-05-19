@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Landing from "./landing";
@@ -22,5 +24,19 @@ describe("Landing", () => {
     expect(html).toContain('href="/landingsoon"');
     expect(html).toContain("Landing Soon");
     expect(html).not.toContain("Continue without account");
+  });
+
+  it("uses static rocket still assets below 1080px on the landing page only", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const landingTabletBlock = css.match(/@media \(max-width: 1079px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
+    const landingMobileBlock = css.match(/@media \(max-width: 699px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
+
+    expect(css).toContain(".landingV2LandingPage");
+    expect(landingTabletBlock).toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_tablet.webp")');
+    expect(landingTabletBlock).toContain(".landingV2LandingPage::before");
+    expect(landingTabletBlock).toContain("display: block;");
+    expect(landingTabletBlock).toContain(".landingV2LandingPage .landingV2BackgroundVideo");
+    expect(landingTabletBlock).toContain('display: none;');
+    expect(landingMobileBlock).toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp")');
   });
 });

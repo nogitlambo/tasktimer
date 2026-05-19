@@ -105,12 +105,11 @@ body.landingRoute {
   max-width: none;
   isolation: isolate;
   --web-sign-in-bg-image: url("/landing_feature_wide-768.webp");
-  --web-sign-in-bg-position: right center;
-  --web-sign-in-bg-size: cover;
-  background:
-    linear-gradient(90deg, rgba(5, 6, 8, 0.18) 0%, rgba(5, 6, 8, 0.08) 46%, rgba(5, 6, 8, 0.12) 100%),
-    var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / var(--web-sign-in-bg-size) no-repeat,
-    #050608;
+  --web-sign-in-bg-position: right top;
+  --web-sign-in-bg-width: max(100vw, 177.8svh);
+  --web-sign-in-bg-right: 0px;
+  --web-sign-in-bg-translate-x: 0;
+  background: #050608;
   color: rgba(248, 250, 252, 0.96);
   font-family: var(--font-readable);
 }
@@ -118,6 +117,38 @@ body.landingRoute {
 body.webSignInRoute .webSignInPage {
   min-height: 100dvh;
   width: 100vw;
+}
+
+body.webSignInNativeRoute .webSignInPage {
+  --web-sign-in-bg-image: none;
+  background: #050608;
+}
+
+.webSignInPage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: var(--web-sign-in-bg-right);
+  bottom: auto;
+  z-index: -3;
+  height: 100svh;
+  width: var(--web-sign-in-bg-width);
+  pointer-events: none;
+  transform: translateX(var(--web-sign-in-bg-translate-x));
+  background:
+    linear-gradient(90deg, rgba(5, 6, 8, 0.18) 0%, rgba(5, 6, 8, 0.08) 46%, rgba(5, 6, 8, 0.12) 100%),
+    var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / 100% auto no-repeat;
+}
+
+.webSignInPage::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -2;
+  height: 100svh;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000 100%);
 }
 
 .webSignInGrid {
@@ -431,7 +462,6 @@ body.webSignInRoute .webSignInPage {
 @media (min-width: 1200px) {
   .webSignInPage {
     --web-sign-in-bg-image: url("/landing_feature_wide-1440.webp");
-    --web-sign-in-bg-size: cover;
   }
 }
 
@@ -443,19 +473,17 @@ body.webSignInRoute .webSignInPage {
 
 @media (max-width: 1199px) {
   .webSignInPage {
-    --web-sign-in-bg-position: right center;
-    --web-sign-in-bg-size: auto 100dvh;
+    --web-sign-in-bg-position: right top;
   }
 }
 
 @media (max-width: 899px) {
   .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature-768.webp");
+    --web-sign-in-bg-image: none;
     --web-sign-in-bg-position: center top;
-    --web-sign-in-bg-size: min(100vw, 768px) auto;
-    background:
-      var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / var(--web-sign-in-bg-size) no-repeat,
-      #050608;
+    --web-sign-in-bg-width: min(100vw, 768px);
+    --web-sign-in-bg-right: 50%;
+    --web-sign-in-bg-translate-x: 50%;
   }
 
   .webSignInAuthColumn {
@@ -478,15 +506,17 @@ body.webSignInRoute .webSignInPage {
 
 @media (max-width: 899px) and (orientation: landscape) {
   .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature_wide-768.webp");
-    --web-sign-in-bg-position: right center;
-    --web-sign-in-bg-size: auto 100dvh;
+    --web-sign-in-bg-image: none;
+    --web-sign-in-bg-position: right top;
+    --web-sign-in-bg-width: max(100vw, 177.8svh);
+    --web-sign-in-bg-right: 0px;
+    --web-sign-in-bg-translate-x: 0;
   }
 }
 
 @media (max-width: 640px) {
   .webSignInPage {
-    --web-sign-in-bg-size: 100vw auto;
+    --web-sign-in-bg-width: 100vw;
   }
 }
 
@@ -579,10 +609,23 @@ canvas {
   --landing-action-gap: clamp(24px, 7svh, 90px);
   --landing-feature-bg: url("/landing_feature_wide-768.webp");
   --landing-feature-position: right top;
-  --landing-feature-width: max(100vw, 177.8svh);
+  --landing-feature-size: 100% auto;
+  --landing-feature-width: clamp(900px, 100vw, 2048px);
+  --landing-feature-height: clamp(506px, 56.25vw, 1152px);
   --landing-feature-right: 0px;
   --landing-feature-start-opacity: 0;
   --landing-feature-visible-opacity: 0.9;
+  --landing-hero-title-size: clamp(3.25rem, 5.833vw, 5.25rem);
+  --landing-hero-title-offset: clamp(-24px, -1.667vw, -17px);
+  --landing-hero-copy-size: clamp(0.88rem, 1.111vw, 1rem);
+  --landing-hero-copy-line-height: 1.72;
+  --landing-hero-tag-size: clamp(0.6rem, 0.764vw, 0.6875rem);
+  --landing-hero-gap: clamp(24px, 2.361vw, 34px);
+  --landing-hero-pad-x: clamp(34px, 3.333vw, 48px);
+  --landing-hero-pad-top-scale: clamp(20px, 1.944vw, 28px);
+  --landing-hero-pad-bottom-scale: clamp(30px, 2.917vw, 42px);
+  --landing-hero-main-pad-top: clamp(16px, 1.528vw, 22px);
+  --landing-hero-main-pad-bottom: clamp(14px, 1.389vw, 20px);
   min-height: 100svh;
   position: relative;
   overflow-x: clip;
@@ -596,12 +639,12 @@ canvas {
   top: 0;
   right: var(--landing-feature-right);
   bottom: auto;
-  height: 100svh;
+  height: var(--landing-feature-height);
   width: var(--landing-feature-width);
   pointer-events: none;
   opacity: var(--landing-feature-start-opacity);
   transition: opacity 2s ease;
-  background: var(--landing-feature-bg) var(--landing-feature-position) / 100% auto no-repeat;
+  background: var(--landing-feature-bg) var(--landing-feature-position) / var(--landing-feature-size) no-repeat;
   display: none;
 }
 
@@ -617,7 +660,7 @@ canvas {
   right: var(--landing-feature-right);
   max-width: none;
   width: var(--landing-feature-width);
-  height: 100svh;
+  height: var(--landing-feature-height);
   object-fit: cover;
   object-position: var(--landing-feature-position);
   opacity: var(--landing-feature-start-opacity);
@@ -666,7 +709,7 @@ canvas {
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 100svh;
+  height: max(100svh, var(--landing-feature-height));
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000 100%);
@@ -816,11 +859,11 @@ canvas {
 }
 
 .landingV2 .landingV2HeroTitle {
-  margin: -24px 0 0;
+  margin: var(--landing-hero-title-offset) 0 0;
   max-width: 10ch;
-  font-size: clamp(2.5125rem, 6vw, 5.25rem);
+  font-size: var(--landing-hero-title-size);
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.06;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #f8f8ff;
@@ -839,8 +882,8 @@ canvas {
   margin: 0;
   color: #f8f8ff;
   font-family: var(--font-readable);
-  font-size: 1rem;
-  line-height: 1.9;
+  font-size: var(--landing-hero-copy-size);
+  line-height: var(--landing-hero-copy-line-height);
 }
 
 .landingV2 .landingV2Hero {
@@ -848,7 +891,7 @@ canvas {
   position: relative;
   display: flex;
   align-items: flex-start;
-  padding: 28px 48px 42px;
+  padding: var(--landing-hero-pad-top-scale) var(--landing-hero-pad-x) var(--landing-hero-pad-bottom-scale);
   overflow: hidden;
   isolation: isolate;
   background: transparent;
@@ -860,9 +903,9 @@ canvas {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 34px;
+  gap: var(--landing-hero-gap);
   min-height: 100%;
-  padding: 22px 0 20px;
+  padding: var(--landing-hero-main-pad-top) 0 var(--landing-hero-main-pad-bottom);
 }
 
 .landingV2 .landingV2HeroTag {
@@ -870,7 +913,7 @@ canvas {
   align-items: center;
   gap: 10px;
   font-family: var(--font-display-ui);
-  font-size: 11px;
+  font-size: var(--landing-hero-tag-size);
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--landing-muted);
@@ -2133,10 +2176,6 @@ canvas {
 }
 
 @media (max-width: 1180px) {
-  .landingV2 {
-    --landing-feature-right: -6vw;
-  }
-
   .landingV2 .landingV2RocketHotspot {
     right: clamp(0px, 3vw, 36px);
     width: clamp(220px, 40vw, 460px);
@@ -2180,10 +2219,6 @@ canvas {
 }
 
 @media (max-width: 860px) {
-  .landingV2 {
-    --landing-feature-right: -28vw;
-  }
-
   .landingV2 .landingV2RocketHotspot {
     right: -18vw;
     width: 56vw;
@@ -2202,21 +2237,6 @@ canvas {
 
   .landingV2 .landingV2Nav {
     display: none;
-  }
-
-  .landingV2 .landingV2Hero {
-    min-height: auto;
-    gap: 30px;
-    padding: 20px 24px 34px;
-    background-position: center;
-  }
-
-  .landingV2 .landingV2HeroTitle {
-    font-size: clamp(2.35rem, 10vw, 3.8rem);
-  }
-
-  .landingV2 .landingV2HeroMain {
-    padding-top: 0;
   }
 
   .landingV2 .landingV2HeroProof {
@@ -2249,35 +2269,15 @@ canvas {
 }
 
 @media (max-width: 700px) {
-  .landingV2 .landingV2Header {
-    --landing-mobile-header-pad: 24px;
-  }
-
-  .landingV2 .landingV2HeaderFooter {
-    align-items: center;
-  }
-
-  .landingV2 .landingV2HeaderFooter > .landingV2FooterLinks {
-    display: none;
-  }
-
-}
-
-@media (max-width: 560px) {
   .landingV2 {
-    --landing-feature-right: -72vw;
     --landing-native-nav-offset: 0px;
-    background:
-      url("/rocket_breaking_chains4_opticalflow_60fps_50pct_poster.jpg") center top / auto 100svh no-repeat,
-      #000;
-  }
-
-  .aboutLandingPage {
     background: #000;
   }
 
-  .landingSoonV2 {
-    background: #000;
+  .landingV2::before,
+  .landingV2 .landingV2BackgroundVideo,
+  .landingV2 .landingV2RocketHotspot {
+    display: none;
   }
 
   .landingV2::after {
@@ -2295,6 +2295,22 @@ canvas {
     justify-items: stretch;
     min-height: 58px;
     padding: calc(max(12px, env(safe-area-inset-top, 0px)) + var(--landing-native-nav-offset)) 0 12px 18px;
+  }
+
+  .landingV2 .landingV2HeaderFooter {
+    align-items: center;
+  }
+
+  .landingV2 .landingV2HeaderFooter > .landingV2FooterLinks {
+    display: none;
+  }
+
+  .aboutLandingPage {
+    background: #000;
+  }
+
+  .landingSoonV2 {
+    background: #000;
   }
 
   .landingV2 .landingV2HeaderFooter .landingV2FooterBrand,
@@ -2476,6 +2492,37 @@ canvas {
 
   .pricingPageV2 .pricingV2Card {
     padding: 32px 18px 24px;
+  }
+}
+
+@media (max-width: 1079px) {
+  .landingV2LandingPage {
+    --landing-feature-bg: url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_tablet.webp");
+    --landing-feature-position: center top;
+    --landing-feature-size: cover;
+    --landing-feature-width: 100vw;
+    --landing-feature-height: 100svh;
+    --landing-feature-right: 0px;
+    background: #000;
+  }
+
+  .landingV2LandingPage::before {
+    display: block;
+  }
+
+  .landingV2LandingPage .landingV2BackgroundVideo,
+  .landingV2LandingPage .landingV2RocketHotspot {
+    display: none;
+  }
+
+  .landingV2LandingPage::after {
+    height: 100svh;
+  }
+}
+
+@media (max-width: 699px) {
+  .landingV2LandingPage {
+    --landing-feature-bg: url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp");
   }
 }
 

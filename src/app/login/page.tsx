@@ -115,10 +115,14 @@ function WebSignInPageContent() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.classList.add("webSignInRoute");
+    if (isNativeLaunchRuntime) {
+      document.body.classList.add("webSignInNativeRoute");
+    }
     return () => {
       document.body.classList.remove("webSignInRoute");
+      document.body.classList.remove("webSignInNativeRoute");
     };
-  }, []);
+  }, [isNativeLaunchRuntime]);
 
   useEffect(() => {
     try {
