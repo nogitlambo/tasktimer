@@ -1807,8 +1807,8 @@ canvas {
 .privacyLandingSection {
   position: relative;
   z-index: 1;
-  padding: 84px 48px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 48px;
+  border-top: 0;
 }
 
 .privacyLandingContent {
@@ -2272,9 +2272,21 @@ canvas {
       #000;
   }
 
+  .aboutLandingPage {
+    background: #000;
+  }
+
+  .landingSoonV2 {
+    background: #000;
+  }
+
   .landingV2::after {
     background:
       linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, #000 100%);
+  }
+
+  .landingSoonV2::after {
+    background: none;
   }
 
   .landingV2 .landingV2Header {
@@ -2453,8 +2465,8 @@ canvas {
   }
 
   .privacyLandingSection {
-    padding-right: 18px;
-    padding-left: 18px;
+    padding: 24px 18px;
+    border-top: 0;
   }
 
   .privacyLandingClause {

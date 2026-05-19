@@ -74,7 +74,7 @@ function AboutList({ items }: { items: string[] }) {
 
 export default function AboutPage() {
   return (
-    <main className="landingV2 privacyLandingPage">
+    <main className="landingV2 privacyLandingPage aboutLandingPage">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={jsonLdScript([organizationJsonLd(), softwareApplicationJsonLd()])}
@@ -177,7 +177,6 @@ export default function AboutPage() {
             <span>TaskLaunch</span>
           </Link>
           <div className="landingV2FooterLinks">
-            <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
           </div>
         </footer>
