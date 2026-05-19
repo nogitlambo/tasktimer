@@ -104,7 +104,7 @@ type RewardMomentumContext = {
 };
 
 export const XP_PER_TASK_LAUNCH = 5;
-export const MIN_REWARD_ELIGIBLE_SESSION_MS = 1 * 60 * 1000;
+export const MIN_REWARD_ELIGIBLE_SESSION_MS = 2 * 60 * 1000;
 export const SESSION_XP_INTERVAL_MS = 1 * 60 * 1000;
 export const SESSION_BASE_XP_PER_INTERVAL = 0.5;
 export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;

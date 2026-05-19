@@ -1489,6 +1489,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
         const task = tasks[i];
         if (!task) return;
+        (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);

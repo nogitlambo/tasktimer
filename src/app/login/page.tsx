@@ -372,7 +372,7 @@ function WebSignInPageContent() {
     }
     const email = authEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setAuthError("Enter a valid email address.");
+      setAuthError("Please enter a valid email address.");
       setAuthStatus("");
       return;
     }

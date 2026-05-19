@@ -9,13 +9,13 @@ describe("LandingSoon", () => {
     expect(html).toContain('src="/rocket_breaking_chains4_opticalflow_60fps_50pct.mp4"');
     expect(html).toContain('class="landingV2RocketHotspot"');
     expect(html).toContain('type="email"');
-    expect(html).toContain("Early Access Countdown");
+    expect(html).toContain("Early access opens:");
     expect(html).toContain("25th May 2026");
     expect(html).toContain("Progress over perfection");
     expect(html).toContain("Break free");
     expect(html).toContain("Designed for the neurodivergent, TaskLaunch uses non-traditional productivity methods");
     expect(html).toContain('aria-label="Request early access"');
-    expect(html).toContain('class="landingSoonV2SubmitIcon"');
+    expect(html).toContain("Join Early Access List");
     expect(html).not.toContain('href="/privacy"');
     expect(html).not.toContain('href="/login"');
     expect(html).not.toContain("Watch Demo");

@@ -1,11 +1,13 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
-import { ApiRateLimitError, buildPublicRateLimitActorKey, enforcePublicRateLimit, extractClientIp } from "../shared/rateLimit";
+import { ApiRateLimitError, buildPublicRateLimitActorKey, enforcePublicRateLimit, extractClientIp } from "../../shared/rateLimit";
 import { sendEarlyAccessConfirmationEmail } from "@/lib/earlyAccessEmail";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = "force-dynamic";
+
+const RESEND_LOCK_MS = 60 * 60 * 1000;
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
     if (!emailNormalized || !isValidEmail(emailNormalized)) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
+
     const clientIp = extractClientIp(req);
     await enforcePublicRateLimit({
       namespace: "subscribe-burst",
@@ -38,39 +41,20 @@ export async function POST(req: Request) {
       code: "subscribe/rate-limited",
       message: "Too many subscribe attempts. Please wait before trying again.",
     });
-    await enforcePublicRateLimit({
-      namespace: "subscribe-email-repeat",
-      actorKey: buildPublicRateLimitActorKey({ ip: "email", secondaryKey: emailNormalized }),
-      windowMs: 24 * 60 * 60 * 1000,
-      maxEvents: 3,
-      code: "subscribe/repeat-rate-limited",
-      message: "This email was submitted too many times recently. Please try again later.",
-    });
 
-    const userAgent = asString(req.headers.get("user-agent"), 512) || null;
-    const referer = asString(req.headers.get("referer"), 2048) || null;
     const db = getFirebaseAdminDb();
     const ref = db.collection("coming_soon_subscriptions").doc(emailNormalized);
     const existingSnap = await ref.get();
     const existingStatus = String(existingSnap.exists ? existingSnap.get("status") || "" : "").trim().toLowerCase();
-    if (existingSnap.exists && existingStatus !== "unsubscribed") {
-      return NextResponse.json({ ok: true, alreadySubscribed: true });
+    if (!existingSnap.exists || existingStatus === "unsubscribed") {
+      return NextResponse.json({ error: "This email is not on the early access list." }, { status: 404 });
     }
 
-    await ref.set(
-      {
-        email,
-        emailNormalized,
-        status: "subscribed",
-        source: "landing",
-        userAgent,
-        referer,
-        updatedAt: FieldValue.serverTimestamp(),
-        unsubscribedAt: null,
-        ...(existingSnap.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
-      },
-      { merge: true }
-    );
+    const nowMs = Date.now();
+    const existingLockedUntilMs = Math.floor(Number(existingSnap.get("confirmationEmailResendLockedUntilMs") || 0));
+    if (Number.isFinite(existingLockedUntilMs) && existingLockedUntilMs > nowMs) {
+      return NextResponse.json({ ok: true, resent: false, resendLockedUntilMs: existingLockedUntilMs });
+    }
 
     try {
       await ref.set(
@@ -81,13 +65,17 @@ export async function POST(req: Request) {
         { merge: true }
       );
       await sendEarlyAccessConfirmationEmail({ email });
+
+      const resendLockedUntilMs = nowMs + RESEND_LOCK_MS;
       await ref.set(
         {
           confirmationEmailSentAt: FieldValue.serverTimestamp(),
           confirmationEmailLastError: null,
+          confirmationEmailResendLockedUntilMs: resendLockedUntilMs,
         },
         { merge: true }
       );
+      return NextResponse.json({ ok: true, resent: true, resendLockedUntilMs });
     } catch (emailError: unknown) {
       await ref.set(
         {
@@ -97,14 +85,13 @@ export async function POST(req: Request) {
         },
         { merge: true }
       );
+      return NextResponse.json({ error: "Could not send the confirmation email right now." }, { status: 500 });
     }
-
-    return NextResponse.json({ ok: true, alreadySubscribed: existingSnap.exists });
   } catch (error: unknown) {
     if (error instanceof ApiRateLimitError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
     }
-    const message = error instanceof Error && error.message ? error.message : "Could not save your email right now.";
+    const message = error instanceof Error && error.message ? error.message : "Could not send the confirmation email right now.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

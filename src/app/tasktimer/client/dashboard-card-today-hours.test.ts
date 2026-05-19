@@ -64,8 +64,9 @@ describe("dashboard today hours card module", () => {
     expect(model.totalDailyGoalMs).toBe(90 * 60 * 1000);
     expect(model.dailyGoalLoggedMs).toBe(30 * 60 * 1000);
     expect(model.dailyGoalInProgressMs).toBe(15 * 60 * 1000);
+    expect(model.dailyGoalElapsedMs).toBe(45 * 60 * 1000);
     expect(model.dailyGoalProjectedMs).toBe(45 * 60 * 1000);
-    expect(model.dailyGoalProgressPct).toBe(33);
+    expect(model.dailyGoalProgressPct).toBe(50);
     expect(model.dailyGoalProjectedPct).toBe(50);
     expect(model.showDirectionalTrendArrow).toBe(true);
   });

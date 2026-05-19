@@ -1319,9 +1319,7 @@ canvas {
 
 .landingV2 .landingSoonV2Form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
   max-width: 720px;
 }
 
@@ -1337,14 +1335,20 @@ canvas {
   color: var(--landing-muted);
 }
 
+.landingV2 .landingSoonV2InputShell {
+  position: relative;
+  display: grid;
+  align-items: center;
+}
+
 .landingV2 .landingSoonV2Input {
   width: 100%;
   min-height: 58px;
-  padding: 0 18px;
+  padding: 0 236px 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(7, 10, 14, 0.78);
   color: var(--landing-text);
-  font-family: var(--font-readable);
+  font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 1rem;
   outline: none;
   transition:
@@ -1363,10 +1367,17 @@ canvas {
 }
 
 .landingV2 .landingSoonV2Submit {
-  min-width: 248px;
+  position: absolute;
+  top: 0;
+  right: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 222px;
+  min-width: 222px;
+  height: 58px;
+  min-height: 58px;
+  padding: 0 18px;
 }
 
 .landingV2 .landingSoonV2SubmitIcon {
@@ -1400,6 +1411,29 @@ canvas {
 
 .landingV2 .landingSoonV2Status.is-error {
   color: #ff9b97;
+}
+
+.landingV2 .landingSoonV2ResendLink {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.landingV2 .landingSoonV2ResendLink:hover {
+  color: var(--landing-text);
+}
+
+.landingV2 .landingSoonV2ResendLink:disabled,
+.landingV2 .landingSoonV2ResendLink.isDisabled {
+  cursor: wait;
+  opacity: 0.78;
+  text-decoration: none;
 }
 
 .landingV2 .landingSoonV2Header {
@@ -2276,8 +2310,8 @@ canvas {
   }
 
   .landingV2 .landingSoonV2Submit {
-    width: 100%;
-    min-width: 0;
+    width: 222px;
+    min-width: 222px;
   }
 
   .landingV2 .landingSoonV2CountdownLabel {

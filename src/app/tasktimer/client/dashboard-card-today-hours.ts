@@ -10,6 +10,7 @@ export type DashboardTodayHoursModel = {
   totalDailyGoalMs: number;
   dailyGoalLoggedMs: number;
   dailyGoalInProgressMs: number;
+  dailyGoalElapsedMs: number;
   dailyGoalProjectedMs: number;
   dailyGoalProgressPct: number;
   dailyGoalProjectedPct: number;
@@ -105,14 +106,15 @@ export function buildDashboardTodayHoursModel(options: {
     if (elapsedMs <= 0) return sum;
     return sum + elapsedMs;
   }, 0);
-  const dailyGoalProjectedMs = dailyGoalLoggedMs + dailyGoalInProgressMs;
+  const dailyGoalElapsedMs = dailyGoalLoggedMs + dailyGoalInProgressMs;
+  const dailyGoalProjectedMs = dailyGoalElapsedMs;
   const dailyGoalProgressPct =
     totalDailyGoalMs > 0
       ? Math.max(
           0,
           Math.min(
             100,
-            Math.round((dailyGoalLoggedMs / totalDailyGoalMs) * 100),
+            Math.round((dailyGoalElapsedMs / totalDailyGoalMs) * 100),
           ),
         )
       : 0;
@@ -136,6 +138,7 @@ export function buildDashboardTodayHoursModel(options: {
     totalDailyGoalMs,
     dailyGoalLoggedMs,
     dailyGoalInProgressMs,
+    dailyGoalElapsedMs,
     dailyGoalProjectedMs,
     dailyGoalProgressPct,
     dailyGoalProjectedPct,

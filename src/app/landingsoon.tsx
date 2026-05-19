@@ -10,6 +10,7 @@ const rocketVideoFadeOutMs = 1200;
 const rocketVideoFadeInMs = 2000;
 const earlyAccessCountdownTarget = new Date("2026-05-25T10:00:00+10:00");
 const earlyAccessCountdownTargetLabel = "25th May 2026";
+const resendLockMs = 60 * 60 * 1000;
 
 type SubscribeState =
   | { status: "idle"; message: string }
@@ -27,6 +28,14 @@ function getCountdownParts(now: Date) {
   return { days, hours, minutes, seconds, isComplete: diffMs <= 0 };
 }
 
+function formatResendCountdown(lockedUntilMs: number | null, nowMs: number) {
+  if (!lockedUntilMs) return "";
+  const totalSeconds = Math.max(0, Math.ceil((lockedUntilMs - nowMs) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export default function LandingSoon(props: LandingProps) {
   void props;
 
@@ -35,6 +44,10 @@ export default function LandingSoon(props: LandingProps) {
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<SubscribeState>({ status: "idle", message: "" });
   const [countdown, setCountdown] = useState<ReturnType<typeof getCountdownParts> | null>(null);
+  const [duplicateEmail, setDuplicateEmail] = useState("");
+  const [resendLockedUntilMs, setResendLockedUntilMs] = useState<number | null>(null);
+  const [resendNowMs, setResendNowMs] = useState(() => Date.now());
+  const [isResendPending, setIsResendPending] = useState(false);
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null);
   const hasTriggeredRocketVideoRef = useRef(false);
   const isRocketVideoResettingRef = useRef(false);
@@ -76,6 +89,20 @@ export default function LandingSoon(props: LandingProps) {
     const intervalId = window.setInterval(syncCountdown, 1000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (!resendLockedUntilMs) return;
+    const syncResendCountdown = () => {
+      const nowMs = Date.now();
+      setResendNowMs(nowMs);
+      if (resendLockedUntilMs <= nowMs) {
+        setResendLockedUntilMs(null);
+      }
+    };
+    syncResendCountdown();
+    const intervalId = window.setInterval(syncResendCountdown, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [resendLockedUntilMs]);
 
   const playRocketVideo = () => {
     const video = backgroundVideoRef.current;
@@ -168,11 +195,15 @@ export default function LandingSoon(props: LandingProps) {
     event.preventDefault();
     const normalizedEmail = email.trim();
     if (!normalizedEmail) {
-      setSubscribeState({ status: "error", message: "Enter a valid email address." });
+      setDuplicateEmail("");
+      setResendLockedUntilMs(null);
+      setSubscribeState({ status: "error", message: "Please enter a valid email address." });
       return;
     }
 
-    setSubscribeState({ status: "loading", message: "Saving your early access request..." });
+    setDuplicateEmail("");
+    setResendLockedUntilMs(null);
+    setSubscribeState({ status: "loading", message: "Registering..." });
 
     try {
       const response = await fetch("/api/subscribe", {
@@ -187,11 +218,15 @@ export default function LandingSoon(props: LandingProps) {
         throw new Error(payload.error || "Could not save your email right now.");
       }
 
+      if (payload.alreadySubscribed) {
+        setDuplicateEmail(normalizedEmail);
+        setSubscribeState({ status: "success", message: "You're already on the early access list." });
+        return;
+      }
+
       setSubscribeState({
         status: "success",
-        message: payload.alreadySubscribed
-          ? "You're already on the early access list."
-          : "You've subscribed to the early access list",
+        message: "You've subscribed to the early access list",
       });
       setEmail("");
     } catch (error: unknown) {
@@ -199,6 +234,50 @@ export default function LandingSoon(props: LandingProps) {
         status: "error",
         message: error instanceof Error && error.message ? error.message : "Could not save your email right now.",
       });
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    const resendEmail = (duplicateEmail || email).trim();
+    if (!resendEmail || isResendPending || (resendLockedUntilMs !== null && resendLockedUntilMs > resendNowMs)) return;
+
+    setIsResendPending(true);
+    try {
+      const response = await fetch("/api/subscribe/resend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        resent?: boolean;
+        resendLockedUntilMs?: number;
+        error?: string;
+      };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Could not send the confirmation email right now.");
+      }
+
+      const lockedUntilMs =
+        typeof payload.resendLockedUntilMs === "number" && Number.isFinite(payload.resendLockedUntilMs)
+          ? payload.resendLockedUntilMs
+          : Date.now() + resendLockMs;
+      setDuplicateEmail(resendEmail);
+      setResendNowMs(Date.now());
+      setResendLockedUntilMs(lockedUntilMs);
+      setSubscribeState({
+        status: "success",
+        message: payload.resent ? "Confirmation email sent." : "Confirmation email was already sent recently.",
+      });
+    } catch (error: unknown) {
+      setSubscribeState({
+        status: "error",
+        message: error instanceof Error && error.message ? error.message : "Could not send the confirmation email right now.",
+      });
+    } finally {
+      setIsResendPending(false);
     }
   };
 
@@ -212,6 +291,8 @@ export default function LandingSoon(props: LandingProps) {
       : countdown.isComplete
       ? "Open now"
       : `${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`;
+  const resendCountdownText = formatResendCountdown(resendLockedUntilMs, resendNowMs);
+  const isResendLocked = Boolean(resendCountdownText);
 
   return (
     <main
@@ -246,7 +327,7 @@ export default function LandingSoon(props: LandingProps) {
 
           <div className="landingSoonV2Countdown" aria-live="polite">
             <div className="landingSoonV2CountdownInfo">
-              <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+              <span className="landingSoonV2CountdownLabel displayFont">Early access opens:</span>
               <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
             </div>
             <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
@@ -275,50 +356,49 @@ export default function LandingSoon(props: LandingProps) {
 
             <div className="landingSoonV2Countdown landingSoonV2CountdownMobile" aria-live="polite">
               <div className="landingSoonV2CountdownInfo">
-                <span className="landingSoonV2CountdownLabel displayFont">Early Access Countdown</span>
+                <span className="landingSoonV2CountdownLabel displayFont">Early access opens:</span>
                 <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
               </div>
               <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
             </div>
 
             <form className={`landingV2Actions landingSoonV2Form ${showHeroActions ? "isVisible" : ""}`} onSubmit={handleSubmit}>
-              <label className="landingSoonV2Field" htmlFor="landingSoonEmail">
-                <span className="landingSoonV2FieldLabel displayFont">Email</span>
-                <input
-                  id="landingSoonEmail"
-                  name="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  onFocus={() => {
-                    setSubscribeState((current) => (current.message ? { status: "idle", message: "" } : current));
-                  }}
-                  className="landingSoonV2Input"
-                  aria-describedby={subscribeState.message ? "landingSoonStatus" : undefined}
-                />
-              </label>
-              <button
-                type="submit"
-                className="landingV2PrimaryBtn displayFont landingSoonV2Submit"
-                disabled={subscribeState.status === "loading"}
-                aria-label={subscribeState.status === "loading" ? "Submitting early access request" : "Request early access"}
-              >
-                {subscribeState.status === "loading" ? (
-                  "Submitting..."
-                ) : (
-                  <span className="landingSoonV2SubmitIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                      <path
-                        d="M12 3.25a4.75 4.75 0 0 0-4.75 4.75v2.44c0 .7-.24 1.38-.68 1.93l-1.37 1.71a1.75 1.75 0 0 0 1.37 2.84h10.86a1.75 1.75 0 0 0 1.37-2.84l-1.37-1.71a3.1 3.1 0 0 1-.68-1.93V8A4.75 4.75 0 0 0 12 3.25Zm0 17.5a2.61 2.61 0 0 1-2.45-1.69.75.75 0 0 1 1.41-.5 1.1 1.1 0 0 0 2.08 0 .75.75 0 0 1 1.41.5A2.61 2.61 0 0 1 12 20.75Z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </span>
-                )}
-              </button>
+              <div className="landingSoonV2Field">
+                <label className="landingSoonV2FieldLabel displayFont" htmlFor="landingSoonEmail">
+                  Email
+                </label>
+                <div className="landingSoonV2InputShell">
+                  <input
+                    id="landingSoonEmail"
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      setDuplicateEmail("");
+                      setResendLockedUntilMs(null);
+                    }}
+                    onFocus={() => {
+                      setSubscribeState((current) =>
+                        current.message && !duplicateEmail ? { status: "idle", message: "" } : current
+                      );
+                    }}
+                    className="landingSoonV2Input"
+                    aria-describedby={subscribeState.message ? "landingSoonStatus" : undefined}
+                  />
+                  <button
+                    type="submit"
+                    className="landingV2PrimaryBtn displayFont landingSoonV2Submit"
+                    disabled={subscribeState.status === "loading"}
+                    aria-label={subscribeState.status === "loading" ? "Submitting early access request" : "Request early access"}
+                  >
+                    {subscribeState.status === "loading" ? "Submitting..." : "Join Early Access List"}
+                  </button>
+                </div>
+              </div>
             </form>
 
             {subscribeState.message ? (
@@ -329,6 +409,23 @@ export default function LandingSoon(props: LandingProps) {
                 role={subscribeState.status === "error" ? "alert" : undefined}
               >
                 {subscribeState.message}
+                {duplicateEmail ? (
+                  <>
+                    {" "}
+                    {isResendLocked ? (
+                      <span className="landingSoonV2ResendLink isDisabled">Resend available in {resendCountdownText}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="landingSoonV2ResendLink"
+                        onClick={handleResendConfirmation}
+                        disabled={isResendPending}
+                      >
+                        {isResendPending ? "Sending..." : "Resend confirmation"}
+                      </button>
+                    )}
+                  </>
+                ) : null}
               </p>
             ) : null}
           </div>

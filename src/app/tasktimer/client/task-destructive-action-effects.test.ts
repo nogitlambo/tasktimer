@@ -143,7 +143,7 @@ function createHarness(overrides: {
 
 describe("task destructive action effects", () => {
   it("opens reset confirmation and marks reset confirm state", () => {
-    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 60_000 })] });
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 120_000 })] });
 
     harness.adapter.resetTask(0);
 
@@ -154,7 +154,7 @@ describe("task destructive action effects", () => {
   });
 
   it("shows the reset XP summary when the task would bank XP", () => {
-    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 60_000 })] });
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 120_000 })] });
 
     harness.adapter.resetTask(0);
 

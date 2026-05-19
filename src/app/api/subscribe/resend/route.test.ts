@@ -13,8 +13,8 @@ vi.mock("firebase-admin/firestore", () => ({
   },
 }));
 
-vi.mock("../shared/rateLimit", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../shared/rateLimit")>();
+vi.mock("../../shared/rateLimit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../shared/rateLimit")>();
   return {
     ...actual,
     enforcePublicRateLimit: mocks.enforcePublicRateLimit,
@@ -53,92 +53,86 @@ function createFirestoreMock(existingData: Record<string, unknown> | null) {
   return { db, ref, setCalls };
 }
 
-function subscribeRequest(email = "User@Example.com") {
-  return new Request("https://tasklaunch.test/api/subscribe", {
+function resendRequest(email = "User@Example.com") {
+  return new Request("https://tasklaunch.test/api/subscribe/resend", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email }),
   });
 }
 
-describe("POST /api/subscribe", () => {
+describe("POST /api/subscribe/resend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
     mocks.enforcePublicRateLimit.mockResolvedValue(undefined);
     mocks.sendEarlyAccessConfirmationEmail.mockResolvedValue(undefined);
   });
 
-  it("saves a new early access request and sends a confirmation email", async () => {
-    const firestore = createFirestoreMock(null);
-    mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
-
-    const response = await POST(subscribeRequest());
-    const payload = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(payload).toEqual({ ok: true, alreadySubscribed: false });
-    expect(firestore.db.collection).toHaveBeenCalledWith("coming_soon_subscriptions");
-    expect(firestore.setCalls[0].data).toMatchObject({
-      email: "User@Example.com",
-      emailNormalized: "user@example.com",
-      status: "subscribed",
-      unsubscribedAt: null,
-      createdAt: "SERVER_TIMESTAMP",
-    });
-    expect(mocks.sendEarlyAccessConfirmationEmail).toHaveBeenCalledWith({ email: "User@Example.com" });
-    expect(firestore.setCalls[2].data).toMatchObject({
-      confirmationEmailSentAt: "SERVER_TIMESTAMP",
-      confirmationEmailLastError: null,
-    });
-  });
-
-  it("returns already subscribed without automatically resending confirmation", async () => {
+  it("resends confirmation for an existing subscribed email and stores a one-hour lock", async () => {
     const firestore = createFirestoreMock({ status: "subscribed" });
     mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
 
-    const response = await POST(subscribeRequest());
+    const response = await POST(resendRequest());
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload).toEqual({ ok: true, alreadySubscribed: true });
+    expect(payload).toEqual({ ok: true, resent: true, resendLockedUntilMs: 1_700_003_600_000 });
+    expect(mocks.sendEarlyAccessConfirmationEmail).toHaveBeenCalledWith({ email: "User@Example.com" });
+    expect(firestore.setCalls.at(-1)?.data).toMatchObject({
+      confirmationEmailSentAt: "SERVER_TIMESTAMP",
+      confirmationEmailLastError: null,
+      confirmationEmailResendLockedUntilMs: 1_700_003_600_000,
+    });
+  });
+
+  it("returns an existing lock without resending", async () => {
+    const firestore = createFirestoreMock({
+      status: "subscribed",
+      confirmationEmailResendLockedUntilMs: 1_700_000_120_000,
+    });
+    mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
+
+    const response = await POST(resendRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true, resent: false, resendLockedUntilMs: 1_700_000_120_000 });
     expect(mocks.sendEarlyAccessConfirmationEmail).not.toHaveBeenCalled();
     expect(firestore.setCalls).toHaveLength(0);
   });
 
-  it("reactivates an unsubscribed email and sends confirmation again", async () => {
-    const firestore = createFirestoreMock({ status: "unsubscribed" });
-    mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
+  it("rejects unknown and unsubscribed emails", async () => {
+    const unknownFirestore = createFirestoreMock(null);
+    mocks.getFirebaseAdminDb.mockReturnValue(unknownFirestore.db);
 
-    const response = await POST(subscribeRequest());
-    const payload = await response.json();
+    const unknownResponse = await POST(resendRequest());
+    expect(unknownResponse.status).toBe(404);
+    expect(await unknownResponse.json()).toEqual({ error: "This email is not on the early access list." });
 
-    expect(response.status).toBe(200);
-    expect(payload).toEqual({ ok: true, alreadySubscribed: true });
-    expect(firestore.setCalls[0].data).toMatchObject({
-      status: "subscribed",
-      unsubscribedAt: null,
-    });
-    expect(mocks.enforcePublicRateLimit).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        namespace: "subscribe-email-resend",
-      })
-    );
-    expect(mocks.sendEarlyAccessConfirmationEmail).toHaveBeenCalledTimes(1);
+    const unsubscribedFirestore = createFirestoreMock({ status: "unsubscribed" });
+    mocks.getFirebaseAdminDb.mockReturnValue(unsubscribedFirestore.db);
+
+    const unsubscribedResponse = await POST(resendRequest());
+    expect(unsubscribedResponse.status).toBe(404);
+    expect(await unsubscribedResponse.json()).toEqual({ error: "This email is not on the early access list." });
+    expect(mocks.sendEarlyAccessConfirmationEmail).not.toHaveBeenCalled();
   });
 
-  it("returns success and records metadata when confirmation email sending fails", async () => {
-    const firestore = createFirestoreMock(null);
+  it("records send failures without storing a resend lock", async () => {
+    const firestore = createFirestoreMock({ status: "subscribed" });
     mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
     mocks.sendEarlyAccessConfirmationEmail.mockRejectedValue(new Error("SMTP rejected the message"));
 
-    const response = await POST(subscribeRequest());
+    const response = await POST(resendRequest());
     const payload = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(payload).toEqual({ ok: true, alreadySubscribed: false });
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ error: "Could not send the confirmation email right now." });
     expect(firestore.setCalls.at(-1)?.data).toMatchObject({
       confirmationEmailLastAttemptAt: "SERVER_TIMESTAMP",
       confirmationEmailLastError: "SMTP rejected the message",
     });
+    expect(firestore.setCalls.some((call) => "confirmationEmailResendLockedUntilMs" in call.data)).toBe(false);
   });
 });

@@ -72,7 +72,11 @@ function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
   const text = [
     "You're on the TaskLaunch early access list.",
     "",
-    "Thanks for requesting early access. We'll email this address when access opens.",
+    "Early access opens on May 25, 2026.",
+    "",
+    "TaskLaunch is built for neurodivergent productivity patterns: flexible momentum, gentle recovery after inconsistency, and progress without guilt-driven systems.",
+    "",
+    "We'll email this address when access opens.",
     "",
     `If you did not request this, unsubscribe here: ${input.unsubscribeUrl}`,
   ].join("\n");
@@ -82,7 +86,9 @@ function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
   <body style="margin:0;padding:24px;background:#0d0f13;color:#f7fafc;font-family:Arial,sans-serif;">
     <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:24px;background:#151923;">
       <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;">You're on the TaskLaunch early access list.</h1>
-      <p style="margin:0 0 16px;line-height:1.55;">Thanks for requesting early access. We'll email this address when access opens.</p>
+      <p style="margin:0 0 16px;line-height:1.55;">Early access opens on May 25, 2026.</p>
+      <p style="margin:0 0 16px;line-height:1.55;">TaskLaunch is built for neurodivergent productivity patterns: flexible momentum, gentle recovery after inconsistency, and progress without guilt-driven systems.</p>
+      <p style="margin:0 0 16px;line-height:1.55;">We'll email this address when access opens.</p>
       <p style="margin:0;color:#b8c0cc;font-size:14px;line-height:1.5;">If you did not request this, <a href="${input.unsubscribeUrl}" style="color:#67e8f9;">unsubscribe here</a>.</p>
     </div>
   </body>

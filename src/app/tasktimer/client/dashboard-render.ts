@@ -959,7 +959,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     const progressPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / goalTotalMs) * 100))) : 0;
     const projectedPct = goalTotalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / goalTotalMs) * 100))) : 0;
-    const showProjectionFill = goalTotalMs > 0 && runningMs > 0;
+    const showProjectionFill = goalTotalMs > 0 && runningMs > 0 && projectedMs > loggedMs;
     const projectedDeltaPct = showProjectionFill ? Math.max(0, projectedPct - progressPct) : 0;
     const markerPct = Math.max(0, Math.min(100, Number.isFinite(activeMarkerPct) ? activeMarkerPct : 0));
 
@@ -1291,7 +1291,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       projectionFillEl,
       projectionMarkerEl,
       goalTotalMs: todayHoursModel.totalDailyGoalMs,
-      loggedMs: todayHoursModel.dailyGoalLoggedMs,
+      loggedMs: todayHoursModel.dailyGoalElapsedMs,
       projectedMs: todayHoursModel.dailyGoalProjectedMs,
       runningMs: todayHoursModel.dailyGoalInProgressMs,
       activeMarkerRunning: todayHoursModel.dailyGoalInProgressMs > 0,

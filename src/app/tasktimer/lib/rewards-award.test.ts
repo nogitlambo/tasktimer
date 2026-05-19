@@ -77,9 +77,9 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(0.5);
-    expect(result.next.totalXpPrecise).toBe(1.5);
-    expect(result.next.totalXp).toBe(1);
+    expect(result.amount).toBe(1);
+    expect(result.next.totalXpPrecise).toBe(2);
+    expect(result.next.totalXp).toBe(2);
     expect(result.next.completedSessions).toBe(2);
   });
 
@@ -128,52 +128,52 @@ describe("awardCompletedSessionXp", () => {
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(0.5);
-    expect(result.next.totalXpPrecise).toBe(12.5);
-    expect(result.next.totalXp).toBe(12);
+    expect(result.amount).toBe(1);
+    expect(result.next.totalXpPrecise).toBe(13);
+    expect(result.next.totalXp).toBe(13);
     expect(result.next.completedSessions).toBe(13);
   });
 
-  it("awards one XP for a one-minute no-goal task session", () => {
+  it("awards one XP for a two-minute no-goal task session", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
 
     const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
       taskId: "task-1",
       awardedAt: Date.now(),
-      elapsedMs: MINUTE_MS,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
       historyByTaskId: {
-        "task-1": [{ ts: Date.now(), name: "Focus", ms: MINUTE_MS }],
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
       },
       tasks: [task()],
       weekStarting: "mon",
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(0.5);
-    expect(result.next.totalXpPrecise).toBe(0.5);
-    expect(result.next.totalXp).toBe(0);
+    expect(result.amount).toBe(1);
+    expect(result.next.totalXpPrecise).toBe(1);
+    expect(result.next.totalXp).toBe(1);
     expect(result.next.completedSessions).toBe(1);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
       taskId: "task-1",
-      eligibleMs: MINUTE_MS,
-      baseXp: 0.5,
+      eligibleMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      baseXp: 1,
       multiplier: 1,
-      xp: 0.5,
+      xp: 1,
     });
   });
 
-  it("does not award XP below one minute but still counts the completed session", () => {
+  it("does not award XP below two minutes but still counts the completed session", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
 
     const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
       taskId: "task-1",
       awardedAt: Date.now(),
-      elapsedMs: MINUTE_MS - 1,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS - 1,
       historyByTaskId: {
-        "task-1": [{ ts: Date.now(), name: "Focus", ms: MINUTE_MS - 1 }],
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS - 1 }],
       },
       tasks: [task()],
       weekStarting: "mon",
@@ -317,21 +317,21 @@ describe("awardCompletedSessionXp", () => {
     const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
       taskId: "task-1",
       awardedAt,
-      elapsedMs: MINUTE_MS,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
       historyByTaskId,
-      tasks: [task({ running: true, startMs: awardedAt - MINUTE_MS })],
+      tasks: [task({ running: true, startMs: awardedAt - MIN_REWARD_ELIGIBLE_SESSION_MS })],
       weekStarting: "mon",
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(0.75);
-    expect(result.next.totalXpPrecise).toBe(0.75);
-    expect(result.next.totalXp).toBe(0);
+    expect(result.amount).toBe(1.5);
+    expect(result.next.totalXpPrecise).toBe(1.5);
+    expect(result.next.totalXp).toBe(1);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
-      baseXp: 0.5,
+      baseXp: 1,
       multiplier: 1.5,
-      xp: 0.75,
+      xp: 1.5,
     });
   });
 
