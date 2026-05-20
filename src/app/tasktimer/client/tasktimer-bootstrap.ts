@@ -38,6 +38,7 @@ type InitialHydrationOptions = {
   finishBootstrapUi: () => void;
   setDashboardRefreshPending: (value: boolean) => void;
   currentUid: () => string | null;
+  hasCachedWorkspace?: () => boolean;
   startInitialAuthHydration: (message?: string) => void;
   finishInitialAuthHydration: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
@@ -95,6 +96,14 @@ export function finishTaskTimerBootstrapUi(options: FinishBootstrapOptions) {
 export function runInitialTaskTimerHydration(options: InitialHydrationOptions) {
   const shouldHydrateBeforeInteractiveBoot = !!options.currentUid();
   if (shouldHydrateBeforeInteractiveBoot) {
+    if (options.hasCachedWorkspace?.()) {
+      options.finishBootstrapUi();
+      options.finishInitialAuthHydration();
+      void options.rehydrateFromCloudAndRender().catch(() => {
+        // Keep cached state if the initial cloud hydrate is unavailable.
+      });
+      return;
+    }
     options.startInitialAuthHydration("Loading your workspace into this session...");
     void options
       .rehydrateFromCloudAndRender()

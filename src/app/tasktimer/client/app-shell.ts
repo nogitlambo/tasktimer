@@ -471,6 +471,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       return;
     }
     if (nextPage === "dashboard" && !opts?.skipDashboardRender) {
+      ctx.applyDashboardCardSizes();
       ctx.renderDashboardWidgets();
     }
   }

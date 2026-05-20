@@ -572,6 +572,7 @@ type CreateAppShellOptionsArgs = {
   requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
+  applyDashboardCardSizes: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderGroupsPage: () => void;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
@@ -682,8 +683,6 @@ type CreateDashboardOptionsArgs = {
   renderDashboardTimelineCard: () => void;
   selectDashboardActivityDay: (dayKey: string | null) => void;
   closeDashboardActivityDayDetail: () => void;
-  toggleDashboardActivityGoal: () => void;
-  toggleDashboardActivityCompare: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -712,8 +711,6 @@ type CreateDashboardFeatureOptionsArgs = {
     | "renderDashboardTimelineCard"
     | "selectDashboardActivityDay"
     | "closeDashboardActivityDayDetail"
-    | "toggleDashboardActivityGoal"
-    | "toggleDashboardActivityCompare"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -854,7 +851,7 @@ export function createTaskTimerPreferencesContext(
     isSwitchOn: args.isSwitchOn,
     storageKeys: args.storageKeys,
     defaultModeColors: args.defaultModeColors,
-    getThemeMode: () => asType<"purple" | "cyan" | "lime">(args.preferencesState.get("themeMode")),
+    getThemeMode: () => asType<"lime">(args.preferencesState.get("themeMode")),
     setThemeModeState: (value) => {
       args.preferencesState.set("themeMode", value);
     },
@@ -1195,7 +1192,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getOpenHistoryTaskIds: () => args.openHistoryTaskIds,
     getPinnedHistoryTaskIds: () => asType<Set<string>>(args.historyUiState.get("pinnedHistoryTaskIds")),
     getHistoryViewByTaskId: () => args.historyViewByTaskId,
-    getThemeMode: () => asType<"purple" | "cyan" | "lime">(args.preferencesState.get("themeMode")),
+    getThemeMode: () => asType<"lime">(args.preferencesState.get("themeMode")),
     getAutoFocusOnTaskLaunchEnabled: () => asType<boolean>(args.preferencesState.get("autoFocusOnTaskLaunchEnabled")),
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     getCheckpointAlertToastEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertToastEnabled")),
@@ -1464,6 +1461,7 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     requestScheduleEntryScroll: args.requestScheduleEntryScroll,
     render: args.render,
     renderHistory: args.renderHistory,
+    applyDashboardCardSizes: args.applyDashboardCardSizes,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderGroupsPage: args.renderGroupsPage,
     refreshGroupsData: args.refreshGroupsData,
@@ -1564,8 +1562,6 @@ export function createTaskTimerDashboardContext(
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardActivityDay: args.selectDashboardActivityDay,
     closeDashboardActivityDayDetail: args.closeDashboardActivityDayDetail,
-    toggleDashboardActivityGoal: args.toggleDashboardActivityGoal,
-    toggleDashboardActivityCompare: args.toggleDashboardActivityCompare,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
@@ -1594,8 +1590,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     hasSelectedDashboardMomentumDriver,
     selectDashboardActivityDay,
     closeDashboardActivityDayDetail,
-    toggleDashboardActivityGoal,
-    toggleDashboardActivityCompare,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
     renderDashboardHeatSessionList,
@@ -1629,8 +1623,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
       selectDashboardActivityDay: (dayKey) => selectDashboardActivityDay(dayKey),
       closeDashboardActivityDayDetail: () => closeDashboardActivityDayDetail(),
-      toggleDashboardActivityGoal: () => toggleDashboardActivityGoal(),
-      toggleDashboardActivityCompare: () => toggleDashboardActivityCompare(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),

@@ -18,6 +18,14 @@ function clampPositiveInt(value: unknown) {
   return Number.isFinite(normalized) ? normalized : 1;
 }
 
+export function getDashboardTemplateColumnCount(template: string | null | undefined) {
+  return String(template || "")
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => !!token && token !== "none")
+    .length;
+}
+
 export function sanitizeDashboardCardPlacements(value: unknown) {
   const out: Record<string, DashboardCardPlacement> = {};
   if (!value || typeof value !== "object") return out;

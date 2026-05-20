@@ -161,6 +161,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function syncPlannedStartValueFromSelectors(opts?: { markTouched?: boolean }) {
     const nextValue = readPlannedStartValue({
+      timeInput: els.addTaskPlannedStartTimeInput,
       hourSelect: els.addTaskPlannedStartHourSelect,
       minuteSelect: els.addTaskPlannedStartMinuteSelect,
       meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
@@ -175,6 +176,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   function syncAddTaskPlannedStartUi() {
     syncPlannedStartSelectors(
       {
+        timeInput: els.addTaskPlannedStartTimeInput,
         hourSelect: els.addTaskPlannedStartHourSelect,
         minuteSelect: els.addTaskPlannedStartMinuteSelect,
         meridiemSelect: els.addTaskPlannedStartMeridiemSelect,
@@ -1051,6 +1053,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMinuteSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartTimeInput, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    ctx.on(els.addTaskPlannedStartTimeInput, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
     ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
       if (!els.addTaskPlannedStartPushReminders?.checked) return;
       void enablePushAlertsForCurrentRuntime();

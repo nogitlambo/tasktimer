@@ -33,6 +33,8 @@ type TaskTimerAppFrameProps = {
   useClientNavButtons?: boolean;
   mobileToolbar?: ReactNode;
   currentRankId: string;
+  desktopPromotionHoldRankId?: string | null;
+  desktopInsigniaUpgrade?: DesktopInsigniaUpgradePayload | null;
   currentUserAvatarSrc?: string;
   currentUserAvatarInitials?: string;
   currentUserLabel?: string;
@@ -53,8 +55,46 @@ type TaskTimerAppFrameProps = {
   };
 };
 
+export type DesktopInsigniaUpgradePayload = {
+  seq: number;
+  previousRankId: string;
+  nextRankId: string;
+};
+
 function formatXpNumber(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+}
+
+function normalizeRankId(value: string | null | undefined) {
+  return String(value || "").trim();
+}
+
+export function getDesktopHeaderRankId(
+  currentRankId: string,
+  desktopPromotionHoldRankId?: string | null,
+  activeUpgrade?: Pick<DesktopInsigniaUpgradePayload, "nextRankId"> | null
+) {
+  return normalizeRankId(activeUpgrade?.nextRankId) || normalizeRankId(desktopPromotionHoldRankId) || normalizeRankId(currentRankId);
+}
+
+export function shouldRenderDesktopInsigniaUpgrade(
+  upgrade: DesktopInsigniaUpgradePayload | null | undefined,
+  activeSeq: number | null
+) {
+  return !!upgrade && upgrade.seq === activeSeq && normalizeRankId(upgrade.previousRankId) !== "" && normalizeRankId(upgrade.nextRankId) !== "";
+}
+
+function playDesktopInsigniaUpgradeAudio() {
+  if (typeof window === "undefined") return;
+  try {
+    const audio = new Audio("/insignia_upgrade.mp3");
+    audio.preload = "auto";
+    audio.currentTime = 0;
+    const playback = audio.play();
+    if (playback && typeof playback.catch === "function") playback.catch(() => {});
+  } catch {
+    // Browser autoplay failures are non-blocking for the header upgrade UI.
+  }
 }
 
 export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
@@ -79,6 +119,8 @@ export default function TaskTimerAppFrame({
   useClientNavButtons = activePage !== "history",
   mobileToolbar = null,
   currentRankId,
+  desktopPromotionHoldRankId = null,
+  desktopInsigniaUpgrade = null,
   currentUserAvatarSrc = "",
   currentUserAvatarInitials = "U",
   currentUserLabel = "User",
@@ -94,6 +136,7 @@ export default function TaskTimerAppFrame({
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const railPage = activePage === "schedule" ? "tasks" : activePage;
@@ -108,6 +151,25 @@ export default function TaskTimerAppFrame({
     : "You have reached the highest configured rank.";
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
+  const isDesktopInsigniaUpgradeActive = shouldRenderDesktopInsigniaUpgrade(
+    desktopInsigniaUpgrade,
+    activeDesktopInsigniaUpgradeSeq
+  );
+  const desktopHeaderRankId = getDesktopHeaderRankId(
+    currentRankId,
+    desktopPromotionHoldRankId,
+    isDesktopInsigniaUpgradeActive ? desktopInsigniaUpgrade : null
+  );
+
+  useEffect(() => {
+    if (!desktopInsigniaUpgrade) return;
+    setActiveDesktopInsigniaUpgradeSeq(desktopInsigniaUpgrade.seq);
+    playDesktopInsigniaUpgradeAudio();
+    const clearTimer = window.setTimeout(() => {
+      setActiveDesktopInsigniaUpgradeSeq((current) => current === desktopInsigniaUpgrade.seq ? null : current);
+    }, 3400);
+    return () => window.clearTimeout(clearTimer);
+  }, [desktopInsigniaUpgrade]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -320,15 +382,38 @@ export default function TaskTimerAppFrame({
                   onClick={() => setShowRankLadderModal(true)}
                 >
                   <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                    <RankThumbnail
-                      rankId={currentRankId}
-                      className="appShellHeaderXpInsigniaShell"
-                      imageClassName="appShellHeaderXpInsigniaImg"
-                      placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
-                      alt=""
-                      size={24}
-                      aria-hidden
-                    />
+                    {isDesktopInsigniaUpgradeActive && desktopInsigniaUpgrade ? (
+                      <span className="appShellHeaderXpInsigniaUpgradeShell" data-insignia-upgrade-seq={desktopInsigniaUpgrade.seq}>
+                        <RankThumbnail
+                          rankId={desktopInsigniaUpgrade.previousRankId}
+                          className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isOld"
+                          imageClassName="appShellHeaderXpInsigniaImg"
+                          placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                          alt=""
+                          size={24}
+                          aria-hidden
+                        />
+                        <RankThumbnail
+                          rankId={desktopInsigniaUpgrade.nextRankId}
+                          className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isNew"
+                          imageClassName="appShellHeaderXpInsigniaImg"
+                          placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                          alt=""
+                          size={24}
+                          aria-hidden
+                        />
+                      </span>
+                    ) : (
+                      <RankThumbnail
+                        rankId={desktopHeaderRankId}
+                        className="appShellHeaderXpInsigniaShell"
+                        imageClassName="appShellHeaderXpInsigniaImg"
+                        placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                        alt=""
+                        size={24}
+                        aria-hidden
+                      />
+                    )}
                     <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>
                   </span>
                   <div

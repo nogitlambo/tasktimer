@@ -82,7 +82,7 @@ export type TaskTimerMutableState = {
   confirmAction: null | (() => void);
   confirmActionAlt: null | (() => void);
   confirmActionCancel: null | (() => void);
-  themeMode: "purple" | "cyan" | "lime";
+  themeMode: "lime";
   menuButtonStyle: "parallelogram" | "square";
   addTaskCustomNames: string[];
   weekStarting: DashboardWeekStart;

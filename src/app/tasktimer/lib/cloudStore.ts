@@ -51,7 +51,7 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
-  theme: "purple" | "cyan" | "lime";
+  theme: "lime";
   menuButtonStyle: "parallelogram" | "square";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
@@ -1060,10 +1060,8 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
 }
 
 function normalizeThemeMode(raw: unknown): UserPreferencesV1["theme"] {
-  const value = String(raw || "").trim().toLowerCase();
-  if (value === "lime") return "lime";
-  if (value === "cyan" || value === "command") return "cyan";
-  return "purple";
+  void raw;
+  return "lime";
 }
 
 function asTaskUi(input: unknown): TaskUiConfig | null {

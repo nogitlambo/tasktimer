@@ -27,7 +27,7 @@ type TaskTimerStorageKeys = {
 };
 
 export const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
-  mode1: "#00CFC8",
+  mode1: "#c9ff24",
 };
 
 export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorageKeys {

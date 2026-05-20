@@ -2,6 +2,7 @@ import type { TaskTimerDashboardContext } from "./context";
 import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions } from "./types";
 import {
   clampDashboardPlacement,
+  getDashboardTemplateColumnCount,
   getDashboardGridColumnValue,
   resolveDashboardCardPlacements,
   sanitizeDashboardCardPlacements,
@@ -79,7 +80,7 @@ export function shouldIgnoreDashboardPointerDragStartTarget(target: DashboardClo
   ) {
     return true;
   }
-  if (target.closest("[data-dashboard-activity-toggle], [data-dashboard-activity-day], [data-dashboard-activity-action]")) return true;
+  if (target.closest("[data-dashboard-activity-day], [data-dashboard-activity-action]")) return true;
   return false;
 }
 
@@ -126,11 +127,8 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function getDashboardGridColumnCount(grid: HTMLElement) {
     if (typeof window === "undefined") return 12;
     const template = window.getComputedStyle(grid).gridTemplateColumns || "";
-    const count = template
-      .split(" ")
-      .map((token) => token.trim())
-      .filter(Boolean).length;
-    return Math.max(1, count || 12);
+    const count = getDashboardTemplateColumnCount(template);
+    return count > 0 ? count : null;
   }
 
   function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
@@ -425,6 +423,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const layoutItems = collectDashboardLayoutItems(grid);
     if (!layoutItems.length) return;
     const columnCount = getDashboardGridColumnCount(grid);
+    if (!columnCount) return;
     const resolvedPlacements = resolveDashboardCardPlacements(layoutItems, columnCount);
     const layoutItemById = new Map(layoutItems.map((item) => [item.id, item]));
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
@@ -682,7 +681,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       .split(" ")
       .map((token) => token.trim())
       .filter(Boolean);
-    const columnCount = Math.max(1, templateColumns.length || getDashboardGridColumnCount(grid));
+    const columnCount = Math.max(1, templateColumns.length || getDashboardGridColumnCount(grid) || 12);
     const rowGap = Number.parseFloat(gridStyle.rowGap || "0") || 0;
     const columnGap = Number.parseFloat(gridStyle.columnGap || gridStyle.gap || "0") || 0;
     const totalColumnGap = columnGap * Math.max(0, columnCount - 1);
@@ -800,14 +799,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       if (!shouldOpenDashboardLockedUpgradePrompt(ctx.getDashboardEditMode())) return;
       const cardId = String(lockedCard.getAttribute("data-dashboard-id") || "").trim();
       ctx.showUpgradePrompt(getDashboardLockedFeatureLabel(cardId), "pro");
-      e.preventDefault();
-      return;
-    }
-    const activityToggle = e.target?.closest?.("[data-dashboard-activity-toggle]") as HTMLElement | null;
-    if (activityToggle) {
-      const toggle = String(activityToggle.getAttribute("data-dashboard-activity-toggle") || "").trim();
-      if (toggle === "goal") ctx.toggleDashboardActivityGoal();
-      else if (toggle === "compare") ctx.toggleDashboardActivityCompare();
       e.preventDefault();
       return;
     }

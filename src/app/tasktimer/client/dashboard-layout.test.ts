@@ -3,6 +3,7 @@ import {
   clampDashboardPlacement,
   getDashboardColumnSpan,
   getDashboardGridColumnValue,
+  getDashboardTemplateColumnCount,
   resolveDashboardCardPlacements,
   sanitizeDashboardCardPlacements,
 } from "./dashboard-layout";
@@ -26,6 +27,12 @@ describe("dashboard layout helpers", () => {
     expect(getDashboardColumnSpan("half", 2)).toBe(2);
     expect(getDashboardColumnSpan("quarter", 2)).toBe(1);
     expect(getDashboardColumnSpan("full", 1)).toBe(1);
+  });
+
+  it("ignores hidden-grid template values when counting columns", () => {
+    expect(getDashboardTemplateColumnCount("120px 120px 120px")).toBe(3);
+    expect(getDashboardTemplateColumnCount("none")).toBe(0);
+    expect(getDashboardTemplateColumnCount("")).toBe(0);
   });
 
   it("clamps placements to valid starting columns for the current span", () => {

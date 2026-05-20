@@ -49,10 +49,11 @@
 }
 
 @media (max-width: 980px){
-  .overlay{
+.overlay{
     padding:10px;
   }
-  .modal{
+
+.modal{
     max-height:88svh;
     overflow:auto;
     padding:var(--modal-padding);
@@ -60,7 +61,7 @@
 }
 
 @media (min-width: 981px){
-  #editOverlay,
+#editOverlay,
   #addTaskOverlay{
     left: var(--desktop-rail-column, clamp(246px, 20vw, 292px));
     right: 0;
@@ -73,7 +74,7 @@
     padding: 0;
   }
 
-  #editOverlay .modal,
+#editOverlay .modal,
   #addTaskOverlay .modal{
     width: min(50%, 640px) !important;
     max-width: calc(100% - 24px) !important;
@@ -88,7 +89,7 @@
     scroll-padding-bottom: 0;
   }
 
-  #editOverlay .editTaskModalBody,
+#editOverlay .editTaskModalBody,
   #addTaskOverlay .editTaskModalBody{
     display: flex;
     flex-direction: column;
@@ -98,7 +99,7 @@
     padding-bottom: 0;
   }
 
-  #editOverlay .footerBtns,
+#editOverlay .footerBtns,
   #addTaskOverlay .footerBtns{
     align-self: stretch;
     display: flex;
@@ -109,7 +110,7 @@
 }
 
 @media (min-width: 981px){
-  body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail,
+body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail,
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail,
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail,
   body:has(#addTaskOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail,
@@ -123,7 +124,7 @@
 }
 
 @media (min-width: 981px){
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailTopSection,
+body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailTopSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailBottomSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBottomSection,
@@ -136,7 +137,7 @@
     transition: opacity .2s ease, filter .2s ease;
   }
 
-  body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMiddleSection,
+body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .dashboardRail .desktopRailMiddleSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailMiddleSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .dashboardRail .desktopRailMiddleSection,
   body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch Settings"] .desktopAppRail .desktopRailMiddleSection{
@@ -189,10 +190,11 @@
 }
 
 @media (max-width: 360px){
-  .modal{
+.modal{
     padding:12px;
   }
-  .modal h2{
+
+.modal h2{
     font-size:18px;
   }
 }
@@ -444,76 +446,16 @@
   box-shadow: none;
 }
 
-body[data-theme="purple"] #rankLadderOverlay .modal{
-  border-color: rgba(214,214,214,.34);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
-}
-
-body[data-theme="purple"] .rankLadderModal p.modalSubtext{
-  color: #ffffff !important;
-}
-
-body[data-theme="purple"] .rankLadderItem{
-  border-color: rgba(214,96,229,.24);
-  background: linear-gradient(180deg, rgba(22,12,34,.96), rgba(15,10,24,.98));
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.03);
-}
-
-body[data-theme="purple"] .rankLadderItem.isSelectable:hover{
-  border-color: rgba(233,134,245,.56);
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08), 0 10px 22px rgba(0,0,0,.22);
-}
-
-body[data-theme="purple"] .rankLadderItem.isSelectable:focus-visible{
-  outline-color: rgba(255,164,250,.96);
-  border-color: rgba(233,134,245,.7);
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.12), 0 0 0 1px rgba(255,164,250,.1);
-}
-
-body[data-theme="purple"] .rankLadderItem.isUnlocked{
-  border-color: rgba(214,96,229,.34);
-}
-
-body[data-theme="purple"] .rankLadderItem.isCurrent{
-  border-color: rgba(233,134,245,.56);
-  background: linear-gradient(180deg, rgba(31,15,46,.98), rgba(20,11,31,.98));
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.09), 0 0 24px rgba(211,86,230,.08);
-}
-
-body[data-theme="purple"] .rankLadderItem.isSelectedThumbnail{
-  border-color: rgba(233,134,245,.76);
-  box-shadow: inset 0 0 0 1px rgba(255,210,255,.11), 0 0 0 1px rgba(233,134,245,.16), 0 0 24px rgba(211,86,230,.12);
-}
-
-body[data-theme="purple"] .rankLadderItemBadge{
-  border-color: rgba(214,96,229,.28);
-  background: rgba(19,10,28,.94);
-}
-
-body[data-theme="purple"] .rankLadderItemTitle{
-  color: rgba(250,240,255,.96);
-}
-
-body[data-theme="purple"] .rankLadderItemMeta{
-  color: rgba(230,212,244,.84);
-}
-
-body[data-theme="purple"] .rankLadderItemFlag{
-  color: #fff7ff;
-  border-color: rgba(233,134,245,.32);
-  background: rgba(161,72,178,.18);
-}
-
 @media (max-width: 700px){
-  #rankLadderOverlay .modal{
+#rankLadderOverlay .modal{
     width: min(560px, 100%);
   }
 
-  .rankLadderList{
+.rankLadderList{
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .rankLadderItem{
+.rankLadderItem{
     aspect-ratio: auto;
     min-height: 0;
     flex-direction: row;
@@ -522,12 +464,12 @@ body[data-theme="purple"] .rankLadderItemFlag{
     padding: 12px;
   }
 
-  .rankLadderItemBody{
+.rankLadderItemBody{
     align-items: flex-start;
     justify-content: center;
   }
 
-  .rankLadderItemStateRow{
+.rankLadderItemStateRow{
     align-items: flex-start;
   }
 }
@@ -924,14 +866,14 @@ body[data-theme="purple"] .rankLadderItemFlag{
 }
 
 @media (prefers-reduced-motion: reduce){
-  #editOverlay::before,
+#editOverlay::before,
   #editOverlay .modal,
   #addTaskOverlay::before,
   #addTaskOverlay .modal{
     transition: opacity .12s ease;
   }
 
-  #editOverlay .modal,
+#editOverlay .modal,
   #editOverlay.isMorphingFromTask .modal,
   #editOverlay.isOpen .modal,
   #editOverlay.isClosing .modal,
@@ -942,7 +884,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
     transform: none;
   }
 
-  #addTaskOverlay .editTaskModalFrame,
+#addTaskOverlay .editTaskModalFrame,
   #addTaskOverlay .addTaskFooterBtns,
   #addTaskOverlay .editTaskColorPopover,
   #addTaskOverlay.isOpen .editTaskModalFrame,
@@ -1206,8 +1148,7 @@ body[data-theme="purple"] .rankLadderItemFlag{
   opacity: 1;
 }
 
-#editOverlay .editTaskTypePills .timerTypePill.isOn,
-body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
+#editOverlay .editTaskTypePills .timerTypePill.isOn{
   border-color: #c9ff24 !important;
 }
 
@@ -1471,7 +1412,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (min-width: 981px){
-  #app[aria-label="TaskLaunch App"] #editOverlay,
+#app[aria-label="TaskLaunch App"] #editOverlay,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay{
     position: absolute;
     top: 0;
@@ -1484,13 +1425,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     z-index: 35;
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay::before,
+#app[aria-label="TaskLaunch App"] #editOverlay::before,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay::before{
     background: rgba(5,8,15,.74);
     backdrop-filter: blur(10px);
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay .modal,
+#app[aria-label="TaskLaunch App"] #editOverlay .modal,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .modal{
     width: min(50%, 640px);
     max-width: calc(100% - 24px);
@@ -1503,7 +1444,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     box-shadow: 0 24px 48px rgba(0,0,0,.48), inset 0 0 0 1px rgba(255,255,255,.04);
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills,
+#app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .editTaskTypePills{
     display: inline-flex;
     flex-wrap: nowrap;
@@ -1512,20 +1453,20 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     gap: 8px;
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills .timerTypePill,
+#app[aria-label="TaskLaunch App"] #editOverlay .editTaskTypePills .timerTypePill,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .editTaskTypePills .timerTypePill{
     width: auto;
     min-width: 74px;
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay .editTaskDurationRow,
+#app[aria-label="TaskLaunch App"] #editOverlay .editTaskDurationRow,
   #app[aria-label="TaskLaunch App"] #editOverlay .addTaskPlannedStartSelectorRow,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .editTaskDurationRow,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .addTaskPlannedStartSelectorRow{
     flex-wrap: wrap;
   }
 
-  #app[aria-label="TaskLaunch App"] #editOverlay .footerBtns,
+#app[aria-label="TaskLaunch App"] #editOverlay .footerBtns,
   #app[aria-label="TaskLaunch App"] #addTaskOverlay .footerBtns{
     margin-top: auto;
     padding-top: 12px;
@@ -1533,7 +1474,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (max-width: 980px){
-  #editOverlay,
+#editOverlay,
   #addTaskOverlay{
     position: fixed;
     inset: 0;
@@ -1541,13 +1482,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     z-index: 95;
   }
 
-  #editOverlay::before,
+#editOverlay::before,
   #addTaskOverlay::before{
     background: rgba(5,8,15,.92);
     backdrop-filter: blur(10px);
   }
 
-  #editOverlay .modal,
+#editOverlay .modal,
   #addTaskOverlay .modal{
     width: 100%;
     height: 100%;
@@ -1559,21 +1500,21 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     box-shadow: none;
   }
 
-  #editOverlay .editTaskModalBody,
+#editOverlay .editTaskModalBody,
   #addTaskOverlay .editTaskModalBody{
     padding-right: 0;
   }
 }
 
 @media (max-width: 980px){
-  #editOverlay .modal,
+#editOverlay .modal,
   #addTaskOverlay .modal{
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
   }
 }
 
 @media (max-width: 640px){
-  #editOverlay .footerBtns,
+#editOverlay .footerBtns,
   #addTaskOverlay .footerBtns{
     display: flex;
     align-items: center;
@@ -1588,7 +1529,8 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     justify-content: flex-end;
     flex-wrap: nowrap;
   }
-  #editOverlay .footerBtns .btn,
+
+#editOverlay .footerBtns .btn,
   #addTaskOverlay .footerBtns .btn{
     flex: 0 0 auto;
     width: auto;
@@ -1596,7 +1538,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (max-width: 420px){
-  #editOverlay .editTaskTypePills,
+#editOverlay .editTaskTypePills,
   #addTaskOverlay .editTaskTypePills{
     display: inline-flex;
     flex-wrap: nowrap;
@@ -1604,19 +1546,19 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (max-width: 640px){
-  #editOverlay .editTaskTimeGoalHeader,
+#editOverlay .editTaskTimeGoalHeader,
   #addTaskOverlay .editTaskTimeGoalHeader{
     align-items: center;
     flex-wrap: nowrap;
     row-gap: 0;
   }
 
-  #editOverlay .editTaskModalHeader,
+#editOverlay .editTaskModalHeader,
   #addTaskOverlay .editTaskModalHeader{
     gap: 8px;
   }
 
-  #editOverlay .editTaskTypePills,
+#editOverlay .editTaskTypePills,
   #addTaskOverlay .editTaskTypePills{
     display: inline-flex;
     flex-wrap: nowrap;
@@ -1626,13 +1568,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     gap: 8px;
   }
 
-  #editOverlay .editTaskTypePills .timerTypePill,
+#editOverlay .editTaskTypePills .timerTypePill,
   #addTaskOverlay .editTaskTypePills .timerTypePill{
     width: auto;
     min-width: 74px;
   }
 
-  #editOverlay .toggleRow,
+#editOverlay .toggleRow,
   #addTaskOverlay .toggleRow{
     min-height: 0;
     align-items: flex-start;
@@ -1640,7 +1582,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     row-gap: 8px;
   }
 
-  #editOverlay .editTaskTimeGoalToggleWrap,
+#editOverlay .editTaskTimeGoalToggleWrap,
   #addTaskOverlay .editTaskTimeGoalToggleWrap{
     width: auto;
     max-width: 100%;
@@ -1648,25 +1590,25 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     flex-wrap: nowrap;
   }
 
-  #editOverlay .editTaskTimeGoalHeaderLabel,
+#editOverlay .editTaskTimeGoalHeaderLabel,
   #addTaskOverlay .editTaskTimeGoalHeaderLabel{
     margin-right: 0;
   }
 
-  #editOverlay .editTaskDurationRow,
+#editOverlay .editTaskDurationRow,
   #addTaskOverlay .editTaskDurationRow{
     align-items: center;
     flex-wrap: wrap;
   }
 
-  #editOverlay #editTaskDurationValueInput,
+#editOverlay #editTaskDurationValueInput,
   #addTaskOverlay #addTaskDurationValueInput{
     width: 86px;
     min-width: 86px;
     flex: 0 0 auto;
   }
 
-  #editOverlay #editTaskDurationUnitPills,
+#editOverlay #editTaskDurationUnitPills,
   #editOverlay #editTaskDurationPeriodPills,
   #addTaskOverlay #addTaskDurationUnitPills,
   #addTaskOverlay #addTaskDurationPeriodPills{
@@ -1676,18 +1618,18 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     min-width: 0;
   }
 
-  #editOverlay .addTaskDurationPills .unitBtn.small,
+#editOverlay .addTaskDurationPills .unitBtn.small,
   #addTaskOverlay .addTaskDurationPills .unitBtn.small{
     width: 34px;
     min-width: 34px;
   }
 
-  #editOverlay .addTaskDurationPerLabel,
+#editOverlay .addTaskDurationPerLabel,
   #addTaskOverlay .addTaskDurationPerLabel{
     flex: 0 0 auto;
   }
 
-  #editOverlay .addTaskPlannedStartSelectorRow,
+#editOverlay .addTaskPlannedStartSelectorRow,
   #addTaskOverlay .addTaskPlannedStartSelectorRow{
     display: flex;
     flex-direction: row;
@@ -1696,13 +1638,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     flex-wrap: nowrap;
   }
 
-  #editOverlay .addTaskPlannedStartTimeCluster,
+#editOverlay .addTaskPlannedStartTimeCluster,
   #addTaskOverlay .addTaskPlannedStartTimeCluster{
     width: auto;
     justify-content: flex-start;
   }
 
-  #editOverlay #editPlannedStartHourSelect,
+#editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect,
   #addTaskOverlay #addTaskPlannedStartHourSelect,
   #addTaskOverlay #addTaskPlannedStartMinuteSelect{
@@ -1710,13 +1652,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     flex: 0 0 64px;
   }
 
-  #editOverlay #editPlannedStartMeridiemSelect,
+#editOverlay #editPlannedStartMeridiemSelect,
   #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
     width: 76px;
     flex: 0 0 76px;
   }
 
-  #editOverlay .addTaskPlannedStartInlineCheckboxRow,
+#editOverlay .addTaskPlannedStartInlineCheckboxRow,
   #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow{
     width: 100%;
     flex: 0 0 auto;
@@ -1725,7 +1667,7 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     white-space: normal;
   }
 
-  #editOverlay .addTaskPlannedStartInlineCheckboxRow span,
+#editOverlay .addTaskPlannedStartInlineCheckboxRow span,
   #addTaskOverlay .addTaskPlannedStartInlineCheckboxRow span{
     white-space: normal;
     line-height: 1.35;
@@ -1734,13 +1676,13 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
 }
 
 @media (max-width: 640px){
-  #editOverlay #editTaskOnceOffDaySelect,
+#editOverlay #editTaskOnceOffDaySelect,
   #addTaskOverlay #addTaskOnceOffDaySelect{
     width: 96px;
     padding-right: 18px;
   }
 
-  #editOverlay #editPlannedStartHourSelect,
+#editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect,
   #addTaskOverlay #addTaskPlannedStartHourSelect,
   #addTaskOverlay #addTaskPlannedStartMinuteSelect{
@@ -1749,14 +1691,14 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
     padding-right: 18px;
   }
 
-  #editOverlay #editPlannedStartMeridiemSelect,
+#editOverlay #editPlannedStartMeridiemSelect,
   #addTaskOverlay #addTaskPlannedStartMeridiemSelect{
     width: 60px;
     padding-left: 8px;
     padding-right: 18px;
   }
 
-  #editOverlay #editPlannedStartHourSelect,
+#editOverlay #editPlannedStartHourSelect,
   #editOverlay #editPlannedStartMinuteSelect,
   #editOverlay #editPlannedStartMeridiemSelect,
   #editOverlay #editTaskOnceOffDaySelect,
@@ -2164,40 +2106,12 @@ body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   justify-content: center;
 }
 
-body[data-theme="purple"] #rewardsInfoOverlay .modal{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
-}
-
-body[data-theme="purple"] #rewardsInfoOverlay .modalSubtext{
-  color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] .rewardsInfoDetailItem{
-  border-color: rgba(221,108,241,.18);
-  background: rgba(255,255,255,.03);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
-}
-
-body[data-theme="purple"] .rewardsInfoDetailLabel{
-  color: rgba(241,198,247,.78);
-}
-
-body[data-theme="purple"] .rewardsInfoDetailValue{
-  color: rgba(252,241,255,.94);
-}
-
-body[data-theme="purple"] .rewardsInfoText{
-  border-color: rgba(214,96,229,.24);
-  color: rgba(235,218,247,.82);
-}
-
 @media (max-width: 640px){
-  .rewardsInfoDetailGrid{
+.rewardsInfoDetailGrid{
     grid-template-columns: 1fr;
   }
 
-  .rewardsInfoActions .btn{
+.rewardsInfoActions .btn{
     min-width: 0;
     width: 100%;
   }
@@ -2298,6 +2212,47 @@ body[data-theme="purple"] .rewardsInfoText{
   align-items:center;
   gap:6px;
   min-width:0;
+}
+
+#editOverlay .plannedStartClockInput,
+#addTaskOverlay .plannedStartClockInput{
+  min-width: 0;
+  width: min(220px, 100%);
+  min-height: 38px;
+  appearance: none;
+  border-radius: 0;
+  clip-path: none;
+  border: none;
+  background: transparent;
+  color: rgba(234,247,255,.96);
+  box-shadow: none;
+  text-align: center;
+  font-family: var(--font-orbitron) !important;
+  font-weight: 700;
+  line-height: 1.1;
+  padding: 8px 0;
+  color-scheme: dark;
+}
+
+#editOverlay .plannedStartClockInput:focus-visible,
+#addTaskOverlay .plannedStartClockInput:focus-visible{
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+#editOverlay .plannedStartClockInput.isDisabled,
+#addTaskOverlay .plannedStartClockInput.isDisabled,
+#editOverlay .plannedStartClockInput:disabled,
+#addTaskOverlay .plannedStartClockInput:disabled{
+  opacity: .48;
+  color: rgba(168,184,196,.72);
+  background: transparent;
+}
+
+#editOverlay .plannedStartLegacySelectors,
+#addTaskOverlay .plannedStartLegacySelectors{
+  display: none;
 }
 
 #editOverlay #editPlannedStartHourSelect,
@@ -2590,7 +2545,7 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 @media (max-width: 980px){
-  #exportTaskOverlay .modal{
+#exportTaskOverlay .modal{
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -3077,12 +3032,12 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 @media (max-width: 640px){
-  #editOverlay .editTaskTimeGoalHeader{
+#editOverlay .editTaskTimeGoalHeader{
     align-items:flex-start;
     flex-direction:column;
   }
 
-  #editOverlay .editTaskTimeGoalToggleWrap{
+#editOverlay .editTaskTimeGoalToggleWrap{
     width:100%;
     justify-content:flex-start;
   }
@@ -3236,7 +3191,7 @@ body[data-theme="purple"] .rewardsInfoText{
 }
 
 @media (max-width: 980px){
-  #addTaskOverlay .modal{
+#addTaskOverlay .modal{
     padding: calc(14px + var(--safe-top)) calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(12px + var(--safe-left));
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
   }
@@ -4217,8 +4172,8 @@ body[data-theme="purple"] .rewardsInfoText{
   width: 100%;
 }
 
-  @media (max-width: 640px){
-  #historyEntryNoteOverlay{
+@media (max-width: 640px){
+#historyEntryNoteOverlay{
     align-items: flex-start;
     justify-content: flex-start;
     padding:
@@ -4228,7 +4183,7 @@ body[data-theme="purple"] .rewardsInfoText{
       calc(6px + var(--safe-left));
   }
 
-  #historyEntryNoteOverlay .modal{
+#historyEntryNoteOverlay .modal{
       --history-entry-note-shell-pad-x: 12px;
       width: calc(100vw - 12px - var(--safe-left) - var(--safe-right));
       max-width: none;
@@ -4238,28 +4193,28 @@ body[data-theme="purple"] .rewardsInfoText{
       padding: 12px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryHero{
+#historyEntryNoteOverlay .historyEntrySummaryHero{
       padding:12px var(--history-entry-note-shell-pad-x) 10px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryHeroTop,
+#historyEntryNoteOverlay .historyEntrySummaryHeroTop,
   #historyEntryNoteOverlay .historyEntrySummarySessionHead{
       grid-template-columns: minmax(0, 1fr);
       display:grid;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummarySessionCard{
+#historyEntryNoteOverlay .historyEntrySummarySessionCard{
       position: relative;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
+#historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
       position: absolute;
       top: 0;
       right: 0;
       z-index: 2;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn{
+#historyEntryNoteOverlay .historyEntrySummaryDeleteBtn{
       min-width: 32px;
       width: 32px;
       min-height: 32px;
@@ -4267,243 +4222,60 @@ body[data-theme="purple"] .rewardsInfoText{
       align-items: center;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryHeroValue{
+#historyEntryNoteOverlay .historyEntrySummaryHeroValue{
       font-size:30px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
+#historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
       font-size:22px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryHeroStats{
+#historyEntryNoteOverlay .historyEntrySummaryHeroStats{
       grid-template-columns: minmax(0, 1fr);
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryGrid{
+#historyEntryNoteOverlay .historyEntrySummaryGrid{
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryField{
+#historyEntryNoteOverlay .historyEntrySummaryField{
       gap: 4px;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryLabel{
+#historyEntryNoteOverlay .historyEntrySummaryLabel{
       font-size: 9px;
       letter-spacing: 0;
       white-space: nowrap;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryValue{
+#historyEntryNoteOverlay .historyEntrySummaryValue{
       font-size: 13px;
       line-height: 1.35;
     }
 
-  #historyEntryNoteOverlay .historyEntrySummaryNoteRow{
+#historyEntryNoteOverlay .historyEntrySummaryNoteRow{
     grid-template-columns: minmax(0, 1fr);
   }
 
-  #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
+#historyEntryNoteOverlay .historyEntrySummaryNoteActions{
     justify-content: flex-start;
   }
 }
 
 @media (max-width: 360px){
-  #historyEntryNoteOverlay .historyEntrySummaryGrid{
+#historyEntryNoteOverlay .historyEntrySummaryGrid{
     gap: 4px;
   }
 
-  #historyEntryNoteOverlay .historyEntrySummaryLabel{
+#historyEntryNoteOverlay .historyEntrySummaryLabel{
     font-size: 8px;
   }
 
-  #historyEntryNoteOverlay .historyEntrySummaryValue{
+#historyEntryNoteOverlay .historyEntrySummaryValue{
     font-size: 12px;
     line-height: 1.3;
   }
-}
-
-body[data-theme="purple"] .task,
-body[data-theme="purple"] .modal,
-body[data-theme="purple"] .menu,
-body[data-theme="purple"] .historyInline,
-body[data-theme="purple"] .historyCanvasWrap,
-body[data-theme="purple"] .hmGroup,
-body[data-theme="purple"] .dashboardShell,
-body[data-theme="purple"] .dashboardCard{
-  border-color: rgba(216,99,235,.28);
-  background:
-    linear-gradient(160deg, rgba(187,63,215,.1), rgba(0,0,0,0) 26%),
-    rgba(16,10,28,.92);
-  box-shadow: inset 0 0 0 1px rgba(239,134,245,.05);
-}
-
-/* Final purple-theme parity override for Edit Task modal controls. */
-
-body[data-theme="purple"] #editOverlay input[type="text"],
-body[data-theme="purple"] #editOverlay input[type="number"],
-body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select{
-  border-color: rgba(214,96,229,.44) !important;
-  background: rgba(22,12,34,.86) !important;
-  color: rgba(245,235,255,.94) !important;
-  color-scheme: dark;
-}
-
-body[data-theme="purple"] #editOverlay input[type="text"]:focus,
-body[data-theme="purple"] #editOverlay input[type="number"]:focus,
-body[data-theme="purple"] #editOverlay .checkpointAlertSoundModeField select:focus,
-body[data-theme="purple"] #addTaskOverlay .checkpointAlertSoundModeField select:focus{
-  border-color: rgba(233,134,245,.7) !important;
-  outline: 1px solid rgba(255,164,250,.3) !important;
-  outline-offset: 0;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset !important;
-}
-
-body[data-theme="purple"] #editOverlay option,
-body[data-theme="purple"] #editOverlay optgroup,
-body[data-theme="purple"] #addTaskOverlay option,
-body[data-theme="purple"] #addTaskOverlay optgroup{
-  background: #140b20;
-  color: #f3e8ff;
-}
-body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:hover,
-body[data-theme="purple"] #editOverlay #editFinalCheckpointActionSelect:focus-visible,
-body[data-theme="purple"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:hover,
-body[data-theme="purple"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:focus-visible,
-body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:hover,
-body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:focus-visible,
-body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointToastModeSelect:hover,
-body[data-theme="purple"] #addTaskOverlay #addTaskCheckpointToastModeSelect:focus-visible{
-  border-color: rgba(206,136,230,.42) !important;
-  background: linear-gradient(180deg, rgba(186,110,214,.18), rgba(108,58,132,.14)) !important;
-  color: #fff8ff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.06), 0 0 10px rgba(176,82,198,.1) !important;
-}
-body[data-theme="purple"] #editOverlay option:hover,
-body[data-theme="purple"] #editOverlay option:focus,
-body[data-theme="purple"] #addTaskOverlay option:hover,
-body[data-theme="purple"] #addTaskOverlay option:focus{
-  background: #3f234f;
-  color: #fff8ff;
-}
-body[data-theme="purple"] #editOverlay option:checked,
-body[data-theme="purple"] #editOverlay option:checked:hover,
-body[data-theme="purple"] #editOverlay option:checked:focus,
-body[data-theme="purple"] #addTaskOverlay option:checked,
-body[data-theme="purple"] #addTaskOverlay option:checked:hover,
-body[data-theme="purple"] #addTaskOverlay option:checked:focus{
-  background: #2b1737;
-  color: #f7eeff;
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.08);
-}
-
-body[data-theme="cyan"] #editOverlay input[type="text"],
-body[data-theme="cyan"] #editOverlay input[type="number"],
-body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select{
-  border-color: rgba(53,232,255,.38) !important;
-  background: rgba(8,18,26,.9) !important;
-  color: rgba(234,252,255,.96) !important;
-  color-scheme: dark;
-}
-
-body[data-theme="cyan"] #editOverlay input[type="text"]:focus,
-body[data-theme="cyan"] #editOverlay input[type="number"]:focus,
-body[data-theme="cyan"] #editOverlay .checkpointAlertSoundModeField select:focus,
-body[data-theme="cyan"] #addTaskOverlay .checkpointAlertSoundModeField select:focus{
-  border-color: rgba(93,239,255,.68) !important;
-  outline: 1px solid rgba(126,243,255,.24) !important;
-  outline-offset: 0;
-  box-shadow: 0 0 0 1px rgba(126,243,255,.16) inset !important;
-}
-
-body[data-theme="cyan"] #editOverlay option,
-body[data-theme="cyan"] #editOverlay optgroup,
-body[data-theme="cyan"] #addTaskOverlay option,
-body[data-theme="cyan"] #addTaskOverlay optgroup{
-  background: #0c131a;
-  color: #eafcff;
-}
-
-body[data-theme="cyan"] #editOverlay .msRow .msSliderInput,
-body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput{
-  accent-color:var(--checkpoint-slider-accent, #58e1ff);
-}
-
-body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
-body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
-body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-track,
-body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
-  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #58e1ff), rgba(172,246,255,.18));
-}
-
-body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
-body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
-body[data-theme="cyan"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
-body[data-theme="cyan"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
-  background:var(--checkpoint-slider-accent, #58e1ff);
-}
-
-body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:hover,
-body[data-theme="cyan"] #editOverlay #editFinalCheckpointActionSelect:focus-visible,
-body[data-theme="cyan"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:hover,
-body[data-theme="cyan"] #addTaskOverlay #addTaskFinalCheckpointActionSelect:focus-visible,
-body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:hover,
-body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointSoundModeSelect:focus-visible,
-body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointToastModeSelect:hover,
-body[data-theme="cyan"] #addTaskOverlay #addTaskCheckpointToastModeSelect:focus-visible{
-  border-color: rgba(116,198,226,.55) !important;
-  background: linear-gradient(180deg, rgba(94,172,202,.18), rgba(52,109,134,.14)) !important;
-  color: #eaf7ff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 0 10px rgba(92,170,201,.1) !important;
-}
-
-body[data-theme="cyan"] #editOverlay option:hover,
-body[data-theme="cyan"] #editOverlay option:focus,
-body[data-theme="cyan"] #addTaskOverlay option:hover,
-body[data-theme="cyan"] #addTaskOverlay option:focus{
-  background: #183846;
-  color: #eaf7ff;
-}
-body[data-theme="cyan"] #editOverlay option:checked,
-body[data-theme="cyan"] #editOverlay option:checked:hover,
-body[data-theme="cyan"] #editOverlay option:checked:focus,
-body[data-theme="cyan"] #addTaskOverlay option:checked,
-body[data-theme="cyan"] #addTaskOverlay option:checked:hover,
-body[data-theme="cyan"] #addTaskOverlay option:checked:focus{
-  background: #122a35;
-  color: #f0fcff;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
-}
-
-body[data-theme="purple"] #editOverlay .switch.on{
-  border-color: rgba(206,136,230,.42) !important;
-  background: linear-gradient(180deg, rgba(186,110,214,.26), rgba(108,58,132,.22)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,190,252,.07), 0 0 10px rgba(176,82,198,.12) !important;
-}
-
-body[data-theme="purple"] #editOverlay .switch.on::after{
-  background: rgba(255,248,255,.96) !important;
-}
-
-body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
-  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
-  color: #fff !important;
-  border-color: rgba(233,134,245,.72) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28) !important;
-  font-weight: 800;
-}
-
-body[data-theme="purple"] #editOverlay .milestonesSummaryCollapseLabel{
-  color: rgba(240,214,255,.92) !important;
-}
-
-body[data-theme="purple"] #editOverlay .milestonesSummaryCollapseLabel::after{
-  color: rgba(233,134,245,.9) !important;
-}
-
-body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
-  border-color: rgba(214,96,229,.42) !important;
-  background: #120a1d !important;
 }
 
 /* Reduce primary heading sizes by 25% across the active app surfaces. */
@@ -4609,22 +4381,6 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   border-color: rgba(194, 201, 211, .86) !important;
 }
 
-body[data-theme="purple"] #confirmOverlay.isArchiveTaskConfirm .modal{
-  border-color: rgba(165, 172, 182, .66);
-  box-shadow:
-    0 24px 56px rgba(0,0,0,.52),
-    inset 0 0 0 1px rgba(255,255,255,.04);
-}
-
-body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .modal{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
-}
-
-body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
-  color: rgba(247,232,255,.92);
-}
-
 #timeGoalCompleteOverlay .modal{
   position: relative;
   z-index: 2;
@@ -4689,23 +4445,12 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 
 #timeGoalCompleteOverlay .timeGoalConfettiStar{
   clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
-}
-
-@keyframes timeGoalConfettiPulse{
-  0%{ transform: translate(-50%,-50%) scale(.1); opacity:.9; }
-  24%{ opacity:.45; }
-  55%,100%{ transform: translate(-50%,-50%) scale(9); opacity:0; }
-}
-
-@keyframes timeGoalConfettiBurst{
-  0%{ opacity:0; transform: translate(-50%, -50%) scale(.2) rotate(var(--rot)); }
-  8%{ opacity:1; }
-  62%{ opacity:1; }
-  100%{ opacity:0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(calc(var(--rot) + var(--spin))); }
+}@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-50%) scale(.1); opacity:.9; }24%{ opacity:.45; }55%,100%{ transform: translate(-50%,-50%) scale(9); opacity:0; }
+}@keyframes timeGoalConfettiBurst{0%{ opacity:0; transform: translate(-50%, -50%) scale(.2) rotate(var(--rot)); }8%{ opacity:1; }62%{ opacity:1; }100%{ opacity:0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(calc(var(--rot) + var(--spin))); }
 }
 
 @media (prefers-reduced-motion: reduce){
-  #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage{
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage{
     display: none;
   }
 }
@@ -4831,19 +4576,19 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing{
-  animation: rankPromotionImpactShake 1.9s cubic-bezier(.2,.8,.2,1) both;
+  animation: rankPromotionImpactShake 2.9s cubic-bezier(.2,.8,.2,1) both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam{
-  animation: rankPromotionLightBeamImpact 1.9s linear both;
+  animation: rankPromotionLightBeamImpact 2.9s linear both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam::before{
-  animation: rankPromotionLightBeamFlicker 1.9s steps(1,end) both;
+  animation: rankPromotionLightBeamFlicker 2.9s steps(1,end) both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionLightBeam::after{
-  animation: rankPromotionLightBeamCore 1.9s ease-out both;
+  animation: rankPromotionLightBeamCore 2.9s ease-out both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
@@ -4904,15 +4649,15 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
-  animation: rankPromotionNewSmash 1.9s linear both;
+  animation: rankPromotionNewSmash 2.9s linear both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia{
-  animation: rankPromotionNewBirdseyeDrop 1.9s cubic-bezier(.08,.86,.14,1) both;
+  animation: rankPromotionNewBirdseyeDrop 2.9s cubic-bezier(.08,.86,.14,1) both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
-  animation: rankPromotionNewLabelImpact 1.9s ease both;
+  animation: rankPromotionNewLabelImpact 2.9s ease both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankOld{
@@ -4969,15 +4714,26 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldInsigniaWrap > .rankPromotionInsignia{
-  animation: rankPromotionOldInsigniaImpactHide 1.9s steps(1,end) both;
+  animation: rankPromotionOldInsigniaImpactHide 280ms steps(1,end) both;
+  animation-delay: 1000ms;
 }
 
 #rankPromotionOverlay .rankPromotionShatterField{
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  width: 640px;
+  height: 640px;
   z-index: 2;
   pointer-events: none;
   overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+#rankPromotionOverlay .rankPromotionShatterCanvas{
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 #rankPromotionOverlay .rankPromotionShard{
@@ -4987,27 +4743,27 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   clip-path: var(--rank-promotion-shard-clip);
   transform: translate3d(0,0,0) rotate(0deg) scale(1);
   transform-origin: 50% 50%;
-  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  contain: paint;
+  will-change: transform, opacity;
 }
 
 #rankPromotionOverlay .rankPromotionShard.is-image{
   background-image: var(--rank-promotion-shard-bg);
   background-repeat: no-repeat;
-  background-size: 1500% 1400%;
+  background-size: var(--rank-promotion-shard-bg-size-x) var(--rank-promotion-shard-bg-size-y);
   background-position: var(--rank-promotion-shard-bg-x) var(--rank-promotion-shard-bg-y);
-  filter: drop-shadow(0 0 2px rgba(126,243,255,.34));
 }
 
 #rankPromotionOverlay .rankPromotionShard.is-placeholder{
   background:
     radial-gradient(circle at 38% 34%, rgba(255,255,255,.82), transparent 30%),
     linear-gradient(135deg, rgba(201,255,36,.95), rgba(53,232,255,.62) 56%, rgba(8,12,18,.5));
-  box-shadow: 0 0 5px rgba(126,243,255,.24);
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionShard{
-  animation: rankPromotionShardExplosion 1.9s cubic-bezier(.12,.76,.18,1) both;
-  animation-delay: var(--rank-promotion-shard-delay);
+  animation: rankPromotionShardExplosion 3.4s cubic-bezier(.12,.56,.16,1) both;
+  animation-delay: calc(1000ms + var(--rank-promotion-shard-delay));
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew{
@@ -5100,44 +4856,6 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
   border-color: rgba(218,224,232,.78);
 }
 
-body[data-theme="purple"] #rankPromotionOverlay .modal{
-  border-color: rgba(233,134,245,.34);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,190,252,.08);
-}
-
-body[data-theme="purple"] #rankPromotionOverlay h2{
-  color: #f4a7ff;
-}
-
-body[data-theme="purple"] #rankPromotionOverlay #rankPromotionText{
-  color: rgba(250,240,255,.96);
-}
-
-body[data-theme="purple"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
-  border-color: rgba(233,134,245,.38);
-  color: #f4a7ff;
-  background: rgba(233,134,245,.1);
-}
-
-body[data-theme="purple"] #rankPromotionOverlay .rankPromotionShard.is-image{
-  filter: drop-shadow(0 0 2px rgba(244,167,255,.34));
-}
-
-body[data-theme="purple"] #rankPromotionOverlay .rankPromotionShard.is-placeholder{
-  background:
-    radial-gradient(circle at 38% 34%, rgba(255,255,255,.82), transparent 30%),
-    linear-gradient(135deg, rgba(244,167,255,.95), rgba(126,90,255,.64) 56%, rgba(14,10,20,.52));
-  box-shadow: 0 0 5px rgba(244,167,255,.24);
-}
-
-body[data-theme="purple"] #rankPromotionOverlay .rankPromotionLabel{
-  color: rgba(250,240,255,.96);
-}
-
-body[data-theme="purple"] #rankPromotionOverlay .rankPromotionLabel::after{
-  background: rgba(244,167,255,.5);
-}
-
 body[data-theme="lime"] #rankPromotionOverlay .modal{
   border-color: rgba(214,214,214,.34);
   background:
@@ -5160,14 +4878,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-image{
-  filter: drop-shadow(0 0 2px rgba(243,255,122,.28));
+  filter: none;
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-placeholder{
   background:
     radial-gradient(circle at 38% 34%, rgba(255,255,255,.78), transparent 30%),
     linear-gradient(135deg, rgba(243,255,122,.92), rgba(214,214,214,.62) 56%, rgba(13,15,16,.54));
-  box-shadow: 0 0 5px rgba(243,255,122,.2);
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
@@ -5176,104 +4893,73 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   background: rgba(243,255,122,.46);
-}
-
-@keyframes rankPromotionCinemaDim{
-  0%{
+}@keyframes rankPromotionCinemaDim{0%{
     opacity: 0;
-  }
-  100%{
+  }100%{
     opacity: 1;
   }
-}
-
-@keyframes rankPromotionModalReveal{
-  0%{
+}@keyframes rankPromotionModalReveal{0%{
     opacity: 0;
     transform: translateY(8px) scale(.98);
     filter: blur(3px);
-  }
-  100%{
+  }100%{
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
   }
-}
-
-@keyframes rankPromotionImpactShake{
-  0%,52%{ transform: translateX(0); }
-  54%{ transform: translateX(-9px); }
-  56%{ transform: translateX(8px); }
-  59%{ transform: translateX(-5px); }
-  64%{ transform: translateX(3px); }
-  100%{ transform: translateX(0); }
-}
-
-@keyframes rankPromotionOldHardSwap{
-  0%{
+}@keyframes rankPromotionImpactShake{0%,34%{ transform: translateX(0); }36%{ transform: translateX(-9px); }38%{ transform: translateX(8px); }41%{ transform: translateX(-5px); }45%{ transform: translateX(3px); }100%{ transform: translateX(0); }
+}@keyframes rankPromotionOldHardSwap{0%{
     opacity: 1;
     visibility: visible;
-  }
-  92%{
+  }92%{
     opacity: 1;
     visibility: visible;
-  }
-  93%,100%{
+  }93%,100%{
     opacity: 0;
     visibility: hidden;
   }
-}
-
-@keyframes rankPromotionOldLabelImpactHide{
-  0%{
+}@keyframes rankPromotionOldLabelImpactHide{0%{
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
     filter: blur(0);
-  }
-  28%{
+  }28%{
     opacity: .58;
     visibility: visible;
     transform: translateY(8px);
     filter: blur(1.5px);
-  }
-  50%{
+  }50%{
     opacity: 0;
     visibility: visible;
     transform: translateY(18px);
     filter: blur(4px);
-  }
-  51%,100%{
+  }51%,100%{
     opacity: 0;
     visibility: hidden;
     transform: translateY(18px);
     filter: blur(4px);
   }
-}
-
-@keyframes rankPromotionOldInsigniaImpactHide{
-  0%,50%{
+}@keyframes rankPromotionOldInsigniaImpactHide{0%,8%{
     opacity: 1;
     visibility: visible;
-  }
-  51%,100%{
+  }9%,100%{
     opacity: 0;
     visibility: hidden;
   }
-}
-
-@keyframes rankPromotionShardExplosion{
-  0%,48%{
-    opacity: 0;
-    transform: translate3d(0,0,0) rotate(0deg) scale(1);
-    filter: brightness(1) blur(0);
-  }
-  50%{
+}@keyframes rankPromotionShardExplosion{0%{
     opacity: 1;
     transform: translate3d(0,0,0) rotate(0deg) scale(1.08);
-    filter: brightness(1.65) blur(0);
-  }
-  58%{
+  }12%{
+    opacity: 1;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-flow-1),
+        var(--rank-promotion-shard-dy-flow-1),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-flow-1))
+      scale(var(--rank-promotion-shard-scale-flow-1));
+  }25%{
     opacity: 1;
     transform:
       translate3d(
@@ -5283,10 +4969,18 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       )
       rotate(var(--rank-promotion-shard-rot-mid))
       scale(var(--rank-promotion-shard-scale-mid));
-    filter: brightness(1.25) blur(.1px);
-  }
-  76%{
-    opacity: .72;
+  }38%{
+    opacity: .96;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-flow-2),
+        var(--rank-promotion-shard-dy-flow-2),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-flow-2))
+      scale(var(--rank-promotion-shard-scale-flow-2));
+  }52%{
+    opacity: .88;
     transform:
       translate3d(
         var(--rank-promotion-shard-dx-near),
@@ -5295,10 +4989,18 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       )
       rotate(var(--rank-promotion-shard-rot-near))
       scale(var(--rank-promotion-shard-scale));
-    filter: brightness(1) blur(.25px);
-  }
-  100%{
-    opacity: 0;
+  }64%{
+    opacity: .82;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-flow-3),
+        var(--rank-promotion-shard-dy-flow-3),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-flow-3))
+      scale(var(--rank-promotion-shard-scale-end));
+  }74%{
+    opacity: .74;
     transform:
       translate3d(
         var(--rank-promotion-shard-dx-far),
@@ -5307,338 +5009,278 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       )
       rotate(var(--rank-promotion-shard-rot))
       scale(var(--rank-promotion-shard-scale-end));
-    filter: brightness(.8) blur(1.4px);
+  }84%{
+    opacity: .6;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-flow-4),
+        var(--rank-promotion-shard-dy-flow-4),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-flow-4))
+      scale(var(--rank-promotion-shard-scale-flow-4));
+  }92%{
+    opacity: .34;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-flow-5),
+        var(--rank-promotion-shard-dy-flow-5),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-flow-5))
+      scale(var(--rank-promotion-shard-scale-flow-5));
+  }100%{
+    opacity: 0;
+    transform:
+      translate3d(
+        var(--rank-promotion-shard-dx-rain),
+        var(--rank-promotion-shard-dy-rain),
+        0
+      )
+      rotate(var(--rank-promotion-shard-rot-rain))
+      scale(var(--rank-promotion-shard-scale-rain));
   }
-}
-
-@keyframes rankPromotionNewSmash{
-  0%{ opacity: 1; }
-  100%{ opacity: 1; }
-}
-
-@keyframes rankPromotionNewBirdseyeDrop{
-  0%{
+}@keyframes rankPromotionNewSmash{0%{ opacity: 1; }100%{ opacity: 1; }
+}@keyframes rankPromotionNewBirdseyeDrop{0%{
     opacity: 0;
     transform: scale(var(--rank-promotion-birdseye-scale));
     filter: blur(10px) drop-shadow(0 0 44px rgba(201,255,36,.34));
-  }
-  10%{
+  }7%{
     opacity: 1;
-  }
-  53%{
+  }35%{
     opacity: 1;
     transform: scale(1.08);
     filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
-  }
-  58%{
+  }40%{
     transform: scale(.88);
     filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
-  }
-  64%{
+  }47%{
     transform: scale(1.05);
     filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
-  }
-  100%{
+  }72%{
+    transform: scale(.99);
+    filter: blur(0) drop-shadow(0 12px 24px rgba(0,0,0,.46));
+  }100%{
     opacity: 1;
     transform: scale(1);
     filter: blur(0) drop-shadow(0 12px 26px rgba(0,0,0,.46));
   }
-}
-
-@keyframes rankPromotionNewLabelImpact{
-  0%,53%{ opacity: 0; transform: translateY(10px); }
-  58%{ opacity: 1; transform: translateY(0); }
-  100%{ opacity: 1; transform: translateY(0); }
-}
-
-@keyframes rankPromotionInsigniaFloat{
-  0%,100%{ transform: translateY(0); }
-  50%{ transform: translateY(-7px); }
-}
-
-@keyframes rankPromotionInsigniaSpin{
-  0%{
+}@keyframes rankPromotionNewLabelImpact{0%,35%{ opacity: 0; transform: translateY(10px); }40%{ opacity: 1; transform: translateY(0); }100%{ opacity: 1; transform: translateY(0); }
+}@keyframes rankPromotionInsigniaFloat{0%,100%{ transform: translateY(0); }50%{ transform: translateY(-7px); }
+}@keyframes rankPromotionInsigniaSpin{0%{
     transform: rotateY(0deg);
-  }
-  20%{
+  }20%{
     transform: rotateY(70deg);
-  }
-  22%{
+  }22%{
     transform: rotateY(80deg);
-  }
-  24%{
+  }24%{
     transform: rotateY(94deg);
-  }
-  26%{
+  }26%{
     transform: rotateY(105deg);
-  }
-  28%{
+  }28%{
     transform: rotateY(110deg);
-  }
-  50%{
+  }50%{
     transform: rotateY(180deg);
-  }
-  70%{
+  }70%{
     transform: rotateY(250deg);
-  }
-  72%{
+  }72%{
     transform: rotateY(260deg);
-  }
-  74%{
+  }74%{
     transform: rotateY(274deg);
-  }
-  76%{
+  }76%{
     transform: rotateY(285deg);
-  }
-  78%{
+  }78%{
     transform: rotateY(290deg);
-  }
-  100%{
+  }100%{
     transform: rotateY(360deg);
   }
-}
-
-@keyframes rankPromotionLightBeamImpact{
-  0%,45%{
+}@keyframes rankPromotionLightBeamImpact{0%,31%{
     opacity: 0;
     transform: translateX(-50%) scaleY(.18) scaleX(.58);
     filter: blur(.5px) drop-shadow(0 0 8px rgba(126,243,255,.3)) drop-shadow(0 0 16px rgba(53,232,255,.14));
-  }
-  49%{
+  }34%{
     opacity: .34;
     transform: translateX(-50%) scaleY(.72) scaleX(.72);
     filter: blur(.5px) drop-shadow(0 0 10px rgba(126,243,255,.38)) drop-shadow(0 0 22px rgba(53,232,255,.18));
-  }
-  53%,58%{
+  }38%,44%{
     opacity: 1;
     transform: translateX(-50%) scaleY(1.04) scaleX(4.6);
     filter: blur(.5px) drop-shadow(0 0 28px rgba(126,243,255,.78)) drop-shadow(0 0 64px rgba(53,232,255,.4));
-  }
-  72%{
+  }62%{
     opacity: .82;
     transform: translateX(-50%) scaleY(.98) scaleX(2.9);
     filter: blur(.5px) drop-shadow(0 0 22px rgba(126,243,255,.66)) drop-shadow(0 0 48px rgba(53,232,255,.32));
-  }
-  88%{
+  }82%{
     opacity: .56;
     transform: translateX(-50%) scaleY(.94) scaleX(1.45);
     filter: blur(.5px) drop-shadow(0 0 16px rgba(126,243,255,.54)) drop-shadow(0 0 34px rgba(53,232,255,.26));
-  }
-  100%{
+  }100%{
     opacity: .5;
     transform: translateX(-50%) scaleY(.92) scaleX(.9);
     filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 26px rgba(53,232,255,.22));
   }
-}
-
-@keyframes rankPromotionLightBeamFlicker{
-  0%,47%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }
-  49%{ opacity: .28; transform: translateX(-50%) skewX(-3deg); }
-  51%{ opacity: .72; transform: translateX(-50%) skewX(2deg); }
-  53%,58%{ opacity: 1; transform: translateX(-50%) skewX(-1deg); }
-  72%{ opacity: .46; transform: translateX(-50%) skewX(3deg); }
-  86%{ opacity: .84; transform: translateX(-50%) skewX(-2deg); }
-  96%{ opacity: .34; transform: translateX(-50%) skewX(1deg); }
-  100%{ opacity: .46; transform: translateX(-50%) skewX(0deg); }
-}
-
-@keyframes rankPromotionLightBeamCore{
-  0%,48%{
+}@keyframes rankPromotionLightBeamFlicker{0%,33%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }35%{ opacity: .28; transform: translateX(-50%) skewX(-3deg); }37%{ opacity: .72; transform: translateX(-50%) skewX(2deg); }39%,45%{ opacity: 1; transform: translateX(-50%) skewX(-1deg); }62%{ opacity: .46; transform: translateX(-50%) skewX(3deg); }78%{ opacity: .84; transform: translateX(-50%) skewX(-2deg); }91%{ opacity: .34; transform: translateX(-50%) skewX(1deg); }100%{ opacity: .46; transform: translateX(-50%) skewX(0deg); }
+}@keyframes rankPromotionLightBeamCore{0%,33%{
     opacity: 0;
     transform: translateX(-50%) scale(.42);
-  }
-  53%,58%{
+  }38%,44%{
     opacity: 1;
     transform: translateX(-50%) scale(1.36);
-  }
-  100%{
+  }72%{
+    opacity: .58;
+    transform: translateX(-50%) scale(1.02);
+  }100%{
     opacity: .38;
     transform: translateX(-50%) scale(.92);
   }
-}
-
-@keyframes rankPromotionLightBeamSustain{
-  0%,100%{
+}@keyframes rankPromotionLightBeamSustain{0%,100%{
     opacity: .42;
     transform: translateX(-50%) scaleY(.86) scaleX(.86);
     filter: blur(.5px) drop-shadow(0 0 10px rgba(126,243,255,.4)) drop-shadow(0 0 24px rgba(53,232,255,.18));
-  }
-  24%{
+  }24%{
     opacity: .5;
     transform: translateX(-50%) scaleY(.91) scaleX(.89);
     filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 27px rgba(53,232,255,.2));
-  }
-  52%{
+  }52%{
     opacity: .66;
     transform: translateX(-50%) scaleY(1) scaleX(.94);
     filter: blur(.5px) drop-shadow(0 0 15px rgba(126,243,255,.56)) drop-shadow(0 0 32px rgba(53,232,255,.24));
-  }
-  78%{
+  }78%{
     opacity: .48;
     transform: translateX(-50%) scaleY(.9) scaleX(.91);
     filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.44)) drop-shadow(0 0 26px rgba(53,232,255,.2));
   }
-}
-
-@keyframes rankPromotionLightBeamSustainFlicker{
-  0%,100%{ opacity: .28; transform: translateX(-50%) skewX(0deg); filter: blur(5px); }
-  12%{ opacity: .39; transform: translateX(-50%) skewX(-.4deg); }
-  25%{ opacity: .34; transform: translateX(-50%) skewX(.35deg); }
-  39%{ opacity: .44; transform: translateX(-50%) skewX(-.65deg); filter: blur(4px); }
-  54%{ opacity: .52; transform: translateX(-50%) skewX(.45deg); }
-  68%{ opacity: .43; transform: translateX(-50%) skewX(-.25deg); }
-  83%{ opacity: .46; transform: translateX(-50%) skewX(.35deg); filter: blur(5px); }
-}
-
-@keyframes rankPromotionLightBeamSustainCore{
-  0%,100%{
+}@keyframes rankPromotionLightBeamSustainFlicker{0%,100%{ opacity: .28; transform: translateX(-50%) skewX(0deg); filter: blur(5px); }12%{ opacity: .39; transform: translateX(-50%) skewX(-.4deg); }25%{ opacity: .34; transform: translateX(-50%) skewX(.35deg); }39%{ opacity: .44; transform: translateX(-50%) skewX(-.65deg); filter: blur(4px); }54%{ opacity: .52; transform: translateX(-50%) skewX(.45deg); }68%{ opacity: .43; transform: translateX(-50%) skewX(-.25deg); }83%{ opacity: .46; transform: translateX(-50%) skewX(.35deg); filter: blur(5px); }
+}@keyframes rankPromotionLightBeamSustainCore{0%,100%{
     opacity: .28;
     transform: translateX(-50%) scale(.86);
-  }
-  28%{
+  }28%{
     opacity: .36;
     transform: translateX(-50%) scale(.94);
-  }
-  50%{
+  }50%{
     opacity: .46;
     transform: translateX(-50%) scale(1.02);
-  }
-  74%{
+  }74%{
     opacity: .34;
     transform: translateX(-50%) scale(.9);
   }
-}
-
-@keyframes rankPromotionLightBeamPulse{
-  0%,55%{
+}@keyframes rankPromotionLightBeamPulse{0%,55%{
     opacity: 0;
     transform: translate3d(-50%,0,0) scaleY(.72);
-  }
-  58%{
+  }58%{
     opacity: .35;
     transform: translate3d(-50%,-80%,0) scaleY(.82);
-  }
-  70%{
+  }70%{
     opacity: .9;
     transform: translate3d(-50%,-520%,0) scaleY(1);
-  }
-  80%{
+  }80%{
     opacity: .46;
     transform: translate3d(-50%,-820%,0) scaleY(.88);
-  }
-  84%,100%{
+  }84%,100%{
     opacity: 0;
     transform: translate3d(-50%,-900%,0) scaleY(.72);
   }
 }
 
 @media (prefers-reduced-motion: reduce){
-  #rankPromotionOverlay .rankPromotionModal.is-smashing{
+#rankPromotionOverlay .rankPromotionModal.is-smashing{
     animation: none;
   }
 
-  #rankPromotionOverlay .rankPromotionLightBeam,
+#rankPromotionOverlay .rankPromotionLightBeam,
   #rankPromotionOverlay .rankPromotionLightBeam::before,
   #rankPromotionOverlay .rankPromotionLightBeam::after,
   #rankPromotionOverlay .rankPromotionLightBeamPulse{
     animation: none !important;
   }
 
-  #rankPromotionOverlay .rankPromotionLightBeamPulse{
+#rankPromotionOverlay .rankPromotionLightBeamPulse{
     display: none;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
     opacity: .42;
     transform: translateX(-50%) scaleY(.9) scaleX(.88);
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
     opacity: .34;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
     opacity: .3;
     transform: translateX(-50%) scale(.9);
   }
 
-  #rankPromotionOverlay .rankPromotionRankNew{
+#rankPromotionOverlay .rankPromotionRankNew{
     transform: none;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
     animation: rankPromotionReducedOldSwap 1.9s ease both;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldInsigniaWrap > .rankPromotionInsignia,
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldInsigniaWrap > .rankPromotionInsignia,
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionShard{
     animation: none;
   }
 
-  #rankPromotionOverlay .rankPromotionShard{
+#rankPromotionOverlay .rankPromotionShard{
     display: none;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
     animation: rankPromotionReducedNewSwap 1.9s ease both;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia,
+#rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionInsignia,
   #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew .rankPromotionLabel{
     animation: none;
   }
 
-  #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
   #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaImage,
   #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaPlaceholder{
     animation: none;
   }
-}
-
-@keyframes rankPromotionReducedOldSwap{
-  0%{
+}@keyframes rankPromotionReducedOldSwap{0%{
     opacity: 1;
     visibility: visible;
     transform: scale(1);
-  }
-  100%{
+  }100%{
     opacity: 0;
     visibility: hidden;
     transform: scale(.82);
   }
-}
-
-@keyframes rankPromotionReducedNewSwap{
-  0%{ opacity: 0; }
-  100%{ opacity: 1; }
+}@keyframes rankPromotionReducedNewSwap{0%{ opacity: 0; }100%{ opacity: 1; }
 }
 
 @media (max-width: 520px){
-  #rankPromotionOverlay .rankPromotionModal{
+#rankPromotionOverlay .rankPromotionModal{
     --rank-promotion-birdseye-scale: 3.6;
   }
 
-  #rankPromotionOverlay .rankPromotionStage{
+#rankPromotionOverlay .rankPromotionStage{
     min-height: 164px;
   }
 
-  #rankPromotionOverlay .rankPromotionInsignia{
+#rankPromotionOverlay .rankPromotionInsignia{
     width: 96px;
     height: 96px;
   }
 
-  #rankPromotionOverlay .rankPromotionInsigniaNew{
+#rankPromotionOverlay .rankPromotionInsigniaNew{
     width: 120px;
     height: 120px;
   }
 
-  #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
+#rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
     width: 82px;
     height: 82px;
     font-size: 30px;
   }
 
-  #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
+#rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
     width: 102px;
     height: 102px;
     font-size: 36px;
@@ -5791,20 +5433,15 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   transform-origin: top center;
   animation: timeGoalCompleteLauncherRollDown .34s cubic-bezier(.16,.84,.24,1) both;
   will-change: opacity, transform, clip-path;
-}
-
-@keyframes timeGoalCompleteLauncherRollDown{
-  from{
+}@keyframes timeGoalCompleteLauncherRollDown{from{
     opacity: 0;
     clip-path: inset(0 0 100% 0);
     transform: translateY(-10px) scaleY(.92);
-  }
-  62%{
+  }62%{
     opacity: 1;
     clip-path: inset(0 0 0 0);
     transform: translateY(2px) scaleY(1.015);
-  }
-  to{
+  }to{
     opacity: 1;
     clip-path: inset(0 0 0 0);
     transform: translateY(0) scaleY(1);
@@ -5812,7 +5449,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 @media (prefers-reduced-motion: reduce){
-  #timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
+#timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
     animation: none;
   }
 }
@@ -5888,13 +5525,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 @media (max-width: 560px){
-  #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
     flex-basis: calc((100% - var(--time-goal-next-task-gap)) / 2);
   }
 }
 
 @media (max-width: 360px){
-  #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
     flex-basis: 100%;
   }
 }
@@ -5953,95 +5590,11 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   box-shadow: 0 0 14px rgba(0,220,255,.3);
 }
 
-body[data-theme="purple"] #timeGoalCompleteOverlay .modal{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .modalSubtext{
-  color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficulty legend{
-  color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteNoteLabel{
-  color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
-  color: #ff6b8f !important;
-}
-
 body[data-theme="lime"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
   color: #ff5a68 !important;
 }
 
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyHint{
-  color: rgba(247,232,255,.72);
-}
-
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconWrap{
-  border-color: rgba(214,96,229,.44);
-  box-shadow: none !important;
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyLabel{
-  color: #ecdfff;
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
-  background: transparent !important;
-  background-image: none !important;
-  color: #ecdfff;
-  border-color: rgba(214,96,229,.44);
-  box-shadow: none !important;
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:focus-visible,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:active,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[aria-pressed="true"],
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:focus-visible,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:active,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent[aria-pressed="true"]{
-  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
-  color: #fff !important;
-  border-color: rgba(233,134,245,.72) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:hover .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"].is-selected .timeGoalCompleteDifficultyIconWrap{
-  background: linear-gradient(180deg, #ff8a8a, #d72d2d) !important;
-  border-color: rgba(255,126,126,.76) !important;
-  box-shadow: 0 0 0 1px rgba(255,185,185,.18) inset, 0 0 14px rgba(215,45,45,.3);
-}
-
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:hover .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
-body[data-theme="purple"] #timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"].is-selected .timeGoalCompleteDifficultyIconWrap{
-  background: linear-gradient(180deg, #86efac, #16a34a) !important;
-  border-color: rgba(110,231,183,.74) !important;
-  box-shadow: 0 0 0 1px rgba(187,247,208,.16) inset, 0 0 14px rgba(22,163,74,.28);
-}
-
-body[data-theme="cyan"] #timeGoalCompleteOverlay .modal{
-  border-color: rgba(53,232,255,.24);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
-}
-
-#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
   background: rgba(255,255,255,.01) !important;
   background-image: none !important;
   color: var(--text) !important;
@@ -6049,9 +5602,7 @@ body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
   box-shadow: none !important;
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
+#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
   background: #c9ff24 !important;
   background-image: none !important;
   color: #061006 !important;
@@ -6060,11 +5611,7 @@ body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
 }
 
 #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
-#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible{
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible{
   background: rgba(255,255,255,.05) !important;
   background-image: none !important;
   color: #c9ff24 !important;
@@ -6073,11 +5620,7 @@ body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus
 }
 
 #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
-#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
-body[data-theme="purple"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
-body[data-theme="cyan"] #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible{
+#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible{
   background: #d6ff57 !important;
   background-image: none !important;
   color: #061006 !important;
@@ -6150,58 +5693,37 @@ body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
   resize: vertical;
 }
 
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .modal,
-body[data-theme="purple"] #timeGoalCompleteNoteOverlay .modal{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(239,134,245,.06);
-}
-
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .modalSubtext,
-body[data-theme="purple"] #timeGoalCompleteNoteOverlay .modalSubtext{
-  color: rgba(247,232,255,.92);
-}
-
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn,
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent{
-  background: rgba(24,13,35,.9);
-  color: #ecdfff;
-  border-color: rgba(214,96,229,.44);
-}
-
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn:hover,
-body[data-theme="purple"] #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent:hover{
-  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
-  color: #fff !important;
-  border-color: rgba(233,134,245,.72) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset, 0 0 14px rgba(211,86,230,.28);
-}
-
 body[data-control-style="square"] #timeGoalCompleteSaveNoteOverlay .modal,
 body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   clip-path: none;
 }
+
 #editOverlay #editTimerSettingsGroup,
 #editOverlay #editFinalCheckpointActionField{
   width:100%;
   max-width:none;
 }
+
 #editOverlay #editFinalCheckpointActionSelect{
   display:block;
   width:100%;
   max-width:none;
 }
+
 #editOverlay .editTaskTimeGoalField #editTimerSettingsGroup{
   display:block;
   width:100%;
   max-width:none;
   min-width:0;
 }
+
 #editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField{
   display:block;
   width:100%;
   max-width:none;
   min-width:0;
 }
+
 #editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select{
   display:block;
   width:100% !important;
@@ -6213,6 +5735,7 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   width:100%;
   max-width:none;
 }
+
 #addTaskOverlay #addTaskFinalCheckpointActionSelect,
 #addTaskOverlay #addTaskCheckpointSoundModeSelect,
 #addTaskOverlay #addTaskCheckpointToastModeSelect{
@@ -6344,64 +5867,6 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   line-height: 1.35;
 }
 
-body[data-theme="purple"] #editOverlay .unitBtn.isOn,
-body[data-theme="purple"] #editOverlay .timerTypePill.isOn{
-  border-color: rgba(255,255,255,.86) !important;
-  background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
-  color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
-}
-
-body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill,
-body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
-  border-color: rgba(255,255,255,.08) !important;
-}
-
-body[data-theme="purple"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
-  border-color: rgba(255,255,255,.86) !important;
-}
-
-body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn{
-  border:0;
-  box-shadow:none;
-  background: transparent;
-}
-
-body[data-theme="purple"] #editOverlay .msRow .checkpointBellBtn.isOn{
-  border:0;
-  box-shadow:none;
-  background: transparent;
-}
-
-body[data-theme="purple"] #editOverlay .msRow .msSliderInput,
-body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput{
-  accent-color:var(--checkpoint-slider-accent, #7fe7ff);
-}
-
-body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
-body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-runnable-track,
-body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-track,
-body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-track{
-  background:linear-gradient(90deg, var(--checkpoint-slider-accent, #7fe7ff), rgba(255,255,255,.12));
-}
-
-body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-webkit-slider-thumb,
-body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-webkit-slider-thumb,
-body[data-theme="purple"] #editOverlay .msRow .msSliderInput::-moz-range-thumb,
-body[data-theme="purple"] #addTaskOverlay .msRow .msSliderInput::-moz-range-thumb{
-  background:var(--checkpoint-slider-accent, #7fe7ff);
-}
-
-body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary,
-body[data-theme="purple"] #addTaskOverlay #addTaskAdvancedMenu > summary{
-  color: #f5eaff;
-}
-
-body[data-theme="purple"] #editOverlay #editTaskAdvancedMenu > summary::before,
-body[data-theme="purple"] #addTaskOverlay #addTaskAdvancedMenu > summary::before{
-  color:#fff;
-}
-
 #editOverlay .milestonesBody,
 #editOverlay .presetIntervalsInfoSlot,
 #editOverlay .btn{
@@ -6450,6 +5915,7 @@ body[data-theme="lime"] .dashboardCard{
     rgba(18,20,24,.96);
   box-shadow: 0 20px 40px rgba(0,0,0,.34), inset 0 0 0 1px rgba(241,255,151,.05);
 }
+
 body[data-theme="lime"] #rankLadderOverlay .modal,
 body[data-theme="lime"] #rewardsInfoOverlay .modal,
 body[data-theme="lime"] #timeGoalCompleteOverlay .modal,
@@ -6460,16 +5926,19 @@ body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modal{
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
     rgba(18,20,24,.96);
 }
+
 body[data-theme="lime"] .rankLadderItem,
 body[data-theme="lime"] .rewardsInfoDetailItem{
   border-color: rgba(219,255,79,.18);
   background: rgba(18,20,24,.96);
 }
+
 body[data-theme="lime"] .rankLadderItem.isSelectable:hover,
 body[data-theme="lime"] .rankLadderItem.isSelectable:focus-visible{
   border-color: rgba(241,255,151,.34);
   box-shadow: 0 0 16px rgba(219,255,79,.12), inset 0 0 0 1px rgba(241,255,151,.08);
 }
+
 body[data-theme="lime"] .rankLadderItem.isUnlocked,
 body[data-theme="lime"] .rankLadderItem.isCurrent,
 body[data-theme="lime"] .rankLadderItem.isSelectedThumbnail,
@@ -6479,6 +5948,7 @@ body[data-theme="lime"] .rankLadderItemFlag,
 body[data-theme="lime"] .rewardsInfoDetailValue{
   color: rgba(247,255,212,.96);
 }
+
 body[data-theme="lime"] .rankLadderItemMeta,
 body[data-theme="lime"] .rewardsInfoText,
 body[data-theme="lime"] .rewardsInfoDetailLabel,
@@ -6488,9 +5958,11 @@ body[data-theme="lime"] #timeGoalCompleteSaveNoteOverlay .modalSubtext,
 body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modalSubtext{
   color: rgba(226,239,170,.82);
 }
+
 body[data-theme="lime"] .rankLadderModal p.modalSubtext{
   color: #ffffff !important;
 }
+
 body[data-theme="lime"] #editOverlay input[type="text"],
 body[data-theme="lime"] #editOverlay input[type="number"],
 body[data-theme="lime"] #editOverlay .checkpointAlertSoundModeField select{
@@ -6498,6 +5970,7 @@ body[data-theme="lime"] #editOverlay .checkpointAlertSoundModeField select{
   background: rgba(20,27,10,.92);
   color: rgba(247,255,212,.96);
 }
+
 body[data-theme="lime"] #editOverlay input[type="text"]:focus,
 body[data-theme="lime"] #editOverlay input[type="number"]:focus,
 body[data-theme="lime"] #editOverlay .checkpointAlertSoundModeField select:focus,
@@ -6505,6 +5978,7 @@ body[data-theme="lime"] #addTaskOverlay .checkpointAlertSoundModeField select:fo
   border-color: rgba(241,255,151,.46);
   box-shadow: 0 0 0 1px rgba(241,255,151,.12);
 }
+
 body[data-theme="lime"] #editOverlay option,
 body[data-theme="lime"] #editOverlay optgroup,
 body[data-theme="lime"] #addTaskOverlay option,
@@ -6512,6 +5986,7 @@ body[data-theme="lime"] #addTaskOverlay optgroup{
   background: #14180a;
   color: #f7ffd0;
 }
+
 body[data-theme="lime"] #editOverlay option:hover,
 body[data-theme="lime"] #editOverlay option:focus,
 body[data-theme="lime"] #editOverlay option:checked,
@@ -6525,6 +6000,7 @@ body[data-theme="lime"] #addTaskOverlay option:checked:focus{
   background: linear-gradient(180deg, rgba(239,255,99,.34), rgba(110,128,16,.96));
   color: #f8ffd7;
 }
+
 body[data-theme="lime"] #editOverlay .unitBtn.isOn,
 body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
   border-color: rgba(255,255,255,.86) !important;
@@ -6536,17 +6012,21 @@ body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
 body[data-theme="lime"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   border-color: rgba(255,255,255,.86) !important;
 }
+
 body[data-theme="lime"] #editOverlay .switch.on{
   background: rgba(219,255,79,.2) !important;
 }
+
 body[data-theme="lime"] #editOverlay .switch.on::after{
   background: #f3ff7a !important;
 }
+
 body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel,
 body[data-theme="lime"] #timeGoalCompleteOverlay .confirmText,
 body[data-theme="lime"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
   color: rgba(243,255,198,.92);
 }
+
 body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(241,255,151,.88);
 }
@@ -6588,8 +6068,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #saveEditBtn:focus-visible,
 #addTaskOverlay #addTaskConfirmBtn,
 #addTaskOverlay #addTaskConfirmBtn:hover:not(:disabled),
-#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled),
-body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
+#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled){
   font-family: var(--font-orbitron) !important;
   background: rgba(255,255,255,.01) !important;
   color: #c9ff24 !important;
@@ -6666,25 +6145,25 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   font-family: inherit;
 }
 
-#confirmChkLabel .confirmChkLabelText {
+#confirmChkLabel .confirmChkLabelText{
   display: inline-flex;
   align-items: center;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmChkRow {
+#confirmOverlay.isResetTaskConfirm #confirmChkRow{
   align-items: center;
   border-radius: 12px;
   padding: 12px 14px;
   background: #16181d;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAll {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAll{
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmChkLabel {
+#confirmOverlay.isResetTaskConfirm #confirmChkLabel{
   width: 100%;
   display: flex;
   align-items: center;
@@ -6693,42 +6172,42 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   cursor: pointer;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmChkLabel .confirmChkLabelText {
+#confirmOverlay.isResetTaskConfirm #confirmChkLabel .confirmChkLabelText{
   flex: 1 1 auto;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch{
   flex: 0 0 auto;
   width: 39px;
   height: 21px;
   min-width: 39px;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch::after {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch::after{
   width: 18px;
   height: 18px;
   top: 1px;
   left: 1px;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch.on::after {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch.on::after{
   left: 19px;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch{
   outline: 2px solid rgba(0, 217, 245, 0.95);
   outline-offset: 2px;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmChkRow.is-disabled {
+#confirmOverlay.isResetTaskConfirm #confirmChkRow.is-disabled{
   opacity: 0.68;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
+#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
   opacity: 0.86;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmChkRow {
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow{
   align-items: center;
   gap: 8px;
   padding: 0;
@@ -6736,14 +6215,14 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   border: 0;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll {
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll{
   position: static;
   opacity: 1;
   pointer-events: auto;
   accent-color: #c9ff24;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel {
+#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel{
   width: auto;
   display: flex;
   align-items: center;
@@ -6753,7 +6232,7 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   cursor: pointer;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel .confirmChkLabelText {
+#confirmOverlay.isDeleteTaskConfirm #confirmChkLabel .confirmChkLabelText{
   flex: 1 1 auto;
   align-items: center;
   min-height: 13px;
@@ -6765,19 +6244,19 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   color: rgba(226,232,240,.92);
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch {
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch{
   display: none;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmChkRow.is-disabled {
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow.is-disabled{
   opacity: 0.68;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
+#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
   opacity: 0.86;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .modal {
+#confirmOverlay.isResetAllDeleteConfirm .modal{
   background: linear-gradient(180deg, rgba(26, 11, 13, 0.98) 0%, rgba(13, 15, 19, 0.99) 100%);
   border: 1px solid rgba(255, 92, 112, 0.56);
   border-radius: 0;
@@ -6788,21 +6267,21 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
 #confirmOverlay.isResetAllDeleteConfirm #confirmTitle,
 #confirmOverlay.isResetAllDeleteConfirm .confirmText,
 #confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel,
-#confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputLabel {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputLabel{
   color: rgba(255, 219, 224, 0.95);
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmText {
+#confirmOverlay.isResetAllDeleteConfirm .confirmText{
   line-height: 1.5;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll{
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmChkRow {
+#confirmOverlay.isResetAllDeleteConfirm #confirmChkRow{
   align-items: center;
   border-radius: 0;
   padding: 12px 14px;
@@ -6810,7 +6289,7 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel {
+#confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel{
   width: 100%;
   display: flex;
   align-items: center;
@@ -6819,11 +6298,11 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   cursor: pointer;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel .confirmChkLabelText {
+#confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel .confirmChkLabelText{
   flex: 1 1 auto;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch{
   margin-left: auto;
   flex: 0 0 auto;
   width: 39px;
@@ -6831,47 +6310,47 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   min-width: 39px;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch::after {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch::after{
   width: 18px;
   height: 18px;
   top: 1px;
   left: 1px;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch.on::after {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch.on::after{
   left: 19px;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch{
   outline: 2px solid rgba(255, 133, 145, 0.95);
   outline-offset: 2px;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmChkRow.is-disabled {
+#confirmOverlay.isResetAllDeleteConfirm #confirmChkRow.is-disabled{
   opacity: 0.68;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch[aria-checked="false"] {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
   opacity: 0.86;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputRow {
+#confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputRow{
   display: grid;
   gap: 6px;
   margin-top: 4px;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInputLabel {
+#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInputLabel{
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInputLabel:empty {
+#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInputLabel:empty{
   display: none;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput {
+#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput{
   width: 100%;
   min-width: 0;
   border-radius: 0;
@@ -6884,23 +6363,23 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   box-shadow: none;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput::placeholder {
+#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput::placeholder{
   color: rgba(255, 184, 192, 0.5);
   font-style: italic;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput:focus-visible {
+#confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput:focus-visible{
   border-color: rgba(255, 133, 145, 0.9);
   box-shadow: 0 0 0 1px rgba(255, 133, 145, 0.18);
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmCancelBtn,
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn {
+#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn{
   min-width: 92px;
   justify-content: center;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn {
+#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn{
   border-color: rgba(255, 92, 112, 0.5);
   background: transparent;
   color: rgba(255, 214, 220, 0.96);
@@ -6908,25 +6387,25 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:hover:not(:disabled),
 #confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:focus-visible:not(:disabled),
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:active:not(:disabled) {
+#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:active:not(:disabled){
   background: rgba(211, 49, 76, 0.94);
   border-color: rgba(255, 110, 132, 0.95);
   color: #fff4f6;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:disabled {
+#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:disabled{
   background: rgba(62, 24, 29, 0.42);
   border-color: rgba(130, 66, 76, 0.38);
   color: rgba(255, 204, 210, 0.46);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid {
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
   display: flex;
   gap: 10px;
   justify-content: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn {
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn{
   width: auto;
   min-width: 132px;
   flex: 0 0 auto;
@@ -6937,16 +6416,16 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
 /* Migrated from retired tasktimer tail: Edit Task typography authority. */
 #editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select,
 #editOverlay #msList .msRow input[type="text"],
-#editOverlay #msList .msRow .msSkewInput {
+#editOverlay #msList .msRow .msSkewInput{
   font-family: var(--font-geist-sans) !important;
 }
 
 @media (max-width: 640px){
-  #editOverlay .editCheckpointAlertBehaviourGrid{
+#editOverlay .editCheckpointAlertBehaviourGrid{
     grid-template-columns: 1fr;
   }
 
-  #editOverlay .msRow,
+#editOverlay .msRow,
   #editOverlay .msRow .msSliderCluster,
   #editOverlay .msRow .msSkewInput,
   #addTaskOverlay .msRow,
@@ -6956,15 +6435,11 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
   }
 }
 
-.confirmAwardText {
+.confirmAwardText{
   display: inline-block;
   margin-top: 8px;
   color: #8ff6ff;
   font-weight: 700;
-}
-
-body[data-theme="purple"] .confirmAwardText {
-  color: #f4a7ff;
 }
 
 /* Rectangular modal shell alignment. */
@@ -6989,34 +6464,22 @@ body[data-theme="purple"] .confirmAwardText {
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}
-
-:is(#addTaskOverlay, #editOverlay) .modal{
+}:is(#addTaskOverlay, #editOverlay) .modal{
   background: var(--modal-bg) !important;
   border: 1px solid var(--modal-border) !important;
   border-radius: 0 !important;
   clip-path: none !important;
   box-shadow: var(--modal-shadow) !important;
   font-family: var(--font-readable) !important;
-}
-
-:is(#confirmOverlay, #elapsedPadOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
+}:is(#confirmOverlay, #elapsedPadOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
-}
-
-:is(#aboutOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay) .modal{
+}:is(#aboutOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
-}
-
-:is(#rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay) .modal{
+}:is(#rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay) .modal{
   width:min(var(--modal-width-lg), 100%) !important;
-}
-
-:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+}:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
   font-family: var(--font-readable) !important;
-}
-
-:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .confirmText,
+}:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .confirmText,
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;
@@ -7028,22 +6491,20 @@ body[data-theme="purple"] .confirmAwardText {
   border-radius: 0 !important;
   clip-path: none !important;
   box-shadow: var(--modal-shadow) !important;
-}
-
-:is(#confirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
+}:is(#confirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
 }
 
-.xpAwardFxLayer {
+.xpAwardFxLayer{
   pointer-events: none;
   position: fixed;
   inset: 0;
   z-index: 1200;
 }
 
-.xpAwardFxPayload {
+.xpAwardFxPayload{
   --xp-payload-color: #c9ff24;
   --xp-payload-border: rgba(201, 255, 36, 0.92);
   --xp-payload-glow: rgba(53, 232, 255, 0.28);
@@ -7067,29 +6528,15 @@ body[data-theme="purple"] .confirmAwardText {
   backface-visibility: hidden;
   will-change: transform, opacity;
   animation: xpAwardPayloadLaunch 1600ms cubic-bezier(.2,.72,.18,1) forwards;
-}
-
-body[data-theme="purple"] .xpAwardFxPayload {
-  --xp-payload-color: #c9ff24;
-  --xp-payload-border: rgba(244, 167, 255, 0.94);
-  --xp-payload-glow: rgba(240, 110, 224, 0.26);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
-    rgba(20, 11, 30, 0.94);
-}
-
-@keyframes xpAwardPayloadLaunch {
-  0% {
+}@keyframes xpAwardPayloadLaunch{0%{
     opacity: 0;
     transform: translate3d(-50%, -50%, 0) scale(0.86);
     filter: blur(4px);
-  }
-  12% {
+  }12%{
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) scale(1);
     filter: blur(0);
-  }
-  100% {
+  }100%{
     opacity: 0;
     transform: translate3d(
       calc(-50% + var(--xp-award-dx, 0px)),

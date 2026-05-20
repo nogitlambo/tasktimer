@@ -284,6 +284,7 @@ export type TaskTimerAppShellContext = {
   requestScheduleEntryScroll: (mode?: "open" | "firstScheduled") => void;
   render: () => void;
   renderHistory: (taskId: string) => void;
+  applyDashboardCardSizes: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderGroupsPage: () => void;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
@@ -379,7 +380,7 @@ export type TaskTimerTasksContext = {
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
   getHistoryViewByTaskId: () => Record<string, HistoryViewState>;
-  getThemeMode: () => "purple" | "cyan" | "lime";
+  getThemeMode: () => "lime";
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertToastEnabled: () => boolean;
@@ -824,8 +825,6 @@ export type TaskTimerDashboardContext = {
   renderDashboardTimelineCard: () => void;
   selectDashboardActivityDay: (dayKey: string | null) => void;
   closeDashboardActivityDayDetail: () => void;
-  toggleDashboardActivityGoal: () => void;
-  toggleDashboardActivityCompare: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -893,8 +892,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     WEEK_STARTING_KEY: string;
   };
   defaultModeColors: Record<MainMode, string>;
-  getThemeMode: () => "purple" | "cyan" | "lime";
-  setThemeModeState: (value: "purple" | "cyan" | "lime") => void;
+  getThemeMode: () => "lime";
+  setThemeModeState: (value: "lime") => void;
   getTaskView: () => "list" | "tile";
   setTaskViewState: (value: "list" | "tile") => void;
   getTaskOrderBy: () => TaskOrderBy;

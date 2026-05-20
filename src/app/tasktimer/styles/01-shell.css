@@ -12,9 +12,11 @@
   flex-direction:column;
   position:relative;
 }
+
 .wrap.isXpAwardSpotlightActive{
   isolation:isolate;
 }
+
 #app[aria-label="TaskLaunch App"]{
   width: 100%;
   max-width: 1625px;
@@ -25,6 +27,7 @@
   overflow-x:hidden;
   -webkit-overflow-scrolling: touch;
 }
+
 .topbar{
   display:grid;
   grid-template-columns: 1fr auto 1fr;
@@ -38,16 +41,20 @@
   z-index:3;
   backdrop-filter: blur(10px);
 }
+
 .wrap.isXpAwardSpotlightActive .taskLaunchAppTopbar{
   z-index:1195;
   backdrop-filter:none;
 }
+
 .topbar.topbarBrandOnly{
   grid-template-columns: minmax(0, 1fr);
 }
+
 .topbar.topbarBrandOnly.taskLaunchAppTopbar{
   grid-template-columns: minmax(0, 1fr) auto;
 }
+
 .brand{
   display:flex;
   align-items:center;
@@ -57,6 +64,7 @@
   letter-spacing:.16em;
   justify-self:start;
 }
+
 .brandLogo{
   display:block;
   width:min(255px, 100%);
@@ -66,6 +74,7 @@
   margin-left:0;
   align-self:center;
 }
+
 .taskLaunchHeaderBrandIcon{
   display: block;
   width: 22px;
@@ -73,6 +82,7 @@
   flex: 0 0 22px;
   object-fit: contain;
 }
+
 .taskLaunchHeaderBrandText{
   color: var(--landing-text, rgba(245,248,244,.96));
   font-family: var(--font-display-ui);
@@ -82,6 +92,7 @@
   line-height: normal;
   text-transform: uppercase;
 }
+
 #app .appBrandLandingReplica{
   display: inline-flex !important;
   align-items: center !important;
@@ -93,6 +104,7 @@
   text-decoration: none !important;
   text-transform: uppercase !important;
 }
+
 #app .appBrandLandingReplicaText{
   color: inherit !important;
   font: inherit !important;
@@ -100,6 +112,7 @@
   line-height: inherit !important;
   text-transform: inherit !important;
 }
+
 #app .appBrandLandingReplicaIcon{
   display: block !important;
   width: 22px !important;
@@ -107,35 +120,44 @@
   flex: 0 0 22px !important;
   object-fit: contain !important;
 }
+
 .taskLaunchMobileMenuBtn{
   display:none;
   border: 0;
 }
+
 .taskLaunchTopbarXp{
   display:none;
   flex:1 1 auto;
   min-width:0;
 }
+
 .taskLaunchMobileToolbar{
   display:none;
 }
+
 @media (max-width: 980px), (pointer: coarse) and (max-device-width: 1024px){
-  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar,
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar{
     display:block;
   }
 }
+
 .taskLaunchMobileMenu{
   display:none;
 }
+
 .controls{display:flex; align-items:center; gap:var(--space-2);}
+
 .controls{ justify-self:end; }
+
 .modeSwitch{
   display:flex;
   align-items:center;
   justify-content:center;
   gap:8px;
 }
+
 .modeSwitchWrap{
   display:flex;
   flex-direction:column;
@@ -145,6 +167,7 @@
   position:relative;
   padding:8px 12px 0;
 }
+
 .modeSwitchWrap::before,
 .modeSwitchWrap::after{
   content:"";
@@ -155,33 +178,40 @@
   border-top:2px solid var(--mode-accent);
   pointer-events:none;
 }
+
 .modeSwitchWrap::before{
   left:0;
   border-left:2px solid var(--mode-accent);
   border-top-left-radius:3px;
 }
+
 .modeSwitchWrap::after{
   right:0;
   border-right:2px solid var(--mode-accent);
   border-top-right-radius:3px;
 }
+
 .modeSwitchWrap.modeSwitchNoBrackets::before,
 .modeSwitchWrap.modeSwitchNoBrackets::after{
   display:none;
 }
+
 body[data-app-page="dashboard"] .modeSwitchWrap,
 body[data-app-page="friends"] .modeSwitchWrap,
 body[data-app-page="leaderboard"] .modeSwitchWrap{
   display:none !important;
 }
+
 body[data-app-page="dashboard"] .appPages{
   padding-left: 0 !important;
 }
+
 body[data-app-page="friends"] .appPages,
 body[data-app-page="leaderboard"] .appPages{
   padding-left: 104px !important;
   padding-right: 18px !important;
 }
+
 .appPages{
   flex:1 1 auto;
   --app-pages-bottom-padding: 12px;
@@ -191,48 +221,49 @@ body[data-app-page="leaderboard"] .appPages{
   overflow-y:auto;
   overflow-x:hidden;
 }
+
 .appPage{
   display:none;
   padding-bottom:12px;
 }
+
 .appPage.appPageOn{
   display:block;
 }
+
 body.isAppPageSliding[data-app-page-slide-direction="forward"] #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
   animation: appPageSlideInForward .22s ease both;
 }
+
 body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
   animation: appPageSlideInBackward .22s ease both;
-}
-@keyframes appPageSlideInForward{
-  from{
+}@keyframes appPageSlideInForward{from{
     opacity:0;
     transform:translateX(24px);
-  }
-  to{
+  }to{
     opacity:1;
     transform:translateX(0);
   }
-}
-@keyframes appPageSlideInBackward{
-  from{
+}@keyframes appPageSlideInBackward{from{
     opacity:0;
     transform:translateX(-24px);
-  }
-  to{
+  }to{
     opacity:1;
     transform:translateX(0);
   }
 }
+
 @media (prefers-reduced-motion: reduce){
-  body.isAppPageSliding #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
+body.isAppPageSliding #app[aria-label="TaskLaunch App"] .appPage.appPageOn{
     animation:none;
   }
 }
+
 /* Use more available width on the Tasks page without affecting route screens that reuse `.list`. */
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
   padding:0;
 }
+
 .modeSwitchesLabel{
   margin:10px 0 6px;
   font-size:11px;
@@ -241,6 +272,7 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   text-transform:uppercase;
   color: rgba(255,255,255,.6);
 }
+
 .footerBtns{
   display:flex;
   gap:12px;
@@ -248,19 +280,23 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   margin-top:16px;
   flex-wrap:wrap;
 }
+
 @media (max-width: 640px){
-  .footerBtns{
+.footerBtns{
     justify-content:stretch;
   }
-  .footerBtns .btn{
+
+.footerBtns .btn{
     flex:1 1 100%;
   }
 }
+
 @media (max-width: 360px){
-  .footerBtns{
+.footerBtns{
     gap:8px;
   }
 }
+
 .historySaveWorkingIndicator{
   position: fixed;
   inset: 0;
@@ -275,10 +311,12 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   pointer-events: none;
   transition: opacity .18s ease;
 }
+
 .historySaveWorkingIndicator.isOn{
   opacity: 1;
   pointer-events: auto;
 }
+
 .dashboardRefreshBusyOverlay{
   position: absolute;
   inset: 0;
@@ -295,11 +333,13 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   pointer-events: none;
   transition: opacity .26s ease, visibility .26s ease;
 }
+
 .dashboardRefreshBusyOverlay.isOn{
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
+
 .dashboardRefreshBusyPanel{
   width: min(360px, calc(100% - 8px));
   padding: 14px 16px 12px;
@@ -310,6 +350,7 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   box-shadow: 0 20px 46px rgba(0,0,0,.42), inset 0 0 0 1px rgba(126,243,255,.06);
   text-align: center;
 }
+
 .dashboardRefreshBusyPanel h2{
   margin: 0;
   font-size: 17px;
@@ -317,11 +358,13 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+
 .dashboardRefreshBusyPanel .modalSubtext{
   margin: 0;
   color: rgba(226,246,255,.9);
   line-height: 1.45;
 }
+
 .dashboardRefreshBusyProgress{
   --dashboard-busy-progress-track: rgba(186, 241, 255, .16);
   --dashboard-busy-progress-fill-start: rgba(115, 234, 255, .94);
@@ -334,6 +377,7 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   border-radius: 999px;
   background: var(--dashboard-busy-progress-track);
 }
+
 .dashboardRefreshBusyProgressBar{
   display: block;
   width: 42%;
@@ -343,73 +387,57 @@ body.isAppPageSliding[data-app-page-slide-direction="backward"] #app[aria-label=
   animation: dashboardRefreshBusyProgressSlide 1.1s ease-in-out infinite;
   transform: translateX(-120%);
   will-change: transform;
-}
-@keyframes dashboardRefreshBusyProgressSlide{
-  0%{
+}@keyframes dashboardRefreshBusyProgressSlide{0%{
     transform: translateX(-120%);
-  }
-  100%{
+  }100%{
     transform: translateX(300%);
   }
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
   position: relative;
   overflow: visible;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellScene{
   overflow: visible;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent{
   overflow: visible;
   transition: opacity .26s ease, filter .26s ease, transform .26s ease;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent.isBackfaceHidden{
   pointer-events: none;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShellContent.isDashboardBusy{
   opacity: .52;
   filter: blur(.7px) saturate(.9);
   transform: scale(.995);
 }
-body[data-theme="purple"] .dashboardRefreshBusyOverlay{
-  background:
-    linear-gradient(180deg, rgba(20,10,24,.14), rgba(20,10,24,.26));
-}
-body[data-theme="purple"] .dashboardRefreshBusyPanel{
-  border-color: rgba(214,96,229,.42);
-  box-shadow: 0 20px 46px rgba(0,0,0,.46), inset 0 0 0 1px rgba(239,134,245,.06);
-}
-body[data-theme="purple"] .dashboardRefreshBusyPanel .modalSubtext{
-  color: rgba(247,232,255,.92);
-}
-body[data-theme="purple"] .dashboardRefreshBusyProgress{
-  --dashboard-busy-progress-track: rgba(239, 191, 255, .18);
-  --dashboard-busy-progress-fill-start: rgba(243, 181, 255, .94);
-  --dashboard-busy-progress-fill-end: rgba(213, 109, 236, .9);
-}
-body[data-theme="purple"] .taskLaunchMobileMenu{
-  border-bottom-color: rgba(218,112,235,.24);
-}
-body[data-theme="purple"] .taskLaunchMobileMenuBars > span{
-  background: rgba(250, 236, 255, 0.96);
-}
+
 body[data-theme="lime"] .taskLaunchMobileMenu{
   border-bottom-color: rgba(191,233,122,.22);
 }
+
 body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
   background: rgba(241, 250, 224, 0.96);
 }
+
 @media (prefers-reduced-motion: reduce){
-  .dashboardRefreshBusyProgressBar{
+.dashboardRefreshBusyProgressBar{
     animation: none;
     transform: translateX(68%);
   }
 
-  .taskLaunchMobileMenu,
+.taskLaunchMobileMenu,
   .taskLaunchMobileMenuBars > span{
     transition: none;
   }
 }
+
 /* Final Tasks-page override: make + Add Task span full panel width. */
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{
   width:100% !important;
@@ -419,15 +447,18 @@ body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
   box-sizing:border-box;
   margin-top: 12px;
 }
+
 /* Final Tasks-page override: make mode switches justify and span full width. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .topbar{
   grid-template-columns:auto minmax(0, 1fr) auto;
 }
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   width:100%;
   max-width:none;
   min-width:0;
 }
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch{
   width:100%;
   display:grid;
@@ -435,19 +466,18 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch{
   gap:8px;
   align-items:stretch;
 }
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn{
   width:100%;
   min-width:0;
   justify-content:center;
 }
-/* Final Tasks-only Cyan Base Console theme experiment */
-body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
-  gap: 10px;
-}
+
 /* Final Tasks-page mode accent override: apply selected mode color to active mode button + task card glow. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mode-accent) 28%, transparent));
 }
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeBtn.isOn{
   border-color: color-mix(in srgb, var(--mode-accent) 72%, #ffffff 28%) !important;
   background:
@@ -462,35 +492,31 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeB
     0 0 0 1px color-mix(in srgb, var(--mode-accent) 24%, transparent) inset,
     0 0 12px color-mix(in srgb, var(--mode-accent) 30%, transparent) !important;
 }
-body[data-theme="purple"] .wrap{
-  background: rgba(8,4,14,.96) !important;
-  border:1px solid rgba(210,94,223,.32);
-  box-shadow: 0 24px 70px rgba(0,0,0,.55), inset 0 0 0 1px rgba(243,127,241,.08);
-}
-body[data-theme="purple"] .topbar{
-  border-bottom:1px solid rgba(218,112,235,.24);
-  background:#0d0f13;
-}
+
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .list{
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
   align-items: start;
 }
+
 /* Final Dashboard Neon reskin:
    dashboard-only rail + hero composition, preserving existing dashboard IDs and interactions. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
   padding-bottom: 28px;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]{
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar{
   width: 0;
   height: 0;
   display: none;
 }
+
 .desktopAppMain{
   display: flex;
   flex: 1 1 auto;
@@ -498,6 +524,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width: 0;
   min-height: 0;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeader{
   display:flex;
   align-items:center;
@@ -511,10 +538,13 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   padding:0 18px;
   box-sizing:border-box;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderSpacer{
   display:none;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXp{
+  --app-shell-insignia-upgrade-glow: rgba(126,243,255,.44);
   position:relative;
   flex:0 1 360px;
   min-width:0;
@@ -530,17 +560,21 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   box-shadow:none;
   box-sizing:border-box;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXp.isXpAwardSpotlightTarget,
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXp.isXpAwardSpotlightTarget{
   position:relative;
   z-index:1195;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXp::before{
   content:none;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXp::after{
   content:none;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpBody{
   position:relative;
   z-index:1;
@@ -550,6 +584,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   align-items:center;
   min-width:0;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpValue{
   flex:0 0 auto;
   display:inline-flex;
@@ -564,10 +599,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   transition:transform .18s ease;
   will-change:transform;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellXpValueAlert,
 #app[aria-label="TaskLaunch App"] .taskLaunchXpValueAlert{
   color:#ff5252;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrack{
   position:relative;
   flex:0 0 clamp(64px, 12vw, 112px);
@@ -580,9 +617,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   background:#0d1118;
   box-shadow:none;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrack::before{
   content:none;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpRankWrap{
   flex:0 0 auto;
   display:flex;
@@ -590,6 +629,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   gap:6px;
   min-width:0;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpBottomRow{
   display:flex;
   align-items:center;
@@ -598,6 +638,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width:0;
   width:100%;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrigger{
   padding:0;
   border:0;
@@ -606,22 +647,189 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   cursor:pointer;
   text-align:inherit;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrigger:focus-visible{
   outline:1px solid rgba(53,232,255,.7);
   outline-offset:4px;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaShell{
   width:36px;
   height:36px;
   display:block;
   flex:0 0 auto;
 }
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell{
+  position:relative;
+  width:36px;
+  height:36px;
+  flex:0 0 auto;
+  display:block;
+  isolation:isolate;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::before,
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:-1;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::before{
+  background:radial-gradient(circle, rgba(126,243,255,.5) 0%, rgba(126,243,255,.26) 36%, rgba(126,243,255,0) 72%);
+  filter:blur(4px);
+  animation: appShellHeaderInsigniaCyanAura 3.2s ease-out both;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::after{
+  inset:-3px;
+  border:1px solid rgba(126,243,255,.66);
+  box-shadow:
+    0 0 14px rgba(126,243,255,.54),
+    0 0 28px rgba(53,232,255,.28),
+    inset 0 0 10px rgba(126,243,255,.2);
+  animation: appShellHeaderInsigniaCyanRing 3.2s ease-out both;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell .appShellHeaderXpInsigniaShell{
+  position:absolute;
+  inset:0;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaLayer{
+  transform-origin:50% 50%;
+  will-change:opacity, transform, filter;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaLayer.isOld{
+  animation: appShellHeaderInsigniaUpgradeOld .72s ease-in both;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaLayer.isNew{
+  animation: appShellHeaderInsigniaUpgradeNew .72s cubic-bezier(.16,.82,.22,1) both;
+}
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaImg,
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaPlaceholder{
   width:100%;
   height:100%;
   display:block;
 }
+
+@keyframes appShellHeaderInsigniaUpgradeOld{
+  0%{
+    opacity:1;
+    transform:scale(1);
+    filter:drop-shadow(0 0 0 rgba(126,243,255,0));
+  }
+  42%{
+    opacity:.78;
+    transform:scale(.88);
+    filter:drop-shadow(0 0 8px var(--app-shell-insignia-upgrade-glow));
+  }
+  100%{
+    opacity:0;
+    transform:scale(.58);
+    filter:drop-shadow(0 0 0 rgba(126,243,255,0));
+  }
+}
+
+@keyframes appShellHeaderInsigniaUpgradeNew{
+  0%{
+    opacity:0;
+    transform:scale(.58);
+    filter:drop-shadow(0 0 0 rgba(126,243,255,0));
+  }
+  34%{
+    opacity:0;
+    transform:scale(.72);
+    filter:drop-shadow(0 0 0 rgba(126,243,255,0));
+  }
+  62%{
+    opacity:1;
+    transform:scale(1.18);
+    filter:drop-shadow(0 0 12px var(--app-shell-insignia-upgrade-glow));
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+    filter:drop-shadow(0 0 4px var(--app-shell-insignia-upgrade-glow));
+  }
+}
+
+@keyframes appShellHeaderInsigniaCyanAura{
+  0%{
+    opacity:0;
+    transform:scale(.72);
+  }
+  18%{
+    opacity:1;
+    transform:scale(1.14);
+  }
+  72%{
+    opacity:.78;
+    transform:scale(1.02);
+  }
+  100%{
+    opacity:0;
+    transform:scale(1.28);
+  }
+}
+
+@keyframes appShellHeaderInsigniaCyanRing{
+  0%{
+    opacity:0;
+    transform:scale(.82);
+  }
+  20%{
+    opacity:1;
+    transform:scale(1.08);
+  }
+  70%{
+    opacity:.72;
+    transform:scale(1);
+  }
+  100%{
+    opacity:0;
+    transform:scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaLayer.isOld{
+    animation: appShellHeaderInsigniaUpgradeOldReduced .12s linear both;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaLayer.isNew{
+    animation: appShellHeaderInsigniaUpgradeNewReduced .12s linear both;
+  }
+
+  #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::before,
+  #app[aria-label="TaskLaunch App"] .appShellHeaderXpInsigniaUpgradeShell::after{
+    animation: appShellHeaderInsigniaCyanGlowReduced 1.6s linear both;
+  }
+}
+
+@keyframes appShellHeaderInsigniaUpgradeOldReduced{
+  0%{ opacity:1; }
+  100%{ opacity:0; }
+}
+
+@keyframes appShellHeaderInsigniaUpgradeNewReduced{
+  0%{ opacity:0; }
+  100%{ opacity:1; }
+}
+
+@keyframes appShellHeaderInsigniaCyanGlowReduced{
+  0%{ opacity:0; }
+  12%{ opacity:.85; }
+  100%{ opacity:0; }
+}
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpRank{
   min-width:0;
   overflow:hidden;
@@ -635,6 +843,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   letter-spacing:.08em;
   color:rgba(247,251,255,.86);
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   position:absolute;
   inset:0 auto 0 0;
@@ -651,6 +860,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
     0 0 10px rgba(201,255,36,.28),
     0 2px 6px rgba(201,255,36,.18);
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill::after{
   content:"";
   position:absolute;
@@ -660,21 +870,22 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   background:linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,0));
   pointer-events:none;
 }
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
-  background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
-}
-body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
-  background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
-}
+
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
 }
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXp{
+  --app-shell-insignia-upgrade-glow: rgba(243,255,122,.42);
+}
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpBody{
   flex:1 1 auto;
   min-width:0;
   display:flex;
   align-items:center;
 }
+
 .xpAwardSpotlightLayer{
   position:absolute;
   inset:0;
@@ -683,17 +894,17 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXpFill{
   background:rgba(6, 10, 16, .7);
   backdrop-filter:blur(1.5px) saturate(.82);
 }
+
 @media (max-width: 980px), (pointer: coarse) and (max-device-width: 1024px){
-  .xpAwardSpotlightLayer{
+.xpAwardSpotlightLayer{
     top:96px;
   }
 }
-body[data-theme="purple"] .xpAwardSpotlightLayer{
-  background:rgba(16, 8, 20, .74);
-}
+
 body[data-theme="lime"] .xpAwardSpotlightLayer{
   background:rgba(10, 12, 6, .72);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpBottomRow{
   display:flex;
   align-items:center;
@@ -702,6 +913,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   min-width:0;
   width:100%;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrigger{
   padding:0;
   border:0;
@@ -710,14 +922,17 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   cursor:pointer;
   text-align:inherit;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrigger:focus-visible{
   outline:1px solid rgba(53,232,255,.7);
   outline-offset:4px;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarTrigger{
   flex:0 0 auto;
   border-radius:999px;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStatsTrigger{
   width:100%;
   min-width:0;
@@ -726,6 +941,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   justify-content:flex-start;
   gap:8px;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpValue{
   flex:0 0 auto;
   display:inline-flex;
@@ -740,10 +956,12 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   transition:transform .18s ease;
   will-change:transform;
 }
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpValue.isAnimatingXpCount,
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpValue.isAnimatingXpCount{
   transform:scale(1.5);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack{
   position:relative;
   flex:0 0 clamp(56px, 18vw, 96px);
@@ -761,6 +979,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
     inset 0 -2px 4px rgba(0,0,0,.48),
     0 1px 4px rgba(0,0,0,.3);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack::before{
   content:"";
   position:absolute;
@@ -770,6 +989,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   background:linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0));
   pointer-events:none;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarWrap{
   width:49.5px;
   height:49.5px;
@@ -781,15 +1001,18 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.1);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarImg,
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarFallback{
   width:100%;
   height:100%;
   display:block;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarImg{
   object-fit:cover;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpAvatarFallback{
   display:grid;
   place-items:center;
@@ -799,6 +1022,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   letter-spacing:.06em;
   color:rgba(247,251,255,.9);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpMeta{
   flex:1 1 auto;
   min-width:0;
@@ -808,6 +1032,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   justify-content:center;
   gap:3px;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpUserName{
   display:block;
   width:100%;
@@ -823,6 +1048,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   letter-spacing:.06em;
   color:rgba(247,251,255,.94);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStatsRow{
   width:100%;
   min-width:0;
@@ -831,6 +1057,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   justify-content:flex-start;
   gap:8px;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRankWrap{
   flex:0 0 auto;
   display:flex;
@@ -838,18 +1065,21 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   gap:6px;
   min-width:0;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpInsigniaShell{
   width:16px;
   height:16px;
   display:block;
   flex:0 0 auto;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpInsigniaImg,
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpInsigniaPlaceholder{
   width:100%;
   height:100%;
   display:block;
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRank{
   min-width:0;
   overflow:hidden;
@@ -863,6 +1093,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   letter-spacing:.08em;
   color:rgba(247,251,255,.86);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill{
   position:absolute;
   inset:0 auto 0 0;
@@ -877,6 +1108,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
     inset 0 -2px 3px rgba(88,116,0,.38),
     0 0 10px rgba(201,255,36,.28);
 }
+
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill::after{
   content:"";
   position:absolute;
@@ -886,15 +1118,11 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   background:linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,0));
   pointer-events:none;
 }
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill{
-  background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
-}
-body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill{
-  background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
-}
+
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill{
   background:linear-gradient(90deg, #c9ff24 0%, #efff86 100%);
 }
+
 #app[aria-label="TaskLaunch App"] .appPages{
   flex: 1 1 auto;
   min-height: 0;
@@ -902,11 +1130,11 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFil
 }
 
 /* Migrated from retired tasktimer tail: authenticated login hydration overlay. */
-body.isInitialAuthHydrating {
+body.isInitialAuthHydrating{
   overflow: hidden;
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyOverlay {
+#app[aria-label="TaskLaunch App"] .initialAuthBusyOverlay{
   position: fixed;
   inset: 0;
   z-index: 1200;
@@ -920,13 +1148,13 @@ body.isInitialAuthHydrating {
   transition: opacity 0.18s ease, visibility 0.18s ease;
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyOverlay.isOn {
+#app[aria-label="TaskLaunch App"] .initialAuthBusyOverlay.isOn{
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyPanel {
+#app[aria-label="TaskLaunch App"] .initialAuthBusyPanel{
   width: min(100%, 420px);
   display: grid;
   gap: 16px;
@@ -942,33 +1170,21 @@ body.isInitialAuthHydrating {
     inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyPanel .modalSubtext {
+#app[aria-label="TaskLaunch App"] .initialAuthBusyPanel .modalSubtext{
   margin: 0;
   color: rgba(223, 234, 245, 0.86);
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyProgress {
+#app[aria-label="TaskLaunch App"] .initialAuthBusyProgress{
   margin-top: 2px;
 }
 
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyOverlay {
-  background: linear-gradient(180deg, rgba(9, 8, 13, 0.9), rgba(8, 7, 12, 0.96));
-}
-
-body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPanel {
-  border-color: rgba(214, 167, 255, 0.18);
-  box-shadow:
-    0 22px 48px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 1px rgba(175, 111, 255, 0.08);
-}
-
-@media (max-width: 980px) {
-  #app[aria-label="TaskLaunch App"] .appShellHeader{
+@media (max-width: 980px){
+#app[aria-label="TaskLaunch App"] .appShellHeader{
     display:none;
   }
 
-  #app[aria-label="TaskLaunch App"] {
+#app[aria-label="TaskLaunch App"]{
     --mobile-footer-offset: 10px;
     --mobile-footer-height: 72px;
     --mobile-footer-reserved-space: calc(
@@ -976,17 +1192,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     );
   }
 
-  .appPages {
+.appPages{
     padding-left: 0;
     --app-pages-bottom-padding: var(--mobile-footer-reserved-space);
     padding-bottom: var(--mobile-footer-reserved-space);
   }
 
-  body[data-app-page="dashboard"] .appPages {
+body[data-app-page="dashboard"] .appPages{
     padding-left: 0 !important;
   }
 
-  .appFooterNav {
+.appFooterNav{
     position: sticky;
     left: auto;
     top: auto;
@@ -1001,72 +1217,72 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
   }
 
-  .appFooterBtn {
+.appFooterBtn{
     min-height: 74px;
     padding: 6px 4px;
     border-color: transparent !important;
   }
 
-  .appFooterIconImage {
+.appFooterIconImage{
     width: 40px;
     height: 40px;
   }
 
-  .appFooterLabel {
+.appFooterLabel{
     font-size: 10px;
     letter-spacing: 0.03em;
   }
 }
 
-@media (max-width: 640px) {
-  #app[aria-label="TaskLaunch App"] .appPages {
+@media (max-width: 640px){
+#app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 }
 
-@media (max-width: 520px) {
-  .appFooterBtn {
+@media (max-width: 520px){
+.appFooterBtn{
     min-height: 62px;
   }
 
-  .appFooterIconImage {
+.appFooterIconImage{
     width: 32px;
     height: 32px;
   }
 }
 
-@media (max-width: 360px) {
-  .appFooterNav {
+@media (max-width: 360px){
+.appFooterNav{
     gap: 4px;
     padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
   }
 
-  .appFooterBtn {
+.appFooterBtn{
     min-height: 56px;
     padding: 4px 2px;
   }
 
-  .appFooterIconImage {
+.appFooterIconImage{
     width: 28px;
     height: 28px;
   }
 }
 
-@media (max-width: 980px) {
-  body {
+@media (max-width: 980px){
+body{
     padding: calc(14px + var(--safe-top)) calc(10px + var(--safe-right)) 0
       calc(10px + var(--safe-left));
     background-attachment: scroll;
   }
 
-  .wrap {
+.wrap{
     width: 100%;
     height: calc(100dvh - (14px + var(--safe-top)));
     border-radius: 0;
   }
 
-  .topbar {
+.topbar{
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "brand controls"
@@ -1075,7 +1291,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     padding: 12px;
   }
 
-  .topbar.topbarBrandOnly.taskLaunchAppTopbar{
+.topbar.topbarBrandOnly.taskLaunchAppTopbar{
     grid-template-columns:minmax(0, 1fr) auto;
     grid-template-areas:
       "brand controls"
@@ -1084,12 +1300,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     z-index: 60;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar{
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar{
     gap:12px;
     padding-bottom:0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar{
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar{
     min-width: 0;
     padding: 8px 12px 8px;
     background: #0d0f13;
@@ -1098,35 +1314,35 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     overflow: visible;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarInner{
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarInner{
     min-width: 0;
     overflow: visible;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .dashboardEditActions,
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .dashboardEditActions,
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .taskPageHeaderActions,
   #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .hmHead{
     margin: 0;
     transform: none;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .dashboardEditActions{
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .dashboardEditActions{
     justify-content: flex-start;
     flex-wrap: wrap;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .hmHead{
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar .hmHead{
     align-items: flex-start;
     margin-bottom: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .brand{
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .brand{
     flex: 1 1 auto;
     width: 100%;
     min-width: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp{
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp{
     display:flex !important;
     flex: 1 1 auto;
     width:100%;
@@ -1136,52 +1352,52 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     overflow:hidden;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBody{
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBody{
     flex: 1 1 auto;
     width:100%;
     min-width: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpStatsTrigger,
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpStatsTrigger,
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .taskLaunchTopbarXp .taskLaunchTopbarXpBottomRow{
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaIcon,
+#app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaIcon,
   #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar .appBrandLandingReplicaText{
     display:none !important;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRank{
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRank{
     max-width:88px;
     padding-left:12px;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack,
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack,
   #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack::before,
   #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill,
   #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpFill::after{
     border-radius:0;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpUserName{
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpUserName{
     max-width:100%;
   }
 
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuBtn{
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuBtn{
     grid-area:controls;
   }
 
-  .brand {
+.brand{
     grid-area: brand;
   }
 
-  .controls {
+.controls{
     grid-area: controls;
   }
 
-  .taskLaunchMobileMenuBtn{
+.taskLaunchMobileMenuBtn{
     display: inline-grid;
     grid-area: controls;
     justify-self: end;
@@ -1194,17 +1410,17 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     clip-path: none;
   }
 
-  .taskLaunchMobileMenuBtn:hover,
+.taskLaunchMobileMenuBtn:hover,
   .taskLaunchMobileMenuBtn:focus-visible{
     background: transparent !important;
   }
 
-  .taskLaunchMobileMenuBars{
+.taskLaunchMobileMenuBars{
     display: inline-grid;
     gap: 4px;
   }
 
-  .taskLaunchMobileMenuBars > span{
+.taskLaunchMobileMenuBars > span{
     display: block;
     width: 16px;
     height: 1.5px;
@@ -1213,19 +1429,19 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     transition: transform .18s ease, opacity .18s ease;
   }
 
-  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(1){
+.taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(1){
     transform: translateY(5.5px) rotate(45deg);
   }
 
-  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(2){
+.taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(2){
     opacity: 0;
   }
 
-  .taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(3){
+.taskLaunchMobileMenuBtn.isOn .taskLaunchMobileMenuBars > span:nth-child(3){
     transform: translateY(-5.5px) rotate(-45deg);
   }
 
-  .taskLaunchMobileMenu{
+.taskLaunchMobileMenu{
     position: fixed;
     inset: 0;
     display: block;
@@ -1253,7 +1469,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     box-shadow: 0 22px 48px rgba(0,0,0,.42);
   }
 
-  .taskLaunchMobileMenu.isOpen{
+.taskLaunchMobileMenu.isOpen{
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -1265,7 +1481,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
       visibility 0s linear 0s;
   }
 
-  .taskLaunchMobileMenuHeader{
+.taskLaunchMobileMenuHeader{
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1275,7 +1491,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     text-align: center;
   }
 
-  .taskLaunchMobileMenuHeaderIcon{
+.taskLaunchMobileMenuHeaderIcon{
     display: block;
     width: 22px;
     height: 22px;
@@ -1283,7 +1499,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     object-fit: contain;
   }
 
-  .taskLaunchMobileMenuHeaderText{
+.taskLaunchMobileMenuHeaderText{
     font-family: var(--font-orbitron);
     font-size: 13.12px;
     font-weight: 400;
@@ -1293,14 +1509,14 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     text-transform: uppercase;
   }
 
-  .taskLaunchMobileMenuList{
+.taskLaunchMobileMenuList{
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     width: 100%;
   }
 
-  .taskLaunchMobileMenuItem{
+.taskLaunchMobileMenuItem{
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1313,12 +1529,12 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     clip-path: none !important;
   }
 
-  .taskLaunchMobileMenuItem:disabled{
+.taskLaunchMobileMenuItem:disabled{
     cursor: wait;
     opacity: .72;
   }
 
-  .taskLaunchMobileMenuItemIcon{
+.taskLaunchMobileMenuItemIcon{
     display: block;
     width: 20px;
     height: 20px;
@@ -1326,7 +1542,7 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     object-fit: contain;
   }
 
-  .taskLaunchMobileMenuItemText{
+.taskLaunchMobileMenuItemText{
     font-family: var(--font-tight);
     font-size: 14px;
     font-weight: 700;
@@ -1336,72 +1552,72 @@ body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .initialAuthBusyPane
     text-align: center;
   }
 
-  .taskLaunchMobileMenuError{
+.taskLaunchMobileMenuError{
     margin: 0;
     text-align: center;
   }
 
-  body.taskLaunchMobileMenuOpen{
+body.taskLaunchMobileMenuOpen{
     overflow: hidden;
   }
 
-  .modeSwitchWrap {
+.modeSwitchWrap{
     grid-area: mode;
     width: 100%;
     padding: 6px 0 0;
     margin-top: 0;
   }
 
-  .modeSwitch {
+.modeSwitch{
     width: 100%;
     justify-content: stretch;
   }
 
-  .modeBtn {
+.modeBtn{
     flex: 1 1 0;
     min-width: 0;
   }
 }
 
-@media (max-width: 640px) {
-  .wrap {
+@media (max-width: 640px){
+.wrap{
     height: calc(100dvh - (10px + var(--safe-top)));
     border-radius: 0;
   }
 
-  .topbar {
+.topbar{
     padding: 10px;
   }
 
-  .brandLogo {
+.brandLogo{
     width: min(225px, 100%);
     max-width: 225px;
   }
 
-  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap {
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
     justify-content: center;
   }
 
-  .modeSwitchWrap::before,
-  .modeSwitchWrap::after {
+.modeSwitchWrap::before,
+  .modeSwitchWrap::after{
     top: 7px;
     width: max(12px, calc(50% - 52px));
   }
 }
 
-@media (max-width: 360px) {
-  .topbar {
+@media (max-width: 360px){
+.topbar{
     gap: 8px;
     padding: 8px;
   }
 
-  .modeBtn {
+.modeBtn{
     min-height: 34px;
     padding: 6px 8px;
     font-size: 11px;
   }
 
-  .historySaveWorkingIndicator {
+.historySaveWorkingIndicator{
     right: 12px;
     bottom: 78px;
     padding: 9px 12px;

@@ -33,7 +33,7 @@ type TaskTimerPreferenceStorageKeys = {
 };
 
 type PreferencesStateSnapshot = {
-  theme: "purple" | "cyan" | "lime";
+  theme: "lime";
   menuButtonStyle: "parallelogram" | "square";
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   startupModule: StartupModulePreference;
@@ -113,10 +113,9 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return (options.getCloudPreferencesCache() || repository.loadCachedPreferences() || null) as StoredPreferences | null;
   }
 
-  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
-    const value = String(raw || "").trim().toLowerCase();
-    if (value === "lime") return "lime";
-    return value === "purple" ? "purple" : value === "cyan" || value === "command" ? "cyan" : "lime";
+  function normalizeThemeMode(raw: string | null | undefined): "lime" {
+    void raw;
+    return "lime";
   }
 
   function buildSnapshot(state: PreferencesStateSnapshot): StoredPreferences {
@@ -205,7 +204,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       .catch(() => {});
   }
 
-  function loadThemeMode(): "purple" | "cyan" | "lime" {
+  function loadThemeMode(): "lime" {
     const cached = getStoredOrCachedPreferences();
     return normalizeThemeMode(cached.theme || safeReadLocalStorage(storageKeys.THEME_KEY));
   }

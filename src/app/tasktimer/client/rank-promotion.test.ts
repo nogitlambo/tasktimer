@@ -7,6 +7,7 @@ import {
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   RANK_PROMOTION_AUDIO_SRC,
+  RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC,
   RANK_PROMOTION_OVERLAY_ID,
   TASKTIMER_RANK_PROMOTION_EVENT,
   startRankPromotionCelebration,
@@ -134,7 +135,7 @@ describe("rank promotion celebration", () => {
     expect(hasBlockingPromotionXpAnimation({ pending: null, active: null })).toBe(false);
   });
 
-  it("opens the modal and plays the promotion audio", () => {
+  it("opens the modal and plays the promotion audio stack", () => {
     const overlay = elementStub("rankPromotionOverlay");
     const play = vi.fn(() => Promise.resolve());
     const audioFactory = vi.fn(() => ({ currentTime: 10, play }));
@@ -146,7 +147,8 @@ describe("rank promotion celebration", () => {
 
     expect(overlay.style.display).toBe("flex");
     expect(audioFactory).toHaveBeenCalledWith(RANK_PROMOTION_AUDIO_SRC);
-    expect(play).toHaveBeenCalledTimes(1);
+    expect(audioFactory).toHaveBeenCalledWith(RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(2);
   });
 
   it("dispatches the shared overlay closed event when closing the modal", () => {

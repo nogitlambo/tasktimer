@@ -10,7 +10,7 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
       exiting={exiting}
       paneClassName="settingsDisplayTypographyPane"
       title="Appearance"
-      subtitle="Choose your theme and visual display options."
+      subtitle="Primary color and visual display options."
     >
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
@@ -19,37 +19,17 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
             <div className="settingsInlineSectionTitle">Theme</div>
           </div>
           <div className="unitRow" id="themeToggleRow">
-            <span>Color Theme</span>
+            <span>Primary Color</span>
             <div className="unitButtons settingsThemePalette" role="group" aria-label="Color theme">
-              <button
-                className="unitBtn settingsThemeSwatch settingsThemeSwatchPurple"
-                id="themePurpleBtn"
-                type="button"
-                aria-label="Purple theme"
-                aria-pressed="false"
-              >
-                <span className="settingsThemeSwatchChip" aria-hidden="true" />
-                <span className="settingsThemeSwatchLabel">Purple</span>
-              </button>
-              <button
-                className="unitBtn settingsThemeSwatch settingsThemeSwatchCyan"
-                id="themeCyanBtn"
-                type="button"
-                aria-label="Cyan theme"
-                aria-pressed="false"
-              >
-                <span className="settingsThemeSwatchChip" aria-hidden="true" />
-                <span className="settingsThemeSwatchLabel">Cyan</span>
-              </button>
               <button
                 className="unitBtn settingsThemeSwatch settingsThemeSwatchLime"
                 id="themeLimeBtn"
                 type="button"
-                aria-label="Lime theme"
+                aria-label="Primary theme"
                 aria-pressed="false"
               >
                 <span className="settingsThemeSwatchChip" aria-hidden="true" />
-                <span className="settingsThemeSwatchLabel">Lime</span>
+                <span className="settingsThemeSwatchLabel">Primary</span>
               </button>
             </div>
           </div>

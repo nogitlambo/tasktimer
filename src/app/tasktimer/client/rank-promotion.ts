@@ -3,6 +3,7 @@ import type { XpAwardAnimationState } from "./xp-award-animation";
 import { dispatchOverlayClosedEvent } from "./xp-award-events";
 
 export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
+export const RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC = "/promotion_bass_drive.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
 export const TASKTIMER_RANK_PROMOTION_EVENT = "tasktimer:rank-promotion";
 
@@ -88,11 +89,14 @@ export function playRankPromotionAudio(audioFactory?: AudioFactory) {
   if (typeof window === "undefined" && !audioFactory) return;
   try {
     const factory = audioFactory || ((src: string) => new Audio(src));
-    const audio = factory(RANK_PROMOTION_AUDIO_SRC);
-    audio.preload = "auto";
-    audio.currentTime = 0;
-    const playback = audio.play();
-    if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    const audioSources = [RANK_PROMOTION_AUDIO_SRC, RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC];
+    audioSources.forEach((src) => {
+      const audio = factory(src);
+      audio.preload = "auto";
+      audio.currentTime = 0;
+      const playback = audio.play();
+      if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    });
   } catch {
     // Browser autoplay failures are non-blocking for the promotion UI.
   }

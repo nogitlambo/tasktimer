@@ -26,7 +26,7 @@ import RankPromotionOverlay from "./components/RankPromotionOverlay";
 import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
-import TaskTimerAppFrame from "./components/TaskTimerAppFrame";
+import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import {
@@ -285,6 +285,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [pendingRankPromotion, setPendingRankPromotion] = useState<RankPromotion | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
   const [promotionOverlayRetrySeq, setPromotionOverlayRetrySeq] = useState(0);
+  const [desktopInsigniaUpgrade, setDesktopInsigniaUpgrade] = useState<DesktopInsigniaUpgradePayload | null>(null);
+  const desktopInsigniaUpgradeSeqRef = useRef(0);
   const [dismissedHighlightParam, setDismissedHighlightParam] = useState<string | null>(null);
   const [leaderboardState, setLeaderboardState] = useState<LeaderboardLoadState>("error");
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
@@ -320,6 +322,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     displayedXpRef.current = displayedXp;
   }, [displayedXp]);
+
+  useEffect(() => {
+    if (!desktopInsigniaUpgrade) return;
+    const clearTimer = window.setTimeout(() => {
+      setDesktopInsigniaUpgrade((current) => current?.seq === desktopInsigniaUpgrade.seq ? null : current);
+    }, 3600);
+    return () => window.clearTimeout(clearTimer);
+  }, [desktopInsigniaUpgrade]);
 
   useEffect(() => {
     leaderboardStateRef.current = leaderboardState;
@@ -890,6 +900,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         activePage={initialPage}
         mobileToolbar={mobileToolbar}
         currentRankId={displayedRewardProgress.currentRankId}
+        desktopPromotionHoldRankId={activeRankPromotion?.previousRankId || null}
+        desktopInsigniaUpgrade={desktopInsigniaUpgrade}
         currentUserAvatarSrc={currentUserAvatarSrc}
         currentUserAvatarInitials={currentUserAvatarInitials}
         currentUserLabel={currentUserLabel}
@@ -1135,9 +1147,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
-                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
-                                  {formatDashboardDurationShort(row.profile.weeklyFocusMs)} logged
-                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">
@@ -1154,7 +1163,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Badges</span>
-                            <span role="columnheader">Time</span>
+                            <span role="columnheader">Weekly XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
                           {weeklyTableRows.map((row) => (
@@ -1176,7 +1185,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 </span>
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
-                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
+                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                                 <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
@@ -1230,9 +1239,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
-                                  {formatDashboardDurationShort(row.profile.totalFocusMs)} logged
-                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">
@@ -1249,7 +1255,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Badges</span>
-                            <span role="columnheader">Time</span>
+                            <span role="columnheader">Total XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
                           {rivalTableRows.map((row) => (
@@ -1271,7 +1277,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 </span>
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
-                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
+                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                                 <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
@@ -1325,9 +1331,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
-                                  {formatDashboardDurationShort(row.profile.totalFocusMs)} logged
-                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">
@@ -1344,7 +1347,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
                             <span role="columnheader">Badges</span>
-                            <span role="columnheader">Time</span>
+                            <span role="columnheader">Total XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
                           {globalTableRows.map((row) => (
@@ -1366,7 +1369,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 </span>
                               </span>
                               <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
-                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatDashboardDurationShort(row.profile.totalFocusMs)}</span>
+                              <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 <LeaderboardRankInsignia profile={row.profile} />
                                 <span className="leaderboardWeeklyInsigniaLabel">{getLeaderboardRankLabel(row.profile)}</span>
@@ -1397,7 +1400,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
                 <div className="leaderboardPositionModalHeader">
                   <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
-                  <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
+                  <div className="leaderboardPositionRankSummary">
+                    <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
+                    <strong>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
+                  </div>
                 </div>
                 <div className="leaderboardPositionModalIdentity">
                   <LeaderboardAvatar profile={selectedLeaderboardProfile} />
@@ -1428,11 +1434,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   </div>
                 </div>
                 <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">Rank</span>
-                  <strong>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
-                </div>
-                <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">XP</span>
+                  <span className="leaderboardMiniLabel">Total XP</span>
                   <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
                 </div>
                 <div className="leaderboardMiniRow">
@@ -1480,6 +1482,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           }}
           onClose={() => {
             stopRankPromotionCelebration(document);
+            if (!isMobileTaskToolbarViewport()) {
+              desktopInsigniaUpgradeSeqRef.current += 1;
+              setDesktopInsigniaUpgrade({
+                seq: desktopInsigniaUpgradeSeqRef.current,
+                previousRankId: activeRankPromotion.previousRankId,
+                nextRankId: activeRankPromotion.nextRankId,
+              });
+            }
             setActiveRankPromotion(null);
             setPromotionOverlayRetrySeq((current) => current + 1);
           }}

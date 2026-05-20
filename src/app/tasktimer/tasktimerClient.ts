@@ -689,6 +689,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   function isInitialAuthHydrating() {
     return !!appRuntimeState.get("initialAuthHydrating");
   }
+
+  function hasCachedWorkspace() {
+    const snapshot = workspaceRepository.loadWorkspaceSnapshot();
+    return (
+      snapshot.tasks.length > 0 ||
+      Object.keys(snapshot.historyByTaskId || {}).length > 0 ||
+      Object.keys(snapshot.liveSessionsByTaskId || {}).length > 0 ||
+      Object.keys(snapshot.deletedTaskMeta || {}).length > 0 ||
+      !!snapshot.preferences ||
+      !!snapshot.dashboard ||
+      !!snapshot.taskUi
+    );
+  }
   setInitialAuthBusyVisible(isInitialAuthHydrating());
   const {
     renderDashboardPanelMenu: renderDashboardPanelMenuApi,
@@ -1011,6 +1024,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       requestScheduleEntryScroll: (mode) => requestScheduleEntryScroll(mode),
       render: () => render(),
       renderHistory: (taskId) => renderHistory(taskId),
+      applyDashboardCardSizes: () => applyDashboardCardSizesApi(),
       renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
       renderGroupsPage,
       refreshGroupsData,
@@ -1640,6 +1654,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     tickApi: () => tickApi(),
     setDashboardRefreshPending,
     currentUid: () => getCurrentTaskTimerUid(),
+    hasCachedWorkspace,
     rehydrateFromCloudAndRender,
     flushPendingCloudWrites: () => workspaceRepository.flushPendingCloudWrites(),
   });

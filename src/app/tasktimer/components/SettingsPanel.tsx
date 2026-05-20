@@ -37,7 +37,7 @@ const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
 
 const SETTINGS_DETAIL_SUBTITLES: Partial<Record<SettingsPaneKey, string>> = {
   preferences: "Configure task behavior and dashboard options.",
-  appearance: "Choose your theme and visual display options.",
+  appearance: "Primary color and visual display options.",
   notifications: "Manage push notifications, in-app sounds and toast alerts.",
   privacy: "Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information.",
   help: "Open privacy and feedback resources.",

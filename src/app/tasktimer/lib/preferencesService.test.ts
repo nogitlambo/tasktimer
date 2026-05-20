@@ -137,4 +137,19 @@ describe("createTaskTimerPreferencesService", () => {
     expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
     expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
   });
+
+  it("maps legacy stored theme values to the Primary theme", () => {
+    const service = createService();
+
+    expect(service.normalizeThemeMode("purple")).toBe("lime");
+    expect(service.normalizeThemeMode("cyan")).toBe("lime");
+    expect(service.normalizeThemeMode("command")).toBe("lime");
+    expect(service.normalizeThemeMode("lime")).toBe("lime");
+  });
+
+  it("loads the Primary theme when local storage still has a legacy theme", () => {
+    window.localStorage.setItem(storageKeys.THEME_KEY, "cyan");
+
+    expect(createService().loadThemeMode()).toBe("lime");
+  });
 });

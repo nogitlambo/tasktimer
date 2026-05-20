@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { bootstrapTaskTimerRuntime } from "./tasktimer-bootstrap";
+import { bootstrapTaskTimerRuntime, runInitialTaskTimerHydration } from "./tasktimer-bootstrap";
 
 function createBootstrapOptions(overrides: Partial<Parameters<typeof bootstrapTaskTimerRuntime>[0]> = {}) {
   return {
@@ -58,5 +58,48 @@ describe("bootstrapTaskTimerRuntime", () => {
     await Promise.resolve();
 
     expect(refreshGroupsData).not.toHaveBeenCalled();
+  });
+});
+
+function createInitialHydrationOptions(overrides: Partial<Parameters<typeof runInitialTaskTimerHydration>[0]> = {}) {
+  return {
+    currentAppPage: "dashboard",
+    finishBootstrapUi: vi.fn(),
+    setDashboardRefreshPending: vi.fn(),
+    currentUid: vi.fn(() => "uid-1"),
+    startInitialAuthHydration: vi.fn(),
+    finishInitialAuthHydration: vi.fn(),
+    rehydrateFromCloudAndRender: vi.fn(async () => undefined),
+    ...overrides,
+  } satisfies Parameters<typeof runInitialTaskTimerHydration>[0];
+}
+
+describe("runInitialTaskTimerHydration", () => {
+  it("renders cached signed-in workspace before refreshing cloud state", async () => {
+    const options = createInitialHydrationOptions({
+      hasCachedWorkspace: vi.fn(() => true),
+    });
+
+    runInitialTaskTimerHydration(options);
+    await Promise.resolve();
+
+    expect(options.startInitialAuthHydration).not.toHaveBeenCalled();
+    expect(options.finishBootstrapUi).toHaveBeenCalledTimes(1);
+    expect(options.finishInitialAuthHydration).toHaveBeenCalledTimes(1);
+    expect(options.rehydrateFromCloudAndRender).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the initial loading overlay when no signed-in cache is available", async () => {
+    const options = createInitialHydrationOptions({
+      hasCachedWorkspace: vi.fn(() => false),
+    });
+
+    runInitialTaskTimerHydration(options);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(options.startInitialAuthHydration).toHaveBeenCalledWith("Loading your workspace into this session...");
+    expect(options.finishBootstrapUi).toHaveBeenCalledTimes(1);
+    expect(options.finishInitialAuthHydration).toHaveBeenCalledTimes(1);
   });
 });

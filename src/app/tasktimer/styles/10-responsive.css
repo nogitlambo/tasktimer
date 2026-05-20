@@ -8,17 +8,17 @@
 }
 
 @media (max-width: 640px){
-  body{
+body{
     padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) 0
       calc(8px + var(--safe-left));
   }
 
-  body[data-app-page="schedule"]{
+body[data-app-page="schedule"]{
     padding-left:0 !important;
     padding-right:0 !important;
   }
 
-  body[data-app-page="schedule"] .wrap,
+body[data-app-page="schedule"] .wrap,
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"],
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .desktopAppShell,
   body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .desktopAppMain,
@@ -32,14 +32,14 @@
     margin-right:0 !important;
   }
 
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
     padding-left:0 !important;
     padding-right:0 !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce){
-  *{
+*{
     animation:none !important;
     transition:none !important;
     scroll-behavior:auto !important;

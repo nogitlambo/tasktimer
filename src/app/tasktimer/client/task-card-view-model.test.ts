@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
 import { dispatchTaskCardAction, renderTaskCardHtml } from "./task-card-view-model";
@@ -116,6 +117,17 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain('class="taskFaceShell taskFaceShellFront" style="--task-history-tab-border-gap:160px"');
     expect(rendered.html).toContain('class="taskHistoryReveal ');
+  });
+
+  it("keeps the front history tab border gap from being overdrawn by the back face", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8");
+
+    expect(css).toContain(".task .taskFaceShellFront::after,\nbody[data-app-page=\"tasks\"] #app[aria-label=\"TaskLaunch App\"] #appPageTasks .task.isFlipped .taskFaceShellBack::after");
+    expect(css).not.toContain(".task .taskFaceShellFront::after,\nbody[data-app-page=\"tasks\"] #app[aria-label=\"TaskLaunch App\"] #appPageTasks .task .taskFaceShellBack::after");
+    expect(css).toContain("--task-card-tab-border-gap: calc(var(--task-history-tab-border-gap, 160px) + 28px);");
+    expect(css).toContain("--task-card-tab-border-overlap: 0px;");
+    expect(css).toContain("overflow:visible;");
+    expect(css).toContain("inset: 4px calc((var(--history-chart-tab-side) - 1px) * -1) -3px;");
   });
 
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {

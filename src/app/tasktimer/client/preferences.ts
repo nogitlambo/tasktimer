@@ -54,30 +54,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function syncThemeAvailabilityUi() {
-    const currentTheme = ctx.getThemeMode();
-    const appliedTheme = currentTheme;
+    const appliedTheme = ctx.getThemeMode();
 
-    els.themePurpleBtn?.classList.toggle("isOn", appliedTheme === "purple");
-    els.themeCyanBtn?.classList.toggle("isOn", appliedTheme === "cyan");
     els.themeLimeBtn?.classList.toggle("isOn", appliedTheme === "lime");
-    els.themePurpleBtn?.setAttribute("aria-pressed", appliedTheme === "purple" ? "true" : "false");
-    els.themeCyanBtn?.setAttribute("aria-pressed", appliedTheme === "cyan" ? "true" : "false");
     els.themeLimeBtn?.setAttribute("aria-pressed", appliedTheme === "lime" ? "true" : "false");
 
-    if (els.themePurpleBtn) {
-      els.themePurpleBtn.disabled = false;
-      els.themePurpleBtn.setAttribute("aria-disabled", "false");
-      els.themePurpleBtn.title = "";
-    }
     if (els.themeLimeBtn) {
       els.themeLimeBtn.disabled = false;
       els.themeLimeBtn.setAttribute("aria-disabled", "false");
       els.themeLimeBtn.title = "";
-    }
-    if (els.themeCyanBtn) {
-      els.themeCyanBtn.disabled = false;
-      els.themeCyanBtn.setAttribute("aria-disabled", "false");
-      els.themeCyanBtn.title = "";
     }
   }
 
@@ -87,10 +72,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     return false;
   }
 
-  function normalizeThemeMode(raw: string | null | undefined): "purple" | "cyan" | "lime" {
-    const value = String(raw || "").trim().toLowerCase();
-    if (value === "lime") return "lime";
-    return value === "purple" ? "purple" : value === "cyan" || value === "command" ? "cyan" : "lime";
+  function normalizeThemeMode(raw: string | null | undefined): "lime" {
+    void raw;
+    return "lime";
   }
 
   function sanitizeModeLabel(value: unknown, fallback: string) {
@@ -153,10 +137,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncModeLabelsUi();
   }
 
-  function applyTheme(mode: "purple" | "cyan" | "lime") {
-    ctx.setThemeModeState(mode);
+  function applyTheme(mode: "lime") {
+    ctx.setThemeModeState(normalizeThemeMode(mode));
     const body = document.body;
-    body.setAttribute("data-theme", mode);
+    body.setAttribute("data-theme", "lime");
     syncThemeAvailabilityUi();
   }
 
@@ -639,8 +623,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
-  function setThemeMode(next: "purple" | "cyan" | "lime") {
-    applyTheme(next);
+  function setThemeMode(next: "lime") {
+    applyTheme(normalizeThemeMode(next));
     persistPreferencesToCloud();
   }
 
@@ -676,12 +660,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
     ctx.on(els.closeMenuBtn, "click", () => {
       handleAppBackNavigation();
-    });
-    ctx.on(els.themePurpleBtn, "click", () => {
-      setThemeMode("purple");
-    });
-    ctx.on(els.themeCyanBtn, "click", () => {
-      setThemeMode("cyan");
     });
     ctx.on(els.themeLimeBtn, "click", () => {
       setThemeMode("lime");

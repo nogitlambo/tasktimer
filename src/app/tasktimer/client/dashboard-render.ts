@@ -42,8 +42,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
   let selectedActivityOverviewDayKey: string | null = null;
-  let activityOverviewGoalVisible = true;
-  let activityOverviewCompareVisible = true;
   let lastMomentumRenderSignature = "";
   let lastMomentumAnimatedTargetScore: number | null = null;
   let lastMomentumAnimatedTargetBand: string | null = null;
@@ -1154,12 +1152,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return `${linePath} L ${last.x.toFixed(1)} 258 L ${first.x.toFixed(1)} 258 Z`;
   }
 
-  function syncDashboardActivityToggle(button: HTMLElement | null, isOn: boolean) {
-    if (!button) return;
-    button.classList.toggle("isOn", isOn);
-    button.setAttribute("aria-pressed", isOn ? "true" : "false");
-  }
-
   function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
     const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
     const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
@@ -1213,10 +1205,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (dailyPathEl) dailyPathEl.setAttribute("d", dailyPath);
     if (areaPathEl) areaPathEl.setAttribute("d", buildDashboardActivityAreaPath(model));
     if (comparePathEl) {
-      comparePathEl.setAttribute("d", activityOverviewCompareVisible && model.hasPreviousWeekActivity ? comparePath : "");
+      comparePathEl.setAttribute("d", model.hasPreviousWeekActivity ? comparePath : "");
     }
     if (goalLineEl) {
-      const showGoal = activityOverviewGoalVisible && model.totalGoalMs > 0;
+      const showGoal = model.totalGoalMs > 0;
       const goalRatio = model.maxChartMs > 0 ? Math.max(0, Math.min(1, model.totalGoalMs / model.maxChartMs)) : 0;
       const y = chart.bottom - goalRatio * (chart.bottom - chart.top);
       goalLineEl.setAttribute("x1", String(chart.left));
@@ -1306,8 +1298,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const subtitleEl = (els as any).dashboardActivityOverviewSubtitle as HTMLElement | null;
     const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
     const emptyTextEl = (els as any).dashboardActivityEmptyText as HTMLElement | null;
-    syncDashboardActivityToggle((els as any).dashboardActivityGoalToggle, activityOverviewGoalVisible);
-    syncDashboardActivityToggle((els as any).dashboardActivityCompareToggle, activityOverviewCompareVisible);
     if (subtitleEl) {
       const start = new Date(model.weekStartMs).toLocaleDateString(undefined, { month: "short", day: "numeric" });
       const end = new Date(model.weekEndMs - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -1343,16 +1333,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function closeDashboardActivityDayDetail() {
     selectedActivityOverviewDayKey = null;
-    renderDashboardActivityOverviewCard();
-  }
-
-  function toggleDashboardActivityGoal() {
-    activityOverviewGoalVisible = !activityOverviewGoalVisible;
-    renderDashboardActivityOverviewCard();
-  }
-
-  function toggleDashboardActivityCompare() {
-    activityOverviewCompareVisible = !activityOverviewCompareVisible;
     renderDashboardActivityOverviewCard();
   }
 
@@ -2795,8 +2775,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardWidgets,
     selectDashboardActivityDay,
     closeDashboardActivityDayDetail,
-    toggleDashboardActivityGoal,
-    toggleDashboardActivityCompare,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,

@@ -337,6 +337,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
   function readEditPlannedStartValueFromSelectors() {
     return readPlannedStartValueFromSelectors({
+      timeInput: els.editPlannedStartTimeInput,
       hourSelect: els.editPlannedStartHourSelect,
       minuteSelect: els.editPlannedStartMinuteSelect,
       meridiemSelect: els.editPlannedStartMeridiemSelect,
@@ -356,6 +357,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
     syncPlannedStartSelectors(
       {
+        timeInput: els.editPlannedStartTimeInput,
         hourSelect: els.editPlannedStartHourSelect,
         minuteSelect: els.editPlannedStartMinuteSelect,
         meridiemSelect: els.editPlannedStartMeridiemSelect,
@@ -1620,6 +1622,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
+    ctx.on(els.editPlannedStartTimeInput, "change", syncEditPlannedStartValueFromSelectors);
+    ctx.on(els.editPlannedStartTimeInput, "input", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartPushReminders, "change", async () => {
       const t = getCurrentEditTask();
       if (!t) return;

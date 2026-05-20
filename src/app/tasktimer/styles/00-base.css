@@ -10,11 +10,11 @@
   --card-2:#0f1a31;
   --muted:rgba(255,255,255,.6);
   --text:#e9eef9;
-  --accent:#00CFC8;
-  --mode-accent:#00CFC8;
-  --mode1-accent:#00CFC8;
-  --accent2:#00B8B2;
-  --accent3:#35e8ff;
+  --accent:#c9ff24;
+  --mode-accent:#c9ff24;
+  --mode1-accent:#c9ff24;
+  --accent2:#8ab600;
+  --accent3:#efff86;
   --warn:#ff4d4d;
   --shadow:0 14px 50px rgba(0,0,0,.35);
   --radius:16px;
@@ -29,31 +29,37 @@
   --font-tight: var(--font-display-ui);
   --font-sevenseg: "DSEG7 Classic", "Digital Numbers", "Digital-7 Mono", "OCR A Std", monospace;
 }
-*{box-sizing:border-box}
-html{
+
+*{box-sizing:border-box}html{
   scrollbar-width: thin;
   scrollbar-color: rgba(44,52,66,.72) rgba(255,255,255,.06);
   overflow-y: auto;
 }
+
 *::-webkit-scrollbar{
   width: 12px;
   height: 12px;
 }
+
 *::-webkit-scrollbar-track{
   background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(8,12,18,.38));
 }
+
 *::-webkit-scrollbar-thumb{
   background: linear-gradient(180deg, rgba(52,61,77,.88), rgba(23,29,40,.94));
   border: 2px solid #0d0f13;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
 }
+
 *::-webkit-scrollbar-thumb:hover{
   background: linear-gradient(180deg, rgba(68,79,98,.92), rgba(31,38,51,.96));
 }
+
 *::-webkit-scrollbar-corner{
   background: #0d0f13;
 }
+
 body{
   margin:0;
   background: #0d0f13 !important;
@@ -68,6 +74,7 @@ body{
     calc(16px + var(--safe-left));
   line-height:1.45;
 }
+
 .logo{
   width:34px;height:34px;
   display:grid;place-items:center;
@@ -75,27 +82,33 @@ body{
   background: rgba(0,207,200,.14);
   border:1px solid rgba(0,207,200,.30);
 }
+
 .logo span{
   color:var(--accent);
   font-weight:900;
 }
+
 body[data-app-page="dashboard"] #modeSwitch,
 body[data-app-page="friends"] #modeSwitch,
 body[data-app-page="leaderboard"] #modeSwitch{
   display:none !important;
 }
+
 .modeBtn{
   min-width:84px;
 }
+
 .modeBtn.isOn{
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
   border-color: rgba(53,232,255,.5);
   box-shadow: 0 0 10px rgba(53,232,255,.25);
 }
+
 .modeBtn:disabled{
   opacity:.45;
   cursor:not-allowed;
 }
+
 .appFooterNav{
   display:none;
   grid-template-columns: 1fr;
@@ -112,6 +125,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   box-shadow: 10px 0 20px rgba(0,0,0,.25);
   background: #0d0f13 !important;
 }
+
 .appFooterBtn{
   width:100%;
   min-height:68px;
@@ -124,6 +138,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   gap:4px;
   text-align:center;
 }
+
 .appFooterAlertBadge{
   position: absolute;
   top: 8px;
@@ -147,18 +162,22 @@ body[data-app-page="leaderboard"] #modeSwitch{
   pointer-events: none;
   z-index: 3;
 }
+
 .appFooterBtn.isOn{
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
   border-color: transparent;
   border-bottom-color: rgba(53,232,255,.7);
   box-shadow: inset 0 -2px 0 rgba(53,232,255,.7);
 }
+
 .appFooterBtn.isOn .appFooterLabel{
   color: rgba(142,242,255,.98);
 }
+
 .appFooterBtn.isOn .appFooterIconImage{
   filter: drop-shadow(0 0 8px rgba(53,232,255,.48));
 }
+
 .appFooterIconImage{
   width:42px;
   height:42px;
@@ -168,6 +187,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   margin:0 auto;
   filter: drop-shadow(0 0 6px rgba(0,190,255,.35));
 }
+
 .appFooterLabel{
   font-family:var(--font-tight);
   font-size:10px;
@@ -178,6 +198,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   text-shadow: 0 0 8px rgba(0,220,255,.5);
   line-height:1;
 }
+
 .btn{
   border:none;
   cursor:pointer;
@@ -192,30 +213,38 @@ body[data-app-page="leaderboard"] #modeSwitch{
   border:1px solid rgba(126,226,255,.24);
   transition:.15s transform, .15s background, .15s border-color;
 }
+
 .btn:hover{ transform: translateY(-1px); background: linear-gradient(180deg, rgba(120,230,255,.16), rgba(255,255,255,.04)); }
+
 .btn:active{ transform: translateY(0px); }
+
 .btn-accent{
   background: linear-gradient(180deg, var(--accent3), var(--accent));
   color:#04131c;
   border-color: rgba(53,232,255,.55);
   box-shadow: 0 0 14px rgba(0,220,255,.3);
 }
+
 .btn-ghost{
   background: rgba(255,255,255,.01);
   border:1px solid rgba(160,232,255,.28);
 }
+
 .btn-warn{
   background: rgba(255,77,77,.18);
   border-color: rgba(255,77,77,.35);
   color:#ffd4d4;
 }
+
 .btn-resume{
   background: linear-gradient(180deg, rgba(255,214,64,.24), rgba(179,132,24,.16));
   border-color: rgba(255,214,64,.42);
   color:#fff3bf;
   box-shadow: 0 0 14px rgba(255,214,64,.18);
 }
+
 .small{ padding:8px 12px; font-size:12px; font-weight:700; }
+
 .iconBtn{
   width:36px;height:36px;
   border-radius:10px;
@@ -225,16 +254,21 @@ body[data-app-page="leaderboard"] #modeSwitch{
   color:var(--text);
   cursor:pointer;
 }
+
 .iconBtn:hover{
   background: linear-gradient(180deg, rgba(120,230,255,.16), rgba(255,255,255,.03));
   border-color: rgba(120,230,255,.4);
 }
+
 .iconBtn.play{ border-color: rgba(0,207,200,.25); }
+
 .iconBtn.stop{ border-color: rgba(255,77,77,.25); }
+
 .iconBtn:disabled{
   opacity:.45;
   cursor:not-allowed;
 }
+
 /* Task list */
 .list{
   padding:12px;
@@ -243,6 +277,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   flex-direction:column;
   gap:var(--gap);
 }
+
 .checkpointMuteBtn{
   position:absolute;
   top:8px;
@@ -263,19 +298,17 @@ body[data-app-page="leaderboard"] #modeSwitch{
   text-shadow: 0 0 8px rgba(255,210,60,.65);
   z-index:2;
 }
+
 .checkpointMuteBtn:hover{
   background: rgba(255,210,60,.24);
   box-shadow: 0 0 14px rgba(255,210,60,.56), inset 0 0 10px rgba(255,210,60,.16);
-}
-@keyframes taskAlertPulseGlow{
-  0%, 100%{
+}@keyframes taskAlertPulseGlow{0%, 100%{
     box-shadow:
       0 0 0 1px rgba(255,210,60,.18),
       0 0 10px rgba(255,210,60,.22),
       0 0 20px rgba(255,210,60,.12),
       inset 0 0 0 1px rgba(255,210,60,.08);
-  }
-  50%{
+  }50%{
     box-shadow:
       0 0 0 1px rgba(255,210,60,.42),
       0 0 18px rgba(255,210,60,.42),
@@ -283,6 +316,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
       inset 0 0 0 1px rgba(255,210,60,.18);
   }
 }
+
 .row{
   display:grid;
   grid-template-columns: minmax(120px, 1fr) minmax(300px, auto) minmax(280px, auto);
@@ -291,6 +325,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   gap:14px;
   width:100%;
 }
+
 .name{
   grid-area:name;
   font-family:var(--font-tight);
@@ -304,6 +339,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   color: rgba(142,242,255,.96);
   text-shadow: 0 0 8px rgba(0,220,255,.32);
 }
+
 .time{
   grid-area:time;
   font-variant-numeric: tabular-nums;
@@ -318,6 +354,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   justify-self:center;
   min-width:0;
 }
+
 .timeChunk{
   width:auto;
   min-width:62px;
@@ -326,6 +363,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   align-items:center;
   justify-content:center;
 }
+
 .timeBoxValue{
   font-family: var(--font-tight);
   font-size:23px;
@@ -340,12 +378,14 @@ body[data-app-page="leaderboard"] #modeSwitch{
   align-items:flex-end;
   gap:1px;
 }
+
 .timeBoxUnit{
   font-size:11px;
   line-height:1;
   opacity:.95;
   transform: translateY(-1px);
 }
+
 .progressWrap{
   width:100%;
   padding:10px 10px 56px;
@@ -353,6 +393,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   background: #0d0f13 !important;
   border:1px solid rgba(114,225,255,.18);
 }
+
 .progressTrack{
   position:relative;
   height:18px;
@@ -362,6 +403,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   border:1px solid rgba(118,225,255,.18);
   box-shadow: inset 0 0 10px rgba(0,190,255,.15);
 }
+
 .progressFill{
   position:absolute; inset:0 auto 0 0;
   width:0%;
@@ -370,6 +412,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   transition: width .15s linear;
   box-shadow: 0 0 10px rgba(0,210,255,.45);
 }
+
 .mkFlag{
   position:absolute;
   top:50%;
@@ -381,6 +424,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   background: rgba(132,146,166,.82);
   box-shadow: 0 0 4px rgba(0,220,255,.18);
 }
+
 .mkFlag.mkGoal{
   top:-11px;
   width:14px;
@@ -393,12 +437,15 @@ body[data-app-page="leaderboard"] #modeSwitch{
   pointer-events:none;
   z-index:2;
 }
+
 .mkFlag::before{
   content:none;
 }
+
 .mkFlag::after{
   content:none;
 }
+
 .mkFlag.mkGoal::before{
   content:"";
   position:absolute;
@@ -409,6 +456,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   background: linear-gradient(180deg, rgba(230,244,255,.92), rgba(122,145,170,.72));
   box-shadow: 0 0 4px rgba(92,126,160,.28);
 }
+
 .mkFlag.mkGoal::after{
   content:"";
   position:absolute;
@@ -425,28 +473,35 @@ body[data-app-page="leaderboard"] #modeSwitch{
   border:1px solid rgba(213,228,242,.78);
   box-shadow: 0 0 6px rgba(0,0,0,.24);
 }
+
 .mkFlag.mkPend::before{
   content:none;
 }
+
 .mkFlag.mkPend::after{
   content:none;
 }
+
 .mkFlag.mkGoal.mkPend::before,
 .mkFlag.mkGoal.mkPend::after,
 .mkFlag.mkGoal.mkAch::before,
 .mkFlag.mkGoal.mkAch::after{
   content:"";
 }
+
 .mkFlag.mkAch::before{
   content:none;
 }
+
 .mkFlag.mkAch::after{
   content:none;
 }
+
 .mkFlag.mkGoal.mkAch::after{
   border-color: rgba(240,248,255,.95);
   box-shadow: 0 0 8px rgba(0,220,255,.28);
 }
+
 .mkTime{
   position:absolute;
   top:22px;
@@ -455,6 +510,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   color: rgba(255,255,255,.55);
   white-space:nowrap;
 }
+
 .mkDesc{
   position:absolute;
   top:38px;
@@ -463,36 +519,47 @@ body[data-app-page="leaderboard"] #modeSwitch{
   color: rgba(255,255,255,.35);
   white-space:nowrap;
 }
+
 .mkAch{ color: rgba(0,207,200,.95) !important; }
+
 .mkPend{ color: rgba(255,255,255,.40) !important; }
+
 .mkEdgeL{ transform: translateX(0%); }
+
 .mkEdgeR{ transform: translateX(-100%); }
+
 .mkWrap8{ max-width:80px; white-space:normal; line-height:1.1; text-align:center; }
+
 .editHead{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap:14px;
 }
+
 .editHead > h2{
   margin-bottom:0;
 }
+
 .editMoveWrap{
   display:flex;
   align-items:center;
   gap:8px;
   margin-top:2px;
 }
+
 .editMoveWrap > label,
 .editMoveWrap > .editMoveLabel{
   margin:0;
   font-size:11px;
   letter-spacing:.5px;
 }
+
 .editMoveMenu{
   position:relative;
   min-width:124px;
 }
+
 .editMoveMenu > summary{
   list-style:none;
   cursor:pointer;
@@ -501,25 +568,29 @@ body[data-app-page="leaderboard"] #modeSwitch{
   align-items:center;
   justify-content:space-between;
 }
+
 .editMoveMenu > summary::-webkit-details-marker{
   display:none;
 }
+
 .editMoveMenu > summary::after{
   content:"▾";
   margin-left:10px;
   opacity:.9;
 }
+
 .editMoveItem.is-disabled{
   color: rgba(160,170,186,.8);
   cursor:not-allowed;
   background: rgba(255,255,255,.02);
   border-color: rgba(255,255,255,.08);
 }
+
 .editMoveItem.is-disabled:hover{
   background: rgba(255,255,255,.02);
 }
-.field{ margin-top:12px; }
-label{
+
+.field{ margin-top:12px; }label{
   display:block;
   font-size:11px;
   font-weight:800;
@@ -527,8 +598,7 @@ label{
   text-transform:uppercase;
   color: rgba(255,255,255,.60);
   margin:0 0 7px;
-}
-input[type="text"], input[type="number"]{
+}input[type="text"], input[type="number"]{
   width:100%;
   padding:12px 12px;
   border-radius: 12px;
@@ -536,12 +606,11 @@ input[type="text"], input[type="number"]{
   background: rgba(0,0,0,.20);
   color: var(--text);
   outline:none;
-}
-input[type="text"]:focus, input[type="number"]:focus{
+}input[type="text"]:focus, input[type="number"]:focus{
   border-color: rgba(0,207,200,.40);
 }
-@media (max-width: 980px){
-  input[type="checkbox"]{
+
+@media (max-width: 980px){input[type="checkbox"]{
     appearance: none;
     -webkit-appearance: none;
     position: relative;
@@ -553,78 +622,54 @@ input[type="text"]:focus, input[type="number"]:focus{
     border-radius: 3px;
     background: rgba(0,0,0,.18);
     vertical-align: middle;
-  }
-
-  input[type="checkbox"]:checked{
+  }input[type="checkbox"]:checked{
     border-color: color-mix(in srgb, var(--accent3) 76%, #ffffff 12%);
     background: linear-gradient(180deg, var(--accent3), var(--accent));
-  }
-
-  input[type="checkbox"]:checked::after{
+  }input[type="checkbox"]:checked::after{
     content: "";
     width: 8px;
     height: 5px;
     border: solid #050607;
     border-width: 0 0 2px 2px;
     transform: translateY(-1px) rotate(-45deg);
-  }
-
-  input[type="checkbox"]:focus-visible{
+  }input[type="checkbox"]:focus-visible{
     outline: 2px solid color-mix(in srgb, var(--accent3) 72%, transparent);
     outline-offset: 2px;
   }
-}
-option,
+}option,
 optgroup{
   background:#0d0f13;
   color:#fff;
 }
-body[data-theme="purple"] select{
-  accent-color: #d447d2;
-}
-body[data-theme="cyan"] select{
-  accent-color: #35e8ff;
-}
+
 body[data-theme="lime"] select{
   accent-color: #efff63;
 }
-body[data-theme="purple"] option:checked,
-body[data-theme="purple"] option:hover,
-body[data-theme="purple"] option:focus{
-  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
-  color: #fff6ff;
-}
-body[data-theme="cyan"] option,
-body[data-theme="cyan"] optgroup{
-  background: #0c131a;
-  color: #eafcff;
-}
-body[data-theme="cyan"] option:checked,
-body[data-theme="cyan"] option:hover,
-body[data-theme="cyan"] option:focus{
-  background: linear-gradient(180deg, rgba(53,232,255,.34), rgba(8,83,110,.96));
-  color: #f3feff;
-}
+
 body[data-theme="lime"] option,
 body[data-theme="lime"] optgroup{
   background: #14180a;
   color: #fbffdf;
 }
+
 body[data-theme="lime"] option:checked,
 body[data-theme="lime"] option:hover,
 body[data-theme="lime"] option:focus{
   background: linear-gradient(180deg, rgba(239,255,99,.34), rgba(110,128,16,.96));
   color: #f8ffd7;
 }
+
 .addTaskNameCombo{
   position:relative;
   display:flex;
   align-items:center;
   gap:8px;
 }
+
 .addTaskNameCombo > input{
   padding-right:46px;
 }
+
 .addTaskNameToggle{
   position:absolute;
   right:6px;
@@ -635,10 +680,12 @@ body[data-theme="lime"] option:focus{
   padding:0;
   line-height:1;
 }
+
 .addTaskNameToggle:hover,
 .addTaskNameToggle:active{
   transform:translateY(-50%);
 }
+
 .addTaskNameMenu{
   position:absolute;
   top:calc(100% + 6px);
@@ -652,29 +699,34 @@ body[data-theme="lime"] option:focus{
   max-height:280px;
   overflow:auto;
 }
+
 .addTaskNameCustomTitle{
   padding:8px 10px 4px;
   font-size:11px;
   font-style:italic;
   color: rgba(205,216,232,.9);
 }
+
 .addTaskNamePresetTitle{
   padding:6px 10px 4px;
   font-size:11px;
   font-style:italic;
   color: rgba(205,216,232,.9);
 }
+
 .addTaskNameDivider{
   height:1px;
   margin:6px 8px;
   background: rgba(255,255,255,.14);
 }
+
 .addTaskNameList{
   display:flex;
   flex-direction:column;
   gap:0;
   padding:2px 0;
 }
+
 .addTaskNameItem{
   width:100%;
   text-align:left;
@@ -692,41 +744,33 @@ body[data-theme="lime"] option:focus{
   box-shadow: inset 0 0 0 1px transparent;
   transition: box-shadow .15s ease, border-color .15s ease, color .15s ease;
 }
+
 .addTaskNameItem:hover{
   background: transparent;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
 }
 
-body[data-theme="purple"] .addTaskNameItem:hover,
-body[data-theme="purple"] .addTaskNameItem:focus{
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(212,71,210,.42);
-  color: #fff8ff;
-}
-
-body[data-theme="cyan"] .addTaskNameItem:hover,
-body[data-theme="cyan"] .addTaskNameItem:focus{
-  background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(53,232,255,.42);
-  color: #eaf7ff;
-}
 body[data-theme="lime"] .addTaskNameItem:hover,
 body[data-theme="lime"] .addTaskNameItem:focus{
   background: transparent;
   box-shadow: inset 0 0 0 1px rgba(239,255,99,.42);
   color: #f7ffd0;
 }
+
 .categoryFieldRow{
   margin-top:10px;
 }
+
 .categoryFieldControl{
   display:flex;
   align-items:center;
   gap:8px;
 }
+
 .categoryFieldControl > input{
   flex:1;
 }
+
 .categoryTrashBtn{
   width:36px;
   height:36px;
@@ -737,14 +781,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   place-items:center;
   cursor:pointer;
 }
+
 .categoryTrashBtn svg{
   width:16px;
   height:16px;
   fill: currentColor;
 }
+
 .categoryTrashBtn:hover{
   background: rgba(255,77,77,.2);
 }
+
 .categoryColorInput{
   width:36px;
   height:36px;
@@ -753,47 +800,57 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(6,24,41,.75);
   cursor:pointer;
 }
+
 .categoryColorHex{
   width:92px;
   text-transform:uppercase;
   font-family:var(--font-tight);
   letter-spacing:.04em;
 }
+
 .switch.opaque{
   opacity:1;
   background: rgba(95,105,122,.95);
   border-color: rgba(145,155,175,.95);
   cursor:not-allowed;
 }
+
 .switch.opaque::after{
   background: rgba(235,240,255,.95);
 }
+
 .row2{
   display:flex;
   gap:12px;
 }
+
 .row3{
   display:flex;
   gap:12px;
 }
+
 .row3 > .field{
   flex:1;
 }
+
 @media (max-width: 640px){
-  .row2,
+.row2,
   .row3{
     flex-direction:column;
   }
 }
+
 .elapsedPadModal{
   width:min(360px, 100%);
 }
+
 .elapsedPadHeadRow{
   display:flex;
   align-items:center;
   gap:10px;
   margin: 4px 0 10px;
 }
+
 .elapsedPadDisplay{
   margin: 0;
   padding: 12px;
@@ -806,15 +863,18 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-variant-numeric: tabular-nums;
   flex:1 1 auto;
 }
+
 .elapsedPadUnitButtons{
   flex:0 0 auto;
   gap:6px;
 }
+
 .elapsedPadUnitButtons .unitBtn{
   min-width:44px;
   min-height:40px;
   padding:0 10px;
 }
+
 .elapsedPadError{
   min-height: 18px;
   margin: -2px 0 10px;
@@ -822,16 +882,19 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight: 700;
   color: #ff6b6b;
 }
+
 .elapsedPadGrid{
   display:grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap:10px;
 }
+
 .elapsedPadKey{
   border-radius: 12px;
   padding: 12px 8px;
   font-size: 16px;
 }
+
 .toggleRow{
   display:flex;
   justify-content:space-between;
@@ -842,9 +905,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
 }
+
 #themeToggleRow{
   cursor:pointer;
 }
+
 .switch{
   width:52px;height:28px;
   border-radius: 999px;
@@ -853,6 +918,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:relative;
   cursor:pointer;
 }
+
 .switch::after{
   content:"";
   width:24px;height:24px;
@@ -862,8 +928,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   top:1px; left:1px;
   transition:.15s left, .15s background;
 }
+
 .switch.on{ background: rgba(0,207,200,.25); border-color: rgba(0,207,200,.35); }
+
 .switch.on::after{ left:26px; background: var(--accent); }
+
 .milestones{
   display:none;
   margin-top:12px;
@@ -872,7 +941,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.03);
   border:1px solid rgba(255,255,255,.08);
 }
+
 .milestones.on{ display:block; }
+
 .unitRow{
   display:flex;
   align-items:center;
@@ -884,6 +955,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.03);
   border:1px solid rgba(255,255,255,.08);
 }
+
 .unitRow > span{
   font-size:12px;
   font-weight:800;
@@ -891,23 +963,28 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color: rgba(255,255,255,.62);
   text-transform:uppercase;
 }
+
 .unitButtons{
   display:flex;
   gap:10px;
 }
+
 .unitBtn.isOn{
   background: linear-gradient(180deg, var(--accent), var(--accent2));
   color:#06110b;
   border-color: rgba(0,207,200,.35);
 }
+
 #historyAnalysisSummary{
   margin-top:8px;
   color: rgba(255,255,255,.78);
   line-height:1.5;
 }
+
 #historyAnalysisSummary b{
   color: rgba(230,250,255,.98);
 }
+
 .pill{
   min-width:52px;
   text-align:center;
@@ -917,23 +994,28 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.06);
   cursor:pointer;
 }
+
 .msSkewField{
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+
 .msSkewInput{
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+
 .confirmText{
   color: rgba(255,255,255,.72);
   line-height:1.55;
   margin-top:6px;
 }
+
 .confirmDanger{
   color:#ff4d4d;
   font-weight:700;
 }
+
 .chkRow{
   margin-top:14px;
   display:flex;
@@ -944,7 +1026,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
 }
+
 .chkRow input{ transform: scale(1.1); }
+
 .confirmBtns{
   display:flex;
   justify-content:flex-end;
@@ -952,6 +1036,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   margin-top:16px;
   flex-wrap:wrap;
 }
+
 /* Menu */
 .menuIcon{
   width:38px;height:38px;
@@ -961,7 +1046,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: rgba(255,255,255,.06);
   cursor:pointer;
 }
+
 .menuIcon:hover{ background: rgba(255,255,255,.10); }
+
 .menu{
   width: min(420px, 100%);
   border-radius: 16px;
@@ -970,6 +1057,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border:1px solid rgba(255,255,255,.14);
   box-shadow: var(--shadow);
 }
+
 .menuHead{
   display:flex;
   justify-content:space-between;
@@ -978,13 +1066,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border-bottom:1px solid rgba(255,255,255,.08);
   margin-bottom:10px;
 }
+
 .menuTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
+
 .menuList{ display:flex; flex-direction:column; gap:10px; }
+
 .menuDivider{
   height:1px;
   margin:2px 2px 4px;
   background: rgba(255,255,255,.14);
 }
+
 .menuItem{
   width:100%;
   text-align:left;
@@ -999,12 +1091,15 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight:700;
   letter-spacing:.1px;
 }
+
 .menuItem:hover{ background: rgba(255,255,255,.08); }
+
 /* History screen */
 #historyScreen{
   display:none;
   padding:18px;
 }
+
 .historyTop{
   display:flex;
   align-items:baseline;
@@ -1014,15 +1109,18 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:relative;
   min-height:32px;
 }
+
 .historyTop .historyMeta:first-child{
   flex:1;
 }
+
 .historyTopActions{
   margin-left:auto;
   display:flex;
   align-items:baseline;
   justify-content:flex-end;
 }
+
 .historyTopDivider{
   width:1px;
   height:16px;
@@ -1031,6 +1129,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   flex:0 0 auto;
   align-self:center;
 }
+
 .historyTitle{
   font-family:var(--font-tight);
   font-weight:700;
@@ -1039,6 +1138,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   letter-spacing:.06em;
   text-transform:uppercase;
 }
+
 .historyPinBtn{
   margin-left:8px;
   padding:0 4px;
@@ -1052,6 +1152,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   cursor:pointer;
   vertical-align:middle;
 }
+
 .historyClearLockBtn{
   margin-left:8px;
   padding:0 10px;
@@ -1073,17 +1174,21 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   justify-content:center;
   align-self:baseline;
 }
+
 .historyClearLockBtn:hover{
   background: rgba(235,245,255,.18) !important;
 }
+
 .historyPinBtn.isOn{
   border:none;
   background: rgba(53,232,255,.16);
   color: rgba(230,250,255,.98);
 }
+
 .historyPinBtn:hover{
   background: rgba(255,255,255,.1);
 }
+
 .historyMeta{
   display:flex;
   align-items:center;
@@ -1092,6 +1197,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color: rgba(255,255,255,.70);
   font-size:12px;
 }
+
 .historyRangeToggleRow{
   display:flex;
   align-items:center;
@@ -1099,10 +1205,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   gap:6px;
   margin: 0;
 }
+
 .historyRangeToggle{
   transform: scale(.45);
   transform-origin:left center;
 }
+
 .historyRangeModePill{
   height:20px;
   padding:0 8px;
@@ -1118,14 +1226,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   text-transform:uppercase;
   cursor:pointer;
 }
+
 .historyRangeModePill:first-of-type{
   margin-left:auto;
 }
+
 .historyRangeModePill.isOn{
   background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
   border-color: rgba(53,232,255,.55);
   color: rgba(228,248,255,.98);
 }
+
 .historyCanvasWrap{
   width:100%;
   height:293px;
@@ -1142,17 +1253,15 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   -webkit-user-select:none;
   -webkit-touch-callout:none;
 }
+
 .historyCanvasWrap.slideFromRight{ animation: chartSlideFromRight .32s cubic-bezier(.22,.78,.2,1); }
-.historyCanvasWrap.slideFromLeft{ animation: chartSlideFromLeft .32s cubic-bezier(.22,.78,.2,1); }
-@keyframes chartSlideFromRight{
-  from{ transform: translate3d(28px,0,0); opacity:.4; filter: saturate(.92); }
-  to{ transform: translateX(0); opacity:1; }
+
+.historyCanvasWrap.slideFromLeft{ animation: chartSlideFromLeft .32s cubic-bezier(.22,.78,.2,1); }@keyframes chartSlideFromRight{from{ transform: translate3d(28px,0,0); opacity:.4; filter: saturate(.92); }to{ transform: translateX(0); opacity:1; }
+}@keyframes chartSlideFromLeft{from{ transform: translate3d(-28px,0,0); opacity:.4; filter: saturate(.92); }to{ transform: translateX(0); opacity:1; }
 }
-@keyframes chartSlideFromLeft{
-  from{ transform: translate3d(-28px,0,0); opacity:.4; filter: saturate(.92); }
-  to{ transform: translateX(0); opacity:1; }
-}
+
 #historyChart{ width:100%; height:100%; display:block; }
+
 .historyCanvasWrap .historyChartInline{
   width:100%;
   height:100%;
@@ -1161,6 +1270,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   user-select:none;
   -webkit-user-select:none;
 }
+
 .historyRangeRow{
   display:flex;
   justify-content:space-between;
@@ -1169,6 +1279,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   margin-top:12px;
   flex-wrap:nowrap;
 }
+
 .historyRangeInfo{
   display:flex;
   flex-direction:column;
@@ -1177,53 +1288,63 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   min-width:0;
   flex:1 1 auto;
 }
+
 .historyRangeText{
   min-width:0;
   font-family: var(--font-geist-sans);
   font-size:10px;
   line-height:1.2;
 }
+
 .historyRangeActions{
   justify-content:flex-end;
   margin-left:auto;
   flex: 0 0 auto;
 }
+
 @media (max-width: 980px){
-  .historyRangeRow{
+.historyRangeRow{
     flex-direction:row;
     align-items:center;
     gap:8px;
     flex-wrap:wrap;
   }
-  .historyRangeInfo{
+
+.historyRangeInfo{
     flex:1 1 100%;
   }
-  .historyRangeActions{
+
+.historyRangeActions{
     width:100%;
     justify-content:flex-end;
   }
 }
+
 /* Mobile-only history chart sizing: +25% from the original 260px baseline. */
 @media (max-width: 640px){
   .historyCanvasWrap{
     height:244px;
   }
 }
+
 .historyActionIconBtn{
   width:30px;
   height:30px;
   font-size:14px;
   line-height:1;
 }
+
 .historyActionIconBtn.isDisabled{
   opacity:.4;
   cursor:not-allowed;
 }
+
 .historyTopIconBtn{
     border:none !important;
     background: transparent !important;
     box-shadow:none !important;
   }
+
 .historyManageBtn{
     min-width:auto;
     height:30px;
@@ -1236,10 +1357,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     letter-spacing:.06em;
     text-transform:uppercase;
   }
+
 .historyManageBtn:hover,
 .historyManageBtn:focus-visible{
     background: rgba(235,245,255,.18) !important;
   }
+
 .historyViewSummaryBtn{
     min-width:auto;
     height:30px;
@@ -1254,26 +1377,31 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     text-transform:uppercase;
     align-self:baseline;
   }
+
 .historyViewSummaryBtn:hover,
 .historyViewSummaryBtn:focus-visible{
     background: rgba(235,245,255,.18) !important;
   }
+
 .historyViewSummaryBtn:disabled,
 .historyViewSummaryBtn[aria-disabled="true"]{
     opacity:.45;
     cursor:not-allowed;
   }
+
 .historyBest{
   margin-top:12px;
   color: rgba(255,255,255,.70);
   font-size:12px;
 }
+
 .historyTrashRow{
   display:none;
   gap:8px;
   justify-content:space-between;
   margin-top:10px;
 }
+
 .historyTrashBtn{
   width:34px;height:34px;
   border-radius:10px;
@@ -1282,18 +1410,22 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color:#ffd4d4;
   cursor:pointer;
 }
+
 .historyTrashBtn:disabled{
   opacity:.35;
   cursor:not-allowed;
 }
+
 .historyEditBtn.isOn{
   border-color: rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
 }
+
 .historyDeleteBtn{
   border-color: rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
 }
+
 .focusDialWrap{
   display:flex;
   justify-content:center;
@@ -1303,12 +1435,14 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   padding:10px 42px 40px;
   overflow:visible;
 }
+
 .focusDialPanel{
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:14px;
 }
+
 .focusCheckpointToggleTop{
   display:flex;
   flex-direction:column;
@@ -1324,14 +1458,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:relative;
   z-index:2;
 }
+
 #focusModeBackBtn{
   border-color: rgba(180,188,198,.34);
   box-shadow:none;
 }
+
 #focusModeBackBtn:hover,
 #focusModeBackBtn:focus-visible{
   border-color: rgba(210,216,224,.48);
 }
+
 .focusCheckpointToggleRow{
   display:flex;
   justify-content:center;
@@ -1341,26 +1478,31 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border:none;
   background: transparent;
 }
+
 .focusCheckpointToggleRow .switch{
   width:39px;
   height:21px;
   min-width:39px;
 }
+
 .focusCheckpointToggleRow .switch::after{
   width:18px;
   height:18px;
   top:1px;
   left:1px;
 }
+
 .focusCheckpointToggleRow .switch.on::after{
   left:19px;
 }
+
 .focusCheckpointToggleRow > span{
   font-size:12px;
   letter-spacing:.04em;
   color: rgba(190,240,255,.9);
   text-transform:uppercase;
 }
+
 .focusCheckpointLog{
   width:min(82vw, 520px);
   border:1px solid rgba(255,255,255,.12);
@@ -1368,6 +1510,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   box-shadow: inset 0 0 16px rgba(0,180,255,.06);
   padding:10px 12px;
 }
+
 .focusCheckpointLogTitle{
   margin:0 0 8px;
   color: rgba(228,244,255,.95);
@@ -1377,11 +1520,13 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   letter-spacing:.12em;
   text-transform:uppercase;
 }
+
 .focusCheckpointLogEmpty{
   color: rgba(170,195,215,.72);
   font-size:12px;
   font-style:italic;
 }
+
 .focusCheckpointLogList{
   display:flex;
   flex-direction:column;
@@ -1390,20 +1535,24 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   overflow-y:auto;
   padding-right:2px;
 }
+
 .focusCheckpointLogItem{
   padding:7px 8px;
   border:1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
 }
+
 .focusCheckpointLogItemLine{
   display:flex;
   align-items:baseline;
   flex-wrap:wrap;
 }
+
 .focusCheckpointLogItem.isLatest{
   border-color: rgba(53,232,255,.34);
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.10);
 }
+
 .focusCheckpointLogItemTime{
   color: rgba(239,248,255,.96);
   font-family: var(--font-tight);
@@ -1411,11 +1560,13 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight:700;
   letter-spacing:.04em;
 }
+
 .focusCheckpointLogItemSep{
   color: rgba(189,222,238,.9);
   font-size:12px;
   font-weight:700;
 }
+
 .focusCheckpointLogItemDesc{
   margin-top:0;
   color: rgba(189,222,238,.9);
@@ -1423,15 +1574,18 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight:700;
   line-height:1.25;
 }
+
 #focusCheckpointToggle.opaque{
   opacity:1;
   background: rgba(95,105,122,.95);
   border-color: rgba(145,155,175,.95);
   cursor:not-allowed;
 }
+
 #focusCheckpointToggle.opaque::after{
   background: rgba(235,240,255,.95);
 }
+
 .focusDial{
   position:relative;
   width:min(33.75vw, 40.5dvh, 351px);
@@ -1454,10 +1608,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   --focus-marker-radius: 42%;
   overflow: visible;
 }
+
 .focusDial:focus-visible{
   outline: 2px solid rgba(117,231,255,.92);
   outline-offset: 8px;
 }
+
 .focusDialOuter{
   position:absolute;
   inset:0;
@@ -1466,30 +1622,32 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   box-shadow: 0 0 14px rgba(0,233,255,.8), 0 0 42px rgba(0,174,255,.5);
   transition: transform .18s ease, box-shadow .18s ease;
 }
+
 .focusDial:hover .focusDialOuter,
 .focusDial:focus-visible .focusDialOuter{
   transform: scale(1.01);
 }
+
 .focusDial.isRunning .focusDialOuter{
   animation: focusDialPulseGlow 2.8s ease-in-out infinite;
 }
+
 .focusDial.isStopped .focusDialOuter{
   border-color: rgba(255,77,77,.95);
   box-shadow: 0 0 14px rgba(255,77,77,.72), 0 0 42px rgba(255,77,77,.42);
 }
+
 .focusDial.isStopped .focusDialTime,
 .focusDial.isStopped .focusDialDays{
   color:#ff4d4d;
   text-shadow: 0 0 1px rgba(255,145,145,.95), 0 0 4px rgba(255,77,77,.7), 0 0 8px rgba(255,40,40,.45);
-}
-@keyframes focusDialPulseGlow{
-  0%, 100%{
+}@keyframes focusDialPulseGlow{0%, 100%{
     box-shadow: 0 0 10px rgba(0,233,255,.55), 0 0 26px rgba(0,174,255,.34);
-  }
-  50%{
+  }50%{
     box-shadow: 0 0 18px rgba(0,233,255,.95), 0 0 56px rgba(0,174,255,.6);
   }
 }
+
 .focusDialProgress{
   position:absolute;
   inset:16px;
@@ -1509,6 +1667,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   -webkit-mask: radial-gradient(circle at center, transparent 62%, #000 64%);
   mask: radial-gradient(circle at center, transparent 62%, #000 64%);
 }
+
 .focusCheckpointRing{
   position:absolute;
   inset:16px;
@@ -1517,6 +1676,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   z-index:3;
   overflow: visible;
 }
+
 .focusCheckpointMark{
   position:absolute;
   top:50%;
@@ -1530,26 +1690,33 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   box-shadow: 0 0 4px rgba(90,105,128,.32);
   transform: translate(calc(var(--mxpx, 0px) - 4px), calc(var(--mypx, 0px) - 4px));
 }
+
 .focusCheckpointMark.reached{
   border-color: rgba(236,244,255,.92);
   background: rgba(0,238,255,.94);
   box-shadow: 0 0 7px rgba(0,220,255,.5);
 }
+
 .focusCheckpointFlag{
   display:none;
 }
+
 .focusCheckpointFlag::before{
   content:none;
 }
+
 .focusCheckpointFlag::after{
   content:none;
 }
+
 .focusCheckpointFlag.reached::before{
   content:none;
 }
+
 .focusCheckpointFlag.reached::after{
   content:none;
 }
+
 .focusCheckpointConnector{
   position:absolute;
   top:50%;
@@ -1561,10 +1728,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   transform: translate(var(--cxpx, 0px), var(--cypx, 0px)) rotate(var(--ca, 0deg));
   transform-origin: 0 50%;
 }
+
 .focusCheckpointConnector.reached{
   background: rgba(240,248,255,.98);
   box-shadow: 0 0 5px rgba(220,235,255,.5);
 }
+
 .focusCheckpointLabel{
   position:absolute;
   top:50%;
@@ -1585,16 +1754,22 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   overflow-wrap:anywhere;
   word-break:break-word;
 }
+
 .focusCheckpointLabel.left{
   transform: translate(calc(var(--lxpx, 0px) - clamp(12px, 3.2cqw, 20px)), var(--lypx, 0px)) translate(-100%, -50%);
   text-align:right;
 }
+
 .focusCheckpointLabel.reached{
   color: rgba(220,232,246,.98);
 }
+
 .focusCheckpointLabelTitle{ font-weight:700; }
+
 .focusCheckpointLabel:not(.isActive){ display:none; }
+
 .focusCheckpointLabelDesc{ display:block; opacity:.9; margin-top:2px; font-weight:700; }
+
 .focusDialInner{
   position:absolute;
   inset: var(--focus-inner-inset);
@@ -1602,6 +1777,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border:3px solid rgba(0,210,255,.55);
   box-shadow: inset 0 0 40px rgba(0,130,255,.15);
 }
+
 .focusDialCenter{
   position:absolute;
   inset: calc(var(--focus-inner-inset) + 8px);
@@ -1613,6 +1789,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   min-width:0;
   overflow:hidden;
 }
+
 .focusDialControls{
   margin-top:clamp(2px, 1.2cqw, 8px);
   display:flex;
@@ -1622,6 +1799,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   min-height:clamp(18px, 7cqw, 34px);
   max-width:100%;
 }
+
 .focusDialHint{
   color: rgba(204,242,255,.9);
   font-family: var(--font-tight);
@@ -1635,6 +1813,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
 #focusResetBtn{
   min-width:0;
   width:40px;
@@ -1645,6 +1824,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   justify-content:center;
   margin-top: 2px;
 }
+
 .focusInsights,
 .focusSessionNotes{
   width:100%;
@@ -1659,17 +1839,20 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+
 .focusInsightsRow{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  justify-items:center;
   gap:14px;
   grid-area: focusStats;
   align-self:stretch;
   width:100%;
   max-width:620px;
-  margin:0;
+  margin:0 auto;
   min-height:0;
 }
+
 .focusInsights{
   align-self:start;
   display:flex;
@@ -1677,6 +1860,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   justify-content:flex-start;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
+
 .focusInsightsTitle{
   margin-bottom:8px;
   color: rgba(228,244,255,.95);
@@ -1687,6 +1871,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   text-transform:uppercase;
   text-align:center;
 }
+
 .focusInsightRow{
   display:flex;
   align-items:center;
@@ -1694,12 +1879,14 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   gap:14px;
   padding: 6px 0;
 }
+
 .focusInsightLabel{
   color: rgba(182,225,240,.88);
   font-size:12px;
   letter-spacing:.03em;
   text-align:left;
 }
+
 .focusInsightValue{
   color: rgba(230,245,255,.96);
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
@@ -1707,29 +1894,42 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight:700;
   text-align:right;
 }
+
 .focusInsightValue.is-empty{
   color: rgba(150,165,185,.88);
   font-style: italic;
   font-weight:600;
 }
+
 .focusInsightValue.is-positive{
   color: #63e6a6;
   text-shadow: 0 0 8px rgba(99,230,166,.22);
 }
+
 .focusInsightValue.is-negative{
   color: #ff7b7b;
   text-shadow: 0 0 8px rgba(255,123,123,.18);
 }
+
 .focusInsightValue.is-neutral{
   color: rgba(230,245,255,.96);
 }
+
 .focusSessionNotes{
+  width:50%;
   margin-top: 0;
   display:flex;
   flex-direction:column;
+  align-items:center;
   justify-content:flex-start;
   align-self:start;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  clip-path:none;
+  text-align:center;
 }
+
 .focusSessionNotesSummary{
   list-style: none;
   display:flex;
@@ -1738,15 +1938,19 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   gap:12px;
   cursor:pointer;
 }
+
 .focusSessionNotesSummary::-webkit-details-marker{
   display:none;
 }
+
 .focusSessionNotesSummary::after{
   content:none;
 }
+
 .focusSessionNotesSummary .focusInsightsTitle{
   margin-bottom:0;
 }
+
 .focusSessionNotesCollapseLabel{
   display:inline-flex;
   align-items:center;
@@ -1759,51 +1963,67 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   text-transform: uppercase;
   white-space: nowrap;
 }
+
 .focusSessionNotesCollapseLabel::after{
   content: "▸";
   font-size: 11px;
   line-height: 1;
   color: rgba(117,231,255,.95);
 }
+
 .focusSessionNotes[open] .focusSessionNotesCollapseLabel::after{
   content: "▾";
 }
+
 .focusSessionNotes:not([open]) .focusSessionNotesCollapseLabel{
   opacity:.82;
 }
+
 .focusSessionNotesBody{
   margin-top:10px;
+  width:100%;
 }
+
 .focusSessionNotesInput{
   width: 100%;
+  height: 38px;
   min-height: 38px;
-  max-height: 18dvh;
-  resize: vertical;
+  max-height: 38px;
+  resize: none;
+  overflow-x:auto;
+  overflow-y:hidden;
+  white-space:pre;
   font-size:12px;
   line-height:1.35;
   letter-spacing:.03em;
-  background: rgba(255,255,255,.02) !important;
-  background-color: rgba(255,255,255,.02) !important;
+  background: transparent !important;
+  background-color: transparent !important;
   background-image: none !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  box-shadow: none;
   color: rgba(230,245,255,.96);
   border: 1px solid rgba(104,220,255,.18);
+  text-align:center;
 }
+
 .focusSessionNotesInput::placeholder{
   color: rgba(151,174,192,.9);
 }
+
 .focusSessionNotesBody{
   display:grid;
   align-content:start;
   gap:8px;
 }
+
 .focusSessionNotesSavedText{
   display:none;
   color:#63e6a6;
   font-size:11px;
   font-weight:700;
   letter-spacing:.02em;
+  text-align:center;
 }
+
 .historySaveWorkingPanel{
   width: min(420px, calc(100vw - 28px));
   min-height: 74px;
@@ -1825,9 +2045,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     inset 0 0 0 1px rgba(255,255,255,.04),
     inset 0 1px 0 rgba(255,255,255,.05);
 }
+
 body[data-control-style="square"] .historySaveWorkingPanel{
   clip-path: none;
 }
+
 #historySaveWorkingText{
   font-family: var(--font-ui);
   font-size: 14px;
@@ -1836,11 +2058,13 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   line-height: 1.4;
   text-align: center;
 }
+
 .historySaveWorkingDots{
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
+
 .historySaveWorkingDots i{
   width: 8px;
   height: 8px;
@@ -1849,22 +2073,22 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   box-shadow: 0 0 0 1px rgba(255,255,255,.08);
   animation: historySaveWorkingPulse 1s ease-in-out infinite;
 }
+
 .historySaveWorkingDots i:nth-child(2){
   animation-delay: .15s;
 }
+
 .historySaveWorkingDots i:nth-child(3){
   animation-delay: .3s;
-}
-@keyframes historySaveWorkingPulse{
-  0%, 80%, 100%{
+}@keyframes historySaveWorkingPulse{0%, 80%, 100%{
     opacity: .35;
     transform: translateY(0) scale(.82);
-  }
-  40%{
+  }40%{
     opacity: 1;
     transform: translateY(-2px) scale(1);
   }
 }
+
 .focusTaskTitle{
   grid-area: focusTitle;
   min-width:0;
@@ -1880,6 +2104,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   overflow:hidden;
   text-overflow:ellipsis;
 }
+
 .focusDialTime{
   font-family: var(--font-orbitron);
   font-size:clamp(14px, 8.2cqw, 42px);
@@ -1896,6 +2121,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   overflow:hidden;
   text-overflow:clip;
 }
+
 .focusDialDays{
   font-family: var(--font-orbitron);
   font-size:clamp(10px, 3.4cqw, 18px);
@@ -1911,6 +2137,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
   text-overflow:clip;
   text-align:center;
 }
+
 #focusModeScreen{
   display:none;
   position:fixed;
@@ -1923,6 +2150,7 @@ body[data-control-style="square"] .historySaveWorkingPanel{
     calc(16px + var(--safe-left));
   background: #000;
 }
+
 body.isFocusModeOpen #focusModeScreen{
   display:grid !important;
   grid-template-columns:minmax(0, min(920px, 100%));
@@ -1940,43 +2168,48 @@ body.isFocusModeOpen #focusModeScreen{
   height:100dvh;
   max-height:100dvh;
 }
+
 body.isFocusModeOpen{
   overflow:hidden;
 }
+
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appShellHeader,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
   opacity:0;
   visibility:hidden;
   pointer-events:none;
 }
+
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbar,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHeaderActions{
   display:none !important;
 }
+
 @media (max-width: 980px){
-  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     display:none !important;
   }
 }
+
 @media (min-width: 981px){
-  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar{
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar{
     opacity:0;
     visibility:hidden;
     pointer-events:none;
   }
 
-  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appShellHeader{
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appShellHeader{
     display:none !important;
   }
 
-  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages{
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages{
     flex:1 1 0;
     height:100%;
     min-height:0;
     overflow:hidden !important;
   }
 
-  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
   body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View{
     position:relative;
     min-height:100%;
@@ -1985,7 +2218,7 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHe
     overflow:hidden;
   }
 
-  body.isFocusModeOpen #focusModeScreen{
+body.isFocusModeOpen #focusModeScreen{
     position:absolute;
     inset:0;
     width:auto;
@@ -1999,7 +2232,7 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHe
     overflow-x:hidden;
   }
 
-  body.isFocusModeOpen #focusModeScreen .focusModeHead,
+body.isFocusModeOpen #focusModeScreen .focusModeHead,
   body.isFocusModeOpen #focusModeScreen .focusTaskTitle,
   body.isFocusModeOpen #focusModeScreen .focusDialWrap,
   body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop,
@@ -2009,18 +2242,20 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHe
     justify-self:stretch;
   }
 
-  body.isFocusModeOpen #focusModeScreen .focusDialWrap{
+body.isFocusModeOpen #focusModeScreen .focusDialWrap{
     padding: 0 0 14px;
   }
 
-  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
+body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
     align-self:stretch;
   }
 }
+
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View > :not(#focusModeScreen){
   display:none !important;
 }
+
 #focusModeScreen::before{
   content:none;
   pointer-events:none;
@@ -2035,16 +2270,19 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.96), rgba(0, 0, 0, 0.12));
   -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.96), rgba(0, 0, 0, 0.12));
 }
+
 #focusModeScreen > *{
   position:relative;
   z-index:1;
 }
+
 /* About */
 .aboutHead{
   display:flex;
   gap:12px;
   align-items:center;
 }
+
 .aboutLogo{
   width: 220px;
   max-width: 42vw;
@@ -2052,15 +2290,15 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   display: block;
   object-fit: contain;
 }
-.aboutText{ color: rgba(255,255,255,.70); line-height:1.45; }
-@keyframes settingsDetailSlideIn{
-  from{ opacity:.7; transform: translateX(14px); }
-  to{ opacity:1; transform: translateX(0); }
+
+.aboutText{ color: rgba(255,255,255,.70); line-height:1.45; }@keyframes settingsDetailSlideIn{from{ opacity:.7; transform: translateX(14px); }to{ opacity:1; transform: translateX(0); }
 }
+
 .toggleRow.isDisabled{
   opacity:.45;
   pointer-events:none;
 }
+
 .checkpointAlertsGroup{
   margin-top:8px;
   border:1px solid rgba(255,255,255,.08);
@@ -2068,6 +2306,7 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   padding:8px 10px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
+
 .checkpointAlertsTitle{
   margin:0 0 6px;
   font-size:11px;
@@ -2076,20 +2315,24 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   color:rgba(255,255,255,.82);
   font-family:var(--font-tight);
 }
+
 .checkpointAlertsGroup .toggleRow{
   margin:0;
 }
+
 .timerTypeRow{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
 }
+
 .timerTypePills{
   display:inline-flex;
   align-items:center;
   gap:6px;
 }
+
 .timerTypePill{
   min-width:84px;
   min-height:30px;
@@ -2106,30 +2349,38 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   border-radius:0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+
 .timerTypePill.isOn{
   border-color: rgba(53,232,255,.38);
   background: linear-gradient(180deg, rgba(53,232,255,.14), rgba(255,255,255,.02));
   color:#eafcff;
   box-shadow: inset 0 0 0 1px rgba(53,232,255,.10);
 }
+
 .checkpointAlertsGroup .toggleRow + .toggleRow{
   margin-top:4px;
 }
+
 .checkpointAlertSoundModeField{
   margin-top:6px;
 }
+
 .checkpointAlertSoundModeField.isHidden{
   display:none;
 }
+
 #editTimerSettingsGroup.isHidden{
   display:none;
 }
+
 #editCheckpointAlertsGroup.isHidden{
   display:none;
 }
+
 .checkpointAlertSoundModeField label{
   margin-bottom:4px;
 }
+
 .checkpointAlertSoundModeField select{
   width:100%;
   min-height:38px;
@@ -2140,34 +2391,25 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   border-radius: 0;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
+
 .checkpointAlertsNote{
   margin:6px 0 0;
   font-size:12px;
   color:rgba(255,255,255,.68);
   font-style:italic;
-}
-@keyframes taskAlertPulseShadow{
-  0%,100%{
+}@keyframes taskAlertPulseShadow{0%,100%{
     box-shadow: 0 0 0 1px rgba(255,214,64,.28) inset, 0 0 12px rgba(255,220,80,.18);
-  }
-  50%{
+  }50%{
     box-shadow: 0 0 0 1px rgba(255,214,64,.38) inset, 0 0 22px rgba(255,220,80,.34), 0 0 34px rgba(255,220,80,.18);
   }
-}
-@keyframes taskJumpFlashPulse{
-  0%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }
-  25%{ box-shadow: 0 0 0 1px rgba(255,220,80,.35), 0 0 22px rgba(255,220,80,.35); }
-  100%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }
-}
-@keyframes taskNewGlowFade {
-  0% {
+}@keyframes taskJumpFlashPulse{0%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }25%{ box-shadow: 0 0 0 1px rgba(255,220,80,.35), 0 0 22px rgba(255,220,80,.35); }100%{ box-shadow: 0 0 0 0 rgba(255,220,80,.0); }
+}@keyframes taskNewGlowFade{0%{
     box-shadow:
       0 0 0 1px rgba(53, 232, 255, 0.65),
       0 0 0 1px rgba(53, 232, 255, 0.35) inset,
       0 0 20px rgba(53, 232, 255, 0.55),
       0 0 36px rgba(53, 232, 255, 0.25);
-  }
-  100% {
+  }100%{
     box-shadow:
       0 0 0 1px rgba(53, 232, 255, 0),
       0 0 0 1px rgba(53, 232, 255, 0) inset,
@@ -2175,17 +2417,20 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
       0 0 0 rgba(53, 232, 255, 0);
   }
 }
+
 /* Appearance setting: Menu and button style */
 body[data-control-style="square"]{
   --control-slant: 0px;
 }
-.friendIdentityRow {
+
+.friendIdentityRow{
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 }
-.friendIdentityProfileBtn {
+
+.friendIdentityProfileBtn{
   border: 0;
   margin: 0;
   padding: 0;
@@ -2197,7 +2442,8 @@ body[data-control-style="square"]{
   min-width: 0;
   cursor: pointer;
 }
-.friendIdentityAvatarBtn {
+
+.friendIdentityAvatarBtn{
   width: 63px;
   min-width: 63px;
   height: 63px;
@@ -2209,7 +2455,8 @@ body[data-control-style="square"]{
   line-height: 0;
   flex: 0 0 63px;
 }
-.friendIdentityAvatar {
+
+.friendIdentityAvatar{
   width: 63px;
   height: 63px;
   display: block;
@@ -2219,27 +2466,32 @@ body[data-control-style="square"]{
   flex: 0 0 auto;
   border: 1px solid rgba(121, 226, 255, 0.3);
 }
-.friendIdentityNameBtn {
+
+.friendIdentityNameBtn{
   justify-content: flex-start;
   text-align: left;
 }
-.friendIdentityProfileBtn:focus-visible {
+
+.friendIdentityProfileBtn:focus-visible{
   outline: 1px solid rgba(121, 226, 255, 0.75);
   outline-offset: 2px;
 }
-.friendIdentityName {
+
+.friendIdentityName{
   min-width: 0;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.friendIdentityNameBlock {
+
+.friendIdentityNameBlock{
   min-width: 0;
   display: grid;
   gap: 2px;
 }
-.friendIdentityUid {
+
+.friendIdentityUid{
   min-width: 0;
   font-size: 10px;
   font-weight: 700;
@@ -2249,6 +2501,7 @@ body[data-control-style="square"]{
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .historyEntryNoteBody{
   margin-top: 0;
   min-width: min(296px, calc(100vw - 52px));
@@ -2263,20 +2516,24 @@ body[data-control-style="square"]{
   font-size: 10px;
   line-height: 1.2;
 }
+
 .historyEntryNoteItem{
   display: grid;
   grid-template-columns: minmax(0, 9fr) minmax(36px, 1fr);
   align-items: stretch;
   column-gap: 8px;
 }
+
 .historyEntryNoteGroup{
   display: block;
 }
+
 .historyEntryNoteGroup-spaced{
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
+
 .historyEntryNoteGroupHeader{
   margin: 0 0 8px;
   color: rgba(163,236,255,.92);
@@ -2284,23 +2541,28 @@ body[data-control-style="square"]{
   font-weight: 700;
   letter-spacing: .02em;
 }
+
 .historyEntryNoteItem-spaced{
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
+
 .historyEntryNoteLine{
   white-space: pre-wrap;
   word-break: break-word;
 }
+
 .historyEntryNoteTime{
   color: #b78cff;
 }
+
 .historyEntryNoteCopyCell{
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .historyEntryNoteCopyLink{
   appearance: none;
   border: 0;
@@ -2312,177 +2574,47 @@ body[data-control-style="square"]{
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
 #rewardsInfoOverlay .rewardsInfoModal{
   max-width: 360px;
 }
+
 #rewardsInfoOverlay .rewardsInfoText{
   margin: 8px 0 0;
   text-align: center;
 }
+
 #rewardsInfoOverlay .rewardsInfoActions{
   justify-content: center;
 }
+
 /* Final modal parity overrides: keep all legacy modals aligned with Add Task/Edit Task styling. */
 .aboutTitle{
   margin: 0;
 }
+
 .aboutKicker{
   color: rgba(255,255,255,.65);
   font-weight: 700;
 }
+
 .aboutTextBody{
   margin-top: 10px;
 }
+
 .aboutLead{
   margin-top: 0;
 }
+
 .aboutFeatureList{
   margin: 8px 0 0 18px;
   padding: 0;
 }
+
 .howtoBody{
   line-height: 1.5;
 }
-/* Global Purple Theme Skin (VR neon purple) */
-body[data-theme="purple"]{
-  --bg:#05010b;
-  --panel:#130b1d;
-  --card:#161026;
-  --card-2:#1a1230;
-  --text:#f4f2ff;
-  --muted:rgba(227,214,255,.78);
-  --accent:#d447d2;
-  --accent2:#b63bc3;
-  --accent3:#f06ee0;
-  --warn:#ff5a8d;
-}
-body[data-theme="purple"]{
-  background: #0d0f13 !important;
-  color:var(--text);
-}
-body[data-theme="purple"] .btn,
-body[data-theme="purple"] .iconBtn,
-body[data-theme="purple"] .menuItem{
-  border-color: rgba(223,112,241,.36);
-  background: rgba(32,18,46,.88);
-  color:#f6f0ff;
-}
-body[data-theme="purple"] .btn-accent,
-body[data-theme="purple"] .unitBtn.isOn,
-body[data-theme="purple"] .modeBtn.isOn{
-  background: linear-gradient(180deg, #df55df, #ad35c1) !important;
-  border-color: rgba(240,138,245,.72) !important;
-  color:#fff !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.2) inset, 0 0 14px rgba(211,86,230,.28);
-}
-body[data-theme="purple"] .btn-resume{
-  background: linear-gradient(180deg, rgba(255,214,64,.26), rgba(175,122,28,.18)) !important;
-  border-color: rgba(255,214,64,.46) !important;
-  color:#fff2c2 !important;
-  box-shadow: 0 0 0 1px rgba(255,228,145,.12) inset, 0 0 14px rgba(255,214,64,.18) !important;
-}
-body[data-theme="purple"] .btn-ghost,
-body[data-theme="purple"] .iconBtn{
-  background: rgba(24,13,35,.9);
-  color:#ecdfff;
-}
-body[data-theme="purple"] .appFooterNav{
-  border-top:1px solid rgba(214,96,229,.24);
-  background:
-    linear-gradient(180deg, rgba(221,95,238,.1), rgba(0,0,0,0)),
-    rgba(11,6,20,.96);
-}
-body[data-theme="purple"] .appFooterBtn.isOn{
-  border-color: transparent;
-  border-bottom-color: rgba(233,134,245,.72);
-  background: linear-gradient(180deg, rgba(217,85,231,.26), rgba(176,56,202,.22));
-  box-shadow: inset 0 -2px 0 rgba(233,134,245,.72);
-}
-body[data-theme="purple"] .friendIdentityProfileBtn:focus-visible{
-  outline-color: rgba(233,134,245,.78) !important;
-}
-body[data-theme="purple"] .btn,
-body[data-theme="purple"] .iconBtn,
-body[data-theme="purple"] .appFooterBtn{
-  border-color: rgba(214,96,229,.44) !important;
-}
-body[data-theme="purple"] .btn-accent,
-body[data-theme="purple"] .unitBtn.isOn,
-body[data-theme="purple"] .timerTypePill.isOn{
-  background: linear-gradient(180deg, var(--accent3), var(--accent2)) !important;
-  border-color: rgba(233,134,245,.72) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
-}
-body[data-theme="purple"] .switch{
-  border-color: rgba(214,96,229,.38) !important;
-  background: rgba(36,22,52,.84) !important;
-}
-body[data-theme="purple"] .switch.on{
-  border-color: rgba(233,134,245,.6) !important;
-  background: rgba(217,85,231,.24) !important;
-}
-body[data-theme="purple"] .switch.on::after{
-  background: var(--accent3) !important;
-}
-body[data-theme="purple"] .focusSessionNotesCollapseLabel{
-  color: rgba(240,214,255,.92) !important;
-}
-body[data-theme="purple"] .focusSessionNotesCollapseLabel::after{
-  color: rgba(233,134,245,.9) !important;
-}
-body[data-theme="purple"] .appFooterNav{
-  border-top-color: rgba(214,96,229,.28) !important;
-}
-body[data-theme="purple"] .appFooterBtn.isOn{
-  border-color: transparent !important;
-  border-bottom-color: rgba(233,134,245,.72) !important;
-  background: rgba(217,85,231,.18) !important;
-  box-shadow: inset 0 -2px 0 rgba(233,134,245,.72) !important;
-}
-body[data-theme="purple"] select,
-body[data-theme="purple"] input[type="text"],
-body[data-theme="purple"] input[type="number"],
-body[data-theme="purple"] input[type="email"]{
-  border-color: rgba(214,96,229,.44) !important;
-}
-body[data-theme="purple"] select:focus,
-body[data-theme="purple"] input[type="text"]:focus,
-body[data-theme="purple"] input[type="number"]:focus,
-body[data-theme="purple"] input[type="email"]:focus{
-  border-color: rgba(233,134,245,.72) !important;
-  box-shadow: 0 0 0 1px rgba(255,164,250,.24) inset !important;
-}
-body[data-theme="purple"] option,
-body[data-theme="purple"] optgroup{
-  background: #140b20;
-  color: #f3e8ff;
-}
-body[data-theme="purple"] option:checked,
-body[data-theme="purple"] option:hover,
-body[data-theme="purple"] option:focus{
-  background: linear-gradient(180deg, rgba(217,85,231,.38), rgba(137,46,164,.96));
-  color: #fff6ff;
-}
-/* Final Purple text/icon pass: footer and title/label language. */
-body[data-theme="purple"] .appFooterLabel{
-  color: rgba(245,218,255,.96) !important;
-  text-shadow: 0 0 8px rgba(212,71,210,.55) !important;
-}
-body[data-theme="purple"] .appFooterIconImage{
-  filter:
-    brightness(0) saturate(100%)
-    invert(57%) sepia(41%) saturate(1412%) hue-rotate(264deg) brightness(94%) contrast(97%)
-    drop-shadow(0 0 7px rgba(212,71,210,.5)) !important;
-}
-body[data-theme="purple"] .appFooterBtn.isOn .appFooterLabel{
-  color: rgba(252,234,255,.98) !important;
-}
-body[data-theme="purple"] .appFooterBtn.isOn .appFooterIconImage{
-  filter:
-    brightness(0) saturate(100%)
-    invert(72%) sepia(37%) saturate(1166%) hue-rotate(268deg) brightness(102%) contrast(101%)
-    drop-shadow(0 0 10px rgba(240,110,224,.62)) !important;
-}
+
 /* Global Lime Theme Skin (neon yellow-lime) */
 body[data-theme="lime"]{
   --bg:#0c0f07;
@@ -2491,15 +2623,17 @@ body[data-theme="lime"]{
   --card-2:#20280f;
   --text:#fbffeb;
   --muted:rgba(233,244,191,.78);
-  --accent:#dbff4f;
+  --accent:#c9ff24;
   --accent2:#b7df1d;
   --accent3:#f3ff7a;
   --warn:#ff7a7a;
 }
+
 body[data-theme="lime"]{
   background: #0d0f13 !important;
   color:var(--text);
 }
+
 body[data-theme="lime"] .btn,
 body[data-theme="lime"] .iconBtn,
 body[data-theme="lime"] .menuItem{
@@ -2507,6 +2641,7 @@ body[data-theme="lime"] .menuItem{
   background: rgba(18,20,24,.96);
   color:#fbffeb;
 }
+
 body[data-theme="lime"] .btn-accent,
 body[data-theme="lime"] .unitBtn.isOn,
 body[data-theme="lime"] .modeBtn.isOn,
@@ -2516,38 +2651,46 @@ body[data-theme="lime"] .timerTypePill.isOn{
   color:#fbffeb !important;
   box-shadow: none !important;
 }
+
 body[data-theme="lime"] .btn-ghost,
 body[data-theme="lime"] .iconBtn{
   background: rgba(18,20,24,.96);
   color:#eef7c8;
 }
+
 body[data-theme="lime"] .switch{
   border-color: rgba(206,240,100,.32) !important;
   background: rgba(18,20,24,.96) !important;
 }
+
 body[data-theme="lime"] .switch.on{
   border-color: rgba(241,255,151,.6) !important;
   background: rgba(219,255,79,.2) !important;
 }
+
 body[data-theme="lime"] .switch.on::after{
   background: var(--accent3) !important;
 }
+
 body[data-theme="lime"] .appFooterNav{
   border-top-color: rgba(213,255,102,.26) !important;
   background: rgba(18,20,24,.96);
 }
+
 body[data-theme="lime"] .appFooterBtn.isOn{
   border-color: transparent !important;
   border-bottom-color: rgba(241,255,151,.72) !important;
   background: rgba(18,20,24,.96) !important;
   box-shadow: inset 0 -2px 0 rgba(241,255,151,.72) !important;
 }
+
 body[data-theme="lime"] select,
 body[data-theme="lime"] input[type="text"],
 body[data-theme="lime"] input[type="number"],
 body[data-theme="lime"] input[type="email"]{
   border-color: rgba(213,255,102,.4) !important;
 }
+
 body[data-theme="lime"] select:focus,
 body[data-theme="lime"] input[type="text"]:focus,
 body[data-theme="lime"] input[type="number"]:focus,
@@ -2555,25 +2698,30 @@ body[data-theme="lime"] input[type="email"]:focus{
   border-color: rgba(241,255,151,.74) !important;
   box-shadow: 0 0 0 1px rgba(241,255,151,.2) inset !important;
 }
+
 body[data-theme="lime"] .appFooterLabel{
   color: rgba(246,255,204,.96) !important;
   text-shadow: 0 0 8px rgba(219,255,79,.45) !important;
 }
+
 body[data-theme="lime"] .appFooterIconImage{
   filter:
     brightness(0) saturate(100%)
     invert(91%) sepia(40%) saturate(724%) hue-rotate(25deg) brightness(106%) contrast(104%)
     drop-shadow(0 0 7px rgba(219,255,79,.44)) !important;
 }
+
 body[data-theme="lime"] .appFooterBtn.isOn .appFooterLabel{
   color: rgba(252,255,224,.98) !important;
 }
+
 body[data-theme="lime"] .appFooterBtn.isOn .appFooterIconImage{
   filter:
     brightness(0) saturate(100%)
     invert(95%) sepia(35%) saturate(938%) hue-rotate(18deg) brightness(103%) contrast(104%)
     drop-shadow(0 0 10px rgba(241,255,122,.6)) !important;
 }
+
 body[data-theme="lime"] .name,
 body[data-theme="lime"] .time,
 body[data-theme="lime"] .dashboardTitle,
@@ -2588,6 +2736,7 @@ body[data-theme="lime"] .checkpointAlertsTitle,
 body[data-theme="lime"] .focusInsightsTitle{
   color: rgba(249,255,216,.96) !important;
 }
+
 body[data-theme="lime"] label,
 body[data-theme="lime"] .modalSubtext,
 body[data-theme="lime"] .historyMeta,
@@ -2595,14 +2744,17 @@ body[data-theme="lime"] .modeSwitchesLabel,
 body[data-theme="lime"] .focusSessionNotesCollapseLabel{
   color: rgba(228,240,171,.82) !important;
 }
+
 body[data-theme="lime"] .focusSessionNotesCollapseLabel::after{
   color: rgba(241,255,151,.88) !important;
 }
+
 body[data-theme="lime"] .iconBtn,
 body[data-theme="lime"] .settingsInlineSectionIcon,
 body[data-theme="lime"] .settingsNavItemIcon{
   color: rgba(244,255,201,.94);
 }
+
 body[data-theme="lime"] .settingsInlineSectionIcon,
 body[data-theme="lime"] .settingsNavItemIcon{
   filter:
@@ -2652,7 +2804,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   strong,
   em,
   div
-) {
+){
   font-family: var(--font-readable) !important;
 }
 
@@ -2701,7 +2853,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   .editTaskTimeGoalHeaderLabel,
   .milestonesSummaryPrimary,
   .milestonesSummaryCollapseLabel
-) {
+){
   font-family: var(--font-orbitron) !important;
 }
 
@@ -2720,13 +2872,13 @@ body[data-theme="lime"] .settingsNavItemIcon{
   #focusModeScreen .focusDialDays *,
   #appPageTasks .task .actions .btn[data-action="start"],
   #appPageTasks .task .actions .btn[data-action="stop"]
-) {
+){
   font-family: var(--font-orbitron) !important;
 }
 
 #app[aria-label="TaskLaunch App"],
 #app[aria-label="TaskLaunch Settings"],
-#app[aria-label="TaskLaunch Feedback"] {
+#app[aria-label="TaskLaunch Feedback"]{
   cursor: crosshair;
 }
 
@@ -2744,7 +2896,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   .historyCanvasWrap,
   .historyChartInline,
   #historyChart
-) {
+){
   cursor: crosshair !important;
 }
 
@@ -2786,86 +2938,86 @@ body[data-theme="lime"] .settingsNavItemIcon{
   [data-history-action],
   [data-menu],
   [data-move-mode]
-) {
+){
   cursor: crosshair !important;
 }
 
 @media (max-width: 980px){
-  body.isFocusModeOpen #focusModeScreen{
+body.isFocusModeOpen #focusModeScreen{
     grid-template-columns:minmax(0, min(620px, 100%));
     gap:clamp(5px, 1.1dvh, 10px);
   }
 
-  .focusDial{
+.focusDial{
     width:min(58.5vw, 28.5dvh, 315px);
   }
 
-  .focusCheckpointLabelDesc{
+.focusCheckpointLabelDesc{
     display:none;
   }
 }
 
 @media (max-width: 760px){
-  body.isFocusModeOpen #focusModeScreen{
+body.isFocusModeOpen #focusModeScreen{
     gap:clamp(5px, 1dvh, 10px) 8px;
     padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
       calc(8px + var(--safe-left));
   }
 
-  .focusDialWrap{
+.focusDialWrap{
     padding:8px 18px 34px;
   }
 
-  .focusDial{
+.focusDial{
     width:min(58.5vw, 26.25dvh, 270px);
   }
 
-  .focusCheckpointToggleTop,
+.focusCheckpointToggleTop,
   .focusInsightsRow{
     align-self:start;
   }
 
-  .focusCheckpointToggleTop{
+.focusCheckpointToggleTop{
     gap:6px;
   }
 
-  .focusInsightsRow{
+.focusInsightsRow{
     gap:8px;
   }
 
-  .focusCheckpointToggleRow{
+.focusCheckpointToggleRow{
     gap:6px;
     padding:2px 0;
   }
 
-  .focusCheckpointToggleRow > span,
+.focusCheckpointToggleRow > span,
   .focusInsightLabel,
   .focusInsightValue{
     font-size:clamp(9px, 2.8vw, 11px);
   }
 
-  .focusInsights,
+.focusInsights,
   .focusSessionNotes{
     padding:8px 9px;
     clip-path:none;
   }
 
-  .focusInsightsTitle{
+.focusInsightsTitle{
     margin-bottom:5px;
     font-size:clamp(10px, 3vw, 12px);
   }
 
-  .focusInsightRow{
+.focusInsightRow{
     gap:6px;
     padding:3px 0;
   }
 
-  .focusSessionNotesBody{
+.focusSessionNotesBody{
     margin-top:6px;
     gap:5px;
   }
 
-  .focusSessionNotesInput{
+.focusSessionNotesInput{
     min-height:38px;
     max-height:12dvh;
     resize:vertical;
@@ -2873,38 +3025,38 @@ body[data-theme="lime"] .settingsNavItemIcon{
 }
 
 @media (max-height: 680px){
-  #focusModeScreen{
+#focusModeScreen{
     padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom))
       calc(10px + var(--safe-left));
   }
 
-  .focusModeTitle{
+.focusModeTitle{
     font-size:clamp(16px, 3.5dvh, 22px);
   }
 
-  .focusTaskTitle{
+.focusTaskTitle{
     font-size:clamp(11px, 2.5dvh, 16px);
   }
 
-  .focusDial{
+.focusDial{
     width:min(55.5vw, 24dvh, 285px);
   }
 
-  .focusInsights,
+.focusInsights,
   .focusSessionNotes{
     padding:8px 10px;
   }
 
-  .focusInsightsTitle{
+.focusInsightsTitle{
     margin-bottom:5px;
     font-size:11px;
   }
 
-  .focusInsightRow{
+.focusInsightRow{
     padding:3px 0;
   }
 
-  .focusSessionNotesInput{
+.focusSessionNotesInput{
     min-height:38px;
     max-height:12dvh;
     resize:vertical;
@@ -2912,81 +3064,77 @@ body[data-theme="lime"] .settingsNavItemIcon{
 }
 
 @media (max-width: 760px) and (max-height: 680px){
-  .focusDial{
+.focusDial{
     width:min(55.5vw, 22.5dvh, 240px);
   }
 }
 
 @media (max-width: 360px){
-  #focusModeScreen{
+#focusModeScreen{
     padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
       calc(8px + var(--safe-left));
   }
 
-  .focusDialWrap{
+.focusDialWrap{
     padding:8px 14px 34px;
   }
 
-  .focusCheckpointToggleTop{
+.focusCheckpointToggleTop{
     margin: 0;
   }
 
-  .focusInsightsRow{
+.focusInsightsRow{
     grid-template-columns:minmax(0, 1fr);
   }
 
-  .focusTaskTitle{
+.focusTaskTitle{
     font-size:14px;
     letter-spacing:.1em;
   }
 
-  .focusDialTime{
+.focusDialTime{
     font-size:clamp(13px, 7.4cqw, 28px);
   }
 
-  .focusDialDays{
+.focusDialDays{
     font-size:clamp(9px, 3.1cqw, 15px);
   }
 
-  .focusInsights,
+.focusInsights,
   .focusSessionNotes{
     width:100%;
     margin:0 auto;
     padding:10px 10px;
   }
 
-  .focusSessionNotes{
+.focusSessionNotes{
     margin-top: 2px;
   }
 
-  .focusSessionNotesSummary{
+.focusSessionNotesSummary{
     align-items:flex-start;
   }
 
-  .focusSessionNotesCollapseLabel{
+.focusSessionNotesCollapseLabel{
     font-size: 9px;
   }
 
-  .focusInsightRow{
+.focusInsightRow{
     gap:8px;
   }
 
-  .focusInsightLabel,
+.focusInsightLabel,
   .focusInsightValue{
     font-size:11px;
   }
 
-  .focusSessionNotesInput{
+.focusSessionNotesInput{
     min-height: 38px;
   }
-}
-
-@keyframes signedInHeaderBadgeXpSlideIn{
-  from{
+}@keyframes signedInHeaderBadgeXpSlideIn{from{
     opacity:0;
     transform:translateX(10px);
-  }
-  to{
+  }to{
     opacity:1;
     transform:translateX(0);
   }

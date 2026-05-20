@@ -119,9 +119,15 @@ type StartRootLifecycleOptions = {
   tickApi: () => void;
   setDashboardRefreshPending: (value: boolean) => void;
   currentUid: () => string | null;
+  hasCachedWorkspace?: () => boolean;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
   flushPendingCloudWrites: () => Promise<void>;
 };
+
+function settingsDashboardFallbackPath(appPathForPage: (page: AppPage) => string) {
+  const tasksPath = appPathForPage("tasks");
+  return `${tasksPath}${tasksPath.includes("?") ? "&" : "?"}page=dashboard`;
+}
 
 export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) {
   const { on, els, documentRef, windowRef, runtime } = options;
@@ -208,7 +214,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     handleAppBackNavigation: () => {
       const currentRoutePath = options.normalizeTaskTimerRoutePath(options.normalizedPathname());
       if (currentRoutePath === "/settings") {
-        windowRef.location.href = options.appPathForPage("dashboard");
+        windowRef.location.href = settingsDashboardFallbackPath(options.appPathForPage);
         return true;
       }
       return options.handleAppBackNavigation();
@@ -282,6 +288,7 @@ export function startTaskTimerRootLifecycle(options: StartRootLifecycleOptions) 
     finishBootstrapUi,
     setDashboardRefreshPending: options.setDashboardRefreshPending,
     currentUid: options.currentUid,
+    hasCachedWorkspace: options.hasCachedWorkspace,
     startInitialAuthHydration: options.startInitialAuthHydration,
     finishInitialAuthHydration: options.finishInitialAuthHydration,
     rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,

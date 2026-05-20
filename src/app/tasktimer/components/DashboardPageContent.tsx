@@ -63,14 +63,6 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                         <div className="dashboardCardTitle" id="dashboardActivityOverviewTitle">Activity Overview</div>
                         <p className="modalSubtext" id="dashboardActivityOverviewSubtitle">Current week activity and goal progress</p>
                       </div>
-                      <div className="dashboardActivityOverviewControls" role="group" aria-label="Activity overview chart controls">
-                        <button className="btn btn-ghost small dashboardActivityToggle isOn" id="dashboardActivityGoalToggle" type="button" data-dashboard-activity-toggle="goal" aria-pressed="true">
-                          Goal
-                        </button>
-                        <button className="btn btn-ghost small dashboardActivityToggle isOn" id="dashboardActivityCompareToggle" type="button" data-dashboard-activity-toggle="compare" aria-pressed="true">
-                          Compare
-                        </button>
-                      </div>
                     </div>
                     <div className="dashboardActivityOverviewBody">
                       <div className="dashboardActivityChartPanel">
