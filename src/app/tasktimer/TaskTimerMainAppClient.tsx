@@ -315,6 +315,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(displayedRewardProgress), [displayedRewardProgress]);
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
+  const friendsAuthRuntimeKey = initialPage === "friends" ? isAuthenticated : null;
 
   useEffect(() => {
     displayedXpRef.current = displayedXp;
@@ -357,7 +358,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     return () => {
       destroy();
     };
-  }, [initialPage]);
+  }, [initialPage, friendsAuthRuntimeKey]);
 
   useEffect(() => {
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
@@ -996,66 +997,63 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             <div className="dashboardShell" id="groupsFriendsSection">
               {!isAuthenticated ? (
                 <SignedOutPrompt message="You will need to create an account or sign in to use Friends" />
-              ) : (
-                <>
-                  <div className="dashboardTopRow">
-                    <div className="dashboardEditActions">
-                      <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
-                        <AppImg
-                          className="friendRequestBtnIcon"
-                          src="/icons/icons_default/add-friend.png"
-                          alt=""
-                          aria-hidden="true"
-                        />
-                        Add Friend
-                      </button>
+              ) : null}
+              <div className="dashboardTopRow">
+                <div className="dashboardEditActions">
+                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
+                    <AppImg
+                      className="friendRequestBtnIcon"
+                      src="/icons/icons_default/add-friend.png"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    Add Friend
+                  </button>
+                </div>
+              </div>
+
+              <div className="dashboardGrid">
+                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
+
+                <section className="dashboardCard" aria-label="Friends list">
+                  <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
+                    You have not added any friends yet
+                  </div>
+                </section>
+
+                <section className="dashboardCard" aria-label="Tasks shared by you">
+                  <details id="groupsSharedByYouDetails">
+                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
+                      0 shared by you
+                    </summary>
+                    <div id="groupsSharedByYouList" className="settingsDetailNote">
+                      No shared tasks.
                     </div>
-                  </div>
+                  </details>
+                </section>
 
-                  <div className="dashboardGrid">
-                    <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
+                <section className="dashboardCard" aria-label="Incoming requests">
+                  <details id="groupsIncomingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
+                      0 Incoming Requests
+                    </summary>
+                    <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                      No incoming requests.
+                    </div>
+                  </details>
+                </section>
 
-                    <section className="dashboardCard" aria-label="Friends list">
-                      <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
-                        You have not added any friends yet
-                      </div>
-                    </section>
-
-                    <section className="dashboardCard" aria-label="Tasks shared by you">
-                      <details id="groupsSharedByYouDetails">
-                        <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
-                          0 shared by you
-                        </summary>
-                        <div id="groupsSharedByYouList" className="settingsDetailNote">
-                          No shared tasks.
-                        </div>
-                      </details>
-                    </section>
-
-                    <section className="dashboardCard" aria-label="Incoming requests">
-                      <details id="groupsIncomingRequestsDetails">
-                        <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
-                          0 Incoming Requests
-                        </summary>
-                        <div id="groupsIncomingRequestsList" className="settingsDetailNote">
-                          No incoming requests.
-                        </div>
-                      </details>
-                    </section>
-
-                    <section className="dashboardCard" aria-label="Outgoing requests">
-                      <details id="groupsOutgoingRequestsDetails">
-                        <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
-                          0 Outgoing Requests
-                        </summary>
-                        <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
-                          No outgoing requests.
-                        </div>
-                      </details>
-                    </section>
-                  </div>
-                </>
-              )}
+                <section className="dashboardCard" aria-label="Outgoing requests">
+                  <details id="groupsOutgoingRequestsDetails">
+                    <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
+                      0 Outgoing Requests
+                    </summary>
+                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                      No outgoing requests.
+                    </div>
+                  </details>
+                </section>
+              </div>
             </div>
           </section>
 
@@ -1137,6 +1135,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
+                                  {formatDashboardDurationShort(row.profile.weeklyFocusMs)} logged
+                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">
@@ -1229,6 +1230,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
+                                  {formatDashboardDurationShort(row.profile.totalFocusMs)} logged
+                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">
@@ -1321,6 +1325,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
                                 <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                                <span className="leaderboardWeeklyPodiumMetric leaderboardWeeklyPodiumMetricSecondary">
+                                  {formatDashboardDurationShort(row.profile.totalFocusMs)} logged
+                                </span>
                               </span>
                             </span>
                             <span className="leaderboardWeeklyPodiumInsignia">

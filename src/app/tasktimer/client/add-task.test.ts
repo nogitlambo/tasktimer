@@ -310,7 +310,7 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.addTaskDurationValueInput.classList.toggle).toHaveBeenCalledWith("isInvalid", true);
   });
 
-  it("opens a conflict modal with the conflicting task name for scheduled add-task overlaps", () => {
+  it("opens a conflict modal with schedule ranges for scheduled add-task overlaps", () => {
     const existingTask = {
       id: "busy-1",
       name: "Deep Work",
@@ -344,18 +344,19 @@ describe("createTaskTimerAddTask", () => {
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
       "Schedule conflict",
-      expect.stringContaining("switch Deep Work with this task?"),
+      "Deep Work - 9:00 AM - 10:00 AM.\n\nSchedule New Task to next free timeslot 10:00 AM - 11:00 AM?",
       expect.objectContaining({
-        okLabel: "Move",
-        altLabel: "Switch",
+        okLabel: "Schedule",
         okButtonClassName: "btn btn-ghost",
-        altButtonClassName: "btn btn-ghost",
       })
     );
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
+    expect(confirmOpts).not.toHaveProperty("altLabel");
+    expect(confirmOpts).not.toHaveProperty("onAlt");
     expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 
-  it("moves the new task to the next available slot when conflict modal Move is chosen", () => {
+  it("schedules the new task to the displayed next available slot when conflict modal Schedule is chosen", () => {
     const existingTask = {
       id: "busy-1",
       name: "Deep Work",
@@ -398,6 +399,55 @@ describe("createTaskTimerAddTask", () => {
         plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
       }),
     ]);
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenCalledWith("10:00");
     expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+  });
+
+  it("opens a switch-only conflict modal when no next free add-task slot exists", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 15,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 15,
+      plannedStartDay: "mon",
+      plannedStartTime: "00:00",
+      plannedStartByDay: { mon: "00:00" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("1430", { tasks: [existingTask] });
+    harness.ctx.getAddTaskDurationUnit = () => "minute";
+    harness.ctx.getAddTaskPlannedStartTime = () => "00:00";
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Schedule conflict",
+      "No next free timeslot was found.\n\nSwitch Deep Work with New Task?",
+      expect.objectContaining({
+        okLabel: "Switch",
+        okButtonClassName: "btn btn-ghost",
+      })
+    );
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
+    expect(confirmOpts).not.toHaveProperty("altLabel");
+    expect(confirmOpts).not.toHaveProperty("onAlt");
+    expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 });

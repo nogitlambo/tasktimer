@@ -2,6 +2,7 @@ type BootstrapOptions = {
   hydrateUiStateFromCaches: (opts?: { skipDashboardWidgetsRender?: boolean }) => void;
   subscribeToCheckpointAlertMuteSignals: () => void;
   refreshOwnSharedSummaries: () => Promise<unknown>;
+  refreshGroupsData: () => Promise<unknown>;
   reconcileOwnedSharedSummaryStates: () => void;
   render: () => void;
   currentAppPage: string;
@@ -50,6 +51,9 @@ export function bootstrapTaskTimerRuntime(options: BootstrapOptions) {
     .then(() => options.reconcileOwnedSharedSummaryStates())
     .then(() => {
       options.render();
+      if (options.currentAppPage === "friends") {
+        void options.refreshGroupsData().catch(() => {});
+      }
       if (options.currentAppPage === "tasks") {
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {

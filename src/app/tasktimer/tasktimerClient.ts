@@ -1620,6 +1620,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     finishInitialAuthHydration,
     subscribeToCheckpointAlertMuteSignals,
     refreshOwnSharedSummaries,
+    refreshGroupsData,
     reconcileOwnedSharedSummaryStates,
     render,
     currentAppPage: appRuntimeState.get("currentAppPage"),

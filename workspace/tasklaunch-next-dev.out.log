@@ -1,0 +1,28 @@
+
+> tasklaunch@1.0.1 dev
+> node scripts/ensure-port-free.mjs 3000 && next dev --turbopack
+
+[dev] Releasing port 3000 from PID 18236.
+[dev] Port 3000 is free.
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.4.22:3000
+- Environments: .env.local
+✓ Ready in 457ms
+Creating turbopack project { dir: 'G:\\Apps\\tasklaunch', testMode: true }
+
+ GET /tasklaunch/?page=schedule 200 in 1994ms (next.js: 1547ms, application-code: 448ms)
+ GET /manifest.webmanifest 200 in 64ms (next.js: 53ms, application-code: 11ms)
+ POST /api/account/sync-identity/ 200 in 948ms (next.js: 524ms, application-code: 424ms)
+ GET /settings/ 200 in 566ms (next.js: 464ms, application-code: 102ms)
+ GET /manifest.webmanifest 200 in 7ms (next.js: 3ms, application-code: 4ms)
+ POST /api/account/sync-identity/ 200 in 92ms (next.js: 1984µs, application-code: 90ms)
+ POST /api/account/sync-identity/ 200 in 79ms (next.js: 1651µs, application-code: 77ms)
+ GET /dashboard/ 200 in 128ms (next.js: 22ms, application-code: 105ms)
+ GET /manifest.webmanifest 200 in 7ms (next.js: 3ms, application-code: 4ms)
+ POST /api/account/sync-identity/ 200 in 82ms (next.js: 7ms, application-code: 75ms)
+ POST /api/account/sync-identity/ 200 in 93ms (next.js: 1649µs, application-code: 91ms)
+ GET /tasklaunch/?page=schedule 200 in 99ms (next.js: 3ms, application-code: 96ms)
+ GET /settings/ 200 in 53ms (next.js: 5ms, application-code: 48ms)
+ GET /history-manager/ 200 in 464ms (next.js: 384ms, application-code: 80ms)
+[?25h

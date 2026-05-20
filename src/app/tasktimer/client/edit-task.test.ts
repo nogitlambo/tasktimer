@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
 import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 import {
   clearTaskScheduleConfig,
+  createTaskTimerEditTask,
   normalizeRecurringScheduleFieldsForSave,
   restoreEditScheduleFieldsFromSnapshot,
   taskHasMeaningfulScheduleConfig,
@@ -28,6 +29,129 @@ function task(overrides: Partial<Task>): Task {
     plannedStartOpenEnded: false,
     ...overrides,
   };
+}
+
+function selectStub(value: string) {
+  return { value, classList: { toggle: vi.fn() } } as unknown as HTMLSelectElement;
+}
+
+function createEditHarness(overrides: {
+  sourceTask?: Task;
+  busyTask?: Task;
+  durationValue?: string;
+  durationUnit?: "minute" | "hour";
+  plannedStartSelectors?: { hour: string; minute: string; meridiem: "AM" | "PM" };
+} = {}) {
+  let editIndex: number | null = 0;
+  const sourceTask =
+    overrides.sourceTask ||
+    task({
+      id: "source",
+      name: "Focus",
+      taskType: "recurring",
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+    });
+  const busyTask =
+    overrides.busyTask ||
+    task({
+      id: "busy",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+    });
+  const draft = { ...sourceTask, plannedStartByDay: sourceTask.plannedStartByDay ? { ...sourceTask.plannedStartByDay } : null };
+  const tasks = [sourceTask, busyTask];
+  const plannedStartSelectors = overrides.plannedStartSelectors;
+  const ctx = {
+    els: {
+      editName: { value: "Focus" } as HTMLInputElement,
+      editTaskDurationValueInput: {
+        value: overrides.durationValue || "1",
+        classList: { remove: vi.fn(), toggle: vi.fn() },
+      } as unknown as HTMLInputElement,
+      editTaskOnceOffDaySelect: null,
+      editPlannedStartHourSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.hour) : null,
+      editPlannedStartMinuteSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : null,
+      editPlannedStartMeridiemSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.meridiem) : null,
+      editPlannedStartPushReminders: null,
+      editOverlay: null,
+      confirmOverlay: null,
+    },
+    sharedTasks: {
+      ensureMilestoneIdentity: vi.fn(),
+      hasNonPositiveCheckpoint: vi.fn(() => false),
+      hasCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
+      milestoneUnitSec: vi.fn(() => 3600),
+    },
+    getTasks: () => tasks,
+    getEditIndex: () => editIndex,
+    setEditIndex: (value: number | null) => {
+      editIndex = value;
+    },
+    getEditTaskDraft: () => draft,
+    setEditTaskDraft: vi.fn(),
+    setEditDraftSnapshot: vi.fn(),
+    getEditTaskDurationUnit: () => overrides.durationUnit || "hour",
+    setEditTaskDurationUnit: vi.fn(),
+    getEditTaskDurationPeriod: () => "day",
+    setEditTaskDurationPeriod: vi.fn(),
+    validateEditTimeGoal: () => true,
+    editTaskHasActiveTimeGoal: () => true,
+    getEditTaskTimeGoalMinutes: () => Number(overrides.durationValue || "1") * (overrides.durationUnit === "minute" ? 1 : 60),
+    getEditTaskTimeGoalMinutesFor: (value: number, unit: "minute" | "hour") => value * (unit === "minute" ? 1 : 60),
+    sortMilestones: (milestones: Task["milestones"]) => milestones,
+    cloneTaskForEdit: (value: Task) => ({ ...value, plannedStartByDay: value.plannedStartByDay ? { ...value.plannedStartByDay } : null }),
+    syncEditSaveAvailability: vi.fn(),
+    syncSharedTaskSummariesForTask: vi.fn(() => Promise.resolve()),
+    confirm: vi.fn(),
+    closeConfirm: vi.fn(),
+    save: vi.fn(),
+    render: vi.fn(),
+    clearEditValidationState: vi.fn(),
+    showEditValidationError: vi.fn(),
+    on: vi.fn(),
+    escapeHtmlUI: (value: unknown) => String(value ?? ""),
+    getOptimalProductivityDays: () => ["mon"],
+    syncEditTaskTimeGoalUi: vi.fn(),
+    syncEditCheckpointAlertUi: vi.fn(),
+    syncEditMilestoneSectionUi: vi.fn(),
+    setMilestoneUnitUi: vi.fn(),
+    renderMilestoneEditor: vi.fn(),
+    syncEditTaskDurationReadout: vi.fn(),
+    isEditTimeGoalEnabled: () => true,
+    setEditTimeGoalEnabled: vi.fn(),
+    isEditMilestoneUnitDay: () => false,
+    buildEditDraftSnapshot: () => "",
+    resetCheckpointAlertTracking: vi.fn(),
+    clearCheckpointBaseline: vi.fn(),
+    getElapsedPadTarget: () => null,
+    setElapsedPadTarget: vi.fn(),
+    getElapsedPadMilestoneRef: () => null,
+    setElapsedPadMilestoneRef: vi.fn(),
+    getElapsedPadDraft: () => "0",
+    setElapsedPadDraft: vi.fn(),
+    getElapsedPadOriginal: () => "0",
+    setElapsedPadOriginal: vi.fn(),
+    getCheckpointAlertSoundEnabled: () => false,
+    getCheckpointAlertToastEnabled: () => false,
+    getMobilePushAlertsEnabled: () => false,
+    setMobilePushAlertsEnabledState: vi.fn(),
+    getWebPushAlertsEnabled: () => false,
+    setWebPushAlertsEnabledState: vi.fn(),
+    persistPushAlertsPreference: vi.fn(),
+    getElapsedMs: () => 0,
+    getAddTaskTimeGoalMinutesState: () => 0,
+    hasEntitlement: () => true,
+    showUpgradePrompt: vi.fn(),
+  } as unknown as Parameters<typeof createTaskTimerEditTask>[0];
+
+  const api = createTaskTimerEditTask(ctx);
+  return { api, ctx, sourceTask, busyTask };
 }
 
 describe("normalizeRecurringScheduleFieldsForSave", () => {
@@ -179,5 +303,101 @@ describe("edit task schedule toggle helpers", () => {
     );
     expect(draft.milestones).toEqual([{ id: "ms-1", hours: 1, description: "", alertsEnabled: true }]);
     expect(draft.milestones).not.toBe(snapshot.milestones);
+  });
+});
+
+describe("edit task schedule conflict confirmation", () => {
+  it("opens a conflict modal with schedule ranges for edit overlaps", () => {
+    const harness = createEditHarness();
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Schedule conflict",
+      "Deep Work - 9:00 AM - 10:00 AM.\n\nSchedule Focus to next free timeslot 10:00 AM - 11:00 AM?",
+      expect.objectContaining({
+        okLabel: "Schedule",
+        okButtonClassName: "btn btn-ghost",
+      })
+    );
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
+    expect(options).not.toHaveProperty("altLabel");
+    expect(options).not.toHaveProperty("onAlt");
+    expect(harness.ctx.save).not.toHaveBeenCalled();
+  });
+
+  it("updates the edited task planned start time when conflict modal Schedule is chosen", () => {
+    const harness = createEditHarness();
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.plannedStartTime).toBe("10:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual(
+      Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "10:00"]))
+    );
+    expect(harness.ctx.save).toHaveBeenCalled();
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+  });
+
+  it("updates the edit planned start controls when conflict modal Schedule is chosen", () => {
+    const harness = createEditHarness({
+      plannedStartSelectors: { hour: "09", minute: "00", meridiem: "AM" },
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("10");
+    expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("00");
+    expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("AM");
+  });
+
+  it("opens a switch-only conflict modal when no next free edit slot exists", () => {
+    const harness = createEditHarness({
+      durationValue: "1430",
+      durationUnit: "minute",
+      plannedStartSelectors: { hour: "12", minute: "00", meridiem: "AM" },
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalValue: 1430,
+        timeGoalUnit: "minute",
+        timeGoalMinutes: 1430,
+        plannedStartDay: null,
+        plannedStartTime: "00:00",
+        plannedStartByDay: { mon: "00:00" },
+      }),
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "mon",
+        timeGoalValue: 15,
+        timeGoalUnit: "minute",
+        timeGoalMinutes: 15,
+        plannedStartDay: "mon",
+        plannedStartTime: "00:00",
+        plannedStartByDay: { mon: "00:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Schedule conflict",
+      "No next free timeslot was found.\n\nSwitch Deep Work with Focus?",
+      expect.objectContaining({
+        okLabel: "Switch",
+        okButtonClassName: "btn btn-ghost",
+      })
+    );
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
+    expect(options).not.toHaveProperty("altLabel");
+    expect(options).not.toHaveProperty("onAlt");
+    expect(harness.ctx.save).not.toHaveBeenCalled();
   });
 });

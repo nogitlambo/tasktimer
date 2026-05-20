@@ -5669,3 +5669,54 @@ body[data-theme="cyan"] #app[aria-label="TaskLaunch Account"] .accountProfileAct
   }
 }
 
+/* Rectangular modal shell alignment for settings-owned overlays. */
+:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) .modal,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal,
+#app[aria-label="TaskLaunch Account"] .accountInlineConfirmModal{
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+  padding: var(--modal-padding) !important;
+  font-family: var(--font-readable) !important;
+}
+
+:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) .modal{
+  width:min(var(--modal-width-md), 100%) !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal{
+  width:min(var(--modal-width-sm), calc(100vw - 28px)) !important;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountInlineConfirmModal{
+  width:min(var(--modal-width-sm), calc(100vw - 28px)) !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal.settingsAvatarModal{
+  width:min(var(--modal-width-lg), calc(100vw - 28px)) !important;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountInlineConfirmModal.accountAvatarModal{
+  width:min(var(--modal-width-lg), calc(100vw - 28px)) !important;
+}
+
+:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) :where(.modalSubtext, .confirmText, label, p),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal :where(.settingsInlineConfirmText, label, p){
+  font-family: var(--font-readable) !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmText,
+#app[aria-label="TaskLaunch Account"] .accountInlineConfirmText{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 13px !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmBtns,
+#app[aria-label="TaskLaunch Account"] .accountInlineConfirmBtns{
+  justify-content:flex-end !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+

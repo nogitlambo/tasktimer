@@ -1,4 +1,14 @@
 /* Generated from tasktimer.css split. */
+:root{
+  --modal-bg: #0d0f13;
+  --modal-border: rgba(255,255,255,.14);
+  --modal-shadow: 0 18px 44px rgba(0,0,0,.44);
+  --modal-padding: 14px;
+  --modal-width-sm: 420px;
+  --modal-width-md: 560px;
+  --modal-width-lg: 860px;
+}
+
 .modalSubtext{
   color: #ffffff;
 }
@@ -28,12 +38,14 @@
 .modal{
   position:relative;
   z-index:1;
-  width: min(560px, 100%);
-  background: rgba(18,24,42,.96);
-  border:1px solid rgba(255,255,255,.14);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding:18px 18px 16px;
+  width: min(var(--modal-width-md), 100%);
+  background: var(--modal-bg);
+  border:1px solid var(--modal-border);
+  border-radius: 0;
+  clip-path: none;
+  box-shadow: var(--modal-shadow);
+  padding: var(--modal-padding);
+  font-family: var(--font-readable);
 }
 
 @media (max-width: 980px){
@@ -43,7 +55,7 @@
   .modal{
     max-height:88svh;
     overflow:auto;
-    padding:14px;
+    padding:var(--modal-padding);
   }
 }
 
@@ -142,6 +154,38 @@
   font-weight:700;
   line-height:1.25;
   letter-spacing:.1px;
+}
+
+.modal :where(p, label, input, select, textarea, .modalSubtext, .confirmText, .field, .settingsDetailNote){
+  font-family: var(--font-readable);
+}
+
+.modal :where(.confirmBtns, .footerBtns){
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+#confirmOverlay .modal,
+#elapsedPadOverlay .modal,
+#timeGoalCompleteSaveNoteOverlay .modal,
+#timeGoalCompleteNoteOverlay .modal{
+  width:min(var(--modal-width-sm), 100%);
+}
+
+#addTaskOverlay .modal,
+#editOverlay .modal,
+#exportTaskOverlay .modal,
+#historyEntryNoteOverlay .modal,
+#historyAnalysisOverlay .modal,
+#rewardsInfoOverlay .modal{
+  width:min(var(--modal-width-md), 100%);
+}
+
+#rankLadderOverlay .modal,
+#rankPromotionOverlay .modal,
+#timeGoalCompleteOverlay .modal{
+  width:min(var(--modal-width-lg), 100%);
 }
 
 @media (max-width: 360px){
@@ -2629,6 +2673,12 @@ body[data-theme="purple"] .rewardsInfoText{
 
 #confirmOverlay.isScheduleConflictConfirm .confirmText{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  white-space: pre-line;
+  text-align: center;
+}
+
+#confirmOverlay.isScheduleConflictConfirm .confirmText::first-line{
+  color: #ff5f5f;
 }
 
 #confirmOverlay.isScheduleConflictConfirm #confirmCancelBtn,
@@ -4474,6 +4524,7 @@ body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
 
 #confirmOverlay.isDeleteFriendConfirm .confirmText{
   color: rgba(255,228,232,.92);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
 #confirmOverlay.isDeleteFriendConfirm .confirmBtns{
@@ -4485,6 +4536,7 @@ body[data-theme="purple"] #editOverlay .editMoveMenu .taskMenuList{
 #confirmOverlay.isDeleteFriendConfirm #confirmOkBtn{
   min-width: 92px;
   justify-content: center;
+  border-color: rgba(148,152,161,.62);
 }
 
 body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
@@ -4611,7 +4663,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying::before{
-  animation: timeGoalConfettiPulse 2.4s ease-out 5 both;
+  animation: timeGoalConfettiPulse 2.4s ease-out 1 both;
 }
 
 #timeGoalCompleteOverlay .timeGoalConfettiPiece{
@@ -4627,7 +4679,7 @@ body[data-theme="purple"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmTe
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
-  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 5 both;
+  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 1 both;
   animation-delay: var(--d);
 }
 
@@ -6913,6 +6965,75 @@ body[data-theme="purple"] #editOverlay #saveEditBtn:hover{
 
 body[data-theme="purple"] .confirmAwardText {
   color: #f4a7ff;
+}
+
+/* Rectangular modal shell alignment. */
+:is(
+  #confirmOverlay,
+  #aboutOverlay,
+  #elapsedPadOverlay,
+  #exportTaskOverlay,
+  #historyEntryNoteOverlay,
+  #historyAnalysisOverlay,
+  #rewardsInfoOverlay,
+  #rankLadderOverlay,
+  #rankPromotionOverlay,
+  #timeGoalCompleteOverlay,
+  #timeGoalCompleteSaveNoteOverlay,
+  #timeGoalCompleteNoteOverlay
+) .modal{
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+  padding: var(--modal-padding) !important;
+  font-family: var(--font-readable) !important;
+}
+
+:is(#addTaskOverlay, #editOverlay) .modal{
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+  font-family: var(--font-readable) !important;
+}
+
+:is(#confirmOverlay, #elapsedPadOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
+  width:min(var(--modal-width-sm), 100%) !important;
+}
+
+:is(#aboutOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay) .modal{
+  width:min(var(--modal-width-md), 100%) !important;
+}
+
+:is(#rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay) .modal{
+  width:min(var(--modal-width-lg), 100%) !important;
+}
+
+:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+  font-family: var(--font-readable) !important;
+}
+
+:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .confirmText,
+#confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 13px !important;
+}
+
+#confirmOverlay .modal{
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+}
+
+:is(#confirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
+  justify-content:flex-end !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
 }
 
 .xpAwardFxLayer {

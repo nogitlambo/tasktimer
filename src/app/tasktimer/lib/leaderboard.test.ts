@@ -34,6 +34,7 @@ vi.mock("./accountProfileStorage", () => ({
 }));
 
 import {
+  buildLeaderboardMetricsSnapshot,
   buildGlobalLeaderboardRows,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
@@ -60,6 +61,7 @@ function createProfile(overrides: Partial<LeaderboardProfile> = {}): Leaderboard
     rewardTotalXp: 0,
     streakDays: 0,
     totalFocusMs: 0,
+    weeklyFocusMs: 0,
     weeklyXpGain: 0,
     memberSinceMs: null,
     schemaVersion: 1,
@@ -414,5 +416,29 @@ describe("loadLeaderboardScreenData", () => {
     expect(result.currentUserRank).toBe(2);
     expect(result.currentUserRivalRank).toBeNull();
     expect(result.currentUserWeeklyRank).toBe(2);
+  });
+});
+
+describe("buildLeaderboardMetricsSnapshot", () => {
+  it("tracks current-week focus time separately from lifetime focus time", () => {
+    const nowMs = Date.parse("2026-05-20T12:00:00.000Z");
+    const weekEntryTs = Date.parse("2026-05-19T09:00:00.000Z");
+    const olderEntryTs = Date.parse("2026-05-10T09:00:00.000Z");
+
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {
+        a: [
+          { ts: weekEntryTs, ms: 25 * 60 * 1000, name: "This week" },
+          { ts: olderEntryTs, ms: 40 * 60 * 1000, name: "Older" },
+        ],
+      },
+      liveSessionsByTaskId: {},
+      rewards: null,
+      nowMs,
+      weekStarting: "mon",
+    });
+
+    expect(snapshot.totalFocusMs).toBe(65 * 60 * 1000);
+    expect(snapshot.weeklyFocusMs).toBe(25 * 60 * 1000);
   });
 });

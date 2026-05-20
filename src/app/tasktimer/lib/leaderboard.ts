@@ -41,6 +41,7 @@ export type LeaderboardProfile = {
   rewardTotalXp: number;
   streakDays: number;
   totalFocusMs: number;
+  weeklyFocusMs: number;
   weeklyXpGain: number;
   memberSinceMs: number | null;
   schemaVersion: 1;
@@ -51,6 +52,7 @@ type LeaderboardMetricsSnapshot = {
   rewardTotalXp: number;
   streakDays: number;
   totalFocusMs: number;
+  weeklyFocusMs: number;
   weeklyXpGain: number;
 };
 
@@ -184,6 +186,7 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
     rewardTotalXp,
     streakDays: normalizeInt(raw.streakDays),
     totalFocusMs: normalizeInt(raw.totalFocusMs),
+    weeklyFocusMs: normalizeInt(raw.weeklyFocusMs),
     weeklyXpGain: normalizeInt(raw.weeklyXpGain),
     memberSinceMs: normalizeOptionalTimestampMs(raw.memberSinceMs),
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
@@ -240,6 +243,21 @@ function sumWeeklyXpGain(rewards: RewardProgressV1, weekStart: DashboardWeekStar
     const xp = normalizeInt(entry?.xp);
     if (!ts || ts < weekStartMs || ts > nowValue || xp <= 0) return sum;
     return sum + xp;
+  }, 0);
+}
+
+function sumWeeklyFocusMs(projectedHistory: HistoryByTaskId, weekStart: DashboardWeekStart, nowValue: number): number {
+  const weekStartMs = startOfCurrentWeekMs(nowValue, weekStart);
+  return Object.values(projectedHistory).reduce((sum, entries) => {
+    if (!Array.isArray(entries)) return sum;
+    return (
+      sum +
+      entries.reduce((entrySum, entry) => {
+        const ts = normalizeInt(entry?.ts);
+        if (!ts || ts < weekStartMs || ts > nowValue) return entrySum;
+        return entrySum + normalizeInt(entry?.ms);
+      }, 0)
+    );
   }, 0);
 }
 
@@ -374,12 +392,14 @@ export function buildLeaderboardMetricsSnapshot(input: {
         : 0)
     );
   }, 0);
+  const weeklyFocusMs = sumWeeklyFocusMs(projectedHistory, weekStarting, nowValue);
 
   return {
     rewardCurrentRankId: normalizeString(rewards.currentRankId, 120),
     rewardTotalXp: normalizeInt(rewards.totalXp),
     streakDays: getRewardStreakLength(projectedHistory),
     totalFocusMs,
+    weeklyFocusMs,
     weeklyXpGain: sumWeeklyXpGain(rewards, weekStarting, nowValue),
   };
 }
@@ -406,6 +426,7 @@ export async function saveLeaderboardProfile(
       rewardTotalXp: normalizeInt(metrics.rewardTotalXp),
       streakDays: normalizeInt(metrics.streakDays),
       totalFocusMs: normalizeInt(metrics.totalFocusMs),
+      weeklyFocusMs: normalizeInt(metrics.weeklyFocusMs),
       weeklyXpGain: normalizeInt(metrics.weeklyXpGain),
       memberSinceMs: identity.memberSinceMs,
       schemaVersion: LEADERBOARD_SCHEMA_VERSION,
@@ -513,6 +534,7 @@ function buildWeeklyPlaceholderProfile(rank: number): LeaderboardProfile {
   const weeklyXpGain = Math.max(24, 320 - (safeRank - 1) * 26);
   const rewardTotalXp = Math.max(weeklyXpGain, 4_800 - (safeRank - 1) * 320);
   const totalFocusMs = Math.max(30 * 60 * 1000, (14 - safeRank) * 42 * 60 * 1000);
+  const weeklyFocusMs = Math.max(20 * 60 * 1000, (10 - safeRank) * 28 * 60 * 1000);
   const streakDays = Math.max(1, 12 - safeRank);
   const label = buildPlaceholderUsername(`weekly:${safeRank}`);
   return {
@@ -527,6 +549,7 @@ function buildWeeklyPlaceholderProfile(rank: number): LeaderboardProfile {
     rewardTotalXp,
     streakDays,
     totalFocusMs,
+    weeklyFocusMs,
     weeklyXpGain,
     memberSinceMs: null,
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
@@ -542,6 +565,7 @@ function buildGlobalPlaceholderProfile(rank: number): LeaderboardProfile {
   const rewardTotalXp = Math.max(900, 12_400 - (safeRank - 1) * 840);
   const weeklyXpGain = Math.max(32, 520 - (safeRank - 1) * 38);
   const totalFocusMs = Math.max(90 * 60 * 1000, (26 - safeRank) * 58 * 60 * 1000);
+  const weeklyFocusMs = Math.max(35 * 60 * 1000, (12 - safeRank) * 32 * 60 * 1000);
   const streakDays = Math.max(1, 18 - safeRank);
   const label = buildPlaceholderUsername(`global:${safeRank}`);
   return {
@@ -556,6 +580,7 @@ function buildGlobalPlaceholderProfile(rank: number): LeaderboardProfile {
     rewardTotalXp,
     streakDays,
     totalFocusMs,
+    weeklyFocusMs,
     weeklyXpGain,
     memberSinceMs: null,
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
@@ -573,6 +598,7 @@ function buildRivalPlaceholderProfile(rank: number, currentUserEntry: Leaderboar
   const rewardTotalXp = Math.max(600, baseTotalXp - (safeRank - 1) * 150);
   const weeklyXpGain = Math.max(28, 360 - (safeRank - 1) * 24);
   const totalFocusMs = Math.max(60 * 60 * 1000, (18 - safeRank) * 46 * 60 * 1000);
+  const weeklyFocusMs = Math.max(24 * 60 * 1000, (10 - safeRank) * 30 * 60 * 1000);
   const streakDays = Math.max(1, 14 - safeRank);
   const label = buildPlaceholderUsername(`rival:${safeRank}`);
   return {
@@ -587,6 +613,7 @@ function buildRivalPlaceholderProfile(rank: number, currentUserEntry: Leaderboar
     rewardTotalXp,
     streakDays,
     totalFocusMs,
+    weeklyFocusMs,
     weeklyXpGain,
     memberSinceMs: null,
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,

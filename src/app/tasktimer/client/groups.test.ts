@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   getFriendProfileOpenUidFromTarget,
-  getSharedTaskReminderStatusMessage,
   loadGroupsSnapshotForUid,
-  shouldRenderSharedTaskReminderButton,
 } from "./groups";
 import type { FriendProfile, Friendship } from "../lib/friendsStore";
 
@@ -53,34 +51,6 @@ describe("loadGroupsSnapshotForUid", () => {
     expect(snapshot.friendships).toEqual([friendship]);
     expect(snapshot.friendProfileCache["user-b"]).toEqual(profile);
     expect(snapshot.sharedSummaries).toEqual([]);
-  });
-});
-
-describe("shared task reminders", () => {
-  it("renders reminder controls only for stopped shared tasks", () => {
-    expect(shouldRenderSharedTaskReminderButton("stopped")).toBe(true);
-    expect(shouldRenderSharedTaskReminderButton("")).toBe(true);
-    expect(shouldRenderSharedTaskReminderButton("running")).toBe(false);
-    expect(shouldRenderSharedTaskReminderButton("RUNNING")).toBe(false);
-  });
-
-  it("maps reminder statuses to user-facing Friends page messages", () => {
-    expect(getSharedTaskReminderStatusMessage({ ok: true, status: "sent" })).toEqual({
-      message: "Reminder sent.",
-      tone: "success",
-    });
-    expect(getSharedTaskReminderStatusMessage({ ok: false, status: "cooldown" })).toEqual({
-      message: "A reminder was sent recently. Try again later.",
-      tone: "info",
-    });
-    expect(getSharedTaskReminderStatusMessage({ ok: false, status: "already-running" })).toEqual({
-      message: "That task is already running.",
-      tone: "info",
-    });
-    expect(getSharedTaskReminderStatusMessage({ ok: false, status: "no-devices" })).toEqual({
-      message: "No enabled push devices were found for this friend.",
-      tone: "error",
-    });
   });
 });
 

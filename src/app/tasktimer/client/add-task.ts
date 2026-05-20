@@ -18,6 +18,8 @@ import {
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
   formatScheduleStoredTimeFromMinutes,
+  formatScheduleTimeRange,
+  getScheduleTaskDurationMinutesForDay,
   normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
@@ -597,8 +599,17 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
-  function formatScheduleConflictMessage(conflictingTaskName: string) {
-    return `Do you want to schedule the task to the next available time slot, or switch ${conflictingTaskName} with this task?`;
+  function formatScheduleConflictMessage(
+    conflictingTaskName: string,
+    conflictingRangeText: string,
+    candidateTaskName: string,
+    nextSlotRangeText: string
+  ) {
+    return `${conflictingTaskName} - ${conflictingRangeText}.\n\nSchedule ${candidateTaskName} to next free timeslot ${nextSlotRangeText}?`;
+  }
+
+  function formatScheduleConflictNoSlotMessage(conflictingTaskName: string, candidateTaskName: string) {
+    return `No next free timeslot was found.\n\nSwitch ${conflictingTaskName} with ${candidateTaskName}?`;
   }
 
   function finishScheduledTaskCreate(tasks: Task[], newTask: Task) {
@@ -624,30 +635,32 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }
     const candidateStartMinutes = overlap.candidateStartMinutes;
     const conflictingStartMinutes = overlap.conflictingStartMinutes;
+    const conflictingEndMinutes = overlap.conflictingEndMinutes;
+    const candidateTaskName = String(newTask.name || "Task") || "Task";
+    const conflictingTaskName = String(conflictingTask.name || "Task") || "Task";
+    const suggestion = findNextAvailableScheduleSlot(tasks, newTask);
 
     const openNoSlotMessage = () => {
-      ctx.confirm("Schedule conflict", "No next available time slot was found for this task. Adjust the schedule or choose Switch.", {
+      ctx.confirm("Schedule conflict", formatScheduleConflictNoSlotMessage(conflictingTaskName, candidateTaskName), {
         cancelLabel: "Cancel",
-        okLabel: "Move",
-        altLabel: "Switch",
+        okLabel: "Switch",
         okButtonClassName: "btn btn-ghost",
-        altButtonClassName: "btn btn-ghost",
         overlayClassName: "isScheduleConflictConfirm",
-        onOk: handleMove,
-        onAlt: handleSwitch,
+        onOk: handleSwitch,
         onCancel: () => ctx.closeConfirm(),
       });
     };
 
     const handleMove = () => {
-      const suggestion = findNextAvailableScheduleSlot(tasks, newTask);
       if (!suggestion) {
         openNoSlotMessage();
         return;
       }
+      const nextTime = formatScheduleStoredTimeFromMinutes(suggestion.startMinutes);
       suggestion.days.forEach((day) => {
-        setTaskScheduledTimeForDay(newTask, day, formatScheduleStoredTimeFromMinutes(suggestion.startMinutes));
+        setTaskScheduledTimeForDay(newTask, day, nextTime);
       });
+      setAddTaskPlannedStartTime(nextTime);
       ctx.closeConfirm();
       finishScheduledTaskCreate(tasks, newTask);
     };
@@ -664,15 +677,25 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       finishScheduledTaskCreate(tasks, newTask);
     };
 
-    ctx.confirm("Schedule conflict", formatScheduleConflictMessage(String(conflictingTask.name || "Task") || "Task"), {
+    if (!suggestion || conflictingEndMinutes == null) {
+      openNoSlotMessage();
+      return;
+    }
+
+    const nextSlotDurationMinutes = getScheduleTaskDurationMinutesForDay(newTask, suggestion.day);
+    const message = formatScheduleConflictMessage(
+      conflictingTaskName,
+      formatScheduleTimeRange(conflictingStartMinutes, conflictingEndMinutes),
+      candidateTaskName,
+      formatScheduleTimeRange(suggestion.startMinutes, suggestion.startMinutes + nextSlotDurationMinutes)
+    );
+
+    ctx.confirm("Schedule conflict", message, {
       cancelLabel: "Cancel",
-      okLabel: "Move",
-      altLabel: "Switch",
+      okLabel: "Schedule",
       okButtonClassName: "btn btn-ghost",
-      altButtonClassName: "btn btn-ghost",
       overlayClassName: "isScheduleConflictConfirm",
       onOk: handleMove,
-      onAlt: handleSwitch,
       onCancel: () => ctx.closeConfirm(),
     });
   }

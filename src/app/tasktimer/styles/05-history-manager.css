@@ -1018,3 +1018,20 @@ body[data-theme="purple"] #historyManagerScreen .hmGroup{
   background: transparent;
   box-shadow: none;
 }
+
+/* Rectangular modal shell alignment for history entry forms. */
+:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .hmManualEntryModal{
+  width:min(var(--modal-width-md), calc(100vw - 32px)) !important;
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--modal-border) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+  padding: var(--modal-padding) !important;
+  font-family: var(--font-readable) !important;
+}
+
+:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .modalSubtext,
+:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) :where(label, input, select, textarea){
+  font-family: var(--font-readable) !important;
+}

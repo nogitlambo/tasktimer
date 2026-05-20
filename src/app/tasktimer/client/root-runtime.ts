@@ -99,6 +99,7 @@ type StartRootLifecycleOptions = {
   finishInitialAuthHydration: () => void;
   subscribeToCheckpointAlertMuteSignals: () => void;
   refreshOwnSharedSummaries: () => Promise<unknown>;
+  refreshGroupsData: () => Promise<unknown>;
   reconcileOwnedSharedSummaryStates: () => void;
   render: () => void;
   currentAppPage: AppPage;
@@ -256,6 +257,7 @@ export function startTaskTimerRootLifecycle(options: StartRootLifecycleOptions) 
     hydrateUiStateFromCaches: options.hydrateUiStateFromCaches,
     subscribeToCheckpointAlertMuteSignals: options.subscribeToCheckpointAlertMuteSignals,
     refreshOwnSharedSummaries: options.refreshOwnSharedSummaries,
+    refreshGroupsData: options.refreshGroupsData,
     reconcileOwnedSharedSummaryStates: options.reconcileOwnedSharedSummaryStates,
     render: options.render,
     currentAppPage: options.currentAppPage,

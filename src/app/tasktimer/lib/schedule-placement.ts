@@ -74,6 +74,12 @@ export function formatScheduleSlotTime(totalMinutes: number) {
   return `${hours12}:${String(minutes).padStart(2, "0")} ${meridiem}`;
 }
 
+export function formatScheduleTimeRange(startMinutes: number, endMinutes: number) {
+  const safeEndMinutes = Math.max(0, Math.min(24 * 60, Math.floor(Number(endMinutes) || 0)));
+  const endText = safeEndMinutes >= 24 * 60 ? "12:00 AM" : formatScheduleSlotTime(safeEndMinutes);
+  return `${formatScheduleSlotTime(startMinutes)} - ${endText}`;
+}
+
 export function formatScheduleDayLabel(day: ScheduleDay) {
   return SCHEDULE_DAY_LABELS[day] || day;
 }

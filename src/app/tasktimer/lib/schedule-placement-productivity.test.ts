@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
+  formatScheduleTimeRange,
   getScheduleTaskDurationMinutesForDay,
   swapTaskScheduleSlotsForDay,
   type ScheduleDay,
@@ -41,6 +42,11 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
+  it("formats schedule time ranges", () => {
+    expect(formatScheduleTimeRange(540, 600)).toBe("9:00 AM - 10:00 AM");
+    expect(formatScheduleTimeRange(1380, 1440)).toBe("11:00 PM - 12:00 AM");
+  });
+
   it("picks the productivity window start when no tasks overlap", () => {
     const result = findFirstAvailableScheduleSlotFromProductivityWindow([], task({ plannedStartTime: "09:00" }), {
       optimalProductivityStartTime: "08:00",
