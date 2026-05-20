@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -243,6 +244,15 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
       ) : (
         initials
       )}
+    </div>
+  );
+}
+
+function SignedOutPrompt({ message }: { message: string }) {
+  return (
+    <div className="signedOutPagePrompt">
+      <span>{message}</span>{" "}
+      <Link href="/login">Sign In</Link>.
     </div>
   );
 }
@@ -984,106 +994,114 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">
-              <div className="dashboardTopRow">
-                <div className="dashboardEditActions">
-                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
-                    <AppImg
-                      className="friendRequestBtnIcon"
-                      src="/icons/icons_default/add-friend.png"
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    Add Friend
-                  </button>
-                </div>
-              </div>
-
-              <div className="dashboardGrid">
-                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
-
-                <section className="dashboardCard" aria-label="Friends list">
-                  <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
-                    {isAuthenticated
-                      ? "You have not added any friends yet"
-                      : "You will need to create an account or sign in to use Friends."}
+              {!isAuthenticated ? (
+                <SignedOutPrompt message="You will need to create an account or sign in to use Friends" />
+              ) : (
+                <>
+                  <div className="dashboardTopRow">
+                    <div className="dashboardEditActions">
+                      <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
+                        <AppImg
+                          className="friendRequestBtnIcon"
+                          src="/icons/icons_default/add-friend.png"
+                          alt=""
+                          aria-hidden="true"
+                        />
+                        Add Friend
+                      </button>
+                    </div>
                   </div>
-                </section>
 
-                <section className="dashboardCard" aria-label="Tasks shared by you">
-                  <details id="groupsSharedByYouDetails">
-                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
-                      0 shared by you
-                    </summary>
-                    <div id="groupsSharedByYouList" className="settingsDetailNote">
-                      No shared tasks.
-                    </div>
-                  </details>
-                </section>
+                  <div className="dashboardGrid">
+                    <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
 
-                <section className="dashboardCard" aria-label="Incoming requests">
-                  <details id="groupsIncomingRequestsDetails">
-                    <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
-                      0 Incoming Requests
-                    </summary>
-                    <div id="groupsIncomingRequestsList" className="settingsDetailNote">
-                      No incoming requests.
-                    </div>
-                  </details>
-                </section>
+                    <section className="dashboardCard" aria-label="Friends list">
+                      <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
+                        You have not added any friends yet
+                      </div>
+                    </section>
 
-                <section className="dashboardCard" aria-label="Outgoing requests">
-                  <details id="groupsOutgoingRequestsDetails">
-                    <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
-                      0 Outgoing Requests
-                    </summary>
-                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
-                      No outgoing requests.
-                    </div>
-                  </details>
-                </section>
-              </div>
+                    <section className="dashboardCard" aria-label="Tasks shared by you">
+                      <details id="groupsSharedByYouDetails">
+                        <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
+                          0 shared by you
+                        </summary>
+                        <div id="groupsSharedByYouList" className="settingsDetailNote">
+                          No shared tasks.
+                        </div>
+                      </details>
+                    </section>
+
+                    <section className="dashboardCard" aria-label="Incoming requests">
+                      <details id="groupsIncomingRequestsDetails">
+                        <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
+                          0 Incoming Requests
+                        </summary>
+                        <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                          No incoming requests.
+                        </div>
+                      </details>
+                    </section>
+
+                    <section className="dashboardCard" aria-label="Outgoing requests">
+                      <details id="groupsOutgoingRequestsDetails">
+                        <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
+                          0 Outgoing Requests
+                        </summary>
+                        <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                          No outgoing requests.
+                        </div>
+                      </details>
+                    </section>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
           <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboards page">
             <div className="dashboardShell leaderboardShell">
-              <div className="leaderboardViewHeader">
-                <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
-                  <button
-                    className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "global" ? " isOn" : ""}`}
-                    id="leaderboardGlobalTab"
-                    type="button"
-                    role="tab"
-                    aria-controls="leaderboardGlobalPanel"
-                    aria-selected={leaderboardView === "global"}
-                    onClick={() => setLeaderboardView("global")}
-                  >
-                    Global
-                  </button>
-                  <button
-                    className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "weekly" ? " isOn" : ""}`}
-                    id="leaderboardWeeklyTab"
-                    type="button"
-                    role="tab"
-                    aria-controls="leaderboardWeeklyPanel"
-                    aria-selected={leaderboardView === "weekly"}
-                    onClick={() => setLeaderboardView("weekly")}
-                  >
-                    Weekly
-                  </button>
-                  <button
-                    className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "rivals" ? " isOn" : ""}`}
-                    id="leaderboardRivalsTab"
-                    type="button"
-                    role="tab"
-                    aria-controls="leaderboardRivalsPanel"
-                    aria-selected={leaderboardView === "rivals"}
-                    onClick={() => setLeaderboardView("rivals")}
-                  >
-                    Rank Rivals
-                  </button>
-                </div>
-              </div>
+              {leaderboardState === "signedOut" ? (
+                <SignedOutPrompt message="Sign in to view the leaderboard" />
+              ) : (
+                <>
+                  <div className="leaderboardViewHeader">
+                    <div className="leaderboardViewToggle" role="tablist" aria-label="Leaderboard view">
+                      <button
+                        className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "global" ? " isOn" : ""}`}
+                        id="leaderboardGlobalTab"
+                        type="button"
+                        role="tab"
+                        aria-controls="leaderboardGlobalPanel"
+                        aria-selected={leaderboardView === "global"}
+                        onClick={() => setLeaderboardView("global")}
+                      >
+                        Global
+                      </button>
+                      <button
+                        className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "weekly" ? " isOn" : ""}`}
+                        id="leaderboardWeeklyTab"
+                        type="button"
+                        role="tab"
+                        aria-controls="leaderboardWeeklyPanel"
+                        aria-selected={leaderboardView === "weekly"}
+                        onClick={() => setLeaderboardView("weekly")}
+                      >
+                        Weekly
+                      </button>
+                      <button
+                        className={`btn btn-ghost small leaderboardViewToggleBtn${leaderboardView === "rivals" ? " isOn" : ""}`}
+                        id="leaderboardRivalsTab"
+                        type="button"
+                        role="tab"
+                        aria-controls="leaderboardRivalsPanel"
+                        aria-selected={leaderboardView === "rivals"}
+                        onClick={() => setLeaderboardView("rivals")}
+                      >
+                        Rank Rivals
+                      </button>
+                    </div>
+                  </div>
 
               {leaderboardView === "weekly" ? (
                 <section
@@ -1171,9 +1189,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <div className="leaderboardPanelText">
                       {leaderboardState === "loading"
                         ? "Loading weekly leaderboard."
-                        : leaderboardState === "signedOut"
-                          ? "Sign in to view the weekly leaderboard."
-                          : leaderboardState === "error"
+                        : leaderboardState === "error"
                             ? leaderboardError || "Could not load the leaderboard."
                             : "No weekly XP has been published yet. Launch a task to climb this board."}
                     </div>
@@ -1265,9 +1281,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <div className="leaderboardPanelText">
                       {leaderboardState === "loading"
                         ? "Loading rivals."
-                        : leaderboardState === "signedOut"
-                          ? "Sign in to view your rivals."
-                          : leaderboardState === "error"
+                        : leaderboardState === "error"
                             ? leaderboardError || "Could not load the leaderboard."
                             : "Your public profile needs to sync before rivals can be calculated."}
                     </div>
@@ -1359,14 +1373,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <div className="leaderboardPanelText">
                       {leaderboardState === "loading"
                         ? "Loading leaderboard standings."
-                        : leaderboardState === "signedOut"
-                          ? "Sign in to view the global leaderboard."
-                          : leaderboardState === "error"
+                        : leaderboardState === "error"
                             ? leaderboardError || "Could not load the leaderboard."
                             : "No leaderboard data yet. Launch a task to publish the first public snapshot."}
                     </div>
                   )}
                 </section>
+              )}
+                </>
               )}
             </div>
           </section>

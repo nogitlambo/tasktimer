@@ -89,6 +89,413 @@
 .dashboardBackMenuHead .modalSubtext{
   margin:6px 0 0;
 }
+.dashboardActivityOverviewCard{
+  grid-column: span 12;
+  min-height:520px;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto minmax(0, 1fr);
+  gap:14px;
+}
+.dashboardActivityOverviewCard[data-dashboard-size]{
+  grid-column: span 12;
+}
+.dashboardActivityOverviewHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  min-width:0;
+}
+.dashboardActivityOverviewHead .modalSubtext{
+  margin:5px 0 0;
+}
+.dashboardActivityOverviewControls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.dashboardActivityToggle{
+  min-width:74px;
+}
+.dashboardActivityToggle.isOn{
+  border-color:rgba(117,231,255,.5);
+  background:rgba(117,231,255,.14);
+  color:#dffaff;
+}
+.dashboardActivityOverviewBody{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(230px, 28%);
+  gap:14px;
+  min-width:0;
+  min-height:0;
+}
+.dashboardActivityChartPanel{
+  min-width:0;
+  min-height:0;
+  display:grid;
+  grid-template-rows:minmax(360px, 1fr) auto;
+  gap:12px;
+}
+.dashboardActivitySummaryMini{
+  min-width:0;
+  border:1px solid rgba(255,255,255,.09);
+  background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.dashboardActivityChartWrap{
+  position:relative;
+  min-width:0;
+  min-height:360px;
+  border:1px solid rgba(117,231,255,.13);
+  border-radius:8px;
+  background:#090d11;
+  overflow:hidden;
+}
+.dashboardActivityChart{
+  position:absolute;
+  inset:0 0 42px 0;
+  width:100%;
+  height:calc(100% - 42px);
+  display:block;
+}
+.dashboardActivityGridLine{
+  stroke:rgba(255,255,255,.12);
+  stroke-width:1;
+}
+.dashboardActivityComparePath,
+.dashboardActivityDailyPath,
+.dashboardActivityLinePath,
+.dashboardActivityAreaPath,
+.dashboardActivityGoalLine{
+  fill:none;
+  vector-effect:non-scaling-stroke;
+}
+.dashboardActivityAreaPath{
+  fill:url(#dashboardActivityAreaGradient);
+  opacity:.88;
+}
+.dashboardActivityComparePath{
+  stroke:rgba(255,255,255,.34);
+  stroke-width:2;
+  stroke-dasharray:7 8;
+}
+.dashboardActivityDailyPath{
+  stroke:rgba(255,214,102,.76);
+  stroke-width:2;
+  opacity:.72;
+}
+.dashboardActivityLinePath{
+  stroke:url(#dashboardActivityLineGradient);
+  stroke-width:4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 10px rgba(117,231,255,.22));
+}
+.dashboardActivityGoalLine{
+  stroke:rgba(217,255,89,.56);
+  stroke-width:2;
+  stroke-dasharray:5 7;
+}
+.dashboardActivityPoint{
+  cursor:pointer;
+  outline:none;
+}
+.dashboardActivityPointHit{
+  fill:transparent;
+}
+.dashboardActivityPointDot{
+  fill:#d9ff59;
+  stroke:#071014;
+  stroke-width:2;
+}
+.dashboardActivityPoint.isSelected .dashboardActivityPointDot,
+.dashboardActivityPoint:focus-visible .dashboardActivityPointDot{
+  fill:#ffffff;
+  stroke:#75e7ff;
+  stroke-width:3;
+}
+.dashboardActivityYAxis{
+  position:absolute;
+  left:12px;
+  top:24px;
+  bottom:58px;
+  width:52px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  color:rgba(220,238,246,.58);
+  font-size:11px;
+  text-align:right;
+  pointer-events:none;
+}
+.dashboardActivityXAxis{
+  position:absolute;
+  left:68px;
+  right:28px;
+  bottom:8px;
+  height:34px;
+  display:grid;
+  grid-template-columns:repeat(7, minmax(0, 1fr));
+  gap:4px;
+}
+.dashboardActivityAxisDay{
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:rgba(220,238,246,.68);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  padding:0;
+  font:inherit;
+  cursor:pointer;
+}
+.dashboardActivityAxisDay span{
+  font-size:11px;
+  font-weight:800;
+}
+.dashboardActivityAxisDay small{
+  font-size:10px;
+  color:rgba(220,238,246,.46);
+}
+.dashboardActivityAxisDay:focus-visible{
+  outline:1px solid rgba(117,231,255,.72);
+  outline-offset:2px;
+}
+.dashboardActivityEmpty{
+  position:absolute;
+  inset:60px 28px 56px 80px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  text-align:center;
+  color:rgba(237,247,250,.78);
+  pointer-events:auto;
+}
+.dashboardActivityEmpty[hidden]{
+  display:none;
+}
+.dashboardActivityEmpty p{
+  margin:0;
+  max-width:360px;
+}
+.dashboardActivityEmptyActions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.dashboardActivityDayDetail{
+  min-width:0;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;
+  background:rgba(7,9,13,.78);
+  padding:12px;
+}
+.dashboardActivityDayDetail[hidden]{
+  display:none;
+}
+.dashboardActivityDayDetailHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+.dashboardActivityDetailTitle{
+  color:#f2fbff;
+  font-weight:800;
+}
+.dashboardActivityDetailBody{
+  display:grid;
+  gap:12px;
+}
+.dashboardActivityDetailSection{
+  display:grid;
+  gap:7px;
+}
+.dashboardActivityDetailSectionTitle{
+  color:rgba(220,238,246,.58);
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.dashboardActivityTaskRow,
+.dashboardActivitySessionRow{
+  min-width:0;
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr) auto;
+  align-items:center;
+  gap:9px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+  color:#eef8fb;
+  padding:8px 10px;
+}
+.dashboardActivityTaskRow{
+  width:100%;
+  font:inherit;
+  cursor:pointer;
+}
+.dashboardActivityTaskRow:disabled{
+  cursor:default;
+  opacity:.64;
+}
+.dashboardActivityTaskRow strong{
+  justify-self:end;
+  font-size:12px;
+}
+.dashboardActivityTaskSwatch{
+  width:9px;
+  height:24px;
+  border-radius:999px;
+  background:var(--activity-task-color, #75e7ff);
+  box-shadow:0 0 10px color-mix(in srgb, var(--activity-task-color, #75e7ff), transparent 55%);
+}
+.dashboardActivitySessionRow{
+  grid-template-columns:auto minmax(0, 1fr);
+  align-items:flex-start;
+}
+.dashboardActivitySessionRow strong,
+.dashboardActivitySessionRow small,
+.dashboardActivitySessionRow p{
+  display:block;
+  min-width:0;
+}
+.dashboardActivitySessionRow small{
+  color:rgba(220,238,246,.58);
+  margin-top:2px;
+}
+.dashboardActivitySessionRow p{
+  margin:5px 0 0;
+  color:rgba(220,238,246,.74);
+}
+.dashboardActivityDetailActions{
+  display:flex;
+  justify-content:flex-end;
+}
+.dashboardActivityDetailEmpty{
+  color:rgba(220,238,246,.68);
+}
+.dashboardActivitySummaryStack{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:12px;
+  min-width:0;
+}
+.dashboardActivitySummaryMini{
+  border-radius:8px;
+  padding:12px;
+  display:grid;
+  grid-template-rows:auto auto auto auto auto;
+  align-content:center;
+  gap:9px;
+}
+.dashboardActivitySummaryTop{
+  min-width:0;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+.dashboardActivitySummaryMini .dashboardBigValue{
+  font-size:30px;
+  line-height:1;
+}
+.dashboardActivitySummaryMini .dashboardSummaryFoot{
+  min-height:18px;
+}
+body[data-theme="purple"] .dashboardActivityToggle.isOn{
+  border-color:rgba(232,169,255,.52);
+  background:rgba(232,169,255,.14);
+  color:#fdefff;
+}
+body[data-theme="purple"] .dashboardActivityChartWrap{
+  border-color:rgba(232,169,255,.16);
+  background:#0c0a10;
+}
+body[data-theme="purple"] .dashboardActivityLinePath{
+  filter:drop-shadow(0 0 10px rgba(232,169,255,.22));
+}
+body[data-theme="purple"] .dashboardActivityGoalLine{
+  stroke:rgba(255,190,247,.58);
+}
+body[data-theme="purple"] .dashboardActivityPoint.isSelected .dashboardActivityPointDot,
+body[data-theme="purple"] .dashboardActivityPoint:focus-visible .dashboardActivityPointDot{
+  stroke:#e8a9ff;
+}
+body[data-theme="purple"] .dashboardActivityAxisDay:focus-visible{
+  outline-color:rgba(232,169,255,.72);
+}
+body[data-theme="lime"] .dashboardActivityToggle.isOn{
+  border-color:rgba(201,255,36,.52);
+  background:rgba(201,255,36,.13);
+  color:#f6ffd8;
+}
+body[data-theme="lime"] .dashboardActivityChartWrap{
+  border-color:rgba(201,255,36,.16);
+  background:#090d09;
+}
+body[data-theme="lime"] .dashboardActivityGoalLine{
+  stroke:rgba(255,209,102,.58);
+}
+body[data-theme="lime"] .dashboardActivityPoint.isSelected .dashboardActivityPointDot,
+body[data-theme="lime"] .dashboardActivityPoint:focus-visible .dashboardActivityPointDot{
+  stroke:#c9ff24;
+}
+body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
+  outline-color:rgba(201,255,36,.72);
+}
+@media (max-width: 860px){
+  .dashboardActivityOverviewCard{
+    min-height:0;
+  }
+  .dashboardActivityOverviewHead,
+  .dashboardActivityOverviewBody{
+    grid-template-columns:1fr;
+  }
+  .dashboardActivityOverviewHead{
+    display:grid;
+  }
+  .dashboardActivityOverviewControls{
+    justify-content:flex-start;
+    overflow-x:auto;
+  }
+  .dashboardActivityChartPanel{
+    grid-template-rows:minmax(330px, auto) auto;
+  }
+  .dashboardActivitySummaryStack{
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+  }
+  .dashboardActivityChartWrap{
+    min-height:330px;
+  }
+  .dashboardActivityYAxis{
+    left:6px;
+    width:46px;
+    font-size:10px;
+  }
+  .dashboardActivityXAxis{
+    left:58px;
+    right:12px;
+  }
+  .dashboardActivityAxisDay small{
+    display:none;
+  }
+  .dashboardActivityEmpty{
+    inset:54px 18px 52px 62px;
+  }
+}
 .dashboardTopRow{
   display:flex;
   align-items:flex-start;
@@ -5097,6 +5504,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   --dashboard-summary-panel-span: 11;
   --dashboard-pro-panel-span: 22;
   --dashboard-task-overview-panel-span: 28;
+  --dashboard-activity-overview-panel-span: 38;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardCard{
   grid-row: span var(--dashboard-pro-panel-span) !important;
@@ -5108,6 +5516,33 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard{
   grid-row: span var(--dashboard-summary-panel-span) !important;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard{
+  grid-row: span var(--dashboard-activity-overview-panel-span) !important;
+  min-height: 520px !important;
+  height: 100% !important;
+  overflow: visible;
+  z-index: 1;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard.isDashboardTopLocked{
+  cursor: default;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid.isEditMode .dashboardActivityOverviewCard.isDashboardTopLocked{
+  cursor: default;
+  border-style: solid;
+  animation: none;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewBody,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityChartPanel,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryStack{
+  min-height: 0;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityChartWrap{
+  min-height: 360px;
+}
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityDayDetail{
+  max-height: 220px;
+  overflow-y: auto;
 }
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard{
@@ -6248,6 +6683,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     --dashboard-summary-panel-span: 9;
     --dashboard-pro-panel-span: 18;
     --dashboard-task-overview-panel-span: 24;
+    --dashboard-activity-overview-panel-span: 44;
   }
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard{
     grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) !important;
@@ -6271,6 +6707,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     --dashboard-summary-panel-span: 8;
     --dashboard-pro-panel-span: 16;
     --dashboard-task-overview-panel-span: 22;
+    --dashboard-activity-overview-panel-span: 50;
   }
 }
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import TaskLaunchAuthGuard from "../tasktimer/TaskLaunchAuthGuard";
 
 export const metadata: Metadata = {
   robots: {
@@ -10,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function LeaderboardsLayout({ children }: { children: ReactNode }) {
-  return <TaskLaunchAuthGuard requireAuth>{children}</TaskLaunchAuthGuard>;
+  return children;
 }

@@ -346,13 +346,13 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   content: "";
   position: absolute;
   inset: 3px calc(var(--history-chart-tab-side) * -1) 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 0 164 21' preserveAspectRatio='none'%3E%3Cpath d='M-2 21 H0 L28 0 H132 L160 21 H162' fill='none' stroke='%23fff' stroke-opacity='.12' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 21' preserveAspectRatio='none'%3E%3Cpath d='M0 21 L28 0 H132 L160 21' fill='none' stroke='%23fff' stroke-opacity='.12' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   filter: drop-shadow(0 -1px 0 rgba(0,0,0,.65));
   pointer-events: none;
   z-index: 3;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskRunning .taskHistoryReveal::after{
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2 0 164 21' preserveAspectRatio='none'%3E%3Cpath d='M-2 21 H0 L28 0 H132 L160 21 H162' fill='none' stroke='%2362e4ff' stroke-opacity='.82' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 21' preserveAspectRatio='none'%3E%3Cpath d='M0 21 L28 0 H132 L160 21' fill='none' stroke='%2362e4ff' stroke-opacity='.82' stroke-width='1.25' vector-effect='non-scaling-stroke' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
   filter:
     drop-shadow(0 -1px 0 rgba(0,0,0,.65))
     drop-shadow(0 0 5px rgba(40,195,255,.32));
@@ -3699,7 +3699,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   box-shadow: 0 16px 38px rgba(0,0,0,.34) !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
-  --task-card-tab-border-gap: calc(var(--task-history-tab-border-gap, 160px) + 8px);
+  --task-card-tab-border-gap: var(--task-history-tab-border-gap, 160px);
+  --task-card-tab-border-overlap: 1px;
   border-color: transparent !important;
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront::before{
@@ -3725,9 +3726,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   height: 1px;
   background:
     linear-gradient(90deg,
-      var(--task-card-bottom-border-color) 0 calc(50% - (var(--task-card-tab-border-gap) / 2)),
-      transparent calc(50% - (var(--task-card-tab-border-gap) / 2)) calc(50% + (var(--task-card-tab-border-gap) / 2)),
-      var(--task-card-bottom-border-color) calc(50% + (var(--task-card-tab-border-gap) / 2)) 100%);
+      var(--task-card-bottom-border-color) 0 calc(50% - (var(--task-card-tab-border-gap) / 2) + var(--task-card-tab-border-overlap, 0px)),
+      transparent calc(50% - (var(--task-card-tab-border-gap) / 2) + var(--task-card-tab-border-overlap, 0px)) calc(50% + (var(--task-card-tab-border-gap) / 2) - var(--task-card-tab-border-overlap, 0px)),
+      var(--task-card-bottom-border-color) calc(50% + (var(--task-card-tab-border-gap) / 2) - var(--task-card-tab-border-overlap, 0px)) 100%);
   pointer-events: none;
   z-index: 4;
 }

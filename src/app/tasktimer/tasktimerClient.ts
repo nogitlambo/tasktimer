@@ -636,6 +636,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         const nextDashboard = value as DashboardConfig | null;
         if (nextDashboard) workspaceRepository.saveDashboard(nextDashboard);
       },
+      navigateToAppRoute: (path) => navigateToAppRouteViaShell(path),
+      jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
     },
   });
   const {

@@ -12,6 +12,7 @@ type WebSignInProps = {
   authError: string;
   authBusy: boolean;
   showLaunchingScreen: boolean;
+  showGuestLink?: boolean;
   onToggleEmailLoginForm: () => void;
   onGoogleSignIn: () => void;
   onSendEmailLink: () => void;
@@ -49,6 +50,7 @@ export default function WebSignIn(props: WebSignInProps) {
     authError,
     authBusy,
     showLaunchingScreen,
+    showGuestLink = true,
     onToggleEmailLoginForm,
     onGoogleSignIn,
     onSendEmailLink,
@@ -154,7 +156,7 @@ export default function WebSignIn(props: WebSignInProps) {
                       <span className="webSignInAuthButtonLabel">Continue with Google</span>
                     </button>
 
-                    {!showEmailLoginForm ? (
+                    {!showEmailLoginForm && showGuestLink ? (
                       <a
                         href="/tasklaunch"
                         className="webSignInGuestLink self-center"

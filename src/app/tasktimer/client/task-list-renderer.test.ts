@@ -116,13 +116,12 @@ describe("task list renderer", () => {
     expect(buildDisplayedTasks(tasks, "schedule").map((entry) => entry.id)).toEqual(["early", "late", "unscheduled"]);
   });
 
-  it("renders the empty state and runs post-render syncs", () => {
+  it("leaves the task list empty and runs post-render syncs when no tasks exist", () => {
     const harness = createHarness({ tasks: [], appPage: "dashboard" });
 
     harness.renderer.renderTasksPage();
 
-    expect(harness.taskListEl.innerHTML).toContain("No Tasks found");
-    expect(harness.taskListEl.innerHTML).toContain('data-action="openAddTask"');
+    expect(harness.taskListEl.innerHTML).toBe("");
     expect(harness.calls).toEqual(["tile-count:1", "sync-flips:", "dashboard", "sync-goal", "restore-goal-flow"]);
   });
 

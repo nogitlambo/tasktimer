@@ -247,14 +247,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   });
 
   function handleTaskListClick(e: any) {
-    const emptyAddBtn = findDelegatedElement(e.target, ".taskListEmptyAddBtn");
-    if (emptyAddBtn) {
-      e?.preventDefault?.();
-      e?.stopPropagation?.();
-      els.openAddTaskBtn?.click();
-      return;
-    }
-
     const taskEl = e.target?.closest?.(".task");
     if (!taskEl) return;
     const i = parseInt(taskEl.dataset.index, 10);

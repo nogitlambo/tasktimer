@@ -2,6 +2,7 @@
 import AppImg from "@/components/AppImg";
 
 const dashboardPanelOptions = [
+  { id: "activity-overview", label: "Activity Overview" },
   { id: "week-hours", label: "Today" },
   { id: "weekly-time-goals", label: "This Week" },
   { id: "tasks-completed", label: "Task Overview" },
@@ -56,6 +57,134 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                 ) : null}
 
                 <div className="dashboardGrid">
+                  <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
+                    <div className="dashboardActivityOverviewHead">
+                      <div>
+                        <div className="dashboardCardTitle" id="dashboardActivityOverviewTitle">Activity Overview</div>
+                        <p className="modalSubtext" id="dashboardActivityOverviewSubtitle">Current week activity and goal progress</p>
+                      </div>
+                      <div className="dashboardActivityOverviewControls" role="group" aria-label="Activity overview chart controls">
+                        <button className="btn btn-ghost small dashboardActivityToggle isOn" id="dashboardActivityGoalToggle" type="button" data-dashboard-activity-toggle="goal" aria-pressed="true">
+                          Goal
+                        </button>
+                        <button className="btn btn-ghost small dashboardActivityToggle isOn" id="dashboardActivityCompareToggle" type="button" data-dashboard-activity-toggle="compare" aria-pressed="true">
+                          Compare
+                        </button>
+                      </div>
+                    </div>
+                    <div className="dashboardActivityOverviewBody">
+                      <div className="dashboardActivityChartPanel">
+                        <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
+                          <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" role="img" aria-label="Current week activity chart" focusable="false">
+                            <defs>
+                              <linearGradient id="dashboardActivityLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#75e7ff" />
+                                <stop offset="58%" stopColor="#9cf68b" />
+                                <stop offset="100%" stopColor="#d9ff59" />
+                              </linearGradient>
+                              <linearGradient id="dashboardActivityAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="rgba(117, 231, 255, .28)" />
+                                <stop offset="100%" stopColor="rgba(117, 231, 255, 0)" />
+                              </linearGradient>
+                            </defs>
+                            <g id="dashboardActivityChartGrid" />
+                            <path className="dashboardActivityComparePath" id="dashboardActivityComparePath" d="" />
+                            <path className="dashboardActivityAreaPath" id="dashboardActivityAreaPath" d="" />
+                            <path className="dashboardActivityDailyPath" id="dashboardActivityDailyPath" d="" />
+                            <path className="dashboardActivityLinePath" id="dashboardActivityLinePath" d="" />
+                            <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
+                            <g id="dashboardActivityPoints" />
+                          </svg>
+                          <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
+                          <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
+                          <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden>
+                            <p id="dashboardActivityEmptyText">No activity logged this week.</p>
+                            <div className="dashboardActivityEmptyActions">
+                              <button className="btn btn-accent small" type="button" data-dashboard-activity-action="tasks">Open Tasks</button>
+                              <button className="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="dashboardActivityDayDetail" id="dashboardActivityDayDetail" hidden>
+                          <div className="dashboardActivityDayDetailHead">
+                            <div>
+                              <div className="dashboardActivityDetailTitle" id="dashboardActivityDetailTitle">Select a day</div>
+                              <p className="modalSubtext" id="dashboardActivityDetailMeta">Daily task and session breakdown</p>
+                            </div>
+                            <button className="iconBtn dashboardActivityDetailClose" type="button" data-dashboard-activity-action="close-detail" aria-label="Close day detail" title="Close day detail">
+                              &#8594;
+                            </button>
+                          </div>
+                          <div className="dashboardActivityDetailBody" id="dashboardActivityDetailBody" />
+                        </div>
+                      </div>
+                      <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
+                        <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">
+                          <div className="dashboardActivitySummaryTop">
+                            <div className="dashboardCardTitle" id="dashboardActivityTodayTitle">Today</div>
+                            <div className="dashboardTrendIndicator" id="dashboardActivityTodayTrendIndicator" aria-hidden="true">--</div>
+                          </div>
+                          <div className="dashboardBigValue" id="dashboardActivityTodayHoursValue">0m</div>
+                          <div className="dashboardGoalProgressWrap">
+                            <span className="dashboardGoalProjectionMarker" id="dashboardActivityTodayHoursProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
+                            <div
+                              className="dashboardGoalProgressBar dashboardSummaryProgress dashboardXpProgressTrack rewardSegmentedBar"
+                              id="dashboardActivityTodayHoursProgressBar"
+                              role="progressbar"
+                              aria-label="Today's time goal progress"
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={0}
+                            >
+                              <span className="dashboardGoalProjectionFill rewardSegmentedBarFill" id="dashboardActivityTodayHoursProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
+                              <span className="dashboardGoalProgressFill rewardSegmentedBarFill" id="dashboardActivityTodayHoursProgressFill" style={{ width: "0%" }} />
+                              <span className="rewardSegmentedBarTrack" aria-hidden="true">
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                              </span>
+                            </div>
+                          </div>
+                          <div className="dashboardDelta dashboardSummaryStatus" id="dashboardActivityTodayHoursMeta" style={{ display: "none" }} />
+                          <div className="dashboardDelta dashboardSummaryFoot" id="dashboardActivityTodayHoursDelta">No time logged today</div>
+                        </section>
+                        <section className="dashboardActivitySummaryMini" aria-label="Weekly logged time and time goal progress">
+                          <div className="dashboardActivitySummaryTop">
+                            <div className="dashboardCardTitle">This Week</div>
+                            <div className="dashboardTrendIndicator" id="dashboardActivityWeeklyTrendIndicator" aria-hidden="true">--</div>
+                          </div>
+                          <div className="dashboardBigValue" id="dashboardActivityWeeklyGoalsValue">0m</div>
+                          <div className="dashboardGoalProgressWrap">
+                            <span className="dashboardGoalProjectionMarker" id="dashboardActivityWeeklyGoalsProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
+                            <div
+                              className="dashboardGoalProgressBar dashboardSummaryProgress dashboardXpProgressTrack rewardSegmentedBar"
+                              id="dashboardActivityWeeklyGoalsProgressBar"
+                              role="progressbar"
+                              aria-label="Weekly time goal progress"
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={0}
+                            >
+                              <span className="dashboardGoalProjectionFill rewardSegmentedBarFill" id="dashboardActivityWeeklyGoalsProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
+                              <span className="dashboardGoalProgressFill rewardSegmentedBarFill" id="dashboardActivityWeeklyGoalsProgressFill" style={{ width: "0%" }} />
+                              <span className="rewardSegmentedBarTrack" aria-hidden="true">
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                                <span className="rewardSegmentedBarSegment" />
+                              </span>
+                            </div>
+                          </div>
+                          <div className="dashboardDelta dashboardSummaryStatus" id="dashboardActivityWeeklyGoalsMeta" style={{ display: "none" }}>No weekly time goals enabled</div>
+                          <div className="dashboardDelta dashboardSummaryFoot" id="dashboardActivityWeeklyGoalsProgressText">0% logged this week</div>
+                        </section>
+                      </aside>
+                    </div>
+                  </section>
+
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" data-dashboard-label="Today" aria-label="Today's logged time">
                     <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
                     <div className="dashboardTrendIndicator" id="dashboardTodayTrendIndicator" aria-hidden="true">--</div>

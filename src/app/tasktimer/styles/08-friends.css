@@ -97,6 +97,22 @@
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 12px;
 }
+#app[aria-label="TaskLaunch App"] :is(#appPageFriends, #appPageLeaderboard) .signedOutPagePrompt{
+  min-height: min(52vh, 420px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color: rgba(188, 214, 230, 0.82);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+#app[aria-label="TaskLaunch App"] :is(#appPageFriends, #appPageLeaderboard) .signedOutPagePrompt a{
+  color: #c9ff24;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 #appPageFriends .sharedTasksEmpty{
   color: rgba(170, 178, 190, 0.82);
   font-style: italic;

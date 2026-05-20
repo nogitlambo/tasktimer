@@ -2622,11 +2622,21 @@ body[data-theme="purple"] .rewardsInfoText{
   justify-content: space-between;
 }
 
+#confirmOverlay.isScheduleConflictConfirm .modal{
+  border-radius: 0;
+  border-color: rgba(156,163,175,.72);
+}
+
+#confirmOverlay.isScheduleConflictConfirm .confirmText{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+}
+
 #confirmOverlay.isScheduleConflictConfirm #confirmCancelBtn,
 #confirmOverlay.isScheduleConflictConfirm #confirmAltBtn,
 #confirmOverlay.isScheduleConflictConfirm #confirmOkBtn{
   flex: 1 1 0;
   justify-content: center;
+  border-color: rgba(156,163,175,.72);
 }
 
 #addTaskOverlay .addTaskWizardProgress{

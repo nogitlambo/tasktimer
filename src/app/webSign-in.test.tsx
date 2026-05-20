@@ -27,4 +27,12 @@ describe("WebSignIn", () => {
     expect(html.indexOf("Continue without account")).toBeGreaterThan(html.indexOf("Continue with Google"));
     expect(html).toContain('href="/tasklaunch"');
   });
+
+  it("omits the guest link for auth-only surfaces", () => {
+    const html = renderToStaticMarkup(<WebSignIn {...baseProps} showGuestLink={false} />);
+
+    expect(html).toContain("Continue with Google");
+    expect(html).toContain("Continue with email");
+    expect(html).not.toContain("Continue without account");
+  });
 });

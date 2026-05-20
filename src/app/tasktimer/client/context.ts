@@ -822,6 +822,10 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  selectDashboardActivityDay: (dayKey: string | null) => void;
+  closeDashboardActivityDayDetail: () => void;
+  toggleDashboardActivityGoal: () => void;
+  toggleDashboardActivityCompare: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -831,6 +835,8 @@ export type TaskTimerDashboardContext = {
   renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
   openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
+  navigateToAppRoute: (path: string) => void;
+  jumpToTaskById: (taskId: string) => void;
 };
 
 export type TaskTimerDashboardRenderContext = {

@@ -23,8 +23,12 @@ function isHalfDefaultDashboardCard(cardId: string) {
   return cardId === "tasks-completed" || cardId === "momentum" || cardId === "avg-session-by-task" || cardId === "heatmap";
 }
 
-function isFixedFullWidthDashboardCard() {
-  return false;
+function isFixedFullWidthDashboardCard(cardId?: string | null) {
+  return String(cardId || "").trim() === "activity-overview";
+}
+
+function isTopLockedDashboardCard(cardId?: string | null) {
+  return String(cardId || "").trim() === "activity-overview";
 }
 
 function isFixedHalfWidthDashboardCard(cardId: string) {
@@ -32,10 +36,11 @@ function isFixedHalfWidthDashboardCard(cardId: string) {
 }
 
 function isFixedDashboardCard(cardId: string) {
-  return isFixedFullWidthDashboardCard() || isFixedHalfWidthDashboardCard(cardId);
+  return isFixedFullWidthDashboardCard(cardId) || isFixedHalfWidthDashboardCard(cardId);
 }
 
 function getDefaultDashboardCardSize(cardId: string): DashboardCardSize | null {
+  if (isFixedFullWidthDashboardCard(cardId)) return "full";
   if (isQuarterDefaultDashboardCard(cardId)) return "quarter";
   if (isHalfDefaultDashboardCard(cardId)) return "half";
   return null;
@@ -43,7 +48,7 @@ function getDefaultDashboardCardSize(cardId: string): DashboardCardSize | null {
 
 export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
   const normalizedCardId = String(cardId || "").trim();
-  if (isFixedFullWidthDashboardCard()) return "full";
+  if (isFixedFullWidthDashboardCard(normalizedCardId)) return "full";
   if (isFixedHalfWidthDashboardCard(normalizedCardId)) return "half";
   if (normalizedCardId === "tasks-completed" && (value === "quarter" || value === "eighth")) return "half";
   if (value === "eighth") return isQuarterDefaultDashboardCard(normalizedCardId) ? "quarter" : null;
@@ -52,6 +57,7 @@ export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null
 }
 
 export function isDashboardCardSizeOptionAllowed(size: string, cardId: string) {
+  if (String(cardId || "").trim() === "activity-overview") return size === "full";
   if (String(cardId || "").trim() === "tasks-completed") return size === "half";
   return size === "full" || size === "half" || size === "quarter";
 }
@@ -73,6 +79,7 @@ export function shouldIgnoreDashboardPointerDragStartTarget(target: DashboardClo
   ) {
     return true;
   }
+  if (target.closest("[data-dashboard-activity-toggle], [data-dashboard-activity-day], [data-dashboard-activity-action]")) return true;
   return false;
 }
 
@@ -83,6 +90,7 @@ export function shouldOpenDashboardLockedUpgradePrompt(editMode: boolean) {
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
   const DASHBOARD_PANEL_REGISTRY = [
+    { panelId: "activity-overview", label: "Activity Overview" },
     { panelId: "week-hours", label: "Today" },
     { panelId: "weekly-time-goals", label: "This Week" },
     { panelId: "tasks-completed", label: "Task Overview" },
@@ -142,6 +150,16 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function shouldForceVisibleDashboardCard(cardId: string) {
     return isAdvancedDashboardCard(cardId) && !ctx.hasEntitlement("advancedInsights");
+  }
+
+  function applyDefaultDashboardCardVisibility(cardId: string, visibility: Record<string, boolean>) {
+    if (cardId === "activity-overview" && typeof visibility[cardId] !== "boolean") {
+      visibility[cardId] = true;
+      return;
+    }
+    if ((cardId === "week-hours" || cardId === "weekly-time-goals") && typeof visibility[cardId] !== "boolean") {
+      visibility[cardId] = false;
+    }
   }
 
   function getDashboardLockedFeatureLabel(cardId: string) {
@@ -288,7 +306,9 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function getDashboardCardPlacementsMapForStorage() {
-    return sanitizeDashboardCardPlacements(ctx.getDashboardCardPlacements());
+    const placements = sanitizeDashboardCardPlacements(ctx.getDashboardCardPlacements());
+    placements["activity-overview"] = { col: 1, row: 1 };
+    return placements;
   }
 
   function saveDashboardWidgetState(partialWidgets: Record<string, unknown>) {
@@ -311,6 +331,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const meta = collectDashboardPanelMeta();
     if (!meta.length) return;
     const nextVisibility = { ...ctx.getDashboardCardVisibility() };
+    meta.forEach(({ panelId }) => applyDefaultDashboardCardVisibility(panelId, nextVisibility));
     ctx.setDashboardCardVisibility(nextVisibility);
     meta.forEach(({ panel, panelId }) => {
       const isVisible = nextVisibility[panelId] !== false;
@@ -345,6 +366,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         nextVisibility[cardId] = visible;
       });
     }
+    DASHBOARD_PANEL_REGISTRY.forEach(({ panelId }) => applyDefaultDashboardCardVisibility(panelId, nextVisibility));
     ctx.setDashboardCardVisibility(nextVisibility);
     ensureDashboardIncludedModesValid();
   }
@@ -385,12 +407,13 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
         const size =
           sanitizeDashboardCardSize(cardSizes[cardId], cardId)
           || getDefaultDashboardCardSize(cardId);
+        const isTopLocked = isTopLockedDashboardCard(cardId);
         return {
           id: cardId,
           size,
-          requested: requestedPlacements[cardId] || null,
+          requested: isTopLocked ? { col: 1, row: 1 } : requestedPlacements[cardId] || null,
           orderIndex,
-          placementPriority: draggingId && cardId === draggingId ? 1 : 0,
+          placementPriority: isTopLocked ? 2 : draggingId && cardId === draggingId ? 1 : 0,
         };
       })
       .filter((item) => !!item.id);
@@ -527,7 +550,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const id = card.getAttribute("data-dashboard-id") || "";
       return !seen.has(id);
     });
-    [...ordered, ...unordered].forEach((card) => grid.appendChild(card));
+    const nextCards = [...ordered, ...unordered];
+    const topLockedCards = nextCards.filter((card) => isTopLockedDashboardCard(card.getAttribute("data-dashboard-id")));
+    const movableCards = nextCards.filter((card) => !isTopLockedDashboardCard(card.getAttribute("data-dashboard-id")));
+    [...topLockedCards, ...movableCards].forEach((card) => grid.appendChild(card));
   }
 
   function applyDashboardOrderFromStorage() {
@@ -625,7 +651,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
     grid.classList.toggle("isEditMode", ctx.getDashboardEditMode());
     Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-      (el as HTMLElement).setAttribute("draggable", ctx.getDashboardEditMode() ? "true" : "false");
+      const card = el as HTMLElement;
+      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
+      const canDrag = ctx.getDashboardEditMode() && !isTopLockedDashboardCard(cardId);
+      card.classList.toggle("isDashboardTopLocked", isTopLockedDashboardCard(cardId));
+      card.setAttribute("draggable", canDrag ? "true" : "false");
     });
     syncDashboardCardSizeControlState();
     applyDashboardCardPlacements();
@@ -773,6 +803,34 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       e.preventDefault();
       return;
     }
+    const activityToggle = e.target?.closest?.("[data-dashboard-activity-toggle]") as HTMLElement | null;
+    if (activityToggle) {
+      const toggle = String(activityToggle.getAttribute("data-dashboard-activity-toggle") || "").trim();
+      if (toggle === "goal") ctx.toggleDashboardActivityGoal();
+      else if (toggle === "compare") ctx.toggleDashboardActivityCompare();
+      e.preventDefault();
+      return;
+    }
+    const activityDay = e.target?.closest?.("[data-dashboard-activity-day]") as HTMLElement | null;
+    if (activityDay) {
+      const dayKey = String(activityDay.getAttribute("data-dashboard-activity-day") || "").trim();
+      if (dayKey) ctx.selectDashboardActivityDay(dayKey);
+      e.preventDefault();
+      return;
+    }
+    const activityAction = e.target?.closest?.("[data-dashboard-activity-action]") as HTMLElement | null;
+    if (activityAction) {
+      const action = String(activityAction.getAttribute("data-dashboard-activity-action") || "").trim();
+      if (action === "close-detail") ctx.closeDashboardActivityDayDetail();
+      else if (action === "tasks") ctx.navigateToAppRoute("/tasklaunch");
+      else if (action === "history") ctx.navigateToAppRoute("/history-manager?returnTo=dashboard");
+      else if (action === "task") {
+        const taskId = String(activityAction.getAttribute("data-dashboard-activity-task-id") || "").trim();
+        if (taskId) ctx.jumpToTaskById(taskId);
+      }
+      e.preventDefault();
+      return;
+    }
     const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
     if (heatDayBtn) {
       const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();
@@ -876,6 +934,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const grid = getDashboardGridEl();
     const card = e.target?.closest?.(".dashboardCard[data-dashboard-id]") as HTMLElement | null;
     if (!grid || !card || !grid.contains(card)) return;
+    if (isTopLockedDashboardCard(card.getAttribute("data-dashboard-id"))) return;
     closeDashboardCardSizeMenus();
     dashboardPointerDrag = {
       card,
@@ -966,6 +1025,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     closeDashboardCardSizeMenus();
     const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
     if (!card || !els.dashboardGrid?.contains(card)) return;
+    if (isTopLockedDashboardCard(card.getAttribute("data-dashboard-id"))) {
+      e.preventDefault?.();
+      return;
+    }
     ctx.setDashboardDragEl(card);
     card.classList.add("isDragging");
     if (e.dataTransfer) {

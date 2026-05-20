@@ -29,6 +29,11 @@ import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dash
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
 import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
 import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
+import {
+  buildDashboardActivityOverviewModel,
+  type DashboardActivityOverviewDay,
+  type DashboardActivityOverviewModel,
+} from "./dashboard-card-activity-overview";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,6 +41,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const { els } = ctx;
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
+  let selectedActivityOverviewDayKey: string | null = null;
+  let activityOverviewGoalVisible = true;
+  let activityOverviewCompareVisible = true;
   let lastMomentumRenderSignature = "";
   let lastMomentumAnimatedTargetScore: number | null = null;
   let lastMomentumAnimatedTargetBand: string | null = null;
@@ -735,6 +743,97 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
   }
 
+  function renderDashboardActivityWeeklySummary() {
+    const valueEl = (els as any).dashboardActivityWeeklyGoalsValue as HTMLElement | null;
+    const metaEl = (els as any).dashboardActivityWeeklyGoalsMeta as HTMLElement | null;
+    const progressBarEl = (els as any).dashboardActivityWeeklyGoalsProgressBar as HTMLElement | null;
+    const projectionMarkerEl = (els as any).dashboardActivityWeeklyGoalsProjectionMarker as HTMLElement | null;
+    const projectionFillEl = (els as any).dashboardActivityWeeklyGoalsProjectionFill as HTMLElement | null;
+    const progressFillEl = (els as any).dashboardActivityWeeklyGoalsProgressFill as HTMLElement | null;
+    const progressTextEl = (els as any).dashboardActivityWeeklyGoalsProgressText as HTMLElement | null;
+    const trendIndicatorEl = (els as any).dashboardActivityWeeklyTrendIndicator as HTMLElement | null;
+    const historyByTaskId = ctx.getHistoryByTaskId();
+
+    const nowValue = nowMs();
+    const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
+    const prevWeekEndMs = weekStartMs;
+    const prevWeekStartMs = prevWeekEndMs - 7 * 86400000;
+    const goalTasks = getDashboardFilteredTasks().filter((task) => {
+      if (!task?.timeGoalEnabled) return false;
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      return goalMinutes > 0 && (task.timeGoalPeriod === "day" || task.timeGoalPeriod === "week");
+    });
+    const totalGoalMs = goalTasks.reduce((sum, task) => {
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      return sum + goalMinutes * 60000 * (task.timeGoalPeriod === "day" ? 7 : 1);
+    }, 0);
+    const loggedMs = goalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      return sum + entries.reduce((entrySum, entry: any) => {
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue || ms <= 0) return entrySum;
+        return entrySum + ms;
+      }, 0);
+    }, 0);
+    let hasFullPriorWeekHistory = false;
+    const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      return sum + entries.reduce((entrySum, entry: any) => {
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (ms <= 0) return entrySum;
+        if (Number.isFinite(ts) && ts <= prevWeekStartMs) hasFullPriorWeekHistory = true;
+        if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
+        return entrySum + ms;
+      }, 0);
+    }, 0);
+    const runningMs = goalTasks.reduce((sum, task) => {
+      if (!isDashboardTaskActivelyRunning(task)) return sum;
+      return sum + Math.max(0, ctx.getElapsedMs(task));
+    }, 0);
+    const projectedMs = loggedMs + runningMs;
+    const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
+    const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
+    if (trendIndicatorEl) {
+      if (hasFullPriorWeekHistory && prevWeekLoggedMs > 0) {
+        trendIndicatorEl.style.display = "";
+        applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
+          showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+        });
+      } else {
+        trendIndicatorEl.style.display = "none";
+        trendIndicatorEl.textContent = "";
+        trendIndicatorEl.classList.remove("positive", "negative", "neutral");
+      }
+    }
+    if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
+    if (metaEl) {
+      metaEl.textContent = "";
+      metaEl.style.display = "none";
+    }
+    applyDashboardGoalProgressUi({
+      progressBarEl,
+      progressFillEl,
+      projectionFillEl,
+      projectionMarkerEl,
+      goalTotalMs: totalGoalMs,
+      loggedMs,
+      projectedMs,
+      runningMs,
+      activeMarkerRunning: runningMs > 0,
+      activeMarkerPct: totalGoalMs > 0 ? projectedPct : progressPct,
+      emptyLabel: "Weekly time goal progress: no weekly time goals enabled",
+      activeLabel: "Weekly time goal progress",
+      projectedLabel: "projected if running tasks are logged",
+    });
+    if (progressTextEl) {
+      progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
+    }
+  }
+
   function renderDashboardMomentumCard() {
     const cardEl = els.dashboardMomentumCard as HTMLElement | null;
     const dialEl = els.dashboardMomentumDial as HTMLElement | null;
@@ -1002,6 +1101,259 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
 
     return { progressPct, projectedPct, showProjectionFill, activeMarkerRunning };
+  }
+
+  function getDashboardActivityOverviewModel() {
+    return buildDashboardActivityOverviewModel({
+      tasks: ctx.getTasks(),
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      deletedTaskMeta: ctx.getDeletedTaskMeta(),
+      weekStarting: ctx.getWeekStarting(),
+      nowMs: nowMs(),
+      getElapsedMs: ctx.getElapsedMs,
+      isTaskRunning: isDashboardTaskActivelyRunning,
+      normalizeHistoryTimestampMs: ctx.normalizeHistoryTimestampMs,
+    });
+  }
+
+  function getDashboardActivityPoint(day: DashboardActivityOverviewDay, index: number, maxChartMs: number) {
+    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
+    const x = chart.left + (index / 6) * (chart.right - chart.left);
+    const ratio = maxChartMs > 0 ? Math.max(0, Math.min(1.15, day.cumulativeMs / maxChartMs)) : 0;
+    const y = chart.bottom - Math.min(1, ratio) * (chart.bottom - chart.top);
+    return { x, y };
+  }
+
+  function getDashboardActivityDailyPoint(day: DashboardActivityOverviewDay, index: number, maxChartMs: number) {
+    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
+    const x = chart.left + (index / 6) * (chart.right - chart.left);
+    const ratio = maxChartMs > 0 ? Math.max(0, Math.min(1, day.totalMs / maxChartMs)) : 0;
+    const y = chart.bottom - ratio * (chart.bottom - chart.top);
+    return { x, y };
+  }
+
+  function buildDashboardActivityPath(
+    days: DashboardActivityOverviewDay[],
+    maxChartMs: number,
+    pointForDay: (day: DashboardActivityOverviewDay, index: number, maxChartMs: number) => { x: number; y: number }
+  ) {
+    if (!days.length) return "";
+    return days
+      .map((day, index) => {
+        const point = pointForDay(day, index, maxChartMs);
+        return `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      })
+      .join(" ");
+  }
+
+  function buildDashboardActivityAreaPath(model: DashboardActivityOverviewModel) {
+    const linePath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityPoint);
+    if (!linePath || !model.days.length) return "";
+    const first = getDashboardActivityPoint(model.days[0]!, 0, model.maxChartMs);
+    const last = getDashboardActivityPoint(model.days[model.days.length - 1]!, model.days.length - 1, model.maxChartMs);
+    return `${linePath} L ${last.x.toFixed(1)} 258 L ${first.x.toFixed(1)} 258 Z`;
+  }
+
+  function syncDashboardActivityToggle(button: HTMLElement | null, isOn: boolean) {
+    if (!button) return;
+    button.classList.toggle("isOn", isOn);
+    button.setAttribute("aria-pressed", isOn ? "true" : "false");
+  }
+
+  function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
+    const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
+    const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
+    if (axisEl) {
+      axisEl.innerHTML = model.days
+        .map(
+          (day) =>
+            `<button class="dashboardActivityAxisDay" type="button" data-dashboard-activity-day="${ctx.escapeHtmlUI(day.key)}" aria-label="${ctx.escapeHtmlUI(`Show ${day.longLabel}`)}"><span>${ctx.escapeHtmlUI(day.label)}</span><small>${ctx.escapeHtmlUI(day.dateLabel)}</small></button>`
+        )
+        .join("");
+    }
+    if (yAxisEl) {
+      const half = Math.round(model.maxChartMs / 2);
+      yAxisEl.innerHTML = [model.maxChartMs, half, 0]
+        .map((ms) => `<span>${ctx.escapeHtmlUI(formatDashboardDurationShort(ms))}</span>`)
+        .join("");
+    }
+  }
+
+  function renderDashboardActivitySvg(model: DashboardActivityOverviewModel) {
+    const chartGridEl = (els as any).dashboardActivityChartGrid as SVGGElement | null;
+    const comparePathEl = (els as any).dashboardActivityComparePath as SVGPathElement | null;
+    const areaPathEl = (els as any).dashboardActivityAreaPath as SVGPathElement | null;
+    const dailyPathEl = (els as any).dashboardActivityDailyPath as SVGPathElement | null;
+    const linePathEl = (els as any).dashboardActivityLinePath as SVGPathElement | null;
+    const goalLineEl = (els as any).dashboardActivityGoalLine as SVGLineElement | null;
+    const pointsEl = (els as any).dashboardActivityPoints as SVGGElement | null;
+    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
+    const svgNs = "http://www.w3.org/2000/svg";
+
+    if (chartGridEl) {
+      chartGridEl.innerHTML = "";
+      [chart.top, (chart.top + chart.bottom) / 2, chart.bottom].forEach((y) => {
+        const line = document.createElementNS(svgNs, "line");
+        line.setAttribute("class", "dashboardActivityGridLine");
+        line.setAttribute("x1", String(chart.left));
+        line.setAttribute("x2", String(chart.right));
+        line.setAttribute("y1", y.toFixed(1));
+        line.setAttribute("y2", y.toFixed(1));
+        chartGridEl.appendChild(line);
+      });
+    }
+    const cumulativePath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityPoint);
+    const dailyPath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityDailyPoint);
+    const comparePath = buildDashboardActivityPath(
+      model.days.map((day) => ({ ...day, cumulativeMs: day.previousWeekCumulativeMs })),
+      model.maxChartMs,
+      getDashboardActivityPoint
+    );
+    if (linePathEl) linePathEl.setAttribute("d", cumulativePath);
+    if (dailyPathEl) dailyPathEl.setAttribute("d", dailyPath);
+    if (areaPathEl) areaPathEl.setAttribute("d", buildDashboardActivityAreaPath(model));
+    if (comparePathEl) {
+      comparePathEl.setAttribute("d", activityOverviewCompareVisible && model.hasPreviousWeekActivity ? comparePath : "");
+    }
+    if (goalLineEl) {
+      const showGoal = activityOverviewGoalVisible && model.totalGoalMs > 0;
+      const goalRatio = model.maxChartMs > 0 ? Math.max(0, Math.min(1, model.totalGoalMs / model.maxChartMs)) : 0;
+      const y = chart.bottom - goalRatio * (chart.bottom - chart.top);
+      goalLineEl.setAttribute("x1", String(chart.left));
+      goalLineEl.setAttribute("x2", String(chart.right));
+      goalLineEl.setAttribute("y1", y.toFixed(1));
+      goalLineEl.setAttribute("y2", y.toFixed(1));
+      goalLineEl.style.display = showGoal ? "" : "none";
+    }
+    if (pointsEl) {
+      pointsEl.innerHTML = "";
+      model.days.forEach((day, index) => {
+        const point = getDashboardActivityPoint(day, index, model.maxChartMs);
+        const button = document.createElementNS(svgNs, "g");
+        button.setAttribute("class", `dashboardActivityPoint${day.key === selectedActivityOverviewDayKey ? " isSelected" : ""}`);
+        button.setAttribute("data-dashboard-activity-day", day.key);
+        button.setAttribute("tabindex", "0");
+        button.setAttribute("role", "button");
+        button.setAttribute("aria-label", `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`);
+        const hit = document.createElementNS(svgNs, "circle");
+        hit.setAttribute("class", "dashboardActivityPointHit");
+        hit.setAttribute("cx", point.x.toFixed(1));
+        hit.setAttribute("cy", point.y.toFixed(1));
+        hit.setAttribute("r", "14");
+        const dot = document.createElementNS(svgNs, "circle");
+        dot.setAttribute("class", "dashboardActivityPointDot");
+        dot.setAttribute("cx", point.x.toFixed(1));
+        dot.setAttribute("cy", point.y.toFixed(1));
+        dot.setAttribute("r", day.totalMs > 0 ? "4.8" : "3.2");
+        button.appendChild(hit);
+        button.appendChild(dot);
+        pointsEl.appendChild(button);
+      });
+    }
+  }
+
+  function renderDashboardActivityDayDetail(model: DashboardActivityOverviewModel) {
+    const detailEl = (els as any).dashboardActivityDayDetail as HTMLElement | null;
+    const titleEl = (els as any).dashboardActivityDetailTitle as HTMLElement | null;
+    const metaEl = (els as any).dashboardActivityDetailMeta as HTMLElement | null;
+    const bodyEl = (els as any).dashboardActivityDetailBody as HTMLElement | null;
+    if (!detailEl || !bodyEl) return;
+    const selectedDay = model.days.find((day) => day.key === selectedActivityOverviewDayKey) || null;
+    detailEl.hidden = !selectedDay;
+    if (!selectedDay) {
+      bodyEl.innerHTML = "";
+      return;
+    }
+    if (titleEl) titleEl.textContent = selectedDay.longLabel;
+    if (metaEl) metaEl.textContent = `${formatDashboardDurationWithMinutes(selectedDay.totalMs)} logged`;
+    if (!selectedDay.sessions.length) {
+      bodyEl.innerHTML = `<div class="dashboardActivityDetailEmpty">No sessions logged for this day.</div>`;
+      return;
+    }
+    const taskRows = selectedDay.taskRows
+      .map(
+        (row) =>
+          `<button class="dashboardActivityTaskRow" type="button" data-dashboard-activity-action="task" data-dashboard-activity-task-id="${ctx.escapeHtmlUI(row.taskId)}" ${row.archived ? "disabled" : ""}><span class="dashboardActivityTaskSwatch" style="--activity-task-color:${ctx.escapeHtmlUI(row.color)}"></span><span>${ctx.escapeHtmlUI(row.taskName)}${row.archived ? " (archived)" : ""}</span><strong>${ctx.escapeHtmlUI(formatDashboardDurationShort(row.totalMs))}</strong></button>`
+      )
+      .join("");
+    const sessionRows = selectedDay.sessions
+      .map((session) => {
+        const timeText = new Date(session.ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+        const note = session.note ? `<p>${ctx.escapeHtmlUI(session.note)}</p>` : "";
+        return `<div class="dashboardActivitySessionRow"><span class="dashboardActivityTaskSwatch" style="--activity-task-color:${ctx.escapeHtmlUI(session.color)}"></span><div><strong>${ctx.escapeHtmlUI(session.taskName)}</strong><small>${ctx.escapeHtmlUI(timeText)}${session.isLive ? " - live" : ""} - ${ctx.escapeHtmlUI(formatDashboardDurationShort(session.ms))}</small>${note}</div></div>`;
+      })
+      .join("");
+    bodyEl.innerHTML = `
+      <div class="dashboardActivityDetailSection">
+        <div class="dashboardActivityDetailSectionTitle">Tasks</div>
+        ${taskRows}
+      </div>
+      <div class="dashboardActivityDetailSection">
+        <div class="dashboardActivityDetailSectionTitle">Sessions</div>
+        ${sessionRows}
+      </div>
+      <div class="dashboardActivityDetailActions">
+        <button class="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
+      </div>
+    `;
+  }
+
+  function renderDashboardActivityOverviewCard() {
+    const cardEl = (els as any).dashboardActivityOverviewCard as HTMLElement | null;
+    if (!cardEl) return;
+    const model = getDashboardActivityOverviewModel();
+    if (selectedActivityOverviewDayKey && !model.days.some((day) => day.key === selectedActivityOverviewDayKey)) selectedActivityOverviewDayKey = null;
+    const subtitleEl = (els as any).dashboardActivityOverviewSubtitle as HTMLElement | null;
+    const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
+    const emptyTextEl = (els as any).dashboardActivityEmptyText as HTMLElement | null;
+    syncDashboardActivityToggle((els as any).dashboardActivityGoalToggle, activityOverviewGoalVisible);
+    syncDashboardActivityToggle((els as any).dashboardActivityCompareToggle, activityOverviewCompareVisible);
+    if (subtitleEl) {
+      const start = new Date(model.weekStartMs).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const end = new Date(model.weekEndMs - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      subtitleEl.textContent = `${start} - ${end}`;
+    }
+    if (emptyEl) {
+      const showEmpty = !model.hasActivity || !model.hasGoal;
+      emptyEl.hidden = !showEmpty;
+      if (emptyTextEl) {
+        emptyTextEl.textContent = !model.hasActivity && !model.hasGoal
+          ? "Set task goals or log time to build your weekly activity overview."
+          : !model.hasGoal
+            ? "No weekly goal is set. Activity is shown without a ceiling."
+            : "No activity logged this week.";
+      }
+    }
+    renderDashboardActivityAxes(model);
+    renderDashboardActivitySvg(model);
+    renderDashboardActivityDayDetail(model);
+    const previousSummary = model.hasPreviousWeekActivity
+      ? `${formatDashboardDurationShort(model.previousWeekTotalMs)} logged in the previous week.`
+      : "No previous-week activity available.";
+    cardEl.setAttribute(
+      "aria-label",
+      `Activity overview. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."} ${previousSummary}`
+    );
+  }
+
+  function selectDashboardActivityDay(dayKey: string | null) {
+    selectedActivityOverviewDayKey = String(dayKey || "").trim() || null;
+    renderDashboardActivityOverviewCard();
+  }
+
+  function closeDashboardActivityDayDetail() {
+    selectedActivityOverviewDayKey = null;
+    renderDashboardActivityOverviewCard();
+  }
+
+  function toggleDashboardActivityGoal() {
+    activityOverviewGoalVisible = !activityOverviewGoalVisible;
+    renderDashboardActivityOverviewCard();
+  }
+
+  function toggleDashboardActivityCompare() {
+    activityOverviewCompareVisible = !activityOverviewCompareVisible;
+    renderDashboardActivityOverviewCard();
   }
 
   function renderDashboardTasksCompletedCard() {
@@ -1312,6 +1664,57 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     if (!deltaEl) return;
 
+    const delta = formatDashboardTodayHoursDeltaText(todayHoursModel, formatDashboardDurationShort);
+    deltaEl.classList.remove("positive", "negative");
+    deltaEl.textContent = delta.text;
+    if (delta.sentiment === "positive") deltaEl.classList.add("positive");
+    else if (delta.sentiment === "negative") deltaEl.classList.add("negative");
+  }
+
+  function renderDashboardActivityTodaySummary() {
+    const valueEl = (els as any).dashboardActivityTodayHoursValue as HTMLElement | null;
+    const metaEl = (els as any).dashboardActivityTodayHoursMeta as HTMLElement | null;
+    const deltaEl = (els as any).dashboardActivityTodayHoursDelta as HTMLElement | null;
+    const trendIndicatorEl = (els as any).dashboardActivityTodayTrendIndicator as HTMLElement | null;
+    const progressBarEl = (els as any).dashboardActivityTodayHoursProgressBar as HTMLElement | null;
+    const projectionMarkerEl = (els as any).dashboardActivityTodayHoursProjectionMarker as HTMLElement | null;
+    const projectionFillEl = (els as any).dashboardActivityTodayHoursProjectionFill as HTMLElement | null;
+    const progressFillEl = (els as any).dashboardActivityTodayHoursProgressFill as HTMLElement | null;
+    const todayHoursModel = buildDashboardTodayHoursModel({
+      tasks: getDashboardFilteredTasks(),
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      nowMs: nowMs(),
+      trendMinBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      getElapsedMs: (task) => ctx.getElapsedMs(task),
+      isTaskRunning: (task) => isDashboardTaskActivelyRunning(task),
+      normalizeHistoryTimestampMs: (value) => ctx.normalizeHistoryTimestampMs(value),
+    });
+
+    if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
+    applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
+      minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      showDirectionalArrow: todayHoursModel.showDirectionalTrendArrow,
+    });
+    applyDashboardGoalProgressUi({
+      progressBarEl,
+      progressFillEl,
+      projectionFillEl,
+      projectionMarkerEl,
+      goalTotalMs: todayHoursModel.totalDailyGoalMs,
+      loggedMs: todayHoursModel.dailyGoalElapsedMs,
+      projectedMs: todayHoursModel.dailyGoalProjectedMs,
+      runningMs: todayHoursModel.dailyGoalInProgressMs,
+      activeMarkerRunning: todayHoursModel.dailyGoalInProgressMs > 0,
+      activeMarkerPct: todayHoursModel.totalDailyGoalMs > 0 ? todayHoursModel.dailyGoalProjectedPct : todayHoursModel.dailyGoalProgressPct,
+      emptyLabel: "Today's time goal progress: no daily time goals enabled",
+      activeLabel: "Today's time goal progress",
+      projectedLabel: "projected if running tasks are logged",
+    });
+    if (metaEl) {
+      metaEl.textContent = "";
+      metaEl.style.display = "none";
+    }
+    if (!deltaEl) return;
     const delta = formatDashboardTodayHoursDeltaText(todayHoursModel, formatDashboardDurationShort);
     deltaEl.classList.remove("positive", "negative");
     deltaEl.textContent = delta.text;
@@ -2348,6 +2751,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
     renderRewardsHeaderProgressCard();
+    renderDashboardActivityOverviewCard();
+    renderDashboardActivityTodaySummary();
+    renderDashboardActivityWeeklySummary();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -2362,6 +2768,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function renderDashboardLiveWidgets() {
+    renderDashboardActivityOverviewCard();
+    renderDashboardActivityTodaySummary();
+    renderDashboardActivityWeeklySummary();
     renderDashboardTodayHoursCard();
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
@@ -2377,12 +2786,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardWeeklyGoalsCard,
     renderDashboardTasksCompletedCard,
     renderDashboardTodayHoursCard,
+    renderDashboardActivityOverviewCard,
     renderDashboardTimelineCard,
     renderDashboardFocusTrend,
     renderDashboardHeatCalendar,
     renderDashboardAvgSessionChart,
     renderDashboardLiveWidgets,
     renderDashboardWidgets,
+    selectDashboardActivityDay,
+    closeDashboardActivityDayDetail,
+    toggleDashboardActivityGoal,
+    toggleDashboardActivityCompare,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,

@@ -680,6 +680,10 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  selectDashboardActivityDay: (dayKey: string | null) => void;
+  closeDashboardActivityDayDetail: () => void;
+  toggleDashboardActivityGoal: () => void;
+  toggleDashboardActivityCompare: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -689,6 +693,8 @@ type CreateDashboardOptionsArgs = {
   renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
   openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
+  navigateToAppRoute: (path: string) => void;
+  jumpToTaskById: (taskId: string) => void;
 };
 
 type CreateDashboardFeatureOptionsArgs = {
@@ -704,6 +710,10 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
     | "renderDashboardTimelineCard"
+    | "selectDashboardActivityDay"
+    | "closeDashboardActivityDayDetail"
+    | "toggleDashboardActivityGoal"
+    | "toggleDashboardActivityCompare"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -1552,6 +1562,10 @@ export function createTaskTimerDashboardContext(
     saveCloudDashboard: args.saveCloudDashboard,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
+    selectDashboardActivityDay: args.selectDashboardActivityDay,
+    closeDashboardActivityDayDetail: args.closeDashboardActivityDayDetail,
+    toggleDashboardActivityGoal: args.toggleDashboardActivityGoal,
+    toggleDashboardActivityCompare: args.toggleDashboardActivityCompare,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
@@ -1561,6 +1575,8 @@ export function createTaskTimerDashboardContext(
     renderDashboardHeatSessionList: args.renderDashboardHeatSessionList,
     renderDashboardHeatTaskList: args.renderDashboardHeatTaskList,
     openDashboardHeatSessionSummary: args.openDashboardHeatSessionSummary,
+    navigateToAppRoute: args.navigateToAppRoute,
+    jumpToTaskById: args.jumpToTaskById,
   };
 }
 
@@ -1576,6 +1592,10 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver,
+    selectDashboardActivityDay,
+    closeDashboardActivityDayDetail,
+    toggleDashboardActivityGoal,
+    toggleDashboardActivityCompare,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
     renderDashboardHeatSessionList,
@@ -1607,6 +1627,10 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       syncDashboardMenuFlipUi: dashboardBindings.syncDashboardMenuFlipUi,
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
+      selectDashboardActivityDay: (dayKey) => selectDashboardActivityDay(dayKey),
+      closeDashboardActivityDayDetail: () => closeDashboardActivityDayDetail(),
+      toggleDashboardActivityGoal: () => toggleDashboardActivityGoal(),
+      toggleDashboardActivityCompare: () => toggleDashboardActivityCompare(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),

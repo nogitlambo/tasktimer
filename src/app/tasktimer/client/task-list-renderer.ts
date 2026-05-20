@@ -91,19 +91,6 @@ export function buildDisplayedTasks(tasks: Task[], taskOrderBy: "custom" | "alph
   return nextTasks.sort(compareTasksByCustomOrder);
 }
 
-function renderTaskListEmptyState(taskListEl: HTMLElement) {
-  taskListEl.innerHTML = `
-        <section class="taskListEmptyState" aria-label="No tasks">
-          <div class="taskListEmptyContent">
-            <p class="taskListEmptyMessage">No Tasks found</p>
-            <button class="btn btn-accent taskListEmptyAddBtn" type="button" data-action="openAddTask">
-              + Add New Task
-            </button>
-          </div>
-        </section>
-      `;
-}
-
 export function createTaskListRenderer(options: TaskListRendererOptions) {
   function renderTasksPage() {
     const taskListEl = options.taskListEl;
@@ -150,7 +137,6 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     }
 
     if (!displayedTasks.length) {
-      renderTaskListEmptyState(taskListEl);
       if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
       options.syncTimeGoalModalWithTaskState();
       options.maybeRestorePendingTimeGoalFlow();
