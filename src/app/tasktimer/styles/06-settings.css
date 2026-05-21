@@ -1182,6 +1182,11 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   color-scheme: dark;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityStartTimeInput,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityEndTimeInput{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection textarea{
   min-height:120px;
   padding:10px 0;

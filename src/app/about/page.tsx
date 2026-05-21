@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
-import AboutBackButton from "./AboutBackButton";
 import { buildPageMetadata, jsonLdScript, organizationJsonLd, softwareApplicationJsonLd } from "../seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -87,7 +86,12 @@ export default function AboutPage() {
           </Link>
 
           <div className="landingV2HeaderActions">
-            <AboutBackButton />
+            <Link href="/" className="landingV2HeaderBack displayFont">
+              Home
+            </Link>
+            <Link href="/privacy" className="landingV2HeaderBack displayFont">
+              Privacy
+            </Link>
           </div>
         </header>
 
@@ -170,16 +174,6 @@ export default function AboutPage() {
             </p>
           </AboutSection>
         </div>
-
-        <footer className="landingV2Footer">
-          <Link href="/" className="landingV2FooterBrand displayFont">
-            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2FooterBrandIcon" />
-            <span>TaskLaunch</span>
-          </Link>
-          <div className="landingV2FooterLinks">
-            <Link href="/privacy">Privacy</Link>
-          </div>
-        </footer>
       </div>
     </main>
   );

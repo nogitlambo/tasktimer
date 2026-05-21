@@ -489,11 +489,10 @@ function loadShadowPreferences(uid?: string): CachedPreferences {
   }
 }
 
-function loadShadowDashboard(): Awaited<ReturnType<typeof loadDashboard>> {
+function loadShadowDashboard(uid = scopedUid()): Awaited<ReturnType<typeof loadDashboard>> {
   if (typeof window === "undefined") return null;
   try {
-    const parsed = safeParseJson<Awaited<ReturnType<typeof loadDashboard>>>(window.localStorage.getItem(SHADOW_DASHBOARD_KEY));
-    return parsed && typeof parsed === "object" ? parsed : null;
+    return loadScopedShadowData<Awaited<ReturnType<typeof loadDashboard>>>(SHADOW_DASHBOARD_KEY, uid, null);
   } catch {
     return null;
   }
@@ -567,14 +566,14 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
   }
 }
 
-function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>): void {
+function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>, uid = scopedUid()): void {
   if (typeof window === "undefined") return;
   try {
     if (!dashboard) {
       window.localStorage.removeItem(SHADOW_DASHBOARD_KEY);
       return;
     }
-    window.localStorage.setItem(SHADOW_DASHBOARD_KEY, JSON.stringify(dashboard));
+    saveScopedShadowData(SHADOW_DASHBOARD_KEY, uid, dashboard);
   } catch {
     // ignore localStorage failures
   }
@@ -593,14 +592,18 @@ function loadPendingMap(key: string, opts?: { maxAgeMs?: number }): Record<strin
 
 type PendingPreferencesSync = {
   ts: number;
+  uid?: string;
   preferences: NonNullable<Awaited<ReturnType<typeof loadPreferences>>>;
 };
 
-function loadPendingPreferencesSync(): PendingPreferencesSync | null {
+function loadPendingPreferencesSync(uid = scopedUid()): PendingPreferencesSync | null {
   if (typeof window === "undefined") return null;
   try {
     const parsed = safeParseJson<PendingPreferencesSync>(window.localStorage.getItem(PENDING_PREFERENCES_SYNC_KEY));
     if (!parsed || typeof parsed !== "object") return null;
+    const normalizedUid = String(uid || "").trim();
+    const pendingUid = String(parsed.uid || "").trim();
+    if (normalizedUid && pendingUid && pendingUid !== normalizedUid) return null;
     const ts = Number(parsed.ts || 0);
     if (!Number.isFinite(ts) || ts <= 0) return null;
     if (nowMs() - ts > PENDING_PREFERENCES_SYNC_TTL_MS) {
@@ -621,7 +624,10 @@ function loadPendingPreferencesSync(): PendingPreferencesSync | null {
   }
 }
 
-function savePendingPreferencesSync(prefs: NonNullable<Awaited<ReturnType<typeof loadPreferences>>> | null): void {
+function savePendingPreferencesSync(
+  prefs: NonNullable<Awaited<ReturnType<typeof loadPreferences>>> | null,
+  uid = scopedUid()
+): void {
   if (typeof window === "undefined") return;
   try {
     if (!prefs) {
@@ -632,6 +638,7 @@ function savePendingPreferencesSync(prefs: NonNullable<Awaited<ReturnType<typeof
       PENDING_PREFERENCES_SYNC_KEY,
       JSON.stringify({
         ts: nowMs(),
+        uid: String(uid || "").trim(),
         preferences: {
           ...prefs,
           rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
@@ -901,7 +908,7 @@ cachedHistory = loadShadowHistory();
 cachedLiveSessions = loadShadowLiveSessions();
 cachedDeletedMeta = loadShadowDeletedMeta();
 cachedPreferences = loadShadowPreferences(scopedUid());
-cachedDashboard = loadShadowDashboard();
+cachedDashboard = loadShadowDashboard(scopedUid());
 
 export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promise<void> {
   const uid = currentUid();
@@ -912,7 +919,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     cachedLiveSessions = loadShadowLiveSessions(retainedUid);
     cachedDeletedMeta = loadShadowDeletedMeta(retainedUid);
     cachedPreferences = loadShadowPreferences(retainedUid);
-    cachedDashboard = loadShadowDashboard();
+    cachedDashboard = loadShadowDashboard(retainedUid);
     emitPreferenceChange();
     return;
   }
@@ -1079,7 +1086,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDeletedMeta(cachedDeletedMeta);
   const shadowPreferences = loadShadowPreferences(uid);
   const cloudPreferences = snapshot.preferences || null;
-  const pendingPreferences = loadPendingPreferencesSync()?.preferences || null;
+  const pendingPreferences = loadPendingPreferencesSync(uid)?.preferences || null;
   const shadowUpdatedAtMs = Number(shadowPreferences?.updatedAtMs || 0);
   const cloudUpdatedAtMs = Number(cloudPreferences?.updatedAtMs || 0);
   const pendingUpdatedAtMs = Number(pendingPreferences?.updatedAtMs || 0);
@@ -1119,7 +1126,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       });
   }
   cachedDashboard = snapshot.dashboard || null;
-  saveShadowDashboard(cachedDashboard);
+  saveShadowDashboard(cachedDashboard, uid);
   cachedTaskUi = snapshot.taskUi || null;
   hydratedUid = uid;
   const pendingTaskDeleteIds = Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).filter(Boolean);
@@ -1231,6 +1238,59 @@ export function clearScopedStorageState(): void {
     }
   }
   clearTaskTimerPlanStorage();
+  emitPreferenceChange();
+}
+
+export function resetVolatileWorkspaceStateForAuthChange(): void {
+  hydratedUid = "";
+  inFlightPreferencesSync = null;
+  queuedPreferencesSyncSnapshot = null;
+  lastSuccessfulPreferencesSyncSignature = "";
+  inFlightTaskQueueSync = null;
+  queuedTaskUpsertsById.clear();
+  queuedTaskDeletes.clear();
+  inFlightHistoryQueueSync = null;
+  queuedHistoryReplacementsByTaskId.clear();
+  inFlightLiveSessionQueueSync = null;
+  queuedLiveSessionFinalizesByTaskId.clear();
+  queuedLiveSessionUpsertsByTaskId.clear();
+  queuedLiveSessionClears.clear();
+  inFlightLeaderboardProfileSync = null;
+  queuedLeaderboardProfileSync = false;
+  cachedTasks = [];
+  cachedHistory = {};
+  cachedLiveSessions = {};
+  cachedDeletedMeta = {};
+  cachedPreferences = null;
+  cachedDashboard = null;
+  cachedTaskUi = null;
+  lastQueuedDashboardSyncSignature = "";
+  lastQueuedTaskUiSyncSignature = "";
+  lastSuccessfulDashboardSyncSignature = "";
+  lastSuccessfulTaskUiSyncSignature = "";
+  lastTaskCloudFlushAtMs = 0;
+  lastHistoryCloudFlushAtMs = 0;
+  lastLiveSessionCloudFlushAtMs = 0;
+  suppressedTaskCloudWriteCount = 0;
+  suppressedHistoryCloudWriteCount = 0;
+  suppressedLiveSessionCloudWriteCount = 0;
+  lastSuccessfulLeaderboardProfileSignature = "";
+  if (queuedTaskCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedTaskCloudFlushTimer);
+    queuedTaskCloudFlushTimer = null;
+  }
+  if (queuedHistoryCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedHistoryCloudFlushTimer);
+    queuedHistoryCloudFlushTimer = null;
+  }
+  if (queuedLiveSessionCloudFlushTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(queuedLiveSessionCloudFlushTimer);
+    queuedLiveSessionCloudFlushTimer = null;
+  }
+  if (leaderboardProfileSyncTimer != null && typeof window !== "undefined") {
+    window.clearTimeout(leaderboardProfileSyncTimer);
+    leaderboardProfileSyncTimer = null;
+  }
   emitPreferenceChange();
 }
 

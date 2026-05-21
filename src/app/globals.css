@@ -1791,7 +1791,7 @@ canvas {
 
 .privacyLandingPage .landingV2HeroMain {
   gap: 12px;
-  max-width: 920px;
+  max-width: none;
   padding-bottom: 8px;
 }
 
@@ -1807,7 +1807,7 @@ canvas {
 .privacyLandingToc {
   display: grid;
   gap: 10px;
-  max-width: 980px;
+  max-width: none;
   margin: 0;
   padding-left: 20px;
   color: var(--landing-text);
@@ -1890,19 +1890,20 @@ canvas {
   min-height: 36px;
 }
 
-.aboutLandingPage .landingV2Shell {
+.privacyLandingPage .landingV2Shell {
+  width: min(100%, 1024px);
   max-width: 1024px;
   margin-inline: auto;
   text-align: left;
 }
 
-.aboutLandingPage .privacyLandingBody,
-.aboutLandingPage .privacyLandingSection,
-.aboutLandingPage .privacyLandingContent {
+.privacyLandingPage .privacyLandingBody,
+.privacyLandingPage .privacyLandingSection,
+.privacyLandingPage .privacyLandingContent {
   width: 100%;
 }
 
-.aboutLandingPage .privacyLandingContent {
+.privacyLandingPage .privacyLandingContent {
   max-width: none;
   text-align: left;
 }

@@ -74,6 +74,7 @@ function createHarness(overrides?: {
     hydrateFromCloud,
     subscribeTaskCollection: vi.fn(() => () => {}),
     subscribeTaskLiveSessions: vi.fn(() => () => {}),
+    resetVolatileStateForAuthChange: vi.fn(),
   };
 
   const documentStub = createDocumentStub();

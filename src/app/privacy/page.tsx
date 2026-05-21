@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import AppImg from "@/components/AppImg";
-import PrivacyBackButton from "./PrivacyBackButton";
 import { buildPageMetadata, jsonLdScript, organizationJsonLd } from "../seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -62,7 +61,12 @@ export default function PrivacyPolicyPage() {
           </Link>
 
           <div className="landingV2HeaderActions">
-            <PrivacyBackButton />
+            <Link href="/" className="landingV2HeaderBack displayFont">
+              Home
+            </Link>
+            <Link href="/about" className="landingV2HeaderBack displayFont">
+              About
+            </Link>
           </div>
         </header>
 

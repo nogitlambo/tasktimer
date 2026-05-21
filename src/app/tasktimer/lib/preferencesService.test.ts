@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_REWARD_PROGRESS } from "./rewards";
-import { createTaskTimerPreferencesService } from "./preferencesService";
+import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "./preferencesService";
 
 const storageKeys = {
   THEME_KEY: "taskticker_tasks_v1:theme",
@@ -21,7 +21,7 @@ const storageKeys = {
   OPTIMAL_PRODUCTIVITY_DAYS_KEY: "taskticker_tasks_v1:optimalProductivityDays",
 };
 
-function buildDefaultPreferences() {
+function buildDefaultPreferences(): TaskTimerStoredPreferences {
   return {
     schemaVersion: 1 as const,
     theme: "lime" as const,
@@ -50,7 +50,8 @@ function buildDefaultPreferences() {
 }
 
 function createService(overrides?: {
-  cachedPreferences?: ReturnType<typeof buildDefaultPreferences> | null;
+  cachedPreferences?: TaskTimerStoredPreferences | null;
+  currentUid?: string;
 }) {
   return createTaskTimerPreferencesService({
     storageKeys,
@@ -61,7 +62,7 @@ function createService(overrides?: {
     },
     getCloudPreferencesCache: () => null,
     setCloudPreferencesCache: vi.fn(),
-    currentUid: () => "",
+    currentUid: () => overrides?.currentUid ?? "",
     syncOwnFriendshipProfile: vi.fn(),
   });
 }
@@ -122,6 +123,43 @@ describe("createTaskTimerPreferencesService", () => {
     ]);
   });
 
+  it("uses cached cloud preferences instead of shared local storage for signed-in users", () => {
+    window.localStorage.setItem(storageKeys.STARTUP_MODULE_KEY, "tasks");
+    window.localStorage.setItem(storageKeys.TASK_ORDER_BY_KEY, "schedule");
+    window.localStorage.setItem(storageKeys.MOBILE_PUSH_ALERTS_KEY, "true");
+    window.localStorage.setItem(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY, "mon,tue,wed,thu,fri");
+
+    const service = createService({
+      currentUid: "uid-2",
+      cachedPreferences: {
+        ...buildDefaultPreferences(),
+        startupModule: "dashboard",
+        taskOrderBy: "alpha",
+        mobilePushAlertsEnabled: false,
+        optimalProductivityDays: ["sun", "sat"],
+      },
+    });
+
+    expect(service.loadStartupModule()).toBe("dashboard");
+    expect(service.loadTaskOrderBy()).toBe("alpha");
+    expect(service.loadMobilePushAlertsEnabled()).toBe(false);
+    expect(service.loadOptimalProductivityDays()).toEqual(["sun", "sat"]);
+  });
+
+  it("does not apply shared local storage as signed-in defaults before cloud preferences hydrate", () => {
+    window.localStorage.setItem(storageKeys.STARTUP_MODULE_KEY, "tasks");
+    window.localStorage.setItem(storageKeys.TASK_ORDER_BY_KEY, "schedule");
+    window.localStorage.setItem(storageKeys.MOBILE_PUSH_ALERTS_KEY, "true");
+    window.localStorage.setItem(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY, "mon,tue,wed,thu,fri");
+
+    const service = createService({ currentUid: "uid-2" });
+
+    expect(service.loadStartupModule()).toBe("dashboard");
+    expect(service.loadTaskOrderBy()).toBe("custom");
+    expect(service.loadMobilePushAlertsEnabled()).toBe(false);
+    expect(service.loadOptimalProductivityDays()).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
+  });
+
   it("persists and reloads task order by from local storage", () => {
     const savePreferences = vi.fn();
     const setCloudPreferencesCache = vi.fn();
@@ -140,6 +178,7 @@ describe("createTaskTimerPreferencesService", () => {
 
     const snapshot = service.buildSnapshot({
       ...buildDefaultPreferences(),
+      weekStarting: "mon",
       taskOrderBy: "schedule",
     });
     service.persistSnapshot(snapshot);

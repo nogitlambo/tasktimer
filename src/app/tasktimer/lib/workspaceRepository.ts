@@ -17,6 +17,7 @@ import {
   loadTasks,
   primeDashboardCacheFromShadow,
   refreshHistoryFromCloud,
+  resetVolatileWorkspaceStateForAuthChange,
   saveCloudDashboard,
   saveCloudPreferences,
   saveCloudTaskUi,
@@ -163,5 +164,6 @@ export function createTaskTimerWorkspaceRepository() {
     flushPendingCloudWrites: () => flushPendingCloudWrites(),
     waitForPendingTaskSync: () => waitForPendingTaskSync(),
     clearScopedState: () => clearScopedStorageState(),
+    resetVolatileStateForAuthChange: () => resetVolatileWorkspaceStateForAuthChange(),
   };
 }

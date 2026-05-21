@@ -113,6 +113,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return (options.getCloudPreferencesCache() || repository.loadCachedPreferences() || null) as StoredPreferences | null;
   }
 
+  function canUseLocalPreferenceFallback(): boolean {
+    return !String(options.currentUid() || "").trim();
+  }
+
   function normalizeThemeMode(raw: string | null | undefined): "lime" {
     void raw;
     return "lime";
@@ -205,28 +209,31 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadThemeMode(): "lime" {
-    const cached = getStoredOrCachedPreferences();
-    return normalizeThemeMode(cached.theme || safeReadLocalStorage(storageKeys.THEME_KEY));
+    const cached = getStoredPreferencesWithoutDefaults();
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.THEME_KEY) : "";
+    return normalizeThemeMode(cached?.theme || localValue);
   }
 
   function loadMenuButtonStyle(): "parallelogram" | "square" {
-    const cached = getStoredOrCachedPreferences();
-    const raw = String(cached.menuButtonStyle || safeReadLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY)).trim().toLowerCase();
+    const cached = getStoredPreferencesWithoutDefaults();
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY) : "";
+    const raw = String(cached?.menuButtonStyle || localValue).trim().toLowerCase();
     return raw === "square" ? "square" : "parallelogram";
   }
 
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
-    const cached = String(getStoredOrCachedPreferences().weekStarting || safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY))
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY) : "";
+    const cached = String(getStoredPreferencesWithoutDefaults()?.weekStarting || localValue)
       .trim()
       .toLowerCase();
     return normalizeDashboardWeekStart(cached);
   }
 
   function loadStartupModule(): StartupModulePreference {
-    const localValue = safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY);
-    if (localValue) return normalizeStartupModule(localValue);
-    const cachedValue = getStoredOrCachedPreferences().startupModule;
+    const cachedValue = getStoredPreferencesWithoutDefaults()?.startupModule;
     if (typeof cachedValue === "string" && cachedValue.trim()) return normalizeStartupModule(cachedValue);
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY) : "";
+    if (localValue) return normalizeStartupModule(localValue);
     return "dashboard";
   }
 
@@ -235,27 +242,32 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadTaskOrderBy(): "custom" | "alpha" | "schedule" {
-    const localRaw = safeReadLocalStorage(storageKeys.TASK_ORDER_BY_KEY).toLowerCase();
+    const cloudRaw = String(getStoredPreferencesWithoutDefaults()?.taskOrderBy || "").trim().toLowerCase();
+    if (cloudRaw === "alpha" || cloudRaw === "schedule" || cloudRaw === "custom") {
+      return cloudRaw === "alpha" ? "alpha" : cloudRaw === "schedule" ? "schedule" : "custom";
+    }
+    const localRaw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.TASK_ORDER_BY_KEY).toLowerCase() : "";
     if (localRaw === "alpha" || localRaw === "schedule" || localRaw === "custom") return localRaw;
-    const cloudRaw = String(getStoredOrCachedPreferences().taskOrderBy || "").trim().toLowerCase();
     return cloudRaw === "alpha" ? "alpha" : cloudRaw === "schedule" ? "schedule" : "custom";
   }
 
   function loadAutoFocusOnTaskLaunchEnabled(): boolean {
-    const cloudValue = getStoredOrCachedPreferences().autoFocusOnTaskLaunchEnabled;
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.autoFocusOnTaskLaunchEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
-    const raw = safeReadLocalStorage(storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY).toLowerCase();
+    const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY).toLowerCase() : "";
     if (raw === "false" || raw === "0" || raw === "off") return false;
     if (raw === "true" || raw === "1" || raw === "on") return true;
     return false;
   }
 
   function loadDynamicColorsEnabled(): boolean {
-    return getStoredOrCachedPreferences().dynamicColorsEnabled !== false;
+    return getStoredPreferencesWithoutDefaults()?.dynamicColorsEnabled !== false;
   }
 
   function loadMobilePushAlertsEnabled(): boolean {
-    const localValue = parseStoredBoolean(safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY));
+    const localValue = canUseLocalPreferenceFallback()
+      ? parseStoredBoolean(safeReadLocalStorage(storageKeys.MOBILE_PUSH_ALERTS_KEY))
+      : null;
     if (typeof localValue === "boolean") return localValue;
     const cloudValue = getStoredPreferencesWithoutDefaults()?.mobilePushAlertsEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
@@ -263,7 +275,9 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadWebPushAlertsEnabled(): boolean {
-    const localValue = parseStoredBoolean(safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY));
+    const localValue = canUseLocalPreferenceFallback()
+      ? parseStoredBoolean(safeReadLocalStorage(storageKeys.WEB_PUSH_ALERTS_KEY))
+      : null;
     if (typeof localValue === "boolean") return localValue;
     const prefs = getStoredPreferencesWithoutDefaults();
     if (typeof prefs?.webPushAlertsEnabled === "boolean") return prefs.webPushAlertsEnabled;
@@ -271,26 +285,26 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadInteractionClickSoundEnabled(): boolean {
-    const cloudValue = getStoredOrCachedPreferences().interactionClickSoundEnabled;
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.interactionClickSoundEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
-    const raw = safeReadLocalStorage(storageKeys.INTERACTION_CLICK_SOUND_KEY).toLowerCase();
+    const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.INTERACTION_CLICK_SOUND_KEY).toLowerCase() : "";
     if (raw === "false" || raw === "0" || raw === "off") return false;
     if (raw === "true" || raw === "1" || raw === "on") return true;
     return true;
   }
 
   function loadInteractionHapticsEnabled(): boolean {
-    const cloudValue = getStoredOrCachedPreferences().interactionHapticsEnabled;
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.interactionHapticsEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
-    const raw = safeReadLocalStorage(storageKeys.INTERACTION_HAPTICS_KEY).toLowerCase();
+    const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.INTERACTION_HAPTICS_KEY).toLowerCase() : "";
     if (raw === "false" || raw === "0" || raw === "off") return false;
     if (raw === "true" || raw === "1" || raw === "on") return true;
     return true;
   }
 
   function loadInteractionHapticsIntensity(): InteractionHapticsIntensity {
-    const cloudValue = getStoredOrCachedPreferences().interactionHapticsIntensity;
-    const localValue = safeReadLocalStorage(storageKeys.INTERACTION_HAPTICS_INTENSITY_KEY);
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.interactionHapticsIntensity;
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.INTERACTION_HAPTICS_INTENSITY_KEY) : "";
     return normalizeInteractionHapticsIntensity(cloudValue || localValue);
   }
 
@@ -308,11 +322,11 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
     const startTime =
       cached?.optimalProductivityStartTime ||
-      safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY) ||
+      (canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY) : "") ||
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME;
     const endTime =
       cached?.optimalProductivityEndTime ||
-      safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY) ||
+      (canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_END_TIME_KEY) : "") ||
       DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME;
     return normalizeOptimalProductivityPeriod({
       optimalProductivityStartTime: startTime,
@@ -322,7 +336,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
 
   function loadOptimalProductivityDays(): OptimalProductivityDays {
     const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
-    const localValue = safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY);
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY) : "";
     return normalizeOptimalProductivityDays(localValue || cached?.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
   }
 

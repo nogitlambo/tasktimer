@@ -82,7 +82,11 @@ import {
   hydrateStorageFromCloud,
   flushPendingCloudWrites,
   loadCachedPreferences,
+  loadCachedDashboard,
+  loadCachedTaskUi,
+  resetVolatileWorkspaceStateForAuthChange,
   saveCloudDashboard,
+  saveCloudPreferences,
   saveCloudTaskUi,
   saveHistory,
   saveHistoryLocally,
@@ -151,6 +155,7 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     });
     cloudStoreMocks.loadUserWorkspace.mockReset();
     cloudStoreMocks.savePreferences.mockClear();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
     leaderboardMocks.buildLeaderboardMetricsSnapshot.mockClear();
     leaderboardMocks.saveLeaderboardProfile.mockClear();
     clearScopedStorageState();
@@ -349,6 +354,47 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
 
     expect(cloudStoreMocks.saveDashboard).toHaveBeenCalledTimes(1);
     expect(cloudStoreMocks.saveTaskUi).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears volatile user caches before hydrating a different signed-in account", async () => {
+    const userOnePrefs = { ...buildDefaultCloudPreferences(), menuButtonStyle: "parallelogram" as const, updatedAtMs: 100 };
+    const userOneDashboard = { order: ["momentum"] };
+    const userOneTaskUi = { pinnedHistoryTaskIds: ["task-user-1"] };
+
+    saveCloudPreferences(userOnePrefs);
+    saveCloudDashboard(userOneDashboard as never);
+    saveCloudTaskUi(userOneTaskUi as never);
+    expect(loadCachedPreferences()?.menuButtonStyle).toBe("parallelogram");
+    expect(loadCachedDashboard()).toEqual(userOneDashboard);
+    expect(loadCachedTaskUi()).toEqual(userOneTaskUi);
+
+    resetVolatileWorkspaceStateForAuthChange();
+
+    expect(loadCachedPreferences()).toBeNull();
+    expect(loadCachedDashboard()).toBeNull();
+    expect(loadCachedTaskUi()).toBeNull();
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-2" } });
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: { ...buildDefaultCloudPreferences(), theme: "lime", updatedAtMs: 50 },
+      dashboard: { order: ["tasksCompleted"] },
+      taskUi: { pinnedHistoryTaskIds: ["task-user-2"] },
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()?.theme).toBe("lime");
+    expect(loadCachedDashboard()).toEqual({ order: ["tasksCompleted"] });
+    expect(loadCachedTaskUi()).toEqual({ pinnedHistoryTaskIds: ["task-user-2"] });
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-2",
+      expect.objectContaining({ menuButtonStyle: "parallelogram" })
+    );
   });
 
   it("keeps a direct completed-session append in a delayed queued history replacement", async () => {

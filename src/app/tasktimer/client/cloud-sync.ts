@@ -12,7 +12,7 @@ import { isOverlayVisible } from "./overlay-visibility";
 type CreateTaskTimerCloudSyncOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
-    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection"
+    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection" | "resetVolatileStateForAuthChange"
   >;
   runtime: TaskTimerRuntime;
   on: (target: EventTarget | null | undefined, type: string, handler: EventListenerOrEventListenerObject) => void;
@@ -268,6 +268,8 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         lastObservedAuthUid = nextUid;
         syncCloudTaskCollectionListener();
         if (signedInTransition) {
+          options.workspaceRepository.resetVolatileStateForAuthChange();
+          options.lastCloudRefreshAtMs.set(0);
           void rehydrateFromCloudAndRender({ force: true });
           return;
         }
