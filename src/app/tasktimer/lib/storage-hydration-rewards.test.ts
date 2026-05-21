@@ -397,6 +397,52 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
   });
 
+  it("loads optimal productivity settings from cloud when local shadow preferences are stale", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      optimalProductivityStartTime: "07:30",
+      optimalProductivityEndTime: "18:45",
+      optimalProductivityDays: ["mon", "tue"],
+      updatedAtMs: 200,
+    });
+    cloudStoreMocks.savePreferences.mockClear();
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({
+        optimalProductivityStartTime: "07:30",
+        optimalProductivityEndTime: "18:45",
+        optimalProductivityDays: ["mon", "tue"],
+      })
+    );
+  });
+
   it("keeps a direct completed-session append in a delayed queued history replacement", async () => {
     const row1 = { ts: Date.parse("2026-05-05T09:00:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
     const row2 = { ts: Date.parse("2026-05-05T09:10:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };

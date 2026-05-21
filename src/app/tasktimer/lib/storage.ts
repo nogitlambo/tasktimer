@@ -566,6 +566,27 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
   }
 }
 
+function applyCloudProductivityPreferenceFields(
+  selected: CachedPreferences,
+  cloudPreferences: CachedPreferences
+): CachedPreferences {
+  if (!selected || !cloudPreferences) return selected;
+  return {
+    ...selected,
+    optimalProductivityStartTime: normalizeTimeOfDay(
+      cloudPreferences.optimalProductivityStartTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+    ),
+    optimalProductivityEndTime: normalizeTimeOfDay(
+      cloudPreferences.optimalProductivityEndTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+    ),
+    optimalProductivityDays: normalizeOptimalProductivityDays(
+      cloudPreferences.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
+    ),
+  };
+}
+
 function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>, uid = scopedUid()): void {
   if (typeof window === "undefined") return;
   try {
@@ -1096,6 +1117,9 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       : shadowUpdatedAtMs > cloudUpdatedAtMs
         ? shadowPreferences
         : cloudPreferences || shadowPreferences || pendingPreferences || null;
+  if (cloudPreferences && cachedPreferences !== pendingPreferences) {
+    cachedPreferences = applyCloudProductivityPreferenceFields(cachedPreferences, cloudPreferences);
+  }
   const weekStarting = loadStoredWeekStartingPreference();
   const reconciledRewards = reconcileRewardProgressWithHistory({
     currentProgress: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
