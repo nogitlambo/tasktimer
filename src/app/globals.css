@@ -1890,6 +1890,23 @@ canvas {
   min-height: 36px;
 }
 
+.aboutLandingPage .landingV2Shell {
+  max-width: 1024px;
+  margin-inline: auto;
+  text-align: left;
+}
+
+.aboutLandingPage .privacyLandingBody,
+.aboutLandingPage .privacyLandingSection,
+.aboutLandingPage .privacyLandingContent {
+  width: 100%;
+}
+
+.aboutLandingPage .privacyLandingContent {
+  max-width: none;
+  text-align: left;
+}
+
 .landingV2 .landingV2HeaderBack {
   display: inline-flex;
   align-items: center;
@@ -2363,9 +2380,14 @@ canvas {
   }
 
   .landingV2 .landingV2Hero {
-    min-height: calc(100svh - 70px);
+    min-height: 0;
     padding-top: clamp(10px, 2.8svh, 18px);
     padding-bottom: clamp(18px, 4svh, 28px);
+  }
+
+  .privacyLandingPage .landingV2Hero {
+    min-height: auto;
+    padding-bottom: 18px;
   }
 
   .landingV2 .landingV2HeroMain {

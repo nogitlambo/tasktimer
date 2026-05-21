@@ -426,6 +426,16 @@ export default function RankPromotionOverlay({
           >
             Close
           </button>
+          <button
+            className="rankPromotionTapCloseText"
+            type="button"
+            onClick={onClose}
+            disabled={!isCloseReady}
+            aria-hidden={!isCloseReady}
+            tabIndex={isCloseReady ? 0 : -1}
+          >
+            Tap to close
+          </button>
         </div>
       </div>
     </div>
