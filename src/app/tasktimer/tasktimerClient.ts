@@ -528,6 +528,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       closeConfirm,
       confirm,
       escapeHtmlUI,
+      getDynamicColorsEnabled: () => preferencesState.get("dynamicColorsEnabled"),
+      fillBackgroundForPct,
       normalizeHistoryTimestampMs,
       showWorkingIndicator,
       hideWorkingIndicator,

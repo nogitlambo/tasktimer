@@ -36,6 +36,19 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks{
     padding-left:0 !important;
     padding-right:0 !important;
   }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"],
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar{
+    width:0;
+    height:0;
+    display:none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce){

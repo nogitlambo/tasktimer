@@ -6,12 +6,17 @@ export default function FriendsOverlays() {
       <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
           <h2>Send Friend Request</h2>
-          <p className="modalSubtext friendRequestModalSubtext">Send a request by entering your friend&apos;s email address.</p>
           <div className="field">
-            <label htmlFor="friendRequestEmailInput">Email address</label>
-            <input id="friendRequestEmailInput" type="email" autoComplete="email" className="text w100" />
+            <input
+              id="friendRequestEmailInput"
+              type="email"
+              autoComplete="email"
+              className="text w100"
+              placeholder="Enter email address"
+              aria-label="Email address"
+            />
           </div>
-          <div className="footerBtns">
+          <div className="confirmBtns">
             <button className="btn btn-ghost" id="friendRequestCancelBtn" type="button">
               Cancel
             </button>
@@ -54,28 +59,33 @@ export default function FriendsOverlays() {
         <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
           <div className="friendUserSummaryHeader">
             <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
-            <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
-              <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
-              <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
-            </span>
+            <div className="friendUserSummaryRankBlock">
+              <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
+                <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
+                <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
+              </span>
+              <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
+            </div>
           </div>
-          <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
-            <span className="friendUserSummaryAvatar" aria-hidden="true">
-              <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toonHead-male.svg" alt="" />
-            </span>
-            <div className="friendUserSummaryIdentityText">
-              <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
-              <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
-              <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
-                Remove
-              </button>
+          <div className="friendUserSummaryTopRow">
+            <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
+              <span className="friendUserSummaryAvatar" aria-hidden="true">
+                <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toonHead-male.svg" alt="" />
+              </span>
+              <div className="friendUserSummaryIdentityText">
+                <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+                <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
+                <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
           <div className="friendUserSummaryStats" aria-label="Friend summary">
             <div className="friendUserSummaryStatsTitle">STATS</div>
             <div>
-              <strong id="friendProfileSharedTaskCount">0</strong>
-              <span>Shared</span>
+              <strong id="friendProfileXp">0 XP</strong>
+              <span>XP</span>
             </div>
             <div>
               <strong id="friendProfileSharedTime">0m</strong>
@@ -85,14 +95,6 @@ export default function FriendsOverlays() {
               <strong id="friendProfileSharedAverage">0m</strong>
               <span>Weekly avg</span>
             </div>
-          </div>
-          <div className="friendUserSummaryMiniRow">
-            <span className="friendUserSummaryMiniLabel">Rank</span>
-            <strong id="friendProfileRank">--</strong>
-          </div>
-          <div className="friendUserSummaryMiniRow">
-            <span className="friendUserSummaryMiniLabel">XP</span>
-            <strong id="friendProfileXp">0 XP</strong>
           </div>
           <div className="confirmBtns friendProfileCloseRow">
             <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">

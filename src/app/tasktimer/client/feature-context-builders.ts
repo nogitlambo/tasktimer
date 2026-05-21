@@ -44,6 +44,8 @@ type CreateGroupsOptionsArgs = {
   closeConfirm: () => void;
   confirm: Parameters<typeof createTaskTimerGroups>[0]["confirm"];
   escapeHtmlUI: (value: unknown) => string;
+  getDynamicColorsEnabled: () => boolean;
+  fillBackgroundForPct: (pct: number) => string;
   normalizeHistoryTimestampMs: (value: unknown) => number;
   showWorkingIndicator: (message: string) => number;
   hideWorkingIndicator: (key?: number) => void;
@@ -770,6 +772,8 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     closeConfirm: args.closeConfirm,
     confirm: args.confirm,
     escapeHtmlUI: args.escapeHtmlUI,
+    getDynamicColorsEnabled: args.getDynamicColorsEnabled,
+    fillBackgroundForPct: args.fillBackgroundForPct,
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
     showWorkingIndicator: args.showWorkingIndicator,
     hideWorkingIndicator: args.hideWorkingIndicator,

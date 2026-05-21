@@ -1,14 +1,4 @@
 /* Generated from tasktimer.css split. */
-/* Friend Request modal: match Edit Task modal style */
-#friendRequestModal .modal{
-  background: #0d0f13;
-  border-color: rgba(170, 178, 190, .48);
-  box-shadow: inset 0 0 0 1px rgba(170, 178, 190, .14), var(--shadow);
-  border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  padding: 14px 14px 12px;
-}
-
 #shareTaskModal .modal{
   border-color: rgba(170, 178, 190, .48);
   box-shadow: inset 0 0 0 1px rgba(170, 178, 190, .14), var(--shadow);
@@ -31,77 +21,38 @@
 
 #friendRequestModal .field{
   margin-top: 8px;
-}
-
-#friendRequestModal :where(.modalSubtext, .field label, input[type="email"]){
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  width: 100%;
 }
 
 #friendRequestModal label{
   margin-bottom: 4px;
-  font-size: 10px;
 }
 
-#friendRequestModal input[type="text"],
-#friendRequestModal input[type="number"],
-#friendRequestModal input[type="email"]{
-  border: 1px solid rgba(53,232,255,.26);
-  background: rgba(255,255,255,.03);
-  color: #e9fcff;
-  padding-left: 14px;
-  padding-right: 10px;
-  border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
+#friendRequestModal #friendRequestEmailInput{
   width: 100%;
   min-width: 100%;
   box-sizing: border-box;
+  border-color: transparent !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
-#friendRequestModal input[type="text"]:focus,
-#friendRequestModal input[type="number"]:focus,
-#friendRequestModal input[type="email"]:focus{
-  border-color: rgba(53,232,255,.6);
-  outline: 1px solid rgba(53,232,255,.35);
-  outline-offset: 0;
+#friendRequestModal #friendRequestEmailInput:focus,
+#friendRequestModal #friendRequestEmailInput:focus-visible{
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-#friendRequestModal .footerBtns{
+#friendRequestModal #friendRequestEmailInput:focus::placeholder{
+  color: transparent;
+}
+
+#friendRequestModal .confirmBtns{
   margin-top: 12px;
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
 }
 
-#friendRequestModal .footerBtns .btn{
+#friendRequestModal .confirmBtns .btn{
   margin: 0 !important;
-  border-color: rgba(170, 178, 190, .58);
-  color: rgba(170, 178, 190, .96);
-}
-
-#friendRequestModal .footerBtns .btn:hover:not(:disabled),
-#friendRequestModal .footerBtns .btn:focus-visible{
-  border-color: #c9ff24;
-  color: #c9ff24;
-}
-
-#friendRequestModal .editHead{
-  margin-bottom: 8px;
-}
-
-#friendRequestModal .editHead h2{
-  margin: 0;
-}
-
-@media (max-width: 980px){
-#friendRequestModal .modal{
-    max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
 }
 
 /* Groups page: stack each section on its own row using full panel width */
@@ -283,6 +234,51 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.friendRequestEmail{
+  min-width: 0;
+  color: rgba(188, 214, 230, 0.76);
+  font-size: 11px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friendRequestCancelLink{
+  width: fit-content;
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  color: #7fe7ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.friendRequestCancelLink:hover,
+.friendRequestCancelLink:focus-visible{
+  color: #c9ff24;
+}
+
+.friendRequestCancelLink:focus-visible{
+  outline: 2px solid rgba(127, 231, 255, 0.72);
+  outline-offset: 3px;
+}
+
+.friendRequestCancelLink:disabled,
+.friendRequestCancelLink[aria-disabled="true"]{
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .friendSharedTasksCountText{
@@ -573,6 +569,9 @@
 }
 
 .friendSharedTaskTrendLabel{
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -600,18 +599,34 @@
   shape-rendering: crispEdges;
 }
 
-.friendSharedTaskTrendDays{
+.friendSharedTaskTrendDays,
+.friendSharedTaskTrendTimes{
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0;
+}
+
+.friendSharedTaskTrendDays{
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: rgba(188, 214, 230, 0.7);
 }
 
-.friendSharedTaskTrendDays span{
+.friendSharedTaskTrendTimes{
+  margin-top: -4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(188, 214, 230, 0.58);
+}
+
+.friendSharedTaskTrendDays span,
+.friendSharedTaskTrendTimes span{
+  min-width: 0;
+  overflow: hidden;
   text-align: center;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .friendSharedTaskState{
@@ -2049,11 +2064,40 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .friendUserSummaryHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom: 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+#friendProfileModal .friendUserSummaryTopRow{
+  display: block;
+  margin-bottom: 14px;
+}
+
+#friendProfileModal .friendUserSummaryTopRowMain{
+  min-width: 0;
+}
+
+#friendProfileModal .friendUserSummaryTopRowSide{
+  min-width: 0;
+  display: flex;
+  align-self: start;
+  align-items: flex-start;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+#friendProfileModal .friendUserSummaryRankBlock{
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  align-self: start;
+  align-content: start;
+  margin-top: -2px;
+  padding-top: 0;
 }
 
 #friendProfileModal .friendUserSummaryTitle{
@@ -2070,9 +2114,25 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   width: 72px;
   height: 72px;
   display: grid;
-  place-items: center;
-  flex: 0 0 auto;
+  justify-items: center;
+  align-items: start;
   overflow: hidden;
+}
+
+#friendProfileModal .friendUserSummaryRankText{
+  display: block;
+  max-width: 120px;
+  text-align: center;
+  color: rgba(233,252,255,.94);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #friendProfileModal .friendUserSummaryRankInsigniaImg{
@@ -2080,7 +2140,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   height: 100%;
   display: block;
   object-fit: contain;
-  object-position: center;
+  object-position: center top;
 }
 
 #friendProfileModal .friendUserSummaryRankInsigniaPlaceholder{
@@ -2101,7 +2161,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 #friendProfileModal .friendUserSummaryIdentityText{
@@ -2246,36 +2307,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   font-size: 12px;
 }
 
-#friendProfileModal .friendUserSummaryMiniRow{
-  display:grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
-  align-items:center;
-  gap:12px;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 6px 0;
-  border-radius: 0;
-  clip-path: none;
-}
-
-#friendProfileModal .friendUserSummaryMiniRow + .friendUserSummaryMiniRow{
-  margin-top: 0;
-}
-
-#friendProfileModal .friendUserSummaryMiniLabel{
-  font-size: 12px;
-  line-height: 1.3;
-  color: rgba(170, 176, 184, 0.82);
-  font-weight: 400;
-  text-align: right;
-}
-
-#friendProfileModal .friendUserSummaryMiniRow strong{
-  text-align: left;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 1.3;
+#friendProfileModal .friendUserSummaryStats #friendProfileXp{
+  font-size: 20px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 
 #friendProfileModal .confirmBtns{
@@ -2288,6 +2323,35 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #friendProfileModal #friendProfileCloseBtn{
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 13px;
+}
+
+@media (max-width: 420px){
+  #friendProfileModal .friendUserSummaryHeader{
+    gap: 10px;
+  }
+
+  #friendProfileModal .friendUserSummaryTopRow{
+    gap: 10px;
+  }
+
+  #friendProfileModal .friendUserSummaryIdentity{
+    gap: 10px;
+  }
+
+  #friendProfileModal .friendUserSummaryAvatar{
+    width: 48px;
+    height: 48px;
+  }
+
+  #friendProfileModal .friendUserSummaryRankInsignia{
+    width: 60px;
+    height: 60px;
+  }
+
+  #friendProfileModal .friendUserSummaryRankText{
+    max-width: 92px;
+    font-size: 11px;
+  }
 }
 
 #friendProfileModal .confirmBtns .btn-ghost{
@@ -2729,4 +2793,13 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
+}
+
+#friendRequestModal .confirmBtns .btn{
+  border-color: rgba(170, 178, 190, .58) !important;
+}
+
+#friendRequestModal .confirmBtns .btn:hover:not(:disabled),
+#friendRequestModal .confirmBtns .btn:focus-visible{
+  border-color: rgba(200, 207, 216, .72) !important;
 }

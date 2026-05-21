@@ -4802,7 +4802,8 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   position: relative;
   margin: 0;
   padding-bottom: 12px;
-  color: rgba(245,248,244,.94);
+  color: #c9ff24;
+  font-family: var(--font-orbitron);
   font-size: 17px;
   font-weight: 700;
   line-height: 1.35;
@@ -4888,7 +4889,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-placeholder
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
-  color: rgba(243,255,198,.92);
+  color: #f3ff7a;
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{

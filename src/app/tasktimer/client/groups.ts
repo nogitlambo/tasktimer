@@ -365,13 +365,48 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     )}</span>`;
   }
 
-  function buildSharedTrendBarSvgMarkup(msByDay: number[], checkpointScaleMs?: number | null): string {
-    const vals = new Array(7).fill(0).map((_, i) => Math.max(0, Number((msByDay || [])[i] || 0)));
+  const sharedTrendDays = [
+    { short: "S", label: "Sunday" },
+    { short: "M", label: "Monday" },
+    { short: "T", label: "Tuesday" },
+    { short: "W", label: "Wednesday" },
+    { short: "T", label: "Thursday" },
+    { short: "F", label: "Friday" },
+    { short: "S", label: "Saturday" },
+  ] as const;
+
+  function getSharedTrendValues(msByDay: number[]): number[] {
+    return new Array(7).fill(0).map((_, i) => Math.max(0, Math.floor(Number((msByDay || [])[i] || 0))));
+  }
+
+  function formatSharedTrendTime(msRaw: number): string {
+    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
+    const totalMinutes = Math.floor(totalMs / 60000);
+    if (totalMinutes >= 1440) return `${Math.floor(totalMinutes / 1440)}d`;
+    if (totalMinutes >= 60) return `${Math.floor(totalMinutes / 60)}h`;
+    if (totalMinutes > 0) return `${totalMinutes}m`;
+    return totalMs > 0 ? "<1m" : "0m";
+  }
+
+  function toSvgIdFragment(value: unknown): string {
+    const normalized = String(value || "")
+      .trim()
+      .replace(/[^A-Za-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return normalized || "trend";
+  }
+
+  function buildSharedTrendBarSvgMarkup(
+    msByDay: number[],
+    checkpointScaleMs?: number | null,
+    opts?: { gradientId?: string; dynamicColorsEnabled?: boolean }
+  ): string {
+    const vals = getSharedTrendValues(msByDay);
     const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
     const maxVal = Math.max(...vals, 1);
     const width = 170;
     const height = 56;
-    const padX = 6;
+    const padX = 0;
     const padY = 6;
     const usableW = width - padX * 2;
     const usableH = height - padY * 2;
@@ -397,12 +432,30 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const h = (usableH * value) / maxVal;
         const x = padX + i * step + (step - barW) / 2;
         const y = padY + usableH - h;
+        const title = `${sharedTrendDays[i].label}: ${formatCompactDurationForSharedCard(value)}`;
+        const barPctBase = scaleRef > 0 ? scaleRef : maxVal;
+        const barPct = barPctBase > 0 ? Math.max(0, Math.min(100, (value / barPctBase) * 100)) : 0;
+        const barFillAttr =
+          opts?.dynamicColorsEnabled === false
+            ? ""
+            : ` style="fill:${ctx.escapeHtmlUI(ctx.fillBackgroundForPct(barPct))}"`;
         return `<rect class="friendSharedTrendBar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(
           1
-        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1" />`;
+        )}" height="${Math.max(1, h).toFixed(1)}" rx="1" ry="1"${barFillAttr}><title>${ctx.escapeHtmlUI(title)}</title></rect>`;
       })
       .join("");
     return `${checkpointLines.join("")}${bars}`;
+  }
+
+  function buildSharedTrendDayMarkup(msByDay: number[], kind: "day" | "time"): string {
+    const vals = getSharedTrendValues(msByDay);
+    return sharedTrendDays
+      .map((day, index) => {
+        const text = kind === "day" ? day.short : formatSharedTrendTime(vals[index]);
+        const label = `${day.label}: ${formatCompactDurationForSharedCard(vals[index])}`;
+        return `<span title="${ctx.escapeHtmlUI(label)}" aria-label="${ctx.escapeHtmlUI(label)}">${ctx.escapeHtmlUI(text)}</span>`;
+      })
+      .join("");
   }
 
   function getSharedFriendUidsForTask(taskId: string): string[] {
@@ -940,16 +993,24 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 )}"${disabledAttr}>Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
                 )}"${disabledAttr}>Approve</button></div>`
-              : `<div class="footerBtns"><button class="btn btn-ghost small" type="button" data-friend-action="cancel" data-request-id="${ctx.escapeHtmlUI(
+              : `<button class="friendRequestCancelLink" type="button" data-friend-action="cancel" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
-                )}"${disabledAttr}>Cancel request</button></div>`;
+                )}"${disabledAttr}>Cancel request</button>`;
         const identityAvatarSrc = opts.incoming
           ? ctx.getFriendAvatarSrcById(String(row.senderAvatarId || "").trim())
           : ctx.buildFriendInitialAvatarDataUrl(peerAlias);
+        const peerEmailText = String(peerEmail || "").trim();
+        const outgoingEmailHtml =
+          !opts.incoming && peerEmailText && peerEmailText.toLowerCase() !== peerAlias.toLowerCase()
+            ? `<div class="friendRequestEmail">${ctx.escapeHtmlUI(peerEmailText)}</div>`
+            : "";
+        const outgoingActionHtml = !opts.incoming ? actionBtns : "";
         const identityHtml = `<div class="friendRequestIdentityRow">
           <img src="${ctx.escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">
             <div class="friendRequestAlias">${ctx.escapeHtmlUI(peerAlias)}</div>
+            ${outgoingEmailHtml}
+            ${outgoingActionHtml}
           </div>
         </div>`;
         if (opts.incoming) {
@@ -958,7 +1019,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
             requestedDate
           )}</div>${identityHtml}${actionBtns}</div>`;
         }
-        return `<div class="settingsDetailNote"><div><b>${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}${actionBtns}</div>`;
+        return `<div class="settingsDetailNote"><div><b>${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}</div>`;
       })
       .join("");
   }
@@ -1019,7 +1080,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
               String(entry.timerState || "stopped").toLowerCase() === "running"
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
-            const trendBars = buildSharedTrendBarSvgMarkup(entry.focusTrend7dMs || [], (entry as any).checkpointScaleMs);
+            const trendValues = entry.focusTrend7dMs || [];
+            const trendTotalMs = getSharedTrendValues(trendValues).reduce((sum, value) => sum + value, 0);
+            const trendBars = buildSharedTrendBarSvgMarkup(trendValues, (entry as any).checkpointScaleMs, {
+              gradientId: `${entry.shareDocId || entry.ownerUid || "friend"}-${entry.taskId || entry.taskName || "task"}`,
+              dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
+            });
+            const trendDayLabels = buildSharedTrendDayMarkup(trendValues, "day");
+            const trendTimeLabels = buildSharedTrendDayMarkup(trendValues, "time");
             return `<div class="friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
@@ -1033,13 +1101,20 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                     formatCompactDurationForSharedCard(Number(entry.totalTimeLoggedMs || 0))
                   )}</div>
                 </div>
-                <div class="friendSharedTaskTrend" aria-label="Focus Trend chart">
-                  <div class="friendSharedTaskTrendLabel">Focus Trend</div>
+                <div class="friendSharedTaskTrend" aria-label="Focus trend chart. ${ctx.escapeHtmlUI(
+                  formatCompactDurationForSharedCard(trendTotalMs)
+                )} logged this week.">
+                  <div class="friendSharedTaskTrendLabel"><span>Focus Trend</span><span>${ctx.escapeHtmlUI(
+                    formatCompactDurationForSharedCard(trendTotalMs)
+                  )}</span></div>
                   <svg viewBox="0 0 170 56" role="img" aria-label="Focus trend over this week">
                     ${trendBars}
                   </svg>
                   <div class="friendSharedTaskTrendDays" aria-hidden="true">
-                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    ${trendDayLabels}
+                  </div>
+                  <div class="friendSharedTaskTrendTimes" aria-hidden="true">
+                    ${trendTimeLabels}
                   </div>
                 </div>
               </div>

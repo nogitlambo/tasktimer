@@ -323,7 +323,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function loadOptimalProductivityDays(): OptimalProductivityDays {
     const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
     const localValue = safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY);
-    return normalizeOptimalProductivityDays(cached?.optimalProductivityDays || localValue || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
+    return normalizeOptimalProductivityDays(localValue || cached?.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
   }
 
   return {

@@ -110,6 +110,18 @@ describe("createTaskTimerPreferencesService", () => {
     ).toBe(true);
   });
 
+  it("keeps explicit local optimal productivity days when cached preferences are stale", () => {
+    window.localStorage.setItem(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY, "mon,tue,wed,thu,fri");
+
+    expect(createService({ cachedPreferences: buildDefaultPreferences() }).loadOptimalProductivityDays()).toEqual([
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+    ]);
+  });
+
   it("persists and reloads task order by from local storage", () => {
     const savePreferences = vi.fn();
     const setCloudPreferencesCache = vi.fn();
