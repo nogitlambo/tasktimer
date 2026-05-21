@@ -1117,7 +1117,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       : shadowUpdatedAtMs > cloudUpdatedAtMs
         ? shadowPreferences
         : cloudPreferences || shadowPreferences || pendingPreferences || null;
-  if (cloudPreferences && cachedPreferences !== pendingPreferences) {
+  if (cloudPreferences) {
     cachedPreferences = applyCloudProductivityPreferenceFields(cachedPreferences, cloudPreferences);
   }
   const weekStarting = loadStoredWeekStartingPreference();
@@ -1141,7 +1141,8 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   saveShadowPreferences(uid, cachedPreferences);
   if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
-    void savePreferences(uid, pendingPreferences)
+    const replayPreferences = applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences;
+    void savePreferences(uid, replayPreferences)
       .then(() => {
         savePendingPreferencesSync(null);
       })

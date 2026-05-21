@@ -443,6 +443,66 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
   });
 
+  it("does not replay stale pending optimal productivity settings over cloud values on login", async () => {
+    localStorage.setItem("taskticker_tasks_v1:activeUid", "uid-1");
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      optimalProductivityStartTime: "07:30",
+      optimalProductivityEndTime: "18:45",
+      optimalProductivityDays: ["mon", "tue"],
+      updatedAtMs: 200,
+    });
+    cloudStoreMocks.savePreferences.mockClear();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+    await vi.waitFor(() => {
+      expect(cloudStoreMocks.savePreferences).toHaveBeenCalled();
+    });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({
+        optimalProductivityStartTime: "07:30",
+        optimalProductivityEndTime: "18:45",
+        optimalProductivityDays: ["mon", "tue"],
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+      })
+    );
+  });
+
   it("keeps a direct completed-session append in a delayed queued history replacement", async () => {
     const row1 = { ts: Date.parse("2026-05-05T09:00:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
     const row2 = { ts: Date.parse("2026-05-05T09:10:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS };
