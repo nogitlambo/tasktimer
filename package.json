@@ -43,6 +43,7 @@
     "agents:check": "node scripts/docs_sync.mjs --check --target=agents",
     "subscriptions:migrate": "node scripts/migrate-user-subscriptions.mjs",
     "subscriptions:reconcile-plans": "node scripts/reconcile-user-plans.mjs",
+    "push:web:audit-devices": "node scripts/audit-web-push-devices.mjs",
     "hooks:install": "node scripts/install_git_hooks.mjs"
   },
   "dependencies": {

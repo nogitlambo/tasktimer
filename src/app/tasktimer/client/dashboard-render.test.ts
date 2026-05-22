@@ -13,6 +13,9 @@ class ElementStub {
     setProperty: (name: string, value: string) => {
       this.style[name] = value;
     },
+    removeProperty: (name: string) => {
+      delete this.style[name];
+    },
   };
   private html = "";
   private classes = new Set<string>();
@@ -50,6 +53,10 @@ class ElementStub {
 
   setAttribute(name: string, value: string) {
     this.attrs.set(name, value);
+  }
+
+  removeAttribute(name: string) {
+    this.attrs.delete(name);
   }
 
   getAttribute(name: string) {
@@ -121,6 +128,9 @@ function createDocumentHarness() {
   register("dashboardAvgSessionTitle");
   register("dashboardLastRanList");
   register("dashboardAvgSessionEmpty");
+  register("dashboardHeatMonthLabel");
+  register("dashboardHeatWeekdays");
+  register("dashboardHeatCalendarGrid");
 
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
@@ -142,7 +152,13 @@ function createDocumentHarness() {
   return { byId, documentRef };
 }
 
-function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number }>> }) {
+function createRenderHarness(
+  tasks: Task[],
+  options?: {
+    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number }>>;
+    hasEntitlement?: boolean;
+  }
+) {
   const { byId, documentRef } = createDocumentHarness();
   const originalDocument = globalThis.document;
   Object.defineProperty(globalThis, "document", {
@@ -162,6 +178,9 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
       dashboardAvgSessionTitle: byId.get("dashboardAvgSessionTitle"),
       dashboardLastRanList: byId.get("dashboardLastRanList"),
       dashboardAvgSessionEmpty: byId.get("dashboardAvgSessionEmpty"),
+      dashboardHeatMonthLabel: byId.get("dashboardHeatMonthLabel"),
+      dashboardHeatWeekdays: byId.get("dashboardHeatWeekdays"),
+      dashboardHeatCalendarGrid: byId.get("dashboardHeatCalendarGrid"),
     } as never,
     getRewardProgress: () => ({}) as never,
     getTasks: () => tasks,
@@ -191,15 +210,17 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
     getModeColor: () => "#00ffff",
     addRangeMsToLocalDayMap: () => {},
     openHistoryEntryNoteOverlay: () => {},
-    hasEntitlement: () => true,
+    hasEntitlement: () => options?.hasEntitlement ?? true,
     getCurrentPlan: () => "pro",
   });
 
   return {
     byId,
+    renderAll: () => dashboardRender.renderDashboardWidgets(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
     renderLastRan: () => dashboardRender.renderDashboardAvgSessionChart(),
+    renderHeat: () => dashboardRender.renderDashboardHeatCalendar(),
     restore: () => {
       Object.defineProperty(globalThis, "document", {
         configurable: true,
@@ -210,6 +231,16 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
 }
 
 describe("last ran dashboard card", () => {
+  it("keeps full dashboard rendering safe when standalone Today and This Week cards are absent", () => {
+    const harness = createRenderHarness([task({ id: "focus", name: "Focus" })]);
+
+    try {
+      expect(() => harness.renderAll()).not.toThrow();
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("orders current tasks by newest completed history and places never-run tasks last", () => {
     const now = Date.now();
     const harness = createRenderHarness(
@@ -290,6 +321,31 @@ describe("last ran dashboard card", () => {
       expect(html.indexOf("Logged Task")).toBeLessThan(html.indexOf("Running Task"));
       expect(html).toContain("Running Task");
       expect(html).toContain("Never");
+    } finally {
+      harness.restore();
+    }
+  });
+});
+
+describe("dashboard availability", () => {
+  it("renders the heatmap for free users instead of a locked mock", () => {
+    const now = Date.now();
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        hasEntitlement: false,
+        historyByTaskId: {
+          focus: [{ ts: now, name: "Focus", ms: 30 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderHeat();
+      const gridHtml = harness.byId.get("dashboardHeatCalendarGrid")?.innerHTML || "";
+
+      expect(gridHtml).toContain("data-heat-date");
+      expect(gridHtml).not.toContain('aria-hidden="true"><span class="dashboardHeatDayNum">1</span>');
     } finally {
       harness.restore();
     }

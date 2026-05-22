@@ -1,109 +1,63 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardCardSize, DashboardRenderOptions } from "./types";
-import {
-  clampDashboardPlacement,
-  getDashboardTemplateColumnCount,
-  getDashboardGridColumnValue,
-  resolveDashboardCardPlacements,
-  sanitizeDashboardCardPlacements,
-} from "./dashboard-layout";
+import type { DashboardAvgRange, DashboardRenderOptions } from "./types";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 type DashboardClosestTarget = {
   closest?: (selector: string) => unknown;
 } | null;
 
-function isQuarterDefaultDashboardCard(cardId: string) {
-  return (
-    cardId === "week-hours" ||
-    cardId === "weekly-time-goals"
-  );
-}
+const DASHBOARD_PANEL_REGISTRY = [
+  { panelId: "activity-overview", label: "Activity Overview" },
+  { panelId: "tasks-completed", label: "Task Overview" },
+  { panelId: "momentum", label: "Momentum" },
+  { panelId: "avg-session-by-task", label: "Last Ran" },
+  { panelId: "heatmap", label: "Focus Heatmap" },
+] as const;
 
-function isHalfDefaultDashboardCard(cardId: string) {
-  return cardId === "tasks-completed" || cardId === "momentum" || cardId === "avg-session-by-task" || cardId === "heatmap";
-}
+const DASHBOARD_SUPPORT_PANEL_IDS = [
+  "tasks-completed",
+  "momentum",
+  "avg-session-by-task",
+  "heatmap",
+] as const;
 
-function isFixedFullWidthDashboardCard(cardId?: string | null) {
-  return String(cardId || "").trim() === "activity-overview";
-}
-
-function isTopLockedDashboardCard(cardId?: string | null) {
-  return String(cardId || "").trim() === "activity-overview";
-}
-
-function isFixedHalfWidthDashboardCard(cardId: string) {
-  return cardId === "tasks-completed" || cardId === "momentum";
-}
-
-function isFixedDashboardCard(cardId: string) {
-  return isFixedFullWidthDashboardCard(cardId) || isFixedHalfWidthDashboardCard(cardId);
-}
-
-function getDefaultDashboardCardSize(cardId: string): DashboardCardSize | null {
-  if (isFixedFullWidthDashboardCard(cardId)) return "full";
-  if (isQuarterDefaultDashboardCard(cardId)) return "quarter";
-  if (isHalfDefaultDashboardCard(cardId)) return "half";
-  return null;
-}
-
-export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null): DashboardCardSize | null {
-  const normalizedCardId = String(cardId || "").trim();
-  if (isFixedFullWidthDashboardCard(normalizedCardId)) return "full";
-  if (isFixedHalfWidthDashboardCard(normalizedCardId)) return "half";
-  if (normalizedCardId === "tasks-completed" && (value === "quarter" || value === "eighth")) return "half";
-  if (value === "eighth") return isQuarterDefaultDashboardCard(normalizedCardId) ? "quarter" : null;
-  if (value === "full" || value === "half" || value === "quarter") return value;
+export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null) {
+  void value;
+  void cardId;
   return null;
 }
 
 export function isDashboardCardSizeOptionAllowed(size: string, cardId: string) {
-  if (String(cardId || "").trim() === "activity-overview") return size === "full";
-  if (String(cardId || "").trim() === "tasks-completed") return size === "half";
-  return size === "full" || size === "half" || size === "quarter";
-}
-
-export function shouldUsePointerDashboardDrag(event: { button?: number; isPrimary?: boolean | null }) {
-  if (typeof event.button === "number" && event.button !== 0) return false;
-  if (event.isPrimary === false) return false;
-  return true;
-}
-
-export function shouldIgnoreDashboardPointerDragStartTarget(target: DashboardClosestTarget) {
-  if (!target?.closest) return false;
-  if (target.closest(".dashboardSizeControl")) return true;
-  if (target.closest("input, select, textarea")) return true;
-  if (target.closest("[data-dashboard-activity-day], [data-dashboard-activity-action]")) return true;
+  void size;
+  void cardId;
   return false;
 }
 
+export function shouldUsePointerDashboardDrag(event: { button?: number; isPrimary?: boolean | null }) {
+  void event;
+  return false;
+}
+
+export function shouldIgnoreDashboardPointerDragStartTarget(target: DashboardClosestTarget) {
+  void target;
+  return true;
+}
+
 export function shouldOpenDashboardLockedUpgradePrompt(editMode: boolean) {
-  return !editMode;
+  void editMode;
+  return false;
 }
 
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
-  const DASHBOARD_PANEL_REGISTRY = [
-    { panelId: "activity-overview", label: "Activity Overview" },
-    { panelId: "week-hours", label: "Today" },
-    { panelId: "weekly-time-goals", label: "This Week" },
-    { panelId: "tasks-completed", label: "Task Overview" },
-    { panelId: "momentum", label: "Momentum" },
-    { panelId: "avg-session-by-task", label: "Last Ran" },
-    { panelId: "heatmap", label: "Focus Heatmap" },
-  ] as const;
-  let dashboardPointerDrag:
-    | {
-        card: HTMLElement;
-        pointerId: number;
-        startX: number;
-        startY: number;
-        active: boolean;
-      }
-    | null = null;
 
   function getDashboardGridEl() {
     return (document.querySelector("#appPageDashboard .dashboardGrid") as HTMLElement | null) || els.dashboardGrid || null;
+  }
+
+  function getDashboardSupportGridEl() {
+    return document.querySelector("#appPageDashboard .dashboardSupportGrid") as HTMLElement | null;
   }
 
   function getCloudDashboardRecord() {
@@ -113,47 +67,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return loaded && typeof loaded === "object" ? (loaded as { order?: unknown; widgets?: unknown }) : null;
   }
 
-  function getDashboardGridColumnCount(grid: HTMLElement) {
-    if (typeof window === "undefined") return 12;
-    const template = window.getComputedStyle(grid).gridTemplateColumns || "";
-    const count = getDashboardTemplateColumnCount(template);
-    return count > 0 ? count : null;
-  }
-
   function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
     const raw = String(value || "").trim();
     if (raw === "past30" || raw === "currentMonth") return "past30";
     if (raw === "currentWeek") return "past7";
     return "past7";
-  }
-
-  function isAdvancedDashboardCard(cardId: string) {
-    return (
-      cardId === "momentum" ||
-      cardId === "avg-session-by-task" ||
-      cardId === "heatmap"
-    );
-  }
-
-  function shouldForceVisibleDashboardCard(cardId: string) {
-    return isAdvancedDashboardCard(cardId) && !ctx.hasEntitlement("advancedInsights");
-  }
-
-  function applyDefaultDashboardCardVisibility(cardId: string, visibility: Record<string, boolean>) {
-    if (cardId === "activity-overview" && typeof visibility[cardId] !== "boolean") {
-      visibility[cardId] = true;
-      return;
-    }
-    if ((cardId === "week-hours" || cardId === "weekly-time-goals") && typeof visibility[cardId] !== "boolean") {
-      visibility[cardId] = false;
-    }
-  }
-
-  function getDashboardLockedFeatureLabel(cardId: string) {
-    if (cardId === "momentum") return "Momentum insights";
-    if (cardId === "avg-session-by-task") return "Last Ran insights";
-    if (cardId === "heatmap") return "Focus heatmap insights";
-    return "Advanced insights";
   }
 
   function ensureDashboardIncludedModesValid() {}
@@ -178,67 +96,56 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return out;
   }
 
-  function isDashboardCardVisible(cardId: string) {
-    if (shouldForceVisibleDashboardCard(cardId)) return true;
-    return ctx.getDashboardCardVisibility()[cardId] !== false;
-  }
-
-  function getDashboardCardVisibilityMapForStorage() {
-    const cardVisibility = ctx.getDashboardCardVisibility();
-    const out: Record<string, boolean> = {};
-    collectDashboardPanelMeta().forEach(({ panelId }) => {
-      out[panelId] = cardVisibility[panelId] !== false;
-    });
-    return out;
-  }
-
-  function getDashboardCardSizeMapForStorage() {
-    const cardSizes = ctx.getDashboardCardSizes();
-    const out: Record<string, DashboardCardSize> = {};
-    Object.entries(cardSizes || {}).forEach(([cardId, size]) => {
-      if (!cardId) return;
-      const nextSize = sanitizeDashboardCardSize(size, cardId);
-      if (nextSize) out[cardId] = nextSize;
-    });
-    return out;
-  }
-
-  function getDashboardCardPlacementsMapForStorage() {
-    const placements = sanitizeDashboardCardPlacements(ctx.getDashboardCardPlacements());
-    placements["activity-overview"] = { col: 1, row: 1 };
-    return placements;
-  }
-
   function saveDashboardWidgetState(partialWidgets: Record<string, unknown>) {
     const dashboard = getCloudDashboardRecord();
     const existingWidgets =
       dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    const persistedWidgets = { ...existingWidgets };
-    delete persistedWidgets.avgSessionByTaskRange;
-    const existingOrder = Array.isArray(dashboard?.order) ? dashboard.order : getCurrentDashboardOrder();
     const widgets = {
-      ...persistedWidgets,
+      ...existingWidgets,
       ...partialWidgets,
-      cardPlacements: getDashboardCardPlacementsMapForStorage(),
-      cardVisibility: getDashboardCardVisibilityMapForStorage(),
     };
-    const nextDashboard = { order: existingOrder, widgets };
+    delete widgets.cardPlacements;
+    delete widgets.cardSizes;
+    delete widgets.cardVisibility;
+    const nextDashboard = { order: [] as string[], widgets };
     ctx.setCloudDashboardCache(nextDashboard);
     ctx.saveCloudDashboard(nextDashboard);
   }
 
-  function applyDashboardCardVisibility() {
-    const meta = collectDashboardPanelMeta();
-    if (!meta.length) return;
-    const nextVisibility = { ...ctx.getDashboardCardVisibility() };
-    meta.forEach(({ panelId }) => applyDefaultDashboardCardVisibility(panelId, nextVisibility));
-    ctx.setDashboardCardVisibility(nextVisibility);
-    meta.forEach(({ panel, panelId }) => {
-      const isVisible = nextVisibility[panelId] !== false;
-      const shouldShow = shouldForceVisibleDashboardCard(panelId) ? true : isVisible;
-      panel.hidden = !shouldShow;
-      panel.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+  function resetDashboardCardLayoutAttributes(card: HTMLElement) {
+    card.removeAttribute("data-dashboard-size");
+    delete card.dataset.dashboardCol;
+    delete card.dataset.dashboardRow;
+    card.style.removeProperty("grid-column");
+    card.style.removeProperty("grid-column-start");
+    card.style.removeProperty("grid-column-end");
+    card.style.removeProperty("grid-row");
+    card.style.removeProperty("grid-row-start");
+    card.style.removeProperty("grid-row-end");
+    card.classList.remove("isDragging", "isDashboardTopLocked", "isSizeMenuOpen");
+    card.removeAttribute("draggable");
+    card.querySelector(".dashboardSizeControl")?.remove();
+  }
+
+  function restoreDashboardSupportGridOwnership() {
+    const supportGrid = getDashboardSupportGridEl();
+    if (!supportGrid) return;
+    DASHBOARD_SUPPORT_PANEL_IDS.forEach((panelId) => {
+      const panel = document.querySelector(
+        `#appPageDashboard [data-dashboard-id="${panelId}"]`
+      ) as HTMLElement | null;
+      if (!panel || panel.parentElement === supportGrid) return;
+      supportGrid.appendChild(panel);
     });
+  }
+
+  function applyDashboardCardVisibility() {
+    restoreDashboardSupportGridOwnership();
+    collectDashboardPanelMeta().forEach(({ panel }) => {
+      panel.hidden = false;
+      panel.setAttribute("aria-hidden", "false");
+    });
+    ctx.setDashboardCardVisibility({});
     ctx.syncDashboardRefreshButtonUi();
   }
 
@@ -247,337 +154,35 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const widgets =
       dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
     ctx.setDashboardAvgRange(sanitizeDashboardAvgRange((widgets as any).avgSessionByTaskRange));
-    const nextSizes: Record<string, DashboardCardSize> = {};
-    const rawSizes = (widgets as any).cardSizes;
-    if (rawSizes && typeof rawSizes === "object") {
-      Object.entries(rawSizes as Record<string, unknown>).forEach(([cardId, size]) => {
-        const nextSize = sanitizeDashboardCardSize(size, cardId);
-        if (!cardId || !nextSize) return;
-        nextSizes[cardId] = nextSize;
-      });
-    }
-    ctx.setDashboardCardSizes(nextSizes);
-    ctx.setDashboardCardPlacements(sanitizeDashboardCardPlacements((widgets as any).cardPlacements));
-    const nextVisibility: Record<string, boolean> = {};
-    const rawVisibility = (widgets as any).cardVisibility;
-    if (rawVisibility && typeof rawVisibility === "object") {
-      Object.entries(rawVisibility as Record<string, unknown>).forEach(([cardId, visible]) => {
-        if (!cardId || typeof visible !== "boolean") return;
-        nextVisibility[cardId] = visible;
-      });
-    }
-    DASHBOARD_PANEL_REGISTRY.forEach(({ panelId }) => applyDefaultDashboardCardVisibility(panelId, nextVisibility));
-    ctx.setDashboardCardVisibility(nextVisibility);
+    ctx.setDashboardCardSizes({});
+    ctx.setDashboardCardPlacements({});
+    ctx.setDashboardCardVisibility({});
     ensureDashboardIncludedModesValid();
   }
 
   function applyDashboardCardSizes() {
     const grid = getDashboardGridEl();
     if (!grid) return;
-    const cardSizes = ctx.getDashboardCardSizes();
+    restoreDashboardSupportGridOwnership();
     Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "");
-      if (!cardId) return;
-      const size =
-        sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-        || getDefaultDashboardCardSize(cardId);
-      if (size) card.setAttribute("data-dashboard-size", size);
-      else card.removeAttribute("data-dashboard-size");
+      resetDashboardCardLayoutAttributes(el as HTMLElement);
     });
-    applyDashboardCardPlacements();
-  }
-
-  function collectDashboardLayoutItems(grid: HTMLElement) {
-    const cardSizes = ctx.getDashboardCardSizes();
-    const requestedPlacements = ctx.getDashboardCardPlacements();
-    const dragging = ctx.getDashboardDragEl();
-    const draggingId = String(dragging?.getAttribute("data-dashboard-id") || "").trim();
-    return Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]"))
-      .map((el, orderIndex) => {
-        const card = el as HTMLElement;
-        const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-        const size =
-          sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-          || getDefaultDashboardCardSize(cardId);
-        const isTopLocked = isTopLockedDashboardCard(cardId);
-        return {
-          id: cardId,
-          size,
-          requested: isTopLocked ? { col: 1, row: 1 } : requestedPlacements[cardId] || null,
-          orderIndex,
-          placementPriority: isTopLocked ? 2 : draggingId && cardId === draggingId ? 1 : 0,
-        };
-      })
-      .filter((item) => !!item.id);
-  }
-
-  function applyDashboardCardPlacements() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    const layoutItems = collectDashboardLayoutItems(grid);
-    if (!layoutItems.length) return;
-    const columnCount = getDashboardGridColumnCount(grid);
-    if (!columnCount) return;
-    const resolvedPlacements = resolveDashboardCardPlacements(layoutItems, columnCount);
-    const layoutItemById = new Map(layoutItems.map((item) => [item.id, item]));
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      const placement = resolvedPlacements[cardId];
-      if (!cardId || !placement) return;
-      card.dataset.dashboardCol = String(placement.col);
-      card.dataset.dashboardRow = String(placement.row);
-      card.style.gridColumn = getDashboardGridColumnValue(placement, layoutItemById.get(cardId)?.size ?? null, columnCount);
-      card.style.gridRowStart = String(placement.row);
-    });
-  }
-
-  function getRenderedDashboardCardPlacements() {
-    const grid = getDashboardGridEl();
-    const out: Record<string, { col: number; row: number }> = {};
-    if (!grid) return out;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      const col = Math.max(1, Math.floor(Number(card.dataset.dashboardCol) || 0));
-      const row = Math.max(1, Math.floor(Number(card.dataset.dashboardRow) || 0));
-      if (!cardId || !Number.isFinite(col) || !Number.isFinite(row)) return;
-      out[cardId] = { col, row };
-    });
-    return out;
-  }
-
-  function commitRenderedDashboardCardPlacements() {
-    const placements = sanitizeDashboardCardPlacements(getRenderedDashboardCardPlacements());
-    if (Object.keys(placements).length) {
-      ctx.setDashboardCardPlacements(placements);
-    }
-  }
-
-  function ensureDashboardCardSizeControls() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      if (card.querySelector(".dashboardSizeControl")) return;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      if (isFixedDashboardCard(cardId)) return;
-      const control = document.createElement("div");
-      control.className = "dashboardSizeControl";
-      control.innerHTML = `
-        <button class="iconBtn dashboardSizeBtn" type="button" data-dashboard-size-toggle="true" aria-label="Panel size options" title="Panel size options" aria-expanded="false">
-          <span class="dashboardSizeGlyph" aria-hidden="true"></span>
-        </button>
-        <div class="dashboardSizeMenu" data-dashboard-size-menu="true" role="menu" aria-label="Panel size options">
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="full" role="menuitemradio" aria-checked="false">Full width</button>
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="half" role="menuitemradio" aria-checked="false">Half width</button>
-          <button class="dashboardSizeOption" type="button" data-dashboard-size="quarter" role="menuitemradio" aria-checked="false">Quarter width</button>
-        </div>
-      `;
-      card.prepend(control);
-    });
-  }
-
-  function syncDashboardCardSizeControlState() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    const cardSizes = ctx.getDashboardCardSizes();
-    Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "");
-      if (!cardId) return;
-      const selectedSize =
-        sanitizeDashboardCardSize(cardSizes[cardId], cardId)
-        || getDefaultDashboardCardSize(cardId);
-      const toggle = card.querySelector("[data-dashboard-size-toggle]") as HTMLButtonElement | null;
-      const menuOpen = card.classList.contains("isSizeMenuOpen");
-      if (isFixedDashboardCard(cardId)) {
-        if (toggle) toggle.remove();
-        const menu = card.querySelector("[data-dashboard-size-menu]") as HTMLElement | null;
-        if (menu) menu.remove();
-      }
-      if (toggle) toggle.setAttribute("aria-expanded", menuOpen ? "true" : "false");
-      Array.from(card.querySelectorAll(".dashboardSizeOption[data-dashboard-size]")).forEach((btn) => {
-        const option = btn as HTMLButtonElement;
-        const rawOptionSize = String(option.getAttribute("data-dashboard-size") || "");
-        const allowed = isDashboardCardSizeOptionAllowed(rawOptionSize, cardId);
-        option.hidden = !allowed;
-        option.disabled = !allowed;
-        option.setAttribute("aria-hidden", allowed ? "false" : "true");
-        const optionSize = allowed ? sanitizeDashboardCardSize(rawOptionSize, cardId) : null;
-        const isSelected = !!optionSize && !!selectedSize && optionSize === selectedSize;
-        option.classList.toggle("isOn", isSelected);
-        option.setAttribute("aria-checked", isSelected ? "true" : "false");
-      });
-    });
-  }
-
-  function closeDashboardCardSizeMenus() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    Array.from(grid.querySelectorAll(".dashboardCard.isSizeMenuOpen")).forEach((el) => {
-      (el as HTMLElement).classList.remove("isSizeMenuOpen");
-    });
-    syncDashboardCardSizeControlState();
-  }
-
-  function applyOrderedDashboardCards(grid: HTMLElement, order: string[] | null | undefined) {
-    if (!Array.isArray(order) || !order.length) return;
-    const cards = Array.from(grid.querySelectorAll(".dashboardCard")) as HTMLElement[];
-    if (!cards.length) return;
-    const byId = new Map<string, HTMLElement>();
-    cards.forEach((card) => {
-      const id = card.getAttribute("data-dashboard-id");
-      if (id) byId.set(id, card);
-    });
-    const ordered: HTMLElement[] = [];
-    const seen = new Set<string>();
-    order.forEach((idRaw) => {
-      const id = String(idRaw || "");
-      if (!id || seen.has(id)) return;
-      seen.add(id);
-      const card = byId.get(id);
-      if (card) ordered.push(card);
-    });
-    const unordered = cards.filter((card) => {
-      const id = card.getAttribute("data-dashboard-id") || "";
-      return !seen.has(id);
-    });
-    const nextCards = [...ordered, ...unordered];
-    const topLockedCards = nextCards.filter((card) => isTopLockedDashboardCard(card.getAttribute("data-dashboard-id")));
-    const movableCards = nextCards.filter((card) => !isTopLockedDashboardCard(card.getAttribute("data-dashboard-id")));
-    [...topLockedCards, ...movableCards].forEach((card) => grid.appendChild(card));
   }
 
   function applyDashboardOrderFromStorage() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    const dashboard = getCloudDashboardRecord();
-    const order = Array.isArray(dashboard?.order) ? dashboard.order : [];
-    if (!order.length) return;
-    applyOrderedDashboardCards(grid, order as string[]);
-    applyDashboardCardPlacements();
-  }
-
-  function getCurrentDashboardOrder() {
-    const grid = getDashboardGridEl();
-    if (!grid) return [] as string[];
-    return Array.from(grid.querySelectorAll(".dashboardCard"))
-      .map((el) => (el as HTMLElement).getAttribute("data-dashboard-id") || "")
-      .filter(Boolean);
-  }
-
-  function saveDashboardOrder() {
-    const order = getCurrentDashboardOrder();
-    const dashboard = getCloudDashboardRecord();
-    const existingWidgets =
-      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    const widgets = {
-      ...existingWidgets,
-      cardPlacements: getDashboardCardPlacementsMapForStorage(),
-      cardSizes: getDashboardCardSizeMapForStorage(),
-      cardVisibility: getDashboardCardVisibilityMapForStorage(),
-    };
-    const nextDashboard = { order, widgets };
-    ctx.setCloudDashboardCache(nextDashboard);
-    ctx.saveCloudDashboard(nextDashboard);
+    applyDashboardCardSizes();
   }
 
   function applyDashboardOrder(order: string[] | null | undefined) {
-    const grid = els.dashboardGrid;
-    if (!grid || !Array.isArray(order) || !order.length) return;
-    applyOrderedDashboardCards(grid, order);
-    applyDashboardCardPlacements();
+    void order;
+    applyDashboardCardSizes();
   }
 
   function applyDashboardEditMode() {
-    const grid = getDashboardGridEl();
-    if (!grid) return;
-    ensureDashboardCardSizeControls();
-    if (!ctx.getDashboardEditMode()) {
-      finishDashboardPointerDrag();
-      closeDashboardCardSizeMenus();
-    }
-    grid.classList.toggle("isEditMode", ctx.getDashboardEditMode());
-    Array.from(grid.querySelectorAll(".dashboardCard")).forEach((el) => {
-      const card = el as HTMLElement;
-      const cardId = String(card.getAttribute("data-dashboard-id") || "").trim();
-      const canDrag = ctx.getDashboardEditMode() && !isTopLockedDashboardCard(cardId);
-      card.classList.toggle("isDashboardTopLocked", isTopLockedDashboardCard(cardId));
-      card.setAttribute("draggable", canDrag ? "true" : "false");
-    });
-    syncDashboardCardSizeControlState();
-    applyDashboardCardPlacements();
-    ctx.syncDashboardMenuFlipUi();
-  }
-
-  function resolveDashboardGridDropPlacement(clientX: number, clientY: number, dragging: HTMLElement) {
-    const grid = getDashboardGridEl();
-    if (!grid) return null;
-    const gridRect = grid.getBoundingClientRect();
-    const gridStyle = window.getComputedStyle(grid);
-    const templateColumns = gridStyle.gridTemplateColumns
-      .split(" ")
-      .map((token) => token.trim())
-      .filter(Boolean);
-    const columnCount = Math.max(1, templateColumns.length || getDashboardGridColumnCount(grid) || 12);
-    const rowGap = Number.parseFloat(gridStyle.rowGap || "0") || 0;
-    const columnGap = Number.parseFloat(gridStyle.columnGap || gridStyle.gap || "0") || 0;
-    const totalColumnGap = columnGap * Math.max(0, columnCount - 1);
-    const usableWidth = Math.max(1, gridRect.width - totalColumnGap);
-    const cellWidth = usableWidth / columnCount;
-    const relativeX = Math.max(0, clientX - gridRect.left);
-    const rawCol = Math.floor(relativeX / Math.max(1, cellWidth + columnGap)) + 1;
-
-    const otherCards = Array.from(grid.querySelectorAll(".dashboardCard[data-dashboard-id]")).filter(
-      (card): card is HTMLElement => card instanceof HTMLElement && card !== dragging
-    );
-    const topValues = Array.from(
-      new Set(
-        otherCards
-          .map((card) => Math.round(card.getBoundingClientRect().top - gridRect.top))
-          .filter((value) => Number.isFinite(value))
-      )
-    ).sort((a, b) => a - b);
-    let rawRow = 1;
-    if (topValues.length) {
-      rawRow = topValues.findIndex((top) => clientY - gridRect.top < top + rowGap / 2) + 1;
-      if (rawRow <= 0) rawRow = topValues.length + 1;
-    }
-
-    const draggedId = String(dragging.getAttribute("data-dashboard-id") || "").trim();
-    const currentSizes = ctx.getDashboardCardSizes();
-    const size =
-      sanitizeDashboardCardSize(currentSizes[draggedId], draggedId)
-      || getDefaultDashboardCardSize(draggedId);
-    return clampDashboardPlacement({ col: rawCol, row: rawRow }, size, columnCount);
-  }
-
-  function moveDashboardDraggedCard(clientX: number, clientY: number) {
-    const drag = dashboardPointerDrag;
-    const grid = getDashboardGridEl();
-    if (!drag || !grid || !grid.contains(drag.card)) return;
-    const draggedId = String(drag.card.getAttribute("data-dashboard-id") || "").trim();
-    if (!draggedId) return;
-    const nextPlacements = { ...ctx.getDashboardCardPlacements() };
-    const gridPlacement = resolveDashboardGridDropPlacement(clientX, clientY, drag.card);
-    if (gridPlacement) nextPlacements[draggedId] = gridPlacement;
-    ctx.setDashboardCardPlacements(nextPlacements);
-    applyDashboardCardPlacements();
-  }
-
-  function finishDashboardPointerDrag() {
-    const drag = dashboardPointerDrag;
-    if (!drag) return;
-    drag.card.classList.remove("isDragging");
-    try {
-      drag.card.releasePointerCapture?.(drag.pointerId);
-    } catch {
-      // ignore browsers that already released capture
-    }
+    ctx.setDashboardEditMode(false);
     ctx.setDashboardDragEl(null);
-    dashboardPointerDrag = null;
+    applyDashboardCardSizes();
+    ctx.syncDashboardMenuFlipUi();
   }
 
   function renderDashboardWidgets(opts?: DashboardRenderOptions) {
@@ -585,14 +190,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
-    const lockedCard = e.target?.closest?.(".dashboardCard.isPlanLocked[data-dashboard-id]") as HTMLElement | null;
-    if (lockedCard) {
-      if (!shouldOpenDashboardLockedUpgradePrompt(ctx.getDashboardEditMode())) return;
-      const cardId = String(lockedCard.getAttribute("data-dashboard-id") || "").trim();
-      ctx.showUpgradePrompt(getDashboardLockedFeatureLabel(cardId), "pro");
-      e.preventDefault();
-      return;
-    }
     const activityDay = e.target?.closest?.("[data-dashboard-activity-day]") as HTMLElement | null;
     if (activityDay) {
       const dayKey = String(activityDay.getAttribute("data-dashboard-activity-day") || "").trim();
@@ -652,35 +249,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       e.preventDefault();
       return;
     }
-    const sizeToggle = e.target?.closest?.("[data-dashboard-size-toggle]") as HTMLElement | null;
-    if (sizeToggle) {
-      if (!ctx.getDashboardEditMode()) return;
-      const card = sizeToggle.closest(".dashboardCard") as HTMLElement | null;
-      if (!card || !els.dashboardGrid?.contains(card)) return;
-      const wasOpen = card.classList.contains("isSizeMenuOpen");
-      closeDashboardCardSizeMenus();
-      card.classList.toggle("isSizeMenuOpen", !wasOpen);
-      syncDashboardCardSizeControlState();
-      e.preventDefault();
-      return;
-    }
-    const sizeOption = e.target?.closest?.(".dashboardSizeOption[data-dashboard-size]") as HTMLElement | null;
-    if (sizeOption) {
-      if (!ctx.getDashboardEditMode()) return;
-      const card = sizeOption.closest(".dashboardCard") as HTMLElement | null;
-      const cardId = String(card?.getAttribute("data-dashboard-id") || "");
-      const rawSize = String(sizeOption.getAttribute("data-dashboard-size") || "");
-      if (!isDashboardCardSizeOptionAllowed(rawSize, cardId)) return;
-      const nextSize = sanitizeDashboardCardSize(rawSize, cardId);
-      if (!card || !cardId || !nextSize) return;
-      ctx.setDashboardCardSizes({ ...ctx.getDashboardCardSizes(), [cardId]: nextSize });
-      applyDashboardCardSizes();
-      commitRenderedDashboardCardPlacements();
-      closeDashboardCardSizeMenus();
-      if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
-      e.preventDefault();
-      return;
-    }
     const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
     if (momentumDriverBtn) {
       const driverKey = String(momentumDriverBtn.getAttribute("data-dashboard-momentum-driver") || "").trim();
@@ -695,130 +263,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
   }
 
-  function handleDashboardGridPointerDown(e: any) {
-    const momentumDriverBtn = e.target?.closest?.("[data-dashboard-momentum-driver]") as HTMLElement | null;
-    if (momentumDriverBtn) {
-      // Driver selection is handled on click. Triggering it here as well causes the
-      // momentum gauge animation to cancel and restart within the same interaction.
-      return;
-    }
-    if (!ctx.getDashboardEditMode() || !shouldUsePointerDashboardDrag(e as PointerEvent)) return;
-    if (shouldIgnoreDashboardPointerDragStartTarget(e.target as DashboardClosestTarget)) return;
-    const grid = getDashboardGridEl();
-    const card = e.target?.closest?.(".dashboardCard[data-dashboard-id]") as HTMLElement | null;
-    if (!grid || !card || !grid.contains(card)) return;
-    if (isTopLockedDashboardCard(card.getAttribute("data-dashboard-id"))) return;
-    closeDashboardCardSizeMenus();
-    dashboardPointerDrag = {
-      card,
-      pointerId: Number(e.pointerId) || 0,
-      startX: Number(e.clientX) || 0,
-      startY: Number(e.clientY) || 0,
-      active: false,
-    };
-    ctx.setDashboardDragEl(card);
-    card.setPointerCapture?.(dashboardPointerDrag.pointerId);
-    e.preventDefault?.();
-  }
-
-  function handleDashboardGridPointerMove(e: any) {
-    const drag = dashboardPointerDrag;
-    if (!drag || !ctx.getDashboardEditMode()) return;
-    if (Number(e.pointerId) !== drag.pointerId) return;
-    const deltaX = Math.abs((Number(e.clientX) || 0) - drag.startX);
-    const deltaY = Math.abs((Number(e.clientY) || 0) - drag.startY);
-    if (!drag.active && deltaX + deltaY < 6) return;
-    drag.active = true;
-    drag.card.classList.add("isDragging");
-    moveDashboardDraggedCard(Number(e.clientX) || 0, Number(e.clientY) || 0);
-    e.preventDefault?.();
-  }
-
-  function handleDashboardGridPointerEnd(e: any) {
-    const drag = dashboardPointerDrag;
-    if (!drag) return;
-    if (Number(e.pointerId) !== drag.pointerId) return;
-    commitRenderedDashboardCardPlacements();
-    finishDashboardPointerDrag();
-    saveDashboardOrder();
-    if (ctx.getCurrentAppPage() === "dashboard") {
-      renderDashboardWidgets();
-    }
-    e.preventDefault?.();
-  }
-
-  function handleDocumentDashboardClick(e: any) {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
-    if (ctx.getDashboardEditMode() && !target.closest(".dashboardSizeControl")) {
-      closeDashboardCardSizeMenus();
-    }
-  }
-
-  function handleDashboardDragStart(e: any) {
-    if (!ctx.getDashboardEditMode()) return;
-    if (typeof window !== "undefined" && "PointerEvent" in window) {
-      e.preventDefault?.();
-      return;
-    }
-    if (dashboardPointerDrag) {
-      e.preventDefault?.();
-      return;
-    }
-    if (e.target?.closest?.(".dashboardSizeControl")) return;
-    closeDashboardCardSizeMenus();
-    const card = e.target?.closest?.(".dashboardCard") as HTMLElement | null;
-    if (!card || !els.dashboardGrid?.contains(card)) return;
-    if (isTopLockedDashboardCard(card.getAttribute("data-dashboard-id"))) {
-      e.preventDefault?.();
-      return;
-    }
-    ctx.setDashboardDragEl(card);
-    card.classList.add("isDragging");
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = "move";
-      try {
-        e.dataTransfer.setData("text/plain", card.getAttribute("data-dashboard-id") || "");
-      } catch {
-        // ignore
-      }
-    }
-  }
-
-  function handleDashboardDragOver(e: any) {
-    if (!ctx.getDashboardEditMode()) return;
-    e.preventDefault?.();
-  }
-
-  function handleDashboardDrop(e: any) {
-    if (!ctx.getDashboardEditMode()) return;
-    e.preventDefault();
-    applyDashboardCardPlacements();
-    saveDashboardOrder();
-    if (ctx.getCurrentAppPage() === "dashboard") {
-      renderDashboardWidgets();
-    }
-  }
-
-  function handleDashboardDragEnd() {
-    const dragging = ctx.getDashboardDragEl();
-    if (dragging) dragging.classList.remove("isDragging");
-    ctx.setDashboardDragEl(null);
-  }
-
   function registerDashboardEvents() {
     const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
-    ctx.on(dashboardInteractionRoot, "pointerdown", handleDashboardGridPointerDown);
-    ctx.on(dashboardInteractionRoot, "pointermove", handleDashboardGridPointerMove);
-    ctx.on(dashboardInteractionRoot, "pointerup", handleDashboardGridPointerEnd);
-    ctx.on(dashboardInteractionRoot, "pointercancel", handleDashboardGridPointerEnd);
-    ctx.on(document as any, "click", handleDocumentDashboardClick);
-    ctx.on(els.dashboardGrid, "dragstart", handleDashboardDragStart);
-    ctx.on(els.dashboardGrid, "dragover", handleDashboardDragOver);
-    ctx.on(els.dashboardGrid, "drop", handleDashboardDrop);
-    ctx.on(els.dashboardGrid, "dragend", handleDashboardDragEnd);
-    ctx.on(window as any, "resize", applyDashboardCardPlacements);
+    ctx.on(window as any, "resize", applyDashboardCardSizes);
     ctx.on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       ctx.closeDashboardHeatSummaryCard({ restoreFocus: true });
     });
@@ -827,7 +275,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   return {
     renderDashboardWidgets,
     saveDashboardWidgetState,
-    getDashboardCardSizeMapForStorage,
+    getDashboardCardSizeMapForStorage: () => ({}),
     getDashboardAvgRange: () => ctx.getDashboardAvgRange(),
     ensureDashboardIncludedModesValid,
     loadDashboardWidgetState,
@@ -836,5 +284,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     applyDashboardOrderFromStorage,
     applyDashboardEditMode,
     registerDashboardEvents,
+    applyDashboardOrder,
   };
 }

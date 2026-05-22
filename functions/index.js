@@ -478,6 +478,29 @@ function filterDeviceRowsByPushPreferences(deviceRows, prefs) {
   return deviceRows.filter((row) => row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled);
 }
 
+function buildScheduledPushData(route, payloadData) {
+  return {
+    ...(asStringMap(payloadData) || {}),
+    route: asString(route, "/tasklaunch") || "/tasklaunch",
+  };
+}
+
+function buildWebPushPayload(route, title, body, payloadData) {
+  return {
+    notification: {
+      title,
+      body,
+    },
+    headers: {
+      Urgency: "high",
+    },
+    fcmOptions: {
+      link: asString(route, "/tasklaunch") || "/tasklaunch",
+    },
+    data: buildScheduledPushData(route, payloadData),
+  };
+}
+
 function isStaleScheduleDoc(dueAtMs, nowMs) {
   return dueAtMs != null && nowMs - dueAtMs > STALE_SCHEDULE_DOC_TTL_MS;
 }
@@ -721,7 +744,7 @@ async function sendScheduledTaskNotification({
     .slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
   const hasForegroundNativeDevice = hasFreshForegroundNativeDevice(deviceRows, nowMs);
-  const hasForegroundWebDevice = hasFreshForegroundWebDevice(deviceRows, nowMs);
+  const pushData = buildScheduledPushData(route, payloadData);
   if (!deviceRows.length) {
     return {status: "no-devices"};
   }
@@ -763,29 +786,21 @@ async function sendScheduledTaskNotification({
           },
         },
       },
-      data: payloadData,
+      data: pushData,
     });
     responses.push(nativeResponse);
     invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse));
   }
 
-  if (allowWeb && webRows.length && !(skipIfForeground && hasForegroundWebDevice)) {
+  if (allowWeb && webRows.length) {
     const webResponse = await messaging.sendEachForMulticast({
       tokens: webRows.map((row) => row.token),
       notification: {
         title: webTitle,
         body: webBody,
       },
-      webpush: {
-        notification: {
-          title: webTitle,
-          body: webBody,
-        },
-        fcmOptions: {
-          link: route,
-        },
-      },
-      data: payloadData,
+      webpush: buildWebPushPayload(route, webTitle, webBody, payloadData),
+      data: pushData,
     });
     responses.push(webResponse);
     invalidRows.push(...await cleanupInvalidDeviceTokens(uid, webRows, webResponse));
@@ -796,9 +811,9 @@ async function sendScheduledTaskNotification({
     failureCount: acc.failureCount + item.failureCount,
   }), {successCount: 0, failureCount: 0});
 
-  if (!response.successCount && !response.failureCount && skipIfForeground && (hasForegroundNativeDevice || hasForegroundWebDevice)) {
+  if (!response.successCount && !response.failureCount && skipIfForeground && hasForegroundNativeDevice) {
     return {
-      status: hasForegroundWebDevice && !hasForegroundNativeDevice ? "foreground" : "sent",
+      status: "foreground",
       successCount: 0,
       failureCount: 0,
       invalidTokenCount: invalidRows.length,
@@ -1646,6 +1661,9 @@ export const sendDueTimeGoalPushes = onSchedule(
 );
 
 export const __testing = {
+  buildScheduledPushData,
+  buildWebPushPayload,
+  extractAndroidDeviceRows,
   sendScheduledTaskNotification,
   processDueTimeGoalCompleteTask,
 };

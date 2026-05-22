@@ -50,6 +50,23 @@ type PushDiagnostics = {
   localTokenPresent: boolean;
   cloudDocPresent: boolean;
   cloudTokenPresent: boolean;
+  cloudEnabled: boolean | null;
+  cloudProvider: string | null;
+  cloudPlatform: string | null;
+  cloudNative: boolean | null;
+  cloudKind: string | null;
+  cloudScope: string | null;
+};
+
+type WebPushRuntimeSupportState = {
+  supported: boolean;
+  reason:
+    | "ok"
+    | "server"
+    | "native-runtime"
+    | "missing-vapid-key"
+    | "missing-browser-apis"
+    | "sdk-unsupported";
 };
 
 type CapAppListenerHandle = {
@@ -121,15 +138,53 @@ function isNativePushRuntime() {
   }
 }
 
-async function isWebPushRuntimeSupported() {
-  if (typeof window === "undefined" || isNativeOrFileRuntime()) return false;
-  if (!firebaseWebPushVapidKey) return false;
-  if (!("Notification" in window) || !("serviceWorker" in navigator)) return false;
-  try {
-    return await isSupported();
-  } catch {
-    return false;
+async function getWebPushRuntimeSupportState(): Promise<WebPushRuntimeSupportState> {
+  if (typeof window === "undefined") return { supported: false, reason: "server" };
+  if (isNativeOrFileRuntime()) return { supported: false, reason: "native-runtime" };
+  if (!firebaseWebPushVapidKey) return { supported: false, reason: "missing-vapid-key" };
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+    return { supported: false, reason: "missing-browser-apis" };
   }
+  try {
+    return (await isSupported())
+      ? { supported: true, reason: "ok" }
+      : { supported: false, reason: "sdk-unsupported" };
+  } catch {
+    return { supported: false, reason: "sdk-unsupported" };
+  }
+}
+
+async function isWebPushRuntimeSupported() {
+  return (await getWebPushRuntimeSupportState()).supported;
+}
+
+function recordPushRegistrationIssue(
+  runtime: "web" | "android",
+  stage: string,
+  error?: unknown,
+  extra?: Record<string, unknown>
+) {
+  const details: Record<string, string | number | boolean> = {
+    flow: "push_registration",
+    runtime,
+    stage,
+  };
+  for (const [key, value] of Object.entries(extra || {})) {
+    const normalizedKey = String(key || "").trim();
+    if (!normalizedKey) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      details[normalizedKey] = value;
+      continue;
+    }
+    if (value != null) details[normalizedKey] = String(value);
+  }
+  if (error instanceof Error) {
+    if (error.name) details.name = error.name;
+    if (error.message) details.message = error.message;
+  } else if (typeof error === "string" && error.trim()) {
+    details.message = error.trim();
+  }
+  void recordNonFatal(error instanceof Error ? error : new Error(`${runtime}:${stage}`), details);
 }
 
 function randomId() {
@@ -462,8 +517,16 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   const auth = getFirebaseAuthClient();
   if (!auth) return false;
   const nativeRuntime = isNativePushRuntime();
-  const webRuntime = await isWebPushRuntimeSupported();
+  const webSupport = await getWebPushRuntimeSupportState();
+  const webRuntime = webSupport.supported;
   if ((nativeRuntime && !desiredPushEnabled.mobileEnabled) || (webRuntime && !desiredPushEnabled.webEnabled)) {
+    await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
+    return false;
+  }
+  if (!nativeRuntime && desiredPushEnabled.webEnabled && !webRuntime) {
+    recordPushRegistrationIssue("web", webSupport.reason, undefined, {
+      hasVapidKey: !!firebaseWebPushVapidKey,
+    });
     await disableTaskTimerPushRuntime({ clearCloudRegistration: true });
     return false;
   }
@@ -504,10 +567,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       latestPushToken = String(token.value || "").trim();
       if (!latestPushToken) return;
       void savePushTokenForUser(auth.currentUser, latestPushToken).catch((error) => {
-        void recordNonFatal(error, {
-          flow: "push_registration",
-          runtime: "android",
-        });
+        recordPushRegistrationIssue("android", "save-token-doc", error);
         if (process.env.NODE_ENV !== "production") {
           console.error("[push] Failed to save registration token", error);
         }
@@ -515,9 +575,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     });
 
     registrationErrorHandle = await PushNotifications.addListener("registrationError", (event) => {
-      void recordNonFatal(new Error("Native push registration error"), {
-        flow: "push_registration",
-        runtime: "android",
+      recordPushRegistrationIssue("android", "native-registration-error", new Error("Native push registration error"), {
         has_message: !!String((event as { error?: string })?.error || "").trim(),
       });
       if (process.env.NODE_ENV !== "production") {
@@ -634,10 +692,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
   let granted = true;
   if (nativeRuntime) {
     granted = await registerForPush().catch((error) => {
-      void recordNonFatal(error, {
-        flow: "push_registration",
-        runtime: "android",
-      });
+      recordPushRegistrationIssue("android", "native-register", error);
       if (process.env.NODE_ENV !== "production") {
         console.error("[push] Failed to register for push notifications", error);
       }
@@ -649,6 +704,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     try {
       const app = getFirebaseAppClient();
       if (!app || !firebaseWebPushVapidKey) {
+        if (!app) {
+          recordPushRegistrationIssue("web", "missing-firebase-app");
+          if (!nativeRuntime) granted = false;
+        }
         if (process.env.NODE_ENV !== "production" && !app && firebaseWebPushVapidKey) {
           console.warn("[push] Web push registration skipped because Firebase app is missing");
         }
@@ -663,7 +722,13 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
           });
         }
         if (permission === "granted") {
-          const serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          let serviceWorkerRegistration: ServiceWorkerRegistration;
+          try {
+            serviceWorkerRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          } catch (error) {
+            recordPushRegistrationIssue("web", "service-worker-register", error);
+            throw error;
+          }
           await navigator.serviceWorker.ready;
           if (!serviceWorkerRegistration.active) {
             await new Promise<void>((resolve) => {
@@ -700,6 +765,7 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
               })) || ""
             ).trim();
           } catch (error) {
+            recordPushRegistrationIssue("web", "get-token", error);
             if (process.env.NODE_ENV !== "production") {
               console.error("[push] Web getToken failed", {
                 error,
@@ -719,9 +785,20 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
             });
           }
           if (latestWebPushToken) {
-            await saveWebPushTokenForUser(auth.currentUser, latestWebPushToken);
+            try {
+              await saveWebPushTokenForUser(auth.currentUser, latestWebPushToken);
+            } catch (error) {
+              recordPushRegistrationIssue("web", "save-token-doc", error);
+              throw error;
+            }
           } else if (process.env.NODE_ENV !== "production") {
             console.warn("[push] Web getToken returned an empty token");
+          } else {
+            // no-op
+          }
+          if (!latestWebPushToken) {
+            recordPushRegistrationIssue("web", "empty-token");
+            throw new Error("Web push registration returned an empty token.");
           }
           unsubscribeForegroundWebMessage = onMessage(messaging, (payload) => {
             const notification =
@@ -764,14 +841,12 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
           };
           navigator.serviceWorker.addEventListener("message", serviceWorkerMessageListener);
         } else if (!nativeRuntime) {
+          recordPushRegistrationIssue("web", "permission-denied", undefined, { permission });
           granted = false;
         }
       }
     } catch (error) {
-      void recordNonFatal(error, {
-        flow: "push_registration",
-        runtime: "web",
-      });
+      recordPushRegistrationIssue("web", "web-register", error);
       if (process.env.NODE_ENV !== "production") {
         console.error("[push] Failed to register for web push notifications", error);
       }
@@ -804,13 +879,18 @@ export async function syncTaskTimerPushNotificationsEnabled(
     .catch(() => ({ mobileEnabled: false, webEnabled: false }))
     .then(async () => {
       const nativeRuntime = isNativePushRuntime();
-      const webRuntime = await isWebPushRuntimeSupported();
+      const webSupport = await getWebPushRuntimeSupportState();
+      const webRuntime = webSupport.supported;
       const currentRuntimeEnabled = nativeRuntime
         ? desiredPushEnabled.mobileEnabled
         : webRuntime
           ? desiredPushEnabled.webEnabled
           : desiredPushEnabled.mobileEnabled || desiredPushEnabled.webEnabled;
       if (!nativeRuntime && !webRuntime && desiredPushEnabled.webEnabled && !desiredPushEnabled.mobileEnabled) {
+        recordPushRegistrationIssue("web", webSupport.reason, undefined, {
+          hasVapidKey: !!firebaseWebPushVapidKey,
+        });
+        desiredPushEnabled = { ...desiredPushEnabled, webEnabled: false };
         return desiredPushEnabled;
       }
       if (currentRuntimeEnabled) {
@@ -885,6 +965,12 @@ export async function getTaskTimerPushDiagnostics(uid: string | null | undefined
     localTokenPresent: !!(latestPushToken || latestWebPushToken),
     cloudDocPresent: false,
     cloudTokenPresent: false,
+    cloudEnabled: null,
+    cloudProvider: null,
+    cloudPlatform: null,
+    cloudNative: null,
+    cloudKind: null,
+    cloudScope: null,
   };
 
   if (!normalizedUid) return diagnostics;
@@ -896,6 +982,12 @@ export async function getTaskTimerPushDiagnostics(uid: string | null | undefined
     const snap = await getDoc(doc(db, "users", normalizedUid, "devices", deviceId));
     diagnostics.cloudDocPresent = snap.exists();
     diagnostics.cloudTokenPresent = snap.exists() && !!String(snap.get("token") || "").trim();
+    diagnostics.cloudEnabled = snap.exists() ? snap.get("enabled") !== false : null;
+    diagnostics.cloudProvider = snap.exists() ? String(snap.get("provider") || "").trim() || null : null;
+    diagnostics.cloudPlatform = snap.exists() ? String(snap.get("platform") || "").trim() || null : null;
+    diagnostics.cloudNative = snap.exists() ? snap.get("native") === true : null;
+    diagnostics.cloudKind = snap.exists() ? String(snap.get("kind") || "").trim() || null : null;
+    diagnostics.cloudScope = snap.exists() ? String(snap.get("scope") || "").trim() || null : null;
   } catch {
     // Keep the diagnostics partial when Firestore is unavailable.
   }

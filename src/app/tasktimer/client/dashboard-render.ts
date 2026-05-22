@@ -137,7 +137,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function hasAdvancedInsights() {
-    return ctx.hasEntitlement("advancedInsights");
+    return true;
   }
 
   function sanitizeDashboardTimelineDensity(value: unknown): DashboardTimelineDensity {

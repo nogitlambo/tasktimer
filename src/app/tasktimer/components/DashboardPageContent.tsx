@@ -16,7 +16,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
                 id="dashboardShellContent"
               >
-                <div className="dashboardGrid">
+                <div className="dashboardGrid dashboardIntegratedPanel">
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
                     <div className="dashboardActivityOverviewHead">
                       <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
@@ -119,66 +119,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                     </div>
                   </section>
 
-                  <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeekHoursCard" data-dashboard-id="week-hours" data-dashboard-label="Today" aria-label="Today's logged time">
-                    <div className="dashboardCardTitle" id="dashboardTodayHoursTitle">Today</div>
-                    <div className="dashboardTrendIndicator" id="dashboardTodayTrendIndicator" aria-hidden="true">--</div>
-                    <div className="dashboardBigValue" id="dashboardTodayHoursValue">0m</div>
-                    <div className="dashboardGoalProgressWrap">
-                      <span className="dashboardGoalProjectionMarker" id="dashboardTodayHoursProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
-                      <div
-                        className="dashboardGoalProgressBar dashboardSummaryProgress dashboardXpProgressTrack rewardSegmentedBar"
-                        id="dashboardTodayHoursProgressBar"
-                        role="progressbar"
-                        aria-label="Today's time goal progress"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={0}
-                      >
-                        <span className="dashboardGoalProjectionFill rewardSegmentedBarFill" id="dashboardTodayHoursProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
-                        <span className="dashboardGoalProgressFill rewardSegmentedBarFill" id="dashboardTodayHoursProgressFill" style={{ width: "0%" }} />
-                        <span className="rewardSegmentedBarTrack" aria-hidden="true">
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                        </span>
-                      </div>
-                    </div>
-                    <div className="dashboardDelta dashboardSummaryStatus" id="dashboardTodayHoursMeta" style={{ display: "none" }} />
-                    <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTodayHoursDelta">No time logged today</div>
-                  </section>
-
-                  <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardWeeklyGoalsCard" data-dashboard-id="weekly-time-goals" data-dashboard-label="This Week" aria-label="Weekly logged time and time goal progress">
-                    <div className="dashboardCardTitle">This Week</div>
-                    <div className="dashboardTrendIndicator" id="dashboardWeeklyTrendIndicator" aria-hidden="true">--</div>
-                    <div className="dashboardBigValue" id="dashboardWeeklyGoalsValue">0m</div>
-                    <div className="dashboardGoalProgressWrap">
-                      <span className="dashboardGoalProjectionMarker" id="dashboardWeeklyGoalsProjectionMarker" aria-hidden="true" style={{ display: "none" }} />
-                      <div
-                        className="dashboardGoalProgressBar dashboardSummaryProgress dashboardXpProgressTrack rewardSegmentedBar"
-                        id="dashboardWeeklyGoalsProgressBar"
-                        role="progressbar"
-                        aria-label="Weekly time goal progress"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={0}
-                      >
-                        <span className="dashboardGoalProjectionFill rewardSegmentedBarFill" id="dashboardWeeklyGoalsProjectionFill" style={{ display: "none", width: "0%", left: "0%" }} />
-                        <span className="dashboardGoalProgressFill rewardSegmentedBarFill" id="dashboardWeeklyGoalsProgressFill" style={{ width: "0%" }} />
-                        <span className="rewardSegmentedBarTrack" aria-hidden="true">
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                          <span className="rewardSegmentedBarSegment" />
-                        </span>
-                      </div>
-                    </div>
-                    <div className="dashboardDelta dashboardSummaryStatus" id="dashboardWeeklyGoalsMeta" style={{ display: "none" }}>No weekly time goals enabled</div>
-                    <div className="dashboardDelta dashboardSummaryFoot" id="dashboardWeeklyGoalsProgressText">0% logged this week</div>
-                  </section>
-
+                  <div className="dashboardSupportGrid" aria-label="Dashboard insights">
                   <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
                     <div className="dashboardCardTitle">Task Overview</div>
                     <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
@@ -353,6 +294,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                       </div>
                     </div>
                   </section>
+                  </div>
                 </div>
               </div>
             </div>
