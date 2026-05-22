@@ -129,7 +129,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings");
-const PROFILE_MENU_PAGES = ["settings", "history"] as const;
+const PROFILE_MENU_PAGES = ["settings"] as const;
 
 export function getDesktopRailProfileMenuItems() {
   return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
@@ -348,58 +348,6 @@ function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void)
       />
       <span className="dashboardRailMenuLabel">{signOutBusy ? "Signing Out" : "Sign Out"}</span>
     </button>
-  );
-}
-
-function renderProfileHelpMenu() {
-  return (
-    <div className="desktopRailProfileSubmenu" role="none">
-      <button
-        className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSubmenuTrigger"
-        type="button"
-        role="menuitem"
-        aria-label="Help Center"
-        aria-haspopup="menu"
-      >
-        <AppImg
-          className="dashboardRailMenuIconImage"
-          src="/icons/icons_default/question.svg"
-          alt=""
-          aria-hidden="true"
-        />
-        <span className="dashboardRailMenuLabel">Help Center</span>
-      </button>
-      <div className="desktopRailProfileSubmenuList" role="menu" aria-label="Help Center">
-        <a
-          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
-          href="/about"
-          role="menuitem"
-          aria-label="About TaskLaunch"
-        >
-          <AppImg
-            className="dashboardRailMenuIconImage"
-            src="/About.svg"
-            alt=""
-            aria-hidden="true"
-          />
-          <span className="dashboardRailMenuLabel">About</span>
-        </a>
-        <a
-          className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn"
-          href="/feedback"
-          role="menuitem"
-          aria-label="Feedback"
-        >
-          <AppImg
-            className="dashboardRailMenuIconImage"
-            src="/About.svg"
-            alt=""
-            aria-hidden="true"
-          />
-          <span className="dashboardRailMenuLabel">Feedback</span>
-        </a>
-      </div>
-    </div>
   );
 }
 
@@ -728,7 +676,6 @@ export default function DesktopAppRail({
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
                 {getDesktopRailProfileMenuItems().map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
-                {renderProfileHelpMenu()}
                 {renderProfileSignOutButton(signOutBusy, handleProfileSignOut)}
                 {signOutError ? (
                   <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">

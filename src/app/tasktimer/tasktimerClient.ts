@@ -597,12 +597,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         cacheRuntimeState.set("lastDashboardLiveSignature", value);
       },
       getLastDashboardLiveSignature: () => cacheRuntimeState.get("lastDashboardLiveSignature"),
-      getDashboardRefreshBtn: () => els.dashboardRefreshBtn as HTMLButtonElement | null,
       getDashboardShellScene: () => els.dashboardShellScene as HTMLElement | null,
       getDashboardShellContent: () => els.dashboardShellContent as HTMLElement | null,
-      getDashboardShellBack: () => els.dashboardShellBack as HTMLElement | null,
-      getDashboardPanelMenuBtn: () => els.dashboardPanelMenuBtn as HTMLButtonElement | null,
-      getDashboardPanelMenuBackBtn: () => els.dashboardPanelMenuBackBtn as HTMLButtonElement | null,
     },
     dashboardBindings: {
       setDashboardRefreshPendingValue: (value) => {
@@ -706,7 +702,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
   setInitialAuthBusyVisible(isInitialAuthHydrating());
   const {
-    renderDashboardPanelMenu: renderDashboardPanelMenuApi,
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
     getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
     getDashboardAvgRange: getDashboardAvgRangeApi,
@@ -1320,7 +1315,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       clearTaskFlipStates,
       save: renderBindings.save,
       render,
-      renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,
       closeOverlay: overlayBindings.closeOverlay,
       closeConfirm: overlayBindings.closeConfirm,
@@ -1503,7 +1497,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       applyAppPage,
       applyDashboardOrderFromStorage: () => applyDashboardOrderFromStorageApi(),
       applyDashboardCardSizes: () => applyDashboardCardSizesApi(),
-      renderDashboardPanelMenu: () => renderDashboardPanelMenuApi(),
       applyDashboardCardVisibility: () => applyDashboardCardVisibilityApi(),
       applyDashboardEditMode: () => applyDashboardEditModeApi(),
       renderDashboardWidgets: () => renderDashboardWidgetsWithBusy(),
@@ -1623,9 +1616,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       registerEditTaskEvents,
       registerPopupMenuEvents,
       registerImportExportEvents,
-      isDashboardBusy: () => dashboardBusyApi.isBusy(),
-      dashboardMenuFlipped: () => appRuntimeState.get("dashboardMenuFlipped"),
-      setDashboardRefreshPending,
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
       registerConfirmOverlayEvents,
     });

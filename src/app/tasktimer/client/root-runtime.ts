@@ -85,9 +85,6 @@ type RegisterRootEventsOptions = {
   registerEditTaskEvents: () => void;
   registerPopupMenuEvents: () => void;
   registerImportExportEvents: () => void;
-  isDashboardBusy: () => boolean;
-  dashboardMenuFlipped: () => boolean;
-  setDashboardRefreshPending: (value: boolean) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
   registerConfirmOverlayEvents: () => void;
 };
@@ -229,12 +226,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
 
   registerTaskTimerDashboardShellEvents({
     on,
-    dashboardRefreshBtn: els.dashboardRefreshBtn as EventTarget | null | undefined,
     dashboardHeatSummaryCloseBtn: els.dashboardHeatSummaryCloseBtn as EventTarget | null | undefined,
-    isDashboardBusy: options.isDashboardBusy,
-    dashboardMenuFlipped: options.dashboardMenuFlipped,
-    setDashboardRefreshPending: options.setDashboardRefreshPending,
-    rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,
     closeDashboardHeatSummaryCard: options.closeDashboardHeatSummaryCard,
   });
 

@@ -957,7 +957,6 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   clearTaskFlipStates: () => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   render: () => void;
-  renderDashboardPanelMenu: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
   closeConfirm: () => void;

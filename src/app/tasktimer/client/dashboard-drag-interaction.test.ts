@@ -21,15 +21,8 @@ describe("dashboard drag interaction guards", () => {
     expect(shouldUsePointerDashboardDrag({ button: 0, isPrimary: false })).toBe(false);
   });
 
-  it("blocks drag starts from dashboard chrome and size controls but not card content", () => {
+  it("blocks drag starts from size controls and form fields but not card content", () => {
     expect(shouldIgnoreDashboardPointerDragStartTarget(makeClosestTarget([".dashboardSizeControl"]))).toBe(true);
-    expect(
-      shouldIgnoreDashboardPointerDragStartTarget(
-        makeClosestTarget([
-          "#dashboardRefreshBtn, #dashboardPanelMenuBtn, #dashboardEditBtn, #dashboardEditCancelBtn, #dashboardEditDoneBtn, #dashboardPanelMenuBackBtn",
-        ])
-      )
-    ).toBe(true);
     expect(shouldIgnoreDashboardPointerDragStartTarget(makeClosestTarget(["input, select, textarea"]))).toBe(true);
     expect(shouldIgnoreDashboardPointerDragStartTarget(makeClosestTarget())).toBe(false);
     expect(shouldIgnoreDashboardPointerDragStartTarget(null)).toBe(false);
@@ -40,7 +33,12 @@ describe("dashboard drag interaction guards", () => {
     expect(shouldOpenDashboardLockedUpgradePrompt(true)).toBe(false);
   });
 
-  it("keeps flexible dashboard cards resizable while forcing task overview to fixed half width", () => {
+  it("keeps flexible dashboard cards resizable while forcing fixed dashboard card sizes", () => {
+    expect(sanitizeDashboardCardSize("quarter", "activity-overview")).toBe("full");
+    expect(sanitizeDashboardCardSize("half", "activity-overview")).toBe("full");
+    expect(isDashboardCardSizeOptionAllowed("quarter", "activity-overview")).toBe(false);
+    expect(isDashboardCardSizeOptionAllowed("half", "activity-overview")).toBe(false);
+    expect(isDashboardCardSizeOptionAllowed("full", "activity-overview")).toBe(true);
     expect(sanitizeDashboardCardSize("quarter", "avg-session-by-task")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "heatmap")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "tasks-completed")).toBe("half");

@@ -16,7 +16,6 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   ".switch",
   '[role="switch"]',
   "#closeMenuBtn",
-  "#menuIcon",
   "[data-nav-page]",
   ".appFooterBtn",
   ".dashboardRailMenuBtn",
@@ -30,7 +29,7 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
 ].join(",");
 
 const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]', ".modalPreviewDropdownOption"].join(",");
-const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,[data-action="history"]';
+const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip]";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([

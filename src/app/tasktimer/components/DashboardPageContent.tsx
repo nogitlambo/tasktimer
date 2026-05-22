@@ -1,22 +1,10 @@
 "use client";
-import AppImg from "@/components/AppImg";
-
-const dashboardPanelOptions = [
-  { id: "activity-overview", label: "Activity Overview" },
-  { id: "week-hours", label: "Today" },
-  { id: "weekly-time-goals", label: "This Week" },
-  { id: "tasks-completed", label: "Task Overview" },
-  { id: "momentum", label: "Momentum" },
-  { id: "avg-session-by-task", label: "Last Ran" },
-  { id: "heatmap", label: "Focus Heatmap" },
-] as const;
 
 type DashboardPageContentProps = {
   active: boolean;
-  showTopRow?: boolean;
 };
 
-export default function DashboardPageContent({ active, showTopRow = true }: DashboardPageContentProps) {
+export default function DashboardPageContent({ active }: DashboardPageContentProps) {
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
@@ -28,74 +16,9 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"
                 id="dashboardShellContent"
               >
-                {showTopRow ? (
-                  <div className="dashboardTopRow">
-                    <div className="dashboardEditActions">
-                      <button className="iconBtn dashboardRefreshBtn" id="dashboardRefreshBtn" type="button" aria-label="Refresh dashboard" title="Refresh dashboard">
-                        <AppImg className="dashboardRefreshIcon" src="/icons/icons_default/refresh.png" alt="" aria-hidden="true" />
-                      </button>
-                      <button
-                        className="btn btn-ghost small dashboardPanelMenuBtn"
-                        id="dashboardPanelMenuBtn"
-                        type="button"
-                        aria-label="Customize dashboard panels"
-                        aria-expanded="false"
-                      >
-                        <span className="dashboardPanelMenuIcon" aria-hidden="true" />
-                      </button>
-                      <button className="iconBtn" id="dashboardEditBtn" type="button" aria-label="Edit Dashboard Layout" title="Edit Dashboard Layout">
-                        &#9998;
-                      </button>
-                      <button className="btn btn-ghost small" id="dashboardEditCancelBtn" type="button" style={{ display: "none" }}>
-                        Cancel
-                      </button>
-                      <button className="btn btn-accent small" id="dashboardEditDoneBtn" type="button" style={{ display: "none" }}>
-                        Done
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
                 <div className="dashboardGrid">
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
                     <div className="dashboardActivityOverviewHead">
-                      <div>
-                        <div className="dashboardCardTitle" id="dashboardActivityOverviewTitle">Activity Overview</div>
-                        <p className="modalSubtext" id="dashboardActivityOverviewSubtitle">Current week activity and goal progress</p>
-                      </div>
-                    </div>
-                    <div className="dashboardActivityOverviewBody">
-                      <div className="dashboardActivityChartPanel">
-                        <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
-                          <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" role="img" aria-label="Current week activity chart" focusable="false">
-                            <g id="dashboardActivityChartGrid" />
-                            <g id="dashboardActivityPreviousBars" />
-                            <g id="dashboardActivityBars" />
-                            <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
-                          </svg>
-                          <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
-                          <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
-                          <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden>
-                            <p id="dashboardActivityEmptyText">No activity logged this week.</p>
-                            <div className="dashboardActivityEmptyActions">
-                              <button className="btn btn-accent small" type="button" data-dashboard-activity-action="tasks">Open Tasks</button>
-                              <button className="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="dashboardActivityDayDetail" id="dashboardActivityDayDetail" hidden>
-                          <div className="dashboardActivityDayDetailHead">
-                            <div>
-                              <div className="dashboardActivityDetailTitle" id="dashboardActivityDetailTitle">Select a day</div>
-                              <p className="modalSubtext" id="dashboardActivityDetailMeta">Daily task and session breakdown</p>
-                            </div>
-                            <button className="iconBtn dashboardActivityDetailClose" type="button" data-dashboard-activity-action="close-detail" aria-label="Close day detail" title="Close day detail">
-                              &#8594;
-                            </button>
-                          </div>
-                          <div className="dashboardActivityDetailBody" id="dashboardActivityDetailBody" />
-                        </div>
-                      </div>
                       <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
                         <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">
                           <div className="dashboardActivitySummaryTop">
@@ -160,6 +83,39 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                           <div className="dashboardDelta dashboardSummaryFoot" id="dashboardActivityWeeklyGoalsProgressText">0% logged this week</div>
                         </section>
                       </aside>
+                    </div>
+                    <div className="dashboardActivityOverviewBody">
+                      <div className="dashboardActivityChartPanel">
+                        <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
+                          <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" preserveAspectRatio="none" role="img" aria-label="Current week activity chart" focusable="false">
+                            <g id="dashboardActivityChartGrid" />
+                            <g id="dashboardActivityPreviousBars" />
+                            <g id="dashboardActivityBars" />
+                            <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
+                          </svg>
+                          <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
+                          <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
+                          <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden>
+                            <p id="dashboardActivityEmptyText">No activity logged this week.</p>
+                            <div className="dashboardActivityEmptyActions">
+                              <button className="btn btn-accent small" type="button" data-dashboard-activity-action="tasks">Open Tasks</button>
+                              <button className="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="dashboardActivityDayDetail" id="dashboardActivityDayDetail" hidden>
+                          <div className="dashboardActivityDayDetailHead">
+                            <div>
+                              <div className="dashboardActivityDetailTitle" id="dashboardActivityDetailTitle">Select a day</div>
+                              <p className="modalSubtext" id="dashboardActivityDetailMeta">Daily task and session breakdown</p>
+                            </div>
+                            <button className="iconBtn dashboardActivityDetailClose" type="button" data-dashboard-activity-action="close-detail" aria-label="Close day detail" title="Close day detail">
+                              &#8594;
+                            </button>
+                          </div>
+                          <div className="dashboardActivityDetailBody" id="dashboardActivityDetailBody" />
+                        </div>
+                      </div>
                     </div>
                   </section>
 
@@ -394,46 +350,6 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                         <div className="confirmText dashboardHeatSummaryBody" id="dashboardHeatSummaryBody">
                           <div className="dashboardHeatSummaryEmpty">No logged sessions for this day.</div>
                         </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              </div>
-              <div className="dashboardShellFace dashboardShellFaceBack" id="dashboardShellBack" aria-hidden="true" inert={true}>
-                <div className="dashboardBackPanel">
-                <div className="dashboardTopRow dashboardBackTopRow">
-                  <div className="dashboardTitleWrap">
-                    <p className="dashboardKicker">Dashboard</p>
-                  </div>
-                    <div className="dashboardBackActions">
-                      <button className="iconBtn dashboardFlipBackBtn" id="dashboardPanelMenuBackBtn" type="button" aria-label="Back to dashboard" title="Back to dashboard" aria-expanded="true">
-                        &#8594;
-                      </button>
-                    </div>
-                  </div>
-                  <section className="dashboardBackMenuCard" aria-label="Dashboard customization">
-                    <div className="dashboardBackMenuHead">
-                      <div className="dashboardCardTitle">Customize Dashboard</div>
-                    </div>
-                    <div className="dashboardPanelMenuList dashboardPanelMenuListBack" id="dashboardPanelMenuList" role="menu" aria-label="Dashboard panels">
-                      <div className="dashboardPanelMenuSectionTitle">
-                        <span>Panels</span>
-                        <button
-                          type="button"
-                          className="dashboardPanelMenuSectionAction"
-                          data-dashboard-panel-bulk-toggle="true"
-                          aria-label="Select all dashboard panels"
-                        >
-                          Select All
-                        </button>
-                      </div>
-                      <div className="dashboardPanelMenuSectionBody dashboardPanelMenuPanelGrid">
-                        {dashboardPanelOptions.map((panel) => (
-                          <label className="dashboardPanelMenuItem dashboardPanelMenuTile" key={panel.id}>
-                            <input type="checkbox" data-dashboard-panel-id={panel.id} />
-                            <span>{panel.label}</span>
-                          </label>
-                        ))}
                       </div>
                     </div>
                   </section>

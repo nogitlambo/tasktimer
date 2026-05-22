@@ -73,7 +73,6 @@ type CreateTaskTimerPersistenceOptions = {
   applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   applyDashboardOrderFromStorage: () => void;
   applyDashboardCardSizes: () => void;
-  renderDashboardPanelMenu: () => void;
   applyDashboardCardVisibility: () => void;
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
@@ -274,7 +273,6 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     });
     options.applyDashboardOrderFromStorage();
     options.applyDashboardCardSizes();
-    options.renderDashboardPanelMenu();
     options.applyDashboardCardVisibility();
     options.applyDashboardEditMode();
     if (!opts?.skipDashboardWidgetsRender && options.getCurrentAppPage() === "dashboard") {

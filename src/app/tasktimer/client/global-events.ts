@@ -48,12 +48,7 @@ type RegisterWindowRuntimeEventsOptions = {
 
 type RegisterDashboardShellEventsOptions = {
   on: (target: EventTarget | null | undefined, event: string, handler: (event: unknown) => void) => void;
-  dashboardRefreshBtn: EventTarget | null | undefined;
   dashboardHeatSummaryCloseBtn: EventTarget | null | undefined;
-  isDashboardBusy: () => boolean;
-  dashboardMenuFlipped: () => boolean;
-  setDashboardRefreshPending: (value: boolean) => void;
-  rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
 
@@ -192,12 +187,6 @@ export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRunt
 }
 
 export function registerTaskTimerDashboardShellEvents(options: RegisterDashboardShellEventsOptions) {
-  options.on(options.dashboardRefreshBtn, "click", () => {
-    if (options.isDashboardBusy() || options.dashboardMenuFlipped()) return;
-    options.setDashboardRefreshPending(false);
-    void options.rehydrateFromCloudAndRender({ force: true });
-  });
-
   options.on(options.dashboardHeatSummaryCloseBtn, "click", () => {
     options.closeDashboardHeatSummaryCard({ restoreFocus: true });
   });

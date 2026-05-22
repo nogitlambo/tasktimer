@@ -106,7 +106,6 @@ function createHarness(snapshotTasks: Task[], nowValue = new Date(2026, 4, 3, 8)
     applyAppPage: () => {},
     applyDashboardOrderFromStorage: () => {},
     applyDashboardCardSizes: () => {},
-    renderDashboardPanelMenu: () => {},
     applyDashboardCardVisibility: () => {},
     applyDashboardEditMode: () => {},
     renderDashboardWidgets: () => {},

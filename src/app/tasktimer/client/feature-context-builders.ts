@@ -89,7 +89,6 @@ type CreatePreferencesOptionsArgs = {
   clearTaskFlipStates: () => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   render: () => void;
-  renderDashboardPanelMenu: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   closeOverlay: Parameters<typeof createTaskTimerPreferences>[0]["closeOverlay"];
   closeConfirm: () => void;
@@ -157,7 +156,6 @@ type CreatePersistenceOptionsArgs = {
   applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   applyDashboardOrderFromStorage: () => void;
   applyDashboardCardSizes: () => void;
-  renderDashboardPanelMenu: () => void;
   applyDashboardCardVisibility: () => void;
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: () => void;
@@ -639,12 +637,8 @@ type CreateDashboardRuntimeOptionsArgs = {
   isDashboardBusy: () => boolean;
   renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
   renderDashboardLiveWidgets: () => void;
-  getDashboardRefreshBtn: () => HTMLButtonElement | null;
   getDashboardShellScene: () => HTMLElement | null;
   getDashboardShellContent: () => HTMLElement | null;
-  getDashboardShellBack: () => HTMLElement | null;
-  getDashboardPanelMenuBtn: () => HTMLButtonElement | null;
-  getDashboardPanelMenuBackBtn: () => HTMLButtonElement | null;
 };
 
 type CreateDashboardOptionsArgs = {
@@ -964,7 +958,6 @@ export function createTaskTimerPreferencesContext(
     clearTaskFlipStates: args.clearTaskFlipStates,
     save: args.save,
     render: args.render,
-    renderDashboardPanelMenu: args.renderDashboardPanelMenu,
     renderDashboardWidgets: args.renderDashboardWidgets,
     closeOverlay: args.closeOverlay,
     closeConfirm: args.closeConfirm,
@@ -1049,7 +1042,6 @@ export function createTaskTimerPersistenceContext(
     applyAppPage: args.applyAppPage as Parameters<typeof createTaskTimerPersistence>[0]["applyAppPage"],
     applyDashboardOrderFromStorage: args.applyDashboardOrderFromStorage,
     applyDashboardCardSizes: args.applyDashboardCardSizes,
-    renderDashboardPanelMenu: args.renderDashboardPanelMenu,
     applyDashboardCardVisibility: args.applyDashboardCardVisibility,
     applyDashboardEditMode: args.applyDashboardEditMode,
     renderDashboardWidgets: args.renderDashboardWidgets,
@@ -1543,12 +1535,8 @@ export function createTaskTimerDashboardRuntimeContext(
     isDashboardBusy: args.isDashboardBusy,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardLiveWidgets: args.renderDashboardLiveWidgets,
-    getDashboardRefreshBtn: args.getDashboardRefreshBtn,
     getDashboardShellScene: args.getDashboardShellScene,
     getDashboardShellContent: args.getDashboardShellContent,
-    getDashboardShellBack: args.getDashboardShellBack,
-    getDashboardPanelMenuBtn: args.getDashboardPanelMenuBtn,
-    getDashboardPanelMenuBackBtn: args.getDashboardPanelMenuBackBtn,
   };
 }
 

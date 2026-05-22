@@ -73,13 +73,6 @@ export function shouldIgnoreDashboardPointerDragStartTarget(target: DashboardClo
   if (!target?.closest) return false;
   if (target.closest(".dashboardSizeControl")) return true;
   if (target.closest("input, select, textarea")) return true;
-  if (
-    target.closest(
-      "#dashboardRefreshBtn, #dashboardPanelMenuBtn, #dashboardEditBtn, #dashboardEditCancelBtn, #dashboardEditDoneBtn, #dashboardPanelMenuBackBtn"
-    )
-  ) {
-    return true;
-  }
   if (target.closest("[data-dashboard-activity-day], [data-dashboard-activity-action]")) return true;
   return false;
 }
@@ -111,10 +104,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function getDashboardGridEl() {
     return (document.querySelector("#appPageDashboard .dashboardGrid") as HTMLElement | null) || els.dashboardGrid || null;
-  }
-
-  function getDashboardPanelMenuListEl() {
-    return (document.getElementById("dashboardPanelMenuList") as HTMLElement | null) || els.dashboardPanelMenuList || null;
   }
 
   function getCloudDashboardRecord() {
@@ -203,95 +192,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     return out;
   }
 
-  function syncDashboardPanelMenuState() {
-    const menuList = getDashboardPanelMenuListEl();
-    if (!menuList) return;
-    const meta = collectDashboardPanelMeta();
-    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
-    Array.from(menuList.querySelectorAll("input[data-dashboard-panel-id]")).forEach((node) => {
-      const checkbox = node as HTMLInputElement;
-      const panelId = String(checkbox.getAttribute("data-dashboard-panel-id") || "");
-      const isVisible = isDashboardCardVisible(panelId);
-      checkbox.checked = isVisible;
-      checkbox.disabled = shouldForceVisibleDashboardCard(panelId);
-    });
-    const bulkToggleBtn = menuList.querySelector("[data-dashboard-panel-bulk-toggle]") as HTMLButtonElement | null;
-    if (bulkToggleBtn) {
-      const allSelected = meta.length > 0 && visibleCount === meta.length;
-      bulkToggleBtn.textContent = allSelected ? "Clear" : "Select All";
-      bulkToggleBtn.setAttribute("aria-label", allSelected ? "Clear all dashboard panels" : "Select all dashboard panels");
-      bulkToggleBtn.hidden = !meta.length;
-    }
-    ctx.syncDashboardRefreshButtonUi();
-  }
-
-  function renderDashboardPanelMenu() {
-    const menuList = getDashboardPanelMenuListEl();
-    if (!menuList) return;
-    const meta = collectDashboardPanelMeta();
-    menuList.innerHTML = "";
-    if (!meta.length) return;
-    const appendSectionBody = (className?: string) => {
-      const body = document.createElement("div");
-      body.className = className ? `dashboardPanelMenuSectionBody ${className}` : "dashboardPanelMenuSectionBody";
-      menuList.appendChild(body);
-      return body;
-    };
-    const appendSectionTitle = (title: string, opts?: { bulkToggle?: boolean }) => {
-      const heading = document.createElement("div");
-      heading.className = "dashboardPanelMenuSectionTitle";
-      const titleText = document.createElement("span");
-      titleText.textContent = title;
-      heading.appendChild(titleText);
-      if (opts?.bulkToggle) {
-        const actionBtn = document.createElement("button");
-        actionBtn.type = "button";
-        actionBtn.className = "dashboardPanelMenuSectionAction";
-        actionBtn.setAttribute("data-dashboard-panel-bulk-toggle", "true");
-        actionBtn.textContent = "Select All";
-        heading.appendChild(actionBtn);
-      }
-      menuList.appendChild(heading);
-    };
-    appendSectionTitle("Panels", { bulkToggle: true });
-    const panelBody = appendSectionBody("dashboardPanelMenuPanelGrid");
-    meta.forEach(({ panelId, label }) => {
-      const row = document.createElement("label");
-      row.className = "dashboardPanelMenuItem dashboardPanelMenuTile";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.setAttribute("data-dashboard-panel-id", panelId);
-      const text = document.createElement("span");
-      text.textContent = label;
-      row.appendChild(input);
-      row.appendChild(text);
-      panelBody.appendChild(row);
-    });
-    syncDashboardPanelMenuState();
-  }
-
-  function syncDashboardMenuFlipState() {
-    ctx.syncDashboardMenuFlipUi();
-  }
-
-  function setDashboardMenuFlipped(nextFlipped: boolean) {
-    if (ctx.getDashboardMenuFlipped() === nextFlipped) {
-      syncDashboardMenuFlipState();
-      return;
-    }
-    ctx.setDashboardMenuFlipped(nextFlipped);
-    syncDashboardMenuFlipState();
-  }
-
-  function openDashboardPanelMenu() {
-    renderDashboardPanelMenu();
-    setDashboardMenuFlipped(true);
-  }
-
-  function closeDashboardPanelMenu() {
-    setDashboardMenuFlipped(false);
-  }
-
   function getDashboardCardSizeMapForStorage() {
     const cardSizes = ctx.getDashboardCardSizes();
     const out: Record<string, DashboardCardSize> = {};
@@ -339,7 +239,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       panel.hidden = !shouldShow;
       panel.setAttribute("aria-hidden", shouldShow ? "false" : "true");
     });
-    syncDashboardPanelMenuState();
+    ctx.syncDashboardRefreshButtonUi();
   }
 
   function loadDashboardWidgetState() {
@@ -591,50 +491,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     applyDashboardCardPlacements();
   }
 
-  function beginDashboardEditMode() {
-    if (ctx.getDashboardEditMode()) return;
-    ctx.setDashboardOrderDraftBeforeEdit(getCurrentDashboardOrder());
-    ctx.setDashboardCardPlacementsDraftBeforeEdit({ ...ctx.getDashboardCardPlacements() });
-    ctx.setDashboardCardSizesDraftBeforeEdit({ ...ctx.getDashboardCardSizes() });
-    ctx.setDashboardEditMode(true);
-    applyDashboardEditMode();
-  }
-
-  function cancelDashboardEditMode() {
-    if (!ctx.getDashboardEditMode()) return;
-    const dashboardOrderDraftBeforeEdit = ctx.getDashboardOrderDraftBeforeEdit();
-    if (dashboardOrderDraftBeforeEdit?.length) {
-      applyDashboardOrder(dashboardOrderDraftBeforeEdit);
-    }
-    ctx.setDashboardCardPlacements(
-      ctx.getDashboardCardPlacementsDraftBeforeEdit() ? { ...ctx.getDashboardCardPlacementsDraftBeforeEdit()! } : {}
-    );
-    ctx.setDashboardCardSizes(
-      ctx.getDashboardCardSizesDraftBeforeEdit() ? { ...ctx.getDashboardCardSizesDraftBeforeEdit()! } : {}
-    );
-    applyDashboardCardSizes();
-    saveDashboardOrder();
-    ctx.setDashboardEditMode(false);
-    ctx.setDashboardOrderDraftBeforeEdit(null);
-    ctx.setDashboardCardPlacementsDraftBeforeEdit(null);
-    ctx.setDashboardCardSizesDraftBeforeEdit(null);
-    applyDashboardEditMode();
-  }
-
-  function commitDashboardEditMode() {
-    if (!ctx.getDashboardEditMode()) return;
-    commitRenderedDashboardCardPlacements();
-    saveDashboardOrder();
-    ctx.setDashboardEditMode(false);
-    ctx.setDashboardOrderDraftBeforeEdit(null);
-    ctx.setDashboardCardPlacementsDraftBeforeEdit(null);
-    ctx.setDashboardCardSizesDraftBeforeEdit(null);
-    applyDashboardEditMode();
-    if (ctx.getCurrentAppPage() === "dashboard") {
-      renderDashboardWidgets();
-    }
-  }
-
   function applyDashboardEditMode() {
     const grid = getDashboardGridEl();
     if (!grid) return;
@@ -653,18 +509,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     });
     syncDashboardCardSizeControlState();
     applyDashboardCardPlacements();
-    if (els.dashboardEditBtn) {
-      els.dashboardEditBtn.classList.toggle("isOn", ctx.getDashboardEditMode());
-      (els.dashboardEditBtn as HTMLElement).style.display = ctx.getDashboardEditMode() ? "none" : "inline-flex";
-    }
-    if (els.dashboardEditCancelBtn) {
-      (els.dashboardEditCancelBtn as HTMLElement).style.display = ctx.getDashboardEditMode() ? "inline-flex" : "none";
-    }
-    if (els.dashboardEditDoneBtn) {
-      (els.dashboardEditDoneBtn as HTMLElement).style.display = ctx.getDashboardEditMode() ? "inline-flex" : "none";
-    }
-    if (ctx.getDashboardEditMode()) closeDashboardPanelMenu();
-    syncDashboardMenuFlipState();
+    ctx.syncDashboardMenuFlipUi();
   }
 
   function resolveDashboardGridDropPlacement(clientX: number, clientY: number, dragging: HTMLElement) {
@@ -737,53 +582,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function renderDashboardWidgets(opts?: DashboardRenderOptions) {
     ctx.renderDashboardWidgets(opts);
-  }
-
-  function applyDashboardBulkPanelVisibility(nextChecked: boolean) {
-    const meta = collectDashboardPanelMeta();
-    if (!meta.length) return;
-    const nextVisibility = { ...ctx.getDashboardCardVisibility() };
-    meta.forEach(({ panelId }) => {
-      nextVisibility[panelId] = nextChecked;
-    });
-    ctx.setDashboardCardVisibility(nextVisibility);
-    applyDashboardCardVisibility();
-    saveDashboardWidgetState({
-      cardSizes: getDashboardCardSizeMapForStorage(),
-    });
-    if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
-  }
-
-  function clearDashboardPanelMenuSelections() {
-    const menuList = getDashboardPanelMenuListEl();
-    if (!menuList) return;
-    Array.from(menuList.querySelectorAll("input[data-dashboard-panel-id]")).forEach((node) => {
-      const checkbox = node as HTMLInputElement;
-      checkbox.checked = false;
-    });
-    const bulkToggleBtn = menuList.querySelector("[data-dashboard-panel-bulk-toggle]") as HTMLButtonElement | null;
-    if (bulkToggleBtn) {
-      bulkToggleBtn.textContent = "Select All";
-      bulkToggleBtn.setAttribute("aria-label", "Select all dashboard panels");
-    }
-  }
-
-  function handleDashboardPanelMenuChange(e: Event) {
-    const input = (e.target as HTMLElement | null)?.closest?.("input[data-dashboard-panel-id]") as HTMLInputElement | null;
-    if (!input) return;
-    const cardId = String(input.getAttribute("data-dashboard-panel-id") || "").trim();
-    if (!cardId) return;
-    if (shouldForceVisibleDashboardCard(cardId)) {
-      input.checked = true;
-      return;
-    }
-    const nextChecked = !!input.checked;
-    ctx.setDashboardCardVisibility({ ...ctx.getDashboardCardVisibility(), [cardId]: nextChecked });
-    applyDashboardCardVisibility();
-    saveDashboardWidgetState({
-      cardSizes: getDashboardCardSizeMapForStorage(),
-    });
-    if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
   }
 
   function handleDashboardGridClick(e: any) {
@@ -949,35 +747,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     e.preventDefault?.();
   }
 
-  function handleDashboardPanelMenuClick(e: Event) {
-    const openBtn = (e.target as HTMLElement | null)?.closest?.("#dashboardPanelMenuBtn") as HTMLButtonElement | null;
-    if (openBtn) {
-      if (ctx.getDashboardEditMode()) return;
-      openDashboardPanelMenu();
-      e.preventDefault();
-      return;
-    }
-    const closeBtn = (e.target as HTMLElement | null)?.closest?.("#dashboardPanelMenuBackBtn") as HTMLButtonElement | null;
-    if (closeBtn) {
-      closeDashboardPanelMenu();
-      e.preventDefault();
-      return;
-    }
-    const bulkToggleBtn = (e.target as HTMLElement | null)?.closest?.(
-      "[data-dashboard-panel-bulk-toggle]"
-    ) as HTMLButtonElement | null;
-    if (!bulkToggleBtn) return;
-    const meta = collectDashboardPanelMeta();
-    const visibleCount = meta.reduce((count, row) => (isDashboardCardVisible(row.panelId) ? count + 1 : count), 0);
-    const allSelected = meta.length > 0 && visibleCount === meta.length;
-    if (allSelected) {
-      clearDashboardPanelMenuSelections();
-    } else {
-      applyDashboardBulkPanelVisibility(true);
-    }
-    e.preventDefault();
-  }
-
   function handleDocumentDashboardClick(e: any) {
     const target = e.target as HTMLElement | null;
     if (!target) return;
@@ -1039,13 +808,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function registerDashboardEvents() {
     const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
-    ctx.on(els.dashboardEditBtn, "click", beginDashboardEditMode);
-    ctx.on(els.dashboardEditCancelBtn, "click", cancelDashboardEditMode);
-    ctx.on(els.dashboardEditDoneBtn, "click", commitDashboardEditMode);
-    ctx.on(els.dashboardPanelMenuBtn, "click", handleDashboardPanelMenuClick);
-    ctx.on(els.dashboardPanelMenuBackBtn, "click", handleDashboardPanelMenuClick);
-    ctx.on(els.dashboardPanelMenuList, "click", handleDashboardPanelMenuClick);
-    ctx.on(els.dashboardPanelMenuList, "change", handleDashboardPanelMenuChange);
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
     ctx.on(dashboardInteractionRoot, "pointerdown", handleDashboardGridPointerDown);
     ctx.on(dashboardInteractionRoot, "pointermove", handleDashboardGridPointerMove);
@@ -1063,7 +825,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   return {
-    renderDashboardPanelMenu,
     renderDashboardWidgets,
     saveDashboardWidgetState,
     getDashboardCardSizeMapForStorage,
@@ -1074,9 +835,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     applyDashboardCardSizes,
     applyDashboardOrderFromStorage,
     applyDashboardEditMode,
-    beginDashboardEditMode,
-    cancelDashboardEditMode,
-    commitDashboardEditMode,
     registerDashboardEvents,
   };
 }

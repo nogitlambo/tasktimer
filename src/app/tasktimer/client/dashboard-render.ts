@@ -1272,14 +1272,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!cardEl) return;
     const model = getDashboardActivityOverviewModel();
     if (selectedActivityOverviewDayKey && !model.days.some((day) => day.key === selectedActivityOverviewDayKey)) selectedActivityOverviewDayKey = null;
-    const subtitleEl = (els as any).dashboardActivityOverviewSubtitle as HTMLElement | null;
     const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
     const emptyTextEl = (els as any).dashboardActivityEmptyText as HTMLElement | null;
-    if (subtitleEl) {
-      const start = new Date(model.weekStartMs).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      const end = new Date(model.weekEndMs - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      subtitleEl.textContent = `${start} - ${end}`;
-    }
     if (emptyEl) {
       const showEmpty = !model.hasActivity;
       emptyEl.hidden = !showEmpty;

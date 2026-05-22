@@ -64,46 +64,6 @@
   pointer-events:auto;
 }
 
-.dashboardBackPanel{
-  width:100%;
-  display:grid;
-  grid-template-rows:auto minmax(0, 1fr);
-  gap:14px;
-  border:0;
-  box-shadow:none;
-}
-
-.dashboardBackTopRow{
-  margin-bottom:0;
-}
-
-.dashboardBackActions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-}
-
-.dashboardBackMenuCard{
-  min-width:0;
-  min-height:320px;
-  display:grid;
-  grid-template-rows:auto minmax(0, 1fr);
-  gap:12px;
-  border:0;
-  background:#0d0f13;
-  box-shadow:none;
-  padding:12px;
-}
-
-.dashboardBackMenuHead{
-  min-width:0;
-}
-
-.dashboardBackMenuHead .modalSubtext{
-  margin:6px 0 0;
-}
-
 .dashboardActivityOverviewCard{
   grid-column: span 12;
   min-height:520px;
@@ -120,18 +80,14 @@
 .dashboardActivityOverviewHead{
   display:flex;
   align-items:flex-start;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:14px;
   min-width:0;
 }
 
-.dashboardActivityOverviewHead .modalSubtext{
-  margin:5px 0 0;
-}
-
 .dashboardActivityOverviewBody{
   display:grid;
-  grid-template-columns:minmax(0, 1fr) minmax(230px, 28%);
+  grid-template-columns:minmax(0, 1fr);
   gap:14px;
   min-width:0;
   min-height:0;
@@ -156,6 +112,8 @@
   position:relative;
   min-width:0;
   min-height:360px;
+  --dashboard-activity-plot-left: 9.444%;
+  --dashboard-activity-plot-right: 3.889%;
   border:0;
   border-radius:8px;
   background:transparent;
@@ -232,8 +190,8 @@
 
 .dashboardActivityXAxis{
   position:absolute;
-  left:68px;
-  right:28px;
+  left:var(--dashboard-activity-plot-left);
+  right:var(--dashboard-activity-plot-right);
   bottom:8px;
   height:34px;
   display:grid;
@@ -415,18 +373,19 @@
 
 .dashboardActivitySummaryStack{
   display:grid;
-  grid-template-rows:1fr 1fr;
+  grid-template-columns:repeat(2, minmax(170px, 1fr));
   gap:12px;
   min-width:0;
+  width:min(520px, 66%);
 }
 
 .dashboardActivitySummaryMini{
   border-radius:8px;
-  padding:12px;
+  padding:10px 12px;
   display:grid;
   grid-template-rows:auto auto auto auto auto;
   align-content:center;
-  gap:9px;
+  gap:7px;
 }
 
 .dashboardActivitySummaryTop{
@@ -438,8 +397,16 @@
 }
 
 .dashboardActivitySummaryMini .dashboardBigValue{
-  font-size:30px;
+  font-size:24px;
   line-height:1;
+}
+
+.dashboardActivitySummaryMini .dashboardTrendIndicator{
+  position:static;
+  top:auto;
+  right:auto;
+  min-width:2.5em;
+  font-size:12px;
 }
 
 .dashboardActivitySummaryMini .dashboardSummaryFoot{
@@ -468,13 +435,9 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
     min-height:0;
   }
 
-.dashboardActivityOverviewHead,
-  .dashboardActivityOverviewBody{
-    grid-template-columns:1fr;
-  }
-
 .dashboardActivityOverviewHead{
     display:grid;
+    grid-template-columns:1fr;
   }
 
 .dashboardActivityChartPanel{
@@ -484,6 +447,7 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
 .dashboardActivitySummaryStack{
     grid-template-columns:1fr;
     grid-template-rows:auto;
+    width:100%;
   }
 
 .dashboardActivityChartWrap{
@@ -497,8 +461,8 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
   }
 
 .dashboardActivityXAxis{
-    left:58px;
-    right:12px;
+    left:var(--dashboard-activity-plot-left);
+    right:var(--dashboard-activity-plot-right);
   }
 
 .dashboardActivityAxisDay small{
@@ -536,340 +500,9 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
   transform: translateY(-4px);
 }
 
-#dashboardEditCancelBtn,
-#dashboardEditDoneBtn{
-  min-width:92px;
-  min-height:0;
-  height:32px;
-  padding:0 12px;
-  justify-content:center;
-  align-items:center;
-  line-height:1;
-}
-
-#dashboardEditCancelBtn,
-#dashboardEditCancelBtn:hover:not(:disabled),
-#dashboardEditCancelBtn:focus-visible:not(:disabled){
-  border-color:rgba(180,190,194,.28) !important;
-  box-shadow:none !important;
-}
-
-#dashboardEditDoneBtn,
-#dashboardEditDoneBtn:hover:not(:disabled),
-#dashboardEditDoneBtn:focus-visible:not(:disabled){
-  border-color:transparent !important;
-  box-shadow:none !important;
-}
-
-#dashboardEditDoneBtn,
-#dashboardEditDoneBtn:hover:not(:disabled),
-#dashboardEditDoneBtn:focus-visible:not(:disabled){
-  background:#c9ff24 !important;
-  color:#04131c !important;
-}
-
-.dashboardRefreshBtn{
-  position:relative;
-  width:36px;
-  height:36px;
-  min-width:36px;
-  padding:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.dashboardRefreshBtn,
-.dashboardRefreshBtn:hover,
-.dashboardRefreshBtn:focus-visible,
-.dashboardRefreshBtn:active,
-.dashboardPanelMenuBtn,
-.dashboardPanelMenuBtn:hover,
-.dashboardPanelMenuBtn:focus-visible,
-.dashboardPanelMenuBtn:active,
-#dashboardEditBtn,
-#dashboardEditBtn:hover,
-#dashboardEditBtn:focus-visible,
-#dashboardEditBtn:active{
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-.dashboardRefreshBtn:disabled{
-  opacity:.42;
-  cursor:default;
-  box-shadow:none;
-}
-
-.dashboardRefreshBtn:disabled .dashboardRefreshIcon{
-  opacity:.72;
-}
-
-.dashboardRefreshIcon{
-  display:block;
-  width:16px;
-  height:16px;
-  object-fit:contain;
-}
-
-.dashboardRefreshBtn.isBusy .dashboardRefreshIcon{
-  animation: dashboardRefreshIconSpin .85s linear infinite;
-}@keyframes dashboardRefreshIconSpin{from{
-    transform: rotate(0deg);
-  }to{
-    transform: rotate(360deg);
-  }
-}
-
-.dashboardRefreshBtn.isPending{
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.dashboardRefreshBtn.isPending::after{
-  content:"";
-  position:absolute;
-  top:6px;
-  right:6px;
-  width:7px;
-  height:7px;
-  border-radius:999px;
-  background: rgba(117,231,255,.96);
-  box-shadow: 0 0 10px rgba(53,232,255,.32);
-}
-
-.dashboardPanelMenu{
-  position:relative;
-  flex:0 0 auto;
-}
-
-.dashboardPanelMenu > summary{
-  list-style:none;
-}
-
-.dashboardPanelMenu > summary::-webkit-details-marker{
-  display:none;
-}
-
-.dashboardPanelMenuBtn{
-  width:36px;
-  min-height:36px;
-  min-width:36px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  padding:0;
-}
-
-.dashboardPanelMenuBtn[aria-expanded="true"]{
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.dashboardPanelMenuIcon{
-  display:block;
-  align-items:center;
-  justify-content:center;
-  width:12px;
-  height:10px;
-  margin:auto;
-  flex:0 0 auto;
-  background:
-    linear-gradient(currentColor, currentColor) center top / 12px 2px no-repeat,
-    linear-gradient(currentColor, currentColor) center center / 12px 2px no-repeat,
-    linear-gradient(currentColor, currentColor) center bottom / 12px 2px no-repeat;
-}
-
-.dashboardPanelMenuList{
-  min-width:220px;
-  max-height:none;
-  overflow:visible;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  padding:8px 0 0;
-  border:0;
-  background:transparent;
-  box-shadow:none;
-}
-
-.dashboardPanelMenuListBack{
-  position:static;
-  top:auto;
-  right:auto;
-  z-index:auto;
-  min-width:0;
-  width:100%;
-  align-self:stretch;
-  box-shadow:none;
-  overflow:auto;
-}
-
-.dashboardPanelMenuSectionTitle{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  font-family:var(--font-tight);
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:rgba(226,247,255,.74);
-  padding:4px 8px 2px;
-}
-
-.dashboardPanelMenuSectionBody{
-  min-width:0;
-}
-
-.dashboardPanelMenuPanelGrid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(112px, 112px));
-  justify-content:start;
-  gap:12px;
-}
-
-.dashboardPanelMenuSectionAction{
-  border:0;
-  background:transparent;
-  padding:0;
-  color:rgba(117,231,255,.92);
-  font-family:var(--font-tight);
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  cursor:pointer;
-}
-
-.dashboardPanelMenuSectionAction:hover,
-.dashboardPanelMenuSectionAction:focus-visible{
-  color:rgba(214,246,255,.98);
-  text-decoration:underline;
-}
-
 .dashboardHeroPanel[hidden],
 .dashboardCard[hidden]{
   display:none !important;
-}
-
-.dashboardPanelMenuItem{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  min-height:28px;
-  padding:6px 8px;
-  border:0;
-  background: rgba(255,255,255,.03);
-  color: rgba(225,247,255,.93);
-  font-family:var(--font-tight);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  cursor:pointer;
-}
-
-.dashboardPanelMenuItem:hover{
-  background: rgba(53,232,255,.1);
-}
-
-.dashboardPanelMenuItem > input{
-  margin:0;
-  accent-color: #35e8ff;
-}
-
-.dashboardPanelMenuItem > input:disabled{
-  opacity:.6;
-}
-
-.dashboardPanelMenuItem > span{
-  flex:1 1 auto;
-  min-width:0;
-}
-
-.dashboardPanelMenuTile{
-  position:relative;
-  min-height:0;
-  aspect-ratio:1 / 1;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  gap:8px;
-  padding:10px 10px 12px;
-  background:rgba(255,255,255,.04);
-  box-shadow: inset 0 0 0 1px rgba(121,226,255,.16);
-}
-
-.dashboardPanelMenuTile:hover{
-  background:rgba(53,232,255,.1);
-  box-shadow: inset 0 0 0 1px rgba(121,226,255,.28);
-}
-
-.dashboardPanelMenuTile > input{
-  position:absolute;
-  top:10px;
-  right:10px;
-  margin:0;
-  transform:scale(1);
-  transform-origin:top right;
-}
-
-.dashboardPanelMenuTile > span{
-  flex:1 1 auto;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  min-width:0;
-  font-size:11px;
-  line-height:1.1;
-  text-align:center;
-  gap:8px;
-}
-
-.dashboardPanelMenuTile > span::before{
-  content:"";
-  width:36px;
-  height:36px;
-  flex:0 0 auto;
-  display:block;
-  background: center / contain no-repeat url("/Dashboard.svg");
-  filter: drop-shadow(0 0 6px rgba(53,232,255,.22));
-  opacity:.9;
-}
-
-.dashboardPanelMenuTile > input:checked + span{
-  color:rgba(214,246,255,.98);
-}
-
-.dashboardFlipBackBtn{
-  width:36px;
-  height:36px;
-  min-width:36px;
-  padding:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  line-height:1;
-}
-
-#dashboardEditBtn{
-  width:36px;
-  height:36px;
-  min-width:36px;
-  flex:0 0 auto;
-  padding:0;
-  display:inline-flex;
-  place-items:center;
-  align-items:center;
-  justify-content:center;
-  font-size:15px;
-  line-height:1;
 }
 
 .dashboardKicker{
@@ -888,12 +521,6 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
   letter-spacing:.08em;
   text-transform:uppercase;
   color: rgba(142,242,255,.96);
-}
-
-#dashboardEditBtn.isOn{
-  background: linear-gradient(180deg, rgba(53,232,255,.24), rgba(255,255,255,.08));
-  border-color: transparent;
-  box-shadow: none;
 }
 
 .dashboardGrid{
@@ -1834,68 +1461,11 @@ body[data-theme="lime"] .dashboardActivityAxisDay:focus-visible{
 #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTitle{
   margin-top: 8px;
 }
-/* Dashboard controls responsive ownership. */
-@media (max-width: 640px){
-  body[data-app-page="dashboard"] .appPages{
-    overflow-x: visible;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardTopRow,
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
-    overflow: visible;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardEditActions{
-    position: relative;
-    width: 100%;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenu{
-    position: relative;
-    width: auto;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuBtn{
-    width: auto;
-    justify-content: flex-start;
-  }
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuList{
-    position: absolute;
-    top: calc(100% + 6px);
-    left: auto;
-    right: 0;
-    width: min(360px, calc(100dvw - var(--safe-left) - var(--safe-right) - 16px));
-    min-width: 220px;
-    max-width: calc(100dvw - var(--safe-left) - var(--safe-right) - 16px);
-    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 84px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    box-sizing: border-box;
-    padding-bottom: 12px;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-@media (min-width: 641px){
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenu{
-    position: relative;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .dashboardPanelMenuList{
-    min-width: 330px;
-    max-height: none;
-    overflow: visible;
-    right: 0;
-    left: auto;
-  }
-}
-
 body[data-theme="lime"] .name,
 body[data-theme="lime"] .time,
 body[data-theme="lime"] .dashboardTitle,
 body[data-theme="lime"] .menuTitle{
   color:#faffd9;
-}
-
-body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRefreshBtn.isPending::after{
-  background: rgba(241,255,151,.98);
-  box-shadow: 0 0 10px rgba(219,255,79,.34);
 }
 
 body[data-theme="lime"] .dashboardTimelineDensityBtn{
@@ -1977,18 +1547,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   width: 100%;
   max-width: none;
   margin: 0;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-  padding: 4px 0;
-  margin-top: 4px;
-  margin-bottom: 1px;
-  align-items: flex-start;
-}
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
-  margin-left: 0;
-  justify-content: flex-start;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardKicker{
@@ -3340,18 +2898,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @media (max-width: 820px){
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid,
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel,
@@ -5660,9 +5206,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard{
+  grid-column: 1 / -1 !important;
   grid-row: span var(--dashboard-activity-overview-panel-span) !important;
   min-height: 520px !important;
   height: 100% !important;
+  background: transparent !important;
+  background-image: none !important;
   overflow: visible;
   z-index: 1;
 }
@@ -5710,6 +5259,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   letter-spacing: .08em;
   color: rgba(209, 220, 228, .68);
   pointer-events: none;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardTrendIndicator{
+  position: static;
+  top: auto;
+  right: auto;
+  min-width: 2.5em;
+  font-size: 12px;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard .dashboardTrendIndicator,
@@ -6565,6 +6122,13 @@ body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch A
   border: 0 !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard,
+body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard{
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
 /* Dashboard summary and responsive height ownership. */
 /* Dashboard summary-card normalization: quarter by default on desktop, resizable only to quarter/half/full, with aligned internal rows. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard{
@@ -6915,12 +6479,77 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 }
 
+@media (max-width: 980px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard{
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px){
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid{
     --dashboard-summary-panel-span: 8;
     --dashboard-pro-panel-span: 16;
     --dashboard-task-overview-panel-span: 22;
     --dashboard-activity-overview-panel-span: 50;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewCard{
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewHead{
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityOverviewBody{
+    display: none !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryStack{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini{
+    min-width: 0 !important;
+    min-height: 118px !important;
+    padding: 12px !important;
+    background: #1a1b20 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardCardTitle{
+    min-width: 0;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardBigValue{
+    min-width: 0;
+    font-size: 24px !important;
+    line-height: 1 !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryFoot,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryStatus{
+    min-width: 0;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeeklyGoalsCard{
+    display: none !important;
   }
 }
 
@@ -7534,12 +7163,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     gap: 12px;
   }
 
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    padding: 4px 0;
-    margin-top: 4px;
-    margin-bottom: 1px;
-  }
-
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeroPanel{
     grid-template-columns: 1fr;
     padding: 18px;
@@ -7584,16 +7207,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 @media (max-width: 640px){
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardNeonLayout{
     margin: 0;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    padding: 0;
-    gap: 10px;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
-    width: 100%;
-    justify-content: flex-start;
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
@@ -7693,48 +7306,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardShell{
     clip-path: none;
     overflow: visible;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTopRow{
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitleWrap{
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardEditActions{
-    position: relative;
-    width: auto;
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    overflow: visible;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelMenuBtn{
-    width: 36px;
-    min-width: 36px;
-    padding: 0;
-  }
-
-body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardPanelMenuList{
-    position: fixed;
-    left: 8px;
-    right: 8px;
-    top: calc(var(--safe-top) + 104px);
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    bottom: calc(var(--mobile-footer-height, 72px) + var(--safe-bottom) + 12px);
-    max-height: none;
-    z-index: 40;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding-bottom: 12px;
-    -webkit-overflow-scrolling: touch;
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardOverviewChart{

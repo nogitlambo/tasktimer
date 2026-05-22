@@ -54,7 +54,6 @@ describe("secondary click audio", () => {
       ".switch",
       '[role="switch"]',
       "#closeMenuBtn",
-      "#menuIcon",
       "[data-nav-page]",
       ".appFooterBtn",
       ".dashboardRailMenuBtn",
@@ -164,10 +163,14 @@ describe("secondary click audio", () => {
   });
 
   it("matches modal preview dropdown trigger for dedicated dropdown audio", () => {
-    const dropdownSelector = '.modalPreviewDropdownButton,[data-action="history"]';
+    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
     const dropdownTrigger = makeElement({
       selectorMatches: { [dropdownSelector]: true, ".modalPreviewDropdownButton": true, "button,a": true },
       textContent: "Standard option",
+    });
+    const mobileMenuTrigger = makeElement({
+      selectorMatches: { [dropdownSelector]: true, "#menuIcon": true, "button,a": true },
+      attributes: { id: "menuIcon" },
     });
     const dropdownOption = makeElement({
       selectorMatches: { ".modalPreviewDropdownOption": true, "button,a": true, ['input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption']: true },
@@ -176,6 +179,8 @@ describe("secondary click audio", () => {
 
     expect(getDropdownClickTarget(dropdownTrigger)).toBe(dropdownTrigger);
     expect(getSecondaryClickTarget(dropdownTrigger)).toBeNull();
+    expect(getDropdownClickTarget(mobileMenuTrigger)).toBe(mobileMenuTrigger);
+    expect(getSecondaryClickTarget(mobileMenuTrigger)).toBeNull();
     expect(getDropdownClickTarget(dropdownOption)).toBeNull();
     expect(getCheckboxClickTarget(dropdownOption)).toBe(dropdownOption);
   });
@@ -207,7 +212,7 @@ describe("secondary click audio", () => {
   });
 
   it("ignores unrelated and disabled controls", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
@@ -221,7 +226,7 @@ describe("secondary click audio", () => {
   });
 
   it("does not blanket-exclude accent controls from default secondary audio", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
       textContent: "Done",
@@ -303,7 +308,7 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#menuIcon": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,#menuIcon,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
@@ -473,8 +478,35 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
         textContent: "Standard option",
+      }),
+    } as unknown as Event);
+
+    expect(playDropdownAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes mobile hamburger menu panel toggles to dropdown audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playDropdownAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playDropdownAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, "#menuIcon": true, "button,a": true },
+        attributes: { id: "menuIcon" },
       }),
     } as unknown as Event);
 
@@ -500,7 +532,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
         textContent: "View Chart",
       }),
     } as unknown as Event);
