@@ -374,6 +374,7 @@ export type TaskTimerTasksContext = {
   getDeletedTaskMeta: () => DeletedTaskMeta;
   setDeletedTaskMeta: (value: DeletedTaskMeta) => void;
   getCurrentUid: () => string | null;
+  getGroupsFriendships: () => Friendship[];
   getCurrentAppPage: () => AppPage;
   getTaskView: () => "list" | "tile";
   getTaskOrderBy: () => TaskOrderBy;

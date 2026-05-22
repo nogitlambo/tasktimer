@@ -269,6 +269,7 @@ type CreateTasksOptionsArgs = {
   };
   appRuntimeState: MutableStore;
   preferencesState: MutableStore;
+  groupsState: MutableStore;
   rewardState: MutableStore;
   historyUiState: MutableStore;
   openHistoryTaskIds: Set<string>;
@@ -1188,6 +1189,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     sharedTasks: args.sharedTasks,
     ...args.taskCollectionBindings,
     getCurrentUid: args.currentUid,
+    getGroupsFriendships: () => asType<Friendship[]>(args.groupsState.get("groupsFriendships")),
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getTaskView: () => asType<"list" | "tile">(args.preferencesState.get("taskView")),
     getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),

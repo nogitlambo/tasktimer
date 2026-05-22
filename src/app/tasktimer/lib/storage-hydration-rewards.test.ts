@@ -405,6 +405,38 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
   });
 
+  it("replays preference saves made before auth resolves for the signed-in user", async () => {
+    authMocks.getFirebaseAuthClient.mockReturnValue(null as never);
+    const pendingPrefs = {
+      ...buildDefaultCloudPreferences(),
+      startupModule: "tasks" as const,
+      updatedAtMs: Date.now() + 1000,
+    };
+
+    saveCloudPreferences(pendingPrefs);
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalled();
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ startupModule: "tasks" })
+    );
+  });
+
   it("loads optimal productivity settings from cloud when local shadow preferences are stale", async () => {
     saveCloudPreferences({
       ...buildDefaultCloudPreferences(),

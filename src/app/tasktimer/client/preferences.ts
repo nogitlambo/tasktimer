@@ -1,5 +1,6 @@
 import type { TaskTimerPreferencesContext } from "./context";
 import type { MainMode, TaskOrderBy } from "./types";
+import { isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { TASKTIMER_PLAN_CHANGED_EVENT } from "../lib/entitlements";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
@@ -14,6 +15,11 @@ import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } fr
 import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
+import {
+  TASKTIMER_ONBOARDING_PREFERENCES_EVENT,
+  type TaskTimerOnboardingPreferenceEventDetail,
+  type TaskTimerOnboardingPreferencePayload,
+} from "./onboarding-events";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import { bindToggleRow } from "./control-helpers";
 import { isInteractionHapticsRuntimeAvailable } from "./interaction-haptics";
@@ -486,6 +492,33 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveMobilePushAlertsSetting();
   }
 
+  async function applyOnboardingPreferences(payload: TaskTimerOnboardingPreferencePayload) {
+    if (payload.weekStarting) {
+      applyWeekStartingPreference(normalizeDashboardWeekStart(payload.weekStarting));
+      saveWeekStartingPreference();
+    }
+    if (payload.optimalProductivityDays) {
+      applyOptimalProductivityDaysPreference(payload.optimalProductivityDays);
+      saveOptimalProductivityDaysPreference();
+    }
+    if (payload.optimalProductivityStartTime || payload.optimalProductivityEndTime) {
+      applyOptimalProductivityPeriodPreference(
+        payload.optimalProductivityStartTime || ctx.getOptimalProductivityStartTime(),
+        payload.optimalProductivityEndTime || ctx.getOptimalProductivityEndTime()
+      );
+      saveOptimalProductivityPeriodPreference();
+    }
+    if (typeof payload.pushNotificationsEnabled === "boolean") {
+      if (isNativeOrFileRuntime()) {
+        await applyMobilePushAlertsPreference(payload.pushNotificationsEnabled);
+      } else {
+        await applyWebPushAlertsPreference(payload.pushNotificationsEnabled);
+      }
+    }
+    syncTaskSettingsUi();
+    ctx.render();
+  }
+
   function loadCheckpointAlertSettings() {
     const prefs = preferenceService.loadCheckpointAlerts();
     ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
@@ -676,6 +709,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
       syncThemeAvailabilityUi();
+    });
+    ctx.on(window, TASKTIMER_ONBOARDING_PREFERENCES_EVENT, (event) => {
+      const detail = (event as CustomEvent<TaskTimerOnboardingPreferenceEventDetail>).detail;
+      void applyOnboardingPreferences(detail?.payload || {})
+        .then(() => detail?.done?.({ ok: true }))
+        .catch((error: unknown) => {
+          const message = error instanceof Error && error.message ? error.message : "Could not save onboarding settings.";
+          detail?.done?.({ ok: false, error: message });
+        });
     });
     ctx.on(els.taskWeekStartingSelect, "change", () => {
       applyWeekStartingPreference(normalizeDashboardWeekStart(els.taskWeekStartingSelect?.value));
@@ -927,6 +969,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadOptimalProductivityPeriodPreference,
     saveOptimalProductivityPeriodPreference,
     applyOptimalProductivityDaysPreference,
+    applyOnboardingPreferences,
     loadOptimalProductivityDaysPreference,
     saveOptimalProductivityDaysPreference,
     setThemeMode,

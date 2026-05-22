@@ -16,6 +16,7 @@ import RankThumbnail from "../RankThumbnail";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
 import type { SettingsAccountViewModel, SettingsAvatarViewModel } from "./types";
+import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../../client/onboarding-events";
 
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
@@ -30,6 +31,10 @@ function formatPlanUserLabel(plan: SettingsAccountViewModel["authPlan"]) {
 
 function formatPlanActionLabel(plan: SettingsAccountViewModel["authPlan"]) {
   return plan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
+}
+
+function openTaskLaunchOnboarding() {
+  window.dispatchEvent(new Event(TASKTIMER_OPEN_ONBOARDING_EVENT));
 }
 
 export function SettingsAccountPane({
@@ -176,6 +181,9 @@ export function SettingsAccountPane({
                         )}
                       </div>
                     </div>
+                    <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
+                      Run Onboarding
+                    </button>
                   </div>
 
                   <div className="settingsAccountIdCardMetaGrid">

@@ -84,6 +84,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     activeCheckpointToastTaskId: ctx.activeCheckpointToastTaskId,
     canUseAdvancedHistory,
     canUseSocialFeatures,
+    hasFriends: () => ctx.getGroupsFriendships().length > 0,
     isTaskSharedByOwner: ctx.isTaskSharedByOwner,
     getDynamicColorsEnabled: ctx.getDynamicColorsEnabled,
     getModeColor: ctx.getModeColor,

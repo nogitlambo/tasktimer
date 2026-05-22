@@ -93,6 +93,7 @@ function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "t
     activeCheckpointToastTaskId: () => null,
     canUseAdvancedHistory: () => true,
     canUseSocialFeatures: () => true,
+    hasFriends: () => true,
     isTaskSharedByOwner: () => false,
     getDynamicColorsEnabled: () => false,
     getModeColor: () => "#00ffff",

@@ -384,11 +384,11 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal::before{
   content: "";
   position: absolute;
-  inset: 4px calc((var(--history-chart-tab-side) - 1px) * -1) -3px;
+  inset: 3px calc((var(--history-chart-tab-side) * -1) - 1px) -3px;
   background:
     linear-gradient(180deg, transparent 0 76%, var(--history-chart-tab-cover) 76% 100%),
     var(--history-chart-tab-fill);
-  clip-path: polygon(0 100%, var(--history-chart-tab-side) 0, calc(100% - var(--history-chart-tab-side)) 0, 100% 100%);
+  clip-path: polygon(-1px 100%, calc(var(--history-chart-tab-side) - 1px) 0, calc(100% - var(--history-chart-tab-side) + 1px) 0, calc(100% + 1px) 100%);
   box-shadow: none;
   z-index: 1;
   transition: background .16s ease;

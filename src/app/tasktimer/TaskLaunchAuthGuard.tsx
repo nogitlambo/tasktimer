@@ -13,7 +13,7 @@ const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 export default function TaskLaunchAuthGuard({
   children,
-  requireAuth = false,
+  requireAuth = true,
 }: {
   children: ReactNode;
   requireAuth?: boolean;

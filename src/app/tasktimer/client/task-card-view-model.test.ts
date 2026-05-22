@@ -35,6 +35,7 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     isHistoryPinned: false,
     canUseAdvancedHistory: true,
     canUseSocialFeatures: true,
+    hasFriends: true,
     isSharedByOwner: false,
     isTimeGoalCompleted: false,
     dynamicColorsEnabled: false,
@@ -112,6 +113,15 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Share (Pro)");
   });
 
+  it("disables sharing when there are no friends", () => {
+    const rendered = renderCard({
+      hasFriends: false,
+    });
+
+    expect(rendered.html).toContain('data-action="shareTask" title="Add friends to share tasks" type="button" disabled');
+    expect(rendered.html).toContain(">Share</button>");
+  });
+
   it("renders a history-tab border footprint for shell border alignment", () => {
     const rendered = renderCard();
 
@@ -128,8 +138,8 @@ describe("task card view model", () => {
     expect(css).toContain("--task-card-tab-border-overlap: 0px;");
     expect(css).toContain("border-color: transparent !important;");
     expect(css).toContain("overflow:visible;");
-    expect(css).toContain("inset: 4px calc((var(--history-chart-tab-side) - 1px) * -1) -3px;");
-    expect(css).toContain("clip-path: polygon(0 100%, var(--history-chart-tab-side) 0, calc(100% - var(--history-chart-tab-side)) 0, 100% 100%);");
+    expect(css).toContain("inset: 3px calc((var(--history-chart-tab-side) * -1) - 1px) -3px;");
+    expect(css).toContain("clip-path: polygon(-1px 100%, calc(var(--history-chart-tab-side) - 1px) 0, calc(100% - var(--history-chart-tab-side) + 1px) 0, calc(100% + 1px) 100%);");
     expect(css).toContain("height: 22px;");
     expect(css).toContain("center bottom / var(--task-card-tab-border-gap) 22px no-repeat");
     expect(css).toContain("border: 1px solid var(--task-card-bottom-border-color, rgba(255,255,255,.12)) !important;");

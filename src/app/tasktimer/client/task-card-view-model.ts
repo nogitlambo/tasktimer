@@ -49,6 +49,7 @@ type RenderTaskCardOptions = {
   isHistoryPinned: boolean;
   canUseAdvancedHistory: boolean;
   canUseSocialFeatures: boolean;
+  hasFriends: boolean;
   isSharedByOwner: boolean;
   isTimeGoalCompleted: boolean;
   dynamicColorsEnabled: boolean;
@@ -260,6 +261,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     isHistoryPinned,
     canUseAdvancedHistory,
     canUseSocialFeatures,
+    hasFriends,
     isSharedByOwner,
     isTimeGoalCompleted,
     dynamicColorsEnabled,
@@ -317,7 +319,14 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         : "No time to reset";
   const shareAction = isSharedByOwner ? "unshareTask" : "shareTask";
   const shareLabel = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Share (Pro)";
-  const shareTitle = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Pro feature: Sharing";
+  const shareDisabled = canUseSocialFeatures && !isSharedByOwner && !hasFriends;
+  const shareTitle = canUseSocialFeatures
+    ? isSharedByOwner
+      ? "Unshare"
+      : hasFriends
+        ? "Share"
+        : "Add friends to share tasks"
+    : "Pro feature: Sharing";
   const manualEntryLabel = canUseAdvancedHistory ? "Add Manual Entry" : "Add Manual Entry (Pro)";
   const manualEntryTitle = canUseAdvancedHistory ? "Add Manual Entry" : "Pro feature: Manual history entry";
   return {
@@ -358,7 +367,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${manualEntryLabel}</button>
-                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
+                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
                 <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>Archive</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>

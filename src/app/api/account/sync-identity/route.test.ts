@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
+import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { verifyFirebaseRequestUser } from "../../shared/auth";
 import { POST } from "./route";
 
@@ -19,14 +19,6 @@ vi.mock("../../shared/auth", () => ({
   verifyFirebaseRequestUser: vi.fn(),
 }));
 
-vi.mock("../../shared/rateLimit", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../shared/rateLimit")>();
-  return {
-    ...actual,
-    enforceUidRateLimit: vi.fn(),
-  };
-});
-
 describe("POST /api/account/sync-identity", () => {
   beforeEach(() => {
     vi.mocked(verifyFirebaseRequestUser).mockResolvedValue({
@@ -34,18 +26,19 @@ describe("POST /api/account/sync-identity", () => {
       email: "user@example.com",
       idToken: "token",
     });
-    vi.mocked(enforceUidRateLimit).mockReset();
+    vi.mocked(getFirebaseAdminDb).mockReturnValue({
+      batch: vi.fn(() => ({
+        set: vi.fn(),
+        delete: vi.fn(),
+        commit: vi.fn(() => Promise.resolve()),
+      })),
+      collection: vi.fn(() => ({
+        doc: vi.fn((id: string) => ({ id })),
+      })),
+    } as never);
   });
 
-  it("returns a reportable log ID for rate limited identity sync attempts", async () => {
-    vi.mocked(enforceUidRateLimit).mockRejectedValue(
-      new ApiRateLimitError(
-        "account/sync-identity-rate-limited",
-        "Too many identity sync attempts recently. Please wait before trying again.",
-        429
-      )
-    );
-
+  it("syncs account identity without applying a route rate limit", async () => {
     const response = await POST(
       new Request("https://tasklaunch.test/api/account/sync-identity", {
         method: "POST",
@@ -54,11 +47,7 @@ describe("POST /api/account/sync-identity", () => {
     );
     const payload = await response.json();
 
-    expect(response.status).toBe(429);
-    expect(payload).toMatchObject({
-      error: "Too many identity sync attempts recently. Please wait before trying again.",
-      code: "account/sync-identity-rate-limited",
-    });
-    expect(payload.logId).toMatch(/^acct-sync-/);
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true });
   });
 });

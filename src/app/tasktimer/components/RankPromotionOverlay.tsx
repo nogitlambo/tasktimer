@@ -367,15 +367,25 @@ export default function RankPromotionOverlay({
     };
   }, [isComplete]);
 
+  const handleClose = () => {
+    if (!isCloseReady) return;
+    onClose();
+  };
+
+  const handleCloseButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    handleClose();
+  };
+
   return (
     <div className={`overlay is-${phase}`} id="rankPromotionOverlay" style={{ display: "flex" }}>
       <div
-        className={`modal rankPromotionModal is-${phase}`}
+        className={`modal rankPromotionModal is-${phase}${isCloseReady ? " is-close-ready" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-hidden={isDimming ? "true" : undefined}
         aria-label="Rank promotion"
-        onClick={(event) => event.stopPropagation()}
+        onClick={handleClose}
       >
         <div className="rankPromotionLightBeam" aria-hidden="true">
           <span className="rankPromotionLightBeamPulse" />
@@ -419,7 +429,7 @@ export default function RankPromotionOverlay({
             className="btn btn-accent"
             id="rankPromotionCloseBtn"
             type="button"
-            onClick={onClose}
+            onClick={handleCloseButtonClick}
             disabled={!isCloseReady}
             aria-hidden={!isCloseReady}
             tabIndex={isCloseReady ? 0 : -1}
@@ -429,7 +439,7 @@ export default function RankPromotionOverlay({
           <button
             className="rankPromotionTapCloseText"
             type="button"
-            onClick={onClose}
+            onClick={handleCloseButtonClick}
             disabled={!isCloseReady}
             aria-hidden={!isCloseReady}
             tabIndex={isCloseReady ? 0 : -1}

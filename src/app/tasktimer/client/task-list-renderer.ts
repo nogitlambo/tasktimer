@@ -33,6 +33,7 @@ type TaskListRendererOptions = {
   activeCheckpointToastTaskId: () => string | null;
   canUseAdvancedHistory: () => boolean;
   canUseSocialFeatures: () => boolean;
+  hasFriends: () => boolean;
   isTaskSharedByOwner: (taskId: string) => boolean;
   getDynamicColorsEnabled: () => boolean;
   getModeColor: (mode: "mode1") => string;
@@ -175,6 +176,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         isHistoryPinned,
         canUseAdvancedHistory: options.canUseAdvancedHistory(),
         canUseSocialFeatures: options.canUseSocialFeatures(),
+        hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
         isTimeGoalCompleted: isTaskTimeGoalStartLockedToday(task),
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),

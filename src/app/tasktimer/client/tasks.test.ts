@@ -141,6 +141,7 @@ function createHarness() {
     deleteSharedTaskSummariesForTask: vi.fn(async () => {}),
     refreshOwnSharedSummaries: vi.fn(async () => {}),
     getCurrentUid: () => "user-1",
+    getGroupsFriendships: () => [],
     getFocusModeTaskId: () => null,
     closeFocusMode: vi.fn(),
     render: vi.fn(() => calls.push("render")),

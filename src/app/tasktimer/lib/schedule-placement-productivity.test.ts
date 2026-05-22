@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  findNextAvailableScheduleSlot,
   findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
   formatScheduleTimeRange,
@@ -176,6 +177,93 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
       conflictingStartMinutes: 540,
       conflictingEndMinutes: 600,
       task: expect.objectContaining({ id: "busy" }),
+    });
+  });
+
+  it("allows a candidate task to end exactly when an existing task starts", () => {
+    const busy = task({
+      id: "busy",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:15",
+      plannedStartByDay: { mon: "07:15" },
+      timeGoalMinutes: 15,
+    });
+    const candidate = task({
+      id: "candidate",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:00",
+      plannedStartByDay: { mon: "07:00" },
+      timeGoalMinutes: 15,
+    });
+
+    expect(findScheduleOverlap([busy], candidate)).toBeNull();
+  });
+
+  it("allows a candidate task to start exactly when an existing task ends", () => {
+    const busy = task({
+      id: "busy",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:00",
+      plannedStartByDay: { mon: "07:00" },
+      timeGoalMinutes: 15,
+    });
+    const candidate = task({
+      id: "candidate",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:15",
+      plannedStartByDay: { mon: "07:15" },
+      timeGoalMinutes: 15,
+    });
+
+    expect(findScheduleOverlap([busy], candidate)).toBeNull();
+  });
+
+  it("treats a one minute boundary crossing as an overlap", () => {
+    const busy = task({
+      id: "busy",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:15",
+      plannedStartByDay: { mon: "07:15" },
+      timeGoalMinutes: 15,
+    });
+    const candidate = task({
+      id: "candidate",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:00",
+      plannedStartByDay: { mon: "07:00" },
+      timeGoalMinutes: 16,
+    });
+
+    expect(findScheduleOverlap([busy], candidate)).toMatchObject({
+      day: "mon",
+      candidateStartMinutes: 420,
+      candidateEndMinutes: 436,
+      conflictingStartMinutes: 435,
+      conflictingEndMinutes: 450,
+      task: expect.objectContaining({ id: "busy" }),
+    });
+  });
+
+  it("can suggest a next available slot at an exact task boundary", () => {
+    const busy = task({
+      id: "busy",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:00",
+      plannedStartByDay: { mon: "07:00" },
+      timeGoalMinutes: 15,
+    });
+    const candidate = task({
+      id: "candidate",
+      plannedStartDay: "mon",
+      plannedStartTime: "07:00",
+      plannedStartByDay: { mon: "07:00" },
+      timeGoalMinutes: 15,
+    });
+
+    expect(findNextAvailableScheduleSlot([busy], candidate)).toMatchObject({
+      day: "mon",
+      days: ["mon"],
+      startMinutes: 435,
     });
   });
 

@@ -355,6 +355,46 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("AM");
   });
 
+  it("saves an edited task that ends exactly when another task starts", () => {
+    vi.stubGlobal("HTMLElement", class HTMLElementStub {});
+    const harness = createEditHarness({
+      durationValue: "15",
+      durationUnit: "minute",
+      plannedStartSelectors: { hour: "07", minute: "00", meridiem: "AM" },
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "once-off",
+        onceOffDay: "mon",
+        timeGoalValue: 15,
+        timeGoalUnit: "minute",
+        timeGoalMinutes: 15,
+        plannedStartDay: "mon",
+        plannedStartTime: "07:00",
+        plannedStartByDay: { mon: "07:00" },
+      }),
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "mon",
+        timeGoalValue: 15,
+        timeGoalUnit: "minute",
+        timeGoalMinutes: 15,
+        plannedStartDay: "mon",
+        plannedStartTime: "07:15",
+        plannedStartByDay: { mon: "07:15" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.save).toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartTime).toBe("07:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "07:00" });
+  });
+
   it("opens a switch-only conflict modal when no next free edit slot exists", () => {
     const harness = createEditHarness({
       durationValue: "1430",

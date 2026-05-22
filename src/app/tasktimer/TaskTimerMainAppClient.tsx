@@ -26,6 +26,7 @@ import RankPromotionOverlay from "./components/RankPromotionOverlay";
 import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
+import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
 import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
@@ -63,6 +64,7 @@ import {
   normalizeRewardProgress,
 } from "./lib/rewards";
 import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
+import type { UserPreferencesV1 } from "./lib/cloudStore";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
 import {
@@ -268,6 +270,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const searchParams = useSearchParams();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => workspaceRepository.loadCachedPreferences());
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [interactionHapticsEnabled, setInteractionHapticsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().interactionHapticsEnabled !== false);
   const [interactionHapticsIntensity, setInteractionHapticsIntensity] = useState<InteractionHapticsIntensity>(() =>
@@ -372,6 +375,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   useEffect(() => {
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
+      setCachedPreferences(prefs);
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
       setInteractionHapticsEnabled(prefs?.interactionHapticsEnabled !== false);
       setInteractionHapticsIntensity(normalizeInteractionHapticsIntensity(prefs?.interactionHapticsIntensity));
@@ -1498,6 +1502,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           }}
         />
       ) : null}
+      <TaskLaunchOnboarding preferences={cachedPreferences} />
     </>
   );
 }

@@ -1968,7 +1968,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
     saveShadowPreferences(uid, cachedPreferences);
     savePendingPreferencesSync(null);
   } else {
-    savePendingPreferencesSync(cachedPreferences);
+    savePendingPreferencesSync(cachedPreferences, "");
   }
   emitPreferenceChange();
   if (!uid) return;

@@ -725,6 +725,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
       appRuntimeState,
       preferencesState,
+      groupsState,
       rewardState,
       historyUiState,
       openHistoryTaskIds,

@@ -3,7 +3,10 @@ import { createTaskTimerAddTask } from "./add-task";
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
-function createHarness(initialValue: string, overrides?: { tasks?: Array<Record<string, unknown>> }) {
+function createHarness(
+  initialValue: string,
+  overrides?: { tasks?: Array<Record<string, unknown>>; plannedStartTime?: string; taskType?: "recurring" | "once-off" }
+) {
   const handlers = new Map<object, HandlerMap>();
   const documentStub = {};
   vi.stubGlobal("document", documentStub);
@@ -105,7 +108,7 @@ function createHarness(initialValue: string, overrides?: { tasks?: Array<Record<
       })),
     },
     on,
-    getAddTaskType: () => "recurring",
+    getAddTaskType: () => overrides?.taskType || "recurring",
     setAddTaskTypeState: vi.fn(),
     getAddTaskDurationValue: () => Number(addTaskDurationValueInput.value || 0),
     setAddTaskDurationValueState: vi.fn(),
@@ -134,7 +137,7 @@ function createHarness(initialValue: string, overrides?: { tasks?: Array<Record<
     escapeHtmlUI: (value: string) => value,
     getAddTaskOnceOffDay: () => "mon",
     setAddTaskOnceOffDayState: vi.fn(),
-    getAddTaskPlannedStartTime: () => "09:00",
+    getAddTaskPlannedStartTime: () => overrides?.plannedStartTime || "09:00",
     setAddTaskPlannedStartTimeState: vi.fn(),
     getTasks: () => [],
     confirm: vi.fn(),
@@ -354,6 +357,50 @@ describe("createTaskTimerAddTask", () => {
     expect(confirmOpts).not.toHaveProperty("altLabel");
     expect(confirmOpts).not.toHaveProperty("onAlt");
     expect(harness.ctx.setTasks).not.toHaveBeenCalled();
+  });
+
+  it("saves a scheduled add-task that ends exactly when another task starts", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 15,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 15,
+      plannedStartDay: "mon",
+      plannedStartTime: "07:15",
+      plannedStartByDay: { mon: "07:15" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("15", { tasks: [existingTask], plannedStartTime: "07:00", taskType: "once-off" });
+    harness.ctx.getAddTaskDurationUnit = () => "minute";
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      existingTask,
+      expect.objectContaining({
+        plannedStartTime: "07:00",
+        plannedStartByDay: { mon: "07:00" },
+        timeGoalMinutes: 15,
+      }),
+    ]);
   });
 
   it("schedules the new task to the displayed next available slot when conflict modal Schedule is chosen", () => {
