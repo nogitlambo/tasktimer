@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
+import type { TaskTimerSessionContext } from "./context";
+import type { TaskTimerRuntime } from "./runtime";
+import type { TaskTimerSharedTaskApi } from "./task-shared";
 import { createTaskTimerSession } from "./session";
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -85,13 +88,13 @@ describe("task timer session tick", () => {
         taskList: taskListEl,
         focusTaskName: null,
       },
-      runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as any,
+      runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
       storageKeys: {
         FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       },
       sharedTasks: {
         milestoneUnitSec: () => 3600,
-      } as any,
+      } as unknown as TaskTimerSharedTaskApi,
       getTasks: () => [activeTask],
       getCheckpointRepeatActiveTaskId: () => null,
       getCheckpointToastQueue: () => [],
@@ -175,7 +178,7 @@ describe("task timer session tick", () => {
       getOptimalProductivityEndTime: () => "17:00",
       getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
       renderDashboardWidgets: () => {},
-    } as any);
+    } as unknown as TaskTimerSessionContext);
 
     session.tick();
 

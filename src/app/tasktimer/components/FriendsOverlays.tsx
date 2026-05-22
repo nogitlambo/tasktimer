@@ -12,7 +12,7 @@ export default function FriendsOverlays() {
               type="email"
               autoComplete="email"
               className="text w100"
-              placeholder="Enter email address"
+              placeholder="Email address"
               aria-label="Email address"
             />
           </div>

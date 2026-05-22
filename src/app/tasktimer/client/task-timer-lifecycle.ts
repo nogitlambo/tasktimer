@@ -1,5 +1,6 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
+import { localDayKey } from "../lib/history";
 import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
@@ -79,6 +80,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     task.running = true;
     task.startMs = startMs;
     task.hasStarted = true;
+    task.resumePendingSinceDayKey = null;
     options.openRewardSessionSegment(task, startMs);
     options.upsertLiveSession(task, { elapsedMs: 0, resumedFromMs: previousElapsedMs, forceCloudFlush: true, reason: "start" });
     options.clearCheckpointBaseline(task.id);
@@ -103,6 +105,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs });
     task.running = false;
     task.startMs = null;
+    task.resumePendingSinceDayKey = task.accumulatedMs > 0 ? localDayKey(stopMs) : null;
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
     const completedToday = isTaskTimeGoalCompletedToday(task, stopMs);
@@ -138,6 +141,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       task.running = false;
       task.startMs = null;
       task.hasStarted = false;
+      task.resumePendingSinceDayKey = null;
     }
     options.clearTaskTimeGoalFlow(taskId);
     options.clearRewardSessionTracker(taskId);

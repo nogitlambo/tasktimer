@@ -38,7 +38,7 @@ export type HistoryManagerManualDraft = {
 type HistoryManagerManualDraftParseInput = {
   draft: HistoryManagerManualDraft;
   taskName: string;
-  taskColor?: string | null;
+  historyEntryColor?: string | null;
 };
 
 function padHistoryManagerDatePart(value: number) {
@@ -93,7 +93,7 @@ export function parseHistoryManagerManualDraft(input: HistoryManagerManualDraftP
   }
   const taskName = String(input.taskName || "").trim() || "Task";
   const noteValue = String(input.draft.noteValue || "").trim();
-  const colorValue = typeof input.taskColor === "string" ? String(input.taskColor).trim() : "";
+  const colorValue = typeof input.historyEntryColor === "string" ? String(input.historyEntryColor).trim() : "";
   return {
     entry: {
       ts: Math.floor(parsedTs),

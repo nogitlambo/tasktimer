@@ -38,7 +38,7 @@ export function createTaskTimerTaskUiPersistence(ctx: TaskTimerTaskUiPersistence
         if (!entry) return;
         const msRaw = entry.ms;
         const ms = Number.isFinite(Number(msRaw)) ? Math.max(0, Number(msRaw)) : 0;
-        const nextColor = ctx.sessionColorForTaskMs(task, ms);
+        const nextColor = ctx.historyEntryColorForTaskMs(task, ms);
         if (entry.color !== nextColor) {
           (entry as { color?: string }).color = nextColor;
           changed = true;

@@ -72,7 +72,7 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.startTask(0);
 
-    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true });
+    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true, resumePendingSinceDayKey: null });
     expect(harness.calls).toEqual([
       "clear-goal:task-1",
       "flush-note:task-1",
@@ -111,7 +111,7 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.startTask(0);
 
-    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true });
+    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true, resumePendingSinceDayKey: null });
     expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
   });
 
@@ -136,7 +136,7 @@ describe("task timer lifecycle", () => {
 
     harness.confirmOptions[0]?.onOk();
 
-    expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 345, startMs: null });
+    expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 345, startMs: null, resumePendingSinceDayKey: "1970-01-01" });
     expect(harness.tasks[1]).toMatchObject({ running: true, startMs: 123 });
     expect(harness.calls).toContain("close-reward:task-1:123");
     expect(harness.calls).toContain("open-reward:task-2:123");
@@ -165,7 +165,7 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.stopTask(0);
 
-    expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 345, startMs: null });
+    expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 345, startMs: null, resumePendingSinceDayKey: "1970-01-01" });
     expect(harness.calls).toEqual([
       "clear-goal:task-1",
       "flush-note:task-1",
@@ -201,6 +201,7 @@ describe("task timer lifecycle", () => {
       accumulatedMs: 0,
       startMs: null,
       hasStarted: false,
+      resumePendingSinceDayKey: null,
       timeGoalCompletedReason: "reset",
       timeGoalCompletedElapsedMs: 55,
     });

@@ -5,16 +5,22 @@ import {
   CANCEL_CLICK_AUDIO_SRC,
   CHECKBOX_CLICK_AUDIO_SRC,
   CLOSE_CLICK_AUDIO_SRC,
+  DROPDOWN_CLICK_AUDIO_SRC,
   getCheckboxClickTarget,
   getCancelClickTarget,
   getCloseClickTarget,
+  getDropdownClickTarget,
   getSecondaryClickTarget,
+  getTaskFlipClickTarget,
   playCancelClickAudio,
   playCheckboxClickAudio,
   playCloseClickAudio,
+  playDropdownClickAudio,
   playSecondaryClickAudio,
+  playTaskFlipClickAudio,
   registerSecondaryClickAudio,
   SECONDARY_CLICK_AUDIO_SRC,
+  TASK_FLIP_CLICK_AUDIO_SRC,
 } from "./secondary-click-audio";
 
 function makeElement(opts: {
@@ -69,7 +75,7 @@ describe("secondary click audio", () => {
   });
 
   it("matches checkbox controls for dedicated checkbox audio", () => {
-    const checkboxSelectors = ['input[type="checkbox"]', '[role="checkbox"]'];
+    const checkboxSelectors = ['input[type="checkbox"]', '[role="checkbox"]', ".modalPreviewDropdownOption"];
     const combinedSelector = checkboxSelectors.join(",");
 
     for (const selector of checkboxSelectors) {
@@ -115,7 +121,7 @@ describe("secondary click audio", () => {
   });
 
   it("excludes controls handled by primary click audio selectors", () => {
-    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
+    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, .closePopup.isSaveAndClose, .modalPreviewPrimaryAction";
     const taskLaunchSelector =
       'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
     const taskStopSelector = 'button[data-action="stop"][title="Stop"]';
@@ -142,16 +148,48 @@ describe("secondary click audio", () => {
 
   it("matches cancel controls for dedicated cancel audio", () => {
     const textSelector = "button,a";
+    const cancelSelector = ".modalPreviewSecondaryAction";
     const cancelByText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" });
     const cancelByAria = makeElement({
       selectorMatches: { [textSelector]: true },
       attributes: { "aria-label": "Cancel" },
     });
+    const cancelByClass = makeElement({ selectorMatches: { [cancelSelector]: true }, textContent: "Secondary" });
     const done = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Done" });
 
     expect(getCancelClickTarget(cancelByText)).toBe(cancelByText);
     expect(getCancelClickTarget(cancelByAria)).toBe(cancelByAria);
+    expect(getCancelClickTarget(cancelByClass)).toBe(cancelByClass);
     expect(getCancelClickTarget(done)).toBeNull();
+  });
+
+  it("matches modal preview dropdown trigger for dedicated dropdown audio", () => {
+    const dropdownSelector = '.modalPreviewDropdownButton,[data-action="history"]';
+    const dropdownTrigger = makeElement({
+      selectorMatches: { [dropdownSelector]: true, ".modalPreviewDropdownButton": true, "button,a": true },
+      textContent: "Standard option",
+    });
+    const dropdownOption = makeElement({
+      selectorMatches: { ".modalPreviewDropdownOption": true, "button,a": true, ['input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption']: true },
+      textContent: "Secondary option",
+    });
+
+    expect(getDropdownClickTarget(dropdownTrigger)).toBe(dropdownTrigger);
+    expect(getSecondaryClickTarget(dropdownTrigger)).toBeNull();
+    expect(getDropdownClickTarget(dropdownOption)).toBeNull();
+    expect(getCheckboxClickTarget(dropdownOption)).toBe(dropdownOption);
+  });
+
+  it("matches task flip controls for dedicated flip audio", () => {
+    const flipSelector = "[data-task-flip]";
+    const flipButton = makeElement({
+      selectorMatches: { [flipSelector]: true, "button,a": true },
+      attributes: { "data-task-flip": "open" },
+      textContent: "More actions",
+    });
+
+    expect(getTaskFlipClickTarget(flipButton)).toBe(flipButton);
+    expect(getSecondaryClickTarget(flipButton)).toBeNull();
   });
 
   it("matches close controls for dedicated close audio", () => {
@@ -232,6 +270,26 @@ describe("secondary click audio", () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
+  it("plays the configured dropdown audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playDropdownClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(DROPDOWN_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the configured task flip audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playTaskFlipClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(TASK_FLIP_CLICK_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
   it("registers one scoped app click listener and skips already-prevented clicks", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
@@ -258,7 +316,7 @@ describe("secondary click audio", () => {
     const on = vi.fn();
     const playAudio = vi.fn();
     const playCheckboxAudio = vi.fn();
-    const checkboxSelector = 'input[type="checkbox"],[role="checkbox"]';
+    const checkboxSelector = 'input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption';
 
     registerSecondaryClickAudio({
       on,
@@ -272,6 +330,27 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [checkboxSelector]: true } }) } as unknown as Event);
 
     expect(playCheckboxAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes task flip controls to the dedicated flip audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playTaskFlipAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playTaskFlipAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "[data-task-flip]": true } }) } as unknown as Event);
+
+    expect(playTaskFlipAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();
   });
 
@@ -302,7 +381,7 @@ describe("secondary click audio", () => {
     expect(playAudio).toHaveBeenCalledTimes(1);
   });
 
-  it("delays an unready cancel click, then replays it exactly once", async () => {
+  it("plays an unready cancel click immediately without delaying the action", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
     const mockPlayers: Array<{
@@ -326,25 +405,138 @@ describe("secondary click audio", () => {
     const cancelPlayer = mockPlayers[1];
     cancelPlayer.isReady.mockReturnValue(false);
     const textSelector = "button,a";
-    const cancelTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
-    cancelTarget.click = vi.fn();
+    const cancelClick = vi.fn();
+    const cancelTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Cancel" }) as HTMLElement & { click: () => void };
+    cancelTarget.click = cancelClick;
     const preventDefault = vi.fn();
     const stopImmediatePropagation = vi.fn();
     const handler = on.mock.calls[0]?.[2] as EventListener;
 
     handler({ defaultPrevented: false, isTrusted: true, target: cancelTarget, preventDefault, stopImmediatePropagation } as unknown as Event);
-    await Promise.resolve();
 
-    expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
-    expect(cancelPlayer.playWhenReady).toHaveBeenCalledWith(120);
-    expect(cancelTarget.click).toHaveBeenCalledTimes(1);
+    expect(cancelPlayer.play).toHaveBeenCalledTimes(1);
+    expect(cancelPlayer.playWhenReady).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(stopImmediatePropagation).not.toHaveBeenCalled();
+    expect(cancelClick).not.toHaveBeenCalled();
 
     handler({ defaultPrevented: false, isTrusted: false, target: cancelTarget } as unknown as Event);
-    expect(cancelPlayer.play).not.toHaveBeenCalled();
+    expect(cancelPlayer.play).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back to replaying after timeout when close audio is still unready", async () => {
+  it("routes modal preview dropdown item selection to checkbox audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playCheckboxAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playCheckboxAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: {
+          ['input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption']: true,
+          ".modalPreviewDropdownOption": true,
+          "button,a": true,
+        },
+        textContent: "Secondary option",
+      }),
+    } as unknown as Event);
+
+    expect(playCheckboxAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes modal preview dropdown trigger to dropdown audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playDropdownAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playDropdownAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { ['.modalPreviewDropdownButton,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
+        textContent: "Standard option",
+      }),
+    } as unknown as Event);
+
+    expect(playDropdownAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes task history chart toggles to dropdown audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playDropdownAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playDropdownAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { ['.modalPreviewDropdownButton,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
+        textContent: "View Chart",
+      }),
+    } as unknown as Event);
+
+    expect(playDropdownAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes modal preview secondary action to cancel audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playCancelAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playCancelAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { ".modalPreviewSecondaryAction": true, "button,a": true },
+        textContent: "Secondary",
+      }),
+    } as unknown as Event);
+
+    expect(playCancelAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("does not replay close clicks when audio is still unready", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
     const mockPlayers: Array<{
@@ -369,8 +561,9 @@ describe("secondary click audio", () => {
     closePlayer.isReady.mockReturnValue(false);
     closePlayer.playWhenReady.mockResolvedValue("timed_out");
     const textSelector = "button,a";
-    const closeTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" }) as HTMLElement & { click: ReturnType<typeof vi.fn> };
-    closeTarget.click = vi.fn();
+    const closeClick = vi.fn();
+    const closeTarget = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" }) as HTMLElement & { click: () => void };
+    closeTarget.click = closeClick;
     const handler = on.mock.calls[0]?.[2] as EventListener;
 
     handler({
@@ -380,9 +573,9 @@ describe("secondary click audio", () => {
       preventDefault: vi.fn(),
       stopImmediatePropagation: vi.fn(),
     } as unknown as Event);
-    await Promise.resolve();
 
-    expect(closePlayer.playWhenReady).toHaveBeenCalledWith(120);
-    expect(closeTarget.click).toHaveBeenCalledTimes(1);
+    expect(closePlayer.play).toHaveBeenCalledTimes(1);
+    expect(closePlayer.playWhenReady).not.toHaveBeenCalled();
+    expect(closeClick).not.toHaveBeenCalled();
   });
 });

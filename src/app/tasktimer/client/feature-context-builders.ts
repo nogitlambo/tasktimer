@@ -165,6 +165,7 @@ type CreatePersistenceOptionsArgs = {
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
   normalizeLoadedTask: (task: Task) => void;
+  syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
 };
 
 type CreateHistoryManagerOptionsArgs = {
@@ -193,6 +194,7 @@ type CreateHistoryManagerOptionsArgs = {
   formatDateTime: (value: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveHistoryAndWait: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => Promise<void>;
@@ -248,6 +250,7 @@ type CreateHistoryInlineOptionsArgs = {
   escapeHtmlUI: (value: unknown) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   getModeColor: (mode: MainMode) => string;
   getDynamicColorsEnabled: () => boolean;
   hasEntitlement: Parameters<typeof createTaskTimerHistoryInline>[0]["hasEntitlement"];
@@ -309,6 +312,7 @@ type CreateTasksOptionsArgs = {
   escapeHtmlUI: (value: unknown) => string;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
+  historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   isTaskSharedByOwner: (taskId: string) => boolean;
@@ -539,6 +543,7 @@ type CreateSessionOptionsArgs = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getHistoryEntryNote: (entry: unknown) => string;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
+  syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
   hasEntitlement: Parameters<typeof createTaskTimerSession>[0]["hasEntitlement"];
@@ -742,6 +747,7 @@ type CreateRewardsHistoryOptionsArgs = {
   currentUid: () => string | null;
   getTaskElapsedMs: (task: Task) => number;
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   captureSessionNoteSnapshot: (taskId?: string | null) => string;
   setFocusSessionDraft: (taskId: string, noteRaw: string) => void;
   clearFocusSessionDraft: (taskId: string) => void;
@@ -867,7 +873,7 @@ export function createTaskTimerPreferencesContext(
     setTaskOrderByState: (value) => {
       args.preferencesState.set("taskOrderBy", value);
     },
-    getMenuButtonStyle: () => asType<"parallelogram" | "square">(args.preferencesState.get("menuButtonStyle")),
+    getMenuButtonStyle: () => asType<"square">(args.preferencesState.get("menuButtonStyle")),
     setMenuButtonStyleState: (value) => {
       args.preferencesState.set("menuButtonStyle", value);
     },
@@ -1047,10 +1053,12 @@ export function createTaskTimerPersistenceContext(
     applyDashboardCardVisibility: args.applyDashboardCardVisibility,
     applyDashboardEditMode: args.applyDashboardEditMode,
     renderDashboardWidgets: args.renderDashboardWidgets,
+    syncSharedTaskSummariesForTasks: args.syncSharedTaskSummariesForTasks,
     maybeRepairHistoryNotesInCloudAfterHydrate: args.maybeRepairHistoryNotesInCloudAfterHydrate,
     jumpToTaskById: args.jumpToTaskById,
     maybeRestorePendingTimeGoalFlow: args.maybeRestorePendingTimeGoalFlow,
     normalizeLoadedTask: args.normalizeLoadedTask,
+    nowMs: Date.now,
   };
 }
 
@@ -1106,6 +1114,7 @@ export function createTaskTimerHistoryManagerContext(
     formatDateTime: args.formatDateTime,
     sortMilestones: args.sortMilestones,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
+    historyEntryColorForTaskMs: args.historyEntryColorForTaskMs,
     save: args.save,
     saveHistory: args.saveHistory,
     saveHistoryAndWait: args.saveHistoryAndWait,
@@ -1172,6 +1181,7 @@ export function createTaskTimerHistoryInlineContext(
     escapeHtmlUI: args.escapeHtmlUI,
     sortMilestones: args.sortMilestones,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
+    historyEntryColorForTaskMs: args.historyEntryColorForTaskMs,
     getModeColor: args.getModeColor,
     getDynamicColorsEnabled: args.getDynamicColorsEnabled,
     hasEntitlement: args.hasEntitlement,
@@ -1218,6 +1228,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     escapeHtmlUI: args.escapeHtmlUI,
     getModeColor: args.getModeColor,
     fillBackgroundForPct: args.fillBackgroundForPct,
+    historyEntryColorForTaskMs: args.historyEntryColorForTaskMs,
     formatMainTaskElapsedHtml: args.formatMainTaskElapsedHtml,
     sortMilestones: args.sortMilestones,
     isTaskSharedByOwner: args.isTaskSharedByOwner,
@@ -1422,6 +1433,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     normalizeHistoryTimestampMs: args.normalizeHistoryTimestampMs,
     getHistoryEntryNote: args.getHistoryEntryNote,
     syncSharedTaskSummariesForTask: args.syncSharedTaskSummariesForTask,
+    syncSharedTaskSummariesForTasks: args.syncSharedTaskSummariesForTasks,
     syncRewardSessionTrackerForTask: args.syncRewardSessionTrackerForTask,
     syncLiveSessionForTask: args.syncLiveSessionForTask,
     hasEntitlement: args.hasEntitlement,
@@ -1684,6 +1696,7 @@ export function createTaskTimerRewardsHistoryContext(
     currentUid: args.currentUid,
     getTaskElapsedMs: args.getTaskElapsedMs,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
+    historyEntryColorForTaskMs: args.historyEntryColorForTaskMs,
     captureSessionNoteSnapshot: args.captureSessionNoteSnapshot,
     setFocusSessionDraft: args.setFocusSessionDraft,
     clearFocusSessionDraft: args.clearFocusSessionDraft,

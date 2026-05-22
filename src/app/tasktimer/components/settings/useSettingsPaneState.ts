@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { SettingsNavItem, SettingsPaneKey } from "./types";
 
 const SETTINGS_PANE_KEYS: SettingsPaneKey[] = [
@@ -96,6 +96,7 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
 export function getSettingsNavItems(): SettingsNavItem[] {
   return [
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
+    { key: "general", label: "Profile", icon: "/landing/avatar-1.svg", desktopOnly: true },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
     { key: "notifications", label: "Sounds & Alerts", icon: "/Settings.svg" },
     { key: "help", label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
@@ -104,6 +105,33 @@ export function getSettingsNavItems(): SettingsNavItem[] {
   ];
 }
 
+export function getVisibleSettingsNavItems(showDesktopOnlyItems = false): SettingsNavItem[] {
+  return getSettingsNavItems().filter((item) => showDesktopOnlyItems || !item.desktopOnly);
+}
+
+function subscribeToDesktopSettingsNav(callback: () => void) {
+  const query = window.matchMedia("(min-width: 641px)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function getDesktopSettingsNavSnapshot() {
+  return window.matchMedia("(min-width: 641px)").matches;
+}
+
+function getServerDesktopSettingsNavSnapshot() {
+  return false;
+}
+
 export function useSettingsNavItems(): SettingsNavItem[] {
-  return useMemo(() => getSettingsNavItems(), []);
+  const showDesktopOnlyItems = useSyncExternalStore(
+    subscribeToDesktopSettingsNav,
+    getDesktopSettingsNavSnapshot,
+    getServerDesktopSettingsNavSnapshot
+  );
+
+  return useMemo(
+    () => getVisibleSettingsNavItems(showDesktopOnlyItems),
+    [showDesktopOnlyItems]
+  );
 }

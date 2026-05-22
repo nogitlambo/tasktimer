@@ -1,9 +1,7 @@
 import {
-  dashboardAvgRangeLabel,
   formatDashboardDurationShort,
   formatDashboardDurationWithMinutes,
   getDashboardWeekdayLabels,
-  getDashboardAvgRangeWindow,
   startOfCurrentWeekMs,
 } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
@@ -22,8 +20,7 @@ import { formatTime, formatTwo, nowMs } from "../lib/time";
 import { normalizeTaskStatusState, type Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerDashboardRenderContext } from "./context";
-import { getHistorySpectrumColor } from "./history-chart-fill";
-import type { DashboardAvgRange, DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
+import type { DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
@@ -31,7 +28,6 @@ import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-
 import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
-  type DashboardActivityOverviewDay,
   type DashboardActivityOverviewModel,
 } from "./dashboard-card-activity-overview";
 
@@ -142,13 +138,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function hasAdvancedInsights() {
     return ctx.hasEntitlement("advancedInsights");
-  }
-
-  function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
-    const raw = String(value || "").trim();
-    if (raw === "past30" || raw === "currentMonth") return "past30";
-    if (raw === "currentWeek") return "past7";
-    return "past7";
   }
 
   function sanitizeDashboardTimelineDensity(value: unknown): DashboardTimelineDensity {
@@ -1114,42 +1103,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
   }
 
-  function getDashboardActivityPoint(day: DashboardActivityOverviewDay, index: number, maxChartMs: number) {
-    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
-    const x = chart.left + (index / 6) * (chart.right - chart.left);
-    const ratio = maxChartMs > 0 ? Math.max(0, Math.min(1.15, day.cumulativeMs / maxChartMs)) : 0;
-    const y = chart.bottom - Math.min(1, ratio) * (chart.bottom - chart.top);
-    return { x, y };
-  }
+  const dashboardActivityChartBounds = { left: 68, right: 692, top: 34, bottom: 258 };
 
-  function getDashboardActivityDailyPoint(day: DashboardActivityOverviewDay, index: number, maxChartMs: number) {
-    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
-    const x = chart.left + (index / 6) * (chart.right - chart.left);
-    const ratio = maxChartMs > 0 ? Math.max(0, Math.min(1, day.totalMs / maxChartMs)) : 0;
-    const y = chart.bottom - ratio * (chart.bottom - chart.top);
-    return { x, y };
-  }
-
-  function buildDashboardActivityPath(
-    days: DashboardActivityOverviewDay[],
-    maxChartMs: number,
-    pointForDay: (day: DashboardActivityOverviewDay, index: number, maxChartMs: number) => { x: number; y: number }
-  ) {
-    if (!days.length) return "";
-    return days
-      .map((day, index) => {
-        const point = pointForDay(day, index, maxChartMs);
-        return `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-      })
-      .join(" ");
-  }
-
-  function buildDashboardActivityAreaPath(model: DashboardActivityOverviewModel) {
-    const linePath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityPoint);
-    if (!linePath || !model.days.length) return "";
-    const first = getDashboardActivityPoint(model.days[0]!, 0, model.maxChartMs);
-    const last = getDashboardActivityPoint(model.days[model.days.length - 1]!, model.days.length - 1, model.maxChartMs);
-    return `${linePath} L ${last.x.toFixed(1)} 258 L ${first.x.toFixed(1)} 258 Z`;
+  function getDashboardActivityY(valueMs: number, maxChartMs: number) {
+    const chart = dashboardActivityChartBounds;
+    const ratio = maxChartMs > 0 ? Math.max(0, Math.min(1, valueMs / maxChartMs)) : 0;
+    return chart.bottom - ratio * (chart.bottom - chart.top);
   }
 
   function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
@@ -1173,13 +1132,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderDashboardActivitySvg(model: DashboardActivityOverviewModel) {
     const chartGridEl = (els as any).dashboardActivityChartGrid as SVGGElement | null;
-    const comparePathEl = (els as any).dashboardActivityComparePath as SVGPathElement | null;
-    const areaPathEl = (els as any).dashboardActivityAreaPath as SVGPathElement | null;
-    const dailyPathEl = (els as any).dashboardActivityDailyPath as SVGPathElement | null;
-    const linePathEl = (els as any).dashboardActivityLinePath as SVGPathElement | null;
+    const previousBarsEl = (els as any).dashboardActivityPreviousBars as SVGGElement | null;
+    const barsEl = (els as any).dashboardActivityBars as SVGGElement | null;
     const goalLineEl = (els as any).dashboardActivityGoalLine as SVGLineElement | null;
-    const pointsEl = (els as any).dashboardActivityPoints as SVGGElement | null;
-    const chart = { left: 68, right: 692, top: 34, bottom: 258 };
+    const chart = dashboardActivityChartBounds;
     const svgNs = "http://www.w3.org/2000/svg";
 
     if (chartGridEl) {
@@ -1194,53 +1150,74 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         chartGridEl.appendChild(line);
       });
     }
-    const cumulativePath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityPoint);
-    const dailyPath = buildDashboardActivityPath(model.days, model.maxChartMs, getDashboardActivityDailyPoint);
-    const comparePath = buildDashboardActivityPath(
-      model.days.map((day) => ({ ...day, cumulativeMs: day.previousWeekCumulativeMs })),
-      model.maxChartMs,
-      getDashboardActivityPoint
-    );
-    if (linePathEl) linePathEl.setAttribute("d", cumulativePath);
-    if (dailyPathEl) dailyPathEl.setAttribute("d", dailyPath);
-    if (areaPathEl) areaPathEl.setAttribute("d", buildDashboardActivityAreaPath(model));
-    if (comparePathEl) {
-      comparePathEl.setAttribute("d", model.hasPreviousWeekActivity ? comparePath : "");
+
+    if (previousBarsEl) {
+      previousBarsEl.innerHTML = "";
+      previousBarsEl.style.display = model.hasPreviousWeekActivity ? "" : "none";
+      if (model.hasPreviousWeekActivity) {
+        const slotWidth = (chart.right - chart.left) / Math.max(1, model.days.length);
+        const barWidth = Math.min(66, slotWidth * 0.62);
+        model.days.forEach((day, index) => {
+          const height = day.previousWeekTotalMs > 0 ? Math.max(2, chart.bottom - getDashboardActivityY(day.previousWeekTotalMs, model.maxChartMs)) : 0;
+          const x = chart.left + index * slotWidth + (slotWidth - barWidth) / 2;
+          const y = chart.bottom - height;
+          const rect = document.createElementNS(svgNs, "rect");
+          rect.setAttribute("class", "dashboardActivityPreviousBar");
+          rect.setAttribute("x", x.toFixed(1));
+          rect.setAttribute("y", y.toFixed(1));
+          rect.setAttribute("width", barWidth.toFixed(1));
+          rect.setAttribute("height", height.toFixed(1));
+          rect.setAttribute("rx", "4");
+          previousBarsEl.appendChild(rect);
+        });
+      }
     }
+
+    if (barsEl) {
+      barsEl.innerHTML = "";
+      const slotWidth = (chart.right - chart.left) / Math.max(1, model.days.length);
+      const barWidth = Math.min(52, slotWidth * 0.48);
+      model.days.forEach((day, index) => {
+        const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, model.maxChartMs)) : 0;
+        const slotX = chart.left + index * slotWidth;
+        const x = slotX + (slotWidth - barWidth) / 2;
+        const y = chart.bottom - height;
+        const group = document.createElementNS(svgNs, "g");
+        group.setAttribute("class", `dashboardActivityBarGroup${day.key === selectedActivityOverviewDayKey ? " isSelected" : ""}`);
+        group.setAttribute("data-dashboard-activity-day", day.key);
+        group.setAttribute("tabindex", "0");
+        group.setAttribute("role", "button");
+        group.setAttribute(
+          "aria-label",
+          `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged${day.previousWeekTotalMs > 0 ? `, ${formatDashboardDurationShort(day.previousWeekTotalMs)} previous week` : ""}`
+        );
+        const hit = document.createElementNS(svgNs, "rect");
+        hit.setAttribute("class", "dashboardActivityBarHit");
+        hit.setAttribute("x", slotX.toFixed(1));
+        hit.setAttribute("y", chart.top.toFixed(1));
+        hit.setAttribute("width", slotWidth.toFixed(1));
+        hit.setAttribute("height", (chart.bottom - chart.top).toFixed(1));
+        const rect = document.createElementNS(svgNs, "rect");
+        rect.setAttribute("class", "dashboardActivityBar");
+        rect.setAttribute("x", x.toFixed(1));
+        rect.setAttribute("y", y.toFixed(1));
+        rect.setAttribute("width", barWidth.toFixed(1));
+        rect.setAttribute("height", height.toFixed(1));
+        rect.setAttribute("rx", "5");
+        group.appendChild(hit);
+        group.appendChild(rect);
+        barsEl.appendChild(group);
+      });
+    }
+
     if (goalLineEl) {
       const showGoal = model.totalGoalMs > 0;
-      const goalRatio = model.maxChartMs > 0 ? Math.max(0, Math.min(1, model.totalGoalMs / model.maxChartMs)) : 0;
-      const y = chart.bottom - goalRatio * (chart.bottom - chart.top);
+      const y = getDashboardActivityY(model.dailyPaceTargetMs, model.maxChartMs);
       goalLineEl.setAttribute("x1", String(chart.left));
       goalLineEl.setAttribute("x2", String(chart.right));
       goalLineEl.setAttribute("y1", y.toFixed(1));
       goalLineEl.setAttribute("y2", y.toFixed(1));
       goalLineEl.style.display = showGoal ? "" : "none";
-    }
-    if (pointsEl) {
-      pointsEl.innerHTML = "";
-      model.days.forEach((day, index) => {
-        const point = getDashboardActivityPoint(day, index, model.maxChartMs);
-        const button = document.createElementNS(svgNs, "g");
-        button.setAttribute("class", `dashboardActivityPoint${day.key === selectedActivityOverviewDayKey ? " isSelected" : ""}`);
-        button.setAttribute("data-dashboard-activity-day", day.key);
-        button.setAttribute("tabindex", "0");
-        button.setAttribute("role", "button");
-        button.setAttribute("aria-label", `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`);
-        const hit = document.createElementNS(svgNs, "circle");
-        hit.setAttribute("class", "dashboardActivityPointHit");
-        hit.setAttribute("cx", point.x.toFixed(1));
-        hit.setAttribute("cy", point.y.toFixed(1));
-        hit.setAttribute("r", "14");
-        const dot = document.createElementNS(svgNs, "circle");
-        dot.setAttribute("class", "dashboardActivityPointDot");
-        dot.setAttribute("cx", point.x.toFixed(1));
-        dot.setAttribute("cy", point.y.toFixed(1));
-        dot.setAttribute("r", day.totalMs > 0 ? "4.8" : "3.2");
-        button.appendChild(hit);
-        button.appendChild(dot);
-        pointsEl.appendChild(button);
-      });
     }
   }
 
@@ -1304,14 +1281,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       subtitleEl.textContent = `${start} - ${end}`;
     }
     if (emptyEl) {
-      const showEmpty = !model.hasActivity || !model.hasGoal;
+      const showEmpty = !model.hasActivity;
       emptyEl.hidden = !showEmpty;
       if (emptyTextEl) {
         emptyTextEl.textContent = !model.hasActivity && !model.hasGoal
           ? "Set task goals or log time to build your weekly activity overview."
-          : !model.hasGoal
-            ? "No weekly goal is set. Activity is shown without a ceiling."
-            : "No activity logged this week.";
+          : "No activity logged this week.";
       }
     }
     renderDashboardActivityAxes(model);
@@ -2545,188 +2520,77 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     gridEl.innerHTML = html.join("");
   }
 
-  function getDashboardAvgSessionRows(range: DashboardAvgRange, nowValue: number) {
-    const { startMs, endMs } = getDashboardAvgRangeWindow(range, nowValue);
-    const taskNameById = new Map<string, string>();
-    const filteredTasks = getDashboardFilteredTasks();
-    const includedTaskIds = new Set<string>();
+  function getDashboardLastRanRows() {
     const historyByTaskId = ctx.getHistoryByTaskId();
-    const deletedTaskMeta = ctx.getDeletedTaskMeta();
-    filteredTasks.forEach((task) => {
-      const id = String(task.id || "").trim();
-      if (!id) return;
-      includedTaskIds.add(id);
-      taskNameById.set(id, String(task.name || "").trim() || "Task");
-    });
-    addArchivedTaskNames(taskNameById);
-    Object.entries(deletedTaskMeta || {}).forEach(([taskId, row]) => {
-      if (normalizeTaskStatusState(row?.state) === "archived") includedTaskIds.add(taskId);
-    });
-
-    const rows: Array<{ taskId: string; taskName: string; avgMs: number; count: number }> = [];
-    Object.keys(historyByTaskId || {}).forEach((taskIdRaw) => {
-      const taskId = String(taskIdRaw || "").trim();
+    const rows: Array<{ taskId: string; taskName: string; lastRanAtMs: number | null; taskOrder: number; sourceIndex: number }> = [];
+    getDashboardFilteredTasks().forEach((task, sourceIndex) => {
+      const taskId = String(task?.id || "").trim();
       if (!taskId) return;
-      if (!includedTaskIds.has(taskId)) return;
       const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      if (!entries.length) return;
-      let sumMs = 0;
-      let count = 0;
+      let lastRanAtMs: number | null = null;
       entries.forEach((entry: any) => {
-        const ts = Number(entry?.ts);
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
         const ms = Number(entry?.ms);
-        if (!Number.isFinite(ts) || !Number.isFinite(ms) || ms <= 0) return;
-        if (ts < startMs || ts > endMs) return;
-        sumMs += ms;
-        count += 1;
+        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
+        if (lastRanAtMs == null || ts > lastRanAtMs) lastRanAtMs = ts;
       });
-      if (count < 1) return;
-      const deletedName = String((deletedTaskMeta as any)?.[taskId]?.name || "").trim();
-      const taskName = taskNameById.get(taskId) || deletedName || "Task";
-      rows.push({ taskId, taskName, avgMs: sumMs / count, count });
+      rows.push({
+        taskId,
+        taskName: String(task.name || "").trim() || "Task",
+        lastRanAtMs,
+        taskOrder: Number.isFinite(Number(task.order)) ? Number(task.order) : sourceIndex,
+        sourceIndex,
+      });
     });
-
     rows.sort((a, b) => {
-      if (b.avgMs !== a.avgMs) return b.avgMs - a.avgMs;
-      const nameCmp = a.taskName.localeCompare(b.taskName);
-      if (nameCmp !== 0) return nameCmp;
-      return a.taskId.localeCompare(b.taskId);
+      const aHasHistory = a.lastRanAtMs != null;
+      const bHasHistory = b.lastRanAtMs != null;
+      if (aHasHistory && bHasHistory && a.lastRanAtMs !== b.lastRanAtMs) {
+        return (b.lastRanAtMs || 0) - (a.lastRanAtMs || 0);
+      }
+      if (aHasHistory !== bHasHistory) return aHasHistory ? -1 : 1;
+      if (a.taskOrder !== b.taskOrder) return a.taskOrder - b.taskOrder;
+      return a.sourceIndex - b.sourceIndex;
     });
     return rows;
   }
 
-  function truncateDashboardLabel(label: string, maxChars: number) {
-    const clean = String(label || "").trim();
-    if (clean.length <= maxChars) return clean;
-    return `${clean.slice(0, Math.max(1, maxChars - 1))}...`;
+  function formatDashboardTimeSinceLastRan(lastRanAtMs: number | null, nowValue: number) {
+    if (lastRanAtMs == null) return "Never";
+    return formatDashboardDurationShort(Math.max(0, nowValue - lastRanAtMs));
   }
-
-  let dashboardAvgSessionMeasureRetryPending = false;
 
   function renderDashboardAvgSessionChart() {
     const titleEl = els.dashboardAvgSessionTitle as HTMLElement | null;
     const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
-    const canvas = els.dashboardAvgSessionChart;
-    const rangeLabelEl = document.getElementById("dashboardAvgRangeMenuLabel") as HTMLElement | null;
-    const cardEl = canvas?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
-    const range = sanitizeDashboardAvgRange(ctx.getDashboardAvgRange());
-    ctx.setDashboardAvgRange(range);
-
-    if (titleEl) titleEl.textContent = `Avg Session by Task (${dashboardAvgRangeLabel(range)})`;
-    if (rangeLabelEl) rangeLabelEl.textContent = dashboardAvgRangeLabel(range);
-
-    if (!canvas) return;
-    const wrap = canvas.closest(".historyCanvasWrap") as HTMLElement | null;
-    if (!wrap) return;
+    const listEl =
+      (document.getElementById("dashboardLastRanList") as HTMLElement | null)
+      || ((els as any).dashboardLastRanList as HTMLElement | null);
+    const cardEl = listEl?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
+    if (titleEl) titleEl.textContent = "Last Ran";
+    if (!listEl) return;
     setDashboardPlanLockedState(cardEl, false);
-    const rows = getDashboardAvgSessionRows(range, nowMs());
+    const nowValue = nowMs();
+    const rows = getDashboardLastRanRows();
     if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;
 
-    const rect = wrap.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const measuredWidth = Math.floor(rect.width || wrap.clientWidth || canvas.clientWidth || 0);
-    const measuredHeight = Math.floor(rect.height || wrap.clientHeight || canvas.clientHeight || 0);
-    if (measuredWidth <= 0 || measuredHeight <= 0) {
-      if (!dashboardAvgSessionMeasureRetryPending) {
-        dashboardAvgSessionMeasureRetryPending = true;
-        window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => {
-            dashboardAvgSessionMeasureRetryPending = false;
-            renderDashboardAvgSessionChart();
-          });
-        });
-      }
-      if (measuredWidth <= 0) return;
-    }
-    const fallbackHeight = Math.max(176, Math.min(236, Math.round(measuredWidth * 0.62)));
-    const width = measuredWidth;
-    const height = measuredHeight > 0 ? measuredHeight : fallbackHeight;
-    wrap.style.minHeight = measuredHeight > 0 ? "" : `${fallbackHeight}px`;
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = "100%";
-    canvas.style.height = `${height}px`;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.clearRect(0, 0, width, height);
-
     if (!rows.length) {
+      listEl.innerHTML = "";
       if (emptyEl) emptyEl.style.display = "block";
       return;
     }
     if (emptyEl) emptyEl.style.display = "none";
-
-    const chartTop = 14;
-    const chartBottom = height - 56;
-    const chartHeight = Math.max(80, chartBottom - chartTop);
-    const maxAvgMs = Math.max(...rows.map((row) => row.avgMs), 1);
-    const tickCount = 4;
-    const tickLabelFont = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-    context.font = tickLabelFont;
-    let maxTickLabelWidth = 0;
-    for (let i = 1; i <= tickCount; i += 1) {
-      const pct = i / tickCount;
-      const tickMs = maxAvgMs * pct;
-      maxTickLabelWidth = Math.max(maxTickLabelWidth, context.measureText(formatDashboardDurationShort(tickMs)).width);
-    }
-    const chartLeft = 12 + Math.ceil(maxTickLabelWidth) + 10;
-    const chartRight = width - 12;
-    const chartWidth = Math.max(120, chartRight - chartLeft);
-    const barCount = rows.length;
-    const gap = barCount > 10 ? 4 : 8;
-    const labelMaxChars = width <= 420 ? 8 : 13;
-    const labelFont = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-    context.font = labelFont;
-    const longestLabelWidth = rows.reduce((maxWidth, row) => {
-      const label = truncateDashboardLabel(row.taskName, labelMaxChars);
-      return Math.max(maxWidth, context.measureText(label).width);
-    }, 0);
-    const preferredBarWidth = Math.ceil(longestLabelWidth + 10);
-    const maxBarWidthByChart = Math.max(8, Math.floor((chartWidth - gap * (barCount - 1)) / Math.max(1, barCount)));
-    const barWidth = Math.max(8, Math.min(preferredBarWidth, maxBarWidthByChart));
-    const startX = chartLeft;
-
-    context.strokeStyle = "rgba(255,255,255,.20)";
-    context.fillStyle = "rgba(255,255,255,.68)";
-    context.font = tickLabelFont;
-    context.textAlign = "right";
-    context.textBaseline = "middle";
-    for (let i = 0; i <= tickCount; i += 1) {
-      const pct = i / tickCount;
-      const y = Math.round(chartBottom - chartHeight * pct) + 0.5;
-      context.globalAlpha = i === 0 ? 0.5 : 0.24;
-      context.beginPath();
-      context.moveTo(chartLeft, y);
-      context.lineTo(chartRight, y);
-      context.stroke();
-      context.globalAlpha = 1;
-      if (i === 0) continue;
-      const tickMs = maxAvgMs * pct;
-      context.fillText(formatDashboardDurationShort(tickMs), chartLeft - 6, y);
-    }
-
-    rows.forEach((row, idx) => {
-      const ratio = Math.max(0, Math.min(1, row.avgMs / maxAvgMs));
-      const x = startX + idx * (barWidth + gap);
-      const barHeight = Math.max(2, Math.round(chartHeight * ratio));
-      const y = chartBottom - barHeight;
-      context.fillStyle = getHistorySpectrumColor(ratio);
-      context.globalAlpha = 0.92;
-      context.fillRect(x, y, barWidth, barHeight);
-      context.globalAlpha = 1;
-
-      const label = truncateDashboardLabel(row.taskName, labelMaxChars);
-      context.save();
-      context.translate(x + barWidth / 2, chartBottom + 10);
-      context.rotate((-42 * Math.PI) / 180);
-      context.textAlign = "right";
-      context.textBaseline = "middle";
-      context.fillStyle = "rgba(255,255,255,.72)";
-      context.font = labelFont;
-      context.fillText(label, 0, 0);
-      context.restore();
-    });
+    listEl.innerHTML = rows
+      .map((row) => {
+        const value = formatDashboardTimeSinceLastRan(row.lastRanAtMs, nowValue);
+        const aria = `${row.taskName}: Time since last ran ${value}`;
+        return `<div class="dashboardLastRanRow${row.lastRanAtMs == null ? " isNever" : ""}" aria-label="${ctx.escapeHtmlUI(
+          aria
+        )}"><span class="dashboardLastRanTask">${ctx.escapeHtmlUI(row.taskName)}</span><span class="dashboardLastRanMeta"><span class="dashboardLastRanLabel">Time since last ran</span> <span class="dashboardLastRanValue">${ctx.escapeHtmlUI(
+          value
+        )}</span></span></div>`;
+      })
+      .join("");
   }
 
   function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {

@@ -34,7 +34,7 @@ type TaskTimerPreferenceStorageKeys = {
 
 type PreferencesStateSnapshot = {
   theme: "lime";
-  menuButtonStyle: "parallelogram" | "square";
+  menuButtonStyle: "square";
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
@@ -128,7 +128,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       ...base,
       schemaVersion: 1,
       theme: state.theme,
-      menuButtonStyle: state.menuButtonStyle,
+      menuButtonStyle: "square",
       weekStarting: state.weekStarting,
       startupModule: state.startupModule,
       taskView: "tile",
@@ -214,11 +214,8 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return normalizeThemeMode(cached?.theme || localValue);
   }
 
-  function loadMenuButtonStyle(): "parallelogram" | "square" {
-    const cached = getStoredPreferencesWithoutDefaults();
-    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY) : "";
-    const raw = String(cached?.menuButtonStyle || localValue).trim().toLowerCase();
-    return raw === "square" ? "square" : "parallelogram";
+  function loadMenuButtonStyle(): "square" {
+    return "square";
   }
 
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {

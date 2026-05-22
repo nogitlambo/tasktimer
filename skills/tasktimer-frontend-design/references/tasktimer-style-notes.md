@@ -25,13 +25,12 @@ Use this reference for quick copy-adapt patterns when building new UI in the Tas
 #exampleOverlay .modal{
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 ```
 
 Notes:
 - Reuse `.overlay`, `.modal`, `.footerBtns`, `btn` classes.
-- Add light-theme overrides if new content-specific styles are introduced.
+- Keep new content-specific styles aligned with the primary theme.
 
 ## 2) Toggle Row Pattern
 
@@ -78,8 +77,8 @@ Notes:
 
 Use existing panel treatment before creating new variants:
 - `background: #0d0f13`
-- borders in existing cyan/white low-opacity range
-- slanted/parallelogram shape where surrounding UI uses it
+- borders in the existing low-opacity neutral/accent range
+- square shape for button-like panels and controls
 
 Examples in app:
 - `.historyInline`
@@ -88,24 +87,19 @@ Examples in app:
 - `.userGuideWindow`
 - `#editOverlay .modal`
 
-## 5) Light Theme Override Pattern
+## 5) Primary Theme Override Pattern
 
-When adding dark-theme styles for a new component, add targeted light overrides if needed:
+When adding styles for a new component, keep any theme-specific rules scoped to the primary theme path:
 
 ```css
-body[data-theme="light"] #exampleOverlay .modal{
-  background: rgba(255,255,255,.78);
-  border-color: rgba(0,0,0,.15);
-}
-
-body[data-theme="light"] #exampleElement{
-  color: #111111;
+body[data-theme="lime"] #exampleElement{
+  border-color: rgba(149, 255, 0, .34);
 }
 ```
 
 Notes:
 - Keep overrides scoped and minimal.
-- Match existing light-theme conventions in `tasktimer.css`.
+- Match existing primary-theme conventions in `tasktimer.css`.
 
 ## 6) Typography Pattern
 

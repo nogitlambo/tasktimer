@@ -52,7 +52,7 @@ export function SettingsAccountPane({
   }, [account.showDeleteAccountConfirm]);
 
   return (
-    <SettingsDetailPane active={active} exiting={exiting} title="Account" subtitle="">
+    <SettingsDetailPane active={active} exiting={exiting} title="Profile" subtitle="">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           {account.authUserEmail ? (

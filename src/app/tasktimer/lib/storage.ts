@@ -97,6 +97,27 @@ function rewardProgressSignature(input: unknown): string {
   }
 }
 
+function normalizePreferenceSnapshot(prefs: CachedPreferences): CachedPreferences {
+  if (!prefs) return null;
+  return {
+    ...prefs,
+    theme: "lime",
+    menuButtonStyle: "square",
+    rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
+    optimalProductivityStartTime: normalizeTimeOfDay(
+      (prefs as { optimalProductivityStartTime?: unknown }).optimalProductivityStartTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+    ),
+    optimalProductivityEndTime: normalizeTimeOfDay(
+      (prefs as { optimalProductivityEndTime?: unknown }).optimalProductivityEndTime,
+      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+    ),
+    optimalProductivityDays: normalizeOptimalProductivityDays(
+      (prefs as { optimalProductivityDays?: unknown }).optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
+    ),
+  };
+}
+
 function applyHistorySaveWorkingVisibility(visible: boolean): void {
   if (typeof document === "undefined") return;
   const indicator = document.getElementById("historySaveWorkingIndicator");
@@ -300,6 +321,10 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
+    resumePendingSinceDayKey:
+      typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
+        ? task.resumePendingSinceDayKey
+        : null,
     plannedStartDay,
     plannedStartTime: task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
@@ -480,10 +505,7 @@ function loadShadowPreferences(uid?: string): CachedPreferences {
     if (normalizedUid && shadowUid && shadowUid !== normalizedUid) return null;
     const prefs = parsed.preferences;
     if (!prefs || typeof prefs !== "object") return null;
-    return {
-      ...prefs,
-      rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
-    };
+    return normalizePreferenceSnapshot(prefs);
   } catch {
     return null;
   }
@@ -555,10 +577,7 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
       SHADOW_PREFERENCES_KEY,
       JSON.stringify({
         uid,
-        preferences: {
-          ...prefs,
-          rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
-        },
+        preferences: normalizePreferenceSnapshot(prefs),
       })
     );
   } catch {
@@ -633,12 +652,11 @@ function loadPendingPreferencesSync(uid = scopedUid()): PendingPreferencesSync |
     }
     const prefs = parsed.preferences;
     if (!prefs || typeof prefs !== "object") return null;
+    const normalizedPreferences = normalizePreferenceSnapshot(prefs);
+    if (!normalizedPreferences) return null;
     return {
       ts,
-      preferences: {
-        ...prefs,
-        rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
-      },
+      preferences: normalizedPreferences,
     };
   } catch {
     return null;
@@ -655,15 +673,17 @@ function savePendingPreferencesSync(
       window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
       return;
     }
+    const normalizedPreferences = normalizePreferenceSnapshot(prefs);
+    if (!normalizedPreferences) {
+      window.localStorage.removeItem(PENDING_PREFERENCES_SYNC_KEY);
+      return;
+    }
     window.localStorage.setItem(
       PENDING_PREFERENCES_SYNC_KEY,
       JSON.stringify({
         ts: nowMs(),
         uid: String(uid || "").trim(),
-        preferences: {
-          ...prefs,
-          rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
-        },
+        preferences: normalizedPreferences,
       } satisfies PendingPreferencesSync)
     );
   } catch {
@@ -1131,24 +1151,26 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   const currentRewardsSignature = rewardProgressSignature(cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS);
   const reconciledRewardsSignature = rewardProgressSignature(reconciledRewards);
   if (currentRewardsSignature !== reconciledRewardsSignature) {
-    cachedPreferences = {
+    cachedPreferences = normalizePreferenceSnapshot({
       ...(cachedPreferences || buildDefaultCloudPreferences()),
       rewards: reconciledRewards,
       updatedAtMs: Date.now(),
-    };
+    });
     queuedPreferencesSyncSnapshot = cachedPreferences;
     flushQueuedCloudPreferences(uid);
   }
   saveShadowPreferences(uid, cachedPreferences);
   if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
-    const replayPreferences = applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences;
-    void savePreferences(uid, replayPreferences)
-      .then(() => {
-        savePendingPreferencesSync(null);
-      })
-      .catch(() => {
-        // Keep pending preferences queued until a later successful sync.
-      });
+    const replayPreferences = normalizePreferenceSnapshot(applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences);
+    if (replayPreferences) {
+      void savePreferences(uid, replayPreferences)
+        .then(() => {
+          savePendingPreferencesSync(null);
+        })
+        .catch(() => {
+          // Keep pending preferences queued until a later successful sync.
+        });
+    }
   }
   cachedDashboard = snapshot.dashboard || null;
   saveShadowDashboard(cachedDashboard, uid);
@@ -1578,7 +1600,7 @@ function scheduleLeaderboardProfileSync(uidRaw?: string): void {
 
 function flushQueuedCloudPreferences(uid: string): void {
   if (inFlightPreferencesSync) return;
-  const nextSnapshot = queuedPreferencesSyncSnapshot;
+  const nextSnapshot = normalizePreferenceSnapshot(queuedPreferencesSyncSnapshot);
   if (!nextSnapshot) return;
   const nextSignature = preferencesSyncSignature(nextSnapshot);
   if (nextSignature === lastSuccessfulPreferencesSyncSignature) {
@@ -1940,16 +1962,7 @@ function enqueueLiveSessionClear(
 }
 
 export function saveCloudPreferences(prefs: UserPreferencesV1) {
-  cachedPreferences = {
-    ...prefs,
-    optimalProductivityStartTime: normalizeTimeOfDay(
-      prefs?.optimalProductivityStartTime,
-      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
-    ),
-    optimalProductivityEndTime: normalizeTimeOfDay(prefs?.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
-    optimalProductivityDays: normalizeOptimalProductivityDays(prefs?.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
-    rewards: normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS),
-  };
+  cachedPreferences = normalizePreferenceSnapshot(prefs);
   const uid = currentUid();
   if (uid) {
     saveShadowPreferences(uid, cachedPreferences);

@@ -169,15 +169,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #confirmOverlay .modal,
 #elapsedPadOverlay .modal,
+#temporaryModalOverlay .modal,
 #timeGoalCompleteSaveNoteOverlay .modal,
 #timeGoalCompleteNoteOverlay .modal{
   width:min(var(--modal-width-sm), 100%);
 }
 
-#addTaskOverlay .modal,
-#editOverlay .modal,
 #exportTaskOverlay .modal,
-#historyEntryNoteOverlay .modal,
 #historyAnalysisOverlay .modal,
 #rewardsInfoOverlay .modal{
   width:min(var(--modal-width-md), 100%);
@@ -209,7 +207,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   -webkit-overflow-scrolling: touch;
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   border: 1px solid rgba(214,214,214,.34);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
@@ -418,7 +415,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   color: #dcfbff;
   border: 1px solid rgba(126,243,255,.26);
   background: rgba(45,128,148,.16);
-  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
 }
 
 .rankLadderModal .confirmBtns{
@@ -474,13 +470,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   }
 }
 
-/* Edit Task modal: parallelogram styling */
-
 #editOverlay .modal{
   background: #0d0f13 !important;
   border: 0 !important;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   box-shadow: none !important;
   padding:14px 14px 12px;
   max-height: min(92dvh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)));
@@ -596,7 +589,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: #0d0f13 !important;
   color: rgba(245,248,244,.94) !important;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.04),
     inset 0 0 0 1px rgba(255,255,255,.02) !important;
@@ -634,7 +626,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top:8px;
   padding:8px 10px;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #editOverlay .toggleRow > span,
@@ -1011,7 +1002,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: 0;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   background: var(--task-color);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
   cursor: pointer;
@@ -1077,7 +1067,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: 0;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   background: var(--task-color);
   box-shadow:
     inset 0 0 0 1px rgba(0,0,0,.2),
@@ -1190,13 +1179,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #taskManualEntryOverlay .hmManualEntryFooterBtns,
 #historyManagerManualEntryOverlay .hmManualEntryFooterBtns{
   flex: 0 0 auto;
-  margin-top: 0;
-  padding: 14px 0 max(14px, var(--safe-bottom));
-  gap: 8px;
+  margin-top: 12px;
+  padding: 0;
+  gap: 10px;
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  border-top: 1px solid rgba(255,255,255,.08);
+  border-top: 0;
   position: relative;
   z-index: 2;
 }
@@ -1827,7 +1816,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border:0;
   background:transparent;
   border-radius:0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #editOverlay .msRow .msSliderReadout,
@@ -1893,7 +1881,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border:1px solid rgba(255,255,255,.18);
   background:var(--checkpoint-slider-accent, #58e1ff);
   box-shadow:0 0 0 2px rgba(13,15,19,.72);
-  clip-path: polygon(18% 0, 100% 0, 82% 100%, 0 100%);
 }
 
 #editOverlay .msRow .msSliderInput::-moz-range-track,
@@ -1998,7 +1985,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border:1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #editOverlay .msRow.isInvalid{
@@ -2022,7 +2008,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   width:min(560px, 100%);
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 /* Desktop rail subscription mock modal */
@@ -2031,7 +2016,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   width: min(560px, 100%);
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   border: 1px solid rgba(53,232,255,.24);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
@@ -2065,7 +2049,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border: 1px solid rgba(121,226,255,.16);
   background: rgba(255,255,255,.03);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.025);
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 .rewardsInfoDetailLabel{
@@ -2117,25 +2100,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   }
 }
 
-/* Add Task modal: parallelogram styling */
-
 #addTaskOverlay .modal{
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #addTaskOverlay input[type="text"],
 #addTaskOverlay input[type="number"]{
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #addTaskOverlay .toggleRow,
 #addTaskOverlay .milestones,
 #addTaskOverlay .unitRow{
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #addTaskOverlay .switch{
@@ -2162,7 +2140,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border:1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #addTaskOverlay .msRow input[type="text"]{
@@ -2262,7 +2239,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-width: 0;
   appearance: none;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   border: 1px solid rgba(126, 214, 236, .24);
   background:
     linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
@@ -2356,7 +2332,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: #0d0f13;
   border: 1px solid rgba(165, 172, 182, .62);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   box-shadow:
     0 18px 46px rgba(0, 0, 0, .46),
@@ -2488,7 +2463,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #exportTaskOverlay .modal{
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
 }
 
@@ -2553,14 +2527,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   }
 }
 
-/* Final modal button sizing override: keep shared dialog actions compact. */
-
 .overlay .modal .btn{
   min-height: 28px !important;
   padding: 4px 10px !important;
 }
-
-/* Final Add Task wizard overrides */
 
 #confirmOverlay.isDeleteTaskConfirm .modal{
   background: #0d0f13;
@@ -2569,7 +2539,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   box-shadow:
     0 18px 54px rgba(0,0,0,.48),
     0 0 24px rgba(255,77,77,.14);
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #confirmOverlay.isDeleteTaskConfirm .confirmText{
@@ -2728,7 +2697,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-width: 0;
   appearance: none;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   border: 1px solid rgba(126, 214, 236, .24);
   background:
     linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
@@ -2885,6 +2853,17 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #addTaskOverlay .addTaskNameCombo > input::placeholder{
   color: rgba(226,246,255,.9);
   opacity: 1;
+}
+
+#addTaskOverlay #addTaskName:not(.isInvalid):focus,
+#addTaskOverlay #addTaskName:not(.isInvalid):focus-visible,
+#editOverlay #editName:focus,
+#editOverlay #editName:focus-visible{
+  border-color: rgba(255,255,255,.02) !important;
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(255,255,255,.02) !important;
 }
 
 #editOverlay .taskNameRow .editTaskColorTrigger,
@@ -3137,8 +3116,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   box-shadow: inset 0 0 0 1px rgba(255,77,77,.12);
 }
 
-/* Final Edit Task footer button sizing: Cancel and Save parity */
-
 #editOverlay #cancelEditBtn,
 #editOverlay #saveEditBtn{
   min-width: 92px;
@@ -3178,7 +3155,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: #0d0f13 !important;
   border: 0 !important;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   box-shadow: none !important;
   padding: 14px 14px 12px;
   width: 100%;
@@ -3270,7 +3246,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: #0d0f13 !important;
   color: rgba(245,248,244,.94) !important;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.02) !important;
 }
 
@@ -3351,7 +3326,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #addTaskOverlay .toggleRow{
@@ -3474,7 +3448,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: 0;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   background: var(--task-color);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
   cursor: pointer;
@@ -3540,7 +3513,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: 0;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   background: var(--task-color);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.2), 0 0 0 0 rgba(201,255,36,0);
   cursor: pointer;
@@ -3574,6 +3546,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top: 12px;
 }
 
+#addTaskOverlay .btn{
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+
 #addTaskOverlay #addTaskCancelBtn,
 #addTaskOverlay #addTaskConfirmBtn{
   min-width: 92px;
@@ -3600,19 +3577,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   color: #c9ff24 !important;
 }
 
-#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible,
-#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:hover,
-#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:focus-visible{
-  background: linear-gradient(180deg, var(--accent3), var(--accent)) !important;
-  color: #04131c !important;
-  border-color: rgba(53,232,255,.55) !important;
-  box-shadow: 0 0 14px rgba(0,220,255,.3) !important;
-  font-weight: 800;
-}
-
-/* Final elapsed keypad overrides: match standard modal/button language */
-
 #elapsedPadOverlay .modal.elapsedPadModal{
   background: #0d0f13;
   border-radius: 0;
@@ -3622,7 +3586,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #elapsedPadOverlay .elapsedPadDisplay{
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   border: 1px solid rgba(53,232,255,.26);
   background: rgba(255,255,255,.03);
   color: #e9fcff;
@@ -4284,13 +4247,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   font-size:15px;
 }
 
-/* Final Delete Friend confirm override: destructive styling belongs on the shared confirm modal, not User Summary. */
-
 #confirmOverlay.isDeleteFriendConfirm .modal{
   background: linear-gradient(180deg, rgba(28,10,14,.98) 0%, rgba(13,15,19,.98) 100%);
   border: 1px solid rgba(255,92,112,.56);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,92,112,.14);
 }
 
@@ -4311,7 +4271,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border-color: rgba(148,152,161,.62);
 }
 
-body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
+#confirmOverlay.isDeleteFriendConfirm .modal{
   clip-path: none;
 }
 
@@ -4339,54 +4299,11 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   justify-content: center;
 }
 
-#confirmOverlay.isArchiveTaskConfirm .modal{
-  background: #0d0f13;
-  border: 1px solid rgba(165, 172, 182, .66);
-  border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-  box-shadow:
-    0 24px 56px rgba(0,0,0,.52),
-    inset 0 0 0 1px rgba(255,255,255,.04);
-}
-
-#confirmOverlay.isArchiveTaskConfirm .confirmText,
-#confirmOverlay.isArchiveTaskConfirm .confirmChkNote,
-#confirmOverlay.isArchiveTaskConfirm .confirmDangerInputLabel{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  font-size: 13px;
-  line-height: 1.45;
-  color: rgba(226,232,240,.92);
-}
-
-#confirmOverlay.isArchiveTaskConfirm .confirmBtns{
-  margin-top: 8px;
-  gap: 8px;
-}
-
-#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn,
-#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn,
-#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn{
-  min-width: 92px;
-  justify-content: center;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  border-color: rgba(165, 172, 182, .66) !important;
-}
-
-#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn:hover:not(:disabled),
-#confirmOverlay.isArchiveTaskConfirm #confirmCancelBtn:focus-visible:not(:disabled),
-#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn:hover:not(:disabled),
-#confirmOverlay.isArchiveTaskConfirm #confirmAltBtn:focus-visible:not(:disabled),
-#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay.isArchiveTaskConfirm #confirmOkBtn:focus-visible:not(:disabled){
-  border-color: rgba(194, 201, 211, .86) !important;
-}
-
 #timeGoalCompleteOverlay .modal{
   position: relative;
   z-index: 2;
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   border: 1px solid rgba(53,232,255,.24);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
@@ -4441,10 +4358,6 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
 
 #timeGoalCompleteOverlay .timeGoalConfettiDot{
   border-radius: 999px;
-}
-
-#timeGoalCompleteOverlay .timeGoalConfettiStar{
-  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
 }@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-50%) scale(.1); opacity:.9; }24%{ opacity:.45; }55%,100%{ transform: translate(-50%,-50%) scale(9); opacity:0; }
 }@keyframes timeGoalConfettiBurst{0%{ opacity:0; transform: translate(-50%, -50%) scale(.2) rotate(var(--rot)); }8%{ opacity:1; }62%{ opacity:1; }100%{ opacity:0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(calc(var(--rot) + var(--spin))); }
 }
@@ -4460,7 +4373,6 @@ body[data-control-style="square"] #confirmOverlay.isDeleteFriendConfirm .modal{
   z-index: 2;
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 16px 16px 14px;
   border: 1px solid rgba(53,232,255,.28);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.08);
@@ -5656,7 +5568,7 @@ body[data-theme="lime"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
   box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px rgba(201,255,36,.3) !important;
 }
 
-body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
+#timeGoalCompleteOverlay .modal{
   clip-path: none;
 }
 
@@ -5664,7 +5576,6 @@ body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
 #timeGoalCompleteNoteOverlay .modal{
   background: #0d0f13;
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   padding: 14px 14px 12px;
   border: 1px solid rgba(53,232,255,.24);
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.06);
@@ -5721,8 +5632,8 @@ body[data-control-style="square"] #timeGoalCompleteOverlay .modal{
   resize: vertical;
 }
 
-body[data-control-style="square"] #timeGoalCompleteSaveNoteOverlay .modal,
-body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
+#timeGoalCompleteSaveNoteOverlay .modal,
+#timeGoalCompleteNoteOverlay .modal{
   clip-path: none;
 }
 
@@ -5771,8 +5682,6 @@ body[data-control-style="square"] #timeGoalCompleteNoteOverlay .modal{
   width:100%;
   max-width:none;
 }
-
-/* Final Edit Task section flattening + typography normalization */
 #editOverlay #editTimerSettingsGroup,
 #editOverlay #editCheckpointAlertsGroup{
   margin: 8px 0 2px;
@@ -6007,6 +5916,15 @@ body[data-theme="lime"] #addTaskOverlay .checkpointAlertSoundModeField select:fo
   box-shadow: 0 0 0 1px rgba(241,255,151,.12);
 }
 
+body[data-theme="lime"] #editOverlay #editName:focus,
+body[data-theme="lime"] #editOverlay #editName:focus-visible{
+  border-color: rgba(255,255,255,.02) !important;
+  outline: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+
 body[data-theme="lime"] #editOverlay option,
 body[data-theme="lime"] #editOverlay optgroup,
 body[data-theme="lime"] #addTaskOverlay option,
@@ -6065,7 +5983,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #taskManualEntryOverlay .hmManualEntryFooterBtns,
 #historyManagerManualEntryOverlay .hmManualEntryFooterBtns{
-  background: #0d0f13 !important;
+  background: transparent !important;
 }
 
 #editOverlay #cancelEditBtn,
@@ -6080,15 +5998,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay #cancelEditBtn:hover,
 #editOverlay #cancelEditBtn:focus-visible{
   border-color: rgba(194, 201, 211, .86) !important;
-}
-
-#taskManualEntryOverlay #taskManualEntryCancelBtn,
-#historyManagerManualEntryOverlay #historyManagerManualEntryCancelBtn{
-  border-color: rgba(201,255,36,.34) !important;
-  color: rgba(245,248,244,.88) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.008) 28%, rgba(255,255,255,0) 100%),
-    linear-gradient(180deg, #050910 0%, #02060d 100%) !important;
 }
 
 #editOverlay #saveEditBtn,
@@ -6117,37 +6026,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     0 0 16px rgba(201,255,36,.2) !important;
 }
 
-#taskManualEntryOverlay #taskManualEntrySaveBtn,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible,
-#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn,
-#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:hover,
-#historyManagerManualEntryOverlay #historyManagerManualEntrySaveBtn:focus-visible{
-  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
-  color: #02060d !important;
-  border-color: rgba(201,255,36,.86) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
-  font-weight: 800;
-}
-
-#taskManualEntryOverlay #taskManualEntryCancelBtn,
-#taskManualEntryOverlay #taskManualEntryCancelBtn:hover,
-#taskManualEntryOverlay #taskManualEntryCancelBtn:focus-visible,
-#taskManualEntryOverlay #taskManualEntrySaveBtn,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible{
-  border-color: rgba(165, 172, 182, .66) !important;
-}
-
-#taskManualEntryOverlay #taskManualEntryCancelBtn:hover,
-#taskManualEntryOverlay #taskManualEntryCancelBtn:focus-visible,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:hover,
-#taskManualEntryOverlay #taskManualEntrySaveBtn:focus-visible{
-  border-color: rgba(194, 201, 211, .86) !important;
-}
-
 /* Migrated from tasktimer.css tail: overlay and confirm authority rules. */
 #editOverlay .field input,
 #editOverlay .field select,
@@ -6158,7 +6036,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay .addTaskPlannedStartSeparator,
 #editOverlay .addTaskDurationPerLabel,
 #editOverlay .addTaskCheckpointInfoDialog,
-#editOverlay #msList .msSkewInput,
 #editOverlay option{
   font-family: var(--font-geist-sans);
 }
@@ -6443,8 +6320,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 /* Migrated from retired tasktimer tail: Edit Task typography authority. */
 #editOverlay .editTaskTimeGoalField #editFinalCheckpointActionField select,
-#editOverlay #msList .msRow input[type="text"],
-#editOverlay #msList .msRow .msSkewInput{
+#editOverlay #msList .msRow input[type="text"]{
   font-family: var(--font-geist-sans) !important;
 }
 
@@ -6455,10 +6331,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #editOverlay .msRow,
   #editOverlay .msRow .msSliderCluster,
-  #editOverlay .msRow .msSkewInput,
   #addTaskOverlay .msRow,
-  #addTaskOverlay .msRow .msSliderCluster,
-  #addTaskOverlay .msRow .msSkewInput{
+  #addTaskOverlay .msRow .msSliderCluster{
     clip-path:none;
   }
 }
@@ -6475,8 +6349,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #confirmOverlay,
   #aboutOverlay,
   #elapsedPadOverlay,
+  #historyManagerManualEntryOverlay,
+  #temporaryModalOverlay,
+  #taskManualEntryOverlay,
   #exportTaskOverlay,
-  #historyEntryNoteOverlay,
   #historyAnalysisOverlay,
   #rewardsInfoOverlay,
   #rankLadderOverlay,
@@ -6492,25 +6368,230 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}:is(#addTaskOverlay, #editOverlay) .modal{
-  background: var(--modal-bg) !important;
-  border: 1px solid var(--modal-border) !important;
-  border-radius: 0 !important;
-  clip-path: none !important;
-  box-shadow: var(--modal-shadow) !important;
-  font-family: var(--font-readable) !important;
-}:is(#confirmOverlay, #elapsedPadOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
+}:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
-}:is(#aboutOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay) .modal{
+}:is(#aboutOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #taskManualEntryOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
 }:is(#rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay) .modal{
   width:min(var(--modal-width-lg), 100%) !important;
-}:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
-  font-family: var(--font-readable) !important;
-}:is(#confirmOverlay, #elapsedPadOverlay, #exportTaskOverlay, #historyEntryNoteOverlay, #historyAnalysisOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .confirmText,
+}:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;
+}
+
+:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+  color: rgba(170, 178, 190, .88) !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
+  border-color: #1a1b20 !important;
+  background-color: rgba(26, 27, 32, .58) !important;
+  color: rgba(238, 242, 246, .92) !important;
+  border-radius: 0 !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
+  border-color: var(--accent) !important;
+  outline: 1px solid var(--accent) !important;
+  outline-offset: 0 !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
+  background: #0d0f13 !important;
+  color: rgba(238, 242, 246, .92) !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownField,
+#temporaryModalOverlay .modalPreviewDropdown{
+  width: 100% !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownField label{
+  color: #fff !important;
+  margin: 0 0 4px !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdown{
+  position: relative !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownField .modalDropdownHelp{
+  margin: 0 0 8px !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownButton,
+#temporaryModalOverlay .modalPreviewDropdownOption{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 13px !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownButton{
+  display: flex !important;
+  width: 100% !important;
+  min-height: 34px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  border: 1px solid #1a1b20 !important;
+  border-radius: 0 !important;
+  background: rgba(26, 27, 32, .58) !important;
+  color: rgba(238, 242, 246, .92) !important;
+  cursor: pointer !important;
+  padding: 7px 10px !important;
+  text-align: left !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownButton:focus,
+#temporaryModalOverlay .modalPreviewDropdownButton:focus-visible{
+  border-color: #1a1b20 !important;
+  outline: 1px solid rgba(170, 178, 190, .28) !important;
+  outline-offset: 0 !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownList{
+  position: absolute !important;
+  z-index: 5 !important;
+  top: calc(100% + 4px) !important;
+  right: 0 !important;
+  left: 0 !important;
+  display: grid !important;
+  border: 1px solid #1a1b20 !important;
+  background: #0d0f13 !important;
+  box-shadow: var(--modal-shadow) !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption{
+  width: 100% !important;
+  min-height: 32px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(238, 242, 246, .9) !important;
+  cursor: pointer !important;
+  font-weight: 400 !important;
+  padding: 7px 10px !important;
+  text-align: left !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption:hover,
+#temporaryModalOverlay .modalPreviewDropdownOption:focus,
+#temporaryModalOverlay .modalPreviewDropdownOption:focus-visible,
+#temporaryModalOverlay .modalPreviewDropdownOption.isSelected,
+#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:focus,
+#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:focus-visible{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption:hover,
+#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:hover{
+  background: rgba(170, 178, 190, .12) !important;
+  box-shadow: none !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption:focus,
+#temporaryModalOverlay .modalPreviewDropdownOption:focus-visible{
+  outline: none !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption.isSelected{
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):hover,
+#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):focus,
+#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):focus-visible{
+  color: rgba(238, 242, 246, .9) !important;
+  font-weight: 400 !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow{
+  align-items: flex-start !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: flex !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+  padding: 0 !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-grid !important;
+  place-content: center !important;
+  position: relative !important;
+  width: 18px !important;
+  height: 18px !important;
+  border: 1px solid rgba(170, 178, 190, .72) !important;
+  border-radius: 0 !important;
+  background: rgba(26, 27, 32, .72) !important;
+  box-shadow: none !important;
+  margin: 1px 0 0 !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked{
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  box-shadow: none !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:hover{
+  background: #1a1b20 !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked:hover{
+  background: var(--accent) !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked::after{
+  content: "" !important;
+  width: 8px !important;
+  height: 5px !important;
+  border: solid #050607 !important;
+  border-width: 0 0 2px 2px !important;
+  transform: translateY(-1px) rotate(-45deg) !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:focus-visible{
+  outline: 1px solid rgba(170, 178, 190, .5) !important;
+  outline-offset: 2px !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxText{
+  min-width: 0 !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxText label{
+  color: #fff !important;
+  display: block !important;
+  margin: 0 0 4px !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxText .modalDropdownHelp{
+  margin: 0 !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal .modalDropdownHelp{
+  margin: 6px 0 0 !important;
+  color: rgba(170, 178, 190, .88) !important;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+#temporaryModalOverlay .modalPreviewDropdownField .modalDropdownHelp{
+  margin: 0 0 8px !important;
+}
+
+#temporaryModalOverlay .modalPreviewCheckboxText .modalDropdownHelp{
+  margin: 0 !important;
 }
 
 #confirmOverlay .modal{
@@ -6523,6 +6604,47 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
+}
+
+#temporaryModalOverlay .modal .confirmBtns{
+  justify-content:flex-end !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
+  border-color: rgba(170, 178, 190, .58) !important;
+  background: rgba(170, 178, 190, .12) !important;
+  color: rgba(238, 242, 246, .88) !important;
+  box-shadow: none !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
+}
+
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: rgba(170, 178, 190, .16) !important;
+}
+
+:is(
+  #confirmOverlay,
+  #aboutOverlay,
+  #elapsedPadOverlay,
+  #historyManagerManualEntryOverlay,
+  #temporaryModalOverlay,
+  #taskManualEntryOverlay,
+  #exportTaskOverlay,
+  #historyAnalysisOverlay,
+  #rewardsInfoOverlay,
+  #rankLadderOverlay,
+  #rankPromotionOverlay,
+  #timeGoalCompleteOverlay,
+  #timeGoalCompleteSaveNoteOverlay,
+  #timeGoalCompleteNoteOverlay
+) .modal :where(.btn, .iconBtn, button:not(.switch)){
+  border-radius: 0 !important;
 }
 
 .xpAwardFxLayer{

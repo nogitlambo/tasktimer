@@ -58,6 +58,7 @@ function createHarness(
     },
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => "mon",
+    getOptimalProductivityDays: () => ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
     getRewardProgress: () => rewardProgress,
     setRewardProgress: (value) => {
       rewardProgress = value;
@@ -76,6 +77,7 @@ function createHarness(
     currentUid: () => "uid-1",
     getTaskElapsedMs: () => elapsedMs,
     sessionColorForTaskMs: () => "#00CFC8",
+    historyEntryColorForTaskMs: () => "#ff8a3d",
     captureSessionNoteSnapshot: () => "",
     setFocusSessionDraft: (taskId, note) => calls.push(`set-focus-draft:${taskId}:${note}`),
     clearFocusSessionDraft: (taskId) => calls.push(`clear-focus-draft:${taskId}`),

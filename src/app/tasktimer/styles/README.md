@@ -1,6 +1,6 @@
 # TaskTimer Styles Ownership
 
-`src/app/tasktimer/styles/*` is the authoritative editing surface for TaskTimer CSS.
+`src/app/tasktimer/styles/*` is the owned editing surface for TaskTimer CSS.
 
 `src/app/tasktimer/tasktimer.css` is a thin bundle entrypoint only. It should only contain `@import` statements that load the split stylesheets.
 
@@ -23,7 +23,7 @@ Editing rules:
 - Do not add new route/component rules to `tasktimer.css`.
 - Prefer the narrowest owner file for any new rule.
 - Use route-scoped selectors where practical.
-- Avoid new comment chains labeled `Final`, `Canonical`, or `authoritative`; resolve ownership instead.
+- Avoid new catch-all override comment chains; resolve ownership instead.
 - Run `npm run css:audit:tasktimer` after meaningful CSS cleanup work.
 - Use `npm run css:audit:tasktimer:duplicates` to focus on cross-file and same-file selector collisions.
 - Use `npm run css:audit:tasktimer:important` to inspect `!important` hotspots by file and selector block.

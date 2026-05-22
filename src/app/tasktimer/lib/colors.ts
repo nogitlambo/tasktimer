@@ -64,3 +64,19 @@ export function sessionColorForTaskMs(t: Task, elapsedMs: number): string {
     return pctToEndColor(0);
   }
 }
+
+export function historyEntryColorForTaskMs(t: Task, elapsedMs: number): string {
+  try {
+    const ms = Math.max(0, elapsedMs || 0);
+    const timeGoalMinutes = Number(t?.timeGoalMinutes || 0);
+
+    if (t?.timeGoalEnabled && timeGoalMinutes > 0) {
+      const timeGoalMs = Math.max(1, timeGoalMinutes * 60 * 1000);
+      return fillBackgroundForPct((ms / timeGoalMs) * 100);
+    }
+
+    return pctToEndColor(0);
+  } catch {
+    return pctToEndColor(0);
+  }
+}

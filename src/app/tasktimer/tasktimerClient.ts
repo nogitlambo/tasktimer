@@ -4,7 +4,7 @@ import type { Task } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
-import { fillBackgroundForPct, sessionColorForTaskMs } from "./lib/colors";
+import { fillBackgroundForPct, historyEntryColorForTaskMs, sessionColorForTaskMs } from "./lib/colors";
 import { normalizeHistoryTimestampMs, localDayKey } from "./lib/history";
 import { formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
@@ -499,7 +499,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     setWorkingIndicatorRestoreFocusEl: (value) => {
       workingIndicatorState.set("restoreFocusEl", value);
     },
-    sessionColorForTaskMs,
+    historyEntryColorForTaskMs,
   });
   const {
     loadPinnedHistoryTaskIds,
@@ -753,6 +753,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       escapeHtmlUI,
       getModeColor: (mode) => getModeColor(mode),
       fillBackgroundForPct,
+      historyEntryColorForTaskMs,
       formatMainTaskElapsedHtml,
       sortMilestones,
       isTaskSharedByOwner,
@@ -985,6 +986,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       normalizeHistoryTimestampMs,
       getHistoryEntryNote: (entry) => runtimeActions.getHistoryEntryNote(entry),
       syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
+      syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
       syncRewardSessionTrackerForTask: (task, nowValue) => syncRewardSessionTrackerForRunningTask(task, nowValue),
       syncLiveSessionForTask: (task, nowValue) => rewardSessionBridge.syncLiveSessionForTask(task, nowValue),
       hasEntitlement,
@@ -1077,6 +1079,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       currentUid: () => getCurrentTaskTimerUid(),
       getTaskElapsedMs: (task) => getTaskElapsedMs(task),
       sessionColorForTaskMs,
+      historyEntryColorForTaskMs,
       captureSessionNoteSnapshot: (taskId) => runtimeActions.captureSessionNoteSnapshot(taskId),
       setFocusSessionDraft: (taskId, noteRaw) => runtimeActions.setFocusSessionDraft(taskId, noteRaw),
       clearFocusSessionDraft: (taskId) => runtimeActions.clearFocusSessionDraft(taskId),
@@ -1198,6 +1201,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       formatDateTime,
       sortMilestones,
       sessionColorForTaskMs,
+      historyEntryColorForTaskMs,
       save: renderBindings.save,
       saveHistory: workspaceRepository.saveHistory,
       saveHistoryAndWait: workspaceRepository.saveHistoryAndWait,
@@ -1254,6 +1258,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       escapeHtmlUI,
       sortMilestones,
       sessionColorForTaskMs,
+      historyEntryColorForTaskMs,
       getModeColor: (mode) => DEFAULT_MODE_COLORS[mode] || DEFAULT_MODE_COLORS.mode1,
       getDynamicColorsEnabled: () => preferencesState.get("dynamicColorsEnabled"),
       hasEntitlement,
@@ -1510,6 +1515,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
       normalizeLoadedTask,
+      syncSharedTaskSummariesForTasks,
     })
   );
 

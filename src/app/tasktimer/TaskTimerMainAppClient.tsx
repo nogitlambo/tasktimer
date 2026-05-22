@@ -77,7 +77,7 @@ import {
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
 } from "./client/xp-award-animation";
-import { playXpAwardDeliveryHaptic, shouldPlayXpAwardDeliveryHaptic } from "./client/xp-award-feedback";
+import { playXpAwardDeliveryAudio, playXpAwardDeliveryHaptic, shouldPlayXpAwardDeliveryHaptic } from "./client/xp-award-feedback";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
@@ -486,6 +486,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
+      if (endXp > startXp) {
+        playXpAwardDeliveryAudio();
+      }
       if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
         playXpAwardDeliveryHaptic({
           isEnabled: interactionHapticsEnabled,

@@ -46,7 +46,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 
 ## Persistent state keys
 - `${STORAGE_KEY}`: primary task storage key (via `lib/storage.ts`).
-- `${STORAGE_KEY}:theme`: `purple`/`cyan` (legacy values may still be normalized on read).
+- `${STORAGE_KEY}:theme`: `lime` (legacy app-theme values are normalized on read).
 - `${STORAGE_KEY}:customTaskNames`: recent custom Add Task names.
 - `${STORAGE_KEY}:pinnedHistoryTaskIds`: pinned inline task history charts.
 
@@ -65,28 +65,28 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 
 ## Styling guardrails
 - Main active stylesheet is `src/app/tasktimer/tasktimer.css`.
-- `src/app/tasktimer/styles/*` is the authoritative editing surface for TaskTimer UI rules.
+- `src/app/tasktimer/styles/*` is the owned editing surface for TaskTimer UI rules.
 - `src/app/tasktimer/tasktimer.css` is an import-only bundle entrypoint; do not add route/component rules there.
 - Prefer the owner split file for new edits:
   - dashboard: `03-dashboard.css` and `10-responsive.css`
   - overlays/modals: `04-overlays.css`
   - settings/account/about/rank ladder: `06-settings.css`
   - desktop rail: `09-desktop-rail.css` and `10-responsive.css`
-- Ensure purple/cyan theme parity when introducing new visual elements.
-- New toggle switches should reuse the app's existing `.switch` visual system and `body[data-control-style]` behavior by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
+- Keep new visual elements aligned to the primary `lime` theme path.
+- New toggle switches should reuse the app's existing `.switch` visual system by default; avoid one-off borders, accent outlines, or custom switch chrome unless explicitly requested.
 - New toggle switches should match the shared app dimensions by default: `39x21` switch track, `18x18` thumb, and `left:19px` for the on-state thumb position.
-- Do not add new `Final`, `Canonical`, or `authoritative` catch-all override blocks to `tasktimer.css`; keep ownership local to the split file that owns the component/route.
+- Do not add new catch-all override blocks to `tasktimer.css`; keep ownership local to the split file that owns the component/route.
 - Prefer route-scoped selectors (`#app[aria-label="..."]`) for Settings changes.
-- For all newly added modals and pages, always apply current app styling by default:
+- For all newly added non-excluded modals and pages, always apply current app styling by default:
   - Use existing font tokens/families already used by the app (`var(--font-...)`) rather than introducing new font stacks.
   - Use the current primary background color (`#0d0f13`) and existing panel treatment from `tasktimer.css`.
   - Use existing button design system classes (`btn`, `btn-accent`, `btn-ghost`, `iconBtn`) and existing interaction patterns.
-  - Keep visual parity between purple and cyan theme overrides for any new UI surface.
-  - Any newly created modal must use the same visual style and interaction pattern as the Edit Task modal by default.
+  - Any newly created standard modal must use the temporary Modal preview (`#temporaryModalOverlay`) as the visual baseline by default.
 
 ## Modal Contract (Required)
-- Canonical pattern: new modals must match the structure and class usage used by `src/app/tasktimer/components/ConfirmOverlay.tsx` and existing edit-style overlays.
-- Visual reference: match the Add Task modal style (glass panel, subtle border, compact heading/subheading, outlined secondary action, cyan primary action).
+- Required pattern: new standard modals must match the structure and class usage used by the temporary Modal preview in `src/app/tasktimer/components/DesktopAppRail.tsx`.
+- Visual reference: match `#temporaryModalOverlay` (square panel chrome, square modal buttons, compact heading, grey modal subtext, grey Orbitron modal action buttons, standard dropdown/select styling, primary-theme hover/focus accents).
+- Total exemptions: Add Task (`#addTaskOverlay`), Edit Task (`#editOverlay`), Friend Info (`#friendProfileModal`), User Summary (`#leaderboardPositionOverlay`), and Session Summary (`#historyEntryNoteOverlay`) intentionally use different styling rules and must not be conformed to the standard modal baseline unless explicitly requested.
 - Required structure:
   - Overlay container: `<div className="overlay" id="...Overlay">`
   - Modal container: `<div className="modal" role="dialog" aria-modal="true" aria-label="...">`
@@ -99,14 +99,17 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - Required styling behavior:
   - Do not introduce new font stacks in modal code.
   - Do not introduce standalone modal color palettes; use existing tokens/colors from `tasktimer.css`.
-  - Purple/cyan theme parity is mandatory for any new modal-specific class added to `tasktimer.css`.
+  - Use `Ligconsolata`, `Inconsolata`, then `var(--font-geist-mono)` at `13px` for standard modal `.modalSubtext` and confirm explanatory text such as `.confirmText`; do not apply this rule to labels, inputs, selects, or buttons unless a modal has a local rule.
+  - Use the Modal preview action-button treatment for standard modal action rows: grey border/background, Orbitron text at `11px`, and primary-theme border/text color on hover/focus. Preserve `btn-warn` destructive styling unless the user explicitly requests otherwise.
+  - For standard modal dropdowns/selects, use square select chrome with `#1a1b20` as the border accent; helper text should use `.modalDropdownHelp` with `Ligconsolata`, `Inconsolata`, then `var(--font-geist-mono)` at `13px` in grey.
+  - Use explicit allowlists for standard modal CSS rules; avoid broad `.overlay .modal` catch-all styling that would affect exempt modals.
   - Avoid inline styles except transient visibility/state toggles (for example `display: none`).
 - Required interaction behavior:
   - Preserve existing close/cancel behavior patterns used by current overlays.
   - Preserve ID/data-attribute hooks consumed by `tasktimerClient.ts` delegated handlers.
 - Compliance checklist for any PR that adds/modifies a modal:
   - Modal uses required overlay/modal/button classes above.
-  - Modal is visually consistent in both purple and cyan themes.
+  - Modal is visually consistent with the primary theme.
   - No custom font stack or one-off modal palette introduced.
   - No delegated event hook regressions (`id`, `data-action`, `data-menu`, `data-history-action`, `data-move-mode` as applicable).
 
@@ -135,7 +138,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
   - Page/route navigation regressions between `/tasklaunch`, `/dashboard`, `/friends`, `/settings`, `/history-manager`, `/feedback`.
   - History Manager behavior regressions: bulk selection propagation (task -> date -> rows), sortable columns, and delete summary accuracy.
   - Pinned history behavior: pinned chart reopens on Tasks page and persists via `${STORAGE_KEY}:pinnedHistoryTaskIds`.
-  - Theme parity regressions: new/changed controls readable and consistent in both purple and cyan themes.
+  - Primary theme regressions: new/changed controls readable and consistent.
   - Encoding issues (unexpected replacement characters or mojibake).
   - Lint status via `npm run lint` (warnings are currently present but non-blocking).
 

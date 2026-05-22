@@ -4,7 +4,6 @@
 #historyManagerScreen .menuIcon,
 #historyManagerScreen .menuItem{
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #historyManagerScreen .hmSortBtn,
@@ -1003,7 +1002,8 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .modalSubtext,
-:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) :where(label, input, select, textarea){
-  font-family: var(--font-readable) !important;
+}:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .modalSubtext{
+  color: rgba(170, 178, 190, .88) !important;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 13px !important;
 }

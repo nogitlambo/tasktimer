@@ -724,7 +724,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
             ts,
             name: String(task.name || "").trim() || "Task",
             ms,
-            color: ctx.sessionColorForTaskMs(task, ms),
+            color: ctx.historyEntryColorForTaskMs(task, ms),
           });
           perTaskCount[taskId] += 1;
           totalGenerated += 1;
@@ -1110,10 +1110,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const draft = manualEntryDraftsByTaskId[taskId];
     if (!draft) return;
     const meta = getTaskMetaForHistoryId(taskId);
+    const task = ctx.getTasks().find((row) => String(row.id || "") === String(taskId)) || null;
+    const elapsedMs = ((Number(draft.hoursValue || 0) * 60) + Number(draft.minutesValue || 0)) * 60 * 1000;
     const parsed = parseHistoryManagerManualDraft({
       draft,
       taskName: meta.name,
-      taskColor: meta.color || null,
+      historyEntryColor: task ? ctx.historyEntryColorForTaskMs(task, elapsedMs) : null,
     });
     if ("error" in parsed) {
       updateManualEntryDraft(taskId, (currentDraft) => ({ ...currentDraft, errorMessage: parsed.error || "Could not save entry." }));

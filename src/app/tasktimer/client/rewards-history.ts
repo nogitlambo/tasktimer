@@ -479,7 +479,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
       updatedAtMs: nowMs(),
       status: "running",
-      color: ctx.sessionColorForTaskMs(task, elapsedMs),
+      color: ctx.historyEntryColorForTaskMs(task, elapsedMs),
       ...(note ? { note } : {}),
     };
   }
@@ -528,7 +528,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ts: completedAtMs,
       name: task.name,
       ms: safeElapsedMs,
-      color: ctx.sessionColorForTaskMs(task, safeElapsedMs),
+      color: ctx.historyEntryColorForTaskMs(task, safeElapsedMs),
       ...(note ? { note } : {}),
       ...(sessionId ? { sessionId } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),

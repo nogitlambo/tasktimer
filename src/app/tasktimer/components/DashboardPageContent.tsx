@@ -7,7 +7,7 @@ const dashboardPanelOptions = [
   { id: "weekly-time-goals", label: "This Week" },
   { id: "tasks-completed", label: "Task Overview" },
   { id: "momentum", label: "Momentum" },
-  { id: "avg-session-by-task", label: "Avg Session by Task" },
+  { id: "avg-session-by-task", label: "Last Ran" },
   { id: "heatmap", label: "Focus Heatmap" },
 ] as const;
 
@@ -68,24 +68,10 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                       <div className="dashboardActivityChartPanel">
                         <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
                           <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" role="img" aria-label="Current week activity chart" focusable="false">
-                            <defs>
-                              <linearGradient id="dashboardActivityLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#75e7ff" />
-                                <stop offset="58%" stopColor="#9cf68b" />
-                                <stop offset="100%" stopColor="#d9ff59" />
-                              </linearGradient>
-                              <linearGradient id="dashboardActivityAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="rgba(117, 231, 255, .28)" />
-                                <stop offset="100%" stopColor="rgba(117, 231, 255, 0)" />
-                              </linearGradient>
-                            </defs>
                             <g id="dashboardActivityChartGrid" />
-                            <path className="dashboardActivityComparePath" id="dashboardActivityComparePath" d="" />
-                            <path className="dashboardActivityAreaPath" id="dashboardActivityAreaPath" d="" />
-                            <path className="dashboardActivityDailyPath" id="dashboardActivityDailyPath" d="" />
-                            <path className="dashboardActivityLinePath" id="dashboardActivityLinePath" d="" />
+                            <g id="dashboardActivityPreviousBars" />
+                            <g id="dashboardActivityBars" />
                             <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
-                            <g id="dashboardActivityPoints" />
                           </svg>
                           <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
                           <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
@@ -365,19 +351,12 @@ export default function DashboardPageContent({ active, showTopRow = true }: Dash
                       </section>
                     </section>
 
-                  <section className="dashboardCard dashboardAvgSessionCard" data-dashboard-id="avg-session-by-task" aria-label="Average completed session duration by task" data-dashboard-label="Avg session by task">
-                    <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">Avg Session by Task (Past 7 Days)</div>
-                    <div className="historyCanvasWrap">
-                      <canvas className="historyChartInline" id="dashboardAvgSessionChart" />
-                    </div>
+                  <section className="dashboardCard dashboardAvgSessionCard" data-dashboard-id="avg-session-by-task" aria-label="Last ran by task" data-dashboard-label="Last Ran">
+                    <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">Last Ran</div>
+                    <div className="dashboardLastRanList" id="dashboardLastRanList" aria-live="polite" />
                     <p className="dashboardAvgSessionEmpty" id="dashboardAvgSessionEmpty" style={{ display: "none" }}>
-                      No completed sessions in this range.
+                      No tasks yet.
                     </p>
-                    <div className="historyRangeRow dashboardAvgSessionRangeRow">
-                      <button className="btn btn-ghost small dashboardAvgRangeToggle" id="dashboardAvgRangeToggleBtn" type="button" data-dashboard-avg-range-toggle="true" aria-label="Toggle average session range between past 7 days and past 30 days">
-                        <span id="dashboardAvgRangeMenuLabel">Past 7 Days</span>
-                      </button>
-                    </div>
                   </section>
 
                   <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">

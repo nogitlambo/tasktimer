@@ -28,7 +28,7 @@ describe("time goal confetti", () => {
     const stage = elementStub();
     stage.classList.add("isPlaying");
     stage.dataset.confettiState = "playing";
-    stage.offsetWidth = 0;
+    Object.defineProperty(stage, "offsetWidth", { value: 0, configurable: true });
 
     expect(startTimeGoalConfetti(stage)).toBe(false);
 

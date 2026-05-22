@@ -118,6 +118,9 @@ function createDocumentHarness() {
   register("dashboardWeeklyGoalsProjectionFill");
   register("dashboardWeeklyGoalsProgressFill");
   register("dashboardWeeklyGoalsProgressText");
+  register("dashboardAvgSessionTitle");
+  register("dashboardLastRanList");
+  register("dashboardAvgSessionEmpty");
 
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
@@ -156,6 +159,9 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
       dashboardWeeklyGoalsProjectionFill: byId.get("dashboardWeeklyGoalsProjectionFill"),
       dashboardWeeklyGoalsProgressFill: byId.get("dashboardWeeklyGoalsProgressFill"),
       dashboardWeeklyGoalsProgressText: byId.get("dashboardWeeklyGoalsProgressText"),
+      dashboardAvgSessionTitle: byId.get("dashboardAvgSessionTitle"),
+      dashboardLastRanList: byId.get("dashboardLastRanList"),
+      dashboardAvgSessionEmpty: byId.get("dashboardAvgSessionEmpty"),
     } as never,
     getRewardProgress: () => ({}) as never,
     getTasks: () => tasks,
@@ -193,6 +199,7 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
     byId,
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
+    renderLastRan: () => dashboardRender.renderDashboardAvgSessionChart(),
     restore: () => {
       Object.defineProperty(globalThis, "document", {
         configurable: true,
@@ -201,6 +208,93 @@ function createRenderHarness(tasks: Task[], options?: { historyByTaskId?: Record
     },
   };
 }
+
+describe("last ran dashboard card", () => {
+  it("orders current tasks by newest completed history and places never-run tasks last", () => {
+    const now = Date.now();
+    const harness = createRenderHarness(
+      [
+        task({ id: "never", name: "Never Task", order: 1 }),
+        task({ id: "older", name: "Older Task", order: 2 }),
+        task({ id: "newer", name: "Newer Task", order: 3 }),
+      ],
+      {
+        historyByTaskId: {
+          older: [{ ts: now - 3 * 60 * 60 * 1000, name: "Older Task", ms: 25 * 60 * 1000 }],
+          newer: [{ ts: now - 60 * 60 * 1000, name: "Newer Task", ms: 10 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderLastRan();
+      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
+
+      expect(html.indexOf("Newer Task")).toBeLessThan(html.indexOf("Older Task"));
+      expect(html.indexOf("Older Task")).toBeLessThan(html.indexOf("Never Task"));
+      expect(html).toContain("Time since last ran");
+      expect(html).toContain("Never");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("ignores invalid and zero-duration history when calculating last ran", () => {
+    const now = Date.now();
+    const harness = createRenderHarness(
+      [
+        task({ id: "invalid", name: "Invalid Task", order: 1 }),
+        task({ id: "valid", name: "Valid Task", order: 2 }),
+      ],
+      {
+        historyByTaskId: {
+          invalid: [
+            { ts: now - 30 * 60 * 1000, name: "Invalid Task", ms: 0 },
+            { ts: 0, name: "Invalid Task", ms: 20 * 60 * 1000 },
+          ],
+          valid: [{ ts: now - 90 * 60 * 1000, name: "Valid Task", ms: 20 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderLastRan();
+      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
+
+      expect(html.indexOf("Valid Task")).toBeLessThan(html.indexOf("Invalid Task"));
+      expect(html).toContain("Invalid Task");
+      expect(html).toContain("Never");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("does not treat a currently running task as last ran without logged history", () => {
+    const now = Date.now();
+    const harness = createRenderHarness(
+      [
+        task({ id: "running", name: "Running Task", order: 1, running: true, startMs: now - 5 * 60 * 1000 }),
+        task({ id: "logged", name: "Logged Task", order: 2 }),
+      ],
+      {
+        historyByTaskId: {
+          logged: [{ ts: now - 4 * 60 * 60 * 1000, name: "Logged Task", ms: 15 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderLastRan();
+      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
+
+      expect(html.indexOf("Logged Task")).toBeLessThan(html.indexOf("Running Task"));
+      expect(html).toContain("Running Task");
+      expect(html).toContain("Never");
+    } finally {
+      harness.restore();
+    }
+  });
+});
 
 describe("weekly goals dashboard card", () => {
   function expectWeeklyTrendHidden(trendEl: ElementStub | undefined) {

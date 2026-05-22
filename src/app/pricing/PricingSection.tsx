@@ -9,7 +9,6 @@ const pricingTiers = [
   {
     name: "Free",
     price: "$0",
-    accent: "cyan" as const,
     cta: "Get Started",
     href: null,
     badge: null,
@@ -26,7 +25,6 @@ const pricingTiers = [
   {
     name: "Pro",
     price: "$3.99",
-    accent: "magenta" as const,
     cta: "GET PRO - 7-DAY FREE TRIAL",
     href: "/login?checkout=pro",
     badge: "7-day free trial",

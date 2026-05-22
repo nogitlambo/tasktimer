@@ -3,13 +3,12 @@ import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-pl
 export const PRIMARY_CLICK_AUDIO_SRC = "/click-primary.mp3";
 export const TASK_LAUNCH_CLICK_AUDIO_SRC = "/click-primary.mp3";
 export const TASK_STOP_CLICK_AUDIO_SRC = "/alert.mp3";
-const CLICK_AUDIO_SYNC_TIMEOUT_MS = 120;
 
 type ClosestCapable = {
   closest?: (selector: string) => Element | null;
 };
 
-const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
+const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, .closePopup.isSaveAndClose, .modalPreviewPrimaryAction";
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
@@ -65,7 +64,6 @@ export function registerPrimaryClickAudio(options: {
   const player = options.playAudio ? null : createClickAudioPlayer(PRIMARY_CLICK_AUDIO_SRC);
   const taskLaunchPlayer = options.playAudio ? null : createClickAudioPlayer(TASK_LAUNCH_CLICK_AUDIO_SRC);
   const taskStopPlayer = options.playAudio ? null : createClickAudioPlayer(TASK_STOP_CLICK_AUDIO_SRC);
-  const replayTargets = new WeakSet<HTMLElement>();
   player?.warm();
   taskLaunchPlayer?.warm();
   taskStopPlayer?.warm();
@@ -78,24 +76,10 @@ export function registerPrimaryClickAudio(options: {
     const primaryTarget = taskStopTarget || taskLaunchTarget ? null : getPrimaryClickTarget(event.target);
     const target = taskStopTarget || taskLaunchTarget || primaryTarget;
     if (!target) return;
-    if (replayTargets.has(target)) {
-      replayTargets.delete(target);
-      return;
-    }
     if ("isTrusted" in event && event.isTrusted === false) return;
 
     const activePlayer = taskStopTarget ? taskStopPlayer : taskLaunchTarget ? taskLaunchPlayer : player;
     const playAudio = options.playAudio || (() => activePlayer?.play());
-    if (!activePlayer || activePlayer.isReady()) {
-      playAudio();
-      return;
-    }
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    void activePlayer.playWhenReady(CLICK_AUDIO_SYNC_TIMEOUT_MS).finally(() => {
-      replayTargets.add(target);
-      target.click();
-    });
+    playAudio();
   }, { capture: true });
 }

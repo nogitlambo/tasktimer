@@ -3,24 +3,28 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createClickAudioPlayer } from "./click-audio-player";
 
 function makeAudioMock(opts: { readyState?: number } = {}) {
-  const listeners = new Map<string, Set<() => void>>();
+  const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
   return {
     currentTime: 0,
     preload: "",
     readyState: opts.readyState ?? 0,
     load: vi.fn(),
     play: vi.fn(),
-    addEventListener: vi.fn((type: string, listener: () => void) => {
-      const bucket = listeners.get(type) || new Set<() => void>();
+    addEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
+      const bucket = listeners.get(type) || new Set<EventListenerOrEventListenerObject>();
       bucket.add(listener);
       listeners.set(type, bucket);
     }),
-    removeEventListener: vi.fn((type: string, listener: () => void) => {
+    removeEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
       listeners.get(type)?.delete(listener);
     }),
     dispatch(type: string) {
       this.readyState = 3;
-      for (const listener of Array.from(listeners.get(type) || [])) listener();
+      const event = { type } as Event;
+      for (const listener of Array.from(listeners.get(type) || [])) {
+        if (typeof listener === "function") listener.call(this, event);
+        else listener.handleEvent(event);
+      }
     },
   };
 }

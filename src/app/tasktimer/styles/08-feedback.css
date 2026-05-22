@@ -242,7 +242,6 @@
   flex: 0 0 auto;
   min-width: 104px;
   border-radius: 0 !important;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardVoteBtn.isOn{
@@ -263,7 +262,6 @@
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardExpandBtn{
   min-width: 88px;
   border-radius: 0 !important;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackBoardDetails{

@@ -120,14 +120,20 @@ describe("task card view model", () => {
   });
 
   it("keeps the front history tab border gap from being overdrawn by the back face", () => {
-    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8");
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
 
     expect(css).toContain(".task .taskFaceShellFront::after,\nbody[data-app-page=\"tasks\"] #app[aria-label=\"TaskLaunch App\"] #appPageTasks .task.isFlipped .taskFaceShellBack::after");
     expect(css).not.toContain(".task .taskFaceShellFront::after,\nbody[data-app-page=\"tasks\"] #app[aria-label=\"TaskLaunch App\"] #appPageTasks .task .taskFaceShellBack::after");
-    expect(css).toContain("--task-card-tab-border-gap: calc(var(--task-history-tab-border-gap, 160px) + 28px);");
+    expect(css).toContain("--task-card-tab-border-gap: var(--task-history-tab-border-gap, 160px);");
     expect(css).toContain("--task-card-tab-border-overlap: 0px;");
+    expect(css).toContain("border-color: transparent !important;");
     expect(css).toContain("overflow:visible;");
     expect(css).toContain("inset: 4px calc((var(--history-chart-tab-side) - 1px) * -1) -3px;");
+    expect(css).toContain("clip-path: polygon(0 100%, var(--history-chart-tab-side) 0, calc(100% - var(--history-chart-tab-side)) 0, 100% 100%);");
+    expect(css).toContain("height: 22px;");
+    expect(css).toContain("center bottom / var(--task-card-tab-border-gap) 22px no-repeat");
+    expect(css).toContain("border: 1px solid var(--task-card-bottom-border-color, rgba(255,255,255,.12)) !important;");
+    expect(css).toContain("border-top: 0 !important;");
   });
 
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {

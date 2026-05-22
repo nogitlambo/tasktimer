@@ -19,6 +19,7 @@ export type SettingsNavItem = {
   label: string;
   icon: string;
   id?: string;
+  desktopOnly?: boolean;
 };
 
 export type SettingsFeedbackState = {

@@ -23,7 +23,7 @@ function task(overrides: Partial<Task>): Task {
 }
 
 describe("dashboard activity overview model", () => {
-  it("combines daily and weekly task goals into one weekly ceiling", () => {
+  it("combines daily and weekly task goals into a weekly total and daily pace target", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [
         task({ id: "daily", timeGoalPeriod: "day", timeGoalMinutes: 30 }),
@@ -39,6 +39,7 @@ describe("dashboard activity overview model", () => {
     });
 
     expect(model.totalGoalMs).toBe((30 * 7 + 120) * 60000);
+    expect(model.dailyPaceTargetMs).toBe(((30 * 7 + 120) * 60000) / 7);
     expect(model.hasGoal).toBe(true);
   });
 
@@ -110,5 +111,26 @@ describe("dashboard activity overview model", () => {
     expect(model.hasPreviousWeekActivity).toBe(true);
     expect(model.days[0]?.previousWeekTotalMs).toBe(15 * 60000);
     expect(model.days[1]?.previousWeekCumulativeMs).toBe(45 * 60000);
+  });
+
+  it("scales the chart by daily activity, previous-week daily activity, and daily pace", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 18, 9).getTime(), name: "Focus", ms: 90 * 60000 },
+          { ts: new Date(2026, 4, 12, 9).getTime(), name: "Focus", ms: 150 * 60000 },
+        ],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.dailyPaceTargetMs).toBe(120 * 60000);
+    expect(model.maxChartMs).toBe(150 * 60000);
   });
 });

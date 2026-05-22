@@ -26,6 +26,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_REVEAL_CLOSE_MS = 480;
   const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
   const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
+  const HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS = [0, 120, 280, HISTORY_REVEAL_OPEN_MS + 32] as const;
+  const HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX = 12;
   const { sharedTasks } = ctx;
   const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
   const historyInlineSelection = createHistoryInlineSelectionInteraction();
@@ -96,6 +98,62 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (ctx.getCurrentAppPage() !== "tasks") return;
         if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
         renderHistory(taskId);
+      }, delayMs);
+    }
+  }
+
+  function getHistoryVisibleViewportBounds() {
+    const viewport = window.visualViewport;
+    const viewportHeight = viewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
+    const footer = document.querySelector("#app[aria-label='TaskLaunch App'] .appFooterNav") as HTMLElement | null;
+    const footerStyle = footer ? window.getComputedStyle(footer) : null;
+    const footerRect = footer?.getBoundingClientRect();
+    const visibleFooter =
+      !!footer &&
+      footerStyle?.display !== "none" &&
+      footerStyle?.visibility !== "hidden" &&
+      !!footerRect &&
+      footerRect.height > 0 &&
+      footerRect.top < viewportHeight &&
+      footerRect.bottom > 0;
+    const bottom = Math.max(
+      HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX,
+      (visibleFooter ? Math.min(viewportHeight, footerRect.top) : viewportHeight) - HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX
+    );
+    return {
+      top: HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX,
+      bottom,
+    };
+  }
+
+  function scrollHistoryInlineIntoViewIfNeeded(taskId: string) {
+    if (ctx.getCurrentAppPage() !== "tasks") return;
+    if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+    const target = getHistoryUi(taskId)?.root;
+    if (!target || !target.isConnected) return;
+    const rect = target.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const { top, bottom } = getHistoryVisibleViewportBounds();
+    if (rect.top >= top && rect.bottom <= bottom) return;
+
+    const block: ScrollLogicalPosition = rect.height > bottom - top || rect.top < top ? "start" : "end";
+    try {
+      target.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block,
+        inline: "nearest",
+      });
+    } catch {
+      target.scrollIntoView();
+    }
+  }
+
+  function scheduleHistoryOpenScrollIntoView(taskId: string) {
+    for (const delayMs of HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS) {
+      window.setTimeout(() => {
+        window.requestAnimationFrame(() => {
+          scrollHistoryInlineIntoViewIfNeeded(taskId);
+        });
       }, delayMs);
     }
   }
@@ -583,14 +641,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         last.ms += ms;
         last.count += 1;
         if (ts >= last.ts) last.ts = ts;
-        if (historyTask) last.color = ctx.sessionColorForTaskMs(historyTask as any, last.ms);
+        if (historyTask) last.color = ctx.historyEntryColorForTaskMs(historyTask as any, last.ms);
       } else {
         groupedByDay.push({
           dayKey: key,
           ts,
           ms,
           count: 1,
-          color: historyTask ? ctx.sessionColorForTaskMs(historyTask as any, ms) : e.color,
+          color: historyTask ? ctx.historyEntryColorForTaskMs(historyTask as any, ms) : e.color,
         });
       }
     });
@@ -656,6 +714,21 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ui.trashRow.innerHTML = buttons.join("");
   }
 
+  function formatHistoryAxisDuration(msRaw: number) {
+    const totalSeconds = Math.max(0, Math.floor((Number(msRaw) || 0) / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      const parts = [`${hours}h`];
+      if (minutes > 0) parts.push(`${minutes}m`);
+      if (seconds > 0) parts.push(`${seconds}s`);
+      return parts.join(" ");
+    }
+    if (minutes > 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+    return `${seconds}s`;
+  }
+
   function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
@@ -685,7 +758,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     const compactLabels = w <= 560;
     const veryCompactLabels = w <= 420;
-    const padL = 12;
+    let padL = 12;
     const padR = 12;
     const padT = 14;
     const barCount = Math.max(1, entries.length);
@@ -693,8 +766,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const useAngledLabels = true;
     const padB = useAngledLabels ? (veryCompactLabels ? 116 : 128) : compactLabels ? 84 : 72;
 
-    const innerW = w - padL - padR;
-    const innerH = h - padT - padB;
     const maxEntryMs = Math.max(...entries.map((e) => e.ms || 0), 1);
     const historyTask = ctx.getTasks().find((task) => String(task.id || "") === taskId) || null;
     const milestoneMs =
@@ -713,6 +784,26 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       historyTask && historyTask.timeGoalEnabled && Number(historyTask.timeGoalMinutes || 0) > 0
         ? Math.max(0, Number(historyTask.timeGoalMinutes || 0) * 60 * 1000)
         : 0;
+    const underGoalPeak = timeGoalMs > 0
+      ? entries.reduce(
+          (best: { index: number; ms: number } | null, entry, index) => {
+            const ms = Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
+            if (ms <= 0 || ms >= timeGoalMs) return best;
+            if (!best || ms > best.ms) return { index, ms };
+            return best;
+          },
+          null
+        )
+      : null;
+    const lowestLogged = entries.reduce(
+      (best: { index: number; ms: number } | null, entry, index) => {
+        const ms = Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
+        if (ms <= 0) return best;
+        if (!best || ms < best.ms) return { index, ms };
+        return best;
+      },
+      null
+    );
     const goalMarker =
       historyTask && timeGoalMs > 0
         ? {
@@ -726,6 +817,20 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const visibleMarkerLabels = chartMarkers.filter((marker) => marker.kind !== "timeGoal");
     const markerLabelFontPx = veryCompactLabels ? 9 : 10;
     draw.font = `${markerLabelFontPx}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+    const underGoalPeakLabel = underGoalPeak ? formatHistoryAxisDuration(underGoalPeak.ms) : "";
+    const timeGoalAxisLabel = goalMarker ? formatHistoryAxisDuration(goalMarker.ms) : "";
+    const lowestLoggedLabel = lowestLogged ? formatHistoryAxisDuration(lowestLogged.ms) : "";
+    if (underGoalPeakLabel) {
+      padL = Math.max(padL, Math.ceil(draw.measureText(underGoalPeakLabel).width) + 12);
+    }
+    if (timeGoalAxisLabel) {
+      padL = Math.max(padL, Math.ceil(draw.measureText(timeGoalAxisLabel).width) + 12);
+    }
+    if (lowestLoggedLabel) {
+      padL = Math.max(padL, Math.ceil(draw.measureText(lowestLoggedLabel).width) + 12);
+    }
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
     const markerLabelPadR = visibleMarkerLabels.length
       ? Math.min(
           Math.floor(innerW * 0.42),
@@ -737,13 +842,18 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       : 10;
     const labelGutterW = markerLabelPadR;
     const plotSidePad = useAngledLabels ? (veryCompactLabels ? 10 : 14) : 6;
+    const yAxisEntryGap = 4;
     const plotW = Math.max(140, innerW - labelGutterW - plotSidePad * 2);
     const plotLeft = padL + plotSidePad;
     const plotRight = plotLeft + plotW;
+    const plotEntryLeft = plotLeft + yAxisEntryGap;
+    const plotEntryW = Math.max(4, plotRight - plotEntryLeft);
 
     draw.strokeStyle = "rgba(255,255,255,.20)";
     draw.lineWidth = 1;
     draw.beginPath();
+    draw.moveTo(plotLeft + 0.5, padT);
+    draw.lineTo(plotLeft + 0.5, padT + innerH);
     draw.moveTo(plotLeft, padT + innerH + 0.5);
     draw.lineTo(plotRight, padT + innerH + 0.5);
     draw.stroke();
@@ -761,8 +871,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
     const maxGoalMs = chartMarkers.length ? Math.max(...chartMarkers.map((m) => m.ms || 0), 0) : 0;
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
-    const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotW * 0.02)) : Math.max(3, Math.floor(plotW * 0.01));
-    const barW = Math.max(4, Math.floor((plotW - gap * (slotCount - 1)) / slotCount));
+    const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotEntryW * 0.02)) : Math.max(3, Math.floor(plotEntryW * 0.01));
+    const barW = Math.max(4, Math.floor((plotEntryW - gap * (slotCount - 1)) / slotCount));
+    const barTops: Array<{ x: number; y: number; w: number; h: number; ms: number; color: string }> = [];
+    const checkpointMarkerColor = String(historyTask?.color || "rgb(0,207,200)");
 
     draw.textAlign = "center";
 
@@ -780,7 +892,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const isLocked = state.lockedAbsIndexes.has(absIndex);
       const isSelected = visualRelIndex === idx;
       const hasSelection = visualRelIndex != null || state.lockedAbsIndexes.size > 0;
-      const baseX = plotLeft + idx * (barW + gap);
+      const baseX = plotEntryLeft + idx * (barW + gap);
       const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW));
       const barRevealProgress = Math.max(0, Math.min(1, state.barRevealProgress ?? 1));
@@ -789,28 +901,31 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         ms > 0 && barRevealProgress > 0
           ? Math.max(2, Math.min(innerH, rawAnimatedBarH))
           : 0;
-      const x = Math.max(plotLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
+      const x = Math.max(plotEntryLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
       const y = drawH > 0 ? Math.max(padT, padT + innerH - drawH) : padT + innerH;
+      const reachesTimeGoal = timeGoalMs > 0 && ms >= timeGoalMs;
+      const barColor = reachesTimeGoal ? "rgb(12,245,127)" : String(e.color || "rgb(0,207,200)");
+      barTops[idx] = { x, y, w: drawW, h: drawH, ms, color: barColor };
 
       if (drawH > 0) {
         draw.save();
         draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
-        draw.fillStyle = String(e.color || "rgb(0,207,200)");
+        draw.fillStyle = barColor;
         draw.fillRect(x, y, drawW, drawH);
         draw.restore();
       }
 
-      const slotLeft = idx === 0 ? plotLeft : plotLeft + idx * (barW + gap) - Math.floor(gap / 2);
-      const slotRight = idx === barCount - 1 ? plotRight : plotLeft + (idx + 1) * (barW + gap) - Math.floor(gap / 2);
+      const slotLeft = idx === 0 ? plotEntryLeft : plotEntryLeft + idx * (barW + gap) - Math.floor(gap / 2);
+      const slotRight = idx === barCount - 1 ? plotRight : plotEntryLeft + (idx + 1) * (barW + gap) - Math.floor(gap / 2);
       state.barRects[idx] = {
         x,
         y,
         w: drawW,
         h: drawH,
         absIndex: (absStartIndex || 0) + idx,
-        hitX: Math.max(plotLeft, slotLeft),
+        hitX: Math.max(plotEntryLeft, slotLeft),
         hitY: padT,
-        hitW: Math.max(4, Math.min(plotRight, slotRight) - Math.max(plotLeft, slotLeft)),
+        hitW: Math.max(4, Math.min(plotRight, slotRight) - Math.max(plotEntryLeft, slotLeft)),
         hitH: innerH,
       };
 
@@ -828,7 +943,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.globalAlpha = labelAlpha;
         draw.fillStyle = "rgba(255,255,255,.65)";
         const baseDateFont = compactLabels ? 10 : 11;
-        const labelFontScale = isSelected ? 1 + ((state.selectionZoom || 1.5) - 1) : isLocked ? 1.5 : 1;
+        const labelFontScale = 1;
         draw.font = `${Math.round(baseDateFont * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
 
         const d = new Date(e.ts || 0);
@@ -893,6 +1008,95 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       }
     }
 
+    const axisMarkerMinGap = 13;
+    const axisMarkerYs: number[] = [];
+    const getMarkerY = (ms: number) => {
+      const markerRatio = Math.max(0, Math.min(1, ms / scaleMaxMs));
+      return padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
+    };
+    const hasAxisMarkerOverlap = (markerY: number) => axisMarkerYs.some((y) => Math.abs(y - markerY) < axisMarkerMinGap);
+    const rememberAxisMarker = (markerY: number) => {
+      axisMarkerYs.push(markerY);
+    };
+    chartMarkers.forEach((marker) => {
+      if (marker.ms > 0) rememberAxisMarker(getMarkerY(marker.ms));
+    });
+
+    if (underGoalPeak && underGoalPeakLabel) {
+      const targetBar = barTops[underGoalPeak.index];
+      if (targetBar && targetBar.h > 0) {
+        const markerY = getMarkerY(underGoalPeak.ms);
+        const lineEndX = Math.max(plotLeft, Math.min(plotRight, targetBar.x + targetBar.w / 2));
+        const axisTickStartX = Math.max(1, plotLeft - 6);
+        const markerColor = targetBar.color || "rgb(0,207,200)";
+
+        draw.save();
+        draw.strokeStyle = markerColor;
+        draw.fillStyle = markerColor;
+        draw.lineWidth = 1;
+        draw.setLineDash([3, 3]);
+        draw.beginPath();
+        draw.moveTo(plotLeft, markerY);
+        draw.lineTo(lineEndX, markerY);
+        draw.stroke();
+        draw.setLineDash([]);
+        draw.beginPath();
+        draw.moveTo(axisTickStartX, markerY);
+        draw.lineTo(plotLeft, markerY);
+        draw.stroke();
+        draw.fillStyle = "rgba(255,255,255,.96)";
+        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.textAlign = "right";
+        draw.textBaseline = "middle";
+        draw.fillText(underGoalPeakLabel, axisTickStartX - 3, markerY);
+        draw.fillStyle = markerColor;
+        draw.beginPath();
+        draw.arc(lineEndX, markerY, 2.5, 0, Math.PI * 2);
+        draw.fill();
+        draw.restore();
+        draw.textAlign = "center";
+        draw.textBaseline = "alphabetic";
+        rememberAxisMarker(markerY);
+      }
+    }
+
+    if (lowestLogged && lowestLoggedLabel) {
+      const targetBar = barTops[lowestLogged.index];
+      const markerY = getMarkerY(lowestLogged.ms);
+      if (targetBar && targetBar.h > 0 && !hasAxisMarkerOverlap(markerY)) {
+        const lineEndX = Math.max(plotLeft, Math.min(plotRight, targetBar.x + targetBar.w / 2));
+        const axisTickStartX = Math.max(1, plotLeft - 6);
+        const markerColor = targetBar.color || "rgba(255,255,255,.58)";
+        draw.save();
+        draw.strokeStyle = markerColor;
+        draw.fillStyle = markerColor;
+        draw.lineWidth = 1;
+        draw.setLineDash([3, 3]);
+        draw.beginPath();
+        draw.moveTo(plotLeft, markerY);
+        draw.lineTo(lineEndX, markerY);
+        draw.stroke();
+        draw.setLineDash([]);
+        draw.beginPath();
+        draw.moveTo(axisTickStartX, markerY);
+        draw.lineTo(plotLeft, markerY);
+        draw.stroke();
+        draw.fillStyle = "rgba(255,255,255,.96)";
+        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.textAlign = "right";
+        draw.textBaseline = "middle";
+        draw.fillText(lowestLoggedLabel, axisTickStartX - 3, markerY);
+        draw.fillStyle = markerColor;
+        draw.beginPath();
+        draw.arc(lineEndX, markerY, 2.5, 0, Math.PI * 2);
+        draw.fill();
+        draw.restore();
+        draw.textAlign = "center";
+        draw.textBaseline = "alphabetic";
+        rememberAxisMarker(markerY);
+      }
+    }
+
     if (chartMarkers.length) {
       draw.save();
       draw.lineWidth = 1;
@@ -905,16 +1109,25 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const markerRatio = Math.max(0, Math.min(1, goal.ms / scaleMaxMs));
         const markerY = padT + innerH - Math.floor(innerH * markerRatio) + 0.5;
 
-        draw.strokeStyle = goal.kind === "timeGoal" ? "rgba(0,207,200,.92)" : "rgba(255,255,255,.5)";
-        if (goal.kind === "timeGoal") {
-          draw.setLineDash([6, 4]);
-        } else {
-          draw.setLineDash([]);
-        }
+        draw.strokeStyle = goal.kind === "timeGoal" ? "rgba(50,217,107,.96)" : checkpointMarkerColor;
+        draw.setLineDash(goal.kind === "timeGoal" ? [] : [1, 4]);
         draw.beginPath();
         draw.moveTo(plotLeft, markerY);
         draw.lineTo(plotRight, markerY);
         draw.stroke();
+
+        if (goal.kind === "timeGoal" && timeGoalAxisLabel) {
+          const axisTickStartX = Math.max(1, plotLeft - 6);
+          draw.beginPath();
+          draw.moveTo(axisTickStartX, markerY);
+          draw.lineTo(plotLeft, markerY);
+          draw.stroke();
+          draw.fillStyle = "rgba(50,217,107,.96)";
+          draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+          draw.textAlign = "right";
+          draw.textBaseline = "middle";
+          draw.fillText(timeGoalAxisLabel, axisTickStartX - 3, markerY);
+        }
 
         const tooClose = drawnLabelY.some((y) => Math.abs(y - markerY) < minLabelGap);
         if (tooClose) continue;
@@ -1087,6 +1300,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     renderAllOpenHistoryChartsAfterLayout();
     renderAllOpenHistoryChartsAfterLayout(32);
     scheduleHistoryOpenSettledRenders(taskId);
+    scheduleHistoryOpenScrollIntoView(taskId);
     if (reducedMotion) return;
     queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;

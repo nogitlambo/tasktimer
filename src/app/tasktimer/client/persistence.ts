@@ -3,6 +3,7 @@ import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceHistoryPersistence, Ta
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasks } from "./live-session-task-state";
+import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 
 type PersistOptions = { deletedTaskIds?: string[]; forceCloudFlush?: boolean };
@@ -76,6 +77,7 @@ type CreateTaskTimerPersistenceOptions = {
   applyDashboardCardVisibility: () => void;
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
+  syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<unknown>;
   maybeRepairHistoryNotesInCloudAfterHydrate?: () => void;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
@@ -109,7 +111,13 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
       return true;
     });
-    options.setTasks(applyLiveSessionsToTasks(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now));
+    const tasksWithLiveSessions = applyLiveSessionsToTasks(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now);
+    const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, (options.nowMs || Date.now)());
+    options.setTasks(tasksWithLiveSessions);
+    if (resetResult.changedTaskIds.length) {
+      options.workspaceRepository.saveTasks(tasksWithLiveSessions);
+      void options.syncSharedTaskSummariesForTasks(resetResult.changedTaskIds).catch(() => {});
+    }
   }
 
   function load() {

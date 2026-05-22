@@ -40,7 +40,7 @@ describe("dashboard drag interaction guards", () => {
     expect(shouldOpenDashboardLockedUpgradePrompt(true)).toBe(false);
   });
 
-  it("keeps chart-heavy cards flexible while forcing task overview to fixed half width", () => {
+  it("keeps flexible dashboard cards resizable while forcing task overview to fixed half width", () => {
     expect(sanitizeDashboardCardSize("quarter", "avg-session-by-task")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "heatmap")).toBe("quarter");
     expect(sanitizeDashboardCardSize("quarter", "tasks-completed")).toBe("half");

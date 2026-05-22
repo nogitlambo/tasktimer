@@ -29,6 +29,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     },
     getTaskById: (taskId) => ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null,
     getTaskDisplayName,
+    historyEntryColorForTaskMs: ctx.historyEntryColorForTaskMs,
     openOverlay: (overlay) => {
       if (overlay) overlay.style.display = "flex";
     },

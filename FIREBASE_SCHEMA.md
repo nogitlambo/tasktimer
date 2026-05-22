@@ -245,8 +245,8 @@ Doc ID:
 Allowed fields (`isPreferencesV1`):
 
 - `schemaVersion: int`
-- `theme: "purple" | "cyan"`
-- `menuButtonStyle: "parallelogram" | "square"`
+- `theme: "lime"`
+- `menuButtonStyle: "square"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
 - `taskView: "list" | "tile"`
 - `autoFocusOnTaskLaunchEnabled: bool`
@@ -260,6 +260,7 @@ Allowed fields (`isPreferencesV1`):
 
 Notes:
 
+- Legacy app-theme values and legacy menu shape values are normalized to the primary theme and square controls on read.
 - Client runtime also keeps a local fallback key for this setting: ``${STORAGE_KEY}:autoFocusOnTaskLaunchEnabled``.
 
 ---

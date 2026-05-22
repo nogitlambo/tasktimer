@@ -103,6 +103,7 @@ function createHarness(overrides?: {
     getTaskById: (taskId) => (task && taskId === "task-1" ? task : null),
     getTaskDisplayName: (entry) =>
       String(entry?.name || "").trim() || "Unnamed task",
+    historyEntryColorForTaskMs: () => "#ff8a3d",
     nowMs: () => new Date("2026-05-03T04:05:00").getTime(),
     setTimeoutRef: overrides?.setTimeoutRef ?? ((handler) => handler()),
     openOverlay: (node) => opened.push(node),
@@ -236,7 +237,7 @@ describe("createTaskManualEntryInteraction", () => {
         name: "Focus",
         completionDifficulty: 1,
         note: "Retrospective note",
-        color: "#21c7ff",
+        color: "#ff8a3d",
       },
     ]);
     expect(harness.setHistoryByTaskId).toHaveBeenCalledWith(nextHistory);

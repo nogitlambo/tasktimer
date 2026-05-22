@@ -72,6 +72,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       onceOffTargetDate: null,
       order: order || 1,
       accumulatedMs: 0,
+      resumePendingSinceDayKey: null,
       running: false,
       startMs: null,
       collapsed: false,
@@ -117,6 +118,10 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
     task.checkpointToastEnabled = !!task.checkpointToastEnabled;
     task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
+    task.resumePendingSinceDayKey =
+      typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
+        ? task.resumePendingSinceDayKey
+        : null;
     task.timeGoalAction = "confirmModal";
     task.timeGoalEnabled = !!task.timeGoalEnabled;
     task.timeGoalValue = Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0;

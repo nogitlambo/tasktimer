@@ -23,6 +23,7 @@ type TaskManualEntryInteractionOptions = {
   elements: TaskManualEntryElements;
   getTaskById: (taskId: string) => Task | null | undefined;
   getTaskDisplayName: (task: Task | null | undefined) => string;
+  historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
   nowMs?: () => number;
   setTimeoutRef?: (handler: () => void, timeout: number) => unknown;
   openOverlay: (overlay: HTMLElement | null) => void;
@@ -184,13 +185,11 @@ export function createTaskManualEntryInteraction(
     if (!taskId) return false;
     const task = options.getTaskById(taskId) || null;
     if (!task || !draft) return false;
+    const elapsedMs = ((Number(draft.hoursValue || 0) * 60) + Number(draft.minutesValue || 0)) * 60 * 1000;
     const parsed = parseHistoryManagerManualDraft({
       draft,
       taskName: options.getTaskDisplayName(task),
-      taskColor:
-        typeof (task as { color?: unknown }).color === "string"
-          ? String((task as { color?: unknown }).color || "")
-          : null,
+      historyEntryColor: options.historyEntryColorForTaskMs(task, elapsedMs),
     });
     if ("error" in parsed) {
       setError(parsed.error || "Could not save entry.");

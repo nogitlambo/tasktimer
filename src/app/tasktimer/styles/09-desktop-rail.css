@@ -1,12 +1,7 @@
 /* Generated from tasktimer.css split. */
-/* Final desktop app rail: use the left navigation panel across main app screens and Settings.
-   Footer navigation is mobile-only. */
 .desktopAppRail{
   display: none;
 }
-
-/* Final desktop shell correction: keep the left rail attached to app/settings content and
-   restore dashboard/task/friends rendering inside the shared desktop layout. */
 .desktopAppShell{
   display: flex;
   flex: 1 1 auto;
@@ -34,10 +29,6 @@
 #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardRailMenuLabel{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
-
-/* Final app-page scroll contract:
-   Dashboard, Tasks, and Friends must remain vertically scrollable when content
-   exceeds the available viewport, regardless of later shell/layout overrides. */
 #app[aria-label="TaskLaunch App"] .desktopAppShell,
 #app[aria-label="TaskLaunch App"] .desktopAppMain{
   min-height: 0;
@@ -67,7 +58,6 @@
       0 26px 60px rgba(0,0,0,.48),
       inset 0 0 0 1px rgba(255,255,255,.04),
       inset 0 1px 0 rgba(255,255,255,.05);
-    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
     z-index: 7;
     overflow-y: auto;
   }
@@ -85,7 +75,6 @@
     height: 44px;
     background: linear-gradient(135deg, rgba(53,232,255,.98), rgba(53,232,255,.68));
     box-shadow: 0 0 22px rgba(53,232,255,.34);
-    clip-path: polygon(0 26%, 36% 10%, 100% 0, 74% 74%, 38% 90%);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel,
@@ -110,7 +99,6 @@
     color: rgba(231,245,252,.82);
     font-family: var(--font-tight);
     font-size: 14px;
-    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSearchIcon,
@@ -162,7 +150,6 @@
     font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
-    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
     justify-self: stretch;
     position: relative;
   }
@@ -230,11 +217,6 @@
     white-space: nowrap;
   }
 
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn{
-    --desktop-nav-hover-accent: rgba(214,120,255,.94);
-  }
-
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn{
     --desktop-nav-hover-accent: rgba(214,246,116,.94);
@@ -245,7 +227,6 @@
     padding: 16px;
     border: 1px solid rgba(255,255,255,.08);
     background: rgba(255,255,255,.03);
-    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
     margin-top: auto;
     display: grid;
     gap: 10px;
@@ -276,7 +257,6 @@
     font-weight: 800;
     letter-spacing: .12em;
     text-transform: uppercase;
-    clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromo h3,
@@ -825,13 +805,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     border: 0 !important;
     box-shadow: none !important;
     overflow: hidden !important;
-  }
-
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"],
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]),
-  body[data-theme="purple"] #app[aria-label="TaskLaunch Feedback"],
-  body[data-theme="purple"] #app[aria-label="TaskLaunch History Manager"]{
-    --flat-accent: rgba(214,120,255,.9);
   }
 
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"],
@@ -1451,93 +1424,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
   }
 }
 
-/* Desktop rail theme parity: keep desktop nav rail aligned with the active theme. */
-@media (min-width: 981px){
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:hover,
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn:focus-visible,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn:hover,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn:focus-visible{
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn.isOn{
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuIconImage{
-    filter:
-      brightness(0)
-      saturate(100%)
-      invert(59%)
-      sepia(42%)
-      saturate(1894%)
-      hue-rotate(278deg)
-      brightness(99%)
-      contrast(94%)
-      drop-shadow(0 0 8px rgba(212,71,210,.38));
-  }
-
-  body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
-    color: rgba(252,234,255,.98);
-    text-shadow: 0 0 8px rgba(240,110,224,.42);
-  }
-
-  body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage{
-    filter:
-      brightness(0)
-      saturate(100%)
-      invert(59%)
-      sepia(42%)
-      saturate(1894%)
-      hue-rotate(278deg)
-      brightness(99%)
-      contrast(94%)
-      drop-shadow(0 0 8px rgba(212,71,210,.38));
-  }
-
-  body[data-theme="purple"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuIconImage{
-    filter:
-      brightness(0)
-      saturate(100%)
-      invert(72%)
-      sepia(37%)
-      saturate(1166%)
-      hue-rotate(268deg)
-      brightness(102%)
-      contrast(101%)
-      drop-shadow(0 0 10px rgba(240,110,224,.62));
-  }
-
-  body[data-theme="cyan"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
-    color: rgba(226,251,255,.98);
-    text-shadow: 0 0 8px rgba(53,232,255,.38);
-  }
-
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail{
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 8px 16px rgba(0,0,0,.14),
-      0 18px 34px rgba(0,0,0,.24),
-      0 30px 68px rgba(0,0,0,.42),
-      0 10px 28px rgba(24,225,255,.05);
-  }
-
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail{
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 8px 16px rgba(0,0,0,.14),
-      0 18px 34px rgba(0,0,0,.24),
-      0 30px 68px rgba(0,0,0,.42),
-      0 10px 28px rgba(145,86,255,.06);
-  }
-}
+/* Desktop rail primary-theme alignment. */
 
 @media (min-width: 981px){
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuIconImage,
@@ -1712,34 +1599,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
 
 /* Desktop rail profile responsive ownership. */
 @media (min-width: 981px){
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummary,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileSummary{
-    grid-column: auto;
-    padding: 16px;
-    border: 0;
-    background: #0d0f13;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 8px 16px rgba(0,0,0,.14),
-      0 18px 34px rgba(0,0,0,.24),
-      0 30px 68px rgba(0,0,0,.42),
-      0 10px 28px rgba(145,86,255,.06);
-    clip-path: none;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummary,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileSummary{
-    grid-column: auto;
-    padding: 16px;
-    border: 0;
-    background: #0d0f13;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.05),
-      0 8px 16px rgba(0,0,0,.14),
-      0 18px 34px rgba(0,0,0,.24),
-      0 30px 68px rgba(0,0,0,.42),
-      0 10px 28px rgba(24,225,255,.05);
-    clip-path: none;
-  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileHead,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileHead{
     margin-top: 8px;
@@ -1886,26 +1745,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
     background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0));
     pointer-events: none;
   }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileXpFill,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileXpFill{
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,0) 42%),
-      linear-gradient(90deg, #8a1fa0 0%, #d447d2 38%, #f06ee0 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -2px 4px rgba(113,24,127,.38),
-      0 0 10px rgba(212,71,210,.35);
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileXpFill,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileXpFill{
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,0) 42%),
-      linear-gradient(90deg, #009fb6 0%, #35e8ff 38%, #00cfc8 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -2px 4px rgba(0,110,130,.32),
-      0 0 10px rgba(0,220,255,.35);
-  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileXpFill::after,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileXpFill::after{
     content: "";
@@ -1939,48 +1778,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
 /* Desktop-rail profile: keep profile chrome theme-aware on desktop. */
 
 @media (min-width: 981px){
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileAvatar,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileAvatar{
-    width: 52px !important;
-    height: 52px !important;
-    border-radius: 12px !important;
-    border: 2px solid rgba(214,120,255,.72) !important;
-    box-shadow: 0 0 0 1px rgba(118,44,162,.4), 0 12px 24px rgba(121,38,146,.24) !important;
-    overflow: hidden;
-    flex: 0 0 auto;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileAvatar,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileAvatar{
-    width: 52px !important;
-    height: 52px !important;
-    border-radius: 12px !important;
-    border: 2px solid rgba(117,231,255,.72) !important;
-    box-shadow: 0 0 0 1px rgba(14,118,142,.4), 0 12px 24px rgba(0,126,146,.22) !important;
-    overflow: hidden;
-    flex: 0 0 auto;
-  }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileAvatarImage,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileAvatarImage{
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
-    object-position: center;
-    background: transparent;
-    padding: 4px;
-    box-sizing: border-box;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileAvatarImage,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileAvatarImage{
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
-    object-position: center;
-    background: transparent;
-    padding: 4px;
-    box-sizing: border-box;
-  }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileMetricRank,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileMetricRank{
     width: 72px;
@@ -2004,14 +1801,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
     text-decoration: none;
     color: inherit;
   }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardTag,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardTag{
-    border-color: rgba(240,110,224,.52);
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardTag,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardTag{
-    border-color: rgba(53,232,255,.58);
-  }
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardTag,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardTag{
     border-color: rgba(219,255,79,.34);
@@ -2026,44 +1815,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
   }
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro{
-    color: #f5c84b !important;
-  }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:hover,
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:focus-visible,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:hover,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:focus-visible{
-    border-color: rgba(214,120,255,.5);
-    color: #f8ecff;
-  }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:hover,
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:focus-visible,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:hover,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:focus-visible{
-    color: #ffffff !important;
-  }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:hover,
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:focus-visible,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:hover,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:focus-visible{
-    color: #f5c84b !important;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:hover,
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:focus-visible,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:hover,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfileTagLink:focus-visible{
-    border-color: rgba(117,231,255,.5);
-    color: #dffcff;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:hover,
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:focus-visible,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:hover,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgeFree:focus-visible{
-    color: #ffffff !important;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:hover,
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:focus-visible,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:hover,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileTags .dashboardRailProfilePlanBadgePro:focus-visible{
     color: #f5c84b !important;
   }
 }
@@ -2159,22 +1910,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileSummarySdCard > *{
     position: relative;
     z-index: 1;
-  }
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
-  body[data-theme="cyan"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileSummarySdCard,
-  body[data-theme="cyan"] #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileSummarySdCard{
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  body[data-theme="purple"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummarySdCard,
-  body[data-theme="purple"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileSummarySdCard,
-  body[data-theme="purple"] #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileSummarySdCard{
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
   }
 }
 

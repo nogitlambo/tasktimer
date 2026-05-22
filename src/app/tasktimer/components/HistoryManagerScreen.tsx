@@ -127,14 +127,11 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
             </div>
 
             <fieldset className="hmManualEntrySentiment">
-              <legend className="hmManualEntryLabel" id="historyManagerManualEntrySentimentQuestion">
-                Sentiment
-              </legend>
               <div
                 className="hmManualEntrySentimentOptions"
                 id="historyManagerManualEntryDifficultyGroup"
                 role="radiogroup"
-                aria-labelledby="historyManagerManualEntrySentimentQuestion"
+                aria-label="Task completion sentiment"
               >
                 {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
                   <button

@@ -357,14 +357,22 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
   });
 
   it("clears volatile user caches before hydrating a different signed-in account", async () => {
-    const userOnePrefs = { ...buildDefaultCloudPreferences(), menuButtonStyle: "parallelogram" as const, updatedAtMs: 100 };
+    const userOnePrefs = { ...buildDefaultCloudPreferences(), menuButtonStyle: "legacy-shape" as never, updatedAtMs: 100 };
     const userOneDashboard = { order: ["momentum"] };
     const userOneTaskUi = { pinnedHistoryTaskIds: ["task-user-1"] };
 
     saveCloudPreferences(userOnePrefs);
     saveCloudDashboard(userOneDashboard as never);
     saveCloudTaskUi(userOneTaskUi as never);
-    expect(loadCachedPreferences()?.menuButtonStyle).toBe("parallelogram");
+    expect(loadCachedPreferences()?.menuButtonStyle).toBe("square");
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ menuButtonStyle: "square" })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ menuButtonStyle: "legacy-shape" })
+    );
     expect(loadCachedDashboard()).toEqual(userOneDashboard);
     expect(loadCachedTaskUi()).toEqual(userOneTaskUi);
 
@@ -393,7 +401,7 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(loadCachedTaskUi()).toEqual({ pinnedHistoryTaskIds: ["task-user-2"] });
     expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
       "uid-2",
-      expect.objectContaining({ menuButtonStyle: "parallelogram" })
+      expect.objectContaining({ menuButtonStyle: "legacy-shape" })
     );
   });
 

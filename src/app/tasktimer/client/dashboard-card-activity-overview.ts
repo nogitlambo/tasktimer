@@ -44,6 +44,7 @@ export type DashboardActivityOverviewModel = {
   weekStartMs: number;
   weekEndMs: number;
   totalGoalMs: number;
+  dailyPaceTargetMs: number;
   weekTotalMs: number;
   previousWeekTotalMs: number;
   maxChartMs: number;
@@ -219,16 +220,17 @@ export function buildDashboardActivityOverviewModel(options: {
   });
 
   const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
+  const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
   const weekTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
   const previousWeekTotalMs = previousWeekTotals.reduce((sum, ms) => sum + ms, 0);
   const maxDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs, day.previousWeekTotalMs), 0);
-  const maxCumulativeMs = days.reduce((max, day) => Math.max(max, day.cumulativeMs, day.previousWeekCumulativeMs), 0);
-  const maxChartMs = Math.max(totalGoalMs, maxDailyMs, maxCumulativeMs, 60 * 60000);
+  const maxChartMs = Math.max(dailyPaceTargetMs, maxDailyMs, 60 * 60000);
 
   return {
     weekStartMs,
     weekEndMs,
     totalGoalMs,
+    dailyPaceTargetMs,
     weekTotalMs,
     previousWeekTotalMs,
     maxChartMs,

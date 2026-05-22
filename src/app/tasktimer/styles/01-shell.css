@@ -437,8 +437,6 @@ body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
     transition: none;
   }
 }
-
-/* Final Tasks-page override: make + Add Task span full panel width. */
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageControls{
   width:100% !important;
   display:grid !important;
@@ -447,8 +445,6 @@ body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
   box-sizing:border-box;
   margin-top: 12px;
 }
-
-/* Final Tasks-page override: make mode switches justify and span full width. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .topbar{
   grid-template-columns:auto minmax(0, 1fr) auto;
 }
@@ -472,8 +468,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #modeSwitch .modeB
   min-width:0;
   justify-content:center;
 }
-
-/* Final Tasks-page mode accent override: apply selected mode color to active mode button + task card glow. */
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mode-accent) 28%, transparent));
 }
@@ -499,9 +493,6 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
   gap: 14px;
   align-items: start;
 }
-
-/* Final Dashboard Neon reskin:
-   dashboard-only rail + hero composition, preserving existing dashboard IDs and interactions. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard{
   padding-bottom: 28px;
 }

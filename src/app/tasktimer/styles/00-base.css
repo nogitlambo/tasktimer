@@ -19,7 +19,6 @@
   --shadow:0 14px 50px rgba(0,0,0,.35);
   --radius:16px;
   --radius2:12px;
-  --control-slant: 10px;
   --gap:16px;
   --space-1:8px;
   --space-2:12px;
@@ -269,6 +268,21 @@ body[data-app-page="leaderboard"] #modeSwitch{
   cursor:not-allowed;
 }
 
+#app :where(
+  .btn,
+  .iconBtn,
+  .menuItem,
+  .modeBtn,
+  .unitBtn,
+  .taskScreenPill,
+  .taskScreenHeaderBtn,
+  .taskMenuBtn,
+  .dashboardRailMenuBtn,
+  button:not(.switch)
+){
+  border-radius: 0 !important;
+}
+
 /* Task list */
 .list{
   padding:12px;
@@ -464,7 +478,6 @@ body[data-app-page="leaderboard"] #modeSwitch{
   top:1px;
   width:9px;
   height:10px;
-  clip-path: polygon(0 0, 100% 10%, 100% 90%, 0 100%);
   background:
     linear-gradient(45deg, rgba(236,244,250,.95) 25%, transparent 25%, transparent 75%, rgba(236,244,250,.95) 75%, rgba(236,244,250,.95)),
     linear-gradient(45deg, rgba(28,34,42,.95) 25%, transparent 25%, transparent 75%, rgba(28,34,42,.95) 75%, rgba(28,34,42,.95));
@@ -995,16 +1008,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   cursor:pointer;
 }
 
-.msSkewField{
-  border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-
-.msSkewInput{
-  border-radius: 0 !important;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
-}
-
 .confirmText{
   color: rgba(255,255,255,.72);
   line-height:1.55;
@@ -1215,7 +1218,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   height:20px;
   padding:0 8px;
   border-radius:0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   border:1px solid rgba(117,231,255,.28);
   background: rgba(255,255,255,.03);
   color: rgba(190,240,255,.85);
@@ -1837,7 +1839,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     inset 0 0 0 1px rgba(255,255,255,.03),
     inset 0 1px 0 rgba(255,255,255,.04);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 .focusInsightsRow{
@@ -2034,7 +2035,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   padding: 16px 18px;
   border: 1px solid rgba(104,220,255,.28);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
   background:
     radial-gradient(140% 140% at 20% 0%, rgba(74,196,255,.14), rgba(0,0,0,0) 34%),
     linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)),
@@ -2046,7 +2046,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     inset 0 1px 0 rgba(255,255,255,.05);
 }
 
-body[data-control-style="square"] .historySaveWorkingPanel{
+.historySaveWorkingPanel{
   clip-path: none;
 }
 
@@ -2347,7 +2347,6 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   text-transform:uppercase;
   cursor:pointer;
   border-radius:0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 .timerTypePill.isOn{
@@ -2389,7 +2388,6 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   background: rgba(0,0,0,.22);
   color: var(--text);
   border-radius: 0;
-  clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
 }
 
 .checkpointAlertsNote{
@@ -2416,11 +2414,6 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
       0 0 0 rgba(53, 232, 255, 0),
       0 0 0 rgba(53, 232, 255, 0);
   }
-}
-
-/* Appearance setting: Menu and button style */
-body[data-control-style="square"]{
-  --control-slant: 0px;
 }
 
 .friendIdentityRow{
@@ -2587,8 +2580,6 @@ body[data-control-style="square"]{
 #rewardsInfoOverlay .rewardsInfoActions{
   justify-content: center;
 }
-
-/* Final modal parity overrides: keep all legacy modals aligned with Add Task/Edit Task styling. */
 .aboutTitle{
   margin: 0;
 }
@@ -2835,7 +2826,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   .toggleRow > span,
   .unitRow > span
 ),
-#editOverlay :where(
+  #editOverlay :where(
   h1,
   h2,
   h3,
@@ -2887,12 +2878,12 @@ body[data-theme="lime"] .settingsNavItemIcon{
   .historyChartInline,
   #historyChart
 ),
-#app[aria-label="TaskLaunch Settings"] :where(
+  #app[aria-label="TaskLaunch Settings"] :where(
   .historyCanvasWrap,
   .historyChartInline,
   #historyChart
 ),
-#app[aria-label="TaskLaunch Feedback"] :where(
+  #app[aria-label="TaskLaunch Feedback"] :where(
   .historyCanvasWrap,
   .historyChartInline,
   #historyChart
@@ -2913,7 +2904,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   [data-menu],
   [data-move-mode]
 ),
-#app[aria-label="TaskLaunch Settings"] :where(
+  #app[aria-label="TaskLaunch Settings"] :where(
   .btn,
   .iconBtn,
   button,
@@ -2926,7 +2917,7 @@ body[data-theme="lime"] .settingsNavItemIcon{
   [data-menu],
   [data-move-mode]
 ),
-#app[aria-label="TaskLaunch Feedback"] :where(
+  #app[aria-label="TaskLaunch Feedback"] :where(
   .btn,
   .iconBtn,
   button,

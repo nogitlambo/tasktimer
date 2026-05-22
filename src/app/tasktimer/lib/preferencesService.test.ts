@@ -189,17 +189,58 @@ describe("createTaskTimerPreferencesService", () => {
     expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
   });
 
+  it("normalizes missing and legacy menu button styles to square", () => {
+    window.localStorage.setItem(storageKeys.MENU_BUTTON_STYLE_KEY, "legacy-shape");
+
+    expect(createService().loadMenuButtonStyle()).toBe("square");
+    expect(
+      createService({
+        cachedPreferences: { ...buildDefaultPreferences(), menuButtonStyle: "legacy-shape" as never },
+      }).loadMenuButtonStyle()
+    ).toBe("square");
+  });
+
+  it("does not persist legacy menu button styles from preference snapshots", () => {
+    const savePreferences = vi.fn();
+    const setCloudPreferencesCache = vi.fn();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      repository: {
+        loadCachedPreferences: () => null,
+        buildDefaultPreferences,
+        savePreferences,
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      menuButtonStyle: "legacy-shape" as never,
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(snapshot.menuButtonStyle).toBe("square");
+    expect(localStorageMap.get(storageKeys.MENU_BUTTON_STYLE_KEY)).toBe("square");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
+    expect(savePreferences).not.toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "legacy-shape" }));
+    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
+  });
+
   it("maps legacy stored theme values to the Primary theme", () => {
     const service = createService();
 
-    expect(service.normalizeThemeMode("purple")).toBe("lime");
-    expect(service.normalizeThemeMode("cyan")).toBe("lime");
+    expect(service.normalizeThemeMode("legacy-theme-a")).toBe("lime");
+    expect(service.normalizeThemeMode("legacy-theme-b")).toBe("lime");
     expect(service.normalizeThemeMode("command")).toBe("lime");
     expect(service.normalizeThemeMode("lime")).toBe("lime");
   });
 
   it("loads the Primary theme when local storage still has a legacy theme", () => {
-    window.localStorage.setItem(storageKeys.THEME_KEY, "cyan");
+    window.localStorage.setItem(storageKeys.THEME_KEY, "legacy-theme-a");
 
     expect(createService().loadThemeMode()).toBe("lime");
   });

@@ -40,7 +40,7 @@ Move from “bag of stores plus many builder args” toward a smaller runtime co
 - Preferences
 - History UI
 - Dashboard UI
-- Groups
+- Friends
 - Session
 - Overlays
 

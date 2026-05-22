@@ -21,6 +21,7 @@ import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
+import { reconcileResumePendingTasks } from "./resume-pending-reset";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -1535,6 +1536,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function tick() {
     if (runtime.destroyed) return;
     const tasks = ctx.getTasks();
+    const resumePendingResetResult = reconcileResumePendingTasks(tasks, nowMs());
+    if (resumePendingResetResult.changedTaskIds.length) {
+      ctx.save();
+      void ctx.syncSharedTaskSummariesForTasks(resumePendingResetResult.changedTaskIds).catch(() => {});
+      ctx.render();
+    }
     const processedCheckpointTaskIds = new Set<string>();
     const taskList = els.taskList as HTMLElement | null;
     if (taskList) {

@@ -65,14 +65,11 @@ export default function TaskManualEntryOverlay() {
           </div>
 
           <fieldset className="hmManualEntrySentiment timeGoalCompleteDifficulty">
-            <legend className="hmManualEntryLabel" id="taskManualEntrySentimentQuestion">
-              Effort required to complete this task today?
-            </legend>
             <div
               className="hmManualEntrySentimentOptions timeGoalCompleteDifficultyIcons"
               id="taskManualEntryDifficultyGroup"
               role="radiogroup"
-              aria-labelledby="taskManualEntrySentimentQuestion"
+              aria-label="Task completion difficulty"
             >
               {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
                 <button

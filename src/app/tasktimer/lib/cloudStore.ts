@@ -52,7 +52,7 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "lime";
-  menuButtonStyle: "parallelogram" | "square";
+  menuButtonStyle: "square";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
   taskOrderBy: "custom" | "alpha" | "schedule";
@@ -668,13 +668,6 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
             error: describeError(error),
           });
         }
-      } else {
-        console.error("[tasktimer-cloud] Failed to sync account identity index", {
-          uid,
-          email: authEmail || null,
-          prevEmail: options?.prevEmail || null,
-          error: describeError(error),
-        });
       }
     }
     throw error;
@@ -1131,6 +1124,10 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
     row.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(row.timeGoalCompletedElapsedMs))
       ? null
       : Math.max(0, Math.floor(Number(row.timeGoalCompletedElapsedMs)));
+  row.resumePendingSinceDayKey =
+    typeof row.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.resumePendingSinceDayKey)
+      ? row.resumePendingSinceDayKey
+      : null;
   row.taskType = row.taskType === "once-off" ? "once-off" : "recurring";
   row.onceOffDay = row.taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null;
   row.onceOffTargetDate = row.taskType === "once-off" ? normalizeLocalDateValue(row.onceOffTargetDate) : null;
@@ -1195,6 +1192,10 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
         ? null
         : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
+    resumePendingSinceDayKey:
+      typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
+        ? task.resumePendingSinceDayKey
+        : null,
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
@@ -1225,7 +1226,8 @@ function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
 
 function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
   const legacyRow = mapTaskToLegacyFirestore(task);
-  const { taskType, onceOffDay, onceOffTargetDate, ...compatibilityRow } = legacyRow;
+  const { resumePendingSinceDayKey, taskType, onceOffDay, onceOffTargetDate, ...compatibilityRow } = legacyRow;
+  void resumePendingSinceDayKey;
   void taskType;
   void onceOffDay;
   void onceOffTargetDate;
@@ -1458,7 +1460,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
       ? {
         schemaVersion: 1,
         theme: normalizeThemeMode(prefSnap.get("theme")),
-        menuButtonStyle: prefSnap.get("menuButtonStyle") === "square" ? "square" : "parallelogram",
+        menuButtonStyle: "square",
         startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
         taskView: "tile",
         taskOrderBy:
@@ -1547,7 +1549,7 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
         preserveSendBookkeeping && existing.exists()
           ? normalizeNullableInt(existing.get("bgTimeGoalPushSentDueAtMs"))
           : null,
-      createdAt: existing.exists() ? existing.get("createdAt") || serverTimestamp() : serverTimestamp(),
+      createdAt: existing.exists() && isTimestampLike(existing.get("createdAt")) ? existing.get("createdAt") : serverTimestamp(),
       updatedAt: serverTimestamp(),
       schemaVersion: 1,
     };
@@ -2059,7 +2061,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   return {
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
-    menuButtonStyle: data.menuButtonStyle === "square" ? "square" : "parallelogram",
+    menuButtonStyle: "square",
     startupModule: normalizeStartupModule(data.startupModule),
     taskView: "tile",
     taskOrderBy: data.taskOrderBy === "alpha" ? "alpha" : data.taskOrderBy === "schedule" ? "schedule" : "custom",

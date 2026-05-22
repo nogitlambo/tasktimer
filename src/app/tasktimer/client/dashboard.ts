@@ -96,7 +96,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     { panelId: "weekly-time-goals", label: "This Week" },
     { panelId: "tasks-completed", label: "Task Overview" },
     { panelId: "momentum", label: "Momentum" },
-    { panelId: "avg-session-by-task", label: "Avg Session by Task" },
+    { panelId: "avg-session-by-task", label: "Last Ran" },
     { panelId: "heatmap", label: "Focus Heatmap" },
   ] as const;
   let dashboardPointerDrag:
@@ -162,7 +162,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
 
   function getDashboardLockedFeatureLabel(cardId: string) {
     if (cardId === "momentum") return "Momentum insights";
-    if (cardId === "avg-session-by-task") return "Average session insights";
+    if (cardId === "avg-session-by-task") return "Last Ran insights";
     if (cardId === "heatmap") return "Focus heatmap insights";
     return "Advanced insights";
   }
@@ -313,9 +313,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     const dashboard = getCloudDashboardRecord();
     const existingWidgets =
       dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
+    const persistedWidgets = { ...existingWidgets };
+    delete persistedWidgets.avgSessionByTaskRange;
     const existingOrder = Array.isArray(dashboard?.order) ? dashboard.order : getCurrentDashboardOrder();
     const widgets = {
-      ...existingWidgets,
+      ...persistedWidgets,
       ...partialWidgets,
       cardPlacements: getDashboardCardPlacementsMapForStorage(),
       cardVisibility: getDashboardCardVisibilityMapForStorage(),
@@ -367,13 +369,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     DASHBOARD_PANEL_REGISTRY.forEach(({ panelId }) => applyDefaultDashboardCardVisibility(panelId, nextVisibility));
     ctx.setDashboardCardVisibility(nextVisibility);
     ensureDashboardIncludedModesValid();
-  }
-
-  function saveDashboardAvgRange(range: DashboardAvgRange) {
-    ctx.setDashboardAvgRange(sanitizeDashboardAvgRange(range));
-    saveDashboardWidgetState({
-      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
-    });
   }
 
   function applyDashboardCardSizes() {
@@ -755,7 +750,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     applyDashboardCardVisibility();
     saveDashboardWidgetState({
       cardSizes: getDashboardCardSizeMapForStorage(),
-      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
     });
     if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
   }
@@ -788,7 +782,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     applyDashboardCardVisibility();
     saveDashboardWidgetState({
       cardSizes: getDashboardCardSizeMapForStorage(),
-      avgSessionByTaskRange: ctx.getDashboardAvgRange(),
     });
     if (ctx.getCurrentAppPage() === "dashboard") renderDashboardWidgets();
   }
@@ -902,15 +895,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (ctx.hasSelectedDashboardMomentumDriver() && !clickedInsideMomentumDrivers) {
       ctx.clearDashboardMomentumDriverSelection();
     }
-    const btn = e.target?.closest?.("[data-dashboard-avg-range-toggle]") as HTMLElement | null;
-    if (!btn) return;
-    const nextRange: DashboardAvgRange = sanitizeDashboardAvgRange(ctx.getDashboardAvgRange()) === "past30" ? "past7" : "past30";
-    if (nextRange === ctx.getDashboardAvgRange()) {
-      renderDashboardWidgets();
-      return;
-    }
-    saveDashboardAvgRange(nextRange);
-    renderDashboardWidgets();
   }
 
   function handleDashboardGridPointerDown(e: any) {

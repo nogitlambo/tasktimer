@@ -19,6 +19,7 @@ export type Task = {
   onceOffTargetDate?: string | null;
   order: number;
   accumulatedMs: number;
+  resumePendingSinceDayKey?: string | null;
   running: boolean;
   startMs: number | null;
   collapsed: boolean;

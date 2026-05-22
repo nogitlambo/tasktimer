@@ -11,6 +11,7 @@ import {
   normalizeTimeOfDay,
 } from "../lib/productivityPeriod";
 import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
+import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
@@ -192,21 +193,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncTaskOrderByMenuUi();
   }
 
-  function applyMenuButtonStyle(next: "parallelogram" | "square") {
-    const menuButtonStyle = next === "square" ? "square" : "parallelogram";
+  function applyMenuButtonStyle(next: "square") {
+    const menuButtonStyle = "square";
+    void next;
     ctx.setMenuButtonStyleState(menuButtonStyle);
-    const body = document.body;
-    body.setAttribute("data-control-style", menuButtonStyle);
-    if (els.menuButtonStyleSelect) {
-      els.menuButtonStyleSelect.value = menuButtonStyle;
-    }
-    els.menuButtonStyleParallelogramBtn?.classList.toggle("isOn", menuButtonStyle === "parallelogram");
-    els.menuButtonStyleSquareBtn?.classList.toggle("isOn", menuButtonStyle === "square");
-    els.menuButtonStyleParallelogramBtn?.setAttribute(
-      "aria-pressed",
-      menuButtonStyle === "parallelogram" ? "true" : "false"
-    );
-    els.menuButtonStyleSquareBtn?.setAttribute("aria-pressed", menuButtonStyle === "square" ? "true" : "false");
   }
 
   function loadThemePreference() {
@@ -549,8 +539,28 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ].filter((input): input is HTMLInputElement => !!input);
   }
 
+  function getOptimalProductivityDayDisplayOrder() {
+    const weekStarting = normalizeDashboardWeekStart(ctx.getWeekStarting());
+    const startIndex = SCHEDULE_DAY_ORDER.indexOf(weekStarting);
+    return startIndex < 0
+      ? [...SCHEDULE_DAY_ORDER]
+      : SCHEDULE_DAY_ORDER.slice(startIndex).concat(SCHEDULE_DAY_ORDER.slice(0, startIndex));
+  }
+
+  function syncOptimalProductivityDaysOrderUi() {
+    if (!els.optimalProductivityDaysMenu) return;
+    const inputsByDay = new Map(
+      getOptimalProductivityDayInputs().map((input) => [normalizeDashboardWeekStart(input.value), input] as const)
+    );
+    getOptimalProductivityDayDisplayOrder().forEach((day) => {
+      const row = inputsByDay.get(day)?.closest(".chkRow");
+      if (row) els.optimalProductivityDaysMenu?.appendChild(row);
+    });
+  }
+
   function syncOptimalProductivityDaysUi() {
     const days = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
+    syncOptimalProductivityDaysOrderUi();
     getOptimalProductivityDayInputs().forEach((input) => {
       input.checked = days.includes(normalizeDashboardWeekStart(input.value));
     });
@@ -628,7 +638,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
-  function setMenuButtonStyle(next: "parallelogram" | "square") {
+  function setMenuButtonStyle(next: "square") {
     applyMenuButtonStyle(next);
     persistPreferencesToCloud();
   }
@@ -663,15 +673,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.themeLimeBtn, "click", () => {
       setThemeMode("lime");
-    });
-    ctx.on(els.menuButtonStyleParallelogramBtn, "click", () => {
-      setMenuButtonStyle("parallelogram");
-    });
-    ctx.on(els.menuButtonStyleSquareBtn, "click", () => {
-      setMenuButtonStyle("square");
-    });
-    ctx.on(els.menuButtonStyleSelect, "change", () => {
-      setMenuButtonStyle(els.menuButtonStyleSelect?.value === "parallelogram" ? "parallelogram" : "square");
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
       syncThemeAvailabilityUi();

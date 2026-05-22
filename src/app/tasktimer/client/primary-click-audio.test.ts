@@ -35,7 +35,7 @@ function makeElement(opts: {
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
-const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, .closePopup.isSaveAndClose";
+const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, .closePopup.isSaveAndClose, .modalPreviewPrimaryAction";
 
 describe("primary click audio", () => {
   beforeEach(() => {
@@ -50,6 +50,18 @@ describe("primary click audio", () => {
 
   it("matches save-and-close controls promoted to primary actions", () => {
     const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } });
+
+    expect(getPrimaryClickTarget(element)).toBe(element);
+  });
+
+  it("matches send friend request as a primary action", () => {
+    const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true } });
+
+    expect(getPrimaryClickTarget(element)).toBe(element);
+  });
+
+  it("matches modal preview primary action controls", () => {
+    const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true, ".modalPreviewPrimaryAction": true } });
 
     expect(getPrimaryClickTarget(element)).toBe(element);
   });
@@ -182,7 +194,7 @@ describe("primary click audio", () => {
     expect(clickAudioPlayerModule.createClickAudioPlayer).toHaveBeenNthCalledWith(3, TASK_STOP_CLICK_AUDIO_SRC);
   });
 
-  it("delays an unready primary click, then replays it exactly once", async () => {
+  it("plays an unready primary click immediately without delaying the action", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
     const mockPlayers: Array<{
@@ -213,15 +225,15 @@ describe("primary click audio", () => {
     const handler = on.mock.calls[0]?.[2] as EventListener;
 
     handler({ defaultPrevented: false, isTrusted: true, target: replay, preventDefault, stopImmediatePropagation } as unknown as Event);
-    await Promise.resolve();
 
-    expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(stopImmediatePropagation).toHaveBeenCalledTimes(1);
-    expect(primaryPlayer.playWhenReady).toHaveBeenCalledWith(120);
-    expect(replayClick).toHaveBeenCalledTimes(1);
+    expect(primaryPlayer.play).toHaveBeenCalledTimes(1);
+    expect(primaryPlayer.playWhenReady).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(stopImmediatePropagation).not.toHaveBeenCalled();
+    expect(replayClick).not.toHaveBeenCalled();
 
     handler({ defaultPrevented: false, isTrusted: false, target: replay } as unknown as Event);
-    expect(primaryPlayer.play).not.toHaveBeenCalled();
+    expect(primaryPlayer.play).toHaveBeenCalledTimes(1);
   });
 
   it("does not delay an already-ready primary click", () => {
