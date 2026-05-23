@@ -1,3 +1,5 @@
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
+import { buildSettingsPreferencesOptimalProductivityDaysHref } from "../lib/settingsRoute";
 import TaskColorPickerPopover from "./TaskColorPickerPopover";
 
 export default function AddTaskOverlay() {
@@ -56,7 +58,15 @@ export default function AddTaskOverlay() {
                 </button>
               </div>
               <p className="taskScheduleDaysHelper" id="addTaskOptimalProductivityDaysHelper">
-                Scheduled recurring tasks are added only to your optimal productivity days: Su, Mo, Tu, We, Th, Fr, Sa
+                Task will be scheduled on your optimal productivity days:{" "}
+                <span data-optimal-productivity-days-summary="true">Su, Mo, Tu, We, Th, Fr, Sa</span>
+                {" - "}
+                <a
+                  className="taskScheduleDaysHelperLink"
+                  href={resolveTaskTimerRouteHref(buildSettingsPreferencesOptimalProductivityDaysHref())}
+                >
+                  Change
+                </a>
               </p>
 
               <div className="field editTaskTimeGoalField">

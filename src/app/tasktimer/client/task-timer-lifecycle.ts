@@ -4,6 +4,7 @@ import { localDayKey } from "../lib/history";
 import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
+import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
 
 type ConfirmOptions = {
   okLabel: string;
@@ -83,6 +84,12 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     task.resumePendingSinceDayKey = null;
     options.openRewardSessionSegment(task, startMs);
     options.upsertLiveSession(task, { elapsedMs: 0, resumedFromMs: previousElapsedMs, forceCloudFlush: true, reason: "start" });
+    void showNativeRunningTimerNotification({
+      taskId,
+      taskName: String(task.name || "Task"),
+      startedAtMs: startMs,
+      elapsedBeforeStartMs: previousElapsedMs,
+    }).catch(() => {});
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
     void trackEvent("task_started", {
@@ -106,6 +113,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     task.running = false;
     task.startMs = null;
     task.resumePendingSinceDayKey = task.accumulatedMs > 0 ? localDayKey(stopMs) : null;
+    void clearNativeRunningTimerNotification(taskId).catch(() => {});
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
     const completedToday = isTaskTimeGoalCompletedToday(task, stopMs);
@@ -143,6 +151,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       task.hasStarted = false;
       task.resumePendingSinceDayKey = null;
     }
+    void clearNativeRunningTimerNotification(taskId).catch(() => {});
     options.clearTaskTimeGoalFlow(taskId);
     options.clearRewardSessionTracker(taskId);
     options.resetCheckpointAlertTracking(task.id);

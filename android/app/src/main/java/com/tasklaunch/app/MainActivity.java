@@ -20,6 +20,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(FirebaseAuthenticationPlugin.class);
+        registerPlugin(TaskLaunchTimerNotificationPlugin.class);
         super.onCreate(savedInstanceState);
         deliverPushIntentToWeb(getIntent());
     }
@@ -48,6 +49,7 @@ public class MainActivity extends BridgeActivity {
             payload.put("taskId", taskId);
             payload.put("route", route);
             payload.put("actionId", actionId);
+            payload.put("sourceNotificationId", intent.getIntExtra("tasktimerNotificationId", 0));
             final String dispatchNonce = buildDispatchNonce(intent, taskId, actionId);
             payload.put("dispatchNonce", dispatchNonce);
 

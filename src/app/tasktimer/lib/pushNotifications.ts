@@ -40,6 +40,7 @@ type PendingPushAction = {
   taskId: string;
   route: string;
   actionId: "default" | "launchTask" | "snooze10m" | "postponeNextGap";
+  sourceNotificationId?: number;
 };
 
 type PushDiagnostics = {
@@ -403,7 +404,8 @@ function normalizePendingPushAction(
   if (!taskId) return null;
   const route = String(input?.route || "/tasklaunch").trim() || "/tasklaunch";
   const actionId = normalizePendingPushActionId(input?.actionId);
-  return { taskId, route, actionId };
+  const sourceNotificationId = Math.max(0, Math.floor(Number(input?.sourceNotificationId || 0) || 0));
+  return { taskId, route, actionId, sourceNotificationId };
 }
 
 function setPendingPushAction(action: Partial<PendingPushAction> | null | undefined) {

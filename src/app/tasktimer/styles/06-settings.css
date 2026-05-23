@@ -3891,6 +3891,24 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   justify-content: space-between;
 }
 
+@keyframes taskTimerSettingsRowHighlightFlash{
+  0%{
+    box-shadow: 0 0 0 1px rgba(189,255,103,.68), 0 0 0 4px rgba(189,255,103,.16), 0 0 18px rgba(189,255,103,.28);
+  }
+  55%{
+    box-shadow: 0 0 0 1px rgba(189,255,103,.42), 0 0 0 3px rgba(189,255,103,.1), 0 0 10px rgba(189,255,103,.16);
+  }
+  100%{
+    box-shadow: 0 0 0 1px rgba(189,255,103,0);
+  }
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityDaysRow.settingsRouteHighlight{
+  border-radius: 14px;
+  background: transparent;
+  animation: taskTimerSettingsRowHighlightFlash 3s ease-out 1;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPreferenceControlCopy{
   display: grid;
   gap: 4px;

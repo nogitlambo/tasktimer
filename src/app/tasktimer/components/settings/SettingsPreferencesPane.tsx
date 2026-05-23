@@ -16,7 +16,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
           <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Auto switch to Focus Mode on launch</span>
-              <span className="settingsPreferenceControlHelp">Open Tasks directly in Focus Mode when TaskLaunch starts, so the timer is ready for focused work.</span>
+              <span className="settingsPreferenceControlHelp">Opens Focus Mode automatically when a task is launched</span>
             </div>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
           </div>

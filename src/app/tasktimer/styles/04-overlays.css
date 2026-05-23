@@ -2537,8 +2537,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: var(--modal-padding);
 }
 
+#confirmOverlay.isDeleteTaskConfirm #confirmTitle,
 #confirmOverlay.isDeleteTaskConfirm .confirmText{
-  color: rgba(170, 178, 190, .88);
+  color: var(--warn);
 }
 
 #confirmOverlay.isDeleteTaskConfirm .confirmDanger{
@@ -2561,6 +2562,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:hover:not(:disabled),
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:focus-visible:not(:disabled),
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:active:not(:disabled){
+  border-color: var(--warn) !important;
+  color: var(--warn) !important;
+  background: rgba(255, 77, 77, .14) !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px !important;
 }
@@ -5668,6 +5672,21 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 11px;
   line-height: 1.35;
+}
+
+#editOverlay .taskScheduleDaysHelperLink,
+#addTaskOverlay .taskScheduleDaysHelperLink{
+  color: #d9ff9a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+#editOverlay .taskScheduleDaysHelperLink:hover,
+#editOverlay .taskScheduleDaysHelperLink:focus-visible,
+#addTaskOverlay .taskScheduleDaysHelperLink:hover,
+#addTaskOverlay .taskScheduleDaysHelperLink:focus-visible{
+  color: #f6ffd9;
 }
 
 #editOverlay .milestonesBody,

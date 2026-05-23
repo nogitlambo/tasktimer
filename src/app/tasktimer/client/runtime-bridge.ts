@@ -5,6 +5,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getTaskTimerPushDeviceId, loadPendingPushAction } from "../lib/pushNotifications";
 import { applyScheduledPushAction } from "../lib/pushFunctions";
+import { setPendingRunningTimerSourceNotification } from "../lib/nativeTimerNotification";
 
 type HandlePendingPushActionOptions = {
   getTasks: () => Task[];
@@ -49,6 +50,7 @@ export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendi
   if (taskIndex < 0) return;
   options.clearPendingPushAction();
   if (pending.actionId === "launchTask") {
+    setPendingRunningTimerSourceNotification(taskId, pending.sourceNotificationId);
     void applyScheduledPushAction({
       actionId: "launchTask",
       taskId,

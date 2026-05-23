@@ -2,6 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
+const nativeTimerNotificationMock = vi.hoisted(() => ({
+  calls: [] as string[],
+}));
+
+vi.mock("../lib/nativeTimerNotification", () => ({
+  showNativeRunningTimerNotification: vi.fn(async (input: { taskId: string; startedAtMs: number; elapsedBeforeStartMs?: number }) => {
+    nativeTimerNotificationMock.calls.push(
+      `show-native:${input.taskId}:${input.startedAtMs}:${input.elapsedBeforeStartMs || 0}`
+    );
+  }),
+  clearNativeRunningTimerNotification: vi.fn(async (taskId: string) => {
+    nativeTimerNotificationMock.calls.push(`clear-native:${taskId}`);
+  }),
+}));
+
 function task(overrides: Partial<Task> = {}): Task {
   return {
     id: "task-1",
@@ -20,6 +35,7 @@ function task(overrides: Partial<Task> = {}): Task {
 
 function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focusTaskId: string | null; autoFocus: boolean }> = {}) {
   const calls: string[] = [];
+  nativeTimerNotificationMock.calls = calls;
   const confirmOptions: Array<{ onOk: () => void; onCancel?: () => void }> = [];
   const tasks = overrides.tasks || [task()];
   const commands = createTaskTimerLifecycleCommands({
@@ -78,6 +94,7 @@ describe("task timer lifecycle", () => {
       "flush-note:task-1",
       "open-reward:task-1:123",
       "upsert-live:task-1:0:0:force",
+      "show-native:task-1:123:0",
       "clear-checkpoint:task-1",
       "save:force",
       "sync-shared:task-1",
@@ -121,6 +138,7 @@ describe("task timer lifecycle", () => {
     harness.lifecycle.startTask(0);
 
     expect(harness.calls).toContain("upsert-live:task-1:0:300000:force");
+    expect(harness.calls).toContain("show-native:task-1:123:300000");
   });
 
   it("confirms before switching away from another running task", () => {
@@ -139,7 +157,9 @@ describe("task timer lifecycle", () => {
     expect(harness.tasks[0]).toMatchObject({ running: false, accumulatedMs: 345, startMs: null, resumePendingSinceDayKey: "1970-01-01" });
     expect(harness.tasks[1]).toMatchObject({ running: true, startMs: 123 });
     expect(harness.calls).toContain("close-reward:task-1:123");
+    expect(harness.calls).toContain("clear-native:task-1");
     expect(harness.calls).toContain("open-reward:task-2:123");
+    expect(harness.calls).toContain("show-native:task-2:123:0");
   });
 
   it("cancels task-switch confirmation without mutating tasks", () => {
@@ -171,6 +191,7 @@ describe("task timer lifecycle", () => {
       "flush-note:task-1",
       "close-reward:task-1:123",
       "finalize-live:task-1:345::",
+      "clear-native:task-1",
       "clear-checkpoint:task-1",
       "save:force",
       "sync-shared:task-1",
@@ -208,6 +229,7 @@ describe("task timer lifecycle", () => {
     expect(harness.calls).toEqual([
       "flush-note:task-1",
       "finalize-live:task-1:678:done:4",
+      "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",
       "reset-checkpoint:task-1",
@@ -220,6 +242,7 @@ describe("task timer lifecycle", () => {
 
   it("resets task state and completes cleanup when live-session finalization throws", () => {
     const calls: string[] = [];
+    nativeTimerNotificationMock.calls = calls;
     const entry = task({ running: true, startMs: 1, accumulatedMs: 55, hasStarted: true });
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const commands = createTaskTimerLifecycleCommands({
@@ -264,6 +287,7 @@ describe("task timer lifecycle", () => {
     expect(entry).toMatchObject({ running: false, accumulatedMs: 0, startMs: null, hasStarted: false });
     expect(calls).toEqual([
       "flush-note:task-1",
+      "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",
       "reset-checkpoint:task-1",

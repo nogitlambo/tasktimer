@@ -47,12 +47,10 @@ export function buildDeleteTaskConfirmOptions(args: {
   const taskName = String(args.taskName || "this task").trim() || "this task";
   return {
     title: `Delete "${taskName}"?`,
-    text: "",
+    text: "History entries associated with this task will also be permanently deleted (your awarded XP will be preserved). To keep history entries and just remove the task, choose Archive.",
     options: {
       okLabel: "Delete",
       cancelLabel: "Cancel",
-      checkboxLabel: "Delete history entries",
-      checkboxChecked: false,
       onOk: args.onDelete,
       onCancel: args.onCancel,
     } satisfies TaskTimerConfirmOptions,

@@ -591,6 +591,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
   }
 
+  function syncTaskScheduleDaysHelper(helperEl: HTMLElement | null, days: ReturnType<typeof normalizeOptimalProductivityDays>) {
+    if (!helperEl) return;
+    const summaryText = buildOptimalProductivityDaysShortList(days);
+    const summaryEl = helperEl.querySelector<HTMLElement>("[data-optimal-productivity-days-summary]");
+    if (summaryEl) {
+      summaryEl.textContent = summaryText;
+      return;
+    }
+    helperEl.textContent = `Task will be scheduled on your optimal productivity days: ${summaryText}`;
+  }
+
   function syncOptimalProductivityDaysUi() {
     const days = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
     syncOptimalProductivityDaysOrderUi();
@@ -603,13 +614,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.optimalProductivityDaysSummary) {
       els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
     }
-    const taskScheduleDaysHelperText = `Scheduled recurring tasks are added only to your optimal productivity days: ${buildOptimalProductivityDaysShortList(days)}`;
-    if (els.addTaskOptimalProductivityDaysHelper) {
-      els.addTaskOptimalProductivityDaysHelper.textContent = taskScheduleDaysHelperText;
-    }
-    if (els.editTaskOptimalProductivityDaysHelper) {
-      els.editTaskOptimalProductivityDaysHelper.textContent = taskScheduleDaysHelperText;
-    }
+    syncTaskScheduleDaysHelper(els.addTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
+    syncTaskScheduleDaysHelper(els.editTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     if (els.optimalProductivityDaysTrigger) {
       const expanded = !els.optimalProductivityDaysMenu?.hasAttribute("hidden");
       els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", expanded ? "true" : "false");
