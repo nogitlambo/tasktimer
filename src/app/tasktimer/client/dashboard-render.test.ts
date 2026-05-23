@@ -149,12 +149,9 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
     progressBarEl.className = "appShellHeaderXpTrack";
     const progressFillEl = new ElementStub();
     progressFillEl.className = "appShellHeaderXpFill";
-    const metaEl = new ElementStub();
-    metaEl.className = "appShellHeaderXpMeta";
     headerXpCard.appendChild(valueEl);
     headerXpCard.appendChild(progressBarEl);
     headerXpCard.appendChild(progressFillEl);
-    headerXpCard.appendChild(metaEl);
   }
 
   const documentRef = {
@@ -357,7 +354,7 @@ describe("last ran dashboard card", () => {
 });
 
 describe("dashboard header XP progress", () => {
-  it("renders the next-rank sub-text into the desktop header card", () => {
+  it("updates the desktop header progress bar without requiring a meta line", () => {
     const harness = createRenderHarness([], {
       includeHeaderXpCard: true,
       rewardProgress: { totalXp: 60, totalXpPrecise: 60, currentRankId: "operator", completedSessions: 0, lastAwardedAt: null, awardLedger: [] },
@@ -365,14 +362,15 @@ describe("dashboard header XP progress", () => {
 
     try {
       harness.renderHeaderXp();
-      const metaEl = harness.headerXpCard?.querySelector(".appShellHeaderXpMeta");
-      expect(metaEl?.textContent).toBe("You are 180 away from Technician");
+      const progressBarEl = harness.headerXpCard?.querySelector(".appShellHeaderXpTrack");
+      expect(harness.headerXpCard?.querySelector(".appShellHeaderXpMeta")).toBeNull();
+      expect(progressBarEl?.getAttribute("aria-valuenow")).toBe("0");
     } finally {
       harness.restore();
     }
   });
 
-  it("renders max-rank fallback copy into the desktop header card", () => {
+  it("keeps max-rank summary available on the desktop header card", () => {
     const harness = createRenderHarness([], {
       includeHeaderXpCard: true,
       rewardProgress: { totalXp: 50000, totalXpPrecise: 50000, currentRankId: "mythic", completedSessions: 0, lastAwardedAt: null, awardLedger: [] },
@@ -380,8 +378,8 @@ describe("dashboard header XP progress", () => {
 
     try {
       harness.renderHeaderXp();
-      const metaEl = harness.headerXpCard?.querySelector(".appShellHeaderXpMeta");
-      expect(metaEl?.textContent).toBe("Max rank reached");
+      expect(harness.headerXpCard?.querySelector(".appShellHeaderXpMeta")).toBeNull();
+      expect(harness.headerXpCard?.getAttribute("aria-label")).toBe("XP progress. 50000 XP total and max rank reached.");
     } finally {
       harness.restore();
     }

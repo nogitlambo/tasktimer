@@ -7,7 +7,7 @@ import {
 import { localDayKey } from "../lib/history";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "../lib/colors";
 import { computeMomentumSnapshot, getMomentumBandLabel } from "../lib/momentum";
-import { buildRewardsHeaderViewModel, buildXpProgressSubtext } from "../lib/rewards";
+import { buildRewardsHeaderViewModel, getNextRank } from "../lib/rewards";
 import {
   getLocalScheduleDay,
   getTaskScheduledDayEntries,
@@ -154,25 +154,43 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function renderRewardsHeaderProgressCard() {
     const cardEl = document.querySelector("#app .appShellHeaderXp") as HTMLElement | null;
+    const topbarEl = document.querySelector("#app .taskLaunchTopbarXp") as HTMLElement | null;
     const valueEl = cardEl?.querySelector(".appShellHeaderXpValue") as HTMLElement | null;
+    const topbarValueEl = topbarEl?.querySelector(".taskLaunchTopbarXpValue") as HTMLElement | null;
+    const promotionLabelEl = cardEl?.querySelector(".appShellHeaderXpPromotionLabel") as HTMLElement | null;
+    const topbarMetaLineEl = topbarEl?.querySelector(".taskLaunchTopbarXpMetaLine") as HTMLElement | null;
     const progressBarEl = cardEl?.querySelector(".appShellHeaderXpTrack") as HTMLElement | null;
+    const topbarProgressBarEl = topbarEl?.querySelector(".taskLaunchTopbarXpTrack") as HTMLElement | null;
     const progressFillEl = cardEl?.querySelector(".appShellHeaderXpFill") as HTMLElement | null;
-    const metaEl = cardEl?.querySelector(".appShellHeaderXpMeta") as HTMLElement | null;
+    const topbarProgressFillEl = topbarEl?.querySelector(".taskLaunchTopbarXpFill") as HTMLElement | null;
     const liveHeader = buildRewardsHeaderViewModel(ctx.getRewardProgress());
     const rewardsHeader = {
       totalXp: liveHeader.totalXp,
       progressPct: liveHeader.progressPct,
       xpToNext: liveHeader.xpToNext,
     };
+    const nextRankLabel = getNextRank(rewardsHeader.totalXp)?.label ?? "Max rank";
+    const promotionLabel = rewardsHeader.xpToNext != null
+      ? `${rewardsHeader.xpToNext.toLocaleString()} XP to ${nextRankLabel}`
+      : "Max rank reached";
     syncXpValueAlert(valueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "appShellXpValueAlert");
+    syncXpValueAlert(topbarValueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "taskLaunchXpValueAlert");
+    if (promotionLabelEl) promotionLabelEl.textContent = promotionLabel;
+    if (topbarMetaLineEl) topbarMetaLineEl.textContent = promotionLabel;
     if (progressFillEl) {
       progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+    }
+    if (topbarProgressFillEl) {
+      topbarProgressFillEl.style.width = `${rewardsHeader.progressPct}%`;
     }
     if (progressBarEl) {
       progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
       progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
     }
-    if (metaEl) metaEl.textContent = buildXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
+    if (topbarProgressBarEl) {
+      topbarProgressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
+      topbarProgressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
+    }
     if (cardEl) {
       const cardSummary =
         rewardsHeader.xpToNext != null

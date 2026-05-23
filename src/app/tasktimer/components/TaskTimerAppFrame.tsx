@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
-import { RANK_LADDER, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
+import { RANK_LADDER, buildXpProgressSubtext, getNextRank, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
@@ -176,6 +176,10 @@ export default function TaskTimerAppFrame({
     [currentRankId]
   );
   const showMaxXpAlert = rewardsHeader.xpToNext == null;
+  const nextRankLabel = getNextRank(rewardsHeader.totalXp)?.label ?? "Max rank";
+  const promotionLabel = rewardsHeader.xpToNext != null
+    ? `${formatXpNumber(rewardsHeader.xpToNext)} XP to ${nextRankLabel}`
+    : "Max rank reached";
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";
@@ -296,7 +300,7 @@ export default function TaskTimerAppFrame({
                       onClick={() => setShowRankLadderModal(true)}
                     >
                       <span className="taskLaunchTopbarXpStats">
-                        <span className="taskLaunchTopbarXpStatsRow">
+                        <span className="appShellHeaderXpStatsRow taskLaunchTopbarXpStatsRow">
                           <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
                             <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
                           </span>
@@ -318,7 +322,7 @@ export default function TaskTimerAppFrame({
                             {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
                           </strong>
                         </span>
-                        <span className="taskLaunchTopbarXpMetaLine">{xpProgressSubtext}</span>
+                        <span className="taskLaunchTopbarXpMetaLine">{promotionLabel}</span>
                       </span>
                     </button>
                   </span>
@@ -454,25 +458,29 @@ export default function TaskTimerAppFrame({
                         )}
                         <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>
                       </span>
-                      <div
-                        className="appShellHeaderXpTrack"
-                        role="progressbar"
-                        aria-label="XP progress toward the next rank"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                      >
-                        <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                      </div>
-                      <strong
-                        className={`appShellHeaderXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
-                        id="appShellHeaderXpValue"
-                      >
-                        {formatXpNumber(rewardsHeader.totalXp)} XP
-                        {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
-                      </strong>
+                      <span className="appShellHeaderXpTrackWrap">
+                        <div
+                          className="appShellHeaderXpTrack"
+                          role="progressbar"
+                          aria-label="XP progress toward the next rank"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                        >
+                          <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                        </div>
+                        <span className="appShellHeaderXpPromotionLabel">{promotionLabel}</span>
+                      </span>
+                      <span className="appShellHeaderXpValueWrap">
+                        <strong
+                          className={`appShellHeaderXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
+                          id="appShellHeaderXpValue"
+                        >
+                          {formatXpNumber(rewardsHeader.totalXp)} XP
+                          {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
+                        </strong>
+                      </span>
                     </span>
-                    <span className="appShellHeaderXpMeta">{xpProgressSubtext}</span>
                   </span>
                 </button>
               </div>

@@ -119,6 +119,15 @@ describe("secondary click audio", () => {
     }
   });
 
+  it("excludes the Focus Mode Exit button from default secondary audio", () => {
+    const focusExitButton = makeElement({
+      selectorMatches: { "button,a": true, "#focusModeBackBtn": true },
+      textContent: "Exit",
+    });
+
+    expect(getSecondaryClickTarget(focusExitButton)).toBeNull();
+  });
+
   it("excludes controls handled by primary click audio selectors", () => {
     const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
     const taskLaunchSelector =

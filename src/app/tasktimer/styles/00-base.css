@@ -1462,13 +1462,22 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 #focusModeBackBtn{
-  border-color: rgba(180,188,198,.34);
-  box-shadow:none;
+  border-color: rgba(170, 178, 190, .58);
+  background: rgba(170, 178, 190, .12);
+  color: rgba(238, 242, 246, .88);
+  box-shadow: none;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  border-radius:0;
 }
 
 #focusModeBackBtn:hover,
 #focusModeBackBtn:focus-visible{
-  border-color: rgba(210,216,224,.48);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(170, 178, 190, .16);
 }
 
 .focusCheckpointToggleRow{
@@ -1919,6 +1928,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .focusSessionNotes{
   width:50%;
   margin-top: 0;
+  padding-bottom:32px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -1989,11 +1999,13 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   width: 100%;
   height: 38px;
   min-height: 38px;
-  max-height: 38px;
+  max-height: min(24dvh, 220px);
   resize: none;
-  overflow-x:auto;
+  overflow-x:hidden;
   overflow-y:hidden;
-  white-space:pre;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
   font-size:12px;
   line-height:1.35;
   letter-spacing:.03em;
@@ -2014,6 +2026,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   display:grid;
   align-content:start;
   gap:8px;
+}
+
+.focusSessionNotesActions{
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
 .focusSessionNotesSavedText{
@@ -2989,8 +3007,13 @@ body.isFocusModeOpen #focusModeScreen{
 
 .focusInsights,
   .focusSessionNotes{
+    width:100%;
     padding:8px 9px;
     clip-path:none;
+  }
+
+.focusSessionNotes{
+    padding-bottom:32px;
   }
 
 .focusInsightsTitle{
@@ -3011,7 +3034,7 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     min-height:38px;
     max-height:12dvh;
-    resize:vertical;
+    resize:none;
   }
 }
 
@@ -3038,6 +3061,10 @@ body.isFocusModeOpen #focusModeScreen{
     padding:8px 10px;
   }
 
+.focusSessionNotes{
+    padding-bottom:32px;
+  }
+
 .focusInsightsTitle{
     margin-bottom:5px;
     font-size:11px;
@@ -3050,7 +3077,7 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     min-height:38px;
     max-height:12dvh;
-    resize:vertical;
+    resize:none;
   }
 }
 
@@ -3100,6 +3127,7 @@ body.isFocusModeOpen #focusModeScreen{
 
 .focusSessionNotes{
     margin-top: 2px;
+    padding-bottom:32px;
   }
 
 .focusSessionNotesSummary{

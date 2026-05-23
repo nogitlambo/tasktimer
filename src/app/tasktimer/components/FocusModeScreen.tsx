@@ -5,11 +5,7 @@ export default function FocusModeScreen() {
       <div className="focusModeHead">
         <div className="focusModeHeadSpacer" aria-hidden="true" />
         <div className="focusModeTitle">Focus Mode</div>
-        <div className="focusModeHeadAction">
-          <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
-            Exit
-          </button>
-        </div>
+        <div className="focusModeHeadAction" aria-hidden="true" />
       </div>
       <div className="focusTaskTitle" id="focusTaskName">
         TASKTIMER
@@ -54,6 +50,11 @@ export default function FocusModeScreen() {
               aria-label="Session Notes"
             />
             <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
+            <div className="focusSessionNotesActions">
+              <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+                Exit
+              </button>
+            </div>
           </div>
         </div>
       </div>

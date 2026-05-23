@@ -22,6 +22,7 @@ import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confett
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
+import { createClickAudioPlayer } from "./click-audio-player";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -54,6 +55,9 @@ type FocusModeCloseOptions = {
 
 const FOCUS_MODE_ZOOM_MS = 380;
 const FOCUS_MODE_FADE_CLOSE_MS = 180;
+const FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX = 38;
+const FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO = 0.24;
+const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -239,6 +243,38 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let activeFocusTransitionTimer: number | null = null;
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
+  const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
+
+  function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement) {
+    const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
+    const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
+    const viewportHeight = Math.max(
+      FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX,
+      Math.floor(Number(windowRef?.innerHeight || 0) || 0)
+    );
+    const fallbackMaxHeight = Math.max(
+      FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX,
+      Math.floor((viewportHeight || 768) * FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO)
+    );
+    const computedMaxHeight = windowRef?.getComputedStyle
+      ? Number.parseFloat(windowRef.getComputedStyle(input).maxHeight || "")
+      : Number.NaN;
+    if (Number.isFinite(computedMaxHeight) && computedMaxHeight >= FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX) {
+      return Math.min(computedMaxHeight, fallbackMaxHeight);
+    }
+    return fallbackMaxHeight;
+  }
+
+  function autosizeFocusSessionNotesInput() {
+    const input = els.focusSessionNotesInput as HTMLTextAreaElement | null;
+    if (!input) return;
+    input.style.height = "auto";
+    const maxHeight = getFocusSessionNotesMaxHeight(input);
+    const nextHeight = Math.max(FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX, Math.ceil(Number(input.scrollHeight || 0) || 0));
+    const clampedHeight = Math.min(nextHeight, maxHeight);
+    input.style.height = `${clampedHeight}px`;
+    input.style.overflowY = nextHeight > maxHeight ? "auto" : "hidden";
+  }
 
   const focusSessionDrafts = createFocusSessionDrafts(
     {
@@ -249,7 +285,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       setPendingSaveTimer: (next) => ctx.setFocusSessionNoteSaveTimer(next),
       getInputValue: () => String(els.focusSessionNotesInput?.value || ""),
       setInputValue: (next) => {
-        if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = next;
+        if (els.focusSessionNotesInput) {
+          els.focusSessionNotesInput.value = next;
+          autosizeFocusSessionNotesInput();
+        }
       },
       setSectionOpen: (open) => {
         if (els.focusSessionNotesSection) {
@@ -284,11 +323,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const normalizedTaskId = String(taskId || "").trim();
     if (!normalizedTaskId) {
       focusSessionDrafts.syncInput(null);
+      autosizeFocusSessionNotesInput();
       clearFocusSessionNotesSavedStatus();
       return;
     }
     const nextValue = getPreferredFocusSessionNote(normalizedTaskId);
     if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = nextValue;
+    autosizeFocusSessionNotesInput();
     clearFocusSessionNotesSavedStatus();
   }
 
@@ -1770,7 +1811,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function registerSessionEvents() {
-    ctx.on(els.focusModeBackBtn, "click", () => closeFocusMode({ animate: true }));
+    ctx.on(els.focusModeBackBtn, "click", () => {
+      focusModeExitClickPlayer.play();
+      closeFocusMode({ animate: true });
+    });
     ctx.on(els.focusCheckpointToggle, "click", () => {
       const nextValue = !ctx.getFocusShowCheckpoints();
       ctx.setFocusShowCheckpoints(nextValue);
@@ -1805,6 +1849,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     ctx.on(els.focusSessionNotesInput, "input", () => {
       if (!ctx.getFocusModeTaskId()) return;
+      autosizeFocusSessionNotesInput();
       clearFocusSessionNotesSavedStatus();
       scheduleFocusSessionNoteSave(String(ctx.getFocusModeTaskId() || ""), String(els.focusSessionNotesInput?.value || ""));
     });
@@ -1849,6 +1894,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (taskId) setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
     });
     if (typeof window !== "undefined") {
+      ctx.on(window, "resize", () => autosizeFocusSessionNotesInput());
       ctx.on(window, TASKTIMER_OVERLAY_CLOSED_EVENT, () => {
         window.setTimeout(() => {
           openDeferredFocusModeTimeGoalModal();

@@ -776,7 +776,7 @@ export function getNextRank(totalXp: number): RankDefinition | null {
 export function buildXpProgressSubtext(totalXp: number, xpToNext: number | null): string {
   const nextRank = getNextRank(totalXp);
   if (xpToNext == null || !nextRank) return "Max rank reached";
-  return `You are ${Math.max(0, Math.floor(Number(xpToNext) || 0)).toLocaleString()} away from ${nextRank.label}`;
+  return `You are ${Math.max(0, Math.floor(Number(xpToNext) || 0)).toLocaleString()} XP away from ${nextRank.label}`;
 }
 
 export function getRankById(rankId: string): RankDefinition {

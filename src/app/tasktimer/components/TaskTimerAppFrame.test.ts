@@ -25,7 +25,7 @@ describe("TaskTimerAppFrame mobile menu", () => {
 
 describe("TaskTimerAppFrame XP progress sub-text", () => {
   it("formats the next-rank sub-text with the next rank label", () => {
-    expect(getXpProgressSubtext(60, 180)).toBe("You are 180 away from Technician");
+    expect(getXpProgressSubtext(60, 180)).toBe("You are 180 XP away from Technician");
   });
 
   it("falls back to max-rank copy when no next rank exists", () => {

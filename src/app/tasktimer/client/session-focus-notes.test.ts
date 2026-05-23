@@ -53,6 +53,8 @@ function createElementStub() {
   const target = new EventTarget() as EventTarget & Record<string, unknown>;
   const attrs = new Map<string, string>();
   target.style = {
+    height: "",
+    overflowY: "",
     setProperty: () => {},
     removeProperty: () => {},
   };
@@ -60,6 +62,7 @@ function createElementStub() {
   target.classList = createClassList();
   target.textContent = "";
   target.value = "";
+  target.scrollHeight = 0;
   target.scrollTop = 0;
   target.scrollLeft = 0;
   target.ownerDocument = null;
@@ -78,6 +81,9 @@ function createHarness(overrides?: {
   drafts?: Record<string, string>;
   liveSessionsByTaskId?: Record<string, { note?: string }>;
   focusModeTaskId?: string | null;
+  focusSessionNotesScrollHeight?: number;
+  focusSessionNotesMaxHeight?: string;
+  windowInnerHeight?: number;
 }) {
   const storage = createStorage();
   if (overrides?.drafts && Object.keys(overrides.drafts).length) {
@@ -94,8 +100,15 @@ function createHarness(overrides?: {
     body,
     documentElement: { scrollTop: 0, scrollLeft: 0 },
     activeElement: null,
+  } as {
+    body: typeof body;
+    documentElement: { scrollTop: number; scrollLeft: number };
+    activeElement: null;
+    defaultView?: unknown;
   };
+  const windowTarget = new EventTarget();
   const windowStub = {
+    innerHeight: overrides?.windowInnerHeight ?? 1000,
     setTimeout,
     clearTimeout,
     requestAnimationFrame: (cb: FrameRequestCallback) => {
@@ -104,11 +117,17 @@ function createHarness(overrides?: {
     },
     scrollTo: () => {},
     localStorage: storage,
+    getComputedStyle: () => ({ maxHeight: overrides?.focusSessionNotesMaxHeight ?? "220px" }),
+    addEventListener: (type: string, handler: EventListener) => windowTarget.addEventListener(type, handler),
+    removeEventListener: (type: string, handler: EventListener) => windowTarget.removeEventListener(type, handler),
+    dispatchEvent: (event: Event) => windowTarget.dispatchEvent(event),
   };
+  documentStub.defaultView = windowStub;
   vi.stubGlobal("document", documentStub);
   vi.stubGlobal("window", windowStub);
 
   const focusSessionNotesInput = createElementStub();
+  focusSessionNotesInput.scrollHeight = overrides?.focusSessionNotesScrollHeight ?? 0;
   const focusSessionNotesSection = createElementStub();
   const focusSessionNotesSavedText = createElementStub();
   const focusModeScreen = createElementStub();
@@ -280,6 +299,7 @@ function createHarness(overrides?: {
     session,
     calls,
     focusSessionNotesInput,
+    windowStub,
     getDrafts: () => drafts,
     getBodyClassList: () => body.classList,
   };
@@ -317,17 +337,52 @@ describe("task timer session focus notes", () => {
     expect(harness.calls).toContain("upsert:task-1:");
   });
 
+  it("autosizes focus notes to the typed content height", () => {
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesScrollHeight: 96,
+    });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "line 1\nline 2\nline 3";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("96px");
+    expect(style.overflowY).toBe("hidden");
+  });
+
+  it("shrinks focus notes back to the compact height when content is deleted", () => {
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesScrollHeight: 96,
+    });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "line 1\nline 2\nline 3";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+    harness.focusSessionNotesInput.scrollHeight = 12;
+    harness.focusSessionNotesInput.value = "";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("38px");
+    expect(style.overflowY).toBe("hidden");
+  });
+
   it("prefers the live-session note over a local draft when focus mode opens", () => {
     const harness = createHarness({
       task: task({ running: true }),
       drafts: { "task-1": "local draft" },
       liveSessionsByTaskId: { "task-1": { note: "cloud note" } },
+      focusSessionNotesScrollHeight: 84,
     });
 
     harness.session.openFocusMode(0);
 
     expect(harness.getBodyClassList().contains("isFocusModeOpen")).toBe(true);
     expect(harness.focusSessionNotesInput.value).toBe("cloud note");
+    expect((harness.focusSessionNotesInput.style as Record<string, string>).height).toBe("84px");
   });
 
   it("falls back to the local draft when no live-session note exists", () => {
@@ -338,5 +393,22 @@ describe("task timer session focus notes", () => {
     harness.session.openFocusMode(0);
 
     expect(harness.focusSessionNotesInput.value).toBe("local draft");
+  });
+
+  it("caps long focus notes and enables textarea scrolling", () => {
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesScrollHeight: 420,
+      focusSessionNotesMaxHeight: "160px",
+      windowInnerHeight: 1000,
+    });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "long note";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("160px");
+    expect(style.overflowY).toBe("auto");
   });
 });

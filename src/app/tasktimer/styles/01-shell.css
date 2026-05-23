@@ -581,10 +581,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   display:flex;
   flex-direction:column;
   align-items:flex-end;
-  gap:2px;
+  gap:0;
 }
 
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpStatsRow{
+  width:100%;
   display:flex;
   align-items:center;
   justify-content:flex-end;
@@ -592,8 +593,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width:0;
 }
 
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStatsRow{
+  justify-content:flex-start;
+}
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpValue{
-  flex:0 0 auto;
   display:inline-flex;
   align-items:center;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
@@ -607,15 +611,27 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   will-change:transform;
 }
 
-#app[aria-label="TaskLaunch App"] .appShellHeaderXpMeta{
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpValueWrap{
+  position:relative;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  line-height:1;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpPromotionLabel{
   display:block;
-  max-width:100%;
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  max-width:none;
   overflow:hidden;
-  text-overflow:ellipsis;
+  text-overflow:clip;
   white-space:nowrap;
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
-  font-size:11px;
-  line-height:1.2;
+  text-align:right;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:9px;
+  line-height:1;
   color:rgba(210, 216, 226, .8);
 }
 
@@ -626,7 +642,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
 
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrack{
   position:relative;
-  flex:0 0 clamp(64px, 12vw, 112px);
   width:clamp(64px, 12vw, 112px);
   min-width:clamp(64px, 12vw, 112px);
   height:9px;
@@ -635,6 +650,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   border:1px solid rgba(255,255,255,.18);
   background:#0d1118;
   box-shadow:none;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpTrackWrap{
+  position:relative;
+  flex:0 0 clamp(64px, 12vw, 112px);
+  min-width:clamp(64px, 12vw, 112px);
+  height:9px;
+  display:block;
 }
 
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpTrack::before{
@@ -1068,15 +1091,6 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   color:rgba(247,251,255,.94);
 }
 
-#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStatsRow{
-  width:100%;
-  min-width:0;
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:8px;
-}
-
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStats{
   width:100%;
   min-width:0;
@@ -1412,7 +1426,6 @@ body{
 
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRank{
     max-width:88px;
-    padding-left:12px;
   }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpTrack,
