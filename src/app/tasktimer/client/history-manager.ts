@@ -3,22 +3,12 @@
 import { normalizeTaskStatusState, type HistoryByTaskId, type Task } from "../lib/types";
 import type { TaskTimerHistoryManagerContext } from "./context";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
-import {
-  allocateHistoryGenDailyBudgets,
-  buildHistoryGenTaskGoal,
-  formatHistoryGenGoalValue,
-  formatHistoryGenMinute,
-  getHistoryGenWeekKey,
-  parseHistoryGenTimeToMinute,
-} from "./history-manager-generation";
 import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./history-manager-render";
 import {
   buildHistoryManagerRowKey,
   groupSelectedHistoryRowsByTask,
   createDefaultHistoryManagerManualDraft,
   parseHistoryManagerManualDraft,
-  type HistoryGenParams,
-  type HistoryGenTaskGoal,
   type HistoryManagerManualDraft,
 } from "./history-manager-shared";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
@@ -26,16 +16,6 @@ import {
   OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT,
   type OpenHistoryManagerManualEntryDetail,
 } from "./history-manager-events";
-
-type HistoryGenPreview = {
-  params: HistoryGenParams;
-  perTaskCount: Record<string, number>;
-  totalGenerated: number;
-  nextHistory: HistoryByTaskId;
-  generatedGoalsByTaskId: Record<string, HistoryGenTaskGoal>;
-  existingGoalsByTaskId: Record<string, HistoryGenTaskGoal>;
-  limitedTaskIds: string[];
-};
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
@@ -528,382 +508,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     reader.readAsText(file);
   }
 
-  function readHistoryManagerGenerateParamsFromConfirm(): HistoryGenParams | null {
-    const host = els.confirmText as HTMLElement | null;
-    if (!host) return null;
-    const selectedTaskIds = Array.from(
-      host.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-history-gen-task-id]:checked')
-    )
-      .map((el) => String(el.getAttribute("data-history-gen-task-id") || "").trim())
-      .filter(Boolean);
-    if (!selectedTaskIds.length) {
-      alert("Select at least one task.");
-      return null;
-    }
-
-    const daysBack = Math.floor(Number((host.querySelector("#historyGenDaysBack") as HTMLInputElement | null)?.value || 0));
-    if (!Number.isFinite(daysBack) || daysBack <= 0) {
-      alert("Enter a valid date range in days (greater than 0).");
-      return null;
-    }
-
-    const entriesPerDayMin = Math.floor(
-      Number((host.querySelector("#historyGenEntriesMin") as HTMLInputElement | null)?.value || 0)
-    );
-    const entriesPerDayMax = Math.floor(
-      Number((host.querySelector("#historyGenEntriesMax") as HTMLInputElement | null)?.value || 0)
-    );
-    if (
-      !Number.isFinite(entriesPerDayMin) ||
-      !Number.isFinite(entriesPerDayMax) ||
-      entriesPerDayMin < 0 ||
-      entriesPerDayMax <= 0
-    ) {
-      alert("Entries/day min must be 0 or greater, and max must be greater than 0.");
-      return null;
-    }
-    if (entriesPerDayMin > entriesPerDayMax) {
-      alert("Entries/day minimum cannot be greater than maximum.");
-      return null;
-    }
-
-    const startRaw = (host.querySelector("#historyGenStartTime") as HTMLInputElement | null)?.value || "";
-    const endRaw = (host.querySelector("#historyGenEndTime") as HTMLInputElement | null)?.value || "";
-    const windowStartMinute = parseHistoryGenTimeToMinute(startRaw);
-    const windowEndMinute = parseHistoryGenTimeToMinute(endRaw);
-    if (windowStartMinute == null || windowEndMinute == null || windowStartMinute >= windowEndMinute) {
-      alert("Enter a valid time window where start is earlier than end.");
-      return null;
-    }
-
-    return {
-      taskIds: selectedTaskIds,
-      daysBack,
-      entriesPerDayMin,
-      entriesPerDayMax,
-      windowStartMinute,
-      windowEndMinute,
-      replaceExisting: !!(host.querySelector("#historyGenReplaceExisting") as HTMLInputElement | null)?.checked,
-      generateRandomTimeGoals: !!(host.querySelector("#historyGenRandomGoals") as HTMLInputElement | null)?.checked,
-    };
-  }
-
-  function buildHistoryManagerTestDataPreview(params: HistoryGenParams): HistoryGenPreview | null {
-    const historyByTaskId = getFinalizedHistoryByTaskId();
-    const tasks = ctx.getTasks();
-    const cloneHistory: HistoryByTaskId = {};
-    if (!params.replaceExisting) {
-      Object.keys(historyByTaskId || {}).forEach((taskId) => {
-        cloneHistory[taskId] = Array.isArray(historyByTaskId[taskId]) ? (historyByTaskId[taskId] || []).slice() : [];
-      });
-    }
-    const nextHistory: HistoryByTaskId = cloneHistory;
-
-    const taskOrderById = new Map<string, number>();
-    (tasks || []).forEach((task, idx) => {
-      const taskId = String(task.id || "").trim();
-      if (taskId) taskOrderById.set(taskId, idx);
-    });
-    const selectedTasks = params.taskIds
-      .map((taskId) => tasks.find((task) => String(task.id || "").trim() === String(taskId)))
-      .filter((task): task is Task => !!task);
-    const perTaskCount: Record<string, number> = {};
-    selectedTasks.forEach((task) => {
-      const taskId = String(task.id || "").trim();
-      perTaskCount[taskId] = 0;
-      if (!Array.isArray(nextHistory[taskId])) nextHistory[taskId] = [];
-    });
-
-    const generatedGoalsByTaskId: Record<string, HistoryGenTaskGoal> = {};
-    const existingGoalsByTaskId: Record<string, HistoryGenTaskGoal> = {};
-    if (params.generateRandomTimeGoals) {
-      const availableWindowMinutes = Math.max(0, params.windowEndMinute - params.windowStartMinute);
-      const budgets = allocateHistoryGenDailyBudgets(selectedTasks.length, availableWindowMinutes);
-      if (!budgets) {
-        alert("The selected time window is too small to assign at least 15 minutes/day to every selected task.");
-        return null;
-      }
-      selectedTasks.forEach((task, index) => {
-        const taskId = String(task.id || "").trim();
-        generatedGoalsByTaskId[taskId] = buildHistoryGenTaskGoal(budgets[index] || 15);
-      });
-    } else {
-      selectedTasks.forEach((task) => {
-        const taskId = String(task.id || "").trim();
-        const timeGoalEnabled = task.timeGoalEnabled !== false;
-        const timeGoalMinutes = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) || 0));
-        if (!timeGoalEnabled || timeGoalMinutes <= 0) return;
-        const timeGoalPeriod: "day" | "week" = task.timeGoalPeriod === "day" ? "day" : "week";
-        const dailyBudgetMinutes =
-          timeGoalPeriod === "week" ? Math.max(0, Math.floor(timeGoalMinutes / 7)) : timeGoalMinutes;
-        existingGoalsByTaskId[taskId] = {
-          timeGoalEnabled: true,
-          timeGoalValue: Math.max(0, Number(task.timeGoalValue || 0) || 0),
-          timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
-          timeGoalPeriod,
-          timeGoalMinutes,
-          dailyBudgetMinutes,
-        };
-      });
-    }
-
-    const unitToMinute = (task: Task) => {
-      if (task.milestoneTimeUnit === "day") return 24 * 60;
-      if (task.milestoneTimeUnit === "minute") return 1;
-      return 60;
-    };
-    const randInt = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
-    const now = new Date();
-    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let totalGenerated = 0;
-    const generatedMinutesByTaskDay: Record<string, number> = {};
-    const generatedMinutesByTaskWeek: Record<string, number> = {};
-    const limitedTaskIds = new Set<string>();
-
-    for (let dayOffset = params.daysBack - 1; dayOffset >= 0; dayOffset -= 1) {
-      const day = new Date(todayLocal);
-      day.setDate(todayLocal.getDate() - dayOffset);
-      const dayKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-      const weekKey = getHistoryGenWeekKey(day);
-
-      selectedTasks.forEach((task) => {
-        const taskId = String(task.id || "").trim();
-        if (!taskId) return;
-        const taskIdx = taskOrderById.get(taskId) || 0;
-        const sessions = randInt(params.entriesPerDayMin, params.entriesPerDayMax);
-        const existingGoal = params.generateRandomTimeGoals ? null : existingGoalsByTaskId[taskId] || null;
-        const milestonesMinutes = ctx
-          .sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : [])
-          .map((m) => Math.floor(Math.max(0, Number(m.hours || 0)) * unitToMinute(task)))
-          .filter((m) => m > 0);
-
-        for (let i = 0; i < sessions; i += 1) {
-          const windowMinute = randInt(params.windowStartMinute, params.windowEndMinute - 1);
-          const tsDate = new Date(day);
-          tsDate.setHours(0, 0, 0, 0);
-          const ts = tsDate.getTime() + windowMinute * 60_000 + i * 37_000 + taskIdx * 1_000;
-
-          let durationMinutes = 0;
-          if (milestonesMinutes.length) {
-            const target = milestonesMinutes[(dayOffset + i + taskIdx) % milestonesMinutes.length];
-            const variance = Math.max(5, Math.floor(target * 0.2));
-            durationMinutes = Math.max(5, target + randInt(-variance, variance));
-          } else {
-            const baseMinutes = 18 + ((taskIdx * 7) % 35);
-            const varianceMinutes = Math.floor(Math.random() * 55);
-            durationMinutes = Math.max(5, baseMinutes + varianceMinutes);
-          }
-
-          if (existingGoal) {
-            const dayBudgetKey = `${taskId}|${dayKey}`;
-            const weekBudgetKey = `${taskId}|${weekKey}`;
-            const usedMinutes =
-              existingGoal.timeGoalPeriod === "day"
-                ? generatedMinutesByTaskDay[dayBudgetKey] || 0
-                : generatedMinutesByTaskWeek[weekBudgetKey] || 0;
-            const remainingMinutes = Math.max(0, existingGoal.timeGoalMinutes - usedMinutes);
-            if (remainingMinutes <= 0) {
-              limitedTaskIds.add(taskId);
-              continue;
-            }
-            if (durationMinutes > remainingMinutes) {
-              durationMinutes = remainingMinutes;
-              limitedTaskIds.add(taskId);
-            }
-            if (durationMinutes <= 0) continue;
-            if (existingGoal.timeGoalPeriod === "day") {
-              generatedMinutesByTaskDay[dayBudgetKey] = usedMinutes + durationMinutes;
-            } else {
-              generatedMinutesByTaskWeek[weekBudgetKey] = usedMinutes + durationMinutes;
-            }
-          }
-
-          const ms = durationMinutes * 60 * 1000;
-          nextHistory[taskId].push({
-            ts,
-            name: String(task.name || "").trim() || "Task",
-            ms,
-            color: ctx.historyEntryColorForTaskMs(task, ms),
-          });
-          perTaskCount[taskId] += 1;
-          totalGenerated += 1;
-        }
-      });
-    }
-
-    Object.keys(nextHistory).forEach((taskId) => {
-      const arr = Array.isArray(nextHistory[taskId]) ? nextHistory[taskId] : [];
-      arr.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
-      nextHistory[taskId] = arr;
-    });
-
-    return {
-      params,
-      perTaskCount,
-      totalGenerated,
-      nextHistory,
-      generatedGoalsByTaskId,
-      existingGoalsByTaskId,
-      limitedTaskIds: Array.from(limitedTaskIds),
-    };
-  }
-
-  async function applyHistoryManagerTestData(preview: HistoryGenPreview): Promise<void> {
-    if (preview.params.generateRandomTimeGoals) {
-      const nextTasks = ctx.getTasks().map((task) => {
-        const taskId = String(task.id || "").trim();
-        const generatedGoal = preview.generatedGoalsByTaskId[taskId];
-        if (!generatedGoal) return task;
-        return {
-          ...task,
-          timeGoalEnabled: generatedGoal.timeGoalEnabled,
-          timeGoalValue: generatedGoal.timeGoalValue,
-          timeGoalUnit: generatedGoal.timeGoalUnit,
-          timeGoalPeriod: generatedGoal.timeGoalPeriod,
-          timeGoalMinutes: generatedGoal.timeGoalMinutes,
-        };
-      });
-      ctx.setTasks(nextTasks);
-      ctx.save();
-    }
-    ctx.setHistoryByTaskId(preview.nextHistory);
-    await ctx.saveHistoryAndWait(preview.nextHistory);
-    ctx.render();
-    renderHistoryManager();
-    alert(`Generated ${preview.totalGenerated} test history entries.`);
-  }
-
-  function openHistoryManagerGeneratePreviewDialog(preview: HistoryGenPreview) {
-    const tasks = ctx.getTasks();
-    const perTaskRows = Object.entries(preview.perTaskCount)
-      .map(([taskId, count]) => {
-        const taskName = String(tasks.find((task) => String(task.id || "") === String(taskId))?.name || taskId || "Task").trim();
-        const generatedGoal = preview.generatedGoalsByTaskId[String(taskId || "").trim()];
-        const existingGoal = preview.existingGoalsByTaskId[String(taskId || "").trim()];
-        const goalSummary = generatedGoal
-          ? ` | Goal: ${ctx.escapeHtmlUI(formatHistoryGenGoalValue(generatedGoal.timeGoalValue))} ${ctx.escapeHtmlUI(
-              generatedGoal.timeGoalUnit
-            )}/${ctx.escapeHtmlUI(generatedGoal.timeGoalPeriod)} (${generatedGoal.dailyBudgetMinutes} min/day)`
-          : existingGoal
-          ? ` | Existing goal cap: ${ctx.escapeHtmlUI(formatHistoryGenGoalValue(existingGoal.timeGoalValue))} ${ctx.escapeHtmlUI(
-              existingGoal.timeGoalUnit
-            )}/${ctx.escapeHtmlUI(existingGoal.timeGoalPeriod)}`
-          : "";
-        const limitedNote = preview.limitedTaskIds.includes(String(taskId || "").trim()) ? ` | Limited by goal` : "";
-        return `<li><b>${ctx.escapeHtmlUI(taskName)}</b>: ${count}${goalSummary}${limitedNote}</li>`;
-      })
-      .join("");
-    const startDate = new Date();
-    startDate.setHours(0, 0, 0, 0);
-    startDate.setDate(startDate.getDate() - (preview.params.daysBack - 1));
-    const endDate = new Date();
-    endDate.setHours(0, 0, 0, 0);
-    ctx.confirm("Preview Test Data", "", {
-      okLabel: "Generate",
-      cancelLabel: "Cancel",
-      textHtml: `
-        <div class="hmGenConfirm">
-          <p style="margin:0 0 8px;">Selected tasks: <b>${preview.params.taskIds.length}</b></p>
-          <p style="margin:0 0 8px;">Date span: <b>${ctx.escapeHtmlUI(startDate.toLocaleDateString())}</b> to <b>${ctx.escapeHtmlUI(
-            endDate.toLocaleDateString()
-          )}</b> (${preview.params.daysBack} days)</p>
-          <p style="margin:0 0 8px;">Entries/day: <b>${preview.params.entriesPerDayMin}</b> to <b>${
-            preview.params.entriesPerDayMax
-          }</b></p>
-          <p style="margin:0 0 8px;">Entry window: <b>${formatHistoryGenMinute(preview.params.windowStartMinute)}</b> to <b>${formatHistoryGenMinute(
-            preview.params.windowEndMinute
-          )}</b></p>
-          <p style="margin:0 0 8px;">Random goals: <b>${preview.params.generateRandomTimeGoals ? "Yes" : "No"}</b></p>
-          <p style="margin:0 0 8px;">Existing goals enforced: <b>${
-            !preview.params.generateRandomTimeGoals && Object.keys(preview.existingGoalsByTaskId).length ? "Yes" : "No"
-          }</b></p>
-          <p style="margin:0 0 8px;">Replace existing: <b>${preview.params.replaceExisting ? "Yes" : "No"}</b></p>
-          <p style="margin:0 0 8px;">Total generated: <b>${preview.totalGenerated}</b></p>
-          <ul style="margin:0; padding-left:20px;">${perTaskRows || "<li>No tasks</li>"}</ul>
-        </div>
-      `,
-      onOk: () => {
-        void applyHistoryManagerTestData(preview);
-        ctx.closeConfirm();
-      },
-      onCancel: () => ctx.closeConfirm(),
-    });
-  }
-
-  function openHistoryManagerGenerateConfigDialog() {
-    const tasks = ctx.getTasks();
-    const taskList = (tasks || []).filter((task) => String(task.id || "").trim());
-    if (!taskList.length) {
-      alert("Add at least one task before generating test history.");
-      return;
-    }
-    const taskOptions = taskList
-      .map((task) => {
-        const taskId = String(task.id || "").trim();
-        const taskName = String(task.name || "").trim() || "Task";
-        return `<label class="hmGenTaskRow" style="display:flex; align-items:center; gap:8px; margin:4px 0;">
-          <input type="checkbox" data-history-gen-task-id="${ctx.escapeHtmlUI(taskId)}" />
-          <span>${ctx.escapeHtmlUI(taskName)}</span>
-        </label>`;
-      })
-      .join("");
-
-    ctx.confirm("Generate Test Data", "", {
-      okLabel: "Preview",
-      cancelLabel: "Cancel",
-      textHtml: `
-        <div class="hmGenConfirm">
-          <div style="margin:0 0 8px;"><b>Select tasks</b></div>
-          <div id="historyGenTaskList" style="max-height:180px; overflow:auto; border:1px solid var(--line, rgba(255,255,255,.14)); border-radius:10px; padding:8px;">
-            ${taskOptions}
-          </div>
-          <div style="display:grid; gap:8px; margin-top:10px;">
-            <div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, .9fr) minmax(0, .9fr); gap:8px; align-items:end;">
-              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <span>Days back</span>
-              <input id="historyGenDaysBack" type="number" min="1" max="3650" value="90" style="width:100%; min-width:0;" />
-              </label>
-              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <span>Entries/day min</span>
-              <input id="historyGenEntriesMin" type="number" min="0" max="1000" value="1" style="width:100%; min-width:0;" />
-              </label>
-              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <span>Entries/day max</span>
-              <input id="historyGenEntriesMax" type="number" min="1" max="1000" value="3" style="width:100%; min-width:0;" />
-              </label>
-            </div>
-            <div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:8px; align-items:end;">
-              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <span>Start time</span>
-              <input id="historyGenStartTime" type="time" value="06:00" style="width:100%; min-width:0;" />
-              </label>
-              <label style="display:flex; flex-direction:column; gap:4px; min-width:0;">
-              <span>End time</span>
-              <input id="historyGenEndTime" type="time" value="20:00" style="width:100%; min-width:0;" />
-              </label>
-            </div>
-            <label style="display:flex; align-items:center; gap:8px; margin-top:2px;">
-              <input id="historyGenRandomGoals" type="checkbox" />
-              <span>Generate Random Time Goal(s)</span>
-            </label>
-            <label style="display:flex; align-items:center; gap:8px; margin-top:2px;">
-              <input id="historyGenReplaceExisting" type="checkbox" checked />
-              <span>Replace existing history</span>
-            </label>
-          </div>
-        </div>
-      `,
-      onOk: () => {
-        const params = readHistoryManagerGenerateParamsFromConfirm();
-        if (!params) return;
-        const preview = buildHistoryManagerTestDataPreview(params);
-        if (!preview) return;
-        openHistoryManagerGeneratePreviewDialog(preview);
-      },
-      onCancel: () => ctx.closeConfirm(),
-    });
-  }
-
   function syncHistoryManagerBulkUi() {
     const hmBulkEditMode = ctx.getHmBulkEditMode();
     const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
@@ -928,9 +532,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const hmBulkEditMode = ctx.getHmBulkEditMode();
     const hmSortKey = ctx.getHmSortKey();
     const hmSortDir = ctx.getHmSortDir();
-    if (els.historyManagerGenerateBtn) {
-      els.historyManagerGenerateBtn.style.display = ctx.isArchitectUser() ? "" : "none";
-    }
     const listEl = document.getElementById("hmList");
     if (!listEl) return;
     const renderResult = renderHistoryManagerHtml({
@@ -974,9 +575,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     if (isHistoryManagerOpen()) {
       if (!historyManagerLoading) renderHistoryManager();
       return;
-    }
-    if (els.historyManagerGenerateBtn) {
-      els.historyManagerGenerateBtn.style.display = ctx.isArchitectUser() ? "" : "none";
     }
     if (els.historyManagerScreen) {
       (els.historyManagerScreen as HTMLElement).style.display = "block";
@@ -1165,13 +763,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const f = e.target?.files && e.target.files[0] ? e.target.files[0] : null;
       e.target.value = "";
       if (f) importHistoryManagerCsvFromFile(f);
-    });
-    ctx.on(els.historyManagerGenerateBtn, "click", () => {
-      if (!ctx.isArchitectUser()) {
-        alert("Generate Test Data is architect-only.");
-        return;
-      }
-      openHistoryManagerGenerateConfigDialog();
     });
     ctx.on(els.historyManagerBulkBtn, "click", () => {
       const nextBulkEditMode = !ctx.getHmBulkEditMode();
@@ -1507,11 +1098,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     getTaskMetaForHistoryId,
     exportHistoryManagerCsv,
     importHistoryManagerCsvFromFile,
-    readHistoryManagerGenerateParamsFromConfirm,
-    buildHistoryManagerTestDataPreview,
-    applyHistoryManagerTestData,
-    openHistoryManagerGeneratePreviewDialog,
-    openHistoryManagerGenerateConfigDialog,
     syncHistoryManagerBulkUi,
     renderHistoryManager,
     openHistoryManager,

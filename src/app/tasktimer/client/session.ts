@@ -139,6 +139,14 @@ export function didElapsedReachTimeGoalFromBaseline(
   return !Number.isFinite(prevBaselineSec) || prevBaselineSec < timeGoalSec;
 }
 
+export function getTimeGoalCompletionElapsedMs(task: Task | null | undefined, elapsedMsRaw: unknown): number {
+  const elapsedMs = Math.max(0, Math.floor(Number(elapsedMsRaw || 0) || 0));
+  const timeGoalMinutes = Number(task?.timeGoalMinutes || 0);
+  if (!(task?.timeGoalEnabled && timeGoalMinutes > 0)) return elapsedMs;
+  const timeGoalMs = Math.max(0, Math.round(timeGoalMinutes * 60_000));
+  return timeGoalMs > 0 ? Math.min(elapsedMs, timeGoalMs) : elapsedMs;
+}
+
 export function resetFocusModeScrollPosition(focusModeScreen: HTMLElement | null | undefined): void {
   const screen = focusModeScreen || null;
   if (screen) {
@@ -692,14 +700,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function completeTimeGoalTask(task: Task, elapsedMs: number, opts?: { reminder?: boolean; deferModal?: boolean }) {
     const taskId = String(task?.id || "").trim();
     if (!taskId || isTaskTimeGoalCompletedToday(task)) return false;
-    const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    const safeElapsedMs = getTimeGoalCompletionElapsedMs(task, elapsedMs);
     const awardPreview = getTimeGoalCompletionAwardPreview(task, safeElapsedMs);
     if (taskId && els.timeGoalCompleteNoteInput) {
       setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task));
+    markTaskTimeGoalCompletedForResolution(task, nowMs(), safeElapsedMs);
+    task.accumulatedMs = safeElapsedMs;
+    task.running = false;
+    task.startMs = null;
     ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
     ctx.save();
     ctx.render();

@@ -23,7 +23,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       dateTimeButton: els.taskManualDateTimeBtn,
       hoursInput: els.taskManualHoursInput,
       minutesInput: els.taskManualMinutesInput,
-      difficultyGroup: els.taskManualEntryDifficultyGroup as HTMLElement | null,
       noteInput: els.taskManualNoteInput,
       error: els.taskManualEntryError as HTMLElement | null,
     },
@@ -312,12 +311,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.on(els.taskManualNoteInput, "input", () => {
       const value = String(els.taskManualNoteInput?.value || "");
       taskManualEntry.setNoteValue(value);
-    });
-    ctx.on(els.taskManualEntryDifficultyGroup, "click", (ev: any) => {
-      const btn = ev.target?.closest?.("[data-completion-difficulty]");
-      if (!btn) return;
-      const value = String(btn.getAttribute("data-completion-difficulty") || "");
-      taskManualEntry.selectDifficulty(value);
     });
   }
 

@@ -59,16 +59,6 @@ function createHarness(overrides?: {
   const minutesInput = inputStub();
   const noteInput = inputStub();
   const error = elementStub("taskManualEntryError");
-  const easyButton = elementStub();
-  easyButton.dataset.completionDifficulty = "5";
-  const hardButton = elementStub();
-  hardButton.dataset.completionDifficulty = "1";
-  const difficultyGroup = elementStub("taskManualEntryDifficultyGroup");
-  difficultyGroup.querySelectorAll.mockImplementation((selector: string) => {
-    if (selector === "[data-completion-difficulty]")
-      return [easyButton, hardButton];
-    return [];
-  });
   const opened: unknown[] = [];
   const closed: unknown[] = [];
   let historyByTaskId: HistoryByTaskId = {
@@ -96,7 +86,6 @@ function createHarness(overrides?: {
       dateTimeButton: dateTimeButton as unknown as HTMLButtonElement,
       hoursInput: hoursInput as unknown as HTMLInputElement,
       minutesInput: minutesInput as unknown as HTMLInputElement,
-      difficultyGroup: difficultyGroup as unknown as HTMLElement,
       noteInput: noteInput as unknown as HTMLInputElement,
       error: error as unknown as HTMLElement,
     },
@@ -125,8 +114,6 @@ function createHarness(overrides?: {
     minutesInput,
     noteInput,
     error,
-    easyButton,
-    hardButton,
     opened,
     closed,
     getHistoryByTaskId: () => historyByTaskId,
@@ -170,29 +157,18 @@ describe("createTaskManualEntryInteraction", () => {
     expect(harness.interaction.getActiveTaskId()).toBeNull();
   });
 
-  it("syncs draft input values, selected difficulty, and error state", () => {
+  it("syncs draft input values and error state", () => {
     const harness = createHarness();
     harness.interaction.open("task-1");
 
     harness.interaction.setHoursValue("1");
     harness.interaction.setMinutesValue("25");
     harness.interaction.setNoteValue("Retrospective note");
-    harness.interaction.selectDifficulty("1");
     harness.interaction.setError("Elapsed time must be greater than 0.");
 
     expect(harness.hoursInput.value).toBe("1");
     expect(harness.minutesInput.value).toBe("25");
     expect(harness.noteInput.value).toBe("Retrospective note");
-    expect(harness.easyButton.classList.contains("is-selected")).toBe(false);
-    expect(harness.easyButton.setAttribute).toHaveBeenLastCalledWith(
-      "aria-checked",
-      "false",
-    );
-    expect(harness.hardButton.classList.contains("is-selected")).toBe(true);
-    expect(harness.hardButton.setAttribute).toHaveBeenLastCalledWith(
-      "aria-checked",
-      "true",
-    );
     expect(harness.error.textContent).toBe(
       "Elapsed time must be greater than 0.",
     );
@@ -202,9 +178,7 @@ describe("createTaskManualEntryInteraction", () => {
   it("clears validation errors when editable fields change", () => {
     const harness = createHarness();
     harness.interaction.open("task-1");
-    harness.interaction.setError(
-      "Choose a sentiment before saving this entry.",
-    );
+    harness.interaction.setError("Elapsed time must be greater than 0.");
 
     harness.interaction.setDateTimeValue("2026-05-03T06:30");
 
@@ -222,7 +196,6 @@ describe("createTaskManualEntryInteraction", () => {
     harness.interaction.setHoursValue("1");
     harness.interaction.setMinutesValue("25");
     harness.interaction.setNoteValue("Retrospective note");
-    harness.interaction.selectDifficulty("1");
 
     expect(harness.interaction.save()).toBe(true);
 
@@ -235,7 +208,6 @@ describe("createTaskManualEntryInteraction", () => {
         ts: new Date("2026-05-03T06:30").getTime(),
         ms: 85 * 60 * 1000,
         name: "Focus",
-        completionDifficulty: 1,
         note: "Retrospective note",
         color: "#ff8a3d",
       },

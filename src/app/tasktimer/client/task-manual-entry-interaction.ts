@@ -1,5 +1,4 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
-import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   createDefaultHistoryManagerManualDraft,
   parseHistoryManagerManualDraft,
@@ -14,7 +13,6 @@ type TaskManualEntryElements = {
   dateTimeButton: HTMLButtonElement | null;
   hoursInput: HTMLInputElement | null;
   minutesInput: HTMLInputElement | null;
-  difficultyGroup: HTMLElement | null;
   noteInput: HTMLInputElement | HTMLTextAreaElement | null;
   error: HTMLElement | null;
 };
@@ -64,19 +62,6 @@ export function createTaskManualEntryInteraction(
       elements.minutesInput.value = currentDraft.minutesValue || "";
     if (elements.noteInput)
       elements.noteInput.value = currentDraft.noteValue || "";
-    const sentimentButtons = Array.from(
-      ((elements.difficultyGroup as HTMLElement | null)?.querySelectorAll?.(
-        "[data-completion-difficulty]",
-      ) || []) as Iterable<Element>,
-    );
-    sentimentButtons.forEach((button) => {
-      const selected =
-        normalizeCompletionDifficulty(
-          (button as HTMLElement).dataset.completionDifficulty,
-        ) === normalizeCompletionDifficulty(currentDraft.completionDifficulty);
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-checked", selected ? "true" : "false");
-    });
     if (elements.error) {
       elements.error.textContent = currentDraft.errorMessage || "";
       elements.error.style.display = currentDraft.errorMessage
@@ -163,15 +148,6 @@ export function createTaskManualEntryInteraction(
     }));
   }
 
-  function selectDifficulty(value: string) {
-    updateDraft((currentDraft) => ({
-      ...currentDraft,
-      completionDifficulty: normalizeCompletionDifficulty(value) || "",
-      errorMessage: "",
-    }));
-    sync();
-  }
-
   function setError(message: string) {
     updateDraft((currentDraft) => ({
       ...currentDraft,
@@ -243,7 +219,6 @@ export function createTaskManualEntryInteraction(
     setHoursValue,
     setMinutesValue,
     setNoteValue,
-    selectDifficulty,
     setError,
     save,
     openDateTimePicker,

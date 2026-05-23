@@ -1,4 +1,3 @@
-
 import AppImg from "@/components/AppImg";
 import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
 
@@ -19,9 +18,6 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
           <div className="hmHead">
             <div className="hmTitle">History Manager</div>
             <div className="hmHeadActions">
-              <button className="btn btn-ghost small" id="historyManagerGenerateBtn" type="button">
-                Generate Test Data
-              </button>
               <button className="btn btn-ghost small" id="historyManagerBulkBtn" type="button">
                 Bulk Edit
               </button>

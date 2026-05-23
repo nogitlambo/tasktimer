@@ -4,6 +4,7 @@ import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
+  getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
   resetFocusModeScrollPosition,
   shouldOpenFocusModeForTimeGoalNextTask,
@@ -86,6 +87,14 @@ describe("time goal completion flow guard", () => {
 
   it("does not detect a time goal before elapsed reaches the goal", () => {
     expect(didElapsedReachTimeGoalFromBaseline(undefined, 59, 60)).toBe(false);
+  });
+
+  it("clamps completed elapsed to the configured time goal", () => {
+    expect(getTimeGoalCompletionElapsedMs(timeGoalTask({ timeGoalMinutes: 1 }), 61_250)).toBe(60_000);
+  });
+
+  it("does not clamp completed elapsed for tasks without a time goal", () => {
+    expect(getTimeGoalCompletionElapsedMs(timeGoalTask({ timeGoalEnabled: false, timeGoalMinutes: 0 }), 61_250)).toBe(61_250);
   });
 
   it("keeps completion available for an active running live session over its goal", () => {

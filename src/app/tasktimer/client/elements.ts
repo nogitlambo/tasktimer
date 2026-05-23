@@ -219,7 +219,6 @@ const els = {
   historyManagerBtn: documentRef.getElementById("historyManagerBtn"),
   historyManagerExportBtn: documentRef.getElementById("historyManagerExportBtn") as HTMLButtonElement | null,
   historyManagerImportBtn: documentRef.getElementById("historyManagerImportBtn") as HTMLButtonElement | null,
-  historyManagerGenerateBtn: documentRef.getElementById("historyManagerGenerateBtn") as HTMLButtonElement | null,
   historyManagerImportFile: documentRef.getElementById("historyManagerImportFile") as HTMLInputElement | null,
   historyManagerBulkBtn: documentRef.getElementById("historyManagerBulkBtn") as HTMLButtonElement | null,
   historyManagerBulkDeleteBtn: documentRef.getElementById("historyManagerBulkDeleteBtn") as HTMLButtonElement | null,

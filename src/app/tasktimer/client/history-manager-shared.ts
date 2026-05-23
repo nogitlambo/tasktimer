@@ -1,22 +1,4 @@
-export type HistoryGenParams = {
-  taskIds: string[];
-  daysBack: number;
-  entriesPerDayMin: number;
-  entriesPerDayMax: number;
-  windowStartMinute: number;
-  windowEndMinute: number;
-  replaceExisting: boolean;
-  generateRandomTimeGoals: boolean;
-};
-
-export type HistoryGenTaskGoal = {
-  timeGoalEnabled: boolean;
-  timeGoalValue: number;
-  timeGoalUnit: "minute" | "hour";
-  timeGoalPeriod: "day" | "week";
-  timeGoalMinutes: number;
-  dailyBudgetMinutes: number;
-};
+import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 
 type HistoryManagerRowEntry = {
   ts: unknown;
@@ -138,4 +120,3 @@ export function groupSelectedHistoryRowsByTask(selectedRowIds: string[]) {
   });
   return byTask;
 }
-import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";

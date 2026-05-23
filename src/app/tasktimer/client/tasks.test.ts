@@ -82,7 +82,6 @@ function createHarness() {
       taskManualDateTimeBtn: null,
       taskManualHoursInput: null,
       taskManualMinutesInput: null,
-      taskManualEntryDifficultyGroup: null,
       taskManualNoteInput: null,
       taskManualEntryError: null,
       taskManualEntryCancelBtn: null,

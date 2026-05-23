@@ -1,6 +1,3 @@
-import AppImg from "../../../components/AppImg";
-import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
-
 export default function TaskManualEntryOverlay() {
   return (
     <div className="overlay" id="taskManualEntryOverlay" style={{ display: "none" }}>
@@ -63,38 +60,6 @@ export default function TaskManualEntryOverlay() {
               </div>
             </div>
           </div>
-
-          <fieldset className="hmManualEntrySentiment timeGoalCompleteDifficulty">
-            <div
-              className="hmManualEntrySentimentOptions timeGoalCompleteDifficultyIcons"
-              id="taskManualEntryDifficultyGroup"
-              role="radiogroup"
-              aria-label="Task completion difficulty"
-            >
-              {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
-                <button
-                  aria-checked="false"
-                  className="hmManualEntrySentimentBtn timeGoalCompleteDifficultyIconBtn"
-                  data-completion-difficulty={option.value}
-                  key={option.value}
-                  role="radio"
-                  type="button"
-                >
-                  <span className="hmManualEntrySentimentIconWrap timeGoalCompleteDifficultyIconWrap" aria-hidden="true">
-                    <AppImg
-                      alt=""
-                      className="hmManualEntrySentimentIcon timeGoalCompleteDifficultyIcon"
-                      draggable={false}
-                      height={44}
-                      src={option.iconSrc}
-                      width={44}
-                    />
-                  </span>
-                  <span className="hmManualEntrySentimentLabel timeGoalCompleteDifficultyLabel">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
 
           <div className="hmManualEntryField">
             <label className="hmManualEntryLabel" htmlFor="taskManualNoteInput">
