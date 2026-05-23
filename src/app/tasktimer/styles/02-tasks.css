@@ -1199,6 +1199,18 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   box-shadow: none !important;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:disabled{
+  color: rgba(233,246,252,.34) !important;
+  background: transparent !important;
+  cursor: default;
+  opacity: .62;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:disabled:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItem:disabled:focus-visible{
+  background: transparent !important;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete{
   color: #ff5c5c !important;
   border-color: transparent !important;
@@ -1390,7 +1402,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-width:0;
   text-align:left;
   justify-self:start;
-  font-family:var(--font-tight);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:13px;
   font-weight:800;
   letter-spacing:.12em;
@@ -1421,6 +1433,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItem{
   width:100%;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete{

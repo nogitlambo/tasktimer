@@ -730,6 +730,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return `${seconds}s`;
   }
 
+  function formatHistoryCheckpointMarkerMinutes(msRaw: number) {
+    const totalMinutes = Math.max(0, Math.round((Number(msRaw) || 0) / 60000));
+    return `${totalMinutes}m`;
+  }
+
   function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
@@ -777,7 +782,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
               kind: "checkpoint" as const,
               value: +m.hours || 0,
               ms: Math.max(0, (+m.hours || 0) * sharedTasks.milestoneUnitSec(historyTask) * 1000),
-              label: `${+m.hours || 0}${sharedTasks.milestoneUnitSuffix(historyTask || undefined)}`,
+              label: formatHistoryCheckpointMarkerMinutes(
+                Math.max(0, (+m.hours || 0) * sharedTasks.milestoneUnitSec(historyTask) * 1000)
+              ),
             }))
             .filter((x, i, arr) => x.ms > 0 && arr.findIndex((y) => y.ms === x.ms) === i)
         : [];

@@ -551,7 +551,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const awardPreview = opts?.awardPreview || getTimeGoalCompletionAwardPreview(task, elapsedMs);
     const awardedXp = awardPreview.awardedXp;
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = `You've been awarded ${awardedXp} XP`;
+      els.timeGoalCompleteText.textContent = `You got ${awardedXp} XP!`;
     }
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";

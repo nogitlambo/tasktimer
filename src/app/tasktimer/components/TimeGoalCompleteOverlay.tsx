@@ -53,7 +53,7 @@ export default function TimeGoalCompleteOverlay() {
       <div className="modal" role="dialog" aria-modal="true" aria-label="Task Complete">
         <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
         <p className="modalSubtext confirmText" id="timeGoalCompleteText">
-          You have been awarded 0 XP
+          You got 0 XP!
         </p>
         <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
         <div className="timeGoalCompleteDivider" aria-hidden="true" />

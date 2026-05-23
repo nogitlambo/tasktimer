@@ -147,6 +147,10 @@ class FakeElement {
     this.listeners.set(type, existing);
   }
 
+  focus() {
+    (document as unknown as { activeElement: FakeElement }).activeElement = this;
+  }
+
   get nextElementSibling(): FakeElement | null {
     const parent = this.parentElement;
     if (!parent) return null;
@@ -161,6 +165,10 @@ class FakeElement {
 
 function matchesSelector(node: FakeElement, selector: string) {
   if (selector === ".task") return node.classList.contains("task");
+  if (selector === ".taskFaceFront") return node.classList.contains("taskFaceFront");
+  if (selector === ".taskFaceBack") return node.classList.contains("taskFaceBack");
+  if (selector === '[data-task-flip="open"]') return node.getAttribute("data-task-flip") === "open";
+  if (selector === '[data-task-flip="close"]') return node.getAttribute("data-task-flip") === "close";
   if (selector === ".task[data-task-id]") return node.classList.contains("task") && !!node.dataset.taskId;
   if (selector === ".taskTileColumn:last-child") {
     const parent = node.parentElement;
@@ -220,6 +228,8 @@ function createHarness(taskIdsInOrder = ["a", "b", "c", "d"]) {
   });
 
   const fakeDocument = {
+    activeElement: null,
+    body: new FakeElement("body"),
     querySelectorAll: vi.fn(() => []),
   };
   const fakeWindow = {
@@ -270,6 +280,58 @@ function createHarness(taskIdsInOrder = ["a", "b", "c", "d"]) {
     handlers,
     cards: Object.fromEntries(list.children.map((child) => [child.dataset.taskId || "", child])),
   };
+}
+
+function createTaskFlipHarness(initiallyFlipped = false) {
+  const list = new FakeElement("section");
+  const card = new FakeElement("div");
+  const frontFace = new FakeElement("div");
+  const backFace = new FakeElement("div");
+  const openBtn = new FakeElement("button");
+  const closeBtn = new FakeElement("button");
+  const flippedTaskIds = new Set<string>(initiallyFlipped ? ["a"] : []);
+
+  card.classList.add("task");
+  card.dataset.taskId = "a";
+  card.setAttribute("data-task-id", "a");
+  frontFace.classList.add("taskFaceFront");
+  backFace.classList.add("taskFaceBack");
+  openBtn.setAttribute("data-task-flip", "open");
+  closeBtn.setAttribute("data-task-flip", "close");
+
+  frontFace.appendChild(openBtn);
+  backFace.appendChild(closeBtn);
+  card.appendChild(frontFace);
+  card.appendChild(backFace);
+  list.appendChild(card);
+
+  const fakeDocument = {
+    activeElement: null,
+    body: new FakeElement("body"),
+    querySelectorAll: vi.fn(() => []),
+  };
+  vi.stubGlobal("document", fakeDocument);
+  vi.stubGlobal("HTMLElement", FakeElement);
+
+  const ui = createTaskTimerTaskListUi({
+    els: { taskList: list as unknown as HTMLElement } as never,
+    on: (() => {}) as never,
+    runtime: { newTaskHighlightTimer: null } as never,
+    getTasks: () => [],
+    setTasks: () => {},
+    getCurrentAppPage: () => "tasks",
+    getTaskView: () => "tile",
+    getTaskOrderBy: () => "custom",
+    getTaskDragEl: () => null,
+    setTaskDragEl: () => {},
+    getFlippedTaskIds: () => flippedTaskIds,
+    getLastRenderedTaskFlipView: () => null,
+    setLastRenderedTaskFlipView: () => {},
+    save: vi.fn(),
+    render: vi.fn(),
+  });
+
+  return { ui, card, frontFace, backFace, openBtn, closeBtn };
 }
 
 describe("task list ui drag ordering", () => {
@@ -406,5 +468,37 @@ describe("task list ui drag ordering", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("task list ui flip accessibility", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("moves focus to the back flip control before hiding the front face", () => {
+    const harness = createTaskFlipHarness(false);
+    harness.openBtn.focus();
+
+    harness.ui.setTaskFlipped("a", true, harness.card as unknown as HTMLElement);
+
+    expect(document.activeElement).toBe(harness.closeBtn);
+    expect(harness.frontFace.getAttribute("aria-hidden")).toBe("true");
+    expect(harness.frontFace.getAttribute("inert")).toBe("");
+    expect(harness.backFace.getAttribute("aria-hidden")).toBe("false");
+    expect(harness.backFace.getAttribute("inert")).toBe(null);
+  });
+
+  it("moves focus to the front flip control before hiding the back face", () => {
+    const harness = createTaskFlipHarness(true);
+    harness.closeBtn.focus();
+
+    harness.ui.setTaskFlipped("a", false, harness.card as unknown as HTMLElement);
+
+    expect(document.activeElement).toBe(harness.openBtn);
+    expect(harness.frontFace.getAttribute("aria-hidden")).toBe("false");
+    expect(harness.frontFace.getAttribute("inert")).toBe(null);
+    expect(harness.backFace.getAttribute("aria-hidden")).toBe("true");
+    expect(harness.backFace.getAttribute("inert")).toBe("");
   });
 });

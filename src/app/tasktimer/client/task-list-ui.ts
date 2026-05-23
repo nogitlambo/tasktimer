@@ -37,6 +37,33 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     ctx.setLastRenderedTaskFlipView(currentView);
   }
 
+  function taskFaceContainsFocus(faceEl: HTMLElement | null) {
+    if (!faceEl || typeof document === "undefined") return false;
+    const activeEl = document.activeElement;
+    return !!activeEl && activeEl !== document.body && faceEl.contains(activeEl);
+  }
+
+  function focusTaskFlipButton(buttonEl: HTMLElement | null) {
+    if (!buttonEl) return;
+    try {
+      buttonEl.focus({ preventScroll: true });
+    } catch {
+      buttonEl.focus();
+    }
+  }
+
+  function showTaskFace(faceEl: HTMLElement | null) {
+    if (!faceEl) return;
+    faceEl.setAttribute("aria-hidden", "false");
+    faceEl.removeAttribute("inert");
+  }
+
+  function hideTaskFace(faceEl: HTMLElement | null) {
+    if (!faceEl) return;
+    faceEl.setAttribute("aria-hidden", "true");
+    faceEl.setAttribute("inert", "");
+  }
+
   function applyTaskFlipDomState(taskId: string, taskEl?: HTMLElement | null) {
     const normalizedTaskId = String(taskId || "").trim();
     if (!normalizedTaskId) return;
@@ -50,18 +77,17 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     const backFace = hostEl.querySelector(".taskFaceBack") as HTMLElement | null;
     const openBtn = hostEl.querySelector('[data-task-flip="open"]') as HTMLElement | null;
     const closeBtn = hostEl.querySelector('[data-task-flip="close"]') as HTMLElement | null;
-    if (frontFace) {
-      frontFace.setAttribute("aria-hidden", flipped ? "true" : "false");
-      if (flipped) frontFace.setAttribute("inert", "");
-      else frontFace.removeAttribute("inert");
-    }
-    if (backFace) {
-      backFace.setAttribute("aria-hidden", flipped ? "false" : "true");
-      if (!flipped) backFace.setAttribute("inert", "");
-      else backFace.removeAttribute("inert");
-    }
     if (openBtn) openBtn.setAttribute("aria-expanded", flipped ? "true" : "false");
     if (closeBtn) closeBtn.setAttribute("aria-expanded", flipped ? "true" : "false");
+
+    const visibleFace = flipped ? backFace : frontFace;
+    const hiddenFace = flipped ? frontFace : backFace;
+    const nextFocusButton = flipped ? closeBtn : openBtn;
+    const shouldMoveFocus = taskFaceContainsFocus(hiddenFace);
+
+    showTaskFace(visibleFace);
+    if (shouldMoveFocus) focusTaskFlipButton(nextFocusButton);
+    hideTaskFace(hiddenFace);
   }
 
   function setTaskFlipped(taskId: string, flipped: boolean, taskEl?: HTMLElement | null) {
