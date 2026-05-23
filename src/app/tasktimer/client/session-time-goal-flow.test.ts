@@ -212,10 +212,9 @@ describe("time goal complete next task launcher", () => {
     expect(options.map((option) => option.id)).toEqual(["early", "midday", "late", "unscheduled"]);
   });
 
-  it("shows the all-tasks-complete message only after a sentiment is selected and no next tasks remain", () => {
-    expect(getTimeGoalCompleteMetaMessage(undefined, [])).toBe("");
-    expect(getTimeGoalCompleteMetaMessage(3, [{ id: "next", name: "Next", color: "#35e8ff", scheduleText: "9:00 AM" }])).toBe("");
-    expect(getTimeGoalCompleteMetaMessage(3, [])).toBe("All tasks completed for today!");
+  it("shows the all-tasks-complete message only when no next tasks remain", () => {
+    expect(getTimeGoalCompleteMetaMessage([{ id: "next", name: "Next", color: "#35e8ff", scheduleText: "9:00 AM" }])).toBe("");
+    expect(getTimeGoalCompleteMetaMessage([])).toBe("All tasks completed for today!");
   });
 
   it("reopens focus mode for the chosen next task only when the completed task was focused", () => {

@@ -29,6 +29,7 @@ type HistoryEntrySummaryInteractionElements = {
   editBtn: HTMLButtonElement | null;
   cancelBtn: HTMLButtonElement | null;
   saveBtn: HTMLButtonElement | null;
+  saveAndCloseBtn: HTMLButtonElement | null;
 };
 
 type CreateHistoryEntrySummaryInteractionOptions = {
@@ -79,9 +80,55 @@ function findEntryByIdentity(
 
 export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntrySummaryInteractionOptions) {
   const { elements } = options;
+  const INLINE_NOTE_COMPACT_HEIGHT_PX = 22;
 
   function getCloseButton() {
     return elements.overlay?.querySelector(".closePopup") as HTMLButtonElement | null;
+  }
+
+  function resetInlineNoteAutosize(input: HTMLTextAreaElement | null) {
+    if (!input) return;
+    input.style.height = "";
+    input.style.overflowY = "";
+  }
+
+  function getInlineNoteMaxHeight(input: HTMLTextAreaElement) {
+    const overlay = elements.overlay;
+    if (!overlay) return Number.POSITIVE_INFINITY;
+    const modal = overlay.querySelector(".modal") as HTMLElement | null;
+    const body = elements.body;
+    if (!modal || !body || typeof input.getBoundingClientRect !== "function") return Number.POSITIVE_INFINITY;
+
+    const inputRect = input.getBoundingClientRect();
+    const modalRect = typeof modal.getBoundingClientRect === "function" ? modal.getBoundingClientRect() : null;
+    const bodyRect = typeof body.getBoundingClientRect === "function" ? body.getBoundingClientRect() : null;
+    if (!modalRect || !bodyRect) return Number.POSITIVE_INFINITY;
+
+    const modalStyle = typeof window !== "undefined" && typeof window.getComputedStyle === "function"
+      ? window.getComputedStyle(modal)
+      : null;
+    const bodyStyle = typeof window !== "undefined" && typeof window.getComputedStyle === "function"
+      ? window.getComputedStyle(body)
+      : null;
+    const modalPaddingBottom = Number.parseFloat(modalStyle?.paddingBottom || "0") || 0;
+    const bodyPaddingBottom = Number.parseFloat(bodyStyle?.paddingBottom || "0") || 0;
+    const modalBottomLimit = modalRect.bottom - modalPaddingBottom;
+    const bodyBottomLimit = bodyRect.bottom - bodyPaddingBottom;
+    const availableHeight = Math.max(
+      INLINE_NOTE_COMPACT_HEIGHT_PX,
+      Math.floor(Math.min(modalBottomLimit, bodyBottomLimit) - inputRect.top)
+    );
+    return availableHeight > 0 ? availableHeight : INLINE_NOTE_COMPACT_HEIGHT_PX;
+  }
+
+  function autosizeInlineNoteInput(input: HTMLTextAreaElement | null) {
+    if (!input || !input.classList.contains("isEditing")) return;
+    input.style.height = "auto";
+    const maxHeight = getInlineNoteMaxHeight(input);
+    const nextHeight = Math.max(INLINE_NOTE_COMPACT_HEIGHT_PX, Math.ceil(input.scrollHeight || 0));
+    const clampedHeight = Math.min(nextHeight, maxHeight);
+    input.style.height = `${clampedHeight}px`;
+    input.style.overflowY = nextHeight > maxHeight ? "auto" : "hidden";
   }
 
   function syncPlaceholders() {
@@ -107,11 +154,12 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
   function syncCloseLabel() {
     const overlay = elements.overlay;
-    const closeBtn = getCloseButton();
-    if (!overlay || !closeBtn) return;
-    const isSaveAndClose = overlay.dataset.historyEntryEditing === "true" && !!getActiveInputValue().trim();
-    closeBtn.textContent = isSaveAndClose ? "Save & Close" : "Close";
-    closeBtn.classList.toggle("isSaveAndClose", isSaveAndClose);
+    const saveAndCloseBtn = elements.saveAndCloseBtn;
+    if (!overlay || !saveAndCloseBtn) return;
+    const shouldShowSaveAndClose = overlay.dataset.historyEntryOwner === "inline"
+      && overlay.dataset.historyEntryEditing === "true"
+      && !!getActiveInputValue().trim();
+    saveAndCloseBtn.style.display = shouldShowSaveAndClose ? "" : "none";
   }
 
   function syncEditorUi(editing: boolean) {
@@ -120,13 +168,14 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const editable = overlay.dataset.historyEntryEditable === "true";
     const currentNote = String(overlay.dataset.historyEntryNote || "");
     const closeBtn = getCloseButton();
+    const saveAndCloseBtn = elements.saveAndCloseBtn;
 
     if (options.owner === "manager" && editing && !getActiveInput()) {
       if (elements.editor) elements.editor.style.display = "grid";
       if (elements.cancelBtn) elements.cancelBtn.style.display = "";
       if (elements.saveBtn) elements.saveBtn.style.display = "";
+      if (saveAndCloseBtn) saveAndCloseBtn.style.display = "none";
       if (elements.editBtn) elements.editBtn.style.display = "none";
-      if (closeBtn) closeBtn.style.display = "none";
     } else {
       if (elements.editor) elements.editor.style.display = "none";
       if (elements.editBtn) {
@@ -135,8 +184,10 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       }
       if (elements.cancelBtn) elements.cancelBtn.style.display = "none";
       if (elements.saveBtn) elements.saveBtn.style.display = "none";
-      if (closeBtn) closeBtn.style.display = "";
+      if (saveAndCloseBtn) saveAndCloseBtn.style.display = "none";
     }
+
+    if (closeBtn) closeBtn.style.display = "";
 
     overlay.dataset.historyEntryEditing = editing ? "true" : "false";
     syncCloseLabel();
@@ -237,6 +288,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       input.readOnly = false;
       input.classList.add("isEditing");
       input.value = note;
+      autosizeInlineNoteInput(input);
     }
     syncEditorUi(true);
     (input || elements.input)?.focus();
@@ -252,12 +304,22 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       activeInput.value = String(overlay.dataset.historyEntryNote || "");
       activeInput.readOnly = true;
       activeInput.classList.remove("isEditing");
+      resetInlineNoteAutosize(activeInput);
     }
     syncEditorUi(false);
   }
 
+  function discardDraft() {
+    const overlay = elements.overlay;
+    if (!overlay || overlay.dataset.historyEntryOwner !== options.owner) return;
+    if (overlay.dataset.historyEntryEditing !== "true") return;
+    cancelEdit();
+  }
+
   function syncInputMirror(value: string) {
-    if (elements.input) elements.input.value = String(value || "");
+    const nextValue = String(value || "");
+    if (elements.input) elements.input.value = nextValue;
+    autosizeInlineNoteInput(getActiveInput());
     syncCloseLabel();
   }
 
@@ -296,6 +358,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     isOpen,
     beginEdit,
     cancelEdit,
+    discardDraft,
     getActiveInputValue,
     syncInputMirror,
     syncCloseLabel,

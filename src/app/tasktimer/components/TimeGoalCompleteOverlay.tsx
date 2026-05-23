@@ -1,6 +1,4 @@
 import type { CSSProperties } from "react";
-import AppImg from "../../../components/AppImg";
-import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
 
 type ConfettiPiece = {
   className: string;
@@ -58,34 +56,6 @@ export default function TimeGoalCompleteOverlay() {
           You have been awarded 0 XP
         </p>
         <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
-        <fieldset className="timeGoalCompleteDifficulty" aria-describedby="timeGoalCompleteDifficultyHint">
-          <legend id="timeGoalCompleteDifficultyQuestion">Effort required to complete this task today?</legend>
-          <div className="timeGoalCompleteDifficultyIcons" id="timeGoalCompleteDifficultyGroup" role="radiogroup" aria-labelledby="timeGoalCompleteDifficultyQuestion">
-            {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
-              <button
-                aria-checked="false"
-                className="timeGoalCompleteDifficultyIconBtn"
-                data-completion-difficulty={option.value}
-                key={option.value}
-                role="radio"
-                type="button"
-              >
-                <span className="timeGoalCompleteDifficultyIconWrap" aria-hidden="true">
-                  <AppImg
-                    alt=""
-                    className="timeGoalCompleteDifficultyIcon"
-                    draggable={false}
-                    height={44}
-                    src={option.iconSrc}
-                    width={44}
-                  />
-                </span>
-                <span className="timeGoalCompleteDifficultyLabel">{option.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="timeGoalCompleteDifficultyHint" id="timeGoalCompleteDifficultyHint" />
-        </fieldset>
         <div className="timeGoalCompleteDivider" aria-hidden="true" />
         <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
           <div
@@ -94,7 +64,6 @@ export default function TimeGoalCompleteOverlay() {
             aria-label="Incomplete tasks for today"
           />
         </div>
-        <div className="timeGoalCompleteValidation confirmText" id="timeGoalCompleteValidation" aria-live="polite" hidden />
         <div className="confirmBtns timeGoalCompleteActionGrid">
           <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button">
             Close

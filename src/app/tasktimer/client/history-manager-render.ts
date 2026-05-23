@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Task } from "../lib/types";
-import { completionDifficultyLabel } from "../lib/completionDifficulty";
 import { escapeHistoryManagerHtml as escapeHtmlHM } from "../lib/historyManager";
 import {
   buildHistoryManagerRowKey,
@@ -10,7 +9,6 @@ import {
 
 type HistoryManagerSortKey = "ts" | "ms";
 type HistoryManagerSortDir = "asc" | "desc";
-export type HistoryManagerTaskView = "active" | "archived";
 
 type RenderArgs = {
   existingListEl: HTMLElement;
@@ -21,7 +19,6 @@ type RenderArgs = {
   hmBulkEditMode: boolean;
   hmSortKey: HistoryManagerSortKey;
   hmSortDir: HistoryManagerSortDir;
-  taskView: HistoryManagerTaskView;
   hmExpandedTaskGroups: Set<string>;
   hmExpandedDateGroups: Set<string>;
   formatTwo: (value: number) => string;
@@ -104,7 +101,6 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
     hmBulkEditMode,
     hmSortKey,
     hmSortDir,
-    taskView,
     hmExpandedTaskGroups,
     hmExpandedDateGroups,
     formatTwo,
@@ -128,7 +124,10 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
   });
   const filteredIds = taskIdFilter
     ? idsWithHistory.filter((id) => String(id) === String(taskIdFilter))
-    : idsWithHistory.filter((id) => getTaskMetaForHistoryId(id).state === taskView);
+    : idsWithHistory.filter((id) => {
+        const state = getTaskMetaForHistoryId(id).state;
+        return state === "active" || state === "archived";
+      });
 
   if (!filteredIds.length) {
     return {
@@ -141,9 +140,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
       isEmpty: true,
       emptyHtml: taskIdFilter
         ? '<div class="hmEmpty">No history entries found for this task.</div>'
-        : taskView === "archived"
-          ? '<div class="hmEmpty">No archived task history entries found.</div>'
-          : '<div class="hmEmpty">No active task history entries found.</div>',
+        : '<div class="hmEmpty">No task history entries found.</div>',
     };
   }
 
@@ -190,7 +187,6 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               const rowKey = buildHistoryManagerRowKey(entry);
               const rowId = `${taskId}|${rowKey}`;
               const note = getHistoryEntryNote(entry);
-              const sentimentLabel = completionDifficultyLabel(entry?.completionDifficulty) || "-";
               const isLiveSession = !!entry?.isLiveSession;
               const noteCell = note
                 ? `<button class="hmNoteBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" title="${escapeHtmlHM(note)}"><span class="hmNoteBtnText">${escapeHtmlHM(note)}</span></button>`
@@ -208,7 +204,6 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
                   <td class="hmSelectCell">${rowCheckbox}</td>
                   <td>${dateTimeCell}</td>
                   <td>${formatHistoryManagerElapsed(entry.ms || 0, formatTwo)}</td>
-                  <td class="hmSentimentCell">${escapeHtmlHM(sentimentLabel)}</td>
                   <td class="hmNotesCell">${noteCell}</td>
                   <td style="text-align:right;">${deleteCell}</td>
                 </tr>
@@ -230,7 +225,6 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
                     <th class="hmSelectHead"></th>
                     <th><button class="hmSortBtn" type="button" data-hm-sort="ts">DATE/TIME${dateSortArrow}</button></th>
                     <th><button class="hmSortBtn" type="button" data-hm-sort="ms">ELAPSED${elapsedSortArrow}</button></th>
-                    <th class="hmSentimentHead">SENTIMENT</th>
                     <th class="hmNotesHead">NOTES</th>
                     <th style="text-align:right;">DELETE</th>
                   </tr>

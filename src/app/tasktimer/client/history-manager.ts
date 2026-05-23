@@ -12,7 +12,6 @@ import {
   parseHistoryGenTimeToMinute,
 } from "./history-manager-generation";
 import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./history-manager-render";
-import type { HistoryManagerTaskView } from "./history-manager-render";
 import {
   buildHistoryManagerRowKey,
   groupSelectedHistoryRowsByTask,
@@ -46,7 +45,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   let flashedManualEntryTimeout: number | null = null;
   let historyManagerLoadCycle = 0;
   let historyManagerLoading = false;
-  let historyManagerTaskView: HistoryManagerTaskView = "active";
 
   function setHistoryManagerLoading(loading: boolean) {
     historyManagerLoading = loading;
@@ -376,6 +374,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       editBtn: els.historyEntryNoteEditBtn as HTMLButtonElement | null,
       cancelBtn: els.historyEntryNoteCancelBtn as HTMLButtonElement | null,
       saveBtn: els.historyEntryNoteSaveBtn as HTMLButtonElement | null,
+      saveAndCloseBtn: els.historyEntryNoteSaveAndCloseBtn as HTMLButtonElement | null,
     },
     escapeHtml: ctx.escapeHtmlUI,
     formatDateTime: ctx.formatDateTime,
@@ -924,19 +923,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
   }
 
-  function syncHistoryManagerTaskViewTabs() {
-    if (!els.historyManagerScreen) return;
-    const buttons = Array.from(
-      (els.historyManagerScreen as HTMLElement).querySelectorAll<HTMLElement>("[data-hm-task-view]")
-    );
-    buttons.forEach((button) => {
-      const view = String(button.getAttribute("data-hm-task-view") || "").trim();
-      const isOn = view === historyManagerTaskView;
-      button.classList.toggle("isOn", isOn);
-      button.setAttribute("aria-selected", isOn ? "true" : "false");
-    });
-  }
-
   function renderHistoryManager() {
     const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
     const hmBulkEditMode = ctx.getHmBulkEditMode();
@@ -956,7 +942,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       hmBulkEditMode,
       hmSortKey,
       hmSortDir,
-      taskView: historyManagerTaskView,
       hmExpandedTaskGroups: ctx.getHmExpandedTaskGroups(),
       hmExpandedDateGroups: ctx.getHmExpandedDateGroups(),
       formatTwo: ctx.formatTwo,
@@ -973,7 +958,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     if (renderResult.isEmpty) {
       listEl.innerHTML = renderResult.emptyHtml;
       syncHistoryManagerBulkUi();
-      syncHistoryManagerTaskViewTabs();
       return;
     }
     listEl.innerHTML = renderResult.html;
@@ -981,12 +965,10 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!renderResult.validRowIds.has(id)) hmBulkSelectedRows.delete(id);
     });
     syncHistoryManagerBulkUi();
-    syncHistoryManagerTaskViewTabs();
     scrollToFlashedManualEntryRow();
   }
 
   function openHistoryManager() {
-    historyManagerTaskView = "active";
     ctx.setHmBulkEditMode(false);
     ctx.setHmBulkSelectedRows(new Set<string>());
     if (isHistoryManagerOpen()) {
@@ -1065,7 +1047,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.setHmBulkSelectedRows(new Set<string>());
     ctx.setHmRowsByTask({});
     ctx.setHmRowsByTaskDate({});
-    historyManagerTaskView = "active";
     manualEntryDraftsByTaskId = {};
     activeManualEntryTaskId = null;
     clearFlashedManualEntryRow(false);
@@ -1254,17 +1235,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     });
     ctx.on(els.historyManagerBackBtn, "click", () => {
       ctx.navigateToAppRoute(getHistoryManagerReturnRoute());
-    });
-    ctx.on(els.historyManagerScreen, "click", (ev: any) => {
-      const tab = ev.target?.closest?.("[data-hm-task-view]") as HTMLElement | null;
-      if (!tab) return;
-      const view = String(tab.getAttribute("data-hm-task-view") || "").trim();
-      if (view !== "active" && view !== "archived") return;
-      if (historyManagerTaskView === view) return;
-      historyManagerTaskView = view;
-      ctx.setHmBulkEditMode(false);
-      ctx.setHmBulkSelectedRows(new Set<string>());
-      renderHistoryManager();
     });
     ctx.on(els.hmList, "mousedown", (ev: any) => {
       const deleteBtn = ev.target?.closest?.(".hmDelBtn");
@@ -1493,12 +1463,9 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
         if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
         if (overlay.dataset.historyEntryEditing === "true") {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-          void saveHistoryManagerOverlayNote({ reopen: false });
-          ctx.closeOverlay(overlay);
+          historyEntrySummaryInteraction.discardDraft();
         }
+        ctx.closeOverlay(overlay);
       },
       { capture: true }
     );

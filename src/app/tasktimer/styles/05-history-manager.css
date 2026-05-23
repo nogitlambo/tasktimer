@@ -104,106 +104,6 @@
 
 .hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 
-#historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
-  flex:0 0 auto;
-  display:inline-flex;
-  align-items:center;
-  gap:0;
-  padding:3px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.045);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn,
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:hover,
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:focus-visible,
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:active{
-  min-height:38px;
-  height:38px;
-  padding:0 13px;
-  gap:7px;
-  border:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  color:rgba(245,248,244,.96) !important;
-  opacity:.42;
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn + .taskScreenHeaderBtn{
-  margin-left:2px;
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:not(.isOn):hover,
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:not(.isOn):focus-visible{
-  background:rgba(255,255,255,.045) !important;
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn.isOn,
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn[aria-selected="true"]{
-  opacity:1;
-  color:#f7fdff !important;
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenTabLabel{
-  display:block;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:11px !important;
-  font-weight:700 !important;
-  letter-spacing:.08em !important;
-  line-height:normal !important;
-  white-space:nowrap;
-  text-transform:none !important;
-}
-
-#historyManagerScreen .hmTaskViewTabs :is(.taskScreenIconBtnImage, .taskScreenIconBtnSvg){
-  width:18px;
-  height:18px;
-  display:block;
-  margin:0 4px 0 0;
-  flex:0 0 auto;
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenIconBtnImage{
-  object-fit:contain;
-  object-position:center;
-  filter:brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,.16));
-}
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenIconBtnSvg{
-  fill:none;
-  stroke:#f7fdff;
-  stroke-width:1.8;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  filter:drop-shadow(0 0 6px rgba(255,255,255,.24));
-}
-
-body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
-  border-color:rgba(196,255,127,.22);
-  background:rgba(139,226,74,.08);
-}
-
-@media (max-width: 640px){
-#historyManagerScreen .hmTaskViewTabs.taskScreenPillGroup{
-    width:100%;
-  }
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn,
-  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:hover,
-  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:focus-visible,
-  #historyManagerScreen .hmTaskViewTabs .taskScreenHeaderBtn:active{
-    flex:1 1 0;
-    min-width:0;
-    padding:0 8px;
-  }
-
-#historyManagerScreen .hmTaskViewTabs .taskScreenTabLabel{
-    font-size:10px !important;
-    letter-spacing:.05em !important;
-  }
-}
-
 .hmList{
   display:flex;
   flex-direction:column;
@@ -257,7 +157,14 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
   border: none;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
   overflow: visible;
+}
+
+body[data-theme="lime"] #historyManagerScreen .hmGroup{
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .hmSummary{
@@ -713,7 +620,7 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
 
 .hmTable th, .hmTable td{
   border-top:1px solid transparent;
-  padding:10px 12px;
+  padding:7px 10px;
   text-align:left;
 }
 
@@ -734,11 +641,12 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
 }
 
 .hmTable tbody tr:has(.hmBulkRowChk:checked) > td{
-  background: rgba(160,232,255,.14);
+  background: transparent;
+  box-shadow: inset 0 1px 0 rgba(160,232,255,.34), inset 0 -1px 0 rgba(160,232,255,.34);
 }
 
 .hmTable tbody tr.hmRowFlash > td{
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: transparent;
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--accent) 68%, white 18%),
     inset 0 -1px 0 color-mix(in srgb, var(--accent) 68%, white 18%);
@@ -758,9 +666,13 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
     inset 0 1px 0 color-mix(in srgb, var(--accent) 68%, white 18%),
     inset 0 -1px 0 color-mix(in srgb, var(--accent) 68%, white 18%);
 }@keyframes hmRowFlashPulse{from{
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--accent) 48%, white 12%),
+      inset 0 -1px 0 color-mix(in srgb, var(--accent) 48%, white 12%);
   }to{
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--accent) 82%, white 18%),
+      inset 0 -1px 0 color-mix(in srgb, var(--accent) 82%, white 18%);
   }
 }
 
@@ -794,15 +706,6 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
 
 .hmNotesHead{
   width: min(34vw, 320px);
-}
-
-.hmSentimentHead{
-  width: 150px;
-}
-
-.hmSentimentCell{
-  color: rgba(236,249,255,.9);
-  white-space: nowrap;
 }
 
 .hmNotesCell{
@@ -869,7 +772,7 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
   display:block;
   list-style:none;
   cursor:pointer;
-  padding:10px 12px 8px;
+  padding:8px 10px 6px;
   color: rgba(190,230,245,.92);
   font-family:var(--font-tight);
   font-size:12px;
@@ -893,8 +796,8 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
 }
 
 .hmDelBtn{
-  width:40px;
-  height:40px;
+  width:34px;
+  height:34px;
   border-radius:10px;
   border:1px solid rgba(255,77,77,.35);
   background: rgba(255,77,77,.12);
@@ -917,7 +820,7 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
 
 .hmTable th,
   .hmTable td{
-    padding:9px 8px;
+    padding:7px 8px;
   }
 
 .hmNotesHead,
@@ -957,13 +860,13 @@ body[data-theme="lime"] #historyManagerScreen .hmTaskViewTabs.taskScreenPillGrou
   }
 
 .hmTable{
-    min-width:560px;
+    min-width:520px;
   }
 }
 
 @media (max-width: 640px){
 .hmTable{
-    min-width:500px;
+    min-width:460px;
   }
 }
 

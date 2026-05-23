@@ -20,7 +20,6 @@ describe("history manager render", () => {
       hmBulkEditMode: false,
       hmSortKey: "ts",
       hmSortDir: "desc",
-      taskView: "active",
       hmExpandedTaskGroups: new Set<string>(),
       hmExpandedDateGroups: new Set<string>(),
       formatTwo: (value) => String(value).padStart(2, "0"),
@@ -36,40 +35,24 @@ describe("history manager render", () => {
     });
   }
 
-  it("renders active task history by default and excludes archived and deleted tasks", () => {
+  it("renders active and archived task history by default and excludes deleted tasks", () => {
     const result = render();
 
     expect(result.html).toContain("Active Task");
-    expect(result.html).not.toContain("Archived Task");
-    expect(result.html).not.toContain("Deleted Task");
-    expect(result.html).not.toContain("hmUnarchiveBtn");
-  });
-
-  it("renders archived task history in the archived view and excludes active and deleted tasks", () => {
-    const result = render({ taskView: "archived" });
-
-    expect(result.html).not.toContain("Active Task");
     expect(result.html).toContain("Archived Task");
     expect(result.html).not.toContain("Deleted Task");
     expect(result.html).toContain(">Archived<");
     expect(result.html).toContain("hmUnarchiveBtn");
   });
 
-  it("shows view-specific empty states", () => {
-    const activeResult = render({
+  it("shows the combined empty state when no active or archived history exists", () => {
+    const result = render({
       historyByTaskId: {
-        archived: [{ ts: 2, ms: 2_000, name: "Archived Task" }],
-      },
-    });
-    const archivedResult = render({
-      taskView: "archived",
-      historyByTaskId: {
-        active: [{ ts: 3, ms: 1_000, name: "Active Task" }],
+        deleted: [{ ts: 1, ms: 3_000, name: "Deleted Task" }],
       },
     });
 
-    expect(activeResult.emptyHtml).toContain("No active task history entries found.");
-    expect(archivedResult.emptyHtml).toContain("No archived task history entries found.");
+    expect(result.emptyHtml).toContain("No task history entries found.");
   });
 
   it("treats filtered legacy preserved-history rows as deleted when no explicit state is provided", () => {

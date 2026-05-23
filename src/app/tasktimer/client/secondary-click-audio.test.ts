@@ -120,7 +120,7 @@ describe("secondary click audio", () => {
   });
 
   it("excludes controls handled by primary click audio selectors", () => {
-    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, .closePopup.isSaveAndClose, .modalPreviewPrimaryAction";
+    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
     const taskLaunchSelector =
       'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
     const taskStopSelector = 'button[data-action="stop"][title="Stop"]';

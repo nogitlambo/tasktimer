@@ -1026,6 +1026,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   width:39px;
   height:21px;
   min-width:39px;
+  border-radius:0;
   border-color: rgba(148, 148, 148, 0.6) !important;
   background: rgba(255,255,255,.08) !important;
 }
@@ -1033,6 +1034,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch::after{
   width:18px;
   height:18px;
+  border-radius:0;
   top:1px;
   left:1px;
 }

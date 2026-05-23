@@ -504,6 +504,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       editBtn: els.historyEntryNoteEditBtn as HTMLButtonElement | null,
       cancelBtn: els.historyEntryNoteCancelBtn as HTMLButtonElement | null,
       saveBtn: els.historyEntryNoteSaveBtn as HTMLButtonElement | null,
+      saveAndCloseBtn: els.historyEntryNoteSaveAndCloseBtn as HTMLButtonElement | null,
     },
     escapeHtml: ctx.escapeHtmlUI,
     formatDateTime: ctx.formatDateTime,
@@ -1447,12 +1448,25 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
         if (!overlay || overlay.dataset.historyEntryOwner !== "inline") return;
         if (overlay.dataset.historyEntryEditing === "true") {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation?.();
-          saveHistoryEntryOverlayNote();
-          closeHistoryEntryNoteOverlay();
+          historyEntrySummaryInteraction.discardDraft();
         }
+        closeHistoryEntryNoteOverlay();
+      },
+      { capture: true }
+    );
+    ctx.on(
+      document,
+      "click",
+      (e: any) => {
+        const saveAndCloseBtn = findDelegatedElement(e.target, "#historyEntryNoteSaveAndCloseBtn");
+        if (!saveAndCloseBtn) return;
+        const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+        if (!overlay || overlay.dataset.historyEntryOwner !== "inline") return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+        saveHistoryEntryOverlayNote();
+        closeHistoryEntryNoteOverlay();
       },
       { capture: true }
     );
@@ -1487,6 +1501,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
     ctx.on(els.historyEntryNoteSaveBtn, "click", () => {
       saveHistoryEntryOverlayNote();
+    });
+    ctx.on(els.historyEntryNoteSaveAndCloseBtn, "click", () => {
+      saveHistoryEntryOverlayNote();
+      closeHistoryEntryNoteOverlay();
     });
 
     ctx.on(els.taskList, "click", (ev: any) => {

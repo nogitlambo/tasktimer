@@ -22,15 +22,19 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
           </div>
           <div className="unitRow" id="taskStartupModuleRow">
             <div className="settingsPreferenceControlCopy">
-              <span className="settingsPreferenceControlLabel">Load Module on App Startup</span>
+              <span className="settingsPreferenceControlLabel">Default Module on App Startup</span>
               <span className="settingsPreferenceControlHelp">Choose which main area opens first after sign-in or app launch.</span>
             </div>
-            <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Load module on app startup">
+            <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Default module on app startup">
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>
             </SettingsDownwardSelect>
+          </div>
+          <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.png" alt="" aria-hidden="true" />
+            <div className="settingsInlineSectionTitle">Productivity Optimisation</div>
           </div>
           <div className="unitRow" id="taskWeekStartingRow">
             <div className="settingsPreferenceControlCopy">
@@ -46,10 +50,6 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <option value="fri">Friday</option>
               <option value="sat">Saturday</option>
             </SettingsDownwardSelect>
-          </div>
-          <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.png" alt="" aria-hidden="true" />
-            <div className="settingsInlineSectionTitle">Productivity Optimisation</div>
           </div>
           <div className="unitRow optimalProductivityDaysRow" id="optimalProductivityDaysRow">
             <div className="settingsPreferenceControlCopy">

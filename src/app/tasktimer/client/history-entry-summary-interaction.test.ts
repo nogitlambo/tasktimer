@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_REWARD_PROGRESS, type RewardLedgerEntry, type RewardProgressV1 } from "../lib/rewards";
 import type { Task } from "../lib/types";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
@@ -48,6 +48,8 @@ function inputStub() {
     placeholder: "",
     readOnly: true,
     rows: 2,
+    scrollHeight: 22,
+    getBoundingClientRect: vi.fn(() => ({ top: 220, bottom: 242, left: 0, right: 320, width: 320, height: 22 })),
   };
 }
 
@@ -75,6 +77,7 @@ function createHarness(overrides?: {
   rewardProgress?: RewardProgressV1;
 }) {
   const overlay = elementStub("historyEntryNoteOverlay");
+  const modal = elementStub("historyEntryNoteModal");
   const closeBtn = elementStub();
   const cardInput = inputStub();
   const editorInput = inputStub();
@@ -85,11 +88,13 @@ function createHarness(overrides?: {
   const editBtn = elementStub("historyEntryNoteEditBtn");
   const cancelBtn = elementStub("historyEntryNoteCancelBtn");
   const saveBtn = elementStub("historyEntryNoteSaveBtn");
+  const saveAndCloseBtn = elementStub("historyEntryNoteSaveAndCloseBtn");
   const entries = overrides?.entries ?? [
     { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" },
   ];
   overlay.querySelector.mockImplementation((selector: string) => {
     if (selector === ".closePopup") return closeBtn;
+    if (selector === ".modal") return modal;
     if (selector === ".historyEntrySummaryNoteInput.isEditing" && cardInput.classList.contains("isEditing")) return cardInput;
     return null;
   });
@@ -99,6 +104,17 @@ function createHarness(overrides?: {
   });
   const opened: unknown[] = [];
   const closed: unknown[] = [];
+  body.getBoundingClientRect = vi.fn(() => ({ top: 120, bottom: 540, left: 0, right: 320, width: 320, height: 420 }));
+  modal.getBoundingClientRect = vi.fn(() => ({ top: 80, bottom: 560, left: 0, right: 360, width: 360, height: 480 }));
+  const existingWindow = (globalThis as { window?: { dispatchEvent?: ReturnType<typeof vi.fn> } }).window;
+  vi.stubGlobal("window", {
+    dispatchEvent: existingWindow?.dispatchEvent ?? vi.fn(),
+    getComputedStyle: vi.fn((node: unknown) => {
+      if (node === modal) return { paddingBottom: "12px" };
+      if (node === body) return { paddingBottom: "0px" };
+      return { paddingBottom: "0px" };
+    }),
+  });
   const interaction = createHistoryEntrySummaryInteraction({
     owner: overrides?.owner ?? "inline",
     elements: {
@@ -111,6 +127,7 @@ function createHarness(overrides?: {
       editBtn: editBtn as unknown as HTMLButtonElement,
       cancelBtn: cancelBtn as unknown as HTMLButtonElement,
       saveBtn: saveBtn as unknown as HTMLButtonElement,
+      saveAndCloseBtn: saveAndCloseBtn as unknown as HTMLButtonElement,
     },
     escapeHtml: (value) => String(value ?? ""),
     formatDateTime: (value) => String(value),
@@ -136,6 +153,7 @@ function createHarness(overrides?: {
   return {
     interaction,
     overlay,
+    modal,
     closeBtn,
     cardInput,
     editorInput,
@@ -146,6 +164,7 @@ function createHarness(overrides?: {
     editBtn,
     cancelBtn,
     saveBtn,
+    saveAndCloseBtn,
     opened,
     closed,
   };
@@ -169,6 +188,10 @@ function triggerStub() {
 }
 
 describe("createHistoryEntrySummaryInteraction", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("renders a summary into the shared overlay and opens it", () => {
     const h = createHarness();
 
@@ -263,7 +286,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(mobile.cardInput.placeholder).toBe("Tap to add note");
   });
 
-  it("begins card note editing and syncs the save-and-close label", () => {
+  it("begins card note editing and keeps close visible while exposing save-and-close only for non-empty drafts", () => {
     const h = createHarness();
     const { trigger, input } = triggerStub();
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
@@ -279,18 +302,37 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.readOnly).toBe(false);
     expect(input.value).toBe("Original note");
     expect(input.focus).toHaveBeenCalledTimes(1);
-    expect(h.closeBtn.textContent).toBe("Save & Close");
-    expect(h.closeBtn.classList.contains("isSaveAndClose")).toBe(true);
+    expect(h.closeBtn.style.display).toBe("");
+    expect(h.closeBtn.textContent).toBe("");
+    expect(h.saveAndCloseBtn.style.display).toBe("");
+    expect(input.style.height).toBe("22px");
+    expect(input.style.overflowY).toBe("hidden");
   });
 
-  it("mirrors input changes into the hidden editor input and close label", () => {
+  it("mirrors input changes into the hidden editor input, autosizes, and toggles save-and-close visibility from draft content", () => {
     const h = createHarness();
-    h.overlay.dataset.historyEntryEditing = "true";
+    const { trigger, input } = triggerStub();
+    input.scrollHeight = 180;
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.interaction.beginEdit(trigger);
 
     h.interaction.syncInputMirror("Updated note");
 
     expect(h.editorInput.value).toBe("Updated note");
-    expect(h.closeBtn.textContent).toBe("Save & Close");
+    expect(h.closeBtn.style.display).toBe("");
+    expect(h.saveAndCloseBtn.style.display).toBe("");
+    expect(input.style.height).toBe("180px");
+    expect(input.style.overflowY).toBe("hidden");
+
+    input.value = "   ";
+    h.interaction.syncInputMirror("   ");
+    expect(h.saveAndCloseBtn.style.display).toBe("none");
   });
 
   it("cancels editing and restores the stored dataset note", () => {
@@ -313,6 +355,48 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.readOnly).toBe(true);
     expect(input.classList.contains("isEditing")).toBe(false);
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(input.style.height).toBe("");
+    expect(input.style.overflowY).toBe("");
+  });
+
+  it("discards the active draft and restores the stored note", () => {
+    const h = createHarness();
+    const { trigger, input } = triggerStub();
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+    h.interaction.beginEdit(trigger);
+    input.value = "Discard me";
+    h.editorInput.value = "Discard me";
+
+    h.interaction.discardDraft();
+
+    expect(h.editorInput.value).toBe("Original note");
+    expect(input.value).toBe("Original note");
+    expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(h.saveAndCloseBtn.style.display).toBe("none");
+  });
+
+  it("caps inline note autosize to the available modal height and enables textarea scrolling", () => {
+    const h = createHarness();
+    const { trigger, input } = triggerStub();
+    input.scrollHeight = 420;
+    input.getBoundingClientRect = vi.fn(() => ({ top: 220, bottom: 242, left: 0, right: 320, width: 320, height: 22 }));
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+
+    expect(h.interaction.beginEdit(trigger)).toBe(true);
+
+    expect(input.style.height).toBe("320px");
+    expect(input.style.overflowY).toBe("auto");
   });
 
   it("clears target state", () => {

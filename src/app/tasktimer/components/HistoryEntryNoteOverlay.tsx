@@ -28,6 +28,9 @@ export default function HistoryEntryNoteOverlay() {
           <button className="btn btn-accent" id="historyEntryNoteSaveBtn" type="button" style={{ display: "none" }}>
             Save Note
           </button>
+          <button className="btn btn-accent historyEntryNoteSaveAndCloseBtn" id="historyEntryNoteSaveAndCloseBtn" type="button" style={{ display: "none" }}>
+            Save &amp; Close
+          </button>
           <button className="btn btn-accent closePopup" type="button">
             Close
           </button>

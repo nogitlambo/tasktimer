@@ -35,7 +35,7 @@ function makeElement(opts: {
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
-const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, .closePopup.isSaveAndClose, .modalPreviewPrimaryAction";
+const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
 
 describe("primary click audio", () => {
   beforeEach(() => {

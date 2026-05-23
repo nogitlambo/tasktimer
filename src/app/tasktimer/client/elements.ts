@@ -403,8 +403,6 @@ const els = {
   timeGoalCompleteTitle: documentRef.getElementById("timeGoalCompleteTitle"),
   timeGoalCompleteText: documentRef.getElementById("timeGoalCompleteText"),
   timeGoalCompleteMeta: documentRef.getElementById("timeGoalCompleteMeta"),
-  timeGoalCompleteDifficultyGroup: documentRef.getElementById("timeGoalCompleteDifficultyGroup"),
-  timeGoalCompleteValidation: documentRef.getElementById("timeGoalCompleteValidation"),
   timeGoalCompleteAddNoteBtn: documentRef.getElementById("timeGoalCompleteAddNoteBtn") as HTMLButtonElement | null,
   timeGoalCompleteNextTasks: documentRef.getElementById("timeGoalCompleteNextTasks") as HTMLElement | null,
   timeGoalCompleteNextTaskGrid: documentRef.getElementById("timeGoalCompleteNextTaskGrid") as HTMLElement | null,
@@ -440,6 +438,7 @@ const els = {
   historyEntryNoteEditBtn: documentRef.getElementById("historyEntryNoteEditBtn") as HTMLButtonElement | null,
   historyEntryNoteCancelBtn: documentRef.getElementById("historyEntryNoteCancelBtn") as HTMLButtonElement | null,
   historyEntryNoteSaveBtn: documentRef.getElementById("historyEntryNoteSaveBtn") as HTMLButtonElement | null,
+  historyEntryNoteSaveAndCloseBtn: documentRef.getElementById("historyEntryNoteSaveAndCloseBtn") as HTMLButtonElement | null,
 
   historyScreen: documentRef.getElementById("historyScreen"),
   historyBackBtn: documentRef.getElementById("historyBackBtn"),

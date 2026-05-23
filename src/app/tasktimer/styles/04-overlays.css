@@ -3841,6 +3841,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .historyEntryNoteEditor .focusSessionNotesInput{
   min-height: 108px;
+  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
 }
 
 #historyEntryNoteOverlay .confirmBtns{
@@ -3860,7 +3862,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay .confirmBtns .btn{
   padding: 9px 12px;
   min-height: 36px;
-  font-family: var(--font-readable) !important;
+  font-family: var(--font-orbitron) !important;
   font-size: 11px;
 }
 
@@ -3870,11 +3872,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border-color: rgba(174,184,194,.45) !important;
   color: rgba(245,248,244,.88) !important;
   background: transparent !important;
+  border-radius: 0 !important;
 }
 
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn,
+#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn,
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible{
+#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:hover,
+#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible,
+#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:focus-visible{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
   border-color: rgba(174,184,194,.58) !important;
@@ -3884,19 +3890,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   font-weight: 800;
 }
 
-#historyEntryNoteOverlay .closePopup.isSaveAndClose,
-#historyEntryNoteOverlay .closePopup.isSaveAndClose:hover,
-#historyEntryNoteOverlay .closePopup.isSaveAndClose:focus-visible{
-  background: rgba(255,255,255,.01) !important;
-  color: #c9ff24 !important;
-  border-color: #c9ff24 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
-  font-weight: 800;
-}
-
-#historyEntryNoteOverlay .closePopup.isSaveAndClose:active{
+#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:active{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
   border-color: rgba(201,255,36,.86) !important;
@@ -4122,6 +4116,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: 8px 10px;
   border: 1px solid rgba(174,184,194,.45);
   background: rgba(255,255,255,.02);
+  resize: none;
+  overflow-y: hidden;
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
@@ -4715,9 +4711,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   margin: 0;
   padding-bottom: 12px;
-  color: #c9ff24;
+  color: #ffffff;
   font-family: var(--font-orbitron) !important;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
@@ -4814,7 +4810,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShard.is-placeholder
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel{
-  color: #f3ff7a;
+  color: #ffffff;
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
@@ -5257,109 +5253,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   display: none !important;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteDifficulty{
-  border: 0;
-  margin: 0 0 12px;
-  padding: 0;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficulty legend{
-  display: block;
-  width: 100%;
-  margin: 0 0 10px;
-  color: rgba(226,246,255,.92);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1.35;
-  text-align: center;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIcons{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  align-items:start;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn{
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  padding: 0;
-  cursor: pointer;
-  display:grid;
-  justify-items:center;
-  gap: 7px;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconWrap{
-  width: 64px;
-  height: 64px;
-  display:grid;
-  place-items:center;
-  background: rgba(255,255,255,.01);
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIcon{
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyLabel{
-  display:block;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  font-size: 12px;
-  letter-spacing: 0;
-  line-height: 1.2;
-  text-align: center;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyIconWrap{
-  background: linear-gradient(180deg, var(--accent3), var(--accent));
-  border-color: rgba(53,232,255,.55);
-  box-shadow: 0 0 14px rgba(0,220,255,.3);
-  transform: translateY(-1px);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:hover .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="1"].is-selected .timeGoalCompleteDifficultyIconWrap{
-  background: linear-gradient(180deg, #ff8a8a, #d72d2d);
-  border-color: rgba(255,110,110,.68);
-  box-shadow: 0 0 14px rgba(215,45,45,.32);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:hover .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"]:focus-visible .timeGoalCompleteDifficultyIconWrap,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn[data-completion-difficulty="5"].is-selected .timeGoalCompleteDifficultyIconWrap{
-  background: linear-gradient(180deg, #86efac, #16a34a);
-  border-color: rgba(74,222,128,.68);
-  box-shadow: 0 0 14px rgba(22,163,74,.28);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:hover .timeGoalCompleteDifficultyLabel,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn:focus-visible .timeGoalCompleteDifficultyLabel,
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyIconBtn.is-selected .timeGoalCompleteDifficultyLabel{
-  color: rgba(255,255,255,.98);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDifficultyHint{
-  min-height: 16px;
-  margin-top: 7px;
-  color: rgba(226,246,255,.72);
-  font-family: var(--font-geist-sans);
-  font-size: 11px;
-  letter-spacing: 0;
-  line-height: 1.35;
-  text-align: center;
-}
-
 #timeGoalCompleteOverlay .timeGoalCompleteNoteField{
   display: grid;
   gap: 8px;
@@ -5368,7 +5261,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
 #timeGoalCompleteOverlay .timeGoalCompleteDivider{
   height: 1px;
-  margin: 2px 0 12px;
+  margin: 0 0 18px;
   background: linear-gradient(90deg, transparent, rgba(180,188,198,.28), transparent);
 }
 
@@ -5377,7 +5270,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
-  margin: 0 0 32px;
+  margin: 0 0 28px;
   overflow: hidden;
   transform-origin: top center;
   animation: timeGoalCompleteLauncherRollDown .34s cubic-bezier(.16,.84,.24,1) both;
@@ -5501,18 +5394,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   line-height: 1.45;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteValidation[hidden]{
-  display: none !important;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteValidation{
-  margin: -2px 0 10px;
-  color: #ff4d5f !important;
-  font-size: 11px;
-  line-height: 1.4;
-  text-align: center;
-}
-
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
   justify-content: center;
   margin-top: 4px;
@@ -5537,10 +5418,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   color: #04131c;
   border-color: rgba(53,232,255,.55);
   box-shadow: 0 0 14px rgba(0,220,255,.3);
-}
-
-body[data-theme="lime"] #timeGoalCompleteOverlay .timeGoalCompleteValidation{
-  color: #ff5a68 !important;
 }
 
 #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
