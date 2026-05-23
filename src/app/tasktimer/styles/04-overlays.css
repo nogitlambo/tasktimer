@@ -6306,6 +6306,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(170, 178, 190, .88) !important;
 }
 
+@media (min-width: 641px){
+  #temporaryModalOverlay .modalSubtext{
+    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+    font-size: 12px !important;
+  }
+}
+
 :is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
   border-color: #1a1b20 !important;
   background-color: rgba(26, 27, 32, .58) !important;

@@ -7,7 +7,7 @@ import {
 import { localDayKey } from "../lib/history";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "../lib/colors";
 import { computeMomentumSnapshot, getMomentumBandLabel } from "../lib/momentum";
-import { buildRewardsHeaderViewModel } from "../lib/rewards";
+import { buildRewardsHeaderViewModel, buildXpProgressSubtext } from "../lib/rewards";
 import {
   getLocalScheduleDay,
   getTaskScheduledDayEntries,
@@ -172,7 +172,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
       progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
     }
-    if (metaEl) metaEl.textContent = rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to next rank` : "Max rank reached";
+    if (metaEl) metaEl.textContent = buildXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
     if (cardEl) {
       const cardSummary =
         rewardsHeader.xpToNext != null
@@ -2620,6 +2620,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   return {
+    renderDashboardHeaderProgress: renderRewardsHeaderProgressCard,
     renderDashboardMomentumCard,
     renderDashboardWeeklyGoalsCard,
     renderDashboardTasksCompletedCard,

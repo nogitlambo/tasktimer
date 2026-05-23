@@ -5,7 +5,7 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { RewardProgressV1 } from "../lib/rewards";
-import type { TaskTimerAppPageOptions } from "./context";
+import type { FocusModeTransitionOptions, TaskTimerAppPageOptions } from "./context";
 import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskTimerMutableStore } from "./mutable-store";
@@ -326,7 +326,7 @@ type CreateTasksOptionsArgs = {
   clearRewardSessionTracker: Parameters<typeof createTaskTimerTasks>[0]["clearRewardSessionTracker"];
   upsertLiveSession: Parameters<typeof createTaskTimerTasks>[0]["upsertLiveSession"];
   finalizeLiveSession: Parameters<typeof createTaskTimerTasks>[0]["finalizeLiveSession"];
-  openFocusMode: (index: number) => void;
+  openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
   appendCompletedSessionHistory: Parameters<typeof createTaskTimerTasks>[0]["appendCompletedSessionHistory"];
@@ -536,6 +536,7 @@ type CreateSessionOptionsArgs = {
   formatTime: (value: number) => string;
   formatMainTaskElapsed: (elapsedMs: number, running?: boolean) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  getTaskElapsedMs: (task: Task) => number;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
@@ -545,6 +546,7 @@ type CreateSessionOptionsArgs = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
+  upsertLiveSession: Parameters<typeof createTaskTimerSession>[0]["upsertLiveSession"];
   hasEntitlement: Parameters<typeof createTaskTimerSession>[0]["hasEntitlement"];
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
@@ -1421,6 +1423,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     formatTime: args.formatTime,
     formatMainTaskElapsed: args.formatMainTaskElapsed,
     formatMainTaskElapsedHtml: args.formatMainTaskElapsedHtml,
+    getTaskElapsedMs: args.getTaskElapsedMs,
     getModeColor: args.getModeColor,
     fillBackgroundForPct: args.fillBackgroundForPct,
     sortMilestones: args.sortMilestones,
@@ -1430,6 +1433,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     syncSharedTaskSummariesForTasks: args.syncSharedTaskSummariesForTasks,
     syncRewardSessionTrackerForTask: args.syncRewardSessionTrackerForTask,
     syncLiveSessionForTask: args.syncLiveSessionForTask,
+    upsertLiveSession: args.upsertLiveSession,
     hasEntitlement: args.hasEntitlement,
     startTask: args.startTask,
     stopTask: args.stopTask,

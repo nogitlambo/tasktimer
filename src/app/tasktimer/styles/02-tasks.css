@@ -640,6 +640,76 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   margin-bottom:0;
 }
 
+.focusModeTransitionClone{
+  position:fixed;
+  z-index:2400;
+  box-sizing:border-box;
+  overflow:hidden;
+  pointer-events:none;
+  transform-origin:top left;
+  transition:
+    transform 380ms cubic-bezier(.18,.84,.22,1),
+    opacity 380ms cubic-bezier(.18,.84,.22,1);
+  will-change:transform, opacity;
+}
+
+.focusModeTransitionClone .taskFlipScene,
+.focusModeTransitionClone .taskFace,
+.focusModeTransitionClone .taskFaceShell{
+  height:100%;
+}
+
+.focusModeTransitionCloneFocus{
+  background:#000;
+}
+
+body.isFocusModeTransitioning{
+  cursor:progress;
+}
+
+body.isFocusModeTransitioning #app[aria-label="TaskLaunch App"],
+body.isFocusModeTransitioning #focusModeScreen{
+  pointer-events:none !important;
+}
+
+#focusModeScreen.focusModeTransitionEntering{
+  opacity:0;
+  animation: focusModeScreenEnter 380ms cubic-bezier(.18,.84,.22,1) both;
+}
+
+#focusModeScreen.focusModeTransitionClosing{
+  animation: focusModeScreenClose 180ms cubic-bezier(.4,0,.2,1) both;
+}
+
+@keyframes focusModeScreenEnter{
+  from{
+    opacity:0;
+    transform:scale(.985);
+  }
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
+
+@keyframes focusModeScreenClose{
+  from{
+    opacity:1;
+  }
+  to{
+    opacity:0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .focusModeTransitionClone,
+  #focusModeScreen.focusModeTransitionEntering,
+  #focusModeScreen.focusModeTransitionClosing{
+    animation:none !important;
+    transition:none !important;
+  }
+}
+
 .focusModeTitle{
   text-align:center;
   font-family:var(--font-tight);

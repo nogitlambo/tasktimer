@@ -178,8 +178,21 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     focusSessionDrafts.clearDraft(taskId);
   }
 
+  function getPreferredFocusSessionNote(taskId?: string | null) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return "";
+    const liveNote = String(options.getLiveSessionsByTaskId()?.[normalizedTaskId]?.note || "").trim();
+    if (liveNote) return liveNote;
+    return focusSessionDrafts.getDraft(normalizedTaskId);
+  }
+
   function syncFocusSessionNotesInput(taskId: string | null) {
-    focusSessionDrafts.syncInput(taskId);
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) {
+      focusSessionDrafts.syncInput(null);
+      return;
+    }
+    options.setFocusSessionNotesInputValue(getPreferredFocusSessionNote(normalizedTaskId));
   }
 
   function syncFocusSessionNotesAccordion(taskId: string | null) {
@@ -246,6 +259,9 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     applyHistorySnapshot(workspaceSnapshot);
     applyTaskSnapshot(workspaceSnapshot);
     options.setFocusSessionNotesByTaskId(focusSessionDrafts.load());
+    const activeFocusTaskId = options.getFocusModeTaskId();
+    syncFocusSessionNotesInput(activeFocusTaskId);
+    syncFocusSessionNotesAccordion(activeFocusTaskId);
     maybeRepairHistoryNotesInCloud();
     loadHistoryRangePrefs();
     options.loadAddTaskCustomNames();

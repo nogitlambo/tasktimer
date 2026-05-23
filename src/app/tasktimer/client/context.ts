@@ -26,6 +26,10 @@ import type { InteractionHapticsIntensity } from "../lib/interactionHapticsInten
 
 export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
+export type FocusModeTransitionOptions = {
+  sourceElement?: HTMLElement | null;
+};
+
 export type TaskTimerCachedModeSettings =
   | Partial<
       Record<
@@ -454,7 +458,7 @@ export type TaskTimerTasksContext = {
   clearRewardSessionTracker: (taskId: string | null | undefined) => void;
   upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (task: Task, opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }) => number;
-  openFocusMode: (index: number) => void;
+  openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
   appendCompletedSessionHistory: (task: Task, completedAtMs: number, elapsedMs: number, note?: string, completionDifficulty?: CompletionDifficulty) => void;
@@ -773,6 +777,7 @@ export type TaskTimerSessionContext = {
   formatTime: (value: number) => string;
   formatMainTaskElapsed: (elapsedMs: number, running?: boolean) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  getTaskElapsedMs: (task: Task) => number;
   getModeColor: (mode: MainMode) => string;
   fillBackgroundForPct: (pct: number) => string;
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
@@ -782,6 +787,7 @@ export type TaskTimerSessionContext = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
+  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;

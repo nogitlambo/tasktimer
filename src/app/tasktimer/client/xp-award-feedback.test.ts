@@ -4,28 +4,29 @@ vi.mock("./interaction-haptics", () => ({
   playInteractionHaptic: vi.fn(),
 }));
 
-vi.mock("./click-audio-player", () => ({
-  createClickAudioPlayer: vi.fn(),
-}));
-
-import { createClickAudioPlayer } from "./click-audio-player";
 import { playInteractionHaptic } from "./interaction-haptics";
 import {
   playXpAwardDeliveryAudio,
   playXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
+  XP_AWARD_DELIVERY_DONE_AUDIO_SRC,
+  XP_AWARD_DELIVERY_DONE_DELAY_MS,
   XP_AWARD_DELIVERY_AUDIO_SRC,
 } from "./xp-award-feedback";
+
+type MockAudio = {
+  currentTime: number;
+  preload?: string;
+  load: () => void;
+  addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  play: () => void;
+};
 
 describe("xp award feedback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createClickAudioPlayer).mockReturnValue({
-      play: vi.fn(),
-      playWhenReady: vi.fn(),
-      warm: vi.fn(),
-      isReady: vi.fn(() => true),
-    });
+    vi.useRealTimers();
   });
 
   it("only plays a delivery haptic when xp increases and haptics are enabled", () => {
@@ -48,12 +49,44 @@ describe("xp award feedback", () => {
     expect(playInteractionHaptic).not.toHaveBeenCalled();
   });
 
-  it("plays the xp delivery audio source without surfacing playback failures", () => {
-    const audioFactory = vi.fn();
+  it("plays the done audio 300ms after the xp delivery audio finishes", () => {
+    vi.useFakeTimers();
+    const listeners = new Map<string, EventListenerOrEventListenerObject>();
+    const play = vi.fn();
+    const load = vi.fn();
+    const removeEventListener = vi.fn((type: string) => listeners.delete(type));
+    const created: Array<{ src: string; audio: MockAudio }> = [];
+    const audioFactory = vi.fn((src: string) => {
+      const audio = {
+        currentTime: 5,
+        load,
+        addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => listeners.set(type, listener),
+        removeEventListener,
+        play,
+      };
+      created.push({ src, audio });
+      return audio;
+    });
 
     playXpAwardDeliveryAudio(audioFactory);
 
-    expect(createClickAudioPlayer).toHaveBeenCalledWith(XP_AWARD_DELIVERY_AUDIO_SRC, audioFactory);
-    expect(vi.mocked(createClickAudioPlayer).mock.results[0].value.play).toHaveBeenCalledTimes(1);
+    expect(audioFactory).toHaveBeenCalledWith(XP_AWARD_DELIVERY_AUDIO_SRC);
+    expect(created[0]?.audio.preload).toBe("auto");
+    expect(created[0]?.audio.currentTime).toBe(0);
+    expect(play).toHaveBeenCalledTimes(1);
+
+    const endedListener = listeners.get("ended");
+    expect(endedListener).toBeTypeOf("function");
+    (endedListener as EventListener)({} as Event);
+    expect(removeEventListener).toHaveBeenCalledWith("ended", endedListener);
+
+    vi.advanceTimersByTime(XP_AWARD_DELIVERY_DONE_DELAY_MS - 1);
+    expect(audioFactory).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1);
+    expect(audioFactory).toHaveBeenLastCalledWith(XP_AWARD_DELIVERY_DONE_AUDIO_SRC);
+    expect(created[1]?.audio.preload).toBe("auto");
+    expect(created[1]?.audio.currentTime).toBe(0);
+    expect(play).toHaveBeenCalledTimes(2);
   });
 });

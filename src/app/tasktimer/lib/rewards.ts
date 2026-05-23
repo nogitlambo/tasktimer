@@ -773,6 +773,12 @@ export function getNextRank(totalXp: number): RankDefinition | null {
   return Number.isFinite(next.minXp) ? next : null;
 }
 
+export function buildXpProgressSubtext(totalXp: number, xpToNext: number | null): string {
+  const nextRank = getNextRank(totalXp);
+  if (xpToNext == null || !nextRank) return "Max rank reached";
+  return `You are ${Math.max(0, Math.floor(Number(xpToNext) || 0)).toLocaleString()} away from ${nextRank.label}`;
+}
+
 export function getRankById(rankId: string): RankDefinition {
   return RANK_BY_ID.get(String(rankId || "").trim().toLowerCase()) || RANK_LADDER[0];
 }

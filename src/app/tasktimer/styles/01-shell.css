@@ -576,6 +576,22 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   min-width:0;
 }
 
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpStats{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpStatsRow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  min-width:0;
+}
+
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpValue{
   flex:0 0 auto;
   display:inline-flex;
@@ -589,6 +605,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   transform-origin:right center;
   transition:transform .18s ease;
   will-change:transform;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderXpMeta{
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:11px;
+  line-height:1.2;
+  color:rgba(210, 216, 226, .8);
 }
 
 #app[aria-label="TaskLaunch App"] .appShellXpValueAlert,
@@ -1047,6 +1075,28 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   align-items:center;
   justify-content:flex-start;
   gap:8px;
+}
+
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpStats{
+  width:100%;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+}
+
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpMetaLine{
+  display:block;
+  width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:11px;
+  line-height:1.2;
+  color:rgba(210, 216, 226, .8);
 }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRankWrap{

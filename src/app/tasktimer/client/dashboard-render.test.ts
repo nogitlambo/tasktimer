@@ -68,6 +68,14 @@ class ElementStub {
     return child;
   }
 
+  querySelector(selector: string) {
+    if (selector.startsWith(".")) {
+      const className = selector.slice(1);
+      return this.children.find((child) => child.className.split(/\s+/).includes(className)) ?? null;
+    }
+    return null;
+  }
+
   closest(selector: string) {
     void selector;
     return null;
@@ -102,7 +110,7 @@ function todaySchedule() {
   return { [today]: "09:00" } as Task["plannedStartByDay"];
 }
 
-function createDocumentHarness() {
+function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   const byId = new Map<string, ElementStub>();
   const register = (id: string) => {
     const el = new ElementStub();
@@ -132,6 +140,23 @@ function createDocumentHarness() {
   register("dashboardHeatWeekdays");
   register("dashboardHeatCalendarGrid");
 
+  const headerXpCard = options?.includeHeaderXpCard ? new ElementStub() : null;
+  if (headerXpCard) {
+    headerXpCard.className = "appShellHeaderXp";
+    const valueEl = new ElementStub();
+    valueEl.className = "appShellHeaderXpValue";
+    const progressBarEl = new ElementStub();
+    progressBarEl.className = "appShellHeaderXpTrack";
+    const progressFillEl = new ElementStub();
+    progressFillEl.className = "appShellHeaderXpFill";
+    const metaEl = new ElementStub();
+    metaEl.className = "appShellHeaderXpMeta";
+    headerXpCard.appendChild(valueEl);
+    headerXpCard.appendChild(progressBarEl);
+    headerXpCard.appendChild(progressFillEl);
+    headerXpCard.appendChild(metaEl);
+  }
+
   const documentRef = {
     getElementById: (id: string) => byId.get(id) ?? null,
     createElementNS: (ns: string, tag: string) => {
@@ -144,12 +169,12 @@ function createDocumentHarness() {
       return new ElementStub();
     },
     querySelector: (selector: string) => {
-      void selector;
+      if (selector === "#app .appShellHeaderXp") return headerXpCard;
       return null;
     },
   };
 
-  return { byId, documentRef };
+  return { byId, documentRef, headerXpCard };
 }
 
 function createRenderHarness(
@@ -157,9 +182,11 @@ function createRenderHarness(
   options?: {
     historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number }>>;
     hasEntitlement?: boolean;
+    rewardProgress?: object;
+    includeHeaderXpCard?: boolean;
   }
 ) {
-  const { byId, documentRef } = createDocumentHarness();
+  const { byId, documentRef, headerXpCard } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
   const originalDocument = globalThis.document;
   Object.defineProperty(globalThis, "document", {
     configurable: true,
@@ -182,7 +209,7 @@ function createRenderHarness(
       dashboardHeatWeekdays: byId.get("dashboardHeatWeekdays"),
       dashboardHeatCalendarGrid: byId.get("dashboardHeatCalendarGrid"),
     } as never,
-    getRewardProgress: () => ({}) as never,
+    getRewardProgress: () => (options?.rewardProgress || {}) as never,
     getTasks: () => tasks,
     getHistoryByTaskId: () => options?.historyByTaskId || {},
     getDeletedTaskMeta: () => ({}),
@@ -216,7 +243,9 @@ function createRenderHarness(
 
   return {
     byId,
+    headerXpCard,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
+    renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
     renderLastRan: () => dashboardRender.renderDashboardAvgSessionChart(),
@@ -321,6 +350,38 @@ describe("last ran dashboard card", () => {
       expect(html.indexOf("Logged Task")).toBeLessThan(html.indexOf("Running Task"));
       expect(html).toContain("Running Task");
       expect(html).toContain("Never");
+    } finally {
+      harness.restore();
+    }
+  });
+});
+
+describe("dashboard header XP progress", () => {
+  it("renders the next-rank sub-text into the desktop header card", () => {
+    const harness = createRenderHarness([], {
+      includeHeaderXpCard: true,
+      rewardProgress: { totalXp: 60, totalXpPrecise: 60, currentRankId: "operator", completedSessions: 0, lastAwardedAt: null, awardLedger: [] },
+    });
+
+    try {
+      harness.renderHeaderXp();
+      const metaEl = harness.headerXpCard?.querySelector(".appShellHeaderXpMeta");
+      expect(metaEl?.textContent).toBe("You are 180 away from Technician");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders max-rank fallback copy into the desktop header card", () => {
+    const harness = createRenderHarness([], {
+      includeHeaderXpCard: true,
+      rewardProgress: { totalXp: 50000, totalXpPrecise: 50000, currentRankId: "mythic", completedSessions: 0, lastAwardedAt: null, awardLedger: [] },
+    });
+
+    try {
+      harness.renderHeaderXp();
+      const metaEl = harness.headerXpCard?.querySelector(".appShellHeaderXpMeta");
+      expect(metaEl?.textContent).toBe("Max rank reached");
     } finally {
       harness.restore();
     }

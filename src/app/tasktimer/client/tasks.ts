@@ -264,7 +264,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!delegatedAction) {
       const inTopRow = !!findDelegatedElement(e.target, ".row");
       const inActions = !!findDelegatedElement(e.target, ".actions");
-      if (inTopRow && !inActions) ctx.openFocusMode(i);
+      if (inTopRow && !inActions) ctx.openFocusMode(i, { sourceElement: taskEl as HTMLElement });
       return;
     }
     const { action, element } = delegatedAction;

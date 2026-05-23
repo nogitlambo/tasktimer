@@ -13,7 +13,7 @@ import {
   parseScheduleTimeMinutes,
 } from "../lib/schedule-placement";
 import { normalizeTaskColor } from "../lib/taskColors";
-import type { TaskTimerSessionContext } from "./context";
+import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
@@ -47,6 +47,13 @@ type DeferredTimeGoalModalEntry = {
   reminder: boolean;
   awardPreview?: TimeGoalAwardPreview;
 };
+
+type FocusModeCloseOptions = {
+  animate?: boolean;
+};
+
+const FOCUS_MODE_ZOOM_MS = 380;
+const FOCUS_MODE_FADE_CLOSE_MS = 180;
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -228,6 +235,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const setActiveToast = (value: CheckpointToast | null) => ctx.setActiveCheckpointToast(value as unknown);
   let timeGoalCompleteAudio: HTMLAudioElement | null = null;
   let timeGoalCompleteClickAudio: HTMLAudioElement | null = null;
+  let activeFocusTransitionClone: HTMLElement | null = null;
+  let activeFocusTransitionTimer: number | null = null;
+  let focusTransitionSourceTaskId: string | null = null;
+  let focusTransitionSourceRect: DOMRect | null = null;
 
   const focusSessionDrafts = createFocusSessionDrafts(
     {
@@ -261,8 +272,23 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     focusSessionDrafts.clearDraft(taskId);
   }
 
+  function getPreferredFocusSessionNote(taskId?: string | null) {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return "";
+    const liveNote = String(ctx.getLiveSessionsByTaskId()?.[normalizedTaskId]?.note || "").trim();
+    if (liveNote) return liveNote;
+    return focusSessionDrafts.getDraft(normalizedTaskId);
+  }
+
   function syncFocusSessionNotesInput(taskId: string | null) {
-    focusSessionDrafts.syncInput(taskId);
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) {
+      focusSessionDrafts.syncInput(null);
+      clearFocusSessionNotesSavedStatus();
+      return;
+    }
+    const nextValue = getPreferredFocusSessionNote(normalizedTaskId);
+    if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = nextValue;
     clearFocusSessionNotesSavedStatus();
   }
 
@@ -303,6 +329,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.setFocusSessionNoteSaveTimer(
       window.setTimeout(() => {
         focusSessionDrafts.setDraft(taskId, noteRaw);
+        const currentTask = ctx.getTasks().find((row) => String(row.id || "").trim() === String(taskId || "").trim()) || null;
+        if (currentTask?.running) {
+          ctx.upsertLiveSession(currentTask, {
+            elapsedMs: ctx.getTaskElapsedMs(currentTask),
+            note: noteRaw,
+            reason: "focus-note-input",
+          });
+        }
         ctx.setFocusSessionNoteSaveTimer(null);
       }, 250)
     );
@@ -983,12 +1017,118 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     renderFocusCheckpointCompletionLog(task);
   }
 
-  function openFocusMode(index: number) {
+  function prefersReducedFocusMotion() {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  }
+
+  function isUsableFocusTransitionRect(rect: DOMRect | null | undefined) {
+    return !!rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 4 && rect.height > 4;
+  }
+
+  function cleanupFocusTransition() {
+    if (activeFocusTransitionTimer != null) {
+      window.clearTimeout(activeFocusTransitionTimer);
+      activeFocusTransitionTimer = null;
+    }
+    activeFocusTransitionClone?.remove();
+    activeFocusTransitionClone = null;
+    document.body.classList.remove("isFocusModeTransitioning", "isFocusModeOpening", "isFocusModeClosing");
+    (els.focusModeScreen as HTMLElement | null)?.classList.remove("focusModeTransitionEntering", "focusModeTransitionClosing");
+  }
+
+  function createFocusTransitionClone(sourceEl: HTMLElement, sourceRect: DOMRect) {
+    const clone = sourceEl.cloneNode(true) as HTMLElement;
+    clone.removeAttribute("id");
+    clone.setAttribute("aria-hidden", "true");
+    clone.classList.add("focusModeTransitionClone");
+    clone.style.left = `${sourceRect.left}px`;
+    clone.style.top = `${sourceRect.top}px`;
+    clone.style.width = `${sourceRect.width}px`;
+    clone.style.height = `${sourceRect.height}px`;
+    clone.style.transform = "translate3d(0, 0, 0) scale(1, 1)";
+    document.body.appendChild(clone);
+    return clone;
+  }
+
+  function animateFocusTransitionClone(clone: HTMLElement, fromRect: DOMRect, toRect: DOMRect, onDone: () => void, fadeOut = true) {
+    const deltaX = toRect.left - fromRect.left;
+    const deltaY = toRect.top - fromRect.top;
+    const scaleX = toRect.width / fromRect.width;
+    const scaleY = toRect.height / fromRect.height;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clone.removeEventListener("transitionend", finish);
+      onDone();
+    };
+    clone.addEventListener("transitionend", finish, { once: true });
+    activeFocusTransitionTimer = window.setTimeout(finish, FOCUS_MODE_ZOOM_MS + 80);
+    window.requestAnimationFrame(() => {
+      clone.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY})`;
+      clone.style.opacity = fadeOut ? "0" : "1";
+    });
+  }
+
+  function getFocusTransitionTargetRect() {
+    const focusScreen = els.focusModeScreen as HTMLElement | null;
+    const rect = focusScreen?.getBoundingClientRect?.();
+    if (isUsableFocusTransitionRect(rect)) return rect as DOMRect;
+    return {
+      left: 0,
+      top: 0,
+      right: window.innerWidth || document.documentElement.clientWidth,
+      bottom: window.innerHeight || document.documentElement.clientHeight,
+      width: window.innerWidth || document.documentElement.clientWidth,
+      height: window.innerHeight || document.documentElement.clientHeight,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
+  }
+
+  function findFocusTransitionTaskCard(taskId: string) {
+    const list = els.taskList as HTMLElement | null;
+    if (!list || !taskId) return null;
+    const escapedTaskId = taskId.replace(/["\\]/g, "\\$&");
+    return list.querySelector(`.task[data-task-id="${escapedTaskId}"]`) as HTMLElement | null;
+  }
+
+  function measureFocusCloseTargetRect(taskId: string) {
+    const focusScreen = els.focusModeScreen as HTMLElement | null;
+    const hadOpenClass = document.body.classList.contains("isFocusModeOpen");
+    const previousDisplay = focusScreen?.style.display || "";
+    if (hadOpenClass) document.body.classList.remove("isFocusModeOpen");
+    if (focusScreen) focusScreen.style.display = "block";
+    const card = findFocusTransitionTaskCard(taskId);
+    const rect = card?.getBoundingClientRect?.();
+    if (hadOpenClass) document.body.classList.add("isFocusModeOpen");
+    if (focusScreen) focusScreen.style.display = previousDisplay;
+    return isUsableFocusTransitionRect(rect) ? (rect as DOMRect) : null;
+  }
+
+  function runFocusOpenTransition(sourceEl: HTMLElement | null | undefined, sourceRect: DOMRect | null, taskId: string) {
+    if (!sourceEl || !sourceRect || prefersReducedFocusMotion()) return;
+    if (!isUsableFocusTransitionRect(sourceRect)) return;
+    cleanupFocusTransition();
+    focusTransitionSourceTaskId = taskId;
+    focusTransitionSourceRect = sourceRect;
+    const clone = createFocusTransitionClone(sourceEl, sourceRect);
+    activeFocusTransitionClone = clone;
+    document.body.classList.add("isFocusModeTransitioning", "isFocusModeOpening");
+    (els.focusModeScreen as HTMLElement | null)?.classList.add("focusModeTransitionEntering");
+    animateFocusTransitionClone(clone, sourceRect, getFocusTransitionTargetRect(), cleanupFocusTransition);
+  }
+
+  function openFocusMode(index: number, opts?: FocusModeTransitionOptions) {
     const task = ctx.getTasks()[index];
     if (!task) return;
+    const taskId = String(task.id || "");
+    const transitionSourceEl = opts?.sourceElement || null;
+    const transitionSourceRect = transitionSourceEl?.getBoundingClientRect?.() || null;
     ctx.setFocusModeTaskId(String(task.id || ""));
     ctx.setDeferredFocusModeTimeGoalModals([]);
-    dismissNonFocusTaskAlertsForFocusTask(String(task.id || ""));
+    dismissNonFocusTaskAlertsForFocusTask(taskId);
     ctx.setFocusModeTaskName((task.name || "").trim());
     if (els.focusTaskName) els.focusTaskName.textContent = ctx.getFocusModeTaskName() || "Task";
     ctx.setFocusCheckpointSig("");
@@ -1008,21 +1148,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     syncFocusSessionNotesInput(String(task.id || ""));
     syncFocusSessionNotesAccordion(String(task.id || ""));
+    runFocusOpenTransition(transitionSourceEl, transitionSourceRect as DOMRect | null, taskId);
   }
 
-  function closeFocusMode() {
-    const focusScreenEl = els.focusModeScreen as HTMLElement | null;
-    const activeEl = document.activeElement as HTMLElement | null;
-    if (focusScreenEl && activeEl && focusScreenEl.contains(activeEl)) {
-      if (els.footerTasksBtn && typeof els.footerTasksBtn.focus === "function") els.footerTasksBtn.focus();
-      else if (els.openAddTaskBtn && typeof els.openAddTaskBtn.focus === "function") els.openAddTaskBtn.focus();
-      else if (typeof activeEl.blur === "function") activeEl.blur();
-    }
-    const closingFocusTaskId = String(ctx.getFocusModeTaskId() || "").trim();
-    flushPendingFocusSessionNoteSave(closingFocusTaskId);
-    if (closingFocusTaskId && els.focusSessionNotesInput) {
-      setFocusSessionDraft(closingFocusTaskId, String(els.focusSessionNotesInput.value || ""));
-    }
+  function finishCloseFocusMode(closingFocusTaskId: string) {
+    cleanupFocusTransition();
     ctx.setFocusModeTaskId(null);
     ctx.setFocusModeTaskName("");
     ctx.setFocusShowCheckpoints(true);
@@ -1055,8 +1185,61 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       els.focusInsightProductivityPeriod.textContent = "--";
       els.focusInsightProductivityPeriod.classList.add("is-empty");
     }
+    if (closingFocusTaskId === focusTransitionSourceTaskId) {
+      focusTransitionSourceTaskId = null;
+      focusTransitionSourceRect = null;
+    }
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
+  }
+
+  function runFocusCloseTransition(closingFocusTaskId: string, onDone: () => void) {
+    const focusScreen = els.focusModeScreen as HTMLElement | null;
+    if (!focusScreen || prefersReducedFocusMotion()) {
+      onDone();
+      return;
+    }
+    const fromRect = getFocusTransitionTargetRect();
+    const targetRect = measureFocusCloseTargetRect(closingFocusTaskId) || (closingFocusTaskId === focusTransitionSourceTaskId ? focusTransitionSourceRect : null);
+    cleanupFocusTransition();
+    document.body.classList.add("isFocusModeTransitioning", "isFocusModeClosing");
+    focusScreen.classList.add("focusModeTransitionClosing");
+    if (!isUsableFocusTransitionRect(targetRect)) {
+      activeFocusTransitionTimer = window.setTimeout(onDone, FOCUS_MODE_FADE_CLOSE_MS);
+      return;
+    }
+    const clone = focusScreen.cloneNode(true) as HTMLElement;
+    clone.removeAttribute("id");
+    clone.setAttribute("aria-hidden", "true");
+    clone.classList.add("focusModeTransitionClone", "focusModeTransitionCloneFocus");
+    clone.style.left = `${fromRect.left}px`;
+    clone.style.top = `${fromRect.top}px`;
+    clone.style.width = `${fromRect.width}px`;
+    clone.style.height = `${fromRect.height}px`;
+    clone.style.transform = "translate3d(0, 0, 0) scale(1, 1)";
+    document.body.appendChild(clone);
+    activeFocusTransitionClone = clone;
+    animateFocusTransitionClone(clone, fromRect, targetRect as DOMRect, onDone, true);
+  }
+
+  function closeFocusMode(opts?: FocusModeCloseOptions) {
+    const focusScreenEl = els.focusModeScreen as HTMLElement | null;
+    const activeEl = document.activeElement as HTMLElement | null;
+    if (focusScreenEl && activeEl && focusScreenEl.contains(activeEl)) {
+      if (els.footerTasksBtn && typeof els.footerTasksBtn.focus === "function") els.footerTasksBtn.focus();
+      else if (els.openAddTaskBtn && typeof els.openAddTaskBtn.focus === "function") els.openAddTaskBtn.focus();
+      else if (typeof activeEl.blur === "function") activeEl.blur();
+    }
+    const closingFocusTaskId = String(ctx.getFocusModeTaskId() || "").trim();
+    flushPendingFocusSessionNoteSave(closingFocusTaskId);
+    if (closingFocusTaskId && els.focusSessionNotesInput) {
+      setFocusSessionDraft(closingFocusTaskId, String(els.focusSessionNotesInput.value || ""));
+    }
+    if (opts?.animate && closingFocusTaskId) {
+      runFocusCloseTransition(closingFocusTaskId, () => finishCloseFocusMode(closingFocusTaskId));
+      return;
+    }
+    finishCloseFocusMode(closingFocusTaskId);
   }
 
   function shouldDeferTimeGoalModalInFocusMode(taskIdRaw: string | null | undefined) {
@@ -1587,7 +1770,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function registerSessionEvents() {
-    ctx.on(els.focusModeBackBtn, "click", closeFocusMode);
+    ctx.on(els.focusModeBackBtn, "click", () => closeFocusMode({ animate: true }));
     ctx.on(els.focusCheckpointToggle, "click", () => {
       const nextValue = !ctx.getFocusShowCheckpoints();
       ctx.setFocusShowCheckpoints(nextValue);

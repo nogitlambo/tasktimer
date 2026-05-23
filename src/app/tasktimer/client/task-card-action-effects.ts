@@ -1,4 +1,5 @@
 import type { Task } from "../lib/types";
+import type { FocusModeTransitionOptions } from "./context";
 import { dispatchTaskCardAction } from "./task-card-view-model";
 
 type TaskCardActionEffectsOptions = {
@@ -13,7 +14,7 @@ type TaskCardActionEffectsOptions = {
   deleteTask: (index: number) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
   openHistory: (index: number) => void;
-  openFocusMode: (index: number) => void;
+  openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   toggleCollapse: (index: number) => void;
   openTaskExportModal: (index: number) => void;
   openManualEntry: (taskId: string) => boolean;
@@ -77,8 +78,8 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
         delete: () => options.deleteTask(taskIndex),
         edit: () => options.openEdit(taskIndex, sourceElement || null),
         history: () => options.openHistory(taskIndex),
-        editName: () => options.openFocusMode(taskIndex),
-        focus: () => options.openFocusMode(taskIndex),
+        editName: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),
+        focus: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),
         collapse: () => options.toggleCollapse(taskIndex),
         exportTask: () => options.openTaskExportModal(taskIndex),
         manualEntry: () => {

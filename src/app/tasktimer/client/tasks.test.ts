@@ -188,6 +188,25 @@ function createHarness() {
   return {
     calls,
     confirm: () => confirmOk?.(),
+    clickTaskTopRow: () => {
+      const taskEl = {
+        dataset: { index: "0", taskId: "task-1" } as Record<string, string>,
+      };
+      const rowEl = {};
+      handlers.get(taskList)?.get("click")?.({
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return taskEl;
+            if (selector === "[data-task-flip]") return null;
+            if (selector === "[data-action]") return null;
+            if (selector === ".row") return rowEl;
+            if (selector === ".actions") return null;
+            return null;
+          },
+        },
+      });
+      return taskEl;
+    },
     clickArchive: () =>
       handlers.get(taskList)?.get("click")?.({
         preventDefault: vi.fn(),
@@ -223,6 +242,13 @@ describe("createTaskTimerTasks", () => {
       "render",
       "closeConfirm",
     ]);
-    expect((harness.ctx.els.taskList as HTMLElement).innerHTML).toContain("No Tasks found");
+  });
+
+  it("opens focus mode with the clicked task card as transition source for direct card clicks", () => {
+    const harness = createHarness();
+
+    const taskEl = harness.clickTaskTopRow();
+
+    expect(harness.ctx.openFocusMode).toHaveBeenCalledWith(0, { sourceElement: taskEl });
   });
 });

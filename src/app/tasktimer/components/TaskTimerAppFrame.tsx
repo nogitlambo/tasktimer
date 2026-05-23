@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
-import { RANK_LADDER, getRankLadderThumbnailSrc } from "../lib/rewards";
+import { RANK_LADDER, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
@@ -61,6 +61,9 @@ export type DesktopInsigniaUpgradePayload = {
   nextRankId: string;
 };
 
+const DESKTOP_INSIGNIA_UPGRADE_START_DELAY_MS = 600;
+const DESKTOP_INSIGNIA_UPGRADE_ACTIVE_DURATION_MS = 3400;
+
 function formatXpNumber(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
 }
@@ -82,6 +85,29 @@ export function shouldRenderDesktopInsigniaUpgrade(
   activeSeq: number | null
 ) {
   return !!upgrade && upgrade.seq === activeSeq && normalizeRankId(upgrade.previousRankId) !== "" && normalizeRankId(upgrade.nextRankId) !== "";
+}
+
+type DesktopInsigniaUpgradeTimerApi = Pick<typeof globalThis, "setTimeout" | "clearTimeout">;
+
+export function scheduleDesktopInsigniaUpgradeActivation(
+  upgrade: DesktopInsigniaUpgradePayload,
+  timerApi: DesktopInsigniaUpgradeTimerApi,
+  setActiveSeq: (updater: (current: number | null) => number | null) => void,
+  playAudio: () => void
+) {
+  let clearTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+  const startTimer = timerApi.setTimeout(() => {
+    setActiveSeq(() => upgrade.seq);
+    playAudio();
+    clearTimer = timerApi.setTimeout(() => {
+      setActiveSeq((current) => current === upgrade.seq ? null : current);
+    }, DESKTOP_INSIGNIA_UPGRADE_ACTIVE_DURATION_MS);
+  }, DESKTOP_INSIGNIA_UPGRADE_START_DELAY_MS);
+
+  return () => {
+    timerApi.clearTimeout(startTimer);
+    if (clearTimer) timerApi.clearTimeout(clearTimer);
+  };
 }
 
 function playDesktopInsigniaUpgradeAudio() {
@@ -111,6 +137,10 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       iconSrc: "/icons/icons_default/signout.png",
     },
   ];
+}
+
+export function getXpProgressSubtext(totalXp: number, xpToNext: number | null) {
+  return buildXpProgressSubtext(totalXp, xpToNext);
 }
 
 export default function TaskTimerAppFrame({
@@ -149,6 +179,7 @@ export default function TaskTimerAppFrame({
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";
+  const xpProgressSubtext = getXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
   const isDesktopInsigniaUpgradeActive = shouldRenderDesktopInsigniaUpgrade(
@@ -163,12 +194,12 @@ export default function TaskTimerAppFrame({
 
   useEffect(() => {
     if (!desktopInsigniaUpgrade) return;
-    setActiveDesktopInsigniaUpgradeSeq(desktopInsigniaUpgrade.seq);
-    playDesktopInsigniaUpgradeAudio();
-    const clearTimer = window.setTimeout(() => {
-      setActiveDesktopInsigniaUpgradeSeq((current) => current === desktopInsigniaUpgrade.seq ? null : current);
-    }, 3400);
-    return () => window.clearTimeout(clearTimer);
+    return scheduleDesktopInsigniaUpgradeActivation(
+      desktopInsigniaUpgrade,
+      window,
+      setActiveDesktopInsigniaUpgradeSeq,
+      playDesktopInsigniaUpgradeAudio
+    );
   }, [desktopInsigniaUpgrade]);
 
   useEffect(() => {
@@ -261,29 +292,34 @@ export default function TaskTimerAppFrame({
                     <button
                       className="taskLaunchTopbarXpStatsTrigger taskLaunchTopbarXpTrigger"
                       type="button"
-                      aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                      aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}. ${xpProgressSubtext}.`}
                       onClick={() => setShowRankLadderModal(true)}
                     >
-                      <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
-                        <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
+                      <span className="taskLaunchTopbarXpStats">
+                        <span className="taskLaunchTopbarXpStatsRow">
+                          <span className="taskLaunchTopbarXpRankWrap" aria-label={`Current rank: ${rewardsHeader.rankLabel}`}>
+                            <span className="taskLaunchTopbarXpRank">{rewardsHeader.rankLabel}</span>
+                          </span>
+                          <div
+                            className="taskLaunchTopbarXpTrack"
+                            role="progressbar"
+                            aria-label="XP progress toward the next rank"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                          >
+                            <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                          </div>
+                          <strong
+                            className={`taskLaunchTopbarXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
+                            id="taskLaunchTopbarXpValue"
+                          >
+                            {formatXpNumber(rewardsHeader.totalXp)} XP
+                            {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
+                          </strong>
+                        </span>
+                        <span className="taskLaunchTopbarXpMetaLine">{xpProgressSubtext}</span>
                       </span>
-                      <div
-                        className="taskLaunchTopbarXpTrack"
-                        role="progressbar"
-                        aria-label="XP progress toward the next rank"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                      >
-                        <span className="taskLaunchTopbarXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                      </div>
-                      <strong
-                        className={`taskLaunchTopbarXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
-                        id="taskLaunchTopbarXpValue"
-                      >
-                        {formatXpNumber(rewardsHeader.totalXp)} XP
-                        {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
-                      </strong>
                     </button>
                   </span>
                 </div>
@@ -378,61 +414,66 @@ export default function TaskTimerAppFrame({
                 <button
                   className="appShellHeaderXpBottomRow appShellHeaderXpTrigger"
                   type="button"
-                  aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
+                  aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}. ${xpProgressSubtext}.`}
                   onClick={() => setShowRankLadderModal(true)}
                 >
-                  <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                    {isDesktopInsigniaUpgradeActive && desktopInsigniaUpgrade ? (
-                      <span className="appShellHeaderXpInsigniaUpgradeShell" data-insignia-upgrade-seq={desktopInsigniaUpgrade.seq}>
-                        <RankThumbnail
-                          rankId={desktopInsigniaUpgrade.previousRankId}
-                          className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isOld"
-                          imageClassName="appShellHeaderXpInsigniaImg"
-                          placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
-                          alt=""
-                          size={24}
-                          aria-hidden
-                        />
-                        <RankThumbnail
-                          rankId={desktopInsigniaUpgrade.nextRankId}
-                          className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isNew"
-                          imageClassName="appShellHeaderXpInsigniaImg"
-                          placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
-                          alt=""
-                          size={24}
-                          aria-hidden
-                        />
+                  <span className="appShellHeaderXpStats">
+                    <span className="appShellHeaderXpStatsRow">
+                      <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                        {isDesktopInsigniaUpgradeActive && desktopInsigniaUpgrade ? (
+                          <span className="appShellHeaderXpInsigniaUpgradeShell" data-insignia-upgrade-seq={desktopInsigniaUpgrade.seq}>
+                            <RankThumbnail
+                              rankId={desktopInsigniaUpgrade.previousRankId}
+                              className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isOld"
+                              imageClassName="appShellHeaderXpInsigniaImg"
+                              placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                              alt=""
+                              size={24}
+                              aria-hidden
+                            />
+                            <RankThumbnail
+                              rankId={desktopInsigniaUpgrade.nextRankId}
+                              className="appShellHeaderXpInsigniaShell appShellHeaderXpInsigniaLayer isNew"
+                              imageClassName="appShellHeaderXpInsigniaImg"
+                              placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                              alt=""
+                              size={24}
+                              aria-hidden
+                            />
+                          </span>
+                        ) : (
+                          <RankThumbnail
+                            rankId={desktopHeaderRankId}
+                            className="appShellHeaderXpInsigniaShell"
+                            imageClassName="appShellHeaderXpInsigniaImg"
+                            placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
+                            alt=""
+                            size={24}
+                            aria-hidden
+                          />
+                        )}
+                        <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>
                       </span>
-                    ) : (
-                      <RankThumbnail
-                        rankId={desktopHeaderRankId}
-                        className="appShellHeaderXpInsigniaShell"
-                        imageClassName="appShellHeaderXpInsigniaImg"
-                        placeholderClassName="appShellHeaderXpInsigniaPlaceholder"
-                        alt=""
-                        size={24}
-                        aria-hidden
-                      />
-                    )}
-                    <span className="appShellHeaderXpRank">{rewardsHeader.rankLabel}</span>
+                      <div
+                        className="appShellHeaderXpTrack"
+                        role="progressbar"
+                        aria-label="XP progress toward the next rank"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(rewardsHeader.progressPct)}
+                      >
+                        <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
+                      </div>
+                      <strong
+                        className={`appShellHeaderXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
+                        id="appShellHeaderXpValue"
+                      >
+                        {formatXpNumber(rewardsHeader.totalXp)} XP
+                        {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
+                      </strong>
+                    </span>
+                    <span className="appShellHeaderXpMeta">{xpProgressSubtext}</span>
                   </span>
-                  <div
-                    className="appShellHeaderXpTrack"
-                    role="progressbar"
-                    aria-label="XP progress toward the next rank"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(rewardsHeader.progressPct)}
-                  >
-                    <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
-                  </div>
-                  <strong
-                    className={`appShellHeaderXpValue${isXpCountAnimating ? " isAnimatingXpCount" : ""}`}
-                    id="appShellHeaderXpValue"
-                  >
-                    {formatXpNumber(rewardsHeader.totalXp)} XP
-                    {showMaxXpAlert ? <span className="appShellXpValueAlert" aria-hidden="true"> !</span> : null}
-                  </strong>
                 </button>
               </div>
             </section>

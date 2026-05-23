@@ -33,7 +33,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     deleteTask: (index) => calls.push(`delete:${index}`),
     openEdit: (index) => calls.push(`edit:${index}`),
     openHistory: (index) => calls.push(`history:${index}`),
-    openFocusMode: (index) => calls.push(`focus:${index}`),
+    openFocusMode: (index, opts) => calls.push(`focus:${index}:${opts?.sourceElement ? "source" : "none"}`),
     toggleCollapse: (index) => calls.push(`collapse:${index}`),
     openTaskExportModal: (index) => calls.push(`export:${index}`),
     openManualEntry: (taskId) => {
@@ -98,6 +98,19 @@ describe("task card action effects", () => {
     expect(harness.calls).toEqual(["timeout"]);
     harness.timers.shift()?.();
     expect(harness.calls).toEqual(["timeout", "manual:task-1"]);
+  });
+
+  it("passes the source task card when opening focus mode from card text actions", () => {
+    const harness = createHarness();
+    const taskCard = { matches: () => true } as unknown as HTMLElement;
+    const sourceElement = {
+      closest: (selector: string) => (selector === ".task" ? taskCard : null),
+    } as unknown as HTMLElement;
+
+    expect(harness.effects.handleAction({ action: "focus", taskIndex: 1, taskId: "task-1", sourceElement })).toBe(true);
+    expect(harness.effects.handleAction({ action: "editName", taskIndex: 2, taskId: "task-1", sourceElement })).toBe(true);
+
+    expect(harness.calls).toEqual(["focus:1:source", "focus:2:source"]);
   });
 
   it("confirms unshare and refreshes friends data when the user confirms on friends page", async () => {
