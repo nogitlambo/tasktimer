@@ -41,6 +41,39 @@ function normalizeTotalXp(value: unknown) {
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
 }
 
+const allowedCorsOrigins = new Set([
+  "https://tasklaunch.app",
+  "https://www.tasklaunch.app",
+  "https://preview.tasklaunch.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "capacitor://localhost",
+]);
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const headers = new Headers({
+    Vary: "Origin",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Firebase-Auth",
+    "Access-Control-Max-Age": "600",
+  });
+  if (allowedCorsOrigins.has(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+  }
+  return headers;
+}
+
+function withCors(req: Request, response: Response) {
+  const headers = new Headers(response.headers);
+  getCorsHeaders(req).forEach((value, key) => headers.set(key, value));
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) {
   return {
     alias: normalizeField(data?.username, 40),
@@ -49,6 +82,13 @@ function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) 
     currentRankId: normalizeField(data?.rewardCurrentRankId, 120),
     totalXp: normalizeTotalXp(data?.rewardTotalXp),
   };
+}
+
+export function OPTIONS(req: Request) {
+  return new Response(null, {
+    status: 204,
+    headers: getCorsHeaders(req),
+  });
 }
 
 export async function POST(req: Request) {
@@ -65,25 +105,25 @@ export async function POST(req: Request) {
     });
     const receiverEmail = normalizeEmail(body.receiverEmail);
     if (!receiverEmail) {
-      return NextResponse.json({ error: "Email address is required." }, { status: 400 });
+      return withCors(req, NextResponse.json({ error: "Email address is required." }, { status: 400 }));
     }
     if (senderEmail && receiverEmail === normalizeEmail(senderEmail)) {
-      return NextResponse.json({ error: "You cannot send a request to yourself." }, { status: 400 });
+      return withCors(req, NextResponse.json({ error: "You cannot send a request to yourself." }, { status: 400 }));
     }
 
     const db = getFirebaseAdminDb();
     const lookupRef = db.collection("userEmailLookup").doc(emailLookupDocKey(receiverEmail));
     const lookupSnap = await lookupRef.get();
     if (!lookupSnap.exists) {
-      return NextResponse.json({ error: "No user found for this email address." }, { status: 404 });
+      return withCors(req, NextResponse.json({ error: "No user found for this email address." }, { status: 404 }));
     }
 
     const receiverUid = asString(lookupSnap.get("uid"), 120);
     if (!receiverUid) {
-      return NextResponse.json({ error: "Could not resolve user account." }, { status: 400 });
+      return withCors(req, NextResponse.json({ error: "Could not resolve user account." }, { status: 400 }));
     }
     if (receiverUid === senderUid) {
-      return NextResponse.json({ error: "You cannot send a request to yourself." }, { status: 400 });
+      return withCors(req, NextResponse.json({ error: "You cannot send a request to yourself." }, { status: 400 }));
     }
 
     const requestId = requestDocId(senderUid, receiverUid);
@@ -149,21 +189,24 @@ export async function POST(req: Request) {
     });
 
     if (!requestResult.ok) {
-      return NextResponse.json({ error: requestResult.error }, { status: requestResult.status });
+      return withCors(req, NextResponse.json({ error: requestResult.error }, { status: requestResult.status }));
     }
 
-    return NextResponse.json({ ok: true, requestId });
+    return withCors(req, NextResponse.json({ ok: true, requestId }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not send friend request.");
+      return withCors(req, createApiAuthErrorResponse(error, "Could not send friend request."));
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not send friend request.",
-      "[api/friends/requests] Request failed"
+    return withCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not send friend request.",
+        "[api/friends/requests] Request failed"
+      )
     );
   }
 }

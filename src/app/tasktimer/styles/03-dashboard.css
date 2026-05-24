@@ -7776,7 +7776,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
   display:grid !important;
-  grid-template-columns:minmax(220px, 292px) minmax(0, 1fr) !important;
+  grid-template-columns:minmax(440px, 584px) minmax(0, 1fr) !important;
   grid-template-rows:auto !important;
   gap:14px !important;
   align-items:stretch !important;
