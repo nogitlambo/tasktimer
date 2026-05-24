@@ -3,14 +3,34 @@ import { createTaskTimerAddTask } from "./add-task";
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
+function buttonStub() {
+  return {
+    disabled: false,
+    classList: { toggle: vi.fn() },
+    setAttribute: vi.fn(),
+  } as unknown as HTMLButtonElement;
+}
+
 function createHarness(
   initialValue: string,
-  overrides?: { tasks?: Array<Record<string, unknown>>; plannedStartTime?: string; taskType?: "recurring" | "once-off" }
+  overrides?: {
+    tasks?: Array<Record<string, unknown>>;
+    plannedStartTime?: string;
+    taskType?: "recurring" | "once-off";
+    productivityStartTime?: string;
+    productivityEndTime?: string;
+    productivityDays?: string[];
+  }
 ) {
   const handlers = new Map<object, HandlerMap>();
   const documentStub = {};
   vi.stubGlobal("document", documentStub);
   let addTaskMilestones: Array<{ hours: number; description: string }> = [];
+  let addTaskType: "recurring" | "once-off" = overrides?.taskType || "recurring";
+  let addTaskDurationUnit: "minute" | "hour" = "hour";
+  let addTaskDurationPeriod: "day" | "week" = "day";
+  let addTaskOnceOffDay = "mon";
+  let addTaskPlannedStartTime = overrides?.plannedStartTime || "09:00";
   const addTaskName = {
     value: "New Task",
     classList: { remove: vi.fn(), toggle: vi.fn() },
@@ -31,6 +51,23 @@ function createHarness(
   const addTaskScheduleFields = {
     classList: { toggle: vi.fn() },
   } as unknown as HTMLElement;
+  const addTaskTypeRecurringBtn = buttonStub();
+  const addTaskTypeOnceOffBtn = buttonStub();
+  const addTaskDurationUnitMinute = buttonStub();
+  const addTaskDurationUnitHour = buttonStub();
+  const addTaskDurationPeriodDay = buttonStub();
+  const addTaskDurationPeriodWeek = buttonStub();
+  const addTaskOnceOffDaySelect = {
+    value: addTaskOnceOffDay,
+  } as HTMLSelectElement;
+  const addTaskPlannedStartTimeInput = {
+    value: addTaskPlannedStartTime,
+    disabled: false,
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLInputElement;
+  const addTaskPlannedStartInput = {
+    value: addTaskPlannedStartTime,
+  } as HTMLInputElement;
 
   const on = vi.fn((target: object | null | undefined, type: string, handler: (event?: Event) => void) => {
     if (!target) return;
@@ -48,24 +85,25 @@ function createHarness(
       addTaskMsList: null,
       addTaskCancelBtn: null,
       addTaskForm: {} as HTMLFormElement,
-      addTaskTypeRecurringBtn: null,
-      addTaskTypeOnceOffBtn: null,
+      addTaskTypeRecurringBtn,
+      addTaskTypeOnceOffBtn,
       addTaskScheduleToggle,
       addTaskScheduleFields,
-      addTaskOnceOffDaySelect: null,
+      addTaskOnceOffDaySelect,
       addTaskNameMenu: null,
       addTaskNameCustomList: null,
       addTaskNamePresetList: null,
       addTaskNameCustomTitle: null,
       addTaskNameDivider: null,
       addTaskNamePresetTitle: null,
-      addTaskDurationUnitMinute: null,
-      addTaskDurationUnitHour: null,
-      addTaskDurationPeriodDay: null,
-      addTaskDurationPeriodWeek: null,
+      addTaskDurationUnitMinute,
+      addTaskDurationUnitHour,
+      addTaskDurationPeriodDay,
+      addTaskDurationPeriodWeek,
       addTaskPlannedStartHourSelect: null,
       addTaskPlannedStartMinuteSelect: null,
       addTaskPlannedStartMeridiemSelect: null,
+      addTaskPlannedStartTimeInput,
       addTaskColorTrigger: null,
       addTaskColorPopover: null,
       addTaskColorPalette: null,
@@ -80,7 +118,7 @@ function createHarness(
       addTaskDurationPerLabel: null,
       addTaskDurationPeriodPills: null,
       addTaskPlannedStartPushReminders: null,
-      addTaskPlannedStartInput: null,
+      addTaskPlannedStartInput,
       addTaskAdvancedMenu: null,
     },
     sharedTasks: {
@@ -108,14 +146,20 @@ function createHarness(
       })),
     },
     on,
-    getAddTaskType: () => overrides?.taskType || "recurring",
-    setAddTaskTypeState: vi.fn(),
+    getAddTaskType: () => addTaskType,
+    setAddTaskTypeState: vi.fn((value: "recurring" | "once-off") => {
+      addTaskType = value;
+    }),
     getAddTaskDurationValue: () => Number(addTaskDurationValueInput.value || 0),
     setAddTaskDurationValueState: vi.fn(),
-    getAddTaskDurationUnit: () => "hour",
-    setAddTaskDurationUnitState: vi.fn(),
-    getAddTaskDurationPeriod: () => "day",
-    setAddTaskDurationPeriodState: vi.fn(),
+    getAddTaskDurationUnit: () => addTaskDurationUnit,
+    setAddTaskDurationUnitState: vi.fn((value: "minute" | "hour") => {
+      addTaskDurationUnit = value;
+    }),
+    getAddTaskDurationPeriod: () => addTaskDurationPeriod,
+    setAddTaskDurationPeriodState: vi.fn((value: "day" | "week") => {
+      addTaskDurationPeriod = value;
+    }),
     getAddTaskNoTimeGoal: () => false,
     setAddTaskNoTimeGoalState: vi.fn(),
     getAddTaskMilestonesEnabled: () => addTaskMsToggle.checked,
@@ -135,10 +179,14 @@ function createHarness(
     saveCloudTaskUi: vi.fn(),
     loadCachedTaskUi: vi.fn(() => null),
     escapeHtmlUI: (value: string) => value,
-    getAddTaskOnceOffDay: () => "mon",
-    setAddTaskOnceOffDayState: vi.fn(),
-    getAddTaskPlannedStartTime: () => overrides?.plannedStartTime || "09:00",
-    setAddTaskPlannedStartTimeState: vi.fn(),
+    getAddTaskOnceOffDay: () => addTaskOnceOffDay,
+    setAddTaskOnceOffDayState: vi.fn((value: string) => {
+      addTaskOnceOffDay = value;
+    }),
+    getAddTaskPlannedStartTime: () => addTaskPlannedStartTime,
+    setAddTaskPlannedStartTimeState: vi.fn((value: string) => {
+      addTaskPlannedStartTime = value;
+    }),
     getTasks: () => [],
     confirm: vi.fn(),
     closeConfirm: vi.fn(),
@@ -151,9 +199,9 @@ function createHarness(
     setSuppressAddTaskNameFocusOpenState: vi.fn(),
     getSuppressAddTaskNameFocusOpen: () => false,
     getCurrentAppPage: () => "tasks",
-    getOptimalProductivityStartTime: () => "09:00",
-    getOptimalProductivityEndTime: () => "17:00",
-    getOptimalProductivityDays: () => ["mon", "wed", "fri"],
+    getOptimalProductivityStartTime: () => overrides?.productivityStartTime || "09:00",
+    getOptimalProductivityEndTime: () => overrides?.productivityEndTime || "17:00",
+    getOptimalProductivityDays: () => overrides?.productivityDays || ["mon", "wed", "fri"],
     jumpToTaskAndHighlight: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
@@ -172,12 +220,19 @@ function createHarness(
   return {
     addTaskDurationValueInput,
     addTaskMsToggle,
+    addTaskPlannedStartTimeInput,
     ctx,
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
     toggleSchedule: (checked = true) => {
       addTaskScheduleToggle.checked = checked;
       handlers.get(addTaskScheduleToggle)?.get("change")?.();
     },
+    setManualPlannedStart: (value: string) => {
+      addTaskPlannedStartTimeInput.value = value;
+      handlers.get(addTaskPlannedStartTimeInput)?.get("input")?.();
+    },
+    clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
+    clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
     toggleCheckpoints: () => handlers.get(addTaskMsToggle)?.get("change")?.(),
@@ -282,6 +337,150 @@ describe("createTaskTimerAddTask", () => {
     ]);
   });
 
+  it("auto-fills Planned Start Time from the optimal productivity start when free", () => {
+    const harness = createHarness("1", { productivityStartTime: "08:00", productivityEndTime: "12:00" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("08:00");
+    expect(harness.addTaskPlannedStartTimeInput.value).toBe("08:00");
+  });
+
+  it("auto-fills Planned Start Time to the next in-range slot when the productivity start is occupied", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("1", { tasks: [existingTask], productivityStartTime: "09:00", productivityEndTime: "12:00" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("10:00");
+    expect(harness.addTaskPlannedStartTimeInput.value).toBe("10:00");
+  });
+
+  it("auto-fills Planned Start Time to the next slot after a full productivity range", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("1", { tasks: [existingTask], productivityStartTime: "09:00", productivityEndTime: "09:59" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("10:00");
+    expect(harness.addTaskPlannedStartTimeInput.value).toBe("10:00");
+  });
+
+  it("does not auto-update Planned Start Time after the user manually edits it", () => {
+    const harness = createHarness("1", { productivityStartTime: "08:00", productivityEndTime: "12:00" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.setManualPlannedStart("11:00");
+    harness.addTaskDurationValueInput.value = "2";
+    harness.inputDuration();
+
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("11:00");
+    expect(harness.addTaskPlannedStartTimeInput.value).toBe("11:00");
+  });
+
+  it("auto-fills weekly recurring tasks only when the same time fits all optimal productivity days", () => {
+    const busyMonday = {
+      id: "busy-mon",
+      name: "Monday Busy",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const busyWednesday = {
+      ...busyMonday,
+      id: "busy-wed",
+      name: "Wednesday Busy",
+      onceOffDay: "wed",
+      plannedStartDay: "wed",
+      plannedStartTime: "10:00",
+      plannedStartByDay: { wed: "10:00" },
+    };
+    const harness = createHarness("20", {
+      tasks: [busyMonday, busyWednesday],
+      productivityStartTime: "09:00",
+      productivityEndTime: "13:00",
+      productivityDays: ["mon", "wed"],
+    });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.clickMinuteUnit();
+    harness.clickWeeklyPeriod();
+
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenLastCalledWith("11:00");
+    expect(harness.addTaskPlannedStartTimeInput.value).toBe("11:00");
+  });
+
   it("schedules weekly recurring tasks across optimal productivity days", () => {
     const harness = createHarness("2");
     harness.addTaskMsToggle.checked = false;
@@ -343,6 +542,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.setManualPlannedStart("09:00");
     harness.submit();
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
@@ -389,6 +589,7 @@ describe("createTaskTimerAddTask", () => {
     harness.ctx.getAddTaskDurationUnit = () => "minute";
     harness.addTaskMsToggle.checked = false;
 
+    harness.setManualPlannedStart("07:00");
     harness.toggleSchedule(true);
     harness.submit();
 
@@ -430,10 +631,11 @@ describe("createTaskTimerAddTask", () => {
       plannedStartOpenEnded: false,
     };
     const tasks = [existingTask];
-    const harness = createHarness("1", { tasks });
+    const harness = createHarness("1", { tasks, taskType: "once-off" });
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.setManualPlannedStart("09:00");
     harness.submit();
 
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
