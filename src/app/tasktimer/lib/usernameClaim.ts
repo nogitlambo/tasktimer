@@ -1,5 +1,6 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
+import { getApiUrl } from "./apiClient";
 
 type ClaimUsernameResult = {
   usernameKey: string;
@@ -37,7 +38,7 @@ export async function claimUsernameClient(rawUsername: string): Promise<ClaimUse
 
   for (let attempt = 0; attempt < USERNAME_CLAIM_MAX_RETRIES; attempt += 1) {
     try {
-      const response = await fetch("/api/account/claim-username", {
+      const response = await fetch(getApiUrl("/api/account/claim-username/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

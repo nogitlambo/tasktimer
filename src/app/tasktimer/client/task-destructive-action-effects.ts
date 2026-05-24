@@ -1,5 +1,5 @@
-import type { DeletedTaskMeta, Task } from "../lib/types";
-import { isTaskTimeGoalStartLockedToday, markTaskTimeGoalResetCompleted } from "../lib/timeGoalCompletion";
+import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import { isTaskTimeGoalStartLockedByHistoryToday, markTaskTimeGoalResetCompleted } from "../lib/timeGoalCompletion";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
@@ -77,7 +77,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
   function resetTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedToday(task)) return;
+    if (isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId() as HistoryByTaskId)) return;
     if (Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0)) <= 0) return;
     const taskId = String(task.id || "");
     const rewardPreview = getResetAwardPreview(task);

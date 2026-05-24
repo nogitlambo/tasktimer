@@ -96,8 +96,9 @@ function makeDashboardContext() {
   };
 
   appendCard("activity-overview", grid);
+  const activityOverview = cardsById.get("activity-overview")!;
   grid.appendChild(supportGrid);
-  appendCard("tasks-completed", grid);
+  appendCard("tasks-completed", activityOverview);
   appendCard("momentum", grid);
   appendCard("avg-session-by-task", grid);
   appendCard("heatmap", grid);
@@ -137,8 +138,6 @@ function makeDashboardContext() {
     on: () => {},
     hasEntitlement: () => true,
     getDashboardAvgRange: () => "past7",
-    selectDashboardActivityDay: () => {},
-    closeDashboardActivityDayDetail: () => {},
     navigateToAppRoute: () => {},
     jumpToTaskById: () => {},
     openDashboardHeatSummaryCard: () => {},
@@ -204,14 +203,14 @@ describe("dashboard drag interaction guards", () => {
     expect(isDashboardCardSizeOptionAllowed("full", "avg-session-by-task")).toBe(false);
   });
 
-  it("normalizes support panels into the integrated support grid and removes retired layout state", () => {
+  it("normalizes support panels without moving Task Overview out of Activity Overview", () => {
     const harness = makeDashboardContext();
 
     try {
       harness.dashboard.applyDashboardOrder(["heatmap", "momentum"]);
       harness.dashboard.applyDashboardCardVisibility();
 
-      ["tasks-completed", "momentum", "avg-session-by-task", "heatmap"].forEach((cardId) => {
+      ["momentum", "avg-session-by-task", "heatmap"].forEach((cardId) => {
         const card = harness.cardsById.get(cardId);
         expect(card?.parentElement).toBe(harness.supportGrid);
         expect(card?.hidden).toBe(false);
@@ -224,6 +223,17 @@ describe("dashboard drag interaction guards", () => {
         expect(card?.style["grid-row"]).toBeUndefined();
         expect(card?.style["grid-row-start"]).toBeUndefined();
       });
+      const taskOverview = harness.cardsById.get("tasks-completed");
+      expect(taskOverview?.parentElement).toBe(harness.cardsById.get("activity-overview"));
+      expect(taskOverview?.hidden).toBe(false);
+      expect(taskOverview?.getAttribute("aria-hidden")).toBe("false");
+      expect(taskOverview?.getAttribute("data-dashboard-size")).toBeNull();
+      expect(taskOverview?.getAttribute("draggable")).toBeNull();
+      expect(taskOverview?.dataset.dashboardCol).toBeUndefined();
+      expect(taskOverview?.dataset.dashboardRow).toBeUndefined();
+      expect(taskOverview?.style["grid-column"]).toBeUndefined();
+      expect(taskOverview?.style["grid-row"]).toBeUndefined();
+      expect(taskOverview?.style["grid-row-start"]).toBeUndefined();
       expect(harness.cardsById.get("activity-overview")?.parentElement).toBe(harness.grid);
     } finally {
       harness.restore();

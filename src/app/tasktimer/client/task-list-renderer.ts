@@ -1,6 +1,6 @@
-import type { Task } from "../lib/types";
+import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
-import { isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
+import { isTaskTimeGoalStartLockedByHistoryToday } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 
 type TaskListRendererDocument = Pick<Document, "createElement">;
@@ -9,6 +9,7 @@ type TaskListRendererOptions = {
   taskListEl: HTMLElement | null;
   documentRef: TaskListRendererDocument;
   getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
   getTaskView: () => "list" | "tile";
   getTaskOrderBy: () => "custom" | "alpha" | "schedule";
   getTileColumnCount: () => number;
@@ -178,7 +179,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
-        isTimeGoalCompleted: isTaskTimeGoalStartLockedToday(task),
+        isTimeGoalCompleted: isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId()),
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         modeColor: options.getModeColor("mode1"),
         fillBackgroundForPct: options.fillBackgroundForPct,

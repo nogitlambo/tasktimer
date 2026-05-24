@@ -80,6 +80,10 @@ function onboardingTitle(step: StepKey, username: string) {
   return STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
 }
 
+export function isOnboardingFinishDisabled(busy: boolean) {
+  return busy;
+}
+
 export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardingProps) {
   const [uid, setUid] = useState("");
   const [username, setUsername] = useState("");
@@ -550,7 +554,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               Next
             </button>
           ) : (
-            <button className="btn btn-accent modalPreviewPrimaryAction" type="button" onClick={() => void handleFinish()} disabled={busy || !usernameConfirmed}>
+            <button className="btn btn-accent modalPreviewPrimaryAction" type="button" onClick={() => void handleFinish()} disabled={isOnboardingFinishDisabled(busy)}>
               Finish
             </button>
           )}

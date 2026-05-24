@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
+import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import { buildDisplayedTasks, createTaskListRenderer } from "./task-list-renderer";
 
 type StubElement = {
@@ -52,7 +53,16 @@ function task(overrides: Partial<Task>): Task {
   } as Task;
 }
 
-function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "tile"; taskOrderBy: "custom" | "alpha" | "schedule"; appPage: string; tileColumnCount: number }> = {}) {
+function createHarness(
+  overrides: Partial<{
+    tasks: Task[];
+    taskView: "list" | "tile";
+    taskOrderBy: "custom" | "alpha" | "schedule";
+    appPage: string;
+    tileColumnCount: number;
+    historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
+  }> = {}
+) {
   const taskListEl = elementStub("section");
   const openHistoryTaskIds = new Set<string>();
   const pinnedHistoryTaskIds = new Set<string>();
@@ -66,6 +76,7 @@ function createHarness(overrides: Partial<{ tasks: Task[]; taskView: "list" | "t
       createElement: (tagName: string) => elementStub(tagName) as unknown as HTMLElement,
     },
     getTasks: () => tasks,
+    getHistoryByTaskId: () => overrides.historyByTaskId || {},
     getTaskView: () => overrides.taskView ?? "list",
     getTaskOrderBy: () => overrides.taskOrderBy ?? "custom",
     getTileColumnCount: () => overrides.tileColumnCount ?? 2,
@@ -192,5 +203,56 @@ describe("task list renderer", () => {
     expect(harness.historyViewByTaskId.missing).toBeUndefined();
     expect(harness.calls).toContain("clear-timeout:42");
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
+  });
+
+  it("renders stale goal completion metadata without history as runnable", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          id: "task-1",
+          name: "Focus",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: "1970-01-01",
+          timeGoalCompletedAtMs: 123,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const renderedTask = harness.taskListEl.children[0];
+    expect(renderedTask?.className).not.toContain("taskCompleted");
+    expect(renderedTask?.innerHTML).toContain('title="Launch"');
+    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+  });
+
+  it("renders goal completion metadata with qualifying history as done", () => {
+    const nowValue = Date.now();
+    const harness = createHarness({
+      tasks: [
+        task({
+          id: "task-1",
+          name: "Focus",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+          timeGoalCompletedAtMs: nowValue,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+      historyByTaskId: {
+        "task-1": [{ ts: nowValue, ms: 60 * 60 * 1000, name: "Focus" }],
+      },
+    });
+
+    harness.renderer.renderTasksPage();
+
+    const renderedTask = harness.taskListEl.children[0];
+    expect(renderedTask?.className).toContain("taskCompleted");
+    expect(renderedTask?.innerHTML).toContain("Done until tomorrow");
   });
 });

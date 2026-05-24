@@ -37,7 +37,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const { els } = ctx;
   let dashboardHeatSelectedDayKey = "";
   let selectedTimelineSuggestionKey: string | null = null;
-  let selectedActivityOverviewDayKey: string | null = null;
   let lastMomentumRenderSignature = "";
   let lastMomentumAnimatedTargetScore: number | null = null;
   let lastMomentumAnimatedTargetBand: string | null = null;
@@ -1136,7 +1135,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       axisEl.innerHTML = model.days
         .map(
           (day) =>
-            `<button class="dashboardActivityAxisDay" type="button" data-dashboard-activity-day="${ctx.escapeHtmlUI(day.key)}" aria-label="${ctx.escapeHtmlUI(`Show ${day.longLabel}`)}"><span>${ctx.escapeHtmlUI(day.label)}</span><small>${ctx.escapeHtmlUI(day.dateLabel)}</small></button>`
+            `<span class="dashboardActivityAxisDay" aria-label="${ctx.escapeHtmlUI(day.longLabel)}"><span>${ctx.escapeHtmlUI(day.label)}</span><small>${ctx.escapeHtmlUI(day.dateLabel)}</small></span>`
         )
         .join("");
     }
@@ -1201,20 +1200,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const x = slotX + (slotWidth - barWidth) / 2;
         const y = chart.bottom - height;
         const group = document.createElementNS(svgNs, "g");
-        group.setAttribute("class", `dashboardActivityBarGroup${day.key === selectedActivityOverviewDayKey ? " isSelected" : ""}`);
-        group.setAttribute("data-dashboard-activity-day", day.key);
-        group.setAttribute("tabindex", "0");
-        group.setAttribute("role", "button");
+        group.setAttribute("class", "dashboardActivityBarGroup");
         group.setAttribute(
           "aria-label",
           `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged${day.previousWeekTotalMs > 0 ? `, ${formatDashboardDurationShort(day.previousWeekTotalMs)} previous week` : ""}`
         );
-        const hit = document.createElementNS(svgNs, "rect");
-        hit.setAttribute("class", "dashboardActivityBarHit");
-        hit.setAttribute("x", slotX.toFixed(1));
-        hit.setAttribute("y", chart.top.toFixed(1));
-        hit.setAttribute("width", slotWidth.toFixed(1));
-        hit.setAttribute("height", (chart.bottom - chart.top).toFixed(1));
         const rect = document.createElementNS(svgNs, "rect");
         rect.setAttribute("class", "dashboardActivityBar");
         rect.setAttribute("x", x.toFixed(1));
@@ -1222,7 +1212,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         rect.setAttribute("width", barWidth.toFixed(1));
         rect.setAttribute("height", height.toFixed(1));
         rect.setAttribute("rx", "5");
-        group.appendChild(hit);
         group.appendChild(rect);
         barsEl.appendChild(group);
       });
@@ -1239,57 +1228,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
   }
 
-  function renderDashboardActivityDayDetail(model: DashboardActivityOverviewModel) {
-    const detailEl = (els as any).dashboardActivityDayDetail as HTMLElement | null;
-    const titleEl = (els as any).dashboardActivityDetailTitle as HTMLElement | null;
-    const metaEl = (els as any).dashboardActivityDetailMeta as HTMLElement | null;
-    const bodyEl = (els as any).dashboardActivityDetailBody as HTMLElement | null;
-    if (!detailEl || !bodyEl) return;
-    const selectedDay = model.days.find((day) => day.key === selectedActivityOverviewDayKey) || null;
-    detailEl.hidden = !selectedDay;
-    if (!selectedDay) {
-      bodyEl.innerHTML = "";
-      return;
-    }
-    if (titleEl) titleEl.textContent = selectedDay.longLabel;
-    if (metaEl) metaEl.textContent = `${formatDashboardDurationWithMinutes(selectedDay.totalMs)} logged`;
-    if (!selectedDay.sessions.length) {
-      bodyEl.innerHTML = `<div class="dashboardActivityDetailEmpty">No sessions logged for this day.</div>`;
-      return;
-    }
-    const taskRows = selectedDay.taskRows
-      .map(
-        (row) =>
-          `<button class="dashboardActivityTaskRow" type="button" data-dashboard-activity-action="task" data-dashboard-activity-task-id="${ctx.escapeHtmlUI(row.taskId)}" ${row.archived ? "disabled" : ""}><span class="dashboardActivityTaskSwatch" style="--activity-task-color:${ctx.escapeHtmlUI(row.color)}"></span><span>${ctx.escapeHtmlUI(row.taskName)}${row.archived ? " (archived)" : ""}</span><strong>${ctx.escapeHtmlUI(formatDashboardDurationShort(row.totalMs))}</strong></button>`
-      )
-      .join("");
-    const sessionRows = selectedDay.sessions
-      .map((session) => {
-        const timeText = new Date(session.ts).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-        const note = session.note ? `<p>${ctx.escapeHtmlUI(session.note)}</p>` : "";
-        return `<div class="dashboardActivitySessionRow"><span class="dashboardActivityTaskSwatch" style="--activity-task-color:${ctx.escapeHtmlUI(session.color)}"></span><div><strong>${ctx.escapeHtmlUI(session.taskName)}</strong><small>${ctx.escapeHtmlUI(timeText)}${session.isLive ? " - live" : ""} - ${ctx.escapeHtmlUI(formatDashboardDurationShort(session.ms))}</small>${note}</div></div>`;
-      })
-      .join("");
-    bodyEl.innerHTML = `
-      <div class="dashboardActivityDetailSection">
-        <div class="dashboardActivityDetailSectionTitle">Tasks</div>
-        ${taskRows}
-      </div>
-      <div class="dashboardActivityDetailSection">
-        <div class="dashboardActivityDetailSectionTitle">Sessions</div>
-        ${sessionRows}
-      </div>
-      <div class="dashboardActivityDetailActions">
-        <button class="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
-      </div>
-    `;
-  }
-
   function renderDashboardActivityOverviewCard() {
     const cardEl = (els as any).dashboardActivityOverviewCard as HTMLElement | null;
     if (!cardEl) return;
     const model = getDashboardActivityOverviewModel();
-    if (selectedActivityOverviewDayKey && !model.days.some((day) => day.key === selectedActivityOverviewDayKey)) selectedActivityOverviewDayKey = null;
     const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
     const emptyTextEl = (els as any).dashboardActivityEmptyText as HTMLElement | null;
     if (emptyEl) {
@@ -1303,7 +1245,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
-    renderDashboardActivityDayDetail(model);
     const previousSummary = model.hasPreviousWeekActivity
       ? `${formatDashboardDurationShort(model.previousWeekTotalMs)} logged in the previous week.`
       : "No previous-week activity available.";
@@ -1311,16 +1252,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       "aria-label",
       `Activity overview. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."} ${previousSummary}`
     );
-  }
-
-  function selectDashboardActivityDay(dayKey: string | null) {
-    selectedActivityOverviewDayKey = String(dayKey || "").trim() || null;
-    renderDashboardActivityOverviewCard();
-  }
-
-  function closeDashboardActivityDayDetail() {
-    selectedActivityOverviewDayKey = null;
-    renderDashboardActivityOverviewCard();
   }
 
   function renderDashboardTasksCompletedCard() {
@@ -2650,8 +2581,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardAvgSessionChart,
     renderDashboardLiveWidgets,
     renderDashboardWidgets,
-    selectDashboardActivityDay,
-    closeDashboardActivityDayDetail,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,

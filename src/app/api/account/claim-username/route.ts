@@ -2,12 +2,17 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
 }
 
 export async function POST(req: Request) {
@@ -25,7 +30,7 @@ export async function POST(req: Request) {
     const rawUsername = asString(body.username);
     const validationError = validateUsername(rawUsername);
     if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 400 });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: validationError }, { status: 400 }));
     }
 
     const usernameKey = normalizeUsername(rawUsername);
@@ -72,20 +77,23 @@ export async function POST(req: Request) {
     });
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: result.error }, { status: result.status }));
     }
-    return NextResponse.json({ ok: true, usernameKey });
+    return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, usernameKey }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not update your username.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not update your username."));
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not update your username.",
-      "[api/account/claim-username] Request failed"
+    return withAuthenticatedApiCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not update your username.",
+        "[api/account/claim-username] Request failed"
+      )
     );
   }
 }

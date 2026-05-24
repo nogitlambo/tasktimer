@@ -103,43 +103,31 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             </div>
                           </div>
                         </div>
-                        <div className="dashboardActivityDayDetail" id="dashboardActivityDayDetail" hidden>
-                          <div className="dashboardActivityDayDetailHead">
-                            <div>
-                              <div className="dashboardActivityDetailTitle" id="dashboardActivityDetailTitle">Select a day</div>
-                              <p className="modalSubtext" id="dashboardActivityDetailMeta">Daily task and session breakdown</p>
-                            </div>
-                            <button className="iconBtn dashboardActivityDetailClose" type="button" data-dashboard-activity-action="close-detail" aria-label="Close day detail" title="Close day detail">
-                              &#8594;
-                            </button>
-                          </div>
-                          <div className="dashboardActivityDetailBody" id="dashboardActivityDetailBody" />
-                        </div>
                       </div>
                     </div>
+                    <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard dashboardActivityTaskOverviewCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
+                      <div className="dashboardCardTitle">Task Overview</div>
+                      <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
+                        <svg
+                          className="dashboardTasksCompletedSvg"
+                          id="dashboardTasksCompletedSvg"
+                          viewBox="0 0 380 380"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
+                          <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
+                        </svg>
+                        <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
+                        <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
+                      </div>
+                      <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
+                      <div className="dashboardSummaryStatus" aria-hidden="true" />
+                      <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
+                    </section>
                   </section>
 
                   <div className="dashboardSupportGrid" aria-label="Dashboard insights">
-                  <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
-                    <div className="dashboardCardTitle">Task Overview</div>
-                    <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
-                      <svg
-                        className="dashboardTasksCompletedSvg"
-                        id="dashboardTasksCompletedSvg"
-                        viewBox="0 0 380 380"
-                        aria-hidden="true"
-                        focusable="false"
-                      >
-                        <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
-                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
-                      </svg>
-                      <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
-                      <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
-                    </div>
-                    <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
-                    <div className="dashboardSummaryStatus" aria-hidden="true" />
-                    <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
-                  </section>
 
                     <section className="dashboardCard dashboardMomentumCard" data-dashboard-id="momentum" aria-label="Momentum overview">
                       <div className="dashboardMomentumTitleRow">

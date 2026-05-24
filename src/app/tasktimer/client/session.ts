@@ -4,7 +4,12 @@ import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
-import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
+import {
+  isTaskTimeGoalCompletedToday,
+  isTaskTimeGoalStartLockedByHistoryToday,
+  isTaskTimeGoalStartLockedToday,
+  markTaskTimeGoalCompleted,
+} from "../lib/timeGoalCompletion";
 import {
   findNextScheduledTaskAfterLocalTime,
   formatScheduleSlotTime,
@@ -201,7 +206,7 @@ function getTimeGoalCompleteNextTaskScheduleSortMinutes(task: Task, nowDate = ne
 
 export function buildTimeGoalCompleteNextTaskOptions(
   tasks: Task[],
-  opts: { activeTaskId?: string | null; fallbackColor?: string } = {}
+  opts: { activeTaskId?: string | null; fallbackColor?: string; historyByTaskId?: Record<string, any[]>; nowMs?: number } = {}
 ): TimeGoalCompleteNextTaskOption[] {
   const activeTaskId = String(opts.activeTaskId || "").trim();
   const fallbackColor = normalizeTaskColor(opts.fallbackColor) || "#35e8ff";
@@ -211,7 +216,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
       if (!taskId || taskId === activeTaskId) return false;
       if (task.running) return false;
       if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
-      return !isTaskTimeGoalStartLockedToday(task);
+      return !isTaskTimeGoalStartLockedByHistoryToday(task, opts.historyByTaskId || {}, opts.nowMs);
     })
     .map((task, index) => ({
       id: String(task.id || "").trim(),
@@ -448,6 +453,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function getTimeGoalCompleteNextTaskOptions() {
     return buildTimeGoalCompleteNextTaskOptions(ctx.getTasks(), {
       activeTaskId: getActiveTimeGoalModalTaskId(),
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      nowMs: nowMs(),
     });
   }
 
@@ -800,7 +807,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function syncFocusRunButtons(task?: Task | null) {
     const running = !!task?.running;
-    const completed = isTaskTimeGoalStartLockedToday(task);
+    const completed = isTaskTimeGoalStartLockedByHistoryToday(task, ctx.getHistoryByTaskId(), nowMs());
     const hintText = completed ? "Done" : running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
     if (els.focusDialHint) els.focusDialHint.textContent = hintText;
     if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running || completed;
@@ -1737,7 +1744,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
-          if (isTaskTimeGoalStartLockedToday(task)) {
+          if (isTaskTimeGoalStartLockedByHistoryToday(task, ctx.getHistoryByTaskId(), nowMs())) {
             primaryActionBtn.className = "btn btn-done small";
             primaryActionBtn.dataset.action = "start";
             primaryActionBtn.title = "Done until tomorrow";
@@ -1766,7 +1773,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         }
         const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
-          const completed = isTaskTimeGoalStartLockedToday(task);
+          const completed = isTaskTimeGoalStartLockedByHistoryToday(task, ctx.getHistoryByTaskId(), nowMs());
           const hasResettableTime = elapsedMs > 0;
           const resetLabel = completed ? "Done until tomorrow" : task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
           resetBtn.disabled = !!task.running || completed || !hasResettableTime;
@@ -1837,7 +1844,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (idx < 0) return;
       const task = ctx.getTasks()[idx];
       if (!task) return;
-      if (isTaskTimeGoalStartLockedToday(task)) return;
+      if (isTaskTimeGoalStartLockedByHistoryToday(task, ctx.getHistoryByTaskId(), nowMs())) return;
       if (task.running) ctx.stopTask(idx);
       else ctx.startTask(idx);
     });

@@ -120,7 +120,7 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const recurringBadge = recurringTask
             ? `<span class="scheduleTaskCardRecurringBadge${recurringColor ? " hasTaskColor" : ""}"${recurringColorStyle} aria-label="${
                 entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
-              }">${entry.task.plannedStartOpenEnded ? "Flex" : "Daily"}</span>`
+              }"></span>`
             : "";
           return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")

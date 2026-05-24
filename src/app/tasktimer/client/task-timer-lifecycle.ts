@@ -1,8 +1,8 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { localDayKey } from "../lib/history";
-import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedToday } from "../lib/timeGoalCompletion";
-import type { Task } from "../lib/types";
+import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedByHistoryToday } from "../lib/timeGoalCompletion";
+import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
 
@@ -56,6 +56,7 @@ type TaskTimerLifecycleCommandAdapters = {
 
 type TaskTimerLifecycleOptions = {
   getTasks: () => Task[];
+  getHistoryByTaskId: () => HistoryByTaskId;
   getTaskDisplayName: (task: Task | null | undefined) => string;
   confirm: (title: string, text: string, opts: ConfirmOptions) => void;
   closeConfirm: () => void;
@@ -183,7 +184,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedToday(task, options.nowMs())) return;
+    if (isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId(), options.nowMs())) return;
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

@@ -685,8 +685,6 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
-  selectDashboardActivityDay: (dayKey: string | null) => void;
-  closeDashboardActivityDayDetail: () => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -713,8 +711,6 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
     | "renderDashboardTimelineCard"
-    | "selectDashboardActivityDay"
-    | "closeDashboardActivityDayDetail"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -1570,8 +1566,6 @@ export function createTaskTimerDashboardContext(
     saveCloudDashboard: args.saveCloudDashboard,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
-    selectDashboardActivityDay: args.selectDashboardActivityDay,
-    closeDashboardActivityDayDetail: args.closeDashboardActivityDayDetail,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
@@ -1598,8 +1592,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver,
-    selectDashboardActivityDay,
-    closeDashboardActivityDayDetail,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
     renderDashboardHeatSessionList,
@@ -1631,8 +1623,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       syncDashboardMenuFlipUi: dashboardBindings.syncDashboardMenuFlipUi,
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
-      selectDashboardActivityDay: (dayKey) => selectDashboardActivityDay(dayKey),
-      closeDashboardActivityDayDetail: () => closeDashboardActivityDayDetail(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),

@@ -285,7 +285,7 @@ export async function sendFriendRequest(
     if (!idToken) {
       return { ok: false, message: "Your sign-in session is no longer valid. Please sign in again." };
     }
-    const response = await fetch(getApiUrl("/api/friends/requests"), {
+    const response = await fetch(getApiUrl("/api/friends/requests/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

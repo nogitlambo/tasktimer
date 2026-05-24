@@ -16,7 +16,6 @@ const DASHBOARD_PANEL_REGISTRY = [
 ] as const;
 
 const DASHBOARD_SUPPORT_PANEL_IDS = [
-  "tasks-completed",
   "momentum",
   "avg-session-by-task",
   "heatmap",
@@ -190,23 +189,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
-    const activityDay = e.target?.closest?.("[data-dashboard-activity-day]") as HTMLElement | null;
-    if (activityDay) {
-      const dayKey = String(activityDay.getAttribute("data-dashboard-activity-day") || "").trim();
-      if (dayKey) ctx.selectDashboardActivityDay(dayKey);
-      e.preventDefault();
-      return;
-    }
     const activityAction = e.target?.closest?.("[data-dashboard-activity-action]") as HTMLElement | null;
     if (activityAction) {
       const action = String(activityAction.getAttribute("data-dashboard-activity-action") || "").trim();
-      if (action === "close-detail") ctx.closeDashboardActivityDayDetail();
-      else if (action === "tasks") ctx.navigateToAppRoute("/tasklaunch");
+      if (action === "tasks") ctx.navigateToAppRoute("/tasklaunch");
       else if (action === "history") ctx.navigateToAppRoute("/history-manager?returnTo=dashboard");
-      else if (action === "task") {
-        const taskId = String(activityAction.getAttribute("data-dashboard-activity-task-id") || "").trim();
-        if (taskId) ctx.jumpToTaskById(taskId);
-      }
       e.preventDefault();
       return;
     }

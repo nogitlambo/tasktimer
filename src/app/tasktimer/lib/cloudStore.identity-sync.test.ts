@@ -19,6 +19,7 @@ const firestoreMocks = vi.hoisted(() => ({
 
 const firebaseClientMocks = vi.hoisted(() => ({
   getFirebaseAuthClient: vi.fn(),
+  isNativeOrFileRuntime: vi.fn(() => false),
 }));
 
 const firestoreClientMocks = vi.hoisted(() => ({
@@ -72,7 +73,7 @@ describe("ensureUserProfileIndex identity sync", () => {
     await ensureUserProfileIndex("uid-identity-sync-test");
 
     expect(fetch).toHaveBeenCalledWith(
-      "/api/account/sync-identity",
+      "/api/account/sync-identity/",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ "x-firebase-auth": "id-token" }),

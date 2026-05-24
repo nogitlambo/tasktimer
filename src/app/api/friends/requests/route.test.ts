@@ -58,7 +58,7 @@ describe("POST /api/friends/requests", () => {
     });
   });
 
-  it("allows native preflight requests with the Firebase auth header", () => {
+  it("allows Capacitor preflight requests with the Firebase auth header", () => {
     const response = OPTIONS(
       new Request("https://tasklaunch.app/api/friends/requests", {
         method: "OPTIONS",
@@ -72,6 +72,22 @@ describe("POST /api/friends/requests", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
     expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+  });
+
+  it("allows Android WebView localhost preflight requests", () => {
+    const response = OPTIONS(
+      new Request("https://tasklaunch.app/api/friends/requests/", {
+        method: "OPTIONS",
+        headers: {
+          origin: "https://localhost",
+          "access-control-request-method": "POST",
+          "access-control-request-headers": "content-type,x-firebase-auth",
+        },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost");
   });
 
   it("keeps CORS headers on validation errors returned to native clients", async () => {

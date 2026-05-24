@@ -59,6 +59,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     taskListEl: els.taskList,
     documentRef: document,
     getTasks: ctx.getTasks,
+    getHistoryByTaskId: ctx.getHistoryByTaskId,
     getTaskView: ctx.getTaskView,
     getTaskOrderBy: ctx.getTaskOrderBy,
     getTileColumnCount: () => getTaskTimerTileColumnCount(typeof window === "undefined" ? null : window),
@@ -124,6 +125,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   const taskTimerLifecycle = createTaskTimerLifecycle({
     getTasks: ctx.getTasks,
+    getHistoryByTaskId: ctx.getHistoryByTaskId,
     getTaskDisplayName,
     confirm: ctx.confirm,
     closeConfirm: ctx.closeConfirm,

@@ -14,6 +14,7 @@ import {
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { validateUsername } from "@/lib/username";
+import { getApiUrl } from "./apiClient";
 import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
@@ -604,7 +605,7 @@ async function syncUserIdentityIndex(uid: string, options?: { prevEmail?: string
   }
   const syncPromise = (async () => {
     try {
-      const response = await fetch("/api/account/sync-identity", {
+      const response = await fetch(getApiUrl("/api/account/sync-identity/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

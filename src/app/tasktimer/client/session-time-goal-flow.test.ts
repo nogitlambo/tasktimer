@@ -185,17 +185,22 @@ describe("time goal completion flow guard", () => {
 
 describe("time goal complete next task launcher", () => {
   it("includes only incomplete daily-goal tasks after excluding the active task", () => {
-    const today = getTimeGoalCompletionDayKey();
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const today = getTimeGoalCompletionDayKey(nowValue);
     const options = buildTimeGoalCompleteNextTaskOptions(
       [
         timeGoalTask({ id: "active", name: "Active", running: true }),
         timeGoalTask({ id: "daily", name: "Daily Task", running: false, color: "#ff5252", plannedStartTime: "09:30" }),
-        timeGoalTask({ id: "completed", name: "Completed", running: false, timeGoalCompletedDayKey: today }),
+        timeGoalTask({ id: "completed", name: "Completed", running: false, timeGoalCompletedDayKey: today, timeGoalCompletedReason: "goal" }),
         timeGoalTask({ id: "weekly", name: "Weekly", running: false, timeGoalPeriod: "week" }),
         timeGoalTask({ id: "no-goal", name: "No Goal", running: false, timeGoalEnabled: false }),
         timeGoalTask({ id: "running", name: "Running", running: true }),
       ],
-      { activeTaskId: "active" }
+      {
+        activeTaskId: "active",
+        historyByTaskId: { completed: [{ ts: nowValue, name: "Completed", ms: 60_000 }] },
+        nowMs: nowValue,
+      }
     );
 
     expect(options).toEqual([{ id: "daily", name: "Daily Task", color: "#ff5252", scheduleText: "9:30 AM" }]);

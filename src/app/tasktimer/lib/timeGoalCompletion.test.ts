@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "./types";
 import {
   getTimeGoalCompletionDayKey,
+  hasTaskGoalHistoryEntryToday,
+  isTaskTimeGoalStartLockedByHistoryToday,
   isTaskTimeGoalCompletedToday,
   isTaskTimeGoalStartLockedToday,
   markTaskTimeGoalCompleted,
@@ -62,6 +64,90 @@ describe("time goal completion lock", () => {
         nowValue
       )
     ).toBe(true);
+  });
+
+  it("does not history-lock a goal-completed task with no current-day history", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(isTaskTimeGoalStartLockedByHistoryToday(entry, {}, nowValue)).toBe(false);
+  });
+
+  it("does not history-lock a goal-completed task when today's history is below the current goal", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(
+      isTaskTimeGoalStartLockedByHistoryToday(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 30 * 60 * 1000 }] },
+        nowValue
+      )
+    ).toBe(false);
+  });
+
+  it("history-locks a goal-completed task when today's history reaches the current goal", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(
+      isTaskTimeGoalStartLockedByHistoryToday(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 60 * 60 * 1000 }] },
+        nowValue
+      )
+    ).toBe(true);
+  });
+
+  it("does not history-lock a reset-completed task even when today's history reaches the current goal", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "reset",
+    });
+
+    expect(
+      isTaskTimeGoalStartLockedByHistoryToday(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 60 * 60 * 1000 }] },
+        nowValue
+      )
+    ).toBe(false);
+  });
+
+  it("ignores qualifying history from a previous local day", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const yesterday = new Date(2026, 4, 6, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(hasTaskGoalHistoryEntryToday(entry, { "task-1": [{ ts: yesterday, name: "Focus", ms: 60 * 60 * 1000 }] }, nowValue)).toBe(false);
   });
 
   it("marks completion with the local day key and timestamp", () => {

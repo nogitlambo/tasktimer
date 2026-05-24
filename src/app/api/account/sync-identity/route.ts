@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
 import { createApiAuthErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { createReportableLogId, writeReportableLog } from "../../shared/reportableLog";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
@@ -18,6 +19,10 @@ function emailLookupDocKey(email: string) {
   return encodeURIComponent(normalizeEmail(email));
 }
 
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
+
 export async function POST(req: Request) {
   let requestUid = "";
   try {
@@ -26,7 +31,7 @@ export async function POST(req: Request) {
     requestUid = uid;
     const authEmail = normalizeEmail(email);
     if (!authEmail) {
-      return NextResponse.json({ error: "A verified email address is required." }, { status: 400 });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: "A verified email address is required." }, { status: 400 }));
     }
 
     const displayName = asString(body.displayName, 120) || null;
@@ -52,10 +57,10 @@ export async function POST(req: Request) {
     }
 
     await batch.commit();
-    return NextResponse.json({ ok: true });
+    return withAuthenticatedApiCors(req, NextResponse.json({ ok: true }));
   } catch (error) {
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not sync account identity.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not sync account identity."));
     }
     const logId = createReportableLogId("acct-sync");
     writeReportableLog("error", "[api/account/sync-identity] Request failed", {
@@ -64,9 +69,12 @@ export async function POST(req: Request) {
       uid: requestUid || null,
       error,
     });
-    return NextResponse.json(
-      { error: "Could not sync account identity.", code: "internal", logId },
-      { status: 500 }
+    return withAuthenticatedApiCors(
+      req,
+      NextResponse.json(
+        { error: "Could not sync account identity.", code: "internal", logId },
+        { status: 500 }
+      )
     );
   }
 }

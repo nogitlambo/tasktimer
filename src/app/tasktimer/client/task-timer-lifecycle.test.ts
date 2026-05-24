@@ -33,7 +33,15 @@ function task(overrides: Partial<Task> = {}): Task {
   };
 }
 
-function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focusTaskId: string | null; autoFocus: boolean }> = {}) {
+function createHarness(
+  overrides: Partial<{
+    tasks: Task[];
+    appPage: string;
+    focusTaskId: string | null;
+    autoFocus: boolean;
+    historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
+  }> = {}
+) {
   const calls: string[] = [];
   nativeTimerNotificationMock.calls = calls;
   const confirmOptions: Array<{ onOk: () => void; onCancel?: () => void }> = [];
@@ -68,6 +76,7 @@ function createHarness(overrides: Partial<{ tasks: Task[]; appPage: string; focu
   });
   const lifecycle = createTaskTimerLifecycle({
     getTasks: () => tasks,
+    getHistoryByTaskId: () => overrides.historyByTaskId || {},
     getTaskDisplayName: (entry) => String(entry?.name || "Unnamed task"),
     confirm: (title, text, opts) => {
       calls.push(`confirm:${title}:${text}`);
@@ -103,9 +112,41 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
-  it("does not start a goal-completed task before reset", () => {
+  it("starts a goal-completed task when today's goal history is missing", () => {
     const harness = createHarness({
-      tasks: [task({ timeGoalCompletedDayKey: "1970-01-01", timeGoalCompletedAtMs: 123, timeGoalCompletedReason: "goal" })],
+      tasks: [
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: "1970-01-01",
+          timeGoalCompletedAtMs: 123,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123 });
+    expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
+  });
+
+  it("does not start a goal-completed task with qualifying history today", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: "1970-01-01",
+          timeGoalCompletedAtMs: 123,
+          timeGoalCompletedReason: "goal",
+        }),
+      ],
+      historyByTaskId: {
+        "task-1": [{ ts: 123, ms: 60 * 60 * 1000, name: "Focus" }],
+      },
     });
 
     harness.lifecycle.startTask(0);
@@ -274,6 +315,7 @@ describe("task timer lifecycle", () => {
     });
     const adapter = createTaskTimerLifecycle({
       getTasks: () => [entry],
+      getHistoryByTaskId: () => ({}),
       getTaskDisplayName: () => "Focus",
       confirm: () => {},
       closeConfirm: () => {},
