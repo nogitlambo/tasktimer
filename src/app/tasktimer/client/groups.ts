@@ -916,7 +916,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
     const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
     const titleSuffix = opts.incoming ? "Incoming Requests" : "Outgoing Requests";
-    if (titleEl) titleEl.textContent = `${rows.length} ${titleSuffix}`;
+    if (titleEl) {
+      titleEl.textContent = `${rows.length} ${titleSuffix}`;
+      titleEl.classList.toggle("isEmptyCount", rows.length === 0);
+    }
     if (detailsEl) detailsEl.open = rows.length > 0;
     if (!container) return;
     if (!rows.length) {
@@ -933,11 +936,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const peerAliasRaw = peerProfile?.alias;
         const peerEmail = opts.incoming ? row.senderEmail : row.receiverEmail;
         const peerAlias = String(peerAliasRaw || "").trim() || String(peerEmail || "").trim() || "Unknown user";
-        const requestedAtMs =
-          row.createdAt && typeof (row.createdAt as any).toMillis === "function"
-            ? Number((row.createdAt as any).toMillis())
-            : Number.NaN;
-        const requestedDate = Number.isFinite(requestedAtMs) ? new Date(requestedAtMs).toLocaleString() : "Unknown";
         const status = String(row.status || "pending");
         const statusLabel = status[0].toUpperCase() + status.slice(1);
         const disabledAttr = groupsLoading ? ' disabled aria-disabled="true"' : "";
@@ -945,9 +943,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           status !== "pending"
             ? ""
             : opts.incoming
-              ? `<div class="groupsIncomingRequestActions"><button class="btn btn-warn small" type="button" data-friend-action="decline" data-request-id="${ctx.escapeHtmlUI(
+              ? `<div class="groupsIncomingRequestActions"><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
-                )}"${disabledAttr}>Decline</button><button class="btn btn-accent small" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
+                )}"${disabledAttr}>Decline</button><button class="btn btn-ghost small" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
                 )}"${disabledAttr}>Approve</button></div>`
               : `<button class="friendRequestCancelLink" type="button" data-friend-action="cancel" data-request-id="${ctx.escapeHtmlUI(
@@ -971,10 +969,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           </div>
         </div>`;
         if (opts.incoming) {
-          const incomingSentence = `<b>${ctx.escapeHtmlUI(peerAlias)}</b> has sent you a friend request!`;
-          return `<div class="settingsDetailNote groupsIncomingRequestRow"><div>${incomingSentence}</div><div>Date Requested: ${ctx.escapeHtmlUI(
-            requestedDate
-          )}</div>${identityHtml}${actionBtns}</div>`;
+          return `<div class="settingsDetailNote groupsIncomingRequestRow">${identityHtml}${actionBtns}</div>`;
         }
         return `<div class="settingsDetailNote"><div><b>${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}</div>`;
       })
@@ -1117,7 +1112,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (!container) return;
     const ownSharedSummaries = ctx.getOwnSharedSummaries();
     const uniqueSharedTaskCount = new Set(ownSharedSummaries.map((entry) => String(entry.taskId || "").trim()).filter(Boolean)).size;
-    if (titleEl) titleEl.textContent = `${uniqueSharedTaskCount} shared by you`;
+    if (titleEl) {
+      titleEl.textContent = `${uniqueSharedTaskCount} shared by you`;
+      titleEl.classList.toggle("isEmptyCount", uniqueSharedTaskCount === 0);
+    }
     if (!ownSharedSummaries.length) {
       container.classList.add("sharedTasksEmpty");
       container.textContent = "No shared tasks.";
@@ -1173,25 +1171,33 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function renderFriendsFooterAlertBadge() {
-    const badgeEl = els.footerTest2AlertBadge as HTMLElement | null;
-    if (!badgeEl) return;
+    const badgeEls = [els.footerTest2AlertBadge, els.commandCenterGroupsAlertBadge].filter(
+      (badgeEl): badgeEl is HTMLElement => !!badgeEl
+    );
+    if (!badgeEls.length) return;
     if (!canUseSocialFeatures()) {
-      badgeEl.style.display = "none";
-      badgeEl.textContent = "";
+      badgeEls.forEach((badgeEl) => {
+        badgeEl.style.display = "none";
+        badgeEl.textContent = "";
+      });
       return;
     }
     const uid = ctx.getCurrentUid();
     const count = uid ? Math.max(0, Number(ctx.getGroupsIncomingRequests().length) || 0) : 0;
     if (count <= 0) {
-      badgeEl.style.display = "none";
-      badgeEl.textContent = "";
-      badgeEl.setAttribute("aria-label", "No incoming friend requests");
+      badgeEls.forEach((badgeEl) => {
+        badgeEl.style.display = "none";
+        badgeEl.textContent = "";
+        badgeEl.setAttribute("aria-label", "No incoming friend requests");
+      });
       return;
     }
     const countLabel = count > 99 ? "99+" : String(count);
-    badgeEl.style.display = "inline-flex";
-    badgeEl.textContent = countLabel;
-    badgeEl.setAttribute("aria-label", `${count} incoming friend request${count === 1 ? "" : "s"}`);
+    badgeEls.forEach((badgeEl) => {
+      badgeEl.style.display = "inline-flex";
+      badgeEl.textContent = countLabel;
+      badgeEl.setAttribute("aria-label", `${count} incoming friend request${count === 1 ? "" : "s"}`);
+    });
   }
 
   function renderGroupsPage() {

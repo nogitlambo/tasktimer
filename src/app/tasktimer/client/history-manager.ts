@@ -1067,6 +1067,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!input) return;
       historyEntrySummaryInteraction.syncInputMirror(String(input.value || ""));
     });
+    ctx.on(document, "focusin", (event: Event) => {
+      const input = (event.target as HTMLElement | null)?.closest?.(
+        "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing"
+      ) as HTMLTextAreaElement | null;
+      if (!input) return;
+      historyEntrySummaryInteraction.expandActiveInlineNoteInput();
+    });
+    ctx.on(document, "click", (event: Event) => {
+      const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+      if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditing !== "true") return;
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest?.("#historyEntryNoteOverlay")) return;
+      if (target.closest("#historyEntryNoteOverlay .historyEntrySummaryNoteInput")) return;
+      if (target.closest('[data-history-summary-action="edit-note"]')) return;
+      historyEntrySummaryInteraction.collapseActiveInlineNoteInput();
+    });
     ctx.on(document, "keydown", (event: Event) => {
       const keyEvent = event as KeyboardEvent;
       if (keyEvent.key !== "Enter" && keyEvent.key !== " ") return;

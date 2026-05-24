@@ -38,12 +38,9 @@ import {
   buildGlobalLeaderboardRows,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
-  getLeaderboardAvatarSrc,
   getLeaderboardResolvedRank,
-  isGlobalLeaderboardPlaceholderProfile,
-  isRivalLeaderboardPlaceholderProfile,
-  isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
+  saveLeaderboardProfile,
   type LeaderboardProfile,
 } from "./leaderboard";
 import { getRankThumbnailDescriptor } from "./rewards";
@@ -83,24 +80,6 @@ function querySnap(docs: Array<ReturnType<typeof docSnap>>) {
     docs,
     size: docs.length,
   };
-}
-
-function expectValidPlaceholderUsernames(rows: Array<{ playerLabel: string; profile: LeaderboardProfile }>) {
-  expect(rows.length).toBeGreaterThan(0);
-  rows.forEach((row) => {
-    const username = String(row.profile.username || "");
-    expect(username).toBeTruthy();
-    expect(row.profile.displayLabel).toBe(username);
-    expect(row.playerLabel).toBe(username);
-    expect(username).not.toMatch(/\s/);
-    expect(username).toMatch(/^[a-z0-9_-]+$/);
-    const wordParts = username.match(/[a-z]+/g) || [];
-    expect(wordParts.length).toBeGreaterThan(0);
-    wordParts.forEach((word) => {
-      expect(word.length).toBeGreaterThanOrEqual(4);
-      expect(word.length).toBeLessThanOrEqual(15);
-    });
-  });
 }
 
 describe("getLeaderboardResolvedRank", () => {
@@ -153,8 +132,7 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows.slice(0, 3).map((row) => row.profile.uid)).toEqual(["high", "mid", "low"]);
     expect(rows.slice(0, 3).map((row) => row.rankLabel)).toEqual(["#1", "#2", "#3"]);
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(3).every((row) => row.isPlaceholder)).toBe(true);
+    expect(rows).toHaveLength(3);
   });
 
   it("pins the current user with their ladder rank when they are outside the weekly board with no weekly XP", () => {
@@ -173,9 +151,24 @@ describe("buildWeeklyLeaderboardRows", () => {
       playerLabel: "You",
       isPlaceholder: false,
     });
-    expect(rows).toHaveLength(11);
+    expect(rows).toHaveLength(3);
     expect(rows.slice(1, 3).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
-    expect(rows.slice(3).every((row) => row.isPlaceholder)).toBe(true);
+  });
+
+  it("keeps an out-of-top-ten current user available for the weekly table", () => {
+    const rows = buildWeeklyLeaderboardRows({
+      weeklyEntries: [],
+      currentUserEntry: createProfile({ uid: "me", username: "me", weeklyXpGain: 0 }),
+      currentUserWeeklyRank: 12,
+    });
+    const tableRows = rows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+
+    expect(tableRows).toHaveLength(1);
+    expect(tableRows[0]).toMatchObject({
+      isCurrentUser: true,
+      rankLabel: "#12",
+      playerLabel: "You",
+    });
   });
 
   it("does not duplicate the current user when they are already ranked in the weekly top entries", () => {
@@ -200,31 +193,14 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
   });
 
-  it("backfills an empty weekly board with ten placeholder rows", () => {
+  it("returns no rows for an empty weekly board", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
     });
 
-    expect(rows).toHaveLength(10);
-    expect(rows.every((row) => row.isPlaceholder)).toBe(true);
-    expect(rows.map((row) => row.rankLabel)).toEqual([
-      "#1",
-      "#2",
-      "#3",
-      "#4",
-      "#5",
-      "#6",
-      "#7",
-      "#8",
-      "#9",
-      "#10",
-    ]);
-    expect(rows.every((row) => isWeeklyLeaderboardPlaceholderProfile(row.profile))).toBe(true);
-    expect(rows.every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
-    expectValidPlaceholderUsernames(rows);
-    expect(rows.some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
+    expect(rows).toEqual([]);
   });
 
   it("fills the weekly table from fourth to tenth place without repeating the podium", () => {
@@ -241,13 +217,12 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     const tableRows = rows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
 
-    expect(tableRows).toHaveLength(7);
-    expect(tableRows.map((row) => row.rankLabel)).toEqual(["#4", "#5", "#6", "#7", "#8", "#9", "#10"]);
+    expect(tableRows).toHaveLength(1);
+    expect(tableRows.map((row) => row.rankLabel)).toEqual(["#4"]);
     expect(tableRows[0]?.profile.uid).toBe("top-4");
-    expect(tableRows.slice(1).every((row) => row.isPlaceholder)).toBe(true);
   });
 
-  it("keeps legitimate weekly entries ahead of placeholder rows", () => {
+  it("does not pad partial weekly boards", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 260 }),
@@ -259,39 +234,22 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
-    expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+    expect(rows).toHaveLength(2);
   });
 });
 
 describe("buildGlobalLeaderboardRows", () => {
-  it("backfills an empty global board with ten placeholder rows", () => {
+  it("returns no rows for an empty global board", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [],
       currentUserEntry: null,
       currentUserRank: null,
     });
 
-    expect(rows).toHaveLength(10);
-    expect(rows.every((row) => row.isPlaceholder)).toBe(true);
-    expect(rows.map((row) => row.rankLabel)).toEqual([
-      "#1",
-      "#2",
-      "#3",
-      "#4",
-      "#5",
-      "#6",
-      "#7",
-      "#8",
-      "#9",
-      "#10",
-    ]);
-    expect(rows.every((row) => isGlobalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
-    expect(rows.every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
-    expectValidPlaceholderUsernames(rows);
-    expect(rows.some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
+    expect(rows).toEqual([]);
   });
 
-  it("keeps real global entries ahead of placeholder rows", () => {
+  it("does not pad partial global boards", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [
         createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 }),
@@ -301,11 +259,10 @@ describe("buildGlobalLeaderboardRows", () => {
       currentUserRank: null,
     });
 
-    expect(rows).toHaveLength(10);
+    expect(rows).toHaveLength(2);
     expect(rows.slice(0, 2).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
-    expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
   });
 
   it("pins the current user with their global rank when outside the top board", () => {
@@ -321,13 +278,28 @@ describe("buildGlobalLeaderboardRows", () => {
       playerLabel: "You",
       isPlaceholder: false,
     });
-    expect(rows).toHaveLength(11);
-    expect(rows.slice(2).every((row) => row.isPlaceholder)).toBe(true);
+    expect(rows).toHaveLength(2);
+  });
+
+  it("keeps an out-of-top-ten current user available for the global table", () => {
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 200 }),
+      currentUserRank: 42,
+    });
+    const tableRows = rows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+
+    expect(tableRows).toHaveLength(1);
+    expect(tableRows[0]).toMatchObject({
+      isCurrentUser: true,
+      rankLabel: "#42",
+      playerLabel: "You",
+    });
   });
 });
 
 describe("buildRivalLeaderboardRows", () => {
-  it("uses an inferred ladder position for the current user when rival rank is unavailable", () => {
+  it("returns only the current user when rival rank is unavailable and there are no rivals", () => {
     const rows = buildRivalLeaderboardRows({
       rivalEntries: [],
       currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
@@ -341,12 +313,7 @@ describe("buildRivalLeaderboardRows", () => {
       playerLabel: "You",
       isPlaceholder: false,
     });
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(1).every((row) => row.isPlaceholder)).toBe(true);
-    expect(rows.slice(1).every((row) => isRivalLeaderboardPlaceholderProfile(row.profile))).toBe(true);
-    expect(rows.slice(1).every((row) => getLeaderboardAvatarSrc(row.profile).startsWith("/avatars/"))).toBe(true);
-    expectValidPlaceholderUsernames(rows.slice(1));
-    expect(rows.slice(1).some((row) => /\d/.test(String(row.profile.username || "")))).toBe(true);
+    expect(rows).toHaveLength(1);
   });
 
   it("keeps the current user on their numeric rival ladder rank when outside the visible board", () => {
@@ -416,6 +383,35 @@ describe("loadLeaderboardScreenData", () => {
     expect(result.currentUserRank).toBe(2);
     expect(result.currentUserRivalRank).toBeNull();
     expect(result.currentUserWeeklyRank).toBe(2);
+  });
+});
+
+describe("saveLeaderboardProfile", () => {
+  it("persists the weekly focus metric used by leaderboard profile rules", async () => {
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc.mockResolvedValueOnce({ exists: () => false, get: vi.fn() });
+
+    await saveLeaderboardProfile("uid-1", {
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 20,
+    });
+
+    expect(firestoreMocks.setDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        uid: "uid-1",
+        totalFocusMs: 60_000,
+        weeklyFocusMs: 15_000,
+        weeklyXpGain: 20,
+        schemaVersion: 1,
+      }),
+      { merge: true }
+    );
   });
 });
 

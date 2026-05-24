@@ -95,13 +95,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                           </svg>
                           <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
                           <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
-                          <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden>
-                            <p id="dashboardActivityEmptyText">No activity logged this week.</p>
-                            <div className="dashboardActivityEmptyActions">
-                              <button className="btn btn-accent small" type="button" data-dashboard-activity-action="tasks">Open Tasks</button>
-                              <button className="btn btn-ghost small" type="button" data-dashboard-activity-action="history">History Manager</button>
-                            </div>
-                          </div>
+                          <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden />
                         </div>
                       </div>
                     </div>

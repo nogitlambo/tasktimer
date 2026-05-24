@@ -123,6 +123,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
   function autosizeInlineNoteInput(input: HTMLTextAreaElement | null) {
     if (!input || !input.classList.contains("isEditing")) return;
+    input.classList.remove("isCollapsed");
     input.style.height = "auto";
     const maxHeight = getInlineNoteMaxHeight(input);
     const nextHeight = Math.max(INLINE_NOTE_COMPACT_HEIGHT_PX, Math.ceil(input.scrollHeight || 0));
@@ -150,6 +151,22 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
   function getActiveInputValue() {
     return String(getActiveInput()?.value ?? elements.input?.value ?? "");
+  }
+
+  function collapseActiveInlineNoteInput() {
+    const input = getActiveInput();
+    if (!input) return false;
+    input.classList.add("isCollapsed");
+    input.style.height = `${INLINE_NOTE_COMPACT_HEIGHT_PX}px`;
+    input.style.overflowY = "hidden";
+    return true;
+  }
+
+  function expandActiveInlineNoteInput() {
+    const input = getActiveInput();
+    if (!input) return false;
+    autosizeInlineNoteInput(input);
+    return true;
   }
 
   function syncCloseLabel() {
@@ -287,6 +304,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     if (input) {
       input.readOnly = false;
       input.classList.add("isEditing");
+      input.classList.remove("isCollapsed");
       input.value = note;
       autosizeInlineNoteInput(input);
     }
@@ -304,6 +322,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       activeInput.value = String(overlay.dataset.historyEntryNote || "");
       activeInput.readOnly = true;
       activeInput.classList.remove("isEditing");
+      activeInput.classList.remove("isCollapsed");
       resetInlineNoteAutosize(activeInput);
     }
     syncEditorUi(false);
@@ -360,6 +379,8 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     cancelEdit,
     discardDraft,
     getActiveInputValue,
+    collapseActiveInlineNoteInput,
+    expandActiveInlineNoteInput,
     syncInputMirror,
     syncCloseLabel,
     syncEditorUi,

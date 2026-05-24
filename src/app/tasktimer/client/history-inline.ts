@@ -1482,6 +1482,19 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (!input) return;
       historyEntrySummaryInteraction.syncInputMirror(String((input as HTMLTextAreaElement).value || ""));
     });
+    ctx.on(document, "focusin", (e: any) => {
+      const input = findDelegatedElement(e.target, "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing");
+      if (!input) return;
+      historyEntrySummaryInteraction.expandActiveInlineNoteInput();
+    });
+    ctx.on(document, "click", (e: any) => {
+      const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+      if (!overlay || overlay.dataset.historyEntryOwner !== "inline" || overlay.dataset.historyEntryEditing !== "true") return;
+      if (!(e.target as HTMLElement | null)?.closest?.("#historyEntryNoteOverlay")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("#historyEntryNoteOverlay .historyEntrySummaryNoteInput")) return;
+      if ((e.target as HTMLElement | null)?.closest?.('[data-history-summary-action="edit-note"]')) return;
+      historyEntrySummaryInteraction.collapseActiveInlineNoteInput();
+    });
     ctx.on(document, "keydown", (e: any) => {
       if (e.key !== "Enter" && e.key !== " ") return;
       if ((e.target as HTMLElement | null)?.closest?.("textarea, input, select, [contenteditable='true']")) return;

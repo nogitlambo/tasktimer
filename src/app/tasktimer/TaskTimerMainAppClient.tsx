@@ -49,9 +49,6 @@ import {
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
-  isGlobalLeaderboardPlaceholderProfile,
-  isRivalLeaderboardPlaceholderProfile,
-  isWeeklyLeaderboardPlaceholderProfile,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
   type LeaderboardProfile,
@@ -790,7 +787,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank]
   );
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const weeklyTableRows = weeklyRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
+  const weeklyTableRows = weeklyRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+  const hasWeeklyRows = weeklyRows.length > 0;
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
       topEntries: hydratedTopEntries,
@@ -799,7 +797,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     });
   }, [hydratedCurrentUserEntry, hydratedTopEntries, leaderboardData.currentUserRank]);
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const globalTableRows = globalRows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
+  const globalTableRows = globalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+  const hasGlobalRows = globalRows.length > 0;
   const rivalRows = useMemo(
     () =>
       buildRivalLeaderboardRows({
@@ -811,6 +810,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   );
   const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const rivalTableRows = rivalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+  const hasRivalRows = rivalRows.length > 0;
   const selectedGlobalRow = selectedLeaderboardProfile ? globalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedWeeklyRow = selectedLeaderboardProfile ? weeklyRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedRivalRow = selectedLeaderboardProfile ? rivalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
@@ -839,13 +839,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   };
 
   const openWeeklyLeaderboardProfile = (profile: LeaderboardProfile) => {
-    if (isWeeklyLeaderboardPlaceholderProfile(profile)) return;
     setSelectedLeaderboardProfile(profile);
   };
 
   const openLeaderboardProfile = (profile: LeaderboardProfile) => {
-    if (isGlobalLeaderboardPlaceholderProfile(profile)) return;
-    if (isRivalLeaderboardPlaceholderProfile(profile)) return;
     setSelectedLeaderboardProfile(profile);
   };
 
@@ -1132,7 +1129,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <p className="dashboardCardEyebrow">Weekly ladder</p>
                     <p className="leaderboardHeroMeta">Top XP earners this week</p>
                   </div>
-                  {leaderboardState === "ready" ? (
+                  {leaderboardState === "ready" && hasWeeklyRows ? (
                     <>
                       <div className="leaderboardWeeklyPodium" aria-label="Weekly top three">
                         {weeklyPodiumRows.map((row) => (
@@ -1203,13 +1200,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </div>
                     </>
                   ) : (
-                    <div className="leaderboardPanelText">
-                      {leaderboardState === "loading"
-                        ? "Loading weekly leaderboard."
-                        : leaderboardState === "error"
-                            ? leaderboardError || "Could not load the leaderboard."
-                            : "No weekly XP has been published yet. Launch a task to climb this board."}
-                    </div>
+                    leaderboardState === "ready" ? null : (
+                      <div className="leaderboardPanelText">
+                        {leaderboardState === "loading" ? "Loading weekly leaderboard." : leaderboardError || "Could not load the leaderboard."}
+                      </div>
+                    )
                   )}
                 </section>
               ) : leaderboardView === "rivals" ? (
@@ -1224,7 +1219,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <p className="dashboardCardEyebrow">Rank Rivals</p>
                     <p className="leaderboardHeroMeta">Ranked leaderboard for {currentUserRankLabel}</p>
                   </div>
-                  {leaderboardState === "ready" ? (
+                  {leaderboardState === "ready" && hasRivalRows ? (
                     <>
                       <div className="leaderboardWeeklyPodium" aria-label="Rivals top three">
                         {rivalPodiumRows.map((row) => (
@@ -1295,13 +1290,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </div>
                     </>
                   ) : (
-                    <div className="leaderboardPanelText">
-                      {leaderboardState === "loading"
-                        ? "Loading rivals."
-                        : leaderboardState === "error"
-                            ? leaderboardError || "Could not load the leaderboard."
-                            : "Your public profile needs to sync before rivals can be calculated."}
-                    </div>
+                    leaderboardState === "ready" ? null : (
+                      <div className="leaderboardPanelText">
+                        {leaderboardState === "loading" ? "Loading rivals." : leaderboardError || "Could not load the leaderboard."}
+                      </div>
+                    )
                   )}
                 </section>
               ) : (
@@ -1316,7 +1309,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <p className="dashboardCardEyebrow leaderboardGlobalLadderEyebrow">Global ladder</p>
                     <p className="leaderboardHeroMeta">Top XP earners of all time</p>
                   </div>
-                  {leaderboardState === "ready" ? (
+                  {leaderboardState === "ready" && hasGlobalRows ? (
                     <>
                       <div className="leaderboardWeeklyPodium" aria-label="Global top three">
                         {globalPodiumRows.map((row) => (
@@ -1387,13 +1380,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </div>
                     </>
                   ) : (
-                    <div className="leaderboardPanelText">
-                      {leaderboardState === "loading"
-                        ? "Loading leaderboard standings."
-                        : leaderboardState === "error"
-                            ? leaderboardError || "Could not load the leaderboard."
-                            : "No leaderboard data yet. Launch a task to publish the first public snapshot."}
-                    </div>
+                    leaderboardState === "ready" ? null : (
+                      <div className="leaderboardPanelText">
+                        {leaderboardState === "loading" ? "Loading leaderboard standings." : leaderboardError || "Could not load the leaderboard."}
+                      </div>
+                    )
                   )}
                 </section>
               )}

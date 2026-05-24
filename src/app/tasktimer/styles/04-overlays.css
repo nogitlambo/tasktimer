@@ -3872,6 +3872,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   font-weight: 800;
 }
 
+#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn{
+  order: 2;
+  border-radius: 0 !important;
+}
+
+#historyEntryNoteOverlay .closePopup{
+  order: 1;
+  margin-left: auto;
+}
+
 #historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:active{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
@@ -4100,6 +4110,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: rgba(255,255,255,.02);
   resize: none;
   overflow-y: hidden;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing.isCollapsed{
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteActions{

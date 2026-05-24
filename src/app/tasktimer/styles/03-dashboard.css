@@ -217,24 +217,11 @@
   gap:12px;
   text-align:center;
   color:rgba(237,247,250,.78);
-  pointer-events:auto;
+  pointer-events:none;
 }
 
 .dashboardActivityEmpty[hidden]{
   display:none;
-}
-
-.dashboardActivityEmpty p{
-  margin:0;
-  max-width:360px;
-}
-
-.dashboardActivityEmptyActions{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex-wrap:wrap;
 }
 
 .dashboardActivitySummaryStack{

@@ -24,7 +24,7 @@ function elementStub(id = "") {
   return {
     id,
     dataset: {} as Record<string, string>,
-    style: { display: "" },
+    style: { display: "" } as Record<string, string>,
     textContent: "",
     innerHTML: "",
     classList,
@@ -38,6 +38,7 @@ function elementStub(id = "") {
     }),
     getAttribute: vi.fn(),
     focus: vi.fn(),
+    getBoundingClientRect: vi.fn(() => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 })),
   };
 }
 
@@ -106,7 +107,7 @@ function createHarness(overrides?: {
   const closed: unknown[] = [];
   body.getBoundingClientRect = vi.fn(() => ({ top: 120, bottom: 540, left: 0, right: 320, width: 320, height: 420 }));
   modal.getBoundingClientRect = vi.fn(() => ({ top: 80, bottom: 560, left: 0, right: 360, width: 360, height: 480 }));
-  const existingWindow = (globalThis as { window?: { dispatchEvent?: ReturnType<typeof vi.fn> } }).window;
+  const existingWindow = (globalThis as unknown as { window?: { dispatchEvent?: EventTarget["dispatchEvent"] } }).window;
   vi.stubGlobal("window", {
     dispatchEvent: existingWindow?.dispatchEvent ?? vi.fn(),
     getComputedStyle: vi.fn((node: unknown) => {
@@ -333,6 +334,55 @@ describe("createHistoryEntrySummaryInteraction", () => {
     input.value = "   ";
     h.interaction.syncInputMirror("   ");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
+  });
+
+  it("collapses the active inline note to compact height while preserving the draft and edit state", () => {
+    const h = createHarness();
+    const { trigger, input } = triggerStub();
+    input.scrollHeight = 180;
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.interaction.beginEdit(trigger);
+    input.value = "Draft note";
+    h.interaction.syncInputMirror("Draft note");
+
+    expect(h.interaction.collapseActiveInlineNoteInput()).toBe(true);
+
+    expect(h.overlay.dataset.historyEntryEditing).toBe("true");
+    expect(input.readOnly).toBe(false);
+    expect(input.value).toBe("Draft note");
+    expect(h.editorInput.value).toBe("Draft note");
+    expect(input.classList.contains("isEditing")).toBe(true);
+    expect(input.classList.contains("isCollapsed")).toBe(true);
+    expect(input.style.height).toBe("22px");
+    expect(input.style.overflowY).toBe("hidden");
+    expect(h.saveAndCloseBtn.style.display).toBe("");
+  });
+
+  it("re-expands a collapsed inline note by autosizing the active draft", () => {
+    const h = createHarness();
+    const { trigger, input } = triggerStub();
+    input.scrollHeight = 180;
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.interaction.beginEdit(trigger);
+    h.interaction.collapseActiveInlineNoteInput();
+
+    expect(h.interaction.expandActiveInlineNoteInput()).toBe(true);
+
+    expect(input.classList.contains("isCollapsed")).toBe(false);
+    expect(input.style.height).toBe("180px");
+    expect(input.style.overflowY).toBe("hidden");
   });
 
   it("cancels editing and restores the stored dataset note", () => {

@@ -92,39 +92,6 @@ const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar
   if (id && src) acc[id] = src;
   return acc;
 }, {});
-const placeholderAvatarIds = AVATAR_CATALOG.map((avatar) => String(avatar?.id || "").trim()).filter(Boolean);
-const placeholderUsernameWords = [
-  "beacon",
-  "blitz",
-  "cinder",
-  "comet",
-  "drift",
-  "ember",
-  "focus",
-  "forge",
-  "glide",
-  "grind",
-  "horizon",
-  "lumen",
-  "neon",
-  "orbit",
-  "pixel",
-  "prime",
-  "pulse",
-  "quest",
-  "rally",
-  "rocket",
-  "runner",
-  "signal",
-  "spark",
-  "stride",
-  "summit",
-  "tempo",
-  "thrive",
-  "vector",
-  "vivid",
-  "zenith",
-];
 const leaderboardIdentityCache = new Map<string, { expiresAtMs: number; value: LeaderboardIdentityFields }>();
 
 function dbOrNull() {
@@ -265,35 +232,6 @@ function resolveBuiltInAvatarSrc(avatarIdRaw: string | null | undefined): string
   const avatarId = String(avatarIdRaw || "").trim();
   if (!avatarId) return "";
   return String(avatarSrcById[avatarId] || "").trim();
-}
-
-function hashPlaceholderSeed(seed: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function pickSeededValue<T>(values: T[], seed: string): T | null {
-  if (!values.length) return null;
-  return values[hashPlaceholderSeed(seed) % values.length] ?? null;
-}
-
-function pickPlaceholderAvatarId(seed: string): string | null {
-  return pickSeededValue(placeholderAvatarIds, seed);
-}
-
-function buildPlaceholderUsername(seed: string): string {
-  const firstWord = pickSeededValue(placeholderUsernameWords, `${seed}:first`) || "focus";
-  const secondWord = pickSeededValue(
-    placeholderUsernameWords.filter((word) => word !== firstWord),
-    `${seed}:second`
-  ) || "runner";
-  const separator = hashPlaceholderSeed(`${seed}:separator`) % 2 === 0 ? "_" : "-";
-  const suffix = hashPlaceholderSeed(`${seed}:number`) % 3 === 0 ? String((hashPlaceholderSeed(`${seed}:digit`) % 90) + 10) : "";
-  return `${firstWord}${separator}${secondWord}${suffix}`;
 }
 
 function dispatchLeaderboardProfileUpdated(uid: string): void {
@@ -529,101 +467,6 @@ function formatWeeklyRankLabel(rank: number | null): string {
   return `#${rank}`;
 }
 
-function buildWeeklyPlaceholderProfile(rank: number): LeaderboardProfile {
-  const safeRank = Math.max(1, Math.floor(rank || 1));
-  const weeklyXpGain = Math.max(24, 320 - (safeRank - 1) * 26);
-  const rewardTotalXp = Math.max(weeklyXpGain, 4_800 - (safeRank - 1) * 320);
-  const totalFocusMs = Math.max(30 * 60 * 1000, (14 - safeRank) * 42 * 60 * 1000);
-  const weeklyFocusMs = Math.max(20 * 60 * 1000, (10 - safeRank) * 28 * 60 * 1000);
-  const streakDays = Math.max(1, 12 - safeRank);
-  const label = buildPlaceholderUsername(`weekly:${safeRank}`);
-  return {
-    uid: `weekly-placeholder-${safeRank}`,
-    username: label,
-    displayLabel: label,
-    avatarId: pickPlaceholderAvatarId(`weekly:${safeRank}`),
-    avatarCustomSrc: null,
-    googlePhotoUrl: null,
-    rankThumbnailSrc: null,
-    rewardCurrentRankId: getRankForXp(rewardTotalXp).id,
-    rewardTotalXp,
-    streakDays,
-    totalFocusMs,
-    weeklyFocusMs,
-    weeklyXpGain,
-    memberSinceMs: null,
-    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
-  };
-}
-
-export function isWeeklyLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
-  return /^weekly-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
-}
-
-function buildGlobalPlaceholderProfile(rank: number): LeaderboardProfile {
-  const safeRank = Math.max(1, Math.floor(rank || 1));
-  const rewardTotalXp = Math.max(900, 12_400 - (safeRank - 1) * 840);
-  const weeklyXpGain = Math.max(32, 520 - (safeRank - 1) * 38);
-  const totalFocusMs = Math.max(90 * 60 * 1000, (26 - safeRank) * 58 * 60 * 1000);
-  const weeklyFocusMs = Math.max(35 * 60 * 1000, (12 - safeRank) * 32 * 60 * 1000);
-  const streakDays = Math.max(1, 18 - safeRank);
-  const label = buildPlaceholderUsername(`global:${safeRank}`);
-  return {
-    uid: `global-placeholder-${safeRank}`,
-    username: label,
-    displayLabel: label,
-    avatarId: pickPlaceholderAvatarId(`global:${safeRank}`),
-    avatarCustomSrc: null,
-    googlePhotoUrl: null,
-    rankThumbnailSrc: null,
-    rewardCurrentRankId: getRankForXp(rewardTotalXp).id,
-    rewardTotalXp,
-    streakDays,
-    totalFocusMs,
-    weeklyFocusMs,
-    weeklyXpGain,
-    memberSinceMs: null,
-    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
-  };
-}
-
-export function isGlobalLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
-  return /^global-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
-}
-
-function buildRivalPlaceholderProfile(rank: number, currentUserEntry: LeaderboardProfile | null): LeaderboardProfile {
-  const safeRank = Math.max(1, Math.floor(rank || 1));
-  const currentTotalXp = normalizeInt(currentUserEntry?.rewardTotalXp);
-  const baseTotalXp = currentTotalXp > 0 ? currentTotalXp + 420 : 7_600;
-  const rewardTotalXp = Math.max(600, baseTotalXp - (safeRank - 1) * 150);
-  const weeklyXpGain = Math.max(28, 360 - (safeRank - 1) * 24);
-  const totalFocusMs = Math.max(60 * 60 * 1000, (18 - safeRank) * 46 * 60 * 1000);
-  const weeklyFocusMs = Math.max(24 * 60 * 1000, (10 - safeRank) * 30 * 60 * 1000);
-  const streakDays = Math.max(1, 14 - safeRank);
-  const label = buildPlaceholderUsername(`rival:${safeRank}`);
-  return {
-    uid: `rival-placeholder-${safeRank}`,
-    username: label,
-    displayLabel: label,
-    avatarId: pickPlaceholderAvatarId(`rival:${safeRank}`),
-    avatarCustomSrc: null,
-    googlePhotoUrl: null,
-    rankThumbnailSrc: null,
-    rewardCurrentRankId: currentUserEntry?.rewardCurrentRankId || getRankForXp(rewardTotalXp).id,
-    rewardTotalXp,
-    streakDays,
-    totalFocusMs,
-    weeklyFocusMs,
-    weeklyXpGain,
-    memberSinceMs: null,
-    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
-  };
-}
-
-export function isRivalLeaderboardPlaceholderProfile(profile: LeaderboardProfile | null | undefined): boolean {
-  return /^rival-placeholder-\d+$/i.test(String(profile?.uid || "").trim());
-}
-
 export function buildGlobalLeaderboardRows(input: {
   topEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
@@ -642,19 +485,6 @@ export function buildGlobalLeaderboardRows(input: {
       isPlaceholder: false,
     };
   });
-
-  while (rows.length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
-    const rank = rows.length + 1;
-    const profile = buildGlobalPlaceholderProfile(rank);
-    rows.push({
-      profile,
-      rank,
-      rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
-      isCurrentUser: false,
-      isPlaceholder: true,
-    });
-  }
 
   if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
 
@@ -710,25 +540,6 @@ export function buildRivalLeaderboardRows(input: {
     }
   }
 
-  while (rows.filter((row) => !row.rank || row.rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT).length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
-    const rank =
-      Math.max(
-        0,
-        ...rows
-          .map((row) => row.rank || 0)
-          .filter((rowRank) => rowRank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT)
-      ) + 1;
-    const profile = buildRivalPlaceholderProfile(rank, input.currentUserEntry);
-    rows.push({
-      profile,
-      rank,
-      rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
-      isCurrentUser: false,
-      isPlaceholder: true,
-    });
-  }
-
   return rows;
 }
 
@@ -751,19 +562,6 @@ export function buildWeeklyLeaderboardRows(input: {
       isPlaceholder: false,
     };
   });
-
-  while (rows.length < WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
-    const rank = rows.length + 1;
-    const profile = buildWeeklyPlaceholderProfile(rank);
-    rows.push({
-      profile,
-      rank,
-      rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: String(profile.username || profile.displayLabel || "User").trim() || "User",
-      isCurrentUser: false,
-      isPlaceholder: true,
-    });
-  }
 
   if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
 

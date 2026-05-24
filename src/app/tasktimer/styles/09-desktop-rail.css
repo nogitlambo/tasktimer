@@ -217,6 +217,11 @@
     white-space: nowrap;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailAlertBadge{
+    top: 8px;
+    right: 12px;
+  }
+
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailMenuBtn{
     --desktop-nav-hover-accent: rgba(214,246,116,.94);

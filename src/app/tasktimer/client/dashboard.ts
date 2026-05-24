@@ -189,14 +189,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
-    const activityAction = e.target?.closest?.("[data-dashboard-activity-action]") as HTMLElement | null;
-    if (activityAction) {
-      const action = String(activityAction.getAttribute("data-dashboard-activity-action") || "").trim();
-      if (action === "tasks") ctx.navigateToAppRoute("/tasklaunch");
-      else if (action === "history") ctx.navigateToAppRoute("/history-manager?returnTo=dashboard");
-      e.preventDefault();
-      return;
-    }
     const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
     if (heatDayBtn) {
       const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();

@@ -221,6 +221,15 @@ function renderDesktopNavItem(
           alt=""
           aria-hidden="true"
         />
+        {item.page === "friends" ? (
+          <span
+            id="commandCenterGroupsAlertBadge"
+            className="appFooterAlertBadge desktopRailAlertBadge"
+            aria-live="polite"
+            aria-atomic="true"
+            style={{ display: "none" }}
+          />
+        ) : null}
         <span className="dashboardRailMenuLabel">{item.label}</span>
       </button>
     );
@@ -244,6 +253,15 @@ function renderDesktopNavItem(
         alt=""
         aria-hidden="true"
       />
+      {item.page === "friends" ? (
+        <span
+          id="commandCenterGroupsAlertBadge"
+          className="appFooterAlertBadge desktopRailAlertBadge"
+          aria-live="polite"
+          aria-atomic="true"
+          style={{ display: "none" }}
+        />
+      ) : null}
       <span className="dashboardRailMenuLabel">{item.label}</span>
     </a>
   );

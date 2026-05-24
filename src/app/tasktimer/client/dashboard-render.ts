@@ -1233,15 +1233,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!cardEl) return;
     const model = getDashboardActivityOverviewModel();
     const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
-    const emptyTextEl = (els as any).dashboardActivityEmptyText as HTMLElement | null;
     if (emptyEl) {
       const showEmpty = !model.hasActivity;
       emptyEl.hidden = !showEmpty;
-      if (emptyTextEl) {
-        emptyTextEl.textContent = !model.hasActivity && !model.hasGoal
-          ? "Set task goals or log time to build your weekly activity overview."
-          : "No activity logged this week.";
-      }
     }
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
