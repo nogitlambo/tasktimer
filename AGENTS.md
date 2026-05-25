@@ -160,14 +160,19 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `/tasklaunch`
 
 ### Persistent keys (derived from storage/client modules)
+- `ACHIEVEMENT_SOUNDS_KEY = `${storageKey}:achievementSoundsEnabled``
 - `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``
 - `CHECKPOINT_ALERT_SOUND_KEY = `${storageKey}:checkpointAlertSoundEnabled``
 - `CHECKPOINT_ALERT_TOAST_KEY = `${storageKey}:checkpointAlertToastEnabled``
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
+- `INTERACTION_CLICK_SOUND_KEY = `${storageKey}:interactionClickSoundEnabled``
+- `INTERACTION_HAPTICS_INTENSITY_KEY = `${storageKey}:interactionHapticsIntensity``
+- `INTERACTION_HAPTICS_KEY = `${storageKey}:interactionHapticsEnabled``
 - `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
 - `MOBILE_PUSH_ALERTS_KEY = `${storageKey}:mobilePushAlertsEnabled``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
+- `OPTIMAL_PRODUCTIVITY_DAYS_KEY = `${storageKey}:optimalProductivityDays``
 - `OPTIMAL_PRODUCTIVITY_END_TIME_KEY = `${storageKey}:optimalProductivityEndTime``
 - `OPTIMAL_PRODUCTIVITY_START_TIME_KEY = `${storageKey}:optimalProductivityStartTime``
 - `STARTUP_MODULE_KEY = `${storageKey}:startupModule``
@@ -179,8 +184,8 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `WEEK_STARTING_KEY = `${storageKey}:weekStarting``
 
 ### Data hooks (derived from client/components)
+- `data-action="archive"`
 - `data-action="closeCheckpointToast"`
-- `data-action="collapse"`
 - `data-action="copyCloudSyncLogId"`
 - `data-action="delete"`
 - `data-action="dismissCloudSyncNotice"`

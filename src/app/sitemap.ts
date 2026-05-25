@@ -6,6 +6,7 @@ export const dynamic = "force-static";
 const lastModifiedByPath: Record<string, Date> = {
   "/": new Date(),
   "/pricing/": new Date(),
+  "/user-guide/": new Date("2026-05-25"),
   "/about/": new Date("2026-05-16"),
   "/privacy/": new Date("2026-04-21"),
 };

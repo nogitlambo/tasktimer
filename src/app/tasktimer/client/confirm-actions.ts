@@ -45,15 +45,16 @@ export function buildDeleteTaskConfirmOptions(args: {
   onCancel: () => void;
 }) {
   const taskName = String(args.taskName || "this task").trim() || "this task";
+  const options: TaskTimerConfirmOptions = {
+    okLabel: "Delete",
+    cancelLabel: "Cancel",
+    onOk: args.onDelete,
+    onCancel: args.onCancel,
+  };
   return {
     title: `Delete "${taskName}"?`,
     text: "History entries associated with this task will also be permanently deleted (your awarded XP will be preserved). To keep history entries and just remove the task, choose Archive.",
-    options: {
-      okLabel: "Delete",
-      cancelLabel: "Cancel",
-      onOk: args.onDelete,
-      onCancel: args.onCancel,
-    } satisfies TaskTimerConfirmOptions,
+    options,
   };
 }
 

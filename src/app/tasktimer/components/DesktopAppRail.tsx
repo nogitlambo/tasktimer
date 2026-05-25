@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -33,7 +34,7 @@ import {
 } from "../lib/accountProfileStorage";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
-type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "none";
+type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "userGuide" | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -126,10 +127,20 @@ const NAV_ITEMS: NavItem[] = [
     href: "/settings",
     showInMobileFooter: false,
   },
+  {
+    page: "userGuide",
+    label: "User Guide",
+    ariaLabel: "User Guide",
+    iconSrc: "/User_Guide.svg",
+    desktopId: "commandCenterUserGuideBtn",
+    mobileId: "footerUserGuideBtn",
+    href: "/user-guide",
+    showInMobileFooter: false,
+  },
 ];
 
-const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings");
-const PROFILE_MENU_PAGES = ["settings"] as const;
+const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings" && item.page !== "userGuide");
+const PROFILE_MENU_PAGES = ["settings", "userGuide"] as const;
 
 export function getDesktopRailProfileMenuItems() {
   return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
@@ -143,7 +154,8 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "leaderboard") return 3;
   if (page === "account") return 4;
   if (page === "settings") return 5;
-  if (page === "history") return 6;
+  if (page === "userGuide") return 6;
+  if (page === "history") return 7;
   return -1;
 }
 
@@ -632,13 +644,17 @@ export default function DesktopAppRail({
             <div className="desktopRailHeaderDivider" aria-hidden="true" />
             <div className="dashboardRailSectionLabel">Modules</div>
             <nav className="dashboardRailNav">
-              {DESKTOP_NAV_ITEMS.map((item) =>
-                renderDesktopNavItem(item, navActivePage, useClientNavButtons, {
-                  onClick: undefined,
-                })
-              )}
+              {DESKTOP_NAV_ITEMS.map((item) => (
+                <Fragment key={item.desktopId}>
+                  {renderDesktopNavItem(item, navActivePage, useClientNavButtons, {
+                    onClick: undefined,
+                  })}
+                  {item.page === "leaderboard" ? <div className="desktopRailNavDivider" aria-hidden="true" /> : null}
+                </Fragment>
+              ))}
+              <div className="dashboardRailSectionLabel desktopRailDevEnvLabel">Dev env</div>
               <button
-                className="btn btn-ghost small dashboardRailMenuBtn"
+                className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
                 id="openTemporaryModalBtn"
                 type="button"
                 aria-label="Open modal preview"

@@ -17,6 +17,7 @@ export const seoConfig = {
   publicRoutes: [
     { path: "/", changeFrequency: "weekly" as const, priority: 1 },
     { path: "/pricing/", changeFrequency: "weekly" as const, priority: 0.8 },
+    { path: "/user-guide/", changeFrequency: "weekly" as const, priority: 0.7 },
     { path: "/about/", changeFrequency: "monthly" as const, priority: 0.6 },
     { path: "/privacy/", changeFrequency: "yearly" as const, priority: 0.4 },
   ],
