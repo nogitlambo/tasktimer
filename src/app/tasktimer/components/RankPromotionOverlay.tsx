@@ -7,6 +7,7 @@ type RankPromotionOverlayProps = {
   previousRankLabel: string;
   nextRankId: string;
   nextRankLabel: string;
+  achievementSoundsEnabled?: boolean;
   onPresentationStart: () => void;
   onClose: () => void;
 };
@@ -295,6 +296,7 @@ export default function RankPromotionOverlay({
   previousRankLabel,
   nextRankId,
   nextRankLabel,
+  achievementSoundsEnabled = true,
   onPresentationStart,
   onClose,
 }: RankPromotionOverlayProps) {
@@ -309,7 +311,7 @@ export default function RankPromotionOverlay({
   }, [onPresentationStart]);
 
   useEffect(() => {
-    playPromotionAudio(RANK_PROMOTION_INTRO_AUDIO_SRC);
+    if (achievementSoundsEnabled) playPromotionAudio(RANK_PROMOTION_INTRO_AUDIO_SRC);
 
     const dimTimer = window.setTimeout(() => {
       setPhase("intro");
@@ -327,10 +329,12 @@ export default function RankPromotionOverlay({
       window.clearTimeout(smashTimer);
       window.clearTimeout(completeTimer);
     };
-  }, []);
+  }, [achievementSoundsEnabled]);
 
   useEffect(() => {
     if (phase !== "smashing") return;
+
+    if (!achievementSoundsEnabled) return;
 
     playPromotionAudio(RANK_PROMOTION_IMPACT_AUDIO_SRC);
     const boomTwoTimer = window.setTimeout(() => {
@@ -352,20 +356,20 @@ export default function RankPromotionOverlay({
       window.clearTimeout(chimeTimer);
       window.clearTimeout(postImpactTimer);
     };
-  }, [phase]);
+  }, [achievementSoundsEnabled, phase]);
 
   useEffect(() => {
     if (!isComplete) return;
 
     const hitTimer = window.setTimeout(() => {
-      playPromotionAudio(RANK_PROMOTION_HIT_AUDIO_SRC);
+      if (achievementSoundsEnabled) playPromotionAudio(RANK_PROMOTION_HIT_AUDIO_SRC);
       setIsCloseReady(true);
     }, RANK_PROMOTION_QUARTER_ROTATION_DELAY_MS);
 
     return () => {
       window.clearTimeout(hitTimer);
     };
-  }, [isComplete]);
+  }, [achievementSoundsEnabled, isComplete]);
 
   const handleClose = () => {
     if (!isCloseReady) return;

@@ -94,6 +94,7 @@ export type TaskTimerMutableState = {
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
+  achievementSoundsEnabled: boolean;
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;

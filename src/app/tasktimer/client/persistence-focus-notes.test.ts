@@ -113,6 +113,7 @@ function createHarness(overrides?: {
     loadAutoFocusOnTaskLaunchSetting: () => {},
     loadDynamicColorsSetting: () => {},
     loadInteractionClickSoundSetting: () => {},
+    loadAchievementSoundsSetting: () => {},
     loadInteractionHapticsSetting: () => {},
     loadCheckpointAlertSettings: () => {},
     loadOptimalProductivityPeriodPreference: () => {},

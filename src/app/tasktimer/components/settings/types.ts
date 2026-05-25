@@ -6,6 +6,7 @@ export type SettingsPaneKey =
   | "general"
   | "preferences"
   | "appearance"
+  | "sounds"
   | "notifications"
   | "privacy"
   | "help"

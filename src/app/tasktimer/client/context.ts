@@ -55,6 +55,7 @@ export type TaskTimerCachedPreferences = {
   mobilePushAlertsEnabled?: unknown;
   webPushAlertsEnabled?: unknown;
   interactionClickSoundEnabled?: unknown;
+  achievementSoundsEnabled?: unknown;
   interactionHapticsEnabled?: unknown;
   interactionHapticsIntensity?: unknown;
   checkpointAlertSoundEnabled?: unknown;
@@ -753,6 +754,7 @@ export type TaskTimerSessionContext = {
   getCheckpointFiredKeysByTaskId: () => Record<string, Set<string>>;
   getCheckpointBaselineSecByTaskId: () => Record<string, number>;
   getDynamicColorsEnabled: () => boolean;
+  getAchievementSoundsEnabled: () => boolean;
   getInteractionHapticsEnabled: () => boolean;
   getInteractionHapticsIntensity: () => InteractionHapticsIntensity;
   getCheckpointAlertSoundEnabled: () => boolean;
@@ -893,6 +895,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
     INTERACTION_CLICK_SOUND_KEY: string;
+    ACHIEVEMENT_SOUNDS_KEY: string;
     INTERACTION_HAPTICS_KEY: string;
     INTERACTION_HAPTICS_INTENSITY_KEY: string;
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
@@ -924,6 +927,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setWebPushAlertsEnabledState: (value: boolean) => void;
   getInteractionClickSoundEnabled: () => boolean;
   setInteractionClickSoundEnabledState: (value: boolean) => void;
+  getAchievementSoundsEnabled: () => boolean;
+  setAchievementSoundsEnabledState: (value: boolean) => void;
   getInteractionHapticsEnabled: () => boolean;
   setInteractionHapticsEnabledState: (value: boolean) => void;
   getInteractionHapticsIntensity: () => InteractionHapticsIntensity;

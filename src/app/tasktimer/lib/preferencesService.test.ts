@@ -14,6 +14,7 @@ const storageKeys = {
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
   INTERACTION_CLICK_SOUND_KEY: "taskticker_tasks_v1:interactionClickSoundEnabled",
+  ACHIEVEMENT_SOUNDS_KEY: "taskticker_tasks_v1:achievementSoundsEnabled",
   INTERACTION_HAPTICS_KEY: "taskticker_tasks_v1:interactionHapticsEnabled",
   INTERACTION_HAPTICS_INTENSITY_KEY: "taskticker_tasks_v1:interactionHapticsIntensity",
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: "taskticker_tasks_v1:optimalProductivityStartTime",
@@ -35,6 +36,7 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
+    achievementSoundsEnabled: true,
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
@@ -160,6 +162,27 @@ describe("createTaskTimerPreferencesService", () => {
     expect(service.loadOptimalProductivityDays()).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
   });
 
+  it("defaults achievement sounds on", () => {
+    expect(createService().loadAchievementSoundsEnabled()).toBe(true);
+  });
+
+  it("loads achievement sounds from local storage for signed-out users", () => {
+    window.localStorage.setItem(storageKeys.ACHIEVEMENT_SOUNDS_KEY, "false");
+
+    expect(createService().loadAchievementSoundsEnabled()).toBe(false);
+  });
+
+  it("uses cached achievement sounds instead of shared local storage for signed-in users", () => {
+    window.localStorage.setItem(storageKeys.ACHIEVEMENT_SOUNDS_KEY, "true");
+
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), achievementSoundsEnabled: false },
+      }).loadAchievementSoundsEnabled()
+    ).toBe(false);
+  });
+
   it("persists and reloads task order by from local storage", () => {
     const savePreferences = vi.fn();
     const setCloudPreferencesCache = vi.fn();
@@ -184,9 +207,10 @@ describe("createTaskTimerPreferencesService", () => {
     service.persistSnapshot(snapshot);
 
     expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("schedule");
+    expect(localStorageMap.get(storageKeys.ACHIEVEMENT_SOUNDS_KEY)).toBe("true");
     expect(service.loadTaskOrderBy()).toBe("schedule");
-    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
-    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule" }));
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
+    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
   });
 
   it("normalizes missing and legacy menu button styles to square", () => {

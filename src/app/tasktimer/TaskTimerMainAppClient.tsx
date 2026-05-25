@@ -269,6 +269,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => workspaceRepository.loadCachedPreferences());
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
+  const [achievementSoundsEnabled, setAchievementSoundsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().achievementSoundsEnabled !== false);
   const [interactionHapticsEnabled, setInteractionHapticsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().interactionHapticsEnabled !== false);
   const [interactionHapticsIntensity, setInteractionHapticsIntensity] = useState<InteractionHapticsIntensity>(() =>
     normalizeInteractionHapticsIntensity(workspaceRepository.buildDefaultPreferences().interactionHapticsIntensity)
@@ -374,6 +375,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
       setCachedPreferences(prefs);
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+      setAchievementSoundsEnabled(prefs?.achievementSoundsEnabled !== false);
       setInteractionHapticsEnabled(prefs?.interactionHapticsEnabled !== false);
       setInteractionHapticsIntensity(normalizeInteractionHapticsIntensity(prefs?.interactionHapticsIntensity));
     });
@@ -906,6 +908,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         currentRankId={displayedRewardProgress.currentRankId}
         desktopPromotionHoldRankId={activeRankPromotion?.previousRankId || null}
         desktopInsigniaUpgrade={desktopInsigniaUpgrade}
+        achievementSoundsEnabled={achievementSoundsEnabled}
         currentUserAvatarSrc={currentUserAvatarSrc}
         currentUserAvatarInitials={currentUserAvatarInitials}
         currentUserLabel={currentUserLabel}
@@ -1475,6 +1478,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          achievementSoundsEnabled={achievementSoundsEnabled}
           onPresentationStart={() => {
             startRankPromotionCelebration(document);
           }}

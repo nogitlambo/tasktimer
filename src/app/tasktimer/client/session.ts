@@ -654,7 +654,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     persistPendingTimeGoalFlow(task, "main", opts);
     syncTimeGoalCompleteNextTaskGrid();
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
-    playTimeGoalCompleteAudio();
+    if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
     startTimeGoalCompleteConfetti();
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {

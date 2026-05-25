@@ -7,7 +7,7 @@ import { SettingsAppearancePane } from "./settings/SettingsAppearancePane";
 import { SettingsDataPane } from "./settings/SettingsDataPane";
 import { SettingsFeedbackPane } from "./settings/SettingsFeedbackPane";
 import { SettingsHelpPane } from "./settings/SettingsHelpPane";
-import { SettingsNotificationsPane } from "./settings/SettingsNotificationsPane";
+import { SettingsNotificationsPane, SettingsSoundsPane } from "./settings/SettingsNotificationsPane";
 import { SettingsPreferencesPane } from "./settings/SettingsPreferencesPane";
 import { SettingsPrivacyPane } from "./settings/SettingsPrivacyPane";
 import { SettingsAboutPane } from "./settings/SettingsAboutPane";
@@ -29,7 +29,8 @@ const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
   general: "Profile",
   preferences: "Preferences",
   appearance: "Appearance",
-  notifications: "Sounds & Alerts",
+  sounds: "Sounds & Alerts",
+  notifications: "Notifications",
   privacy: "Privacy Policy",
   help: "Help Center",
   about: "About",
@@ -40,7 +41,8 @@ const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
 const SETTINGS_DETAIL_SUBTITLES: Partial<Record<SettingsPaneKey, string>> = {
   preferences: "Configure task behavior and dashboard options.",
   appearance: "Primary color and visual display options.",
-  notifications: "Manage push notifications, in-app sounds and toast alerts.",
+  sounds: "Manage in-app sounds and checkpoint audio alerts.",
+  notifications: "Manage push notifications and checkpoint toast alerts.",
   privacy: "Review Timebase's privacy policy, including data handling, local storage behavior, and account deletion information.",
   help: "Open privacy and feedback resources.",
   about: "TaskLaunch version and current build information",
@@ -132,6 +134,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           />
           <SettingsPreferencesPane active={paneState.activePane === "preferences"} exiting={paneState.exitingPane === "preferences"} />
           <SettingsAppearancePane active={paneState.activePane === "appearance"} exiting={paneState.exitingPane === "appearance"} />
+          <SettingsSoundsPane active={paneState.activePane === "sounds"} exiting={paneState.exitingPane === "sounds"} />
           <SettingsNotificationsPane active={paneState.activePane === "notifications"} exiting={paneState.exitingPane === "notifications"} />
           <SettingsPrivacyPane active={paneState.activePane === "privacy"} exiting={paneState.exitingPane === "privacy"} />
           <SettingsHelpPane active={paneState.activePane === "help"} exiting={paneState.exitingPane === "help"} />

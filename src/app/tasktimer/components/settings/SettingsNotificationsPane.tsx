@@ -13,8 +13,8 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
       active={active}
       exiting={exiting}
       paneClassName="settingsDisplayTypographyPane settingsNotificationsPane"
-      title="Sounds & Alerts"
-      subtitle="Manage push notifications, in-app sounds and toast alerts."
+      title="Notifications"
+      subtitle="Manage push notifications and checkpoint toast alerts."
     >
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
@@ -41,6 +41,46 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               </div>
             )}
             <div className="settingsInlineSectionHead">
+              <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+              <div className="settingsInlineSectionTitle">Checkpoint Toasts</div>
+            </div>
+            <div className="toggleRow" id="taskCheckpointToastToggleRow">
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Checkpoint Toast</span>
+                <span className="settingsPreferenceControlHelp">Show an in-app checkpoint message while you are using TaskLaunch.</span>
+              </div>
+              <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+            <div className="field checkpointAlertSoundModeField" id="taskCheckpointToastModeField">
+              <label className="settingsPreferenceControlCopy" htmlFor="taskCheckpointToastModeSelect">
+                <span className="settingsPreferenceControlLabel">Toast Behaviour</span>
+                <span className="settingsPreferenceControlHelp">Choose whether checkpoint messages disappear automatically or wait for manual dismissal.</span>
+              </label>
+              <SettingsDownwardSelect id="taskCheckpointToastModeSelect" defaultValue="auto5s">
+                <option value="auto5s">Auto dismiss after 5 seconds</option>
+                <option value="manual">Dismiss manually</option>
+              </SettingsDownwardSelect>
+            </div>
+          </div>
+        </section>
+      </div>
+    </SettingsDetailPane>
+  );
+}
+
+export function SettingsSoundsPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
+  return (
+    <SettingsDetailPane
+      active={active}
+      exiting={exiting}
+      paneClassName="settingsDisplayTypographyPane settingsNotificationsPane settingsSoundsPane"
+      title="Sounds & Alerts"
+      subtitle="Manage in-app sounds and checkpoint audio alerts."
+    >
+      <div className="settingsInlineStack">
+        <section className="settingsInlineSection">
+          <div className="checkpointAlertsGroup">
+            <div className="settingsInlineSectionHead">
               <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.png" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">In-app Sounds</div>
             </div>
@@ -50,6 +90,13 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
                 <span className="settingsPreferenceControlHelp">Play short click sounds for navigation, buttons, switches, and checkbox interactions.</span>
               </div>
               <button className="switch on" id="taskInteractionClickSoundToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+            <div className="toggleRow" id="taskAchievementSoundsToggleRow">
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Achievements</span>
+                <span className="settingsPreferenceControlHelp">Play sounds for task completion and rank promotions.</span>
+              </div>
+              <button className="switch on" id="taskAchievementSoundsToggle" type="button" role="switch" aria-checked="true" />
             </div>
             <div className="toggleRow" id="taskInteractionHapticsToggleRow" hidden>
               <div className="settingsPreferenceControlCopy">
@@ -90,23 +137,6 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               <SettingsDownwardSelect id="taskCheckpointSoundModeSelect" defaultValue="once">
                 <option value="once">Once</option>
                 <option value="repeat">Repeat until dismissed</option>
-              </SettingsDownwardSelect>
-            </div>
-            <div className="toggleRow" id="taskCheckpointToastToggleRow">
-              <div className="settingsPreferenceControlCopy">
-                <span className="settingsPreferenceControlLabel">Checkpoint Toast</span>
-                <span className="settingsPreferenceControlHelp">Show an in-app checkpoint message while you are using TaskLaunch.</span>
-              </div>
-              <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
-            </div>
-            <div className="field checkpointAlertSoundModeField" id="taskCheckpointToastModeField">
-              <label className="settingsPreferenceControlCopy" htmlFor="taskCheckpointToastModeSelect">
-                <span className="settingsPreferenceControlLabel">Toast Behaviour</span>
-                <span className="settingsPreferenceControlHelp">Choose whether checkpoint messages disappear automatically or wait for manual dismissal.</span>
-              </label>
-              <SettingsDownwardSelect id="taskCheckpointToastModeSelect" defaultValue="auto5s">
-                <option value="auto5s">Auto dismiss after 5 seconds</option>
-                <option value="manual">Dismiss manually</option>
               </SettingsDownwardSelect>
             </div>
           </div>

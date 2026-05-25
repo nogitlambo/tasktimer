@@ -114,6 +114,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       interactionClickSoundEnabled: ctx.getInteractionClickSoundEnabled(),
+      achievementSoundsEnabled: ctx.getAchievementSoundsEnabled(),
       interactionHapticsEnabled: ctx.getInteractionHapticsEnabled(),
       interactionHapticsIntensity: ctx.getInteractionHapticsIntensity(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
@@ -305,6 +306,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskInteractionClickSoundToggle as HTMLElement | null, ctx.getInteractionClickSoundEnabled());
+    ctx.toggleSwitchElement(els.taskAchievementSoundsToggle as HTMLElement | null, ctx.getAchievementSoundsEnabled());
     ctx.toggleSwitchElement(els.taskInteractionHapticsToggle as HTMLElement | null, ctx.getInteractionHapticsEnabled());
     syncInteractionHapticsIntensityUi();
     ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
@@ -388,6 +390,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setInteractionClickSoundEnabledState(preferenceService.loadInteractionClickSoundEnabled());
   }
 
+  function loadAchievementSoundsSetting() {
+    ctx.setAchievementSoundsEnabledState(preferenceService.loadAchievementSoundsEnabled());
+  }
+
   function loadInteractionHapticsSetting() {
     ctx.setInteractionHapticsEnabledState(preferenceService.loadInteractionHapticsEnabled());
     ctx.setInteractionHapticsIntensityState(preferenceService.loadInteractionHapticsIntensity());
@@ -398,6 +404,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       localStorage.setItem(
         ctx.storageKeys.INTERACTION_CLICK_SOUND_KEY,
         ctx.getInteractionClickSoundEnabled() ? "true" : "false"
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
+  function saveAchievementSoundsSetting() {
+    try {
+      localStorage.setItem(
+        ctx.storageKeys.ACHIEVEMENT_SOUNDS_KEY,
+        ctx.getAchievementSoundsEnabled() ? "true" : "false"
       );
     } catch {
       // ignore localStorage write failures
@@ -690,6 +708,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveAutoFocusOnTaskLaunchSetting();
     saveDynamicColorsSetting();
     saveMobilePushAlertsSetting();
+    saveAchievementSoundsSetting();
     saveCheckpointAlertSettings();
     saveInteractionHapticsSetting();
     saveOptimalProductivityPeriodPreference();
@@ -809,6 +828,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         ctx.setInteractionClickSoundEnabledState(!ctx.getInteractionClickSoundEnabled());
         syncTaskSettingsUi();
         saveInteractionClickSoundSetting();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskAchievementSoundsToggle,
+      row: els.taskAchievementSoundsToggleRow,
+      ignoreSelector: "#taskAchievementSoundsToggle",
+      handleToggle: () => {
+        ctx.setAchievementSoundsEnabledState(!ctx.getAchievementSoundsEnabled());
+        syncTaskSettingsUi();
+        saveAchievementSoundsSetting();
       },
     });
     bindToggleRow({
@@ -963,10 +993,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
     loadInteractionClickSoundSetting,
+    loadAchievementSoundsSetting,
     loadInteractionHapticsSetting,
     loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
     saveInteractionClickSoundSetting,
+    saveAchievementSoundsSetting,
     saveInteractionHapticsSetting,
     loadCheckpointAlertSettings,
     saveMobilePushAlertsSetting,

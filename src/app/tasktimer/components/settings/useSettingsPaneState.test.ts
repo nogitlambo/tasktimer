@@ -13,12 +13,12 @@ describe("settings navigation", () => {
   it("uses the mobile-safe nav list by default for SSR hydration", () => {
     const labels = getVisibleSettingsNavItems().map((item) => item.label);
 
-    expect(labels).toEqual(["Preferences", "Appearance", "Sounds & Alerts", "Help Center", "Data", "About"]);
+    expect(labels).toEqual(["Preferences", "Appearance", "Sounds & Alerts", "Notifications", "Help Center", "Data", "About"]);
   });
 
   it("includes Profile in the desktop nav list", () => {
     const labels = getVisibleSettingsNavItems(true).map((item) => item.label);
 
-    expect(labels).toEqual(["Preferences", "Profile", "Appearance", "Sounds & Alerts", "Help Center", "Data", "About"]);
+    expect(labels).toEqual(["Preferences", "Profile", "Appearance", "Sounds & Alerts", "Notifications", "Help Center", "Data", "About"]);
   });
 });

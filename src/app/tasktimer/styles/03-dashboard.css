@@ -3162,6 +3162,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background:linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.96) 18%, rgba(117,231,255,.95));
   box-shadow:0 0 14px rgba(117,231,255,.24);
   z-index:1;
+  clip-path:inset(0 0 0 50%);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumSubtext{
@@ -3372,6 +3373,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   transform: rotate(var(--momentum-needle-deg));
   z-index: 5;
   pointer-events: none;
+  clip-path: inset(0 0 0 50%);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedleCore{
@@ -3580,6 +3582,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(40,191,255,.98) 18%, rgba(145,230,255,.98) 78%, rgba(255,179,77,.98) 100%);
   box-shadow: 0 0 12px rgba(56,192,255,.28);
   z-index: 4;
+  clip-path: inset(0 0 0 50%);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
@@ -3708,6 +3711,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: 0 0 12px rgba(62,204,255,.34);
   opacity: calc(1 - (var(--momentum-locked) * 0.42));
   z-index: 2;
+  clip-path: inset(0 0 0 50%);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
@@ -3852,6 +3856,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: 0 0 10px rgba(202,114,255,.26);
   opacity: calc(1 - (var(--momentum-locked) * 0.42));
   z-index: 2;
+  clip-path: inset(0 0 0 50%);
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
@@ -3980,6 +3985,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   box-shadow: 0 0 12px rgba(197,109,255,.24) !important;
   opacity: calc(1 - (var(--momentum-locked) * 0.42)) !important;
   z-index: 2 !important;
+  clip-path: inset(0 0 0 50%) !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
@@ -4168,6 +4174,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     0 0 8px rgba(117,167,255,.24) !important;
   opacity: calc(1 - (var(--momentum-locked) * 0.42)) !important;
   z-index: 4 !important;
+  clip-path: inset(0 0 0 50%) !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumNeedle::before{
@@ -4291,7 +4298,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   width: 29% !important;
   height: 2px !important;
   overflow: hidden !important;
-  clip-path: none !important;
+  clip-path: inset(0 0 0 50%) !important;
   transform-origin: 0% 50% !important;
   transform: rotate(var(--momentum-needle-deg)) !important;
   border-radius: 999px !important;
@@ -7997,6 +8004,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   z-index:2 !important;
   pointer-events:none !important;
   overflow:hidden !important;
+  clip-path:inset(0 0 0 50%) !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid .dashboardMomentumNeedle::before,

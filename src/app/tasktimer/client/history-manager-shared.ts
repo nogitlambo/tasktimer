@@ -70,9 +70,6 @@ export function parseHistoryManagerManualDraft(input: HistoryManagerManualDraftP
     return { error: "Elapsed time must be greater than 0." } as const;
   }
   const completionDifficulty = normalizeCompletionDifficulty(input.draft.completionDifficulty);
-  if (!completionDifficulty) {
-    return { error: "Choose a sentiment before saving this entry." } as const;
-  }
   const taskName = String(input.taskName || "").trim() || "Task";
   const noteValue = String(input.draft.noteValue || "").trim();
   const colorValue = typeof input.historyEntryColor === "string" ? String(input.historyEntryColor).trim() : "";
@@ -81,7 +78,7 @@ export function parseHistoryManagerManualDraft(input: HistoryManagerManualDraftP
       ts: Math.floor(parsedTs),
       ms: Math.floor(elapsedMs),
       name: taskName,
-      completionDifficulty,
+      ...(completionDifficulty ? { completionDifficulty } : {}),
       ...(noteValue ? { note: noteValue } : {}),
       ...(colorValue ? { color: colorValue } : {}),
     },

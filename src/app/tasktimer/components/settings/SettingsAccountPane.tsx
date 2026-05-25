@@ -16,6 +16,7 @@ import RankThumbnail from "../RankThumbnail";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
 import type { SettingsAccountViewModel, SettingsAvatarViewModel } from "./types";
+import { useAchievementSoundsEnabled } from "./useAchievementSoundsEnabled";
 import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../../client/onboarding-events";
 
 function formatMemberSinceDate(value: string | null) {
@@ -48,6 +49,7 @@ export function SettingsAccountPane({
   account: SettingsAccountViewModel;
   avatar: SettingsAvatarViewModel;
 }) {
+  const achievementSoundsEnabled = useAchievementSoundsEnabled();
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
@@ -350,6 +352,7 @@ export function SettingsAccountPane({
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          achievementSoundsEnabled={achievementSoundsEnabled}
           onPresentationStart={() => {
             startRankPromotionCelebration(document);
           }}

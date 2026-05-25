@@ -62,6 +62,7 @@ export type UserPreferencesV1 = {
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
+  achievementSoundsEnabled: boolean;
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
@@ -1423,6 +1424,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
             ? asBool(prefSnap.get("webPushAlertsEnabled"), false)
             : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         interactionClickSoundEnabled: asBool(prefSnap.get("interactionClickSoundEnabled"), true),
+        achievementSoundsEnabled: asBool(prefSnap.get("achievementSoundsEnabled"), true),
         interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
         interactionHapticsIntensity: normalizeInteractionHapticsIntensity(prefSnap.get("interactionHapticsIntensity")),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
@@ -2019,6 +2021,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
         ? asBool(data.webPushAlertsEnabled, false)
         : asBool(data.mobilePushAlertsEnabled, false),
     interactionClickSoundEnabled: asBool(data.interactionClickSoundEnabled, true),
+    achievementSoundsEnabled: asBool(data.achievementSoundsEnabled, true),
     interactionHapticsEnabled: asBool(data.interactionHapticsEnabled, true),
     interactionHapticsIntensity: normalizeInteractionHapticsIntensity(data.interactionHapticsIntensity),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),

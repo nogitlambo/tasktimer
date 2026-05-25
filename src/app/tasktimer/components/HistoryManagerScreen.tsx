@@ -1,6 +1,3 @@
-import AppImg from "@/components/AppImg";
-import { COMPLETION_DIFFICULTY_COMPACT_OPTIONS } from "../lib/completionDifficulty";
-
 export default function HistoryManagerScreen({ showHeader = true }: { showHeader?: boolean }) {
   return (
     <>
@@ -90,38 +87,6 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
                 </div>
               </div>
             </div>
-
-            <fieldset className="hmManualEntrySentiment">
-              <div
-                className="hmManualEntrySentimentOptions"
-                id="historyManagerManualEntryDifficultyGroup"
-                role="radiogroup"
-                aria-label="Task completion sentiment"
-              >
-                {COMPLETION_DIFFICULTY_COMPACT_OPTIONS.map((option) => (
-                  <button
-                    aria-checked="false"
-                    className="hmManualEntrySentimentBtn"
-                    data-completion-difficulty={option.value}
-                    key={option.value}
-                    role="radio"
-                    type="button"
-                  >
-                    <span className="hmManualEntrySentimentIconWrap" aria-hidden="true">
-                      <AppImg
-                        alt=""
-                        className="hmManualEntrySentimentIcon"
-                        draggable={false}
-                        height={42}
-                        src={option.iconSrc}
-                        width={42}
-                      />
-                    </span>
-                    <span className="hmManualEntrySentimentLabel">{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
 
             <div className="hmManualEntryField">
               <label className="hmManualEntryLabel" htmlFor="historyManagerManualNoteInput">

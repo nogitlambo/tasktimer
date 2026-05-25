@@ -13,6 +13,7 @@ type TaskTimerStorageKeys = {
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
   INTERACTION_CLICK_SOUND_KEY: string;
+  ACHIEVEMENT_SOUNDS_KEY: string;
   INTERACTION_HAPTICS_KEY: string;
   INTERACTION_HAPTICS_INTENSITY_KEY: string;
   CHECKPOINT_ALERT_SOUND_KEY: string;
@@ -43,6 +44,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     MOBILE_PUSH_ALERTS_KEY: `${storageKey}:mobilePushAlertsEnabled`,
     WEB_PUSH_ALERTS_KEY: `${storageKey}:webPushAlertsEnabled`,
     INTERACTION_CLICK_SOUND_KEY: `${storageKey}:interactionClickSoundEnabled`,
+    ACHIEVEMENT_SOUNDS_KEY: `${storageKey}:achievementSoundsEnabled`,
     INTERACTION_HAPTICS_KEY: `${storageKey}:interactionHapticsEnabled`,
     INTERACTION_HAPTICS_INTENSITY_KEY: `${storageKey}:interactionHapticsIntensity`,
     CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
@@ -82,6 +84,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
+    achievementSoundsEnabled: true,
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max",
     checkpointAlertSoundEnabled: true,

@@ -140,6 +140,7 @@ type CreatePersistenceOptionsArgs = {
   loadAutoFocusOnTaskLaunchSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
+  loadAchievementSoundsSetting: () => void;
   loadInteractionHapticsSetting: () => void;
   loadCheckpointAlertSettings: () => void;
   loadOptimalProductivityPeriodPreference: () => void;
@@ -898,6 +899,10 @@ export function createTaskTimerPreferencesContext(
     setInteractionClickSoundEnabledState: (value) => {
       args.preferencesState.set("interactionClickSoundEnabled", value);
     },
+    getAchievementSoundsEnabled: () => args.preferencesState.get("achievementSoundsEnabled") !== false,
+    setAchievementSoundsEnabledState: (value) => {
+      args.preferencesState.set("achievementSoundsEnabled", value);
+    },
     getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
     setInteractionHapticsEnabledState: (value) => {
       args.preferencesState.set("interactionHapticsEnabled", value);
@@ -1025,6 +1030,7 @@ export function createTaskTimerPersistenceContext(
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
+    loadAchievementSoundsSetting: args.loadAchievementSoundsSetting,
     loadInteractionHapticsSetting: args.loadInteractionHapticsSetting,
     loadCheckpointAlertSettings: args.loadCheckpointAlertSettings,
     loadOptimalProductivityPeriodPreference: args.loadOptimalProductivityPeriodPreference,
@@ -1393,6 +1399,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getCheckpointFiredKeysByTaskId: args.getCheckpointFiredKeysByTaskId,
     getCheckpointBaselineSecByTaskId: args.getCheckpointBaselineSecByTaskId,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
+    getAchievementSoundsEnabled: () => args.preferencesState.get("achievementSoundsEnabled") !== false,
     getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
     getInteractionHapticsIntensity: () =>
       normalizeInteractionHapticsIntensity(args.preferencesState.get("interactionHapticsIntensity")),

@@ -90,6 +90,7 @@ function createHarness(snapshotTasks: Task[], nowValue = new Date(2026, 4, 3, 8)
     loadAutoFocusOnTaskLaunchSetting: () => {},
     loadDynamicColorsSetting: () => {},
     loadInteractionClickSoundSetting: () => {},
+    loadAchievementSoundsSetting: () => {},
     loadInteractionHapticsSetting: () => {},
     loadCheckpointAlertSettings: () => {},
     loadOptimalProductivityPeriodPreference: () => {},

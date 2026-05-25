@@ -25,6 +25,7 @@ type TaskTimerPreferenceStorageKeys = {
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
   INTERACTION_CLICK_SOUND_KEY: string;
+  ACHIEVEMENT_SOUNDS_KEY: string;
   INTERACTION_HAPTICS_KEY: string;
   INTERACTION_HAPTICS_INTENSITY_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
@@ -44,6 +45,7 @@ type PreferencesStateSnapshot = {
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
+  achievementSoundsEnabled: boolean;
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
@@ -138,6 +140,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
       webPushAlertsEnabled: state.webPushAlertsEnabled,
       interactionClickSoundEnabled: state.interactionClickSoundEnabled,
+      achievementSoundsEnabled: state.achievementSoundsEnabled,
       interactionHapticsEnabled: state.interactionHapticsEnabled,
       interactionHapticsIntensity: normalizeInteractionHapticsIntensity(state.interactionHapticsIntensity),
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
@@ -176,6 +179,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.INTERACTION_CLICK_SOUND_KEY,
       snapshot.interactionClickSoundEnabled !== false ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.ACHIEVEMENT_SOUNDS_KEY,
+      snapshot.achievementSoundsEnabled !== false ? "true" : "false",
     );
     safeWriteLocalStorage(
       storageKeys.INTERACTION_HAPTICS_KEY,
@@ -290,6 +297,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return true;
   }
 
+  function loadAchievementSoundsEnabled(): boolean {
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.achievementSoundsEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.ACHIEVEMENT_SOUNDS_KEY).toLowerCase() : "";
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    return true;
+  }
+
   function loadInteractionHapticsEnabled(): boolean {
     const cloudValue = getStoredPreferencesWithoutDefaults()?.interactionHapticsEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
@@ -351,6 +367,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadMobilePushAlertsEnabled,
     loadWebPushAlertsEnabled,
     loadInteractionClickSoundEnabled,
+    loadAchievementSoundsEnabled,
     loadInteractionHapticsEnabled,
     loadInteractionHapticsIntensity,
     loadCheckpointAlerts,

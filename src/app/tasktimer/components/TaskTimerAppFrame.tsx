@@ -35,6 +35,7 @@ type TaskTimerAppFrameProps = {
   currentRankId: string;
   desktopPromotionHoldRankId?: string | null;
   desktopInsigniaUpgrade?: DesktopInsigniaUpgradePayload | null;
+  achievementSoundsEnabled?: boolean;
   currentUserAvatarSrc?: string;
   currentUserAvatarInitials?: string;
   currentUserLabel?: string;
@@ -85,6 +86,10 @@ export function shouldRenderDesktopInsigniaUpgrade(
   activeSeq: number | null
 ) {
   return !!upgrade && upgrade.seq === activeSeq && normalizeRankId(upgrade.previousRankId) !== "" && normalizeRankId(upgrade.nextRankId) !== "";
+}
+
+export function getDesktopInsigniaUpgradeAudioCallback(achievementSoundsEnabled: boolean, playAudio: () => void) {
+  return achievementSoundsEnabled ? playAudio : () => {};
 }
 
 type DesktopInsigniaUpgradeTimerApi = Pick<typeof globalThis, "setTimeout" | "clearTimeout">;
@@ -151,6 +156,7 @@ export default function TaskTimerAppFrame({
   currentRankId,
   desktopPromotionHoldRankId = null,
   desktopInsigniaUpgrade = null,
+  achievementSoundsEnabled = true,
   currentUserAvatarSrc = "",
   currentUserAvatarInitials = "U",
   currentUserLabel = "User",
@@ -202,9 +208,9 @@ export default function TaskTimerAppFrame({
       desktopInsigniaUpgrade,
       window,
       setActiveDesktopInsigniaUpgradeSeq,
-      playDesktopInsigniaUpgradeAudio
+      getDesktopInsigniaUpgradeAudioCallback(achievementSoundsEnabled, playDesktopInsigniaUpgradeAudio)
     );
-  }, [desktopInsigniaUpgrade]);
+  }, [achievementSoundsEnabled, desktopInsigniaUpgrade]);
 
   useEffect(() => {
     setMobileMenuOpen(false);

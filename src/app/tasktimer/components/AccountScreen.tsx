@@ -17,6 +17,7 @@ import {
 } from "../client/rank-promotion";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
 
@@ -36,6 +37,7 @@ function formatXp(value: number) {
 export default function AccountScreen() {
   const router = useRouter();
   const accountState = useSettingsAccountState();
+  const achievementSoundsEnabled = useAchievementSoundsEnabled();
   const account = accountState.account;
   const avatar = useSettingsAvatarState({
     authUserUid: accountState.authUserUid,
@@ -350,6 +352,7 @@ export default function AccountScreen() {
           previousRankLabel={activeRankPromotion.previousRankLabel}
           nextRankId={activeRankPromotion.nextRankId}
           nextRankLabel={activeRankPromotion.nextRankLabel}
+          achievementSoundsEnabled={achievementSoundsEnabled}
           onPresentationStart={() => {
             startRankPromotionCelebration(document);
           }}

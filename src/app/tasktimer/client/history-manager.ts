@@ -2,7 +2,6 @@
 
 import { normalizeTaskStatusState, type HistoryByTaskId, type Task } from "../lib/types";
 import type { TaskTimerHistoryManagerContext } from "./context";
-import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./history-manager-render";
 import {
   buildHistoryManagerRowKey,
@@ -47,17 +46,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     if (els.historyManagerManualHoursInput) els.historyManagerManualHoursInput.value = draft.hoursValue || "";
     if (els.historyManagerManualMinutesInput) els.historyManagerManualMinutesInput.value = draft.minutesValue || "";
     if (els.historyManagerManualNoteInput) els.historyManagerManualNoteInput.value = draft.noteValue || "";
-    const sentimentButtons = Array.from(
-      ((els.historyManagerManualEntryDifficultyGroup as HTMLElement | null)?.querySelectorAll?.("[data-completion-difficulty]") ||
-        []) as Iterable<Element>
-    );
-    sentimentButtons.forEach((button) => {
-      const selected =
-        normalizeCompletionDifficulty((button as HTMLElement).dataset.completionDifficulty) ===
-        normalizeCompletionDifficulty(draft.completionDifficulty);
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-checked", selected ? "true" : "false");
-    });
     if (els.historyManagerManualEntryError) {
       els.historyManagerManualEntryError.textContent = draft.errorMessage || "";
       (els.historyManagerManualEntryError as HTMLElement).style.display = draft.errorMessage ? "block" : "none";
@@ -1016,19 +1004,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     });
     ctx.on(els.historyManagerManualDateTimeBtn, "click", () => {
       openManualEntryDateTimePicker();
-    });
-    ctx.on(els.historyManagerManualEntryDifficultyGroup, "click", (event: Event) => {
-      const button = (event.target as HTMLElement | null)?.closest?.("[data-completion-difficulty]") as HTMLElement | null;
-      if (!button) return;
-      const taskId = String(activeManualEntryTaskId || "").trim();
-      const value = normalizeCompletionDifficulty(button.dataset.completionDifficulty);
-      if (!taskId || !manualEntryDraftsByTaskId[taskId] || !value) return;
-      updateManualEntryDraft(taskId, (draft) => ({
-        ...draft,
-        completionDifficulty: value,
-        errorMessage: "",
-      }));
-      syncManualEntryOverlayFromDraft(taskId);
     });
     ctx.on(document, "click", (event: Event) => {
       const xpReplayTarget = (event.target as HTMLElement | null)?.closest?.(

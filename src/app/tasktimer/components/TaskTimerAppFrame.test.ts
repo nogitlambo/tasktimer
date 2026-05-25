@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getDesktopHeaderRankId,
+  getDesktopInsigniaUpgradeAudioCallback,
   getTaskLaunchMobileMenuItems,
   getXpProgressSubtext,
   scheduleDesktopInsigniaUpgradeActivation,
@@ -87,6 +88,26 @@ describe("TaskTimerAppFrame desktop promotion insignia", () => {
 
     vi.advanceTimersByTime(1);
     expect(activeSeq).toBeNull();
+  });
+
+  it("keeps the desktop insignia upgrade animation but mutes audio when achievements sounds are disabled", () => {
+    vi.useFakeTimers();
+    let activeSeq: number | null = null;
+    const playAudio = vi.fn();
+    const setActiveSeq = vi.fn((updater: (current: number | null) => number | null) => {
+      activeSeq = updater(activeSeq);
+    });
+
+    scheduleDesktopInsigniaUpgradeActivation(
+      { seq: 6, previousRankId: "operator", nextRankId: "specialist" },
+      globalThis,
+      setActiveSeq,
+      getDesktopInsigniaUpgradeAudioCallback(false, playAudio)
+    );
+
+    vi.advanceTimersByTime(600);
+    expect(activeSeq).toBe(6);
+    expect(playAudio).not.toHaveBeenCalled();
   });
 
   it("cancels stale delayed desktop insignia upgrade playback on cleanup", () => {

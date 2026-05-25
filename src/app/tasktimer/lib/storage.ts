@@ -1377,6 +1377,7 @@ export function buildDefaultCloudPreferences() {
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
+    achievementSoundsEnabled: true,
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
