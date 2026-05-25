@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
 import {
   buildDashboardTodayHoursModel,
+  classifyDashboardTodayTrendIcon,
   formatDashboardTodayHoursDeltaText,
 } from "./dashboard-card-today-hours";
 
@@ -81,5 +82,20 @@ describe("dashboard today hours card module", () => {
       text: "+15m vs this time yesterday",
       sentiment: "positive",
     });
+  });
+
+  it.each([
+    [100, "trendUp"],
+    [99, "trendUpRight"],
+    [50, "trendUpRight"],
+    [49, "trendRight"],
+    [0, "trendRight"],
+    [-49, "trendRight"],
+    [-50, "trendDownRight"],
+    [-99, "trendDownRight"],
+    [-100, "trendDown"],
+    [-125, "trendDown"],
+  ] as const)("classifies %i percent for the Today trend icon", (deltaPct, className) => {
+    expect(classifyDashboardTodayTrendIcon(deltaPct).className).toBe(className);
   });
 });

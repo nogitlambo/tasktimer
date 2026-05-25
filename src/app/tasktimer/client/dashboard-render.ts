@@ -25,7 +25,7 @@ export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMom
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
 import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
-import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
+import { buildDashboardTodayHoursModel, classifyDashboardTodayTrendIcon, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
   type DashboardActivityOverviewModel,
@@ -222,6 +222,33 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (deltaPct > 0) indicatorEl.classList.add("positive");
     else if (deltaPct < 0) indicatorEl.classList.add("negative");
     else indicatorEl.classList.add("neutral");
+    return deltaPct;
+  }
+
+  function applyDashboardTodayTrendIcon(indicatorEl: HTMLElement | null, currentMs: number, previousMs: number, opts?: { minBaselineMs?: number }) {
+    if (!indicatorEl) return null;
+    const deltaPct = applyDashboardTrendIndicator(indicatorEl, currentMs, previousMs, {
+      minBaselineMs: opts?.minBaselineMs,
+      showDirectionalArrow: false,
+    });
+    indicatorEl.classList.remove("dashboardTodayTrendIcon", "trendUp", "trendUpRight", "trendRight", "trendDownRight", "trendDown");
+    indicatorEl.removeAttribute("title");
+    indicatorEl.removeAttribute("aria-label");
+    indicatorEl.setAttribute("aria-hidden", "true");
+    if (deltaPct == null) return null;
+
+    const icon = classifyDashboardTodayTrendIcon(deltaPct);
+    const trendSummary = `${deltaPct > 0 ? "+" : ""}${deltaPct}% versus this time yesterday.`;
+    indicatorEl.classList.add("dashboardTodayTrendIcon", icon.className);
+    indicatorEl.setAttribute("title", trendSummary);
+    indicatorEl.setAttribute("aria-label", `${icon.label}: ${trendSummary}`);
+    indicatorEl.setAttribute("aria-hidden", "false");
+    indicatorEl.innerHTML = `
+      <svg class="dashboardTodayTrendIconSvg" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <path d="M12 19V5" />
+        <path d="M6 11l6-6 6 6" />
+      </svg>
+    `;
     return deltaPct;
   }
 
@@ -1583,9 +1610,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
 
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
-    applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
+    applyDashboardTodayTrendIcon(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
       minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
-      showDirectionalArrow: todayHoursModel.showDirectionalTrendArrow,
     });
     applyDashboardGoalProgressUi({
       progressBarEl,

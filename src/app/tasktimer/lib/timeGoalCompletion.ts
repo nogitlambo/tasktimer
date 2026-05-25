@@ -34,6 +34,14 @@ export function hasTaskGoalHistoryEntryToday(
   });
 }
 
+export function hasTaskReachedDailyTimeGoal(task: Task | null | undefined, elapsedMsRaw: unknown): boolean {
+  const goalMinutes = Number(task?.timeGoalMinutes || 0);
+  if (!(task?.timeGoalEnabled && task.timeGoalPeriod === "day" && goalMinutes > 0)) return false;
+  const elapsedMs = Math.max(0, Math.floor(Number(elapsedMsRaw || 0) || 0));
+  const goalMs = Math.max(0, Math.round(goalMinutes * 60_000));
+  return goalMs > 0 && elapsedMs >= goalMs;
+}
+
 export function isTaskTimeGoalStartLockedByHistoryToday(
   task: Task | null | undefined,
   historyByTaskId: HistoryByTaskId | null | undefined,

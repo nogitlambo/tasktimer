@@ -241,6 +241,32 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
+  it("marks a daily time-goal task complete when it is stopped after reaching the goal", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          running: true,
+          startMs: 1,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 0.005,
+        }),
+      ],
+    });
+
+    harness.lifecycle.stopTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: 345,
+      startMs: null,
+      timeGoalCompletedDayKey: "1970-01-01",
+      timeGoalCompletedAtMs: 123,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 300,
+    });
+  });
+
   it("resets task state and syncs focus note UI when the task is focused", () => {
     const harness = createHarness({
       tasks: [

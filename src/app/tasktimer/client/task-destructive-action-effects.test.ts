@@ -200,6 +200,28 @@ describe("task destructive action effects", () => {
     expect(harness.classes.has("isResetTaskConfirm")).toBe(false);
   });
 
+  it("marks a daily time-goal task complete when reset elapsed has reached the goal", async () => {
+    const harness = createHarness({
+      tasks: [
+        createTask({
+          accumulatedMs: 30 * 60 * 1000,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 15,
+        }),
+      ],
+    });
+
+    harness.adapter.resetTask(0);
+    await harness.confirmCalls[0].opts.onOk();
+
+    expect(harness.tasks[0]).toMatchObject({
+      accumulatedMs: 0,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+    });
+  });
+
   it("ignores a second reset after the first reset locks the task as done", async () => {
     const harness = createHarness({ tasks: [createTask({ accumulatedMs: 30 * 60 * 1000 })] });
 

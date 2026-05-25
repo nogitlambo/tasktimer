@@ -1,5 +1,10 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
-import { isTaskTimeGoalStartLockedByHistoryToday, markTaskTimeGoalResetCompleted } from "../lib/timeGoalCompletion";
+import {
+  hasTaskReachedDailyTimeGoal,
+  isTaskTimeGoalStartLockedByHistoryToday,
+  markTaskTimeGoalCompleted,
+  markTaskTimeGoalResetCompleted,
+} from "../lib/timeGoalCompletion";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
@@ -108,7 +113,11 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
             });
           }
           const resetElapsedMs = Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0));
-          markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs);
+          if (hasTaskReachedDailyTimeGoal(task, resetElapsedMs)) {
+            markTaskTimeGoalCompleted(task, Date.now(), { reason: "goal", elapsedMs: resetElapsedMs });
+          } else {
+            markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs);
+          }
           options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
           options.save();
           options.closeConfirm();

@@ -1,7 +1,12 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { localDayKey } from "../lib/history";
-import { isTaskTimeGoalCompletedToday, isTaskTimeGoalStartLockedByHistoryToday } from "../lib/timeGoalCompletion";
+import {
+  hasTaskReachedDailyTimeGoal,
+  isTaskTimeGoalCompletedToday,
+  isTaskTimeGoalStartLockedByHistoryToday,
+  markTaskTimeGoalCompleted,
+} from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
@@ -110,6 +115,10 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.flushPendingFocusSessionNoteSave(taskId);
     options.closeRewardSessionSegment(task, stopMs);
     task.accumulatedMs = options.getElapsedMs(task);
+    if (!isTaskTimeGoalCompletedToday(task, stopMs) && hasTaskReachedDailyTimeGoal(task, task.accumulatedMs)) {
+      const goalElapsedMs = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) * 60_000));
+      markTaskTimeGoalCompleted(task, stopMs, { reason: "goal", elapsedMs: goalElapsedMs });
+    }
     options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs });
     task.running = false;
     task.startMs = null;

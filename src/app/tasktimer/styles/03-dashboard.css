@@ -5125,6 +5125,61 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color: rgba(209, 220, 228, .82);
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardTrendIndicator.dashboardTodayTrendIcon{
+  min-width:24px;
+  width:24px;
+  height:24px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTodayTrendIconSvg{
+  width:18px;
+  height:18px;
+  display:block;
+  overflow:visible;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.35;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendUp,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendUpRight{
+  color:#6fe3a8;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendRight{
+  color:#ffd54a;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendDownRight{
+  color:#ff9d42;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendDown{
+  color:#ff6b6b;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendUpRight .dashboardTodayTrendIconSvg{
+  transform:rotate(45deg);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendRight .dashboardTodayTrendIconSvg{
+  transform:rotate(90deg);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendDownRight .dashboardTodayTrendIconSvg{
+  transform:rotate(135deg);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTrendIndicator.dashboardTodayTrendIcon.trendDown .dashboardTodayTrendIconSvg{
+  transform:rotate(180deg);
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardAvgSessionCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTimelineCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard{
@@ -7642,6 +7697,13 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   transform:none !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardMomentumCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardAvgSessionCard,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardCard[hidden]{
   display:none !important;
 }
@@ -7849,7 +7911,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   padding:10px 12px !important;
   border-top:1px solid rgba(255,255,255,.08) !important;
   border-radius:8px !important;
-  background:rgba(255,255,255,.018) !important;
+  background:transparent !important;
   pointer-events:none !important;
 }
 
@@ -8138,7 +8200,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 @media (min-width: 981px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
     grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-    grid-template-rows:auto minmax(214px, 1fr) !important;
+    grid-template-rows:max-content minmax(214px, 1fr) !important;
     align-items:stretch !important;
   }
 
@@ -8149,7 +8211,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
     grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    height:100% !important;
+    height:auto !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewBody{
@@ -8162,7 +8224,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     grid-column:1 / -1 !important;
   }
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard{
     grid-column:3 !important;
     grid-row:1 / span 2 !important;
     align-self:stretch !important;
@@ -8177,7 +8239,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     overflow:hidden !important;
   }
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityTaskOverviewCard .dashboardTasksCompletedChart{
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard .dashboardTasksCompletedChart{
     width:min(100%, 380px) !important;
     min-height:0 !important;
     align-self:center !important;

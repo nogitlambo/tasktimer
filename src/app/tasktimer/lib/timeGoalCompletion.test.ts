@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "./types";
 import {
   getTimeGoalCompletionDayKey,
+  hasTaskReachedDailyTimeGoal,
   hasTaskGoalHistoryEntryToday,
   isTaskTimeGoalStartLockedByHistoryToday,
   isTaskTimeGoalCompletedToday,
@@ -148,6 +149,32 @@ describe("time goal completion lock", () => {
     });
 
     expect(hasTaskGoalHistoryEntryToday(entry, { "task-1": [{ ts: yesterday, name: "Focus", ms: 60 * 60 * 1000 }] }, nowValue)).toBe(false);
+  });
+
+  it("detects elapsed time that reaches a daily time goal", () => {
+    expect(
+      hasTaskReachedDailyTimeGoal(
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+        60 * 60 * 1000
+      )
+    ).toBe(true);
+  });
+
+  it("does not treat weekly goals as daily lockable goals", () => {
+    expect(
+      hasTaskReachedDailyTimeGoal(
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "week",
+          timeGoalMinutes: 60,
+        }),
+        60 * 60 * 1000
+      )
+    ).toBe(false);
   });
 
   it("marks completion with the local day key and timestamp", () => {

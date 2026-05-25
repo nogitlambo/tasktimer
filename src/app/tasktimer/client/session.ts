@@ -1635,9 +1635,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const hasMilestones = !!task.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.length > 0;
     const elapsedWholeSec = Math.floor(Math.max(0, elapsedSecNow));
+    const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Math.round(Number(task.timeGoalMinutes || 0) * 60) : 0;
     const baselineByTaskId = ctx.getCheckpointBaselineSecByTaskId();
     const prevBaseline = baselineByTaskId[taskId];
-    if (!Number.isFinite(prevBaseline) || elapsedWholeSec <= prevBaseline) {
+    if (!Number.isFinite(prevBaseline)) {
+      baselineByTaskId[taskId] = elapsedWholeSec;
+      if (!(timeGoalSec > 0 && elapsedWholeSec >= timeGoalSec)) return;
+    } else if (elapsedWholeSec <= prevBaseline) {
       baselineByTaskId[taskId] = elapsedWholeSec;
       return;
     }
@@ -1673,7 +1677,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }
       if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
     });
-    const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Math.round(Number(task.timeGoalMinutes || 0) * 60) : 0;
     if (didElapsedReachTimeGoalFromBaseline(prevBaseline, elapsedWholeSec, timeGoalSec) && ctx.getTimeGoalModalTaskId() !== taskId) {
       shouldOpenTimeGoalModal = true;
     }

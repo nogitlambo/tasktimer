@@ -18,6 +18,21 @@ export type DashboardTodayHoursModel = {
   showDirectionalTrendArrow: boolean;
 };
 
+export type DashboardTodayTrendIconModel = {
+  className: "trendUp" | "trendUpRight" | "trendRight" | "trendDownRight" | "trendDown";
+  label: string;
+};
+
+export function classifyDashboardTodayTrendIcon(deltaPct: number): DashboardTodayTrendIconModel {
+  const pct = Math.round(Number(deltaPct) || 0);
+  if (pct >= 100) return { className: "trendUp", label: "Trending up strongly" };
+  if (pct >= 50) return { className: "trendUpRight", label: "Trending up" };
+  if (pct >= 0) return { className: "trendRight", label: "Holding steady" };
+  if (pct >= -49) return { className: "trendRight", label: "Holding steady" };
+  if (pct >= -99) return { className: "trendDownRight", label: "Trending down" };
+  return { className: "trendDown", label: "Trending down strongly" };
+}
+
 export function buildDashboardTodayHoursModel(options: {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
