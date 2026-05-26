@@ -1775,6 +1775,16 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   background: rgba(255,255,255,.045);
 }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace.isPlaceholder{
+  cursor:default;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder:hover,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder:focus-visible{
+  background: transparent;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isCurrentUser{
   background: rgba(103,255,159,.08);
 }

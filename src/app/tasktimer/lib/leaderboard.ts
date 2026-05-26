@@ -467,6 +467,54 @@ function formatWeeklyRankLabel(rank: number | null): string {
   return `#${rank}`;
 }
 
+function createPlaceholderLeaderboardRow(rank: number): WeeklyLeaderboardRow {
+  return {
+    profile: {
+      uid: `leaderboard-placeholder-${rank}`,
+      username: "",
+      displayLabel: "",
+      rewardTotalXp: 0,
+      rewardCurrentRankId: "unranked",
+      weeklyXpGain: 0,
+      streakDays: 0,
+      totalFocusMs: 0,
+      weeklyFocusMs: 0,
+      memberSinceMs: null,
+      schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+      avatarId: null,
+      avatarCustomSrc: null,
+      googlePhotoUrl: null,
+      rankThumbnailSrc: null,
+    },
+    rank,
+    rankLabel: formatWeeklyRankLabel(rank),
+    playerLabel: "",
+    isCurrentUser: false,
+    isPlaceholder: true,
+  };
+}
+
+function padLeaderboardRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow[] {
+  const visibleRanks = new Set(
+    rows
+      .map((row) => row.rank)
+      .filter((rank): rank is number => !!rank && rank >= 1 && rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT)
+  );
+  const placeholders: WeeklyLeaderboardRow[] = [];
+
+  for (let rank = 1; rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT; rank += 1) {
+    if (!visibleRanks.has(rank)) placeholders.push(createPlaceholderLeaderboardRow(rank));
+  }
+
+  return [...rows, ...placeholders].sort((left, right) => {
+    const leftRank = left.rank && left.rank > 0 ? left.rank : Number.MAX_SAFE_INTEGER;
+    const rightRank = right.rank && right.rank > 0 ? right.rank : Number.MAX_SAFE_INTEGER;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    if (left.isPlaceholder !== right.isPlaceholder) return left.isPlaceholder ? 1 : -1;
+    return String(left.profile.uid).localeCompare(String(right.profile.uid));
+  });
+}
+
 export function buildGlobalLeaderboardRows(input: {
   topEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
@@ -486,9 +534,9 @@ export function buildGlobalLeaderboardRows(input: {
     };
   });
 
-  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
+  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return padLeaderboardRows(rows);
 
-  return [
+  return padLeaderboardRows([
     {
       profile: input.currentUserEntry,
       rank: input.currentUserRank,
@@ -498,7 +546,7 @@ export function buildGlobalLeaderboardRows(input: {
       isPlaceholder: false,
     },
     ...rows,
-  ];
+  ]);
 }
 
 export function buildRivalLeaderboardRows(input: {
@@ -540,7 +588,7 @@ export function buildRivalLeaderboardRows(input: {
     }
   }
 
-  return rows;
+  return padLeaderboardRows(rows);
 }
 
 export function buildWeeklyLeaderboardRows(input: {
@@ -563,9 +611,9 @@ export function buildWeeklyLeaderboardRows(input: {
     };
   });
 
-  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return rows;
+  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) return padLeaderboardRows(rows);
 
-  return [
+  return padLeaderboardRows([
     {
       profile: input.currentUserEntry,
       rank: input.currentUserWeeklyRank,
@@ -575,7 +623,7 @@ export function buildWeeklyLeaderboardRows(input: {
       isPlaceholder: false,
     },
     ...rows,
-  ];
+  ]);
 }
 
 function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, identity: LeaderboardIdentityFields | null): LeaderboardProfile {
