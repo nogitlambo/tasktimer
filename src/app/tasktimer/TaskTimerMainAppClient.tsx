@@ -1435,24 +1435,26 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           {selectedLeaderboardProfile ? (
             <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
               <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
-                <div className="leaderboardPositionModalHeader">
+                <div className="leaderboardPositionModalHeaderRow">
                   <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
+                </div>
+                <div className="leaderboardPositionModalHeader">
+                  <div className="leaderboardPositionModalIdentity">
+                    <LeaderboardAvatar profile={selectedLeaderboardProfile} />
+                    <div className="leaderboardPositionModalIdentityText">
+                      <strong
+                        className="leaderboardName leaderboardPositionName"
+                      >
+                        {selectedLeaderboardLabel}
+                      </strong>
+                      {selectedLeaderboardMemberSince ? (
+                        <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
+                      ) : null}
+                    </div>
+                  </div>
                   <div className="leaderboardPositionRankSummary">
                     <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
                     <strong>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
-                  </div>
-                </div>
-                <div className="leaderboardPositionModalIdentity">
-                  <LeaderboardAvatar profile={selectedLeaderboardProfile} />
-                  <div className="leaderboardPositionModalIdentityText">
-                    <strong
-                      className="leaderboardName leaderboardPositionName"
-                    >
-                      {selectedLeaderboardLabel}
-                    </strong>
-                    {selectedLeaderboardMemberSince ? (
-                      <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
-                    ) : null}
                   </div>
                 </div>
                 <div className="leaderboardPositionStats" aria-label="Leaderboard positions">

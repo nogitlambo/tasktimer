@@ -4492,24 +4492,25 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
-  opacity: .5;
-  transform: translateX(-50%) scaleY(.92) scaleX(.9);
-  animation: rankPromotionLightBeamSustain 5.6s ease-in-out infinite;
+  opacity: 0;
+  transform: translateX(-50%) scaleY(.08) scaleX(.2);
+  animation: none;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
-  opacity: .46;
-  animation: rankPromotionLightBeamSustainFlicker 4.8s linear infinite;
+  opacity: 0;
+  animation: none;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
-  opacity: .38;
-  transform: translateX(-50%) scale(.92);
-  animation: rankPromotionLightBeamSustainCore 6.2s ease-in-out infinite;
+  opacity: 0;
+  transform: translateX(-50%) scale(.18);
+  animation: none;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeamPulse{
-  animation: rankPromotionLightBeamPulse 2s linear infinite;
+  display: none;
+  animation: none;
 }
 
 #rankPromotionOverlay .rankPromotionStage{
@@ -4537,7 +4538,28 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #rankPromotionOverlay .rankPromotionRankNew{
   opacity: 0;
+  isolation: isolate;
+  position: relative;
   transform: none;
+}
+
+#rankPromotionOverlay .rankPromotionRankNew::before{
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 136px;
+  z-index: 0;
+  width: 118px;
+  height: 22px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scaleX(.72);
+  transform-origin: 50% 50%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,.78) 0%, rgba(0,0,0,.5) 36%, rgba(53,232,255,.18) 58%, transparent 78%),
+    radial-gradient(ellipse at center, rgba(201,255,36,.18) 0%, transparent 64%);
+  filter: blur(6px);
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankOld{
@@ -4568,6 +4590,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew{
   opacity: 1;
   transform: none;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew::before{
+  animation: rankPromotionInsigniaShadowFloat 4.8s ease-in-out infinite;
+}
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionLabel{
+  position: relative;
+  z-index: 1;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
@@ -4702,12 +4734,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   margin: 0;
   padding-bottom: 12px;
-  color: #ffffff;
+  color: #c9ff24;
   font-family: var(--font-orbitron) !important;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
+  text-transform: uppercase;
 }
 
 #rankPromotionOverlay .rankPromotionLabel::after{
@@ -4980,29 +5013,38 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }@keyframes rankPromotionNewLabelImpact{0%,35%{ opacity: 0; transform: translateY(10px); }40%{ opacity: 1; transform: translateY(0); }100%{ opacity: 1; transform: translateY(0); }
 }@keyframes rankPromotionInsigniaFloat{0%,100%{ transform: translateY(0); }50%{ transform: translateY(-7px); }
+}@keyframes rankPromotionInsigniaShadowFloat{0%,100%{
+    opacity: .9;
+    transform: translateX(-50%) scaleX(1.1) scaleY(1);
+    filter: blur(5px);
+  }50%{
+    opacity: .5;
+    transform: translateX(-50%) scaleX(.68) scaleY(.78);
+    filter: blur(9px);
+  }
 }@keyframes rankPromotionInsigniaSpin{0%{
     transform: rotateY(0deg);
-  }20%{
+  }10%{
     transform: rotateY(70deg);
-  }22%{
+  }13%{
     transform: rotateY(80deg);
-  }24%{
+  }15%{
     transform: rotateY(94deg);
-  }26%{
+  }17%{
     transform: rotateY(105deg);
-  }28%{
+  }18%{
     transform: rotateY(110deg);
   }50%{
     transform: rotateY(180deg);
-  }70%{
+  }60%{
     transform: rotateY(250deg);
-  }72%{
+  }63%{
     transform: rotateY(260deg);
-  }74%{
+  }65%{
     transform: rotateY(274deg);
-  }76%{
+  }67%{
     transform: rotateY(285deg);
-  }78%{
+  }68%{
     transform: rotateY(290deg);
   }100%{
     transform: rotateY(360deg);
@@ -5027,12 +5069,16 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     opacity: .56;
     transform: translateX(-50%) scaleY(.94) scaleX(1.45);
     filter: blur(.5px) drop-shadow(0 0 16px rgba(126,243,255,.54)) drop-shadow(0 0 34px rgba(53,232,255,.26));
+  }94%{
+    opacity: .18;
+    transform: translateX(-50%) scaleY(.46) scaleX(.48);
+    filter: blur(.5px) drop-shadow(0 0 8px rgba(126,243,255,.3)) drop-shadow(0 0 16px rgba(53,232,255,.14));
   }100%{
-    opacity: .5;
-    transform: translateX(-50%) scaleY(.92) scaleX(.9);
-    filter: blur(.5px) drop-shadow(0 0 12px rgba(126,243,255,.46)) drop-shadow(0 0 26px rgba(53,232,255,.22));
+    opacity: 0;
+    transform: translateX(-50%) scaleY(.08) scaleX(.2);
+    filter: blur(.5px) drop-shadow(0 0 0 rgba(126,243,255,0)) drop-shadow(0 0 0 rgba(53,232,255,0));
   }
-}@keyframes rankPromotionLightBeamFlicker{0%,33%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }35%{ opacity: .28; transform: translateX(-50%) skewX(-3deg); }37%{ opacity: .72; transform: translateX(-50%) skewX(2deg); }39%,45%{ opacity: 1; transform: translateX(-50%) skewX(-1deg); }62%{ opacity: .46; transform: translateX(-50%) skewX(3deg); }78%{ opacity: .84; transform: translateX(-50%) skewX(-2deg); }91%{ opacity: .34; transform: translateX(-50%) skewX(1deg); }100%{ opacity: .46; transform: translateX(-50%) skewX(0deg); }
+}@keyframes rankPromotionLightBeamFlicker{0%,33%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }35%{ opacity: .28; transform: translateX(-50%) skewX(-3deg); }37%{ opacity: .72; transform: translateX(-50%) skewX(2deg); }39%,45%{ opacity: 1; transform: translateX(-50%) skewX(-1deg); }62%{ opacity: .46; transform: translateX(-50%) skewX(3deg); }78%{ opacity: .84; transform: translateX(-50%) skewX(-2deg); }91%{ opacity: .2; transform: translateX(-50%) skewX(1deg); }100%{ opacity: 0; transform: translateX(-50%) skewX(0deg); }
 }@keyframes rankPromotionLightBeamCore{0%,33%{
     opacity: 0;
     transform: translateX(-50%) scale(.42);
@@ -5042,9 +5088,12 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }72%{
     opacity: .58;
     transform: translateX(-50%) scale(1.02);
+  }92%{
+    opacity: .16;
+    transform: translateX(-50%) scale(.48);
   }100%{
-    opacity: .38;
-    transform: translateX(-50%) scale(.92);
+    opacity: 0;
+    transform: translateX(-50%) scale(.18);
   }
 }@keyframes rankPromotionLightBeamSustain{0%,100%{
     opacity: .42;
@@ -5112,17 +5161,17 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam{
-    opacity: .42;
-    transform: translateX(-50%) scaleY(.9) scaleX(.88);
+    opacity: 0;
+    transform: translateX(-50%) scaleY(.08) scaleX(.2);
   }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::before{
-    opacity: .34;
+    opacity: 0;
   }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionLightBeam::after{
-    opacity: .3;
-    transform: translateX(-50%) scale(.9);
+    opacity: 0;
+    transform: translateX(-50%) scale(.18);
   }
 
 #rankPromotionOverlay .rankPromotionRankNew{
@@ -5154,6 +5203,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia,
   #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaImage,
   #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaPlaceholder{
+    animation: none;
+  }
+
+#rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew::before{
+    opacity: .7;
+    transform: translateX(-50%) scaleX(.9) scaleY(.86);
+    filter: blur(7px);
     animation: none;
   }
 }@keyframes rankPromotionReducedOldSwap{0%{

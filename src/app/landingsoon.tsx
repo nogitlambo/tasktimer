@@ -8,8 +8,6 @@ import type { LandingProps } from "./landing.types";
 
 const rocketVideoFadeOutMs = 1200;
 const rocketVideoFadeInMs = 2000;
-const earlyAccessCountdownTarget = new Date("2026-05-25T10:00:00+10:00");
-const earlyAccessCountdownTargetLabel = "25th May 2026";
 const resendLockMs = 60 * 60 * 1000;
 
 type SubscribeState =
@@ -17,16 +15,6 @@ type SubscribeState =
   | { status: "loading"; message: string }
   | { status: "success"; message: string }
   | { status: "error"; message: string };
-
-function getCountdownParts(now: Date) {
-  const diffMs = Math.max(0, earlyAccessCountdownTarget.getTime() - now.getTime());
-  const totalSeconds = Math.floor(diffMs / 1000);
-  const days = Math.floor(totalSeconds / (60 * 60 * 24));
-  const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
-  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-  const seconds = totalSeconds % 60;
-  return { days, hours, minutes, seconds, isComplete: diffMs <= 0 };
-}
 
 function formatResendCountdown(lockedUntilMs: number | null, nowMs: number) {
   if (!lockedUntilMs) return "";
@@ -43,7 +31,6 @@ export default function LandingSoon(props: LandingProps) {
   const [isRocketVideoResetting, setIsRocketVideoResetting] = useState(false);
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<SubscribeState>({ status: "idle", message: "" });
-  const [countdown, setCountdown] = useState<ReturnType<typeof getCountdownParts> | null>(null);
   const [duplicateEmail, setDuplicateEmail] = useState("");
   const [resendLockedUntilMs, setResendLockedUntilMs] = useState<number | null>(null);
   const [resendNowMs, setResendNowMs] = useState(() => Date.now());
@@ -81,13 +68,6 @@ export default function LandingSoon(props: LandingProps) {
       window.cancelAnimationFrame(frameId);
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, []);
-
-  useEffect(() => {
-    const syncCountdown = () => setCountdown(getCountdownParts(new Date()));
-    syncCountdown();
-    const intervalId = window.setInterval(syncCountdown, 1000);
-    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -285,12 +265,6 @@ export default function LandingSoon(props: LandingProps) {
   const showHeroActions = revealStage >= 2;
   const showHeader = revealStage >= 3;
   const showBackgroundImage = revealStage >= 1;
-  const countdownText =
-    countdown === null
-      ? "Loading..."
-      : countdown.isComplete
-      ? "Open now"
-      : `${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`;
   const resendCountdownText = formatResendCountdown(resendLockedUntilMs, resendNowMs);
   const isResendLocked = Boolean(resendCountdownText);
 
@@ -345,14 +319,6 @@ export default function LandingSoon(props: LandingProps) {
               sustainable discipline over time, supporting inconsistency instead of punishing it, helping you rebuild
               momentum quickly, and make progress without perfectionism.
             </p>
-
-            <div className="landingSoonV2Countdown landingSoonV2CountdownMobile" aria-live="polite">
-              <div className="landingSoonV2CountdownInfo">
-                <span className="landingSoonV2CountdownLabel displayFont">Early access opens:</span>
-                <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
-              </div>
-              <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
-            </div>
 
             <form className={`landingV2Actions landingSoonV2Form ${showHeroActions ? "isVisible" : ""}`} onSubmit={handleSubmit}>
               <div className="landingSoonV2Field">

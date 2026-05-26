@@ -1230,10 +1230,6 @@ body.isInitialAuthHydrating{
   color: rgba(223, 234, 245, 0.86);
 }
 
-#app[aria-label="TaskLaunch App"] .initialAuthBusyProgress{
-  margin-top: 2px;
-}
-
 @media (max-width: 980px){
 #app[aria-label="TaskLaunch App"] .appShellHeader{
     display:none;

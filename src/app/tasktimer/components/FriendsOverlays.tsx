@@ -57,17 +57,10 @@ export default function FriendsOverlays() {
 
       <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
         <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
-          <div className="friendUserSummaryHeader">
+          <div className="friendUserSummaryHeaderRow">
             <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
-            <div className="friendUserSummaryRankBlock">
-              <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
-                <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
-                <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
-              </span>
-              <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
-            </div>
           </div>
-          <div className="friendUserSummaryTopRow">
+          <div className="friendUserSummaryHeader">
             <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
               <span className="friendUserSummaryAvatar" aria-hidden="true">
                 <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toonHead-male.svg" alt="" />
@@ -79,6 +72,13 @@ export default function FriendsOverlays() {
                   Remove
                 </button>
               </div>
+            </div>
+            <div className="friendUserSummaryRankBlock">
+              <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
+                <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
+                <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
+              </span>
+              <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
             </div>
           </div>
           <div className="friendUserSummaryStats" aria-label="Friend summary">
@@ -97,7 +97,7 @@ export default function FriendsOverlays() {
             </div>
           </div>
           <div className="confirmBtns friendProfileCloseRow">
-            <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
+            <button className="btn btn-ghost modalPreviewSecondaryAction" id="friendProfileCloseBtn" type="button">
               Close
             </button>
           </div>

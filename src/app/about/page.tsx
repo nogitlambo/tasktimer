@@ -12,28 +12,22 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 const HELP_POINTS = [
-  "Restart quickly after setbacks instead of spiralling into guilt.",
-  "Build momentum without pressure or unrealistic expectations.",
-  "Stay organized without feeling overwhelmed.",
-  "Reduce all-or-nothing thinking that destroys motivation.",
-  "Focus on meaningful progress instead of perfection.",
-  "Create routines that feel sustainable long term.",
-  "Turn scattered energy into focused action.",
-  "Recover faster after difficult days or periods of inactivity.",
-  "Stay engaged without relying on rigid streak systems.",
-  "Build confidence through consistent recovery, not flawless performance.",
+  "Quickly resume work without falling victim to self-blame.",
+  "Increase your momentum without stressing out.",
+  "Feel organized without becoming overwhelmed.",
+  "Avoid all-or-nothing thinking.",
+  "Focus on results instead of perfection.",
+  "Recover faster after setbacks and downtime.",
+  "Remain engaged without having to follow a strict streak-based system.",
 ];
 
 const FEATURE_POINTS = [
-  "Flexible task management designed to reduce overwhelm.",
-  "Goal and habit tracking without excessive pressure.",
-  "Momentum focused workflows that encourage action over perfection.",
-  "Public leaderboards and social systems for optional motivation.",
-  "Low-pressure productivity systems designed for long term sustainability.",
-  "Progress tracking that values recovery and consistency over streak obsession.",
-  "Neurodivergent-friendly workflows designed around real-world behaviour.",
-  "Clean and distraction-reduced interfaces that support focus.",
-  "Systems designed to lower friction between intention and action.",
+  "Flexible task management to ease the process of getting started.",
+  "Setting goals and forming habits with less pressure on your shoulders.",
+  "Push notifications and reminders to help you take action.",
+  "Public leaderboards and social systems to give you additional motivation (optional).",
+  "Progress tracking that rewards persistence and recovery.",
+  "Clean and minimalist interfaces for better focus.",
 ];
 
 function AboutSection({
@@ -61,9 +55,11 @@ function AboutSection({
 function AboutList({ items }: { items: string[] }) {
   return (
     <div className="privacyLandingStack">
-      {items.map((item, index) => (
+      {items.map((item) => (
         <div className="privacyLandingClause" key={item}>
-          <span className="privacyLandingClauseKey">({String.fromCharCode(97 + index)})</span>
+          <span className="privacyLandingClauseKey" aria-hidden="true">
+            &bull;
+          </span>
           <div>{item}</div>
         </div>
       ))}
@@ -106,71 +102,62 @@ export default function AboutPage() {
         <div className="privacyLandingBody">
           <AboutSection id="mission" number={1} title="Mission">
             <p>
-              TaskLaunch is a flexible productivity app built for neurodivergent minds. Instead of demanding
-              perfection, rigid routines, or relentless consistency, TaskLaunch helps you build sustainable momentum in
-              a way that feels realistic, supportive, and human.
+              TaskLaunch is a highly adaptive productivity tool aimed at neurodivergent brains. It doesn&apos;t require
+              you to be perfect or follow strict schedules, but rather helps create sustainable momentum by being
+              realistic and human-centric.
             </p>
             <p>
-              It is not about becoming a productivity machine. It is about helping you function more consistently in a
-              world that often expects perfection from people who are already exhausted trying to keep up.
+              TaskLaunch doesn&apos;t transform you into a productivity machine. Instead, it helps you function in a way
+              that supports your focus patterns and optimize your output in those periods.
             </p>
           </AboutSection>
 
-          <AboutSection id="cycle" number={2} title="The cycle it breaks">
+          <AboutSection id="cycle" number={2} title="Cycle to break">
             <p>
-              Most productivity apps are built around the idea that success comes from doing the same thing every
-              single day without interruption. Miss a habit, fall behind on tasks, lose focus for a week, or struggle
-              through burnout, and suddenly it feels like everything has collapsed.
+              Most productivity tools assume that success lies within doing something the same way every day without a
+              break. Failure to hit a goal or missing a habit makes you lose all momentum instantly. One bad day turns
+              into guilt, which eventually leads to avoiding work entirely and becoming overwhelmed and exhausted.
             </p>
             <p>
-              One difficult day turns into guilt. Guilt turns into avoidance. Avoidance turns into feeling overwhelmed,
-              exhausted, and stuck. For people living with ADHD, autism, executive dysfunction, anxiety, burnout,
-              fluctuating motivation, or unpredictable energy levels, that cycle can feel relentless.
-            </p>
-            <p>TaskLaunch was created to break that cycle.</p>
-          </AboutSection>
-
-          <AboutSection id="different-way" number={3} title="A different way forward">
-            <p>
-              Instead of punishing inconsistency, TaskLaunch is designed to help you recover quickly, regain control,
-              and keep moving forward without shame or perfectionism. A difficult day should not erase your progress.
-              Losing momentum should not make you feel like you have failed.
-            </p>
-            <p>
-              Progress is still progress, even when it is messy, nonlinear, or slower than expected. TaskLaunch works
-              with the way your brain naturally functions instead of forcing you into rigid systems that become
-              impossible to maintain over time.
-            </p>
-            <p>
-              Whether you are struggling to start tasks, constantly battling distraction, feeling crushed by traditional
-              productivity systems, or trying to rebuild structure after burnout, TaskLaunch is designed to help you
-              move forward one step at a time.
+              The vicious cycle of procrastination and lack of motivation becomes a regular routine for many people
+              suffering from ADHD, executive dysfunction, autism, burnout, fluctuating motivation, or inconsistent
+              energy levels. TaskLaunch helps break that circle.
             </p>
           </AboutSection>
 
-          <AboutSection id="helps-you" number={4} title="How TaskLaunch helps">
+          <AboutSection id="different-way" number={3} title="Alternative approach">
+            <p>
+              Rather than punishing for inconsistency, TaskLaunch lets you regain control and resume productivity
+              without feeling guilty or expecting perfection from yourself. One challenging day shouldn&apos;t make you
+              abandon all your goals or lose all the momentum you&apos;ve gained previously.
+            </p>
+            <p>
+              It is still progress even if it goes slowly or unpredictably because of your condition. TaskLaunch works
+              with the ways your mind naturally processes information and doesn&apos;t try to make you fit a specific set
+              of rules, making things more complicated over time.
+            </p>
+          </AboutSection>
+
+          <AboutSection id="helps-you" number={4} title="Advantages">
             <AboutList items={HELP_POINTS} />
           </AboutSection>
 
           <AboutSection id="features" number={5} title="Features">
-            <p>TaskLaunch includes a growing range of tools and systems designed to support sustainable productivity.</p>
+            <p>TaskLaunch offers an expanding list of mechanisms aimed at developing sustainable productivity.</p>
             <AboutList items={FEATURE_POINTS} />
           </AboutSection>
 
           <AboutSection id="philosophy" number={6} title="Philosophy">
             <p>
-              Unlike traditional productivity apps that constantly remind you of what you missed, TaskLaunch is
-              designed to encourage resilience, flexibility, and self-compassion. It recognizes that productivity is not
-              a straight line.
+              Unlike other productivity tools that constantly push you to do more, TaskLaunch encourages you to be more
+              resilient and realistic. Productivity is not a straight line where each next step follows previous ones.
+              Sometimes you feel highly motivated and ready to do anything. At other times, even a minor task seems
+              impossible to complete.
             </p>
             <p>
-              Some days you will feel focused and unstoppable. Other days even the smallest task can feel impossible.
-              Both experiences are normal. The goal is not perfection. The goal is learning how to continue moving
-              forward without letting difficult moments completely derail you.
-            </p>
-            <p>
-              Because real progress is not built through endless pressure. It is built through recovery. Through
-              persistence. Through learning how to begin again, over and over, without losing hope in yourself.
+              Both states are natural. What&apos;s important is being able to overcome failures and resume working without
+              falling into depression and self-blame. Real productivity can only be achieved through recovery,
+              persistence, and self-confidence.
             </p>
           </AboutSection>
         </div>

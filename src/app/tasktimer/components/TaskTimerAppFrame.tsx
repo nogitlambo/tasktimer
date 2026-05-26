@@ -522,9 +522,6 @@ export default function TaskTimerAppFrame({
         <div className="initialAuthBusyPanel" role="status" aria-live="polite" aria-atomic="true">
           <h2 className="sr-only">Loading your workspace</h2>
           <p className="modalSubtext confirmText" id="initialAuthBusyText">Loading your workspace into this session...</p>
-          <div className="dashboardRefreshBusyProgress initialAuthBusyProgress" aria-hidden="true">
-            <span className="dashboardRefreshBusyProgressBar" />
-          </div>
         </div>
       </div>
       <div className="cloudSyncNoticeHost" id="cloudSyncNoticeHost" aria-live="polite" aria-atomic="true" />

@@ -1908,6 +1908,60 @@ canvas {
   text-align: left;
 }
 
+.privacyLandingPage.aboutLandingPage {
+  --about-background-image: url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_tablet.webp");
+  background: #000;
+}
+
+.privacyLandingPage.aboutLandingPage::before {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  opacity: 0.95;
+  display: block;
+  background: var(--about-background-image) center top / cover no-repeat;
+}
+
+.privacyLandingPage.aboutLandingPage::after {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.84) 0%, rgba(0, 0, 0, 0.54) 46%, rgba(0, 0, 0, 0.16) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.36) 56%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+.privacyLandingPage.aboutLandingPage .landingV2Shell {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.aboutLandingPage .landingV2Header {
+  background: rgba(0, 0, 0, 0.74);
+}
+
+.aboutLandingPage .landingV2Hero,
+.aboutLandingPage .privacyLandingSection {
+  padding-right: clamp(24px, 6vw, 96px);
+  padding-left: clamp(24px, 6vw, 96px);
+}
+
+.aboutLandingPage .landingV2SectionLabel {
+  margin-bottom: 24px;
+}
+
+.aboutLandingPage .landingV2HeroMain,
+.aboutLandingPage .privacyLandingSection {
+  max-width: 1120px;
+}
+
+.aboutLandingPage .privacyLandingContent {
+  max-width: 820px;
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.46);
+}
+
 .landingV2 .landingV2HeaderBack {
   display: inline-flex;
   align-items: center;
@@ -2723,6 +2777,10 @@ canvas {
     background:
       linear-gradient(90deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.62) 100%);
     box-shadow: 0 0 34px rgba(0, 0, 0, 0.34);
+  }
+
+  .aboutLandingPage .landingV2HeroMain::before {
+    display: none;
   }
 
   .landingV2 .landingV2HeroTag {

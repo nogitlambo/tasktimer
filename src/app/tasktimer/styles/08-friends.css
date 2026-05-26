@@ -360,7 +360,7 @@
 /* Friend Profile modal: match Add Task/Edit-style modal treatment. */
 #friendProfileModal .modal{
   background: #0d0f13;
-  border: 1px solid rgba(53,232,255,.26);
+  border: 1px solid rgba(170, 178, 190, .32);
   border-radius: 0;
   padding: 14px 14px 12px;
 }
@@ -1889,11 +1889,21 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModalHeader{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom: 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionModalHeaderRow{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(170, 178, 190, .22);
 }
 
 #leaderboardPositionOverlay .leaderboardPositionRankSummary{
@@ -1906,13 +1916,17 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
 #leaderboardPositionOverlay .leaderboardPositionRankSummary strong{
   max-width: 108px;
-  color: rgba(238,242,246,.88);
-  font-family: var(--font-tight);
+  color: rgba(233,252,255,.94);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: .04em;
   text-align: center;
-  overflow-wrap: anywhere;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #leaderboardPositionOverlay .leaderboardUserSummaryTitle{
@@ -1960,7 +1974,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  min-width: 0;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModalIdentityText{
@@ -2130,16 +2145,21 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   border-radius: 0;
 }
 
+#friendProfileModal .friendUserSummaryHeaderRow{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(170, 178, 190, .22);
+}
+
 #friendProfileModal .friendUserSummaryHeader{
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 14px;
-  margin-bottom: 12px;
-}
-
-#friendProfileModal .friendUserSummaryTopRow{
-  display: block;
   margin-bottom: 14px;
 }
 
@@ -2387,17 +2407,12 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   gap:10px;
 }
 
-#friendProfileModal #friendProfileCloseBtn{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  font-size: 13px;
-}
-
 @media (max-width: 420px){
-  #friendProfileModal .friendUserSummaryHeader{
+  #friendProfileModal .friendUserSummaryHeaderRow{
     gap: 10px;
   }
 
-  #friendProfileModal .friendUserSummaryTopRow{
+  #friendProfileModal .friendUserSummaryHeader{
     gap: 10px;
   }
 
@@ -2422,20 +2437,23 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .confirmBtns .btn-ghost{
-  background: rgba(255,255,255,.01) !important;
-  background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(178,187,196,.46) !important;
+  border-color: rgba(170, 178, 190, .58) !important;
+  background: rgba(170, 178, 190, .12) !important;
+  color: rgba(238, 242, 246, .88) !important;
   box-shadow: none !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
+}
+
+#friendProfileModal #friendProfileCloseBtn{
+  border-radius: 0 !important;
 }
 
 #friendProfileModal .confirmBtns .btn-ghost:hover:not(:disabled),
 #friendProfileModal .confirmBtns .btn-ghost:focus-visible{
-  background: rgba(255,255,255,.05) !important;
-  background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(202,210,218,.62) !important;
-  box-shadow: 0 0 0 1px rgba(202,210,218,.12) inset !important;
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+  background: rgba(170, 178, 190, .16) !important;
 }
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
