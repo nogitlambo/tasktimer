@@ -95,6 +95,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   async function enablePushAlertsForCurrentRuntime() {
+    if (!ctx.getMobilePushAlertsEnabled() && !ctx.getWebPushAlertsEnabled()) return;
     const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
       mobileEnabled: ctx.getMobilePushAlertsEnabled(),
       webEnabled: ctx.getWebPushAlertsEnabled(),

@@ -192,6 +192,7 @@ service cloud.firestore {
         "webPushAlertsEnabled",
         "dynamicColorsEnabled",
         "interactionClickSoundEnabled",
+        "achievementSoundsEnabled",
         "interactionHapticsEnabled",
         "interactionHapticsIntensity",
         "checkpointAlertSoundEnabled",
@@ -218,6 +219,7 @@ service cloud.firestore {
       && (!("webPushAlertsEnabled" in request.resource.data) || request.resource.data.webPushAlertsEnabled is bool)
       && (!("dynamicColorsEnabled" in request.resource.data) || request.resource.data.dynamicColorsEnabled is bool)
       && (!("interactionClickSoundEnabled" in request.resource.data) || request.resource.data.interactionClickSoundEnabled is bool)
+      && (!("achievementSoundsEnabled" in request.resource.data) || request.resource.data.achievementSoundsEnabled is bool)
       && (!("interactionHapticsEnabled" in request.resource.data) || request.resource.data.interactionHapticsEnabled is bool)
       && (!("interactionHapticsIntensity" in request.resource.data) || request.resource.data.interactionHapticsIntensity in ["max", "medium", "low"])
       && (!("checkpointAlertSoundEnabled" in request.resource.data) || request.resource.data.checkpointAlertSoundEnabled is bool)
