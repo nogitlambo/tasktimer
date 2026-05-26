@@ -1200,6 +1200,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       sortMilestones,
       sessionColorForTaskMs,
       historyEntryColorForTaskMs,
+      resetTaskStateImmediate: resetTaskStateImmediateApi,
       save: renderBindings.save,
       saveHistory: workspaceRepository.saveHistory,
       saveHistoryAndWait: workspaceRepository.saveHistoryAndWait,

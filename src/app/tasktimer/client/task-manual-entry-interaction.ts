@@ -29,6 +29,11 @@ type TaskManualEntryInteractionOptions = {
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (historyByTaskId: HistoryByTaskId) => void;
   saveHistory: (historyByTaskId: HistoryByTaskId) => void;
+  onManualEntrySaved?: (args: {
+    task: Task;
+    entry: HistoryByTaskId[string][number];
+    historyByTaskId: HistoryByTaskId;
+  }) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   render: () => void;
 };
@@ -179,6 +184,7 @@ export function createTaskManualEntryInteraction(
     const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
     options.setHistoryByTaskId(nextHistory);
     options.saveHistory(nextHistory);
+    options.onManualEntrySaved?.({ task, entry: parsed.entry, historyByTaskId: nextHistory });
     void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     close();
     options.render();

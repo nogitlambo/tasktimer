@@ -68,6 +68,7 @@ function createHarness(overrides?: {
     historyByTaskId = nextHistory;
   });
   const saveHistory = vi.fn();
+  const onManualEntrySaved = vi.fn();
   const syncSharedTaskSummariesForTask = vi.fn(() => Promise.resolve());
   const render = vi.fn();
   const task =
@@ -100,6 +101,7 @@ function createHarness(overrides?: {
     getHistoryByTaskId: () => historyByTaskId,
     setHistoryByTaskId,
     saveHistory,
+    onManualEntrySaved,
     syncSharedTaskSummariesForTask,
     render,
   });
@@ -119,6 +121,7 @@ function createHarness(overrides?: {
     getHistoryByTaskId: () => historyByTaskId,
     setHistoryByTaskId,
     saveHistory,
+    onManualEntrySaved,
     syncSharedTaskSummariesForTask,
     render,
   };
@@ -214,6 +217,17 @@ describe("createTaskManualEntryInteraction", () => {
     ]);
     expect(harness.setHistoryByTaskId).toHaveBeenCalledWith(nextHistory);
     expect(harness.saveHistory).toHaveBeenCalledWith(nextHistory);
+    expect(harness.onManualEntrySaved).toHaveBeenCalledWith({
+      task: { id: "task-1", name: "Focus", color: "#21c7ff" },
+      entry: {
+        ts: new Date("2026-05-03T06:30").getTime(),
+        ms: 85 * 60 * 1000,
+        name: "Focus",
+        note: "Retrospective note",
+        color: "#ff8a3d",
+      },
+      historyByTaskId: nextHistory,
+    });
     expect(harness.syncSharedTaskSummariesForTask).toHaveBeenCalledWith(
       "task-1",
     );

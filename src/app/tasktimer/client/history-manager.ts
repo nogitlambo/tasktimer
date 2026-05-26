@@ -15,6 +15,7 @@ import {
   OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT,
   type OpenHistoryManagerManualEntryDetail,
 } from "./history-manager-events";
+import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
@@ -695,6 +696,26 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory);
+    const completed = task
+      ? completeManualEntryDailyGoalIfReached({
+          task,
+          historyByTaskId: nextHistory,
+          manualEntryTs: Number(parsed.entry.ts || 0),
+          nowMs: Date.now(),
+        })
+      : { completed: false };
+    if (task && completed.completed) {
+      if (task.running) {
+        ctx.resetTaskStateImmediate(task, { logHistory: true });
+        completeManualEntryDailyGoalIfReached({
+          task,
+          historyByTaskId: ctx.getHistoryByTaskId(),
+          manualEntryTs: Number(parsed.entry.ts || 0),
+          nowMs: Date.now(),
+        });
+      }
+      ctx.save();
+    }
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     const nextDrafts = { ...manualEntryDraftsByTaskId };
     delete nextDrafts[taskId];

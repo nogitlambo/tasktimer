@@ -6,6 +6,7 @@ import { createTaskCardActionEffects } from "./task-card-action-effects";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import { createTaskListRenderer } from "./task-list-renderer";
 import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
+import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
 import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
@@ -14,6 +15,9 @@ import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./ta
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
+  let resetTaskStateImmediateForManualEntry:
+    | ((task: Task, opts?: { logHistory?: boolean }) => void)
+    | null = null;
   const taskManualEntry = createTaskManualEntryInteraction({
     elements: {
       overlay: els.taskManualEntryOverlay,
@@ -38,6 +42,25 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     getHistoryByTaskId: ctx.getHistoryByTaskId,
     setHistoryByTaskId: ctx.setHistoryByTaskId,
     saveHistory: ctx.saveHistory,
+    onManualEntrySaved: ({ task, entry, historyByTaskId }) => {
+      const completed = completeManualEntryDailyGoalIfReached({
+        task,
+        historyByTaskId,
+        manualEntryTs: Number(entry.ts || 0),
+        nowMs: nowMs(),
+      });
+      if (!completed.completed) return;
+      if (task.running) {
+        resetTaskStateImmediateForManualEntry?.(task, { logHistory: true });
+        completeManualEntryDailyGoalIfReached({
+          task,
+          historyByTaskId: ctx.getHistoryByTaskId(),
+          manualEntryTs: Number(entry.ts || 0),
+          nowMs: nowMs(),
+        });
+      }
+      ctx.save();
+    },
     syncSharedTaskSummariesForTask: ctx.syncSharedTaskSummariesForTask,
     render: ctx.render,
   });
@@ -139,6 +162,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     nowMs: () => Date.now(),
   });
   const { startTask, stopTask, resetTaskStateImmediate } = taskTimerLifecycle;
+  resetTaskStateImmediateForManualEntry = resetTaskStateImmediate;
 
 
   function toggleCollapse(i: number) {

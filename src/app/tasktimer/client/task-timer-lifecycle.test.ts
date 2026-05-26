@@ -307,6 +307,30 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
+  it("does not finalize history again when resetting an already stopped task", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          running: false,
+          accumulatedMs: 678,
+          hasStarted: true,
+          resumePendingSinceDayKey: "1970-01-01",
+        }),
+      ],
+    });
+
+    harness.lifecycle.resetTaskStateImmediate(harness.tasks[0], { logHistory: true, sessionNote: "done" });
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: 0,
+      startMs: null,
+      hasStarted: false,
+      resumePendingSinceDayKey: null,
+    });
+    expect(harness.calls).not.toContain("finalize-live:task-1:678:done:");
+  });
+
   it("resets task state and completes cleanup when live-session finalization throws", () => {
     const calls: string[] = [];
     nativeTimerNotificationMock.calls = calls;

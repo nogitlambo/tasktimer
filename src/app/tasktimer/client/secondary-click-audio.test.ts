@@ -120,12 +120,27 @@ describe("secondary click audio", () => {
   });
 
   it("excludes the Focus Mode Exit button from default secondary audio", () => {
+    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
     const focusExitButton = makeElement({
-      selectorMatches: { "button,a": true, "#focusModeBackBtn": true },
+      selectorMatches: { "button,a": true, [excludedSelector]: true, "#focusModeBackBtn": true },
       textContent: "Exit",
     });
 
     expect(getSecondaryClickTarget(focusExitButton)).toBeNull();
+  });
+
+  it("excludes the Delete Session Entry icon trigger from default secondary audio", () => {
+    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
+    const deleteSessionButton = makeElement({
+      selectorMatches: {
+        "button,a": true,
+        [excludedSelector]: true,
+        '[data-history-summary-action="delete-session"]': true,
+      },
+      attributes: { "aria-label": "Delete session entry" },
+    });
+
+    expect(getSecondaryClickTarget(deleteSessionButton)).toBeNull();
   });
 
   it("excludes controls handled by primary click audio selectors", () => {

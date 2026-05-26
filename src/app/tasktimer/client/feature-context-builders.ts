@@ -5,6 +5,7 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { RewardProgressV1 } from "../lib/rewards";
+import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { FocusModeTransitionOptions, TaskTimerAppPageOptions } from "./context";
 import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { StartupModulePreference } from "../lib/startupModule";
@@ -194,6 +195,7 @@ type CreateHistoryManagerOptionsArgs = {
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty }) => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveHistoryAndWait: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => Promise<void>;
@@ -1112,6 +1114,7 @@ export function createTaskTimerHistoryManagerContext(
     sortMilestones: args.sortMilestones,
     sessionColorForTaskMs: args.sessionColorForTaskMs,
     historyEntryColorForTaskMs: args.historyEntryColorForTaskMs,
+    resetTaskStateImmediate: args.resetTaskStateImmediate,
     save: args.save,
     saveHistory: args.saveHistory,
     saveHistoryAndWait: args.saveHistoryAndWait,

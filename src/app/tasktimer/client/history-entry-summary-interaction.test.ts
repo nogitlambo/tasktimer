@@ -204,7 +204,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.opened).toEqual([h.overlay]);
   });
 
-  it("renders dev XP replay buttons for aggregate and session XP values when XP is tracked", () => {
+  it("renders aggregate and session XP values without modal replay buttons", () => {
     const rewardProgress = {
       ...DEFAULT_REWARD_PROGRESS,
       totalXp: 120,
@@ -226,11 +226,11 @@ describe("createHistoryEntrySummaryInteraction", () => {
       { taskId: "task-1", ts: 2000, ms: 30000, name: "Focus", note: "B" },
     ]);
 
-    expect(h.body.innerHTML.match(/data-history-summary-action="trigger-xp-award"/g)).toHaveLength(3);
+    expect(h.body.innerHTML).not.toContain('data-history-summary-action="trigger-xp-award"');
     expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
-    expect(h.body.innerHTML).toContain('data-history-summary-xp="20"');
-    expect(h.body.innerHTML).toContain('data-history-summary-xp="12"');
-    expect(h.body.innerHTML).toContain('data-history-summary-xp="8"');
+    expect(h.body.innerHTML).toContain(">20</div>");
+    expect(h.body.innerHTML).toContain(">12</div>");
+    expect(h.body.innerHTML).toContain(">8</div>");
   });
 
   it("sets editable target dataset for a single entry", () => {

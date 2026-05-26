@@ -22,8 +22,11 @@ import {
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
 } from "../lib/entitlements";
+import { normalizeRewardProgress, type RewardProgressV1 } from "../lib/rewards";
+import { loadCachedPreferences, subscribeCachedPreferences } from "../lib/storage";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
 import { saveUserRootPatch } from "../lib/cloudStore";
+import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "../client/xp-award-events";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
   ACCOUNT_PROFILE_UPDATED_EVENT,
@@ -141,6 +144,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings" && item.page !== "userGuide");
 const PROFILE_MENU_PAGES = ["settings", "userGuide"] as const;
+const SHOW_DEV_XP_REPLAY_BUTTON = process.env.NODE_ENV !== "production";
 
 export function getDesktopRailProfileMenuItems() {
   return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
@@ -381,6 +385,26 @@ function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void)
   );
 }
 
+export function getLatestReplayableXpAward(rewardProgress: RewardProgressV1 | null | undefined) {
+  const normalized = normalizeRewardProgress(rewardProgress);
+  const latestAward = normalized.awardLedger
+    .slice()
+    .sort((a, b) => b.ts - a.ts)
+    .find((entry) => Math.floor(Number(entry.xp) || 0) > 0);
+  if (!latestAward) return null;
+
+  const awardedXp = Math.max(0, Math.floor(Number(latestAward.xp) || 0));
+  const toXp = Math.max(0, Math.floor(Number(normalized.totalXp) || 0));
+  if (!(awardedXp > 0) || !(toXp > 0)) return null;
+
+  return {
+    awardedXp,
+    fromXp: Math.max(0, toXp - awardedXp),
+    toXp,
+    taskId: latestAward.taskId ? String(latestAward.taskId).trim() : "",
+  };
+}
+
 export default function DesktopAppRail({
   activePage,
   useClientNavButtons = false,
@@ -391,6 +415,9 @@ export default function DesktopAppRail({
   const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
+  const [rewardProgress, setRewardProgress] = useState<RewardProgressV1>(() =>
+    normalizeRewardProgress(loadCachedPreferences()?.rewards)
+  );
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
@@ -465,6 +492,12 @@ export default function DesktopAppRail({
   }, []);
 
   useEffect(() => {
+    return subscribeCachedPreferences((prefs) => {
+      setRewardProgress(normalizeRewardProgress(prefs?.rewards));
+    });
+  }, []);
+
+  useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -535,6 +568,24 @@ export default function DesktopAppRail({
   const selectedTemporaryDropdownOption =
     TEMPORARY_MODAL_DROPDOWN_OPTIONS.find((option) => option.value === temporaryDropdownValue) ??
     TEMPORARY_MODAL_DROPDOWN_OPTIONS[0];
+  const latestReplayableXpAward = useMemo(() => getLatestReplayableXpAward(rewardProgress), [rewardProgress]);
+
+  const handleReplayLatestXpAward = useCallback((event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (typeof window === "undefined") return;
+    const award = getLatestReplayableXpAward(rewardProgress);
+    if (!award) return;
+
+    dispatchPendingXpAwardEvent(window, {
+      fromXp: award.fromXp,
+      toXp: award.toXp,
+      awardedXp: award.awardedXp,
+      sourceModal: "historyEntrySummaryTest",
+      sourceTaskId: award.taskId || null,
+      sourceOverlayId: "desktopAppRail",
+      sourceElementKey: "desktopRailXpReplayBtn",
+      sourceRect: captureXpAwardRectSnapshot(event.currentTarget),
+    });
+  }, [rewardProgress]);
 
   const handleTemporaryDropdownKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -629,6 +680,7 @@ export default function DesktopAppRail({
       {showDesktopRail ? (
         <aside
           className="dashboardRail desktopAppRail"
+          id="desktopAppRail"
           aria-label="TaskLaunch navigation"
           data-profile-menu-open={profileMenuOpen && !profileMenuClosing ? "true" : undefined}
         >
@@ -668,6 +720,25 @@ export default function DesktopAppRail({
                 />
                 <span className="dashboardRailMenuLabel">Modal</span>
               </button>
+              {SHOW_DEV_XP_REPLAY_BUTTON ? (
+                <button
+                  className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn desktopRailXpReplayBtn"
+                  id="xpReplayBtn"
+                  type="button"
+                  aria-label="Replay latest XP animation"
+                  title="Replay latest XP animation"
+                  onClick={handleReplayLatestXpAward}
+                  disabled={!latestReplayableXpAward}
+                >
+                  <AppImg
+                    className="dashboardRailMenuIconImage"
+                    src="/icons/icons_default/sounds.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span className="dashboardRailMenuLabel">XP Replay</span>
+                </button>
+              ) : null}
             </nav>
           </div>
 

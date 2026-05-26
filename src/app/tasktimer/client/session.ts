@@ -7,7 +7,6 @@ import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   isTaskTimeGoalCompletedToday,
   isTaskTimeGoalStartLockedByHistoryToday,
-  isTaskTimeGoalStartLockedToday,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import {
@@ -748,7 +747,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
     const taskId = String(task.id || "");
-    if (isTaskTimeGoalStartLockedToday(task)) {
+    if (shouldSuppressTimeGoalCompletionForTask(task, { historyByTaskId: ctx.getHistoryByTaskId(), nowMs: nowMs() })) {
       clearTaskTimeGoalFlow(taskId);
       stopTimeGoalCompleteConfetti();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);

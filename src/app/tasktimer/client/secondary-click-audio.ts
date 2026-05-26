@@ -32,7 +32,7 @@ const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]', 
 const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip]";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
-const SECONDARY_CLICK_EXCLUDED_SELECTOR = "#focusModeBackBtn";
+const SECONDARY_CLICK_EXCLUDED_SELECTOR = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
   "save",
   "cancel",

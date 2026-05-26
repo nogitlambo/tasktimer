@@ -145,16 +145,25 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     const taskId = String(task.id || "");
     options.flushPendingFocusSessionNoteSave(taskId);
     const elapsedMs = options.getTaskElapsedMs(task);
+    const shouldFinalizeHistory = opts?.logHistory !== false && !task.resumePendingSinceDayKey;
     let finalizeError: unknown = null;
-    try {
-      options.finalizeLiveSession(task, {
-        elapsedMs,
-        note: opts?.sessionNote,
-        completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
-      });
-    } catch (error) {
-      finalizeError = error;
-    } finally {
+    if (shouldFinalizeHistory) {
+      try {
+        options.finalizeLiveSession(task, {
+          elapsedMs,
+          note: opts?.sessionNote,
+          completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
+        });
+      } catch (error) {
+        finalizeError = error;
+      } finally {
+        task.accumulatedMs = 0;
+        task.running = false;
+        task.startMs = null;
+        task.hasStarted = false;
+        task.resumePendingSinceDayKey = null;
+      }
+    } else {
       task.accumulatedMs = 0;
       task.running = false;
       task.startMs = null;

@@ -3789,14 +3789,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     flex-wrap:wrap;
   }
 
-#historyEntryNoteOverlay .historyEntrySummaryXpReplayBtn{
-    min-height:24px;
-    padding:4px 8px;
-    font-size:10px;
-    letter-spacing:.08em;
-    line-height:1;
-  }
-
 #historyEntryNoteOverlay .historyEntrySummarySessions{
     display:grid;
     gap:0;

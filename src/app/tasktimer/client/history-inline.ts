@@ -1,6 +1,7 @@
 import type { HistoryViewState } from "./types";
 import type { TaskTimerHistoryInlineContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
+import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
 import { createHistoryInlineSelectionInteraction } from "./history-inline-selection-interaction";
 
@@ -1445,6 +1446,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         },
       });
       if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
+      playDeleteAlertAudio();
     });
     ctx.on(
       document,
