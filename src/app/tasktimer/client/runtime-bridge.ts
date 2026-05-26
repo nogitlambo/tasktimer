@@ -6,6 +6,9 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getTaskTimerPushDeviceId, loadPendingPushAction } from "../lib/pushNotifications";
 import { applyScheduledPushAction } from "../lib/pushFunctions";
 import { setPendingRunningTimerSourceNotification } from "../lib/nativeTimerNotification";
+import { STORAGE_KEY } from "../lib/storage";
+
+const LAST_NATIVE_PUSH_DISPATCH_KEY = `${STORAGE_KEY}:lastNativePushDispatch`;
 
 type HandlePendingPushActionOptions = {
   getTasks: () => Task[];
@@ -37,6 +40,17 @@ export function clearTaskTimerPendingPushAction(storageKey: string) {
   }
 }
 
+function markNativePushDispatchHandled(dispatchNonce: string | null | undefined) {
+  if (typeof window === "undefined") return;
+  const normalizedNonce = String(dispatchNonce || "").trim();
+  if (!normalizedNonce) return;
+  try {
+    window.localStorage.setItem(LAST_NATIVE_PUSH_DISPATCH_KEY, normalizedNonce);
+  } catch {
+    // ignore localStorage failures
+  }
+}
+
 export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendingPushActionOptions) {
   const pending = loadPendingPushAction();
   if (!pending) return;
@@ -48,6 +62,7 @@ export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendi
   }
   const taskIndex = options.getTasks().findIndex((row) => String(row.id || "").trim() === taskId);
   if (taskIndex < 0) return;
+  markNativePushDispatchHandled(pending.dispatchNonce);
   options.clearPendingPushAction();
   if (pending.actionId === "launchTask") {
     setPendingRunningTimerSourceNotification(taskId, pending.sourceNotificationId);

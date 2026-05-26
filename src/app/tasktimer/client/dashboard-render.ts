@@ -168,34 +168,38 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       progressPct: liveHeader.progressPct,
       xpToNext: liveHeader.xpToNext,
     };
+    const isXpCountAnimating =
+      valueEl?.classList.contains("isAnimatingXpCount") || topbarValueEl?.classList.contains("isAnimatingXpCount");
     const nextRankLabel = getNextRank(rewardsHeader.totalXp)?.label ?? "Max rank";
     const promotionLabel = rewardsHeader.xpToNext != null
       ? `${rewardsHeader.xpToNext.toLocaleString()} XP to ${nextRankLabel}`
       : "Max rank reached";
-    syncXpValueAlert(valueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "appShellXpValueAlert");
-    syncXpValueAlert(topbarValueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "taskLaunchXpValueAlert");
-    if (promotionLabelEl) promotionLabelEl.textContent = promotionLabel;
-    if (topbarMetaLineEl) topbarMetaLineEl.textContent = promotionLabel;
-    if (progressFillEl) {
-      progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
-    }
-    if (topbarProgressFillEl) {
-      topbarProgressFillEl.style.width = `${rewardsHeader.progressPct}%`;
-    }
-    if (progressBarEl) {
-      progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
-      progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
-    }
-    if (topbarProgressBarEl) {
-      topbarProgressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
-      topbarProgressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
-    }
-    if (cardEl) {
-      const cardSummary =
-        rewardsHeader.xpToNext != null
-          ? `${rewardsHeader.totalXp} XP total and ${rewardsHeader.xpToNext} XP to the next rank.`
-          : `${rewardsHeader.totalXp} XP total and max rank reached.`;
-      cardEl.setAttribute("aria-label", `XP progress. ${cardSummary}`);
+    if (!isXpCountAnimating) {
+      syncXpValueAlert(valueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "appShellXpValueAlert");
+      syncXpValueAlert(topbarValueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "taskLaunchXpValueAlert");
+      if (promotionLabelEl) promotionLabelEl.textContent = promotionLabel;
+      if (topbarMetaLineEl) topbarMetaLineEl.textContent = promotionLabel;
+      if (progressFillEl) {
+        progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+      }
+      if (topbarProgressFillEl) {
+        topbarProgressFillEl.style.width = `${rewardsHeader.progressPct}%`;
+      }
+      if (progressBarEl) {
+        progressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
+        progressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
+      }
+      if (topbarProgressBarEl) {
+        topbarProgressBarEl.setAttribute("aria-valuenow", String(rewardsHeader.progressPct));
+        topbarProgressBarEl.setAttribute("aria-label", "XP progress toward the next rank");
+      }
+      if (cardEl) {
+        const cardSummary =
+          rewardsHeader.xpToNext != null
+            ? `${rewardsHeader.totalXp} XP total and ${rewardsHeader.xpToNext} XP to the next rank.`
+            : `${rewardsHeader.totalXp} XP total and max rank reached.`;
+        cardEl.setAttribute("aria-label", `XP progress. ${cardSummary}`);
+      }
     }
   }
 

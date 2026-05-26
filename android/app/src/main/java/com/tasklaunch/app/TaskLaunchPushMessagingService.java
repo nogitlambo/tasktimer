@@ -77,7 +77,7 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
 
         int notificationId = Math.abs((messageId.isEmpty() ? (taskId + route) : messageId).hashCode());
         String contentActionId = "default";
-        Intent defaultIntent = buildReceiverIntent(
+        Intent defaultIntent = buildActivityIntent(
             taskId,
             route,
             taskName,
@@ -88,22 +88,22 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
             notificationKind,
             dueAtMs
         );
-        Intent launchIntent = buildReceiverIntent(taskId, route, taskName, messageId, ACTION_LAUNCH_TASK, notificationId, eventType, notificationKind, dueAtMs);
-        Intent secondaryIntent = buildReceiverIntent(taskId, route, taskName, messageId, secondaryActionId, notificationId, eventType, notificationKind, dueAtMs);
+        Intent launchIntent = buildActivityIntent(taskId, route, taskName, messageId, ACTION_LAUNCH_TASK, notificationId, eventType, notificationKind, dueAtMs);
+        Intent secondaryIntent = buildActivityIntent(taskId, route, taskName, messageId, secondaryActionId, notificationId, eventType, notificationKind, dueAtMs);
 
-        PendingIntent contentPendingIntent = PendingIntent.getBroadcast(
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(
             this,
             notificationId,
             defaultIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        PendingIntent launchPendingIntent = PendingIntent.getBroadcast(
+        PendingIntent launchPendingIntent = PendingIntent.getActivity(
             this,
             notificationId + 1,
             launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        PendingIntent secondaryPendingIntent = PendingIntent.getBroadcast(
+        PendingIntent secondaryPendingIntent = PendingIntent.getActivity(
             this,
             notificationId + 2,
             secondaryIntent,
@@ -137,7 +137,7 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         NotificationManagerCompat.from(this).notify(notificationId, builder.build());
     }
 
-    private Intent buildReceiverIntent(
+    private Intent buildActivityIntent(
         String taskId,
         String route,
         String taskName,
@@ -148,7 +148,8 @@ public class TaskLaunchPushMessagingService extends FirebaseMessagingService {
         String notificationKind,
         long dueAtMs
     ) {
-        Intent intent = new Intent(this, TaskLaunchPushActionReceiver.class);
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra("google.message_id", messageId);
         intent.putExtra("taskId", taskId);
         intent.putExtra("route", route);

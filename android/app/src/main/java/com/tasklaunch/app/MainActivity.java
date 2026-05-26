@@ -1,6 +1,8 @@
 package com.tasklaunch.app;
 
 import android.content.Intent;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -43,13 +45,17 @@ public class MainActivity extends BridgeActivity {
         final String actionId = valueOrEmpty(intent.getStringExtra("tasktimerActionId")).isEmpty()
             ? "default"
             : valueOrEmpty(intent.getStringExtra("tasktimerActionId"));
+        final int sourceNotificationId = intent.getIntExtra("tasktimerNotificationId", 0);
+        if (!"launchTask".equals(actionId)) {
+            cancelNotification(sourceNotificationId);
+        }
 
         try {
             JSONObject payload = new JSONObject();
             payload.put("taskId", taskId);
             payload.put("route", route);
             payload.put("actionId", actionId);
-            payload.put("sourceNotificationId", intent.getIntExtra("tasktimerNotificationId", 0));
+            payload.put("sourceNotificationId", sourceNotificationId);
             final String dispatchNonce = buildDispatchNonce(intent, taskId, actionId);
             payload.put("dispatchNonce", dispatchNonce);
 
@@ -65,6 +71,7 @@ public class MainActivity extends BridgeActivity {
                         "if (dispatchNonce && lastDispatch === dispatchNonce) return;" +
                         "window.localStorage.setItem(" + JSONObject.quote(PENDING_PUSH_TASK_ID_KEY) + ", " + taskIdJson + ");" +
                         "window.localStorage.setItem(" + JSONObject.quote(PENDING_PUSH_ACTION_KEY) + ", " + payloadJson + ");" +
+                        "if (!window.__tasktimerPendingPushReady) return;" +
                         "if (dispatchNonce) window.localStorage.setItem(" + JSONObject.quote(LAST_NATIVE_PUSH_DISPATCH_KEY) + ", dispatchNonce);" +
                         "window.dispatchEvent(new CustomEvent(" + eventNameJson + ", { detail: JSON.parse(" + payloadJson + ") }));" +
                     "} catch (e) {}" +
@@ -118,6 +125,18 @@ public class MainActivity extends BridgeActivity {
             nonceSource = "push|" + System.currentTimeMillis();
         }
         return nonceSource;
+    }
+
+    private void cancelNotification(int notificationId) {
+        if (notificationId == 0) return;
+        try {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (notificationManager != null) {
+                notificationManager.cancel(notificationId);
+            }
+        } catch (Exception ignored) {
+            // Ignore notification cleanup failures.
+        }
     }
 
     private String valueOrEmpty(String value) {

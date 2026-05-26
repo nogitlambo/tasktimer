@@ -163,6 +163,11 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
 }
 
 export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRuntimeEventsOptions) {
+  try {
+    (options.windowRef as Window & { __tasktimerPendingPushReady?: boolean }).__tasktimerPendingPushReady = true;
+  } catch {
+    // Ignore readiness marker failures.
+  }
   options.on(options.windowRef, options.pendingPushEvent as any, () => {
     options.maybeHandlePendingTaskJump();
     options.maybeHandlePendingPushAction();

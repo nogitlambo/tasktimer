@@ -27,7 +27,7 @@ import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
-import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
+import TaskTimerAppFrame, { getXpPromotionLabel, type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import {
@@ -283,6 +283,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [xpAnimationState, setXpAnimationState] = useState(() => createXpAwardAnimationState());
   const [isXpCountAnimating, setIsXpCountAnimating] = useState(false);
   const [isXpAwardSpotlightActive, setIsXpAwardSpotlightActive] = useState(false);
+  const [xpPromotionLabelOverride, setXpPromotionLabelOverride] = useState<string | null>(null);
   const [pendingRankPromotion, setPendingRankPromotion] = useState<RankPromotion | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
   const [promotionOverlayRetrySeq, setPromotionOverlayRetrySeq] = useState(0);
@@ -435,6 +436,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
       xpCountAnimationStartedRef.current = false;
+      setXpPromotionLabelOverride(null);
       return;
     }
 
@@ -460,11 +462,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       displayedXp: displayedXpRef.current,
     });
     displayedXpRef.current = startXp;
+    const frozenPromotionHeader = buildRewardsHeaderViewModel({
+      ...rewardProgress,
+      totalXp: startXp,
+      totalXpPrecise: startXp,
+      currentRankId: getRankForXp(startXp).id,
+    });
+    const frozenPromotionLabel = getXpPromotionLabel(frozenPromotionHeader.totalXp, frozenPromotionHeader.xpToNext);
 
     window.requestAnimationFrame(() => {
       setDisplayedXp(startXp);
-      setIsXpCountAnimating(false);
+      setIsXpCountAnimating(countAnimationStarted);
       setIsXpAwardSpotlightActive(true);
+      setXpPromotionLabelOverride(frozenPromotionLabel);
       setXpAwardFx({
         visible: true,
         payloadStyle,
@@ -478,6 +488,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
           setIsXpCountAnimating(false);
           setIsXpAwardSpotlightActive(false);
+          setXpPromotionLabelOverride(null);
           setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
           setXpAnimationState((current) => clearActiveXpAward(current));
         }, reducedMotion ? 160 : 360);
@@ -511,7 +522,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           xpCountAnimationStartedRef.current = false;
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
-          setIsXpCountAnimating(false);
+          window.requestAnimationFrame(() => {
+            setIsXpCountAnimating(false);
+            setXpPromotionLabelOverride(null);
+          });
           xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
             setIsXpAwardSpotlightActive(false);
             setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
@@ -913,6 +927,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         currentUserAvatarInitials={currentUserAvatarInitials}
         currentUserLabel={currentUserLabel}
         rewardsHeader={rewardsHeader}
+        promotionLabelOverride={xpPromotionLabelOverride}
         isXpCountAnimating={isXpCountAnimating}
         isXpAwardSpotlightActive={isXpAwardSpotlightActive}
         onTestRankPromotion={(rankId) => {

@@ -1,8 +1,34 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/tasklaunch",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock("@/components/AppImg", () => ({
+  default: (props: Record<string, unknown>) => createElement("img", props),
+}));
+
+vi.mock("./DesktopAppRail", () => ({
+  default: () => createElement("div", { "data-testid": "desktop-app-rail" }),
+}));
+
+vi.mock("./RankLadderModal", () => ({
+  default: () => null,
+}));
+
+vi.mock("./RankThumbnail", () => ({
+  default: ({ rankId, className }: { rankId: string; className?: string }) =>
+    createElement("span", { className, "data-rank-id": rankId }),
+}));
 import {
+  default as TaskTimerAppFrame,
   getDesktopHeaderRankId,
   getDesktopInsigniaUpgradeAudioCallback,
   getTaskLaunchMobileMenuItems,
+  getXpPromotionLabel,
   getXpProgressSubtext,
   scheduleDesktopInsigniaUpgradeActivation,
   shouldRenderDesktopInsigniaUpgrade,
@@ -31,6 +57,45 @@ describe("TaskTimerAppFrame XP progress sub-text", () => {
 
   it("falls back to max-rank copy when no next rank exists", () => {
     expect(getXpProgressSubtext(50000, null)).toBe("Max rank reached");
+  });
+
+  it("formats the promotion label from the current xp and next-rank gap", () => {
+    expect(getXpPromotionLabel(60, 180)).toBe("180 XP to Technician");
+    expect(getXpPromotionLabel(50000, null)).toBe("Max rank reached");
+  });
+});
+
+describe("TaskTimerAppFrame XP header animation", () => {
+  it("keeps the animation class on the desktop and mobile xp values only", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        TaskTimerAppFrame,
+        {
+          activePage: "tasks",
+          children: createElement("div"),
+          currentRankId: "operator",
+          currentUserLabel: "User",
+          rewardsHeader: {
+            rankLabel: "Operator",
+            totalXp: 60,
+            progressPct: 25,
+            progressLabel: "60/240 XP",
+            xpToNext: 180,
+          },
+          promotionLabelOverride: "180 XP to Technician",
+          isXpCountAnimating: true,
+        }
+      )
+    );
+
+    expect(html).toContain('id="taskLaunchTopbarXpValue"');
+    expect(html).toContain('class="taskLaunchTopbarXpValue isAnimatingXpCount"');
+    expect(html).toContain('id="appShellHeaderXpValue"');
+    expect(html).toContain('class="appShellHeaderXpValue isAnimatingXpCount"');
+    expect(html).toContain('class="taskLaunchTopbarXpMetaLine">180 XP to Technician<');
+    expect(html).toContain('class="appShellHeaderXpPromotionLabel">180 XP to Technician<');
+    expect(html).not.toContain("appShellHeaderXpPromotionLabel isAnimatingXpCount");
+    expect(html).not.toContain("taskLaunchTopbarXpMetaLine isAnimatingXpCount");
   });
 });
 

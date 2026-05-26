@@ -3,7 +3,7 @@ import { maybeHandleTaskTimerPendingPushAction } from "./runtime-bridge";
 import type { Task } from "../lib/types";
 
 const runtimeBridgeMocks = vi.hoisted(() => ({
-  pending: null as null | { taskId: string; route: string; actionId: string; sourceNotificationId?: number },
+  pending: null as null | { taskId: string; route: string; actionId: string; sourceNotificationId?: number; dispatchNonce?: string },
   uid: "user-1",
   sourceNotifications: [] as Array<{ taskId: string; sourceNotificationId: unknown }>,
   appliedActions: [] as Array<{ actionId: string; taskId: string; route?: string; deviceId?: string }>,
@@ -82,12 +82,21 @@ describe("runtime bridge push actions", () => {
 
   it("starts launch actions and preserves the source notification id for native replacement", async () => {
     const calls: string[] = [];
+    const storedValues = new Map<string, string>();
     runtimeBridgeMocks.pending = {
       taskId: "task-1",
       route: "/tasklaunch",
       actionId: "launchTask",
       sourceNotificationId: 123,
+      dispatchNonce: "message-1|task-1|launchTask|123|0",
     };
+    vi.stubGlobal("window", {
+      setTimeout: vi.fn(),
+      localStorage: {
+        setItem: vi.fn((key: string, value: string) => storedValues.set(key, value)),
+        removeItem: vi.fn(),
+      },
+    });
 
     await maybeHandleTaskTimerPendingPushAction({
       getTasks: () => [task()],
@@ -102,5 +111,6 @@ describe("runtime bridge push actions", () => {
     expect(runtimeBridgeMocks.appliedActions).toEqual([
       { actionId: "launchTask", taskId: "task-1", route: "/tasklaunch", deviceId: "device-1" },
     ]);
+    expect(storedValues.get("taskticker_tasks_v1:lastNativePushDispatch")).toBe("message-1|task-1|launchTask|123|0");
   });
 });

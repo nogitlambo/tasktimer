@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import nodemailer from "nodemailer";
 
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
-const EMAIL_SUBJECT = "You're on the TaskLaunch early access list";
+const EMAIL_SUBJECT = "Early Access List";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -68,15 +68,27 @@ export function buildEarlyAccessUnsubscribeUrl(email: string) {
   return url.toString();
 }
 
+function buildAboutUrl() {
+  return new URL("/about", getAppBaseUrl()).toString();
+}
+
+function buildEmailLogoUrl() {
+  return new URL("/logo/launch-icon-original-transparent.png", getAppBaseUrl()).toString();
+}
+
 function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
+  const aboutUrl = buildAboutUrl();
+  const logoUrl = buildEmailLogoUrl();
   const text = [
     "You're on the TaskLaunch early access list.",
     "",
-    "Early access opens on May 25, 2026.",
+    "Thank you for registering your interest in TaskLaunch.",
     "",
     "TaskLaunch is built for neurodivergent productivity patterns: flexible momentum, gentle recovery after inconsistency, and progress without guilt-driven systems.",
     "",
     "We'll email this address when access opens.",
+    "",
+    `Learn more about TaskLaunch: ${aboutUrl}`,
     "",
     `If you did not request this, unsubscribe here: ${input.unsubscribeUrl}`,
   ].join("\n");
@@ -85,10 +97,12 @@ function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
 <html>
   <body style="margin:0;padding:24px;background:#0d0f13;color:#f7fafc;font-family:Arial,sans-serif;">
     <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:24px;background:#151923;">
+      <img src="${logoUrl}" alt="TaskLaunch" width="56" height="56" style="display:block;width:56px;height:56px;margin:0 0 16px;" />
       <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;">You're on the TaskLaunch early access list.</h1>
-      <p style="margin:0 0 16px;line-height:1.55;">Early access opens on May 25, 2026.</p>
+      <p style="margin:0 0 16px;line-height:1.55;">Thank you for registering your interest in TaskLaunch.</p>
       <p style="margin:0 0 16px;line-height:1.55;">TaskLaunch is built for neurodivergent productivity patterns: flexible momentum, gentle recovery after inconsistency, and progress without guilt-driven systems.</p>
       <p style="margin:0 0 16px;line-height:1.55;">We'll email this address when access opens.</p>
+      <p style="margin:0 0 16px;line-height:1.55;"><a href="${aboutUrl}" style="color:#67e8f9;">About TaskLaunch</a></p>
       <p style="margin:0;color:#b8c0cc;font-size:14px;line-height:1.5;">If you did not request this, <a href="${input.unsubscribeUrl}" style="color:#67e8f9;">unsubscribe here</a>.</p>
     </div>
   </body>

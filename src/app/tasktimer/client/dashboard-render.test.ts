@@ -141,17 +141,36 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardHeatCalendarGrid");
 
   const headerXpCard = options?.includeHeaderXpCard ? new ElementStub() : null;
+  const topbarXp = options?.includeHeaderXpCard ? new ElementStub() : null;
   if (headerXpCard) {
     headerXpCard.className = "appShellHeaderXp";
     const valueEl = new ElementStub();
     valueEl.className = "appShellHeaderXpValue";
+    const promotionLabelEl = new ElementStub();
+    promotionLabelEl.className = "appShellHeaderXpPromotionLabel";
     const progressBarEl = new ElementStub();
     progressBarEl.className = "appShellHeaderXpTrack";
     const progressFillEl = new ElementStub();
     progressFillEl.className = "appShellHeaderXpFill";
     headerXpCard.appendChild(valueEl);
+    headerXpCard.appendChild(promotionLabelEl);
     headerXpCard.appendChild(progressBarEl);
     headerXpCard.appendChild(progressFillEl);
+  }
+  if (topbarXp) {
+    topbarXp.className = "taskLaunchTopbarXp";
+    const valueEl = new ElementStub();
+    valueEl.className = "taskLaunchTopbarXpValue";
+    const metaLineEl = new ElementStub();
+    metaLineEl.className = "taskLaunchTopbarXpMetaLine";
+    const progressBarEl = new ElementStub();
+    progressBarEl.className = "taskLaunchTopbarXpTrack";
+    const progressFillEl = new ElementStub();
+    progressFillEl.className = "taskLaunchTopbarXpFill";
+    topbarXp.appendChild(valueEl);
+    topbarXp.appendChild(metaLineEl);
+    topbarXp.appendChild(progressBarEl);
+    topbarXp.appendChild(progressFillEl);
   }
 
   const documentRef = {
@@ -167,11 +186,12 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
     },
     querySelector: (selector: string) => {
       if (selector === "#app .appShellHeaderXp") return headerXpCard;
+      if (selector === "#app .taskLaunchTopbarXp") return topbarXp;
       return null;
     },
   };
 
-  return { byId, documentRef, headerXpCard };
+  return { byId, documentRef, headerXpCard, topbarXp };
 }
 
 function createRenderHarness(
@@ -183,7 +203,7 @@ function createRenderHarness(
     includeHeaderXpCard?: boolean;
   }
 ) {
-  const { byId, documentRef, headerXpCard } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
+  const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
   const originalDocument = globalThis.document;
   Object.defineProperty(globalThis, "document", {
     configurable: true,
@@ -241,6 +261,7 @@ function createRenderHarness(
   return {
     byId,
     headerXpCard,
+    topbarXp,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
     renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
@@ -380,6 +401,35 @@ describe("dashboard header XP progress", () => {
       harness.renderHeaderXp();
       expect(harness.headerXpCard?.querySelector(".appShellHeaderXpMeta")).toBeNull();
       expect(harness.headerXpCard?.getAttribute("aria-label")).toBe("XP progress. 50000 XP total and max rank reached.");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("does not overwrite the animated xp header while the count-up is active", () => {
+    const harness = createRenderHarness([], {
+      includeHeaderXpCard: true,
+      rewardProgress: { totalXp: 60, totalXpPrecise: 60, currentRankId: "operator", completedSessions: 0, lastAwardedAt: null, awardLedger: [] },
+    });
+
+    try {
+      const desktopValueEl = harness.headerXpCard?.querySelector(".appShellHeaderXpValue");
+      const desktopLabelEl = harness.headerXpCard?.querySelector(".appShellHeaderXpPromotionLabel");
+      const mobileValueEl = harness.topbarXp?.querySelector(".taskLaunchTopbarXpValue");
+      const mobileLabelEl = harness.topbarXp?.querySelector(".taskLaunchTopbarXpMetaLine");
+
+      desktopValueEl?.classList.add("isAnimatingXpCount");
+      if (desktopValueEl) desktopValueEl.textContent = "42 XP";
+      if (desktopLabelEl) desktopLabelEl.textContent = "198 XP to Technician";
+      if (mobileValueEl) mobileValueEl.textContent = "42 XP";
+      if (mobileLabelEl) mobileLabelEl.textContent = "198 XP to Technician";
+
+      harness.renderHeaderXp();
+
+      expect(desktopValueEl?.textContent).toBe("42 XP");
+      expect(desktopLabelEl?.textContent).toBe("198 XP to Technician");
+      expect(mobileValueEl?.textContent).toBe("42 XP");
+      expect(mobileLabelEl?.textContent).toBe("198 XP to Technician");
     } finally {
       harness.restore();
     }

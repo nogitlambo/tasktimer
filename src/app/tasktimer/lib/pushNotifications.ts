@@ -41,6 +41,7 @@ type PendingPushAction = {
   route: string;
   actionId: "default" | "launchTask" | "snooze10m" | "postponeNextGap";
   sourceNotificationId?: number;
+  dispatchNonce?: string;
 };
 
 type PushDiagnostics = {
@@ -405,7 +406,8 @@ function normalizePendingPushAction(
   const route = String(input?.route || "/tasklaunch").trim() || "/tasklaunch";
   const actionId = normalizePendingPushActionId(input?.actionId);
   const sourceNotificationId = Math.max(0, Math.floor(Number(input?.sourceNotificationId || 0) || 0));
-  return { taskId, route, actionId, sourceNotificationId };
+  const dispatchNonce = String(input?.dispatchNonce || "").trim();
+  return { taskId, route, actionId, sourceNotificationId, dispatchNonce };
 }
 
 function setPendingPushAction(action: Partial<PendingPushAction> | null | undefined) {
@@ -544,10 +546,13 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     const taskId = String(data.taskId || "").trim();
     const route = String(data.route || "/tasklaunch").trim();
     const actionId = normalizePendingPushActionId(actionIdOverride ?? data.tasktimerActionId ?? data.actionId);
+    const sourceNotificationId = Math.max(0, Math.floor(Number(data.tasktimerNotificationId || data.sourceNotificationId || 0) || 0));
+    const dispatchNonce = String(data.dispatchNonce || "").trim();
     if (taskId) setPendingPushTaskId(taskId);
-    if (taskId) setPendingPushAction({ taskId, route, actionId });
+    if (taskId) setPendingPushAction({ taskId, route, actionId, sourceNotificationId, dispatchNonce });
+    const detail = { taskId, route, actionId, sourceNotificationId, dispatchNonce };
     try {
-      window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail: { taskId, route, actionId } }));
+      window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail }));
     } catch {
       // Ignore custom event failures.
     }

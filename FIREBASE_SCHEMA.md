@@ -213,6 +213,7 @@ Allowed fields (`isLeaderboardProfileDoc`):
 - `rewardTotalXp: int`
 - `streakDays: int`
 - `totalFocusMs: int`
+- `weeklyFocusMs: int`
 - `weeklyXpGain: int`
 - `updatedAt: timestamp`
 - `schemaVersion: int`

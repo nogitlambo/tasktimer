@@ -46,6 +46,7 @@ type TaskTimerAppFrameProps = {
     progressLabel: string;
     xpToNext: number | null;
   };
+  promotionLabelOverride?: string | null;
   isXpCountAnimating?: boolean;
   isXpAwardSpotlightActive?: boolean;
   onTestRankPromotion?: (rankId: string) => void;
@@ -154,6 +155,13 @@ export function getXpProgressSubtext(totalXp: number, xpToNext: number | null) {
   return buildXpProgressSubtext(totalXp, xpToNext);
 }
 
+export function getXpPromotionLabel(totalXp: number, xpToNext: number | null) {
+  const nextRankLabel = getNextRank(totalXp)?.label ?? "Max rank";
+  return xpToNext != null
+    ? `${formatXpNumber(xpToNext)} XP to ${nextRankLabel}`
+    : "Max rank reached";
+}
+
 export default function TaskTimerAppFrame({
   activePage,
   children,
@@ -167,6 +175,7 @@ export default function TaskTimerAppFrame({
   currentUserAvatarInitials = "U",
   currentUserLabel = "User",
   rewardsHeader,
+  promotionLabelOverride = null,
   isXpCountAnimating = false,
   isXpAwardSpotlightActive = false,
   onTestRankPromotion,
@@ -188,10 +197,7 @@ export default function TaskTimerAppFrame({
     [currentRankId]
   );
   const showMaxXpAlert = rewardsHeader.xpToNext == null;
-  const nextRankLabel = getNextRank(rewardsHeader.totalXp)?.label ?? "Max rank";
-  const promotionLabel = rewardsHeader.xpToNext != null
-    ? `${formatXpNumber(rewardsHeader.xpToNext)} XP to ${nextRankLabel}`
-    : "Max rank reached";
+  const promotionLabel = promotionLabelOverride ?? getXpPromotionLabel(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";

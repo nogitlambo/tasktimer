@@ -1011,16 +1011,7 @@ service cloud.firestore {
     match /leaderboardProfiles/{userId} {
       allow read: if request.auth != null;
       allow create: if isOwner(userId) && isLeaderboardProfileDoc(userId);
-      allow update: if isOwner(userId) && isLeaderboardProfileDoc(userId)
-        && request.resource.data.rewardTotalXp == resource.data.rewardTotalXp
-        && request.resource.data.rewardCurrentRankId == resource.data.rewardCurrentRankId
-        && request.resource.data.currentStreak == resource.data.currentStreak
-        && request.resource.data.longestStreak == resource.data.longestStreak
-        && request.resource.data.focusScore == resource.data.focusScore
-        && request.resource.data.totalFocusMs == resource.data.totalFocusMs
-        && request.resource.data.weeklyFocusMs == resource.data.weeklyFocusMs
-        && request.resource.data.weeklyCompletedCount == resource.data.weeklyCompletedCount
-        && request.resource.data.weeklyGoalMinutes == resource.data.weeklyGoalMinutes;
+      allow update: if isOwner(userId) && isLeaderboardProfileDoc(userId);
       allow delete: if isOwner(userId);
     }
 

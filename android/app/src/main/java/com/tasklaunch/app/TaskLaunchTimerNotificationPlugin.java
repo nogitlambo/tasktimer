@@ -18,7 +18,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "TaskLaunchTimerNotification")
 public class TaskLaunchTimerNotificationPlugin extends Plugin {
-    private static final String CHANNEL_ID = "tasklaunch-default";
+    private static final String RUNNING_TIMER_CHANNEL_ID = "tasklaunch-running-timer";
     private static final String ACTION_CLOSE_RUNNING_TIMER = "closeRunningTimerNotification";
 
     @PluginMethod
@@ -70,13 +70,14 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
         );
 
         long chronometerBaseMs = Math.max(0L, startedAtMs - elapsedBeforeStartMs);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), RUNNING_TIMER_CHANNEL_ID)
             .setSmallIcon(getContext().getApplicationInfo().icon)
             .setContentTitle(taskName)
             .setContentText("Timer running")
             .setSubText("Running")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setSilent(true)
             .setOngoing(true)
             .setAutoCancel(false)
             .setOnlyAlertOnce(true)
@@ -110,13 +111,15 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
     private void ensureNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null || notificationManager.getNotificationChannel(CHANNEL_ID) != null) return;
+        if (notificationManager == null || notificationManager.getNotificationChannel(RUNNING_TIMER_CHANNEL_ID) != null) return;
         NotificationChannel channel = new NotificationChannel(
-            CHANNEL_ID,
-            "TaskLaunch Alerts",
+            RUNNING_TIMER_CHANNEL_ID,
+            "TaskLaunch Timer Running",
             NotificationManager.IMPORTANCE_LOW
         );
-        channel.setDescription("TaskLaunch timer and push notifications");
+        channel.setDescription("Silent notification shown while a TaskLaunch timer is running");
+        channel.setSound(null, null);
+        channel.enableVibration(false);
         notificationManager.createNotificationChannel(channel);
     }
 
