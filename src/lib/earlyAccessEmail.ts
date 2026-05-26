@@ -3,6 +3,8 @@ import nodemailer from "nodemailer";
 
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
 const EMAIL_SUBJECT = "Early Access List";
+const EARLY_ACCESS_ABOUT_URL = "https://tasklaunch.app/about";
+const EARLY_ACCESS_LOGO_URL = "https://tasklaunch.app/logo/launch-icon-original-transparent.png";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -69,11 +71,11 @@ export function buildEarlyAccessUnsubscribeUrl(email: string) {
 }
 
 function buildAboutUrl() {
-  return new URL("/about", getAppBaseUrl()).toString();
+  return EARLY_ACCESS_ABOUT_URL;
 }
 
 function buildEmailLogoUrl() {
-  return new URL("/logo/launch-icon-original-transparent.png", getAppBaseUrl()).toString();
+  return EARLY_ACCESS_LOGO_URL;
 }
 
 function buildEmailBody(input: { email: string; unsubscribeUrl: string }) {
