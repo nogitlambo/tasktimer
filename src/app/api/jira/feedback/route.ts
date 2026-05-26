@@ -4,6 +4,7 @@ import {
   asString,
   describeError,
   fetchJiraIssueStatuses,
+  loadPublicFeedbackLinkedJiraIssueKeys,
 } from "./shared";
 import {
   FeedbackApiError,
@@ -18,7 +19,8 @@ function parseIssueKeysParam(value: unknown) {
   return asString(value)
     .split(",")
     .map((part) => asString(part, 120))
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 20);
 }
 
 export async function GET(req: Request) {
@@ -50,14 +52,29 @@ export async function GET(req: Request) {
       );
     }
 
+    const allowedKeys = await loadPublicFeedbackLinkedJiraIssueKeys();
+    const authorizedKeys = jiraIssueKeys.filter((key) => allowedKeys.has(key));
+    if (!authorizedKeys.length) {
+      return NextResponse.json(
+        { ok: true, statuses: {} },
+        {
+          status: 404,
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        }
+      );
+    }
+
     const jiraBaseUrl = asString(process.env.JIRA_BASE_URL).replace(/\/+$/, "");
     if (!jiraBaseUrl) {
       throw new Error("Missing JIRA_BASE_URL.");
     }
-    const statuses = await fetchJiraIssueStatuses({ jiraBaseUrl, jiraIssueKeys });
+    const statuses = await fetchJiraIssueStatuses({ jiraBaseUrl, jiraIssueKeys: authorizedKeys });
     console.info("[api/jira/feedback] Jira status sync result", {
       uid,
       requestedKeys: jiraIssueKeys,
+      authorizedKeys,
       returnedKeys: Object.keys(statuses),
     });
     return NextResponse.json(

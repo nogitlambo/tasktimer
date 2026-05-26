@@ -680,6 +680,8 @@ service cloud.firestore {
       && isFriendshipProfileValue(request.resource.data.profileByUid[request.resource.data.users[1]])
       && request.resource.data.createdAt is timestamp
       && request.resource.data.createdBy is string
+      && request.resource.data.createdBy == request.auth.uid
+      && hasApprovedFriendRequestForUsers(request.resource.data.users[0], request.resource.data.users[1])
       && (
         (
           request.resource.data.users[0] < request.resource.data.users[1]
@@ -690,6 +692,21 @@ service cloud.firestore {
           && request.resource.data.pairId == ("pair:" + request.resource.data.users[1] + ":" + request.resource.data.users[0])
         )
       );
+    }
+
+    function hasApprovedFriendRequestForUsers(uidA, uidB) {
+      let forwardRequestId = "pending:" + uidA + ":" + uidB;
+      let reverseRequestId = "pending:" + uidB + ":" + uidA;
+      return hasApprovedFriendRequestDoc(forwardRequestId, uidA, uidB)
+        || hasApprovedFriendRequestDoc(reverseRequestId, uidB, uidA);
+    }
+
+    function hasApprovedFriendRequestDoc(requestId, senderUid, receiverUid) {
+      return exists(/databases/$(database)/documents/friend_requests/$(requestId))
+        && get(/databases/$(database)/documents/friend_requests/$(requestId)).data.status == "approved"
+        && get(/databases/$(database)/documents/friend_requests/$(requestId)).data.senderUid == senderUid
+        && get(/databases/$(database)/documents/friend_requests/$(requestId)).data.receiverUid == receiverUid
+        && get(/databases/$(database)/documents/friend_requests/$(requestId)).data.respondedBy == receiverUid;
     }
 
     function isFriendshipSelfProfileUpdate() {
@@ -991,7 +1008,17 @@ service cloud.firestore {
 
     match /leaderboardProfiles/{userId} {
       allow read: if request.auth != null;
-      allow create, update: if isOwner(userId) && isLeaderboardProfileDoc(userId);
+      allow create: if isOwner(userId) && isLeaderboardProfileDoc(userId);
+      allow update: if isOwner(userId) && isLeaderboardProfileDoc(userId)
+        && request.resource.data.rewardTotalXp == resource.data.rewardTotalXp
+        && request.resource.data.rewardCurrentRankId == resource.data.rewardCurrentRankId
+        && request.resource.data.currentStreak == resource.data.currentStreak
+        && request.resource.data.longestStreak == resource.data.longestStreak
+        && request.resource.data.focusScore == resource.data.focusScore
+        && request.resource.data.totalFocusMs == resource.data.totalFocusMs
+        && request.resource.data.weeklyFocusMs == resource.data.weeklyFocusMs
+        && request.resource.data.weeklyCompletedCount == resource.data.weeklyCompletedCount
+        && request.resource.data.weeklyGoalMinutes == resource.data.weeklyGoalMinutes;
       allow delete: if isOwner(userId);
     }
 
@@ -1036,4 +1063,3 @@ service cloud.firestore {
     }
   }
 }
-

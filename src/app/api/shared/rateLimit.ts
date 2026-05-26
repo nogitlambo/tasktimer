@@ -40,16 +40,29 @@ function normalizeEventTimes(value: unknown, nowMs: number, windowMs: number) {
 }
 
 export function extractClientIp(req: Request) {
-  const forwardedFor = asString(req.headers.get("x-forwarded-for"), 1000);
-  if (forwardedFor) {
-    const [first] = forwardedFor.split(",");
+  const trustedProxySecret = asString(process.env.TRUSTED_PROXY_HEADER_SECRET, 240);
+  const trustedProxyValue = asString(req.headers.get("x-tasktimer-proxy-auth"), 240);
+  const canTrustProxyHeaders = !!trustedProxySecret && trustedProxyValue === trustedProxySecret;
+
+  if (canTrustProxyHeaders) {
+    const forwardedFor = asString(req.headers.get("x-forwarded-for"), 1000);
+    if (forwardedFor) {
+      const [first] = forwardedFor.split(",");
+      const candidate = asString(first, 240);
+      if (candidate) return candidate;
+    }
+    const realIp = asString(req.headers.get("x-real-ip"), 240);
+    if (realIp) return realIp;
+    const cloudflareIp = asString(req.headers.get("cf-connecting-ip"), 240);
+    if (cloudflareIp) return cloudflareIp;
+  }
+
+  const platformIp = asString(req.headers.get("x-vercel-forwarded-for"), 1000);
+  if (platformIp) {
+    const [first] = platformIp.split(",");
     const candidate = asString(first, 240);
     if (candidate) return candidate;
   }
-  const realIp = asString(req.headers.get("x-real-ip"), 240);
-  if (realIp) return realIp;
-  const cloudflareIp = asString(req.headers.get("cf-connecting-ip"), 240);
-  if (cloudflareIp) return cloudflareIp;
   return "unknown";
 }
 

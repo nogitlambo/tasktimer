@@ -197,6 +197,22 @@ export function parseJiraIssueKeyFromBrowseUrl(urlRaw: unknown) {
   return match?.[1] ? asString(match[1], 120) : "";
 }
 
+export async function loadPublicFeedbackLinkedJiraIssueKeys(maxItems = 500) {
+  const { getFirebaseAdminDb } = await import("@/lib/firebaseAdmin");
+  const db = getFirebaseAdminDb();
+  const snap = await db
+    .collection("feedback_items")
+    .orderBy("updatedAt", "desc")
+    .limit(Math.max(1, Math.min(2000, Math.floor(maxItems))))
+    .get();
+  const keys = new Set<string>();
+  snap.docs.forEach((doc) => {
+    const key = parseJiraIssueKeyFromBrowseUrl(doc.get("jiraIssueBrowseUrl"));
+    if (key) keys.add(key);
+  });
+  return keys;
+}
+
 export async function createJiraIssue(input: {
   uid: string;
   type: FeedbackType;
