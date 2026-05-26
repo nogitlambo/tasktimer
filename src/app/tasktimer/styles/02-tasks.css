@@ -1406,12 +1406,13 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShell > .taskColorPill{
   position:absolute;
   top:12px;
-  right:14px;
+  right:auto;
+  left:14px;
   z-index:4;
-  width:38px;
-  height:16px;
-  min-width:38px;
-  border-radius:999px;
+  width:14px;
+  height:14px;
+  min-width:14px;
+  border-radius:0;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShell > .checkpointMuteBtn{

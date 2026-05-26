@@ -324,14 +324,6 @@ export default function LandingSoon(props: LandingProps) {
             <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
             <span>TaskLaunch</span>
           </Link>
-
-          <div className="landingSoonV2Countdown" aria-live="polite">
-            <div className="landingSoonV2CountdownInfo">
-              <span className="landingSoonV2CountdownLabel displayFont">Early access opens:</span>
-              <span className="landingSoonV2CountdownDate">{earlyAccessCountdownTargetLabel}</span>
-            </div>
-            <span className="landingSoonV2CountdownValue displayFont">{countdownText}</span>
-          </div>
           <Link href="/about" className="landingSoonV2AboutLink displayFont">
             About
           </Link>

@@ -500,6 +500,44 @@ describe("createTaskTimerAddTask", () => {
     ]);
   });
 
+  it("schedules daily recurring tasks only across optimal productivity days", () => {
+    const harness = createHarness("1");
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        timeGoalPeriod: "day",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+      }),
+    ]);
+    const savedTask = setTasksMock.mock.calls[0]?.[0]?.[0] as { plannedStartByDay?: Record<string, string> } | undefined;
+    expect(savedTask?.plannedStartByDay).not.toHaveProperty("tue");
+    expect(savedTask?.plannedStartByDay).not.toHaveProperty("thu");
+    expect(savedTask?.plannedStartByDay).not.toHaveProperty("sat");
+    expect(savedTask?.plannedStartByDay).not.toHaveProperty("sun");
+  });
+
+  it("schedules recurring tasks using a custom optimal productivity day set", () => {
+    const harness = createHarness("1", { productivityDays: ["tue", "thu"] });
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        plannedStartTime: "09:00",
+        plannedStartByDay: { tue: "09:00", thu: "09:00" },
+      }),
+    ]);
+  });
+
   it("rejects a scheduled task when the time amount is zero", () => {
     const harness = createHarness("0");
     harness.addTaskMsToggle.checked = false;
@@ -547,15 +585,18 @@ describe("createTaskTimerAddTask", () => {
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
       "Schedule conflict",
-      "Deep Work - 9:00 AM - 10:00 AM.\n\nSchedule New Task to next free timeslot 10:00 AM - 11:00 AM?",
+      "",
       expect.objectContaining({
-        okLabel: "Schedule",
+        altLabel: "Continue",
+        okLabel: "Change",
+        textHtml:
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+        altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-ghost",
       })
     );
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
-    expect(confirmOpts).not.toHaveProperty("altLabel");
-    expect(confirmOpts).not.toHaveProperty("onAlt");
+    expect(confirmOpts).toHaveProperty("onAlt");
     expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 
@@ -604,7 +645,7 @@ describe("createTaskTimerAddTask", () => {
     ]);
   });
 
-  it("schedules the new task to the displayed next available slot when conflict modal Schedule is chosen", () => {
+  it("schedules the new task to the displayed next available slot when conflict modal Change is chosen", () => {
     const existingTask = {
       id: "busy-1",
       name: "Deep Work",
@@ -649,6 +690,57 @@ describe("createTaskTimerAddTask", () => {
       }),
     ]);
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenCalledWith("10:00");
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+  });
+
+  it("keeps the new task planned start and moves the conflicting task when conflict modal Continue is chosen", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const tasks = [existingTask];
+    const harness = createHarness("1", { tasks, taskType: "once-off" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.setManualPlannedStart("09:00");
+    harness.submit();
+
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onAlt?.();
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: "busy-1",
+        plannedStartTime: "10:00",
+        plannedStartByDay: expect.objectContaining({ mon: "10:00" }),
+      }),
+      expect.objectContaining({
+        plannedStartTime: "09:00",
+        plannedStartByDay: expect.objectContaining({ mon: "09:00" }),
+      }),
+    ]);
     expect(harness.ctx.closeConfirm).toHaveBeenCalled();
   });
 

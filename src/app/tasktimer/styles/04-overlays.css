@@ -5248,6 +5248,29 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-align: center;
 }
 
+#timeGoalCompleteOverlay #timeGoalCompleteText{
+  color: var(--accent);
+  animation: timeGoalCompleteTextBounce 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes timeGoalCompleteTextBounce{
+  0%, 16.666%, 33.333%, 50%, 100%{
+    transform: translateY(0);
+  }
+
+  8.333%, 25%, 41.666%{
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+#timeGoalCompleteOverlay #timeGoalCompleteText{
+    animation: none;
+    will-change: auto;
+  }
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteMeta[hidden]{
   display: none !important;
 }
@@ -5800,6 +5823,10 @@ body[data-theme="lime"] #timeGoalCompleteNoteOverlay .modalSubtext{
 
 body[data-theme="lime"] .rankLadderModal p.modalSubtext{
   color: #ffffff !important;
+}
+
+body[data-theme="lime"] #timeGoalCompleteOverlay .modalSubtext{
+  color: #c9ff24;
 }
 
 body[data-theme="lime"] #editOverlay input[type="text"],

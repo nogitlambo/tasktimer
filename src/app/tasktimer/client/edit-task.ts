@@ -10,13 +10,15 @@ import {
 } from "../lib/taskConfig";
 import {
   buildWeeklyPlannedStartByDay,
+  findClosestAvailableScheduleSlot,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
+  formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
-  getScheduleTaskDurationMinutesForDay,
   getTaskScheduledDays,
+  getLocalScheduleDay,
   hasTaskMixedScheduleTimes,
   isRecurringDailyScheduleTask,
   normalizeScheduleStoredTime,
@@ -351,10 +353,25 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     els.editTaskScheduleFields?.classList.toggle("isHidden", !editTaskScheduleEnabled);
   }
 
+  function getEditPlannedStartTimeForDisplay(task?: Task | null) {
+    const plannedTime = normalizeScheduleStoredTime(task?.plannedStartTime);
+    if (plannedTime) return plannedTime;
+    const byDay = normalizeTaskPlannedStartByDay(task?.plannedStartByDay);
+    if (byDay) {
+      const todayTime = normalizeScheduleStoredTime(byDay[getLocalScheduleDay()]);
+      if (todayTime) return todayTime;
+      for (const day of SCHEDULE_DAY_ORDER) {
+        const dayTime = normalizeScheduleStoredTime(byDay[day]);
+        if (dayTime) return dayTime;
+      }
+    }
+    return "09:00";
+  }
 
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
+    const plannedStartTime = getEditPlannedStartTimeForDisplay(currentTask);
     syncPlannedStartSelectors(
       {
         timeInput: els.editPlannedStartTimeInput,
@@ -362,10 +379,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         minuteSelect: els.editPlannedStartMinuteSelect,
         meridiemSelect: els.editPlannedStartMeridiemSelect,
       },
-      currentTask?.plannedStartTime || "09:00"
+      plannedStartTime
     );
     if (els.editPlannedStartInput) {
-      els.editPlannedStartInput.value = String(currentTask?.plannedStartTime || "09:00");
+      els.editPlannedStartInput.value = plannedStartTime;
     }
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
@@ -659,13 +676,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
-  function formatScheduleConflictMessage(
+  function formatScheduleConflictMessageHtml(
     conflictingTaskName: string,
     conflictingRangeText: string,
     candidateTaskName: string,
-    nextSlotRangeText: string
+    plannedStartText: string
   ) {
-    return `${conflictingTaskName} - ${conflictingRangeText}.\n\nSchedule ${candidateTaskName} to next free timeslot ${nextSlotRangeText}?`;
+    return `${ctx.escapeHtmlUI(conflictingTaskName)} - ${ctx.escapeHtmlUI(
+      conflictingRangeText
+    )}.\n\nDo you want to <strong>change</strong> ${ctx.escapeHtmlUI(
+      candidateTaskName
+    )} to the next available timeslot or <strong>continue</strong> with ${ctx.escapeHtmlUI(
+      plannedStartText
+    )} and move ${ctx.escapeHtmlUI(conflictingTaskName)} to the closest available timeslot?`;
   }
 
   function formatScheduleConflictNoSlotMessage(conflictingTaskName: string, candidateTaskName: string) {
@@ -966,6 +989,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.save();
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
+    finishEditOverlayClose();
+  }
+
+  function finishEditOverlayClose() {
+    hideEditOverlay();
+    setEditTaskColorPopoverOpen(false);
+    ctx.clearEditValidationState();
+    closeElapsedPad(false);
+    ctx.setEditIndex(null);
+    ctx.setEditTaskDraft(null);
+    ctx.setEditDraftSnapshot("");
+    editTaskScheduleRestoreSnapshot = null;
   }
 
   function openEditScheduleConflictModal(
@@ -1022,25 +1057,43 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       persistResolvedEditSave(sourceTask, draftTask);
     };
 
+    const handleContinue = () => {
+      const tasksWithDraft = ctx.getTasks().map((task) => (String(task.id || "") === sourceTaskId ? draftTask : task));
+      const closestSlot = findClosestAvailableScheduleSlot(tasksWithDraft, conflictingTask, {
+        day: overlap.day,
+        targetStartMinutes: conflictingStartMinutes,
+        excludeTaskIds: [conflictingTask.id],
+      });
+      if (!closestSlot) {
+        openNoSlotMessage();
+        return;
+      }
+      setTaskScheduledTimeForDay(conflictingTask, closestSlot.day, formatScheduleStoredTimeFromMinutes(closestSlot.startMinutes));
+      persistResolvedEditSave(sourceTask, draftTask);
+    };
+
     if (!suggestion || conflictingEndMinutes == null) {
       openNoSlotMessage();
       return;
     }
 
-    const nextSlotDurationMinutes = getScheduleTaskDurationMinutesForDay(draftTask, suggestion.day);
-    const message = formatScheduleConflictMessage(
+    const messageHtml = formatScheduleConflictMessageHtml(
       conflictingTaskName,
       formatScheduleTimeRange(conflictingStartMinutes, conflictingEndMinutes),
       candidateTaskName,
-      formatScheduleTimeRange(suggestion.startMinutes, suggestion.startMinutes + nextSlotDurationMinutes)
+      formatScheduleSlotTime(candidateStartMinutes)
     );
 
-    ctx.confirm("Schedule conflict", message, {
+    ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      okLabel: "Schedule",
+      altLabel: "Continue",
+      okLabel: "Change",
+      altButtonClassName: "btn btn-ghost",
       okButtonClassName: "btn btn-ghost",
+      textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
       onOk: handleMove,
+      onAlt: handleContinue,
       onCancel: () => ctx.closeConfirm(),
     });
   }
@@ -1456,14 +1509,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       }
       if (!finalizeEditSave(sourceTask, t)) return;
     }
-    hideEditOverlay();
-    setEditTaskColorPopoverOpen(false);
-    ctx.clearEditValidationState();
-    closeElapsedPad(false);
-    ctx.setEditIndex(null);
-    ctx.setEditTaskDraft(null);
-    ctx.setEditDraftSnapshot("");
-    editTaskScheduleRestoreSnapshot = null;
+    finishEditOverlayClose();
   }
 
   function handleEditNameInput() {

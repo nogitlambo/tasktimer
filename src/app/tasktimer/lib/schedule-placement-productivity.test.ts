@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  findClosestAvailableScheduleSlot,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
@@ -287,5 +288,44 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
 
     expect(first.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:30" });
     expect(second.plannedStartByDay).toEqual({ mon: "09:30", fri: "11:00" });
+  });
+});
+
+describe("findClosestAvailableScheduleSlot", () => {
+  it("prefers the closest later slot when later and earlier slots are equally close", () => {
+    const result = findClosestAvailableScheduleSlot(
+      [
+        task({ id: "candidate", plannedStartTime: "09:00" }),
+        task({ id: "busy-before", plannedStartTime: "07:00" }),
+        task({ id: "busy-after", plannedStartTime: "11:00" }),
+      ],
+      task({ id: "moving", plannedStartTime: "09:00" }),
+      { day: "mon", targetStartMinutes: 540, excludeTaskIds: ["moving"] }
+    );
+
+    expect(result?.startMinutes).toBe(600);
+  });
+
+  it("selects the nearest earlier slot when it is closer than the later slot", () => {
+    const result = findClosestAvailableScheduleSlot(
+      [
+        task({ id: "candidate", plannedStartTime: "09:00" }),
+        task({ id: "busy-after", plannedStartTime: "10:00" }),
+      ],
+      task({ id: "moving", plannedStartTime: "09:00" }),
+      { day: "mon", targetStartMinutes: 540, excludeTaskIds: ["moving"] }
+    );
+
+    expect(result?.startMinutes).toBe(480);
+  });
+
+  it("returns null when no same-day slot can fit the task", () => {
+    const result = findClosestAvailableScheduleSlot(
+      [task({ id: "all-day", plannedStartTime: "00:00", timeGoalMinutes: 1440 })],
+      task({ id: "moving", plannedStartTime: "09:00" }),
+      { day: "mon", targetStartMinutes: 540, excludeTaskIds: ["moving"] }
+    );
+
+    expect(result).toBeNull();
   });
 });

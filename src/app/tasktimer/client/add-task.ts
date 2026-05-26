@@ -13,13 +13,14 @@ import {
 import { getNextAutoTaskColor, getTaskColorFamilyForColor, normalizeTaskColor, resolveNewTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
 import {
   buildWeeklyPlannedStartByDay,
+  findClosestAvailableScheduleSlot,
   findFirstAvailableScheduleSlotFromProductivityWindow,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   formatScheduleSlotSuggestion,
+  formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
-  getScheduleTaskDurationMinutesForDay,
   normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
@@ -226,9 +227,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       plannedStartByDay:
         taskType === "once-off"
           ? { [onceOffDay]: plannedStartTime }
-          : timeGoalPeriod === "week"
-            ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime)
-            : null,
+          : buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime),
     } satisfies Task;
     return draftTask;
   }
@@ -601,13 +600,19 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return suggestion ? `${baseMessage} ${formatScheduleSlotSuggestion(suggestion)}` : baseMessage;
   }
 
-  function formatScheduleConflictMessage(
+  function formatScheduleConflictMessageHtml(
     conflictingTaskName: string,
     conflictingRangeText: string,
     candidateTaskName: string,
-    nextSlotRangeText: string
+    plannedStartText: string
   ) {
-    return `${conflictingTaskName} - ${conflictingRangeText}.\n\nSchedule ${candidateTaskName} to next free timeslot ${nextSlotRangeText}?`;
+    return `${ctx.escapeHtmlUI(conflictingTaskName)} - ${ctx.escapeHtmlUI(
+      conflictingRangeText
+    )}.\n\nDo you want to <strong>change</strong> ${ctx.escapeHtmlUI(
+      candidateTaskName
+    )} to the next available timeslot or <strong>continue</strong> with ${ctx.escapeHtmlUI(
+      plannedStartText
+    )} and move ${ctx.escapeHtmlUI(conflictingTaskName)} to the closest available timeslot?`;
   }
 
   function formatScheduleConflictNoSlotMessage(conflictingTaskName: string, candidateTaskName: string) {
@@ -667,6 +672,21 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       finishScheduledTaskCreate(tasks, newTask);
     };
 
+    const handleContinue = () => {
+      const closestSlot = findClosestAvailableScheduleSlot([...tasks, newTask], conflictingTask, {
+        day: overlap.day,
+        targetStartMinutes: conflictingStartMinutes,
+        excludeTaskIds: [conflictingTask.id],
+      });
+      if (!closestSlot) {
+        openNoSlotMessage();
+        return;
+      }
+      setTaskScheduledTimeForDay(conflictingTask, closestSlot.day, formatScheduleStoredTimeFromMinutes(closestSlot.startMinutes));
+      ctx.closeConfirm();
+      finishScheduledTaskCreate(tasks, newTask);
+    };
+
     const handleSwitch = () => {
       swapTaskScheduleSlotsForDay(
         newTask,
@@ -684,20 +704,23 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       return;
     }
 
-    const nextSlotDurationMinutes = getScheduleTaskDurationMinutesForDay(newTask, suggestion.day);
-    const message = formatScheduleConflictMessage(
+    const messageHtml = formatScheduleConflictMessageHtml(
       conflictingTaskName,
       formatScheduleTimeRange(conflictingStartMinutes, conflictingEndMinutes),
       candidateTaskName,
-      formatScheduleTimeRange(suggestion.startMinutes, suggestion.startMinutes + nextSlotDurationMinutes)
+      formatScheduleSlotTime(candidateStartMinutes)
     );
 
-    ctx.confirm("Schedule conflict", message, {
+    ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      okLabel: "Schedule",
+      altLabel: "Continue",
+      okLabel: "Change",
+      altButtonClassName: "btn btn-ghost",
       okButtonClassName: "btn btn-ghost",
+      textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
       onOk: handleMove,
+      onAlt: handleContinue,
       onCancel: () => ctx.closeConfirm(),
     });
   }
@@ -912,10 +935,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       newTask.plannedStartOpenEnded = false;
       const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
       newTask.plannedStartTime = plannedTime;
-      newTask.plannedStartByDay =
-        newTask.timeGoalPeriod === "week" && plannedTime
-          ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedTime)
-          : null;
+      newTask.plannedStartByDay = plannedTime ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedTime) : null;
     }
 
     if (findScheduleOverlap(tasks, newTask)) {

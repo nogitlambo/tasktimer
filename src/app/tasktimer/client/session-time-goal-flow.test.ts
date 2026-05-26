@@ -6,8 +6,10 @@ import {
   didElapsedReachTimeGoalFromBaseline,
   getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
+  markTaskTimeGoalCompletedForResolution,
   resetFocusModeScrollPosition,
   shouldOpenFocusModeForTimeGoalNextTask,
+  shouldSuppressTimeGoalCompletionForTask,
   shouldKeepTimeGoalCompletionFlowForTask,
   shiftValidDeferredTimeGoalModal,
 } from "./session";
@@ -129,6 +131,62 @@ describe("time goal completion flow guard", () => {
         }
       )
     ).toBe(false);
+  });
+
+  it("does not suppress completion when today's goal history was deleted", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+
+    expect(
+      shouldSuppressTimeGoalCompletionForTask(
+        timeGoalTask({
+          timeGoalCompletedDayKey: completedToday,
+          timeGoalCompletedAtMs: nowValue - 60_000,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60_000,
+        }),
+        {
+          historyByTaskId: {},
+          nowMs: nowValue,
+        }
+      )
+    ).toBe(false);
+  });
+
+  it("suppresses completion when today's qualifying goal history still exists", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+
+    expect(
+      shouldSuppressTimeGoalCompletionForTask(
+        timeGoalTask({
+          timeGoalCompletedDayKey: completedToday,
+          timeGoalCompletedAtMs: nowValue - 60_000,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60_000,
+        }),
+        {
+          historyByTaskId: { "task-1": [{ ts: nowValue, name: "Focus", ms: 60_000 }] },
+          nowMs: nowValue,
+        }
+      )
+    ).toBe(true);
+  });
+
+  it("updates completion metadata when a stale completion marker is completed again", () => {
+    const previousCompletionMs = new Date(2026, 4, 7, 9, 0, 0).getTime();
+    const nextCompletionMs = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = timeGoalTask({
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(previousCompletionMs),
+      timeGoalCompletedAtMs: previousCompletionMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    markTaskTimeGoalCompletedForResolution(entry, nextCompletionMs, 60_000, { historyByTaskId: {} });
+
+    expect(entry.timeGoalCompletedAtMs).toBe(nextCompletionMs);
+    expect(entry.timeGoalCompletedElapsedMs).toBe(60_000);
   });
 
   it("ignores live sessions for a different task", () => {

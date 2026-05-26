@@ -1547,7 +1547,7 @@ canvas {
 
 .landingV2 .landingSoonV2Header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
 }
 
@@ -2688,11 +2688,7 @@ canvas {
   }
 
   .landingV2 .landingSoonV2Header {
-    grid-template-columns: auto 1fr auto;
-  }
-
-  .landingV2 .landingSoonV2Header .landingSoonV2Countdown {
-    display: none;
+    grid-template-columns: auto 1fr;
   }
 
   .landingV2 .landingSoonV2CountdownMobile {

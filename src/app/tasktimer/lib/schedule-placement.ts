@@ -249,6 +249,11 @@ export type NextAvailableScheduleSlotResult = {
   startMinutes: number;
 };
 
+export type ClosestAvailableScheduleSlotResult = {
+  day: ScheduleDay;
+  startMinutes: number;
+};
+
 export type ProductivityWindowScheduleSlotResult = NextAvailableScheduleSlotResult & {
   time: string;
   source: "productivityWindow" | "outsideProductivityWindow";
@@ -301,6 +306,45 @@ function scheduleSlotFits(
     const intervals = busyByDay.get(day) || [];
     return intervals.every((interval) => startMinutes >= interval.endMinutes || endMinutes <= interval.startMinutes);
   });
+}
+
+export function findClosestAvailableScheduleSlot(
+  tasks: Task[],
+  candidate: Task,
+  options: { day: ScheduleDay; targetStartMinutes: number; excludeTaskIds?: Array<string | null | undefined> }
+): ClosestAvailableScheduleSlotResult | null {
+  const durationMinutes = getScheduleTaskDurationMinutesForDay(candidate, options.day) || getScheduleTaskDurationMinutes(candidate);
+  if (!(durationMinutes > 0)) return null;
+  const targetStartMinutes = snapScheduleSuggestionStartMinutes(options.targetStartMinutes);
+  const excludeTaskIds = new Set((options.excludeTaskIds || []).map((id) => String(id || "").trim()).filter(Boolean));
+  const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
+  const intervals: Array<{ startMinutes: number; endMinutes: number }> = [];
+  for (const task of tasks) {
+    const taskId = String(task.id || "").trim();
+    if (taskId && excludeTaskIds.has(taskId)) continue;
+    intervals.push(...getBusyScheduleIntervalsForDay([task], options.day, ""));
+  }
+  busyByDay.set(options.day, intervals.sort((a, b) => a.startMinutes - b.startMinutes));
+
+  let bestStartMinutes: number | null = null;
+  for (
+    let startMinutes = 0;
+    startMinutes + durationMinutes <= 24 * 60;
+    startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
+  ) {
+    if (!scheduleSlotFits(busyByDay, [options.day], startMinutes, durationMinutes)) continue;
+    if (bestStartMinutes == null) {
+      bestStartMinutes = startMinutes;
+      continue;
+    }
+    const bestDistance = Math.abs(bestStartMinutes - targetStartMinutes);
+    const nextDistance = Math.abs(startMinutes - targetStartMinutes);
+    if (nextDistance < bestDistance || (nextDistance === bestDistance && startMinutes > bestStartMinutes)) {
+      bestStartMinutes = startMinutes;
+    }
+  }
+
+  return bestStartMinutes == null ? null : { day: options.day, startMinutes: bestStartMinutes };
 }
 
 function getProductivitySearchIntervals(startMinutes: number, endMinutes: number) {

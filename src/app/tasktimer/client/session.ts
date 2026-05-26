@@ -1,4 +1,4 @@
-import type { LiveTaskSession, Task } from "../lib/types";
+import type { HistoryByTaskId, LiveTaskSession, Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { computeFocusInsights } from "../lib/focusInsights";
 import { awardCompletedSessionXp } from "../lib/rewards";
@@ -93,11 +93,13 @@ export function shouldKeepTimeGoalCompletionFlowForTask(
   opts: {
     elapsedMs: number;
     liveSession?: LiveTaskSession | null;
+    historyByTaskId?: HistoryByTaskId | null;
+    nowMs?: number;
     getTaskTimeGoalAction?: (task: Task) => string;
   }
 ) {
   if (!task || !task.running) return false;
-  if (isTaskTimeGoalCompletedToday(task)) return false;
+  if (shouldSuppressTimeGoalCompletionForTask(task, { historyByTaskId: opts.historyByTaskId, nowMs: opts.nowMs })) return false;
   const taskId = String(task.id || "").trim();
   const liveSessionTaskId = String(opts.liveSession?.taskId || "").trim();
   if (!taskId || liveSessionTaskId !== taskId) return false;
@@ -106,6 +108,15 @@ export function shouldKeepTimeGoalCompletionFlowForTask(
   if ((opts.getTaskTimeGoalAction?.(task) || "confirmModal") !== "confirmModal") return false;
   const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
   return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
+}
+
+export function shouldSuppressTimeGoalCompletionForTask(
+  task: Task | null | undefined,
+  opts: { historyByTaskId?: HistoryByTaskId | null; nowMs?: number } = {}
+): boolean {
+  if (!isTaskTimeGoalCompletedToday(task, opts.nowMs)) return false;
+  if (!opts.historyByTaskId) return true;
+  return isTaskTimeGoalStartLockedByHistoryToday(task, opts.historyByTaskId, opts.nowMs);
 }
 
 export function shiftValidDeferredTimeGoalModal(
@@ -138,8 +149,13 @@ export function shiftValidDeferredTimeGoalModal(
   return { nextPending: null, remainingQueue: [] };
 }
 
-export function markTaskTimeGoalCompletedForResolution(task: Task, completedAtMs: number, elapsedMs?: number | null): void {
-  if (isTaskTimeGoalCompletedToday(task, completedAtMs)) return;
+export function markTaskTimeGoalCompletedForResolution(
+  task: Task,
+  completedAtMs: number,
+  elapsedMs?: number | null,
+  opts: { historyByTaskId?: HistoryByTaskId | null } = {}
+): void {
+  if (shouldSuppressTimeGoalCompletionForTask(task, { historyByTaskId: opts.historyByTaskId, nowMs: completedAtMs })) return;
   markTaskTimeGoalCompleted(task, completedAtMs, { reason: "goal", elapsedMs });
 }
 
@@ -595,6 +611,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return shouldKeepTimeGoalCompletionFlowForTask(task, {
       elapsedMs,
       liveSession: taskId ? ctx.getLiveSessionsByTaskId()[taskId] || null : null,
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      nowMs: nowMs(),
       getTaskTimeGoalAction,
     });
   }
@@ -746,7 +764,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task));
+    markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task), { historyByTaskId: ctx.getHistoryByTaskId() });
     ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote });
     clearTaskTimeGoalFlow(taskId);
     stopTimeGoalCompleteConfetti();
@@ -781,7 +799,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function completeTimeGoalTask(task: Task, elapsedMs: number, opts?: { reminder?: boolean; deferModal?: boolean }) {
     const taskId = String(task?.id || "").trim();
-    if (!taskId || isTaskTimeGoalCompletedToday(task)) return false;
+    if (!taskId || shouldSuppressTimeGoalCompletionForTask(task, { historyByTaskId: ctx.getHistoryByTaskId(), nowMs: nowMs() })) return false;
     const safeElapsedMs = getTimeGoalCompletionElapsedMs(task, elapsedMs);
     const awardPreview = getTimeGoalCompletionAwardPreview(task, safeElapsedMs);
     if (taskId && els.timeGoalCompleteNoteInput) {
@@ -789,7 +807,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs(), safeElapsedMs);
+    markTaskTimeGoalCompletedForResolution(task, nowMs(), safeElapsedMs, { historyByTaskId: ctx.getHistoryByTaskId() });
     task.accumulatedMs = safeElapsedMs;
     task.running = false;
     task.startMs = null;

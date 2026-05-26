@@ -35,6 +35,29 @@ function selectStub(value: string) {
   return { value, classList: { toggle: vi.fn() } } as unknown as HTMLSelectElement;
 }
 
+function timeInputStub(value = "") {
+  return {
+    value,
+    disabled: false,
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLInputElement;
+}
+
+function overlayStub() {
+  return {
+    style: {
+      display: "flex",
+      removeProperty: vi.fn(),
+    },
+    classList: {
+      add: vi.fn(),
+      remove: vi.fn(),
+      toggle: vi.fn(),
+    },
+    querySelector: vi.fn(() => null),
+  } as unknown as HTMLElement;
+}
+
 function createEditHarness(overrides: {
   sourceTask?: Task;
   busyTask?: Task;
@@ -42,7 +65,17 @@ function createEditHarness(overrides: {
   durationUnit?: "minute" | "hour";
   plannedStartSelectors?: { hour: string; minute: string; meridiem: "AM" | "PM" };
 } = {}) {
+  vi.stubGlobal("HTMLElement", class HTMLElementStub {});
+  vi.stubGlobal("window", {
+    setTimeout: vi.fn((callback: () => void) => {
+      callback();
+      return 1;
+    }),
+    clearTimeout: vi.fn(),
+    matchMedia: vi.fn(() => ({ matches: false })),
+  });
   let editIndex: number | null = 0;
+  const editOverlay = overlayStub();
   const sourceTask =
     overrides.sourceTask ||
     task({
@@ -67,6 +100,11 @@ function createEditHarness(overrides: {
   const draft = { ...sourceTask, plannedStartByDay: sourceTask.plannedStartByDay ? { ...sourceTask.plannedStartByDay } : null };
   const tasks = [sourceTask, busyTask];
   const plannedStartSelectors = overrides.plannedStartSelectors;
+  const editPlannedStartHourSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.hour) : selectStub("");
+  const editPlannedStartMinuteSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : selectStub("");
+  const editPlannedStartMeridiemSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.meridiem) : selectStub("");
+  const editPlannedStartTimeInput = timeInputStub();
+  const editPlannedStartInput = { value: "" } as HTMLInputElement;
   const ctx = {
     els: {
       editName: { value: "Focus" } as HTMLInputElement,
@@ -75,11 +113,13 @@ function createEditHarness(overrides: {
         classList: { remove: vi.fn(), toggle: vi.fn() },
       } as unknown as HTMLInputElement,
       editTaskOnceOffDaySelect: null,
-      editPlannedStartHourSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.hour) : null,
-      editPlannedStartMinuteSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : null,
-      editPlannedStartMeridiemSelect: plannedStartSelectors ? selectStub(plannedStartSelectors.meridiem) : null,
+      editPlannedStartTimeInput,
+      editPlannedStartHourSelect,
+      editPlannedStartMinuteSelect,
+      editPlannedStartMeridiemSelect,
+      editPlannedStartInput,
       editPlannedStartPushReminders: null,
-      editOverlay: null,
+      editOverlay,
       confirmOverlay: null,
     },
     sharedTasks: {
@@ -90,9 +130,9 @@ function createEditHarness(overrides: {
     },
     getTasks: () => tasks,
     getEditIndex: () => editIndex,
-    setEditIndex: (value: number | null) => {
+    setEditIndex: vi.fn((value: number | null) => {
       editIndex = value;
-    },
+    }),
     getEditTaskDraft: () => draft,
     setEditTaskDraft: vi.fn(),
     setEditDraftSnapshot: vi.fn(),
@@ -151,7 +191,21 @@ function createEditHarness(overrides: {
   } as unknown as Parameters<typeof createTaskTimerEditTask>[0];
 
   const api = createTaskTimerEditTask(ctx);
-  return { api, ctx, sourceTask, busyTask };
+  return { api, ctx, sourceTask, busyTask, editOverlay, getEditIndex: () => editIndex };
+}
+
+function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditHarness>) {
+  expect(harness.ctx.save).toHaveBeenCalled();
+  expect(harness.ctx.render).toHaveBeenCalled();
+  expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+  expect(harness.editOverlay.classList.remove).toHaveBeenCalledWith("isOpening");
+  expect(harness.editOverlay.classList.remove).toHaveBeenCalledWith("isOpen");
+  expect(harness.editOverlay.classList.add).toHaveBeenCalledWith("isClosing");
+  expect(harness.ctx.clearEditValidationState).toHaveBeenCalled();
+  expect(harness.ctx.setEditIndex).toHaveBeenCalledWith(null);
+  expect(harness.ctx.setEditTaskDraft).toHaveBeenCalledWith(null);
+  expect(harness.ctx.setEditDraftSnapshot).toHaveBeenCalledWith("");
+  expect(harness.getEditIndex()).toBeNull();
 }
 
 describe("normalizeRecurringScheduleFieldsForSave", () => {
@@ -306,6 +360,89 @@ describe("edit task schedule toggle helpers", () => {
   });
 });
 
+describe("edit task planned start initialization", () => {
+  it("loads a shared per-day planned start when plannedStartTime is empty", () => {
+    vi.setSystemTime(new Date("2026-05-18T10:00:00"));
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartTime: null,
+        plannedStartByDay: { mon: "13:45", wed: "13:45", fri: "13:45" },
+      }),
+    });
+
+    harness.api.openEdit(0);
+
+    expect(harness.ctx.els.editPlannedStartTimeInput?.value).toBe("13:45");
+    expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("01");
+    expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("45");
+    expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("PM");
+    expect(harness.ctx.els.editPlannedStartInput?.value).toBe("13:45");
+  });
+
+  it("loads today's planned start for mixed per-day schedules", () => {
+    vi.setSystemTime(new Date("2026-05-20T10:00:00"));
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartTime: null,
+        plannedStartByDay: { mon: "08:15", wed: "14:30", fri: "16:45" },
+      }),
+    });
+
+    harness.api.openEdit(0);
+
+    expect(harness.ctx.els.editPlannedStartTimeInput?.value).toBe("14:30");
+    expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("02");
+    expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("30");
+    expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("PM");
+  });
+
+  it("falls back to the first scheduled day when the task is not scheduled today", () => {
+    vi.setSystemTime(new Date("2026-05-21T10:00:00"));
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartTime: null,
+        plannedStartByDay: { tue: "11:20", fri: "15:10" },
+      }),
+    });
+
+    harness.api.openEdit(0);
+
+    expect(harness.ctx.els.editPlannedStartTimeInput?.value).toBe("11:20");
+    expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("11");
+    expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("20");
+    expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("AM");
+  });
+
+  it("falls back to 9 AM when no planned schedule time exists", () => {
+    vi.setSystemTime(new Date("2026-05-18T10:00:00"));
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartTime: null,
+        plannedStartByDay: null,
+      }),
+    });
+
+    harness.api.openEdit(0);
+
+    expect(harness.ctx.els.editPlannedStartTimeInput?.value).toBe("09:00");
+    expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("09");
+    expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("00");
+    expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("AM");
+  });
+});
+
 describe("edit task schedule conflict confirmation", () => {
   it("opens a conflict modal with schedule ranges for edit overlaps", () => {
     const harness = createEditHarness();
@@ -314,19 +451,22 @@ describe("edit task schedule conflict confirmation", () => {
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
       "Schedule conflict",
-      "Deep Work - 9:00 AM - 10:00 AM.\n\nSchedule Focus to next free timeslot 10:00 AM - 11:00 AM?",
+      "",
       expect.objectContaining({
-        okLabel: "Schedule",
+        altLabel: "Continue",
+        okLabel: "Change",
+        textHtml:
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+        altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-ghost",
       })
     );
     const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
-    expect(options).not.toHaveProperty("altLabel");
-    expect(options).not.toHaveProperty("onAlt");
+    expect(options).toHaveProperty("onAlt");
     expect(harness.ctx.save).not.toHaveBeenCalled();
   });
 
-  it("updates the edited task planned start time when conflict modal Schedule is chosen", () => {
+  it("updates the edited task planned start time when conflict modal Change is chosen", () => {
     const harness = createEditHarness();
 
     harness.api.closeEdit(true);
@@ -337,11 +477,24 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.sourceTask.plannedStartByDay).toEqual(
       Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "10:00"]))
     );
-    expect(harness.ctx.save).toHaveBeenCalled();
-    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expectEditConflictSavedAndClosed(harness);
   });
 
-  it("updates the edit planned start controls when conflict modal Schedule is chosen", () => {
+  it("keeps the edited task planned start and moves the conflicting task when conflict modal Continue is chosen", () => {
+    const harness = createEditHarness();
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
+    options?.onAlt?.();
+
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual(Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])));
+    expect(harness.busyTask.plannedStartTime).toBe("10:00");
+    expect(harness.busyTask.plannedStartByDay).toEqual({ mon: "10:00" });
+    expectEditConflictSavedAndClosed(harness);
+  });
+
+  it("updates the edit planned start controls when conflict modal Change is chosen", () => {
     const harness = createEditHarness({
       plannedStartSelectors: { hour: "09", minute: "00", meridiem: "AM" },
     });
@@ -353,6 +506,7 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("10");
     expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("00");
     expect(harness.ctx.els.editPlannedStartMeridiemSelect?.value).toBe("AM");
+    expectEditConflictSavedAndClosed(harness);
   });
 
   it("saves an edited task that ends exactly when another task starts", () => {
