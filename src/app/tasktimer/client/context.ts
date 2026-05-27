@@ -687,7 +687,7 @@ export type TaskTimerSessionContext = {
   storageKeys: {
     FOCUS_SESSION_NOTES_KEY: string;
     TIME_GOAL_PENDING_FLOW_KEY: string;
-    APP_BLOCKING_STORAGE_KEY: string;
+    FOCUS_DND_STORAGE_KEY: string;
   };
   getTasks: () => Task[];
   getCurrentAppPage: () => AppPage;
@@ -904,7 +904,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
     MENU_BUTTON_STYLE_KEY: string;
     WEEK_STARTING_KEY: string;
-    APP_BLOCKING_STORAGE_KEY: string;
+    FOCUS_DND_STORAGE_KEY: string;
   };
   defaultModeColors: Record<MainMode, string>;
   getThemeMode: () => "lime";

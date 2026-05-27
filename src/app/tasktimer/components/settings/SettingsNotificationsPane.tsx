@@ -40,6 +40,27 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
                 <button className="switch" id="taskWebPushAlertsToggle" type="button" role="switch" aria-checked="false" />
               </div>
             )}
+            <div className="settingsInlineSectionHead" id="taskFocusDndSectionHead" hidden>
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/privacy-policy.svg" alt="" aria-hidden="true" />
+              <div className="settingsInlineSectionTitle">Focus Do Not Disturb</div>
+            </div>
+            <div className="toggleRow" id="taskFocusDndToggleRow" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Enable Do Not Disturb in Focus Mode</span>
+                <span className="settingsPreferenceControlHelp">Android only. Switches to Priority Only while Focus Mode is open.</span>
+              </div>
+              <button className="switch" id="taskFocusDndToggle" type="button" role="switch" aria-checked="false" />
+            </div>
+            <div className="taskFocusDndPanel" id="taskFocusDndPanel" hidden>
+              <div className="taskFocusDndStatus" id="taskFocusDndStatus" aria-live="polite">
+                Checking Do Not Disturb access...
+              </div>
+              <div className="taskFocusDndActions">
+                <button className="btn btn-ghost small" id="taskFocusDndAccessBtn" type="button">
+                  DND Access
+                </button>
+              </div>
+            </div>
             <div className="settingsInlineSectionHead">
               <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">Checkpoint Toasts</div>

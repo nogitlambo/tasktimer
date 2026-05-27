@@ -58,17 +58,14 @@ export default function FocusModeScreen() {
           </div>
         </div>
       </div>
-      <div className="focusAppBlockingSetup" id="focusAppBlockingSetup" hidden>
-        <div className="focusInsightsTitle">App Blocking Setup</div>
-        <div className="focusAppBlockingSetupText" id="focusAppBlockingSetupText" aria-live="polite">
-          Grant Android permissions to block selected apps during Focus Mode.
+      <div className="focusDndSetup" id="focusDndSetup" hidden>
+        <div className="focusInsightsTitle">Do Not Disturb Setup</div>
+        <div className="focusDndSetupText" id="focusDndSetupText" aria-live="polite">
+          Grant Android Do Not Disturb access to silence interruptions during Focus Mode.
         </div>
-        <div className="focusAppBlockingSetupActions">
-          <button className="btn btn-ghost small" id="focusAppBlockingUsageAccessBtn" type="button">
-            Usage Access
-          </button>
-          <button className="btn btn-ghost small" id="focusAppBlockingOverlayBtn" type="button">
-            Overlay
+        <div className="focusDndSetupActions">
+          <button className="btn btn-ghost small" id="focusDndAccessBtn" type="button">
+            DND Access
           </button>
         </div>
       </div>

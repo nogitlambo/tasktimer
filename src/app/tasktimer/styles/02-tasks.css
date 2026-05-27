@@ -728,7 +728,7 @@ body.isFocusModeTransitioning #focusModeScreen{
   justify-content:flex-end;
 }
 
-.focusAppBlockingSetup{
+.focusDndSetup{
   width:min(520px, calc(100% - 28px));
   margin:12px auto 0;
   padding:12px;
@@ -736,7 +736,7 @@ body.isFocusModeTransitioning #focusModeScreen{
   background:rgba(13,15,19,.82);
 }
 
-.focusAppBlockingSetupText{
+.focusDndSetupText{
   margin-top:6px;
   color:rgba(238,244,250,.72);
   font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
@@ -745,7 +745,7 @@ body.isFocusModeTransitioning #focusModeScreen{
   text-align:center;
 }
 
-.focusAppBlockingSetupActions{
+.focusDndSetupActions{
   display:flex;
   justify-content:center;
   flex-wrap:wrap;

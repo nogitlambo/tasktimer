@@ -26,14 +26,6 @@ function formatMemberSinceDate(value: string | null) {
   return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-function formatPlanUserLabel(plan: SettingsAccountViewModel["authPlan"]) {
-  return `${plan === "pro" ? "Pro" : "Free"} User`;
-}
-
-function formatPlanActionLabel(plan: SettingsAccountViewModel["authPlan"]) {
-  return plan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
-}
-
 function openTaskLaunchOnboarding() {
   window.dispatchEvent(new Event(TASKTIMER_OPEN_ONBOARDING_EVENT));
 }
@@ -66,17 +58,92 @@ export function SettingsAccountPane({
             <div className="settingsAvatarPicker" aria-label="Avatar selection">
               <div className="settingsAccountIdCard" aria-label="Account profile card">
                 <div className="settingsAccountIdCardHeader">
-                  <div className="settingsAccountIdCardBrandBlock">
-                    <div className="settingsAccountIdCardBrandEyebrow">VERIFIED IDENTITY</div>
-                    <div className="settingsAccountIdCardBrandTitle">{formatPlanUserLabel(account.authPlan)}</div>
-                    <button
-                      className="settingsAccountIdCardPlanLink"
-                      type="button"
-                      onClick={() => void account.onOpenPlanAction()}
-                    >
-                      {formatPlanActionLabel(account.authPlan)}
-                    </button>
+                  <div className="settingsAccountIdCardHeaderProfile">
+                    <div className="settingsAvatarCol settingsAccountIdCardAvatarDock">
+                      <button
+                        type="button"
+                        className="accountAvatarFrameBtn"
+                        onClick={() => avatar.setShowAvatarPickerModal(true)}
+                        aria-label="Choose avatar"
+                      >
+                        <div className="accountAvatarPlaceholder">
+                          {avatar.selectedAvatar ? (
+                            <AppImg
+                              className="accountAvatarImage"
+                              src={avatar.selectedAvatar.src}
+                              alt={`${avatar.selectedAvatar.label} avatar`}
+                              referrerPolicy={/^https?:\/\//i.test(avatar.selectedAvatar.src) ? "no-referrer" : undefined}
+                            />
+                          ) : (
+                            <div className="accountAvatarPlaceholderInner" />
+                          )}
+                        </div>
+                      </button>
+                      <div className="settingsAccountIdCardAvatarCaption">Tap avatar to update profile badge</div>
+                    </div>
+
+                    <div className="settingsAccountIdCardIdentity">
+                      <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
+                        <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Username</div>
+                        <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
+                          {account.authUserAliasEditing ? (
+                            <>
+                              <input
+                                className="settingsAccountAliasInput"
+                                type="text"
+                                value={account.authUserAliasDraft}
+                                onChange={(event) => account.onAliasDraftChange(event.target.value)}
+                                disabled={account.authUserAliasBusy}
+                                aria-label="Username"
+                                maxLength={60}
+                              />
+                              <div className="settingsAccountAliasActions">
+                                <button
+                                  className="iconBtn settingsAccountAliasAction settingsAccountAliasActionSave"
+                                  type="button"
+                                  onClick={() => void account.onSaveAlias()}
+                                  disabled={account.authUserAliasBusy}
+                                  aria-label="Save username"
+                                  title="Save username"
+                                >
+                                  {"\u2713"}
+                                </button>
+                                <button
+                                  className="iconBtn settingsAccountAliasAction settingsAccountAliasActionCancel"
+                                  type="button"
+                                  onClick={account.onCancelAliasEdit}
+                                  disabled={account.authUserAliasBusy}
+                                  aria-label="Cancel username edit"
+                                  title="Cancel username edit"
+                                >
+                                  {"\u2715"}
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
+                                {account.authUserAlias || "-"}
+                              </div>
+                              <button
+                                className="iconBtn settingsAccountAliasAction"
+                                type="button"
+                                onClick={account.onStartAliasEdit}
+                                aria-label="Edit username"
+                                title="Edit username"
+                              >
+                                {"\u270e"}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
+                        Run Onboarding
+                      </button>
+                    </div>
                   </div>
+
                   <div className="settingsAccountIdCardHeaderRankCluster">
                     <div className="settingsAccountFieldRow settingsAccountRankCol settingsAccountIdCardHeaderRankMeta">
                       <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Current Rank</div>
@@ -104,90 +171,6 @@ export function SettingsAccountPane({
                 </div>
 
                 <div className="settingsAccountProfileRow settingsAccountIdCardBody">
-                  <div className="settingsAvatarCol settingsAccountIdCardAvatarDock">
-                    <button
-                      type="button"
-                      className="accountAvatarFrameBtn"
-                      onClick={() => avatar.setShowAvatarPickerModal(true)}
-                      aria-label="Choose avatar"
-                    >
-                      <div className="accountAvatarPlaceholder">
-                        {avatar.selectedAvatar ? (
-                          <AppImg
-                            className="accountAvatarImage"
-                            src={avatar.selectedAvatar.src}
-                            alt={`${avatar.selectedAvatar.label} avatar`}
-                            referrerPolicy={/^https?:\/\//i.test(avatar.selectedAvatar.src) ? "no-referrer" : undefined}
-                          />
-                        ) : (
-                          <div className="accountAvatarPlaceholderInner" />
-                        )}
-                      </div>
-                    </button>
-                    <div className="settingsAccountIdCardAvatarCaption">Tap avatar to update profile badge</div>
-                  </div>
-
-                  <div className="settingsAccountIdCardIdentity">
-                    <div className="settingsAccountFieldRow settingsAccountIdentityBlock">
-                      <div className="settingsAccountFieldLabel settingsAccountIdCardLabel">Username</div>
-                      <div className="settingsAccountFieldValueRow settingsAccountAliasValueRow">
-                        {account.authUserAliasEditing ? (
-                          <>
-                            <input
-                              className="settingsAccountAliasInput"
-                              type="text"
-                              value={account.authUserAliasDraft}
-                              onChange={(event) => account.onAliasDraftChange(event.target.value)}
-                              disabled={account.authUserAliasBusy}
-                              aria-label="Username"
-                              maxLength={60}
-                            />
-                            <div className="settingsAccountAliasActions">
-                              <button
-                                className="iconBtn settingsAccountAliasAction settingsAccountAliasActionSave"
-                                type="button"
-                                onClick={() => void account.onSaveAlias()}
-                                disabled={account.authUserAliasBusy}
-                                aria-label="Save username"
-                                title="Save username"
-                              >
-                                {"\u2713"}
-                              </button>
-                              <button
-                                className="iconBtn settingsAccountAliasAction settingsAccountAliasActionCancel"
-                                type="button"
-                                onClick={account.onCancelAliasEdit}
-                                disabled={account.authUserAliasBusy}
-                                aria-label="Cancel username edit"
-                                title="Cancel username edit"
-                              >
-                                {"\u2715"}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
-                              {account.authUserAlias || "-"}
-                            </div>
-                            <button
-                              className="iconBtn settingsAccountAliasAction"
-                              type="button"
-                              onClick={account.onStartAliasEdit}
-                              aria-label="Edit username"
-                              title="Edit username"
-                            >
-                              {"\u270e"}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
-                      Run Onboarding
-                    </button>
-                  </div>
-
                   <div className="settingsAccountIdCardMetaGrid">
                     <div className="settingsAccountIdCardMetaItem">
                       <span className="settingsAccountUidLabel">Email Address</span>

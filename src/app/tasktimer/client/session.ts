@@ -25,13 +25,12 @@ import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
-  getAppBlockingEnabled,
-  getNativeAppBlockerStatus,
-  openNativeAppBlockerOverlaySettings,
-  openNativeAppBlockerUsageAccessSettings,
-  startNativeAppBlockingForFocusMode,
-  stopNativeAppBlockingForFocusMode,
-} from "../lib/nativeAppBlocker";
+  getFocusDndEnabled,
+  getNativeFocusDndStatus,
+  openNativeFocusDndAccessSettings,
+  startNativeFocusDndSession,
+  stopNativeFocusDndSession,
+} from "../lib/nativeFocusDnd";
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createClickAudioPlayer } from "./click-audio-player";
@@ -273,49 +272,59 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let focusTransitionSourceRect: DOMRect | null = null;
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
 
-  function setFocusAppBlockingSetupVisible(visible: boolean, message?: string) {
-    if (els.focusAppBlockingSetup) {
-      els.focusAppBlockingSetup.hidden = !visible;
+  function setFocusDndSetupVisible(visible: boolean, message?: string) {
+    if (els.focusDndSetup) {
+      els.focusDndSetup.hidden = !visible;
     }
-    if (els.focusAppBlockingSetupText && message) {
-      els.focusAppBlockingSetupText.textContent = message;
+    if (els.focusDndSetupText && message) {
+      els.focusDndSetupText.textContent = message;
     }
   }
 
-  async function syncFocusAppBlockingSetupPrompt() {
-    if (!getAppBlockingEnabled(ctx.storageKeys.APP_BLOCKING_STORAGE_KEY)) {
-      setFocusAppBlockingSetupVisible(false);
+  async function syncFocusDndSetupPrompt() {
+    if (!getFocusDndEnabled(ctx.storageKeys.FOCUS_DND_STORAGE_KEY)) {
+      setFocusDndSetupVisible(false);
       return;
     }
-    const status = await getNativeAppBlockerStatus().catch(() => null);
+    const status = await getNativeFocusDndStatus().catch(() => null);
     if (!status?.supported) {
-      setFocusAppBlockingSetupVisible(false);
+      setFocusDndSetupVisible(false);
       return;
     }
-    const missing: string[] = [];
-    if (!status.usageAccessGranted) missing.push("Usage Access");
-    if (!status.overlayPermissionGranted) missing.push("Overlay");
-    setFocusAppBlockingSetupVisible(
-      missing.length > 0,
-      missing.length > 0
-        ? `App blocking needs ${missing.join(" and ")} permission before it can interrupt selected apps.`
-        : "App blocking is active for selected apps."
+    setFocusDndSetupVisible(
+      !status.policyAccessGranted,
+      !status.policyAccessGranted
+        ? "Focus Do Not Disturb needs Android DND access before it can silence interruptions."
+        : "Focus Do Not Disturb is ready."
     );
   }
 
-  function startFocusAppBlocking(task: Task) {
-    void startNativeAppBlockingForFocusMode({
-      storageKey: ctx.storageKeys.APP_BLOCKING_STORAGE_KEY,
-      taskId: task.id,
-      taskName: task.name,
-    })
-      .then(() => syncFocusAppBlockingSetupPrompt())
-      .catch(() => syncFocusAppBlockingSetupPrompt());
+  function startFocusDnd() {
+    const storageKey = ctx.storageKeys.FOCUS_DND_STORAGE_KEY;
+    if (!getFocusDndEnabled(storageKey)) {
+      setFocusDndSetupVisible(false);
+      return;
+    }
+    void getNativeFocusDndStatus()
+      .then(async (status) => {
+        if (!status.supported) {
+          setFocusDndSetupVisible(false);
+          return;
+        }
+        if (!status.policyAccessGranted) {
+          setFocusDndSetupVisible(true, "Focus Do Not Disturb needs Android DND access before it can silence interruptions.");
+          await openNativeFocusDndAccessSettings().catch(() => {});
+          return;
+        }
+        await startNativeFocusDndSession({ storageKey });
+      })
+      .then(() => syncFocusDndSetupPrompt())
+      .catch(() => syncFocusDndSetupPrompt());
   }
 
-  function stopFocusAppBlocking() {
-    void stopNativeAppBlockingForFocusMode().catch(() => {});
-    setFocusAppBlockingSetupVisible(false);
+  function stopFocusDnd() {
+    void stopNativeFocusDndSession().catch(() => {});
+    setFocusDndSetupVisible(false);
   }
 
   function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement) {
@@ -1266,7 +1275,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     syncFocusSessionNotesInput(String(task.id || ""));
     syncFocusSessionNotesAccordion(String(task.id || ""));
-    startFocusAppBlocking(task);
+    startFocusDnd();
     runFocusOpenTransition(transitionSourceEl, transitionSourceRect as DOMRect | null, taskId);
   }
 
@@ -1308,7 +1317,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       focusTransitionSourceTaskId = null;
       focusTransitionSourceRect = null;
     }
-    stopFocusAppBlocking();
+    stopFocusDnd();
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
   }
@@ -1897,14 +1906,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       focusModeExitClickPlayer.play();
       closeFocusMode({ animate: true });
     });
-    ctx.on(els.focusAppBlockingUsageAccessBtn, "click", () => {
-      void openNativeAppBlockerUsageAccessSettings()
-        .then(() => syncFocusAppBlockingSetupPrompt())
-        .catch(() => {});
-    });
-    ctx.on(els.focusAppBlockingOverlayBtn, "click", () => {
-      void openNativeAppBlockerOverlaySettings()
-        .then(() => syncFocusAppBlockingSetupPrompt())
+    ctx.on(els.focusDndAccessBtn, "click", () => {
+      void openNativeFocusDndAccessSettings()
+        .then(() => syncFocusDndSetupPrompt())
         .catch(() => {});
     });
     ctx.on(els.focusCheckpointToggle, "click", () => {

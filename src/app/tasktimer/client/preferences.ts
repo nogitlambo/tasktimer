@@ -24,17 +24,12 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 import { bindToggleRow } from "./control-helpers";
 import { isInteractionHapticsRuntimeAvailable } from "./interaction-haptics";
 import {
-  getAppBlockingEnabled,
-  getNativeAppBlockerStatus,
-  isNativeAppBlockingAvailable,
-  listNativeLaunchableApps,
-  loadBlockedAndroidAppPackages,
-  openNativeAppBlockerOverlaySettings,
-  openNativeAppBlockerUsageAccessSettings,
-  setAppBlockingEnabled,
-  toggleBlockedAndroidAppPackage,
-  type NativeBlockedApp,
-} from "../lib/nativeAppBlocker";
+  getFocusDndEnabled,
+  getNativeFocusDndStatus,
+  isNativeFocusDndAvailable,
+  openNativeFocusDndAccessSettings,
+  setFocusDndEnabled,
+} from "../lib/nativeFocusDnd";
 
 type PreferenceEventDeps = {
   handleAppBackNavigation: () => boolean;
@@ -45,8 +40,7 @@ const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToas
 
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
-  let appBlockingAppsCache: NativeBlockedApp[] | null = null;
-  let appBlockingSyncSeq = 0;
+  let focusDndSyncSeq = 0;
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
     repository: {
@@ -341,7 +335,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.taskStartupModuleSelect) {
       els.taskStartupModuleSelect.value = startupModule;
     }
-    void syncAppBlockingSettingsUi();
+    void syncFocusDndSettingsUi();
     if (els.optimalProductivityStartTimeInput) {
       els.optimalProductivityStartTimeInput.value = ctx.getOptimalProductivityStartTime();
     }
@@ -470,67 +464,33 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
   }
 
-  function getAppBlockingStorageKey() {
-    return ctx.storageKeys.APP_BLOCKING_STORAGE_KEY;
+  function getFocusDndStorageKey() {
+    return ctx.storageKeys.FOCUS_DND_STORAGE_KEY;
   }
 
-  function renderAppBlockingList(apps: NativeBlockedApp[]) {
-    const list = els.taskAppBlockingList as HTMLElement | null;
-    if (!list) return;
-    const blocked = new Set(loadBlockedAndroidAppPackages(getAppBlockingStorageKey()));
-    list.innerHTML = apps
-      .map((app) => {
-        const packageName = ctx.escapeHtmlUI(app.packageName);
-        const label = ctx.escapeHtmlUI(app.label || app.packageName);
-        const checked = blocked.has(app.packageName) ? " checked" : "";
-        return `<label class="taskAppBlockingItem"><input type="checkbox" data-app-block-package="${packageName}"${checked} /><span>${label}</span><small>${packageName}</small></label>`;
-      })
-      .join("");
-    if (els.taskAppBlockingEmpty) {
-      (els.taskAppBlockingEmpty as HTMLElement).hidden = apps.length > 0;
-    }
-  }
-
-  async function syncAppBlockingSettingsUi(opts: { refreshApps?: boolean } = {}) {
-    const seq = ++appBlockingSyncSeq;
-    const enabled = getAppBlockingEnabled(getAppBlockingStorageKey());
-    ctx.toggleSwitchElement(els.taskAppBlockingToggle as HTMLElement | null, enabled);
-    const available = isNativeAppBlockingAvailable();
+  async function syncFocusDndSettingsUi() {
+    const seq = ++focusDndSyncSeq;
+    const enabled = getFocusDndEnabled(getFocusDndStorageKey());
+    const available = isNativeFocusDndAvailable();
+    if (els.taskFocusDndSectionHead) (els.taskFocusDndSectionHead as HTMLElement).hidden = !available;
+    if (els.taskFocusDndToggleRow) (els.taskFocusDndToggleRow as HTMLElement).hidden = !available;
+    if (els.taskFocusDndPanel) (els.taskFocusDndPanel as HTMLElement).hidden = !available;
+    ctx.toggleSwitchElement(els.taskFocusDndToggle as HTMLElement | null, enabled);
     if (!available) {
-      if (els.taskAppBlockingStatus) els.taskAppBlockingStatus.textContent = "Android app blocking is available only in the Android app.";
-      if (els.taskAppBlockingList) (els.taskAppBlockingList as HTMLElement).innerHTML = "";
-      if (els.taskAppBlockingEmpty) {
-        (els.taskAppBlockingEmpty as HTMLElement).hidden = false;
-        els.taskAppBlockingEmpty.textContent = "Open TaskLaunch on Android to choose blocked apps.";
-      }
-      [els.taskAppBlockingUsageAccessBtn, els.taskAppBlockingOverlayBtn, els.taskAppBlockingRefreshBtn].forEach((button) => {
-        if (button) button.disabled = true;
-      });
+      if (els.taskFocusDndStatus) els.taskFocusDndStatus.textContent = "Focus Do Not Disturb is available only in the Android app.";
+      if (els.taskFocusDndAccessBtn) els.taskFocusDndAccessBtn.disabled = true;
       return;
     }
-    const status = await getNativeAppBlockerStatus().catch(() => null);
-    if (seq !== appBlockingSyncSeq) return;
-    if (els.taskAppBlockingEmpty) {
-      els.taskAppBlockingEmpty.textContent = "No Android apps available to configure.";
-    }
-    const missing: string[] = [];
-    if (!status?.usageAccessGranted) missing.push("Usage Access");
-    if (!status?.overlayPermissionGranted) missing.push("Overlay");
-    if (els.taskAppBlockingStatus) {
-      els.taskAppBlockingStatus.textContent = missing.length
-        ? `Needs ${missing.join(" and ")} permission before Focus Mode can block apps.`
+    const status = await getNativeFocusDndStatus().catch(() => null);
+    if (seq !== focusDndSyncSeq) return;
+    if (els.taskFocusDndStatus) {
+      els.taskFocusDndStatus.textContent = !status?.policyAccessGranted
+        ? "Needs Android Do Not Disturb access before Focus Mode can silence interruptions."
         : enabled
-          ? "Ready. Selected apps will be blocked while Focus Mode is open."
-          : "Ready. Turn on app blocking to use selected apps during Focus Mode.";
+          ? "Ready. Android will switch to Priority Only while Focus Mode is open."
+          : "Ready. Turn this on to use Do Not Disturb during Focus Mode.";
     }
-    [els.taskAppBlockingUsageAccessBtn, els.taskAppBlockingOverlayBtn, els.taskAppBlockingRefreshBtn].forEach((button) => {
-      if (button) button.disabled = false;
-    });
-    if (!appBlockingAppsCache || opts.refreshApps) {
-      appBlockingAppsCache = await listNativeLaunchableApps().catch(() => []);
-      if (seq !== appBlockingSyncSeq) return;
-    }
-    renderAppBlockingList(appBlockingAppsCache);
+    if (els.taskFocusDndAccessBtn) els.taskFocusDndAccessBtn.disabled = false;
   }
 
   function applyInteractionHapticsIntensityPreference(next: InteractionHapticsIntensity) {
@@ -867,32 +827,27 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     bindToggleRow({
       on: ctx.on,
-      control: els.taskAppBlockingToggle,
-      row: els.taskAppBlockingToggleRow,
-      ignoreSelector: "#taskAppBlockingToggle",
+      control: els.taskFocusDndToggle,
+      row: els.taskFocusDndToggleRow,
+      ignoreSelector: "#taskFocusDndToggle",
       handleToggle: () => {
-        setAppBlockingEnabled(getAppBlockingStorageKey(), !getAppBlockingEnabled(getAppBlockingStorageKey()));
-        void syncAppBlockingSettingsUi();
+        const nextEnabled = !getFocusDndEnabled(getFocusDndStorageKey());
+        setFocusDndEnabled(getFocusDndStorageKey(), nextEnabled);
+        void syncFocusDndSettingsUi();
+        if (nextEnabled) {
+          void getNativeFocusDndStatus()
+            .then((status) => {
+              if (status.supported && !status.policyAccessGranted) return openNativeFocusDndAccessSettings();
+              return undefined;
+            })
+            .catch(() => {});
+        }
       },
     });
-    ctx.on(els.taskAppBlockingUsageAccessBtn, "click", () => {
-      void openNativeAppBlockerUsageAccessSettings()
-        .then(() => syncAppBlockingSettingsUi({ refreshApps: true }))
+    ctx.on(els.taskFocusDndAccessBtn, "click", () => {
+      void openNativeFocusDndAccessSettings()
+        .then(() => syncFocusDndSettingsUi())
         .catch(() => {});
-    });
-    ctx.on(els.taskAppBlockingOverlayBtn, "click", () => {
-      void openNativeAppBlockerOverlaySettings()
-        .then(() => syncAppBlockingSettingsUi())
-        .catch(() => {});
-    });
-    ctx.on(els.taskAppBlockingRefreshBtn, "click", () => {
-      void syncAppBlockingSettingsUi({ refreshApps: true });
-    });
-    ctx.on(els.taskAppBlockingList, "change", (event: Event) => {
-      const input = (event.target as HTMLElement | null)?.closest?.("[data-app-block-package]") as HTMLInputElement | null;
-      if (!input) return;
-      toggleBlockedAndroidAppPackage(getAppBlockingStorageKey(), input.dataset.appBlockPackage || "");
-      renderAppBlockingList(appBlockingAppsCache || []);
     });
     bindToggleRow({
       on: ctx.on,

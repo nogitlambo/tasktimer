@@ -353,10 +353,56 @@ async function clearPushDeviceForUid(uid: string | null | undefined) {
   }
 }
 
+async function clearPushDevicesForDisabledChannels(
+  uid: string | null | undefined,
+  preference: PushChannelPreference
+) {
+  const normalizedUid = String(uid || "").trim();
+  const db = getFirebaseFirestoreClient();
+  if (!normalizedUid || !db) return;
+
+  const disabledChannelQueries: Array<ReturnType<typeof query>> = [];
+  const devicesRef = collection(db, "users", normalizedUid, "devices");
+  if (!preference.mobileEnabled) {
+    disabledChannelQueries.push(query(devicesRef, where("native", "==", true)));
+  }
+  if (!preference.webEnabled) {
+    disabledChannelQueries.push(query(devicesRef, where("native", "==", false)));
+    disabledChannelQueries.push(query(devicesRef, where("platform", "==", "web")));
+  }
+  if (!disabledChannelQueries.length) return;
+
+  const snapshots = await Promise.all(disabledChannelQueries.map((disabledQuery) => getDocs(disabledQuery)));
+  const disabledDeviceIds = new Set<string>();
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((docSnap) => {
+      const id = String(docSnap.id || "").trim();
+      if (id) disabledDeviceIds.add(id);
+    });
+  });
+
+  await Promise.all(
+    Array.from(disabledDeviceIds).map((deviceId) =>
+      setDoc(
+        doc(db, "users", normalizedUid, "devices", deviceId),
+        {
+          enabled: false,
+          appActive: false,
+          appStateUpdatedAtMs: Date.now(),
+          token: deleteField(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      )
+    )
+  );
+}
+
 async function clearPushDeviceForUser(user: User | null) {
   const uid = String(user?.uid || lastSyncedUid || "").trim();
   if (!uid) return;
   await clearPushDeviceForUid(uid);
+  await clearPushDevicesForDisabledChannels(uid, desiredPushEnabled);
   if (uid === lastSyncedUid) lastSyncedUid = "";
 }
 

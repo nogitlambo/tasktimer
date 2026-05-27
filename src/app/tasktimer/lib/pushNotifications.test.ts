@@ -6,6 +6,8 @@ type SetupOptions = {
   token?: string;
   saveError?: Error | null;
   cloudDocData?: Record<string, unknown> | null;
+  nativeRuntime?: boolean;
+  deviceDocs?: Array<{ id: string; data: Record<string, unknown> }>;
 };
 
 async function setupPushModule(options: SetupOptions = {}) {
@@ -22,12 +24,24 @@ async function setupPushModule(options: SetupOptions = {}) {
     exists: () => options.cloudDocData != null,
     get: (field: string) => options.cloudDocData?.[field],
   }));
-  const getDocs = vi.fn(async () => ({ empty: true, docs: [] }));
+  const getDocs = vi.fn(async (ref: { filters?: Array<{ field: string; value: unknown }> } | undefined) => {
+    const filters = Array.isArray(ref?.filters) ? ref.filters : [];
+    const docs = (options.deviceDocs || [])
+      .filter((row) => filters.every((filter) => row.data[filter.field] === filter.value))
+      .map((row) => ({
+        id: row.id,
+        get: (field: string) => row.data[field],
+      }));
+    return { empty: docs.length === 0, docs };
+  });
   const doc = vi.fn((...segments: unknown[]) => ({
     path: segments.filter((segment) => typeof segment === "string").join("/"),
   }));
-  const query = vi.fn((value) => value);
-  const where = vi.fn();
+  const query = vi.fn((value, ...filters) => ({
+    ...value,
+    filters: filters.flatMap((filter) => filter ? [filter] : []),
+  }));
+  const where = vi.fn((field: string, _op: string, value: unknown) => ({ field, value }));
   const recordNonFatal = vi.fn();
   const onMessage = vi.fn(() => () => {});
   const getToken = vi.fn(async () => options.token ?? "web-token-123");
@@ -47,7 +61,7 @@ async function setupPushModule(options: SetupOptions = {}) {
   vi.doMock("@/lib/firebaseClient", () => ({
     getFirebaseAppClient: () => ({ name: "app" }),
     getFirebaseAuthClient: () => ({ currentUser: { uid: "user-1" } }),
-    isNativeOrFileRuntime: () => false,
+    isNativeOrFileRuntime: () => options.nativeRuntime === true,
   }));
   vi.doMock("@/lib/firebaseFirestoreClient", () => ({
     getFirebaseFirestoreClient: () => ({ name: "db" }),
@@ -81,8 +95,8 @@ async function setupPushModule(options: SetupOptions = {}) {
   }));
   vi.doMock("@capacitor/core", () => ({
     Capacitor: {
-      isNativePlatform: () => false,
-      getPlatform: () => "web",
+      isNativePlatform: () => options.nativeRuntime === true,
+      getPlatform: () => options.nativeRuntime === true ? "android" : "web",
     },
   }));
   vi.doMock("@capacitor/push-notifications", () => ({
@@ -229,6 +243,59 @@ describe("pushNotifications web registration", () => {
         runtime: "web",
         stage: "permission-denied",
       })
+    );
+  });
+
+  it("clears stale native device registrations when mobile push is disabled", async () => {
+    const { mod, setDoc } = await setupPushModule({
+      nativeRuntime: true,
+      deviceDocs: [
+        {
+          id: "stale-native-1",
+          data: {
+            native: true,
+            token: "old-native-token",
+            enabled: true,
+          },
+        },
+        {
+          id: "web-1",
+          data: {
+            native: false,
+            platform: "web",
+            token: "web-token",
+            enabled: true,
+          },
+        },
+      ],
+    });
+
+    const result = await mod.syncTaskTimerPushNotificationsEnabled({ mobileEnabled: false, webEnabled: true });
+
+    expect(result).toEqual({ mobileEnabled: false, webEnabled: true });
+    expect(setDoc.mock.calls).toEqual(
+      expect.arrayContaining([
+        [
+          expect.objectContaining({ path: "users/user-1/devices/stale-native-1" }),
+          expect.objectContaining({
+            enabled: false,
+            token: "DELETE_FIELD",
+          }),
+          { merge: true },
+        ],
+      ])
+    );
+    expect(setDoc.mock.calls).not.toEqual(
+      expect.arrayContaining([
+        [
+          expect.objectContaining({ path: "users/user-1/devices/web-1" }),
+          expect.objectContaining({
+            enabled: false,
+            token: "DELETE_FIELD",
+          }),
+          { merge: true },
+        ],
+      ])
     );
   });
 
