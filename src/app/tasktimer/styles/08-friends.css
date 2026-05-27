@@ -304,7 +304,6 @@
 }
 
 .friendSharedTaskCard{
-  border: 1px solid rgba(134, 170, 196, 0.35);
   background: rgba(9, 15, 24, 0.55);
   padding: 10px 0;
   border-radius: 0;
@@ -523,108 +522,23 @@
 
 .friendSharedTaskCardLayout{
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
   align-items: stretch;
 }
 
-.friendSharedTaskInfo,
-.friendSharedTaskMetric,
-.friendSharedTaskSpacer,
-.friendSharedTaskTrend{
+.friendSharedTaskInfo{
   min-width: 0;
 }
 
-.friendSharedTaskInfo,
-.friendSharedTaskMetric,
-.friendSharedTaskSpacer,
-.friendSharedTaskTrend{
-  padding: 0 12px;
-  border-left: 1px dashed rgba(121, 226, 255, 0.42);
-  border-right: 1px dashed rgba(121, 226, 255, 0.42);
+.friendSharedTaskInfo{
+  padding: 0;
 }
 
-.friendSharedTaskInfo,
-.friendSharedTaskMetric{
+.friendSharedTaskInfo{
   display: grid;
   align-content: start;
   gap: 4px;
-}
-
-.friendSharedTaskTrend{
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.friendSharedTaskTrendLabel{
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(188, 214, 230, 0.72);
-  text-align: right;
-}
-
-.friendSharedTrendBars{
-  width: 100%;
-  display: grid;
-  gap: 4px;
-  padding: 6px;
-  box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(121, 226, 255, 0.2);
-}
-
-.friendSharedTrendRow{
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) 32px;
-  gap: 6px;
-  align-items: center;
-  min-width: 0;
-}
-
-.friendSharedTrendDay,
-.friendSharedTrendTime{
-  min-width: 0;
-  overflow: hidden;
-  color: rgba(188, 214, 230, 0.7);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.friendSharedTrendDay{
-  text-align: center;
-}
-
-.friendSharedTrendTime{
-  color: rgba(188, 214, 230, 0.62);
-  text-align: right;
-  text-overflow: clip;
-}
-
-.friendSharedTrendTrack{
-  position: relative;
-  display: block;
-  min-width: 0;
-  height: 6px;
-  overflow: hidden;
-  background: rgba(188, 214, 230, 0.1);
-}
-
-.friendSharedTrendBar{
-  display: block;
-  width: 0;
-  min-width: 1px;
-  height: 100%;
-  background: var(--accent, #35e8ff);
-  opacity: 0.9;
 }
 
 .friendSharedTaskState{
@@ -690,9 +604,6 @@
     grid-template-columns: 1fr;
   }
 
-.friendSharedTaskTrendLabel{
-    text-align: left;
-  }
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,
@@ -1144,27 +1055,17 @@
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCardLayout{
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
   align-items: stretch;
   min-height: 100%;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo,
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskMetric{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo{
   display: grid;
   align-content: start;
   gap: 4px;
   min-width: 0;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrend{
-  min-width: 0;
-  justify-content: stretch;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrendLabel{
-  text-align: right;
 }
 
 @media (max-width: 900px){
@@ -1176,19 +1077,8 @@
     grid-template-columns: 1fr;
   }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo,
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskMetric,
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskSpacer,
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrend{
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo{
     padding: 8px 0;
-    border-left: 0;
-    border-right: 0;
-    border-top: 1px dashed rgba(121, 226, 255, 0.42);
-    border-bottom: 1px dashed rgba(121, 226, 255, 0.42);
-  }
-
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTrendLabel{
-    text-align: left;
   }
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
@@ -1219,7 +1109,6 @@ body[data-theme="lime"] .friendIdentityMeta{
 }
 
 body[data-theme="lime"] .friendSharedTaskCard{
-  border-color: rgba(219,255,79,.18);
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
     rgba(18,20,24,.96);
@@ -1776,12 +1665,15 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isDummy,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace.isPlaceholder{
   cursor:default;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder:hover,
-#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder:focus-visible{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isPlaceholder:focus-visible,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isDummy:hover,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow.isDummy:focus-visible{
   background: transparent;
 }
 

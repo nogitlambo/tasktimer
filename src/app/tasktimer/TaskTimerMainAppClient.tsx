@@ -1152,7 +1152,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyPodium" aria-label="Weekly top three">
                         {weeklyPodiumRows.map((row) => (
                           <button
-                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                             type="button"
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
@@ -1198,13 +1198,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           {weeklyTableRows.map((row) => (
                             <button
-                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                               role="row"
                               type="button"
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-                              disabled={row.isPlaceholder}
-                              aria-disabled={row.isPlaceholder}
-                              onClick={() => openWeeklyLeaderboardProfile(row.profile)}
+                              disabled={row.isPlaceholder || row.isDummy}
+                              aria-disabled={row.isPlaceholder || row.isDummy}
+                              onClick={() => {
+                                if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
+                              }}
                             >
                               <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPlayerCell" role="cell">
@@ -1254,7 +1256,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyPodium" aria-label="Rivals top three">
                         {rivalPodiumRows.map((row) => (
                           <button
-                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                             type="button"
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
@@ -1300,13 +1302,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           {rivalTableRows.map((row) => (
                             <button
-                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                               role="row"
                               type="button"
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-                              disabled={row.isPlaceholder}
-                              aria-disabled={row.isPlaceholder}
-                              onClick={() => openLeaderboardProfile(row.profile)}
+                              disabled={row.isPlaceholder || row.isDummy}
+                              aria-disabled={row.isPlaceholder || row.isDummy}
+                              onClick={() => {
+                                if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
+                              }}
                             >
                               <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPlayerCell" role="cell">
@@ -1356,7 +1360,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <div className="leaderboardWeeklyPodium" aria-label="Global top three">
                         {globalPodiumRows.map((row) => (
                           <button
-                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                             type="button"
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
@@ -1402,13 +1406,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           </div>
                           {globalTableRows.map((row) => (
                             <button
-                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}`}
+                              className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                               role="row"
                               type="button"
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-                              disabled={row.isPlaceholder}
-                              aria-disabled={row.isPlaceholder}
-                              onClick={() => openLeaderboardProfile(row.profile)}
+                              disabled={row.isPlaceholder || row.isDummy}
+                              aria-disabled={row.isPlaceholder || row.isDummy}
+                              onClick={() => {
+                                if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
+                              }}
                             >
                               <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPlayerCell" role="cell">

@@ -1,6 +1,7 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
+import type { FormEvent } from "react";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -57,6 +58,14 @@ export default function WebSignIn(props: WebSignInProps) {
     onCompleteEmailLink,
     onAuthEmailChange,
   } = props;
+  const canSendEmailLink = !authBusy && isValidAuthEmail;
+  const canCompleteEmailLink = !authBusy && isValidAuthEmail;
+
+  const handleEmailFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSendEmailLink) return;
+    onSendEmailLink();
+  };
 
   if (showLaunchingScreen) {
     return (
@@ -166,7 +175,7 @@ export default function WebSignIn(props: WebSignInProps) {
                     ) : null}
 
                     {showEmailLoginForm ? (
-                      <>
+                      <form className="webSignInEmailFormContents" onSubmit={handleEmailFormSubmit}>
                         <label htmlFor="landingEmailInput" className="sr-only">
                           Email address
                         </label>
@@ -179,35 +188,33 @@ export default function WebSignIn(props: WebSignInProps) {
                           onChange={(e) => onAuthEmailChange(e.target.value)}
                           className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
                         />
-                      </>
+
+                        <div className="webSignInAuthActions flex flex-wrap justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={onToggleEmailLoginForm}
+                            disabled={authBusy}
+                            className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={!canSendEmailLink}
+                            className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
+                          >
+                            Send Link
+                          </button>
+                        </div>
+                      </form>
                     ) : null}
 
                     <div className="webSignInAuthActions flex flex-wrap justify-center gap-2">
-                      {showEmailLoginForm ? (
-                        <button
-                          type="button"
-                          onClick={onToggleEmailLoginForm}
-                          disabled={authBusy}
-                          className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
-                        >
-                          Cancel
-                        </button>
-                      ) : null}
-                      {showEmailLoginForm ? (
-                        <button
-                          type="button"
-                          onClick={onSendEmailLink}
-                          disabled={authBusy || !isValidAuthEmail}
-                          className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
-                        >
-                          Send Link
-                        </button>
-                      ) : null}
                       {isEmailLinkFlow ? (
                         <button
                           type="button"
                           onClick={onCompleteEmailLink}
-                          disabled={authBusy || !isValidAuthEmail}
+                          disabled={!canCompleteEmailLink}
                           className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
                         >
                           Complete Sign-In

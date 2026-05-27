@@ -382,6 +382,12 @@ body.webSignInNativeRoute .webSignInPage {
   border-color: rgba(167, 243, 92, 0.48);
 }
 
+.webSignInEmailFormContents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .webSignInAuthActions {
   justify-content: center;
 }

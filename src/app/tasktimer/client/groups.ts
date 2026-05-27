@@ -365,56 +365,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     )}</span>`;
   }
 
-  const sharedTrendDays = [
-    { short: "S", label: "Sunday" },
-    { short: "M", label: "Monday" },
-    { short: "T", label: "Tuesday" },
-    { short: "W", label: "Wednesday" },
-    { short: "T", label: "Thursday" },
-    { short: "F", label: "Friday" },
-    { short: "S", label: "Saturday" },
-  ] as const;
-
-  function getSharedTrendValues(msByDay: number[]): number[] {
-    return new Array(7).fill(0).map((_, i) => Math.max(0, Math.floor(Number((msByDay || [])[i] || 0))));
-  }
-
-  function formatSharedTrendTime(msRaw: number): string {
-    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
-    const totalMinutes = Math.floor(totalMs / 60000);
-    if (totalMinutes >= 1440) return `${Math.floor(totalMinutes / 1440)}d`;
-    if (totalMinutes >= 60) return `${Math.floor(totalMinutes / 60)}h`;
-    if (totalMinutes > 0) return `${totalMinutes}m`;
-    return totalMs > 0 ? "<1m" : "0m";
-  }
-
-  function buildSharedTrendBarMarkup(
-    msByDay: number[],
-    checkpointScaleMs?: number | null,
-    opts?: { dynamicColorsEnabled?: boolean }
-  ): string {
-    const vals = getSharedTrendValues(msByDay);
-    const scaleRef = Math.max(0, Number(checkpointScaleMs || 0));
-    const maxVal = Math.max(...vals, 1);
-    return vals
-      .map((value, index) => {
-        const day = sharedTrendDays[index];
-        const title = `${day.label}: ${formatCompactDurationForSharedCard(value)}`;
-        const barPctBase = scaleRef > 0 ? scaleRef : maxVal;
-        const barPct = barPctBase > 0 ? Math.max(0, Math.min(100, (value / barPctBase) * 100)) : 0;
-        const barStyle =
-          opts?.dynamicColorsEnabled === false
-            ? ` style="width:${barPct.toFixed(1)}%"`
-            : ` style="width:${barPct.toFixed(1)}%; background:${ctx.escapeHtmlUI(ctx.fillBackgroundForPct(barPct))}"`;
-        return `<div class="friendSharedTrendRow" title="${ctx.escapeHtmlUI(title)}" aria-label="${ctx.escapeHtmlUI(title)}">
-          <span class="friendSharedTrendDay" aria-hidden="true">${ctx.escapeHtmlUI(day.short)}</span>
-          <span class="friendSharedTrendTrack" aria-hidden="true"><span class="friendSharedTrendBar"${barStyle}></span></span>
-          <span class="friendSharedTrendTime">${ctx.escapeHtmlUI(formatSharedTrendTime(value))}</span>
-        </div>`;
-      })
-      .join("");
-  }
-
   function getSharedFriendUidsForTask(taskId: string): string[] {
     const uid = ctx.getCurrentUid();
     if (!uid || !taskId) return [];
@@ -1032,38 +982,18 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
               String(entry.timerState || "stopped").toLowerCase() === "running"
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
-            const trendValues = entry.focusTrend7dMs || [];
-            const trendTotalMs = getSharedTrendValues(trendValues).reduce((sum, value) => sum + value, 0);
-            const trendBars = buildSharedTrendBarMarkup(trendValues, (entry as any).checkpointScaleMs, {
-              dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
-            });
             return `<div class="friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
                   <div class="friendSharedTaskTitle">${ctx.escapeHtmlUI(entry.taskName)}</div>
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
                   <div class="friendSharedTaskMeta">Created: ${ctx.escapeHtmlUI(createdDate)}</div>
-                </div>
-                <div class="friendSharedTaskMetric">
                   <div class="friendSharedTaskMeta">Daily avg: ${ctx.escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(entry.avgTimeLoggedThisWeekMs || 0))
                   )}</div>
-                </div>
-                <div class="friendSharedTaskMetric">
                   <div class="friendSharedTaskMeta">Total logged: ${ctx.escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(entry.totalTimeLoggedMs || 0))
                   )}</div>
-                </div>
-                <div class="friendSharedTaskSpacer" aria-hidden="true"></div>
-                <div class="friendSharedTaskTrend" aria-label="Focus trend chart. ${ctx.escapeHtmlUI(
-                  formatCompactDurationForSharedCard(trendTotalMs)
-                )} logged this week.">
-                  <div class="friendSharedTaskTrendLabel"><span>Focus Trend</span><span>${ctx.escapeHtmlUI(
-                    formatCompactDurationForSharedCard(trendTotalMs)
-                  )}</span></div>
-                  <div class="friendSharedTrendBars" role="img" aria-label="Focus trend over this week">
-                    ${trendBars}
-                  </div>
                 </div>
               </div>
             </div>`;

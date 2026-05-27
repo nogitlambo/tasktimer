@@ -35,4 +35,15 @@ describe("WebSignIn", () => {
     expect(html).toContain("Continue with email");
     expect(html).not.toContain("Continue without account");
   });
+
+  it("submits the visible email form through the send-link action", () => {
+    const html = renderToStaticMarkup(
+      <WebSignIn {...baseProps} showEmailLoginForm={true} isValidAuthEmail={true} authEmail="user@example.com" />
+    );
+
+    expect(html).toContain("<form");
+    expect(html).toContain('type="email"');
+    expect(html).toContain('type="submit"');
+    expect(html).toContain("Send Link");
+  });
 });
