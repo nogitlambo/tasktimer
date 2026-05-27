@@ -20,6 +20,37 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             </div>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
           </div>
+          <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/privacy-policy.svg" alt="" aria-hidden="true" />
+            <div className="settingsInlineSectionTitle">App Blocking</div>
+          </div>
+          <div className="toggleRow" id="taskAppBlockingToggleRow">
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Block selected apps in Focus Mode</span>
+              <span className="settingsPreferenceControlHelp">Android only. Requires Usage Access and overlay permissions.</span>
+            </div>
+            <button className="switch" id="taskAppBlockingToggle" type="button" role="switch" aria-checked="false" />
+          </div>
+          <div className="taskAppBlockingPanel" id="taskAppBlockingPanel">
+            <div className="taskAppBlockingStatus" id="taskAppBlockingStatus" aria-live="polite">
+              Checking app blocking status...
+            </div>
+            <div className="taskAppBlockingActions">
+              <button className="btn btn-ghost small" id="taskAppBlockingUsageAccessBtn" type="button">
+                Usage Access
+              </button>
+              <button className="btn btn-ghost small" id="taskAppBlockingOverlayBtn" type="button">
+                Overlay
+              </button>
+              <button className="btn btn-ghost small" id="taskAppBlockingRefreshBtn" type="button">
+                Refresh Apps
+              </button>
+            </div>
+            <div className="taskAppBlockingList" id="taskAppBlockingList" aria-label="Blocked Android apps" />
+            <div className="taskAppBlockingEmpty" id="taskAppBlockingEmpty">
+              No Android apps available to configure.
+            </div>
+          </div>
           <div className="unitRow" id="taskStartupModuleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Default Module on App Startup</span>

@@ -24,6 +24,14 @@ import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } 
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
+import {
+  getAppBlockingEnabled,
+  getNativeAppBlockerStatus,
+  openNativeAppBlockerOverlaySettings,
+  openNativeAppBlockerUsageAccessSettings,
+  startNativeAppBlockingForFocusMode,
+  stopNativeAppBlockingForFocusMode,
+} from "../lib/nativeAppBlocker";
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createClickAudioPlayer } from "./click-audio-player";
@@ -264,6 +272,51 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
+
+  function setFocusAppBlockingSetupVisible(visible: boolean, message?: string) {
+    if (els.focusAppBlockingSetup) {
+      els.focusAppBlockingSetup.hidden = !visible;
+    }
+    if (els.focusAppBlockingSetupText && message) {
+      els.focusAppBlockingSetupText.textContent = message;
+    }
+  }
+
+  async function syncFocusAppBlockingSetupPrompt() {
+    if (!getAppBlockingEnabled(ctx.storageKeys.APP_BLOCKING_STORAGE_KEY)) {
+      setFocusAppBlockingSetupVisible(false);
+      return;
+    }
+    const status = await getNativeAppBlockerStatus().catch(() => null);
+    if (!status?.supported) {
+      setFocusAppBlockingSetupVisible(false);
+      return;
+    }
+    const missing: string[] = [];
+    if (!status.usageAccessGranted) missing.push("Usage Access");
+    if (!status.overlayPermissionGranted) missing.push("Overlay");
+    setFocusAppBlockingSetupVisible(
+      missing.length > 0,
+      missing.length > 0
+        ? `App blocking needs ${missing.join(" and ")} permission before it can interrupt selected apps.`
+        : "App blocking is active for selected apps."
+    );
+  }
+
+  function startFocusAppBlocking(task: Task) {
+    void startNativeAppBlockingForFocusMode({
+      storageKey: ctx.storageKeys.APP_BLOCKING_STORAGE_KEY,
+      taskId: task.id,
+      taskName: task.name,
+    })
+      .then(() => syncFocusAppBlockingSetupPrompt())
+      .catch(() => syncFocusAppBlockingSetupPrompt());
+  }
+
+  function stopFocusAppBlocking() {
+    void stopNativeAppBlockingForFocusMode().catch(() => {});
+    setFocusAppBlockingSetupVisible(false);
+  }
 
   function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement) {
     const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
@@ -1213,6 +1266,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     syncFocusSessionNotesInput(String(task.id || ""));
     syncFocusSessionNotesAccordion(String(task.id || ""));
+    startFocusAppBlocking(task);
     runFocusOpenTransition(transitionSourceEl, transitionSourceRect as DOMRect | null, taskId);
   }
 
@@ -1254,6 +1308,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       focusTransitionSourceTaskId = null;
       focusTransitionSourceRect = null;
     }
+    stopFocusAppBlocking();
     ctx.render();
     openDeferredFocusModeTimeGoalModal();
   }
@@ -1841,6 +1896,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.on(els.focusModeBackBtn, "click", () => {
       focusModeExitClickPlayer.play();
       closeFocusMode({ animate: true });
+    });
+    ctx.on(els.focusAppBlockingUsageAccessBtn, "click", () => {
+      void openNativeAppBlockerUsageAccessSettings()
+        .then(() => syncFocusAppBlockingSetupPrompt())
+        .catch(() => {});
+    });
+    ctx.on(els.focusAppBlockingOverlayBtn, "click", () => {
+      void openNativeAppBlockerOverlaySettings()
+        .then(() => syncFocusAppBlockingSetupPrompt())
+        .catch(() => {});
     });
     ctx.on(els.focusCheckpointToggle, "click", () => {
       const nextValue = !ctx.getFocusShowCheckpoints();

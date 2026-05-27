@@ -728,6 +728,31 @@ body.isFocusModeTransitioning #focusModeScreen{
   justify-content:flex-end;
 }
 
+.focusAppBlockingSetup{
+  width:min(520px, calc(100% - 28px));
+  margin:12px auto 0;
+  padding:12px;
+  border:1px solid rgba(201,255,36,.24);
+  background:rgba(13,15,19,.82);
+}
+
+.focusAppBlockingSetupText{
+  margin-top:6px;
+  color:rgba(238,244,250,.72);
+  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:13px;
+  line-height:1.35;
+  text-align:center;
+}
+
+.focusAppBlockingSetupActions{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+
 .checkpointToastHost{
   position:fixed;
   inset:0;

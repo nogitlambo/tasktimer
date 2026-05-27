@@ -10,6 +10,71 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   display: none;
 }
 
+.taskAppBlockingPanel{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:10px 0 4px;
+}
+
+.taskAppBlockingStatus,
+.taskAppBlockingEmpty{
+  color:rgba(238,244,250,.72);
+  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:13px;
+  line-height:1.35;
+}
+
+.taskAppBlockingActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.taskAppBlockingList{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+  gap:8px;
+}
+
+.taskAppBlockingItem{
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr);
+  grid-template-areas:"check label" ". package";
+  align-items:center;
+  gap:2px 8px;
+  min-height:48px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+}
+
+.taskAppBlockingItem input{
+  grid-area:check;
+}
+
+.taskAppBlockingItem span{
+  grid-area:label;
+  min-width:0;
+  color:rgba(249,255,216,.94);
+  font-size:13px;
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.taskAppBlockingItem small{
+  grid-area:package;
+  min-width:0;
+  color:rgba(238,244,250,.56);
+  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:11px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]),
 #app[aria-label="TaskLaunch History Manager"]{
   width: 100%;

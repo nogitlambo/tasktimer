@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(FirebaseAuthenticationPlugin.class);
         registerPlugin(TaskLaunchTimerNotificationPlugin.class);
+        registerPlugin(TaskLaunchAppBlockerPlugin.class);
         super.onCreate(savedInstanceState);
         deliverPushIntentToWeb(getIntent());
     }

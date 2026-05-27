@@ -58,6 +58,20 @@ export default function FocusModeScreen() {
           </div>
         </div>
       </div>
+      <div className="focusAppBlockingSetup" id="focusAppBlockingSetup" hidden>
+        <div className="focusInsightsTitle">App Blocking Setup</div>
+        <div className="focusAppBlockingSetupText" id="focusAppBlockingSetupText" aria-live="polite">
+          Grant Android permissions to block selected apps during Focus Mode.
+        </div>
+        <div className="focusAppBlockingSetupActions">
+          <button className="btn btn-ghost small" id="focusAppBlockingUsageAccessBtn" type="button">
+            Usage Access
+          </button>
+          <button className="btn btn-ghost small" id="focusAppBlockingOverlayBtn" type="button">
+            Overlay
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
