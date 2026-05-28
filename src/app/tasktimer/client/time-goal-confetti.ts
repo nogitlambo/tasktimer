@@ -18,3 +18,14 @@ export function stopTimeGoalConfetti(stage: HTMLElement | null | undefined) {
 export function getTimeGoalConfettiStage(overlay: HTMLElement | null | undefined) {
   return (overlay?.querySelector("#timeGoalCompleteConfettiStage") as HTMLElement | null) || null;
 }
+
+export function startTimeGoalXpSplash(text: HTMLElement | null | undefined) {
+  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  if (!fx) return false;
+  fx.classList.remove("isPlaying");
+  fx.dataset.xpSplashState = "stopped";
+  void fx.offsetWidth;
+  fx.classList.add("isPlaying");
+  fx.dataset.xpSplashState = "playing";
+  return true;
+}

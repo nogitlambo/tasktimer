@@ -37,6 +37,13 @@ type LayoutConfig = {
   labelOrbitRadius: number;
 };
 
+type LabelSafetyConfig = Partial<Pick<LayoutConfig, "chartSize" | "center" | "ringOuterRadius">> & {
+  viewportWidth?: number;
+  viewportHeight?: number;
+  padding?: number;
+  protectedRadius?: number;
+};
+
 const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   chartSize: 380,
   center: 190,
@@ -46,6 +53,9 @@ const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   ringOuterRadius: 104,
   labelOrbitRadius: 148,
 };
+
+const DEFAULT_LABEL_SAFETY_PADDING = 1;
+const DEFAULT_LABEL_PROTECTED_RADIUS = 88;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -157,6 +167,37 @@ export function dashboardTasksCompletedPathIntersectsRect(
     segmentStart = segmentEnd;
   }
   return false;
+}
+
+function rectIntersectsCircle(rect: DashboardTasksCompletedRect, center: DashboardTasksCompletedPoint, radius: number) {
+  const closestX = clamp(center.x, rect.x, rect.x + rect.width);
+  const closestY = clamp(center.y, rect.y, rect.y + rect.height);
+  return Math.hypot(closestX - center.x, closestY - center.y) < radius;
+}
+
+function rectFitsBounds(rect: DashboardTasksCompletedRect, width: number, height: number, padding: number) {
+  return rect.x >= padding &&
+    rect.y >= padding &&
+    rect.x + rect.width <= width - padding &&
+    rect.y + rect.height <= height - padding;
+}
+
+export function areDashboardTasksCompletedLabelsSafe(
+  labels: DashboardTasksCompletedLabelLayout[],
+  configOverrides: LabelSafetyConfig = {}
+) {
+  const chartSize = configOverrides.chartSize ?? DEFAULT_LAYOUT_CONFIG.chartSize;
+  const center = configOverrides.center ?? DEFAULT_LAYOUT_CONFIG.center;
+  const padding = configOverrides.padding ?? DEFAULT_LABEL_SAFETY_PADDING;
+  const viewportWidth = configOverrides.viewportWidth ?? chartSize;
+  const viewportHeight = configOverrides.viewportHeight ?? chartSize;
+  const protectedRadius = configOverrides.protectedRadius ?? DEFAULT_LABEL_PROTECTED_RADIUS;
+  const protectedCenter = { x: center, y: center };
+
+  return labels.every((label) => (
+    rectFitsBounds(label.rect, viewportWidth, viewportHeight, padding) &&
+    !rectIntersectsCircle(label.rect, protectedCenter, protectedRadius)
+  ));
 }
 
 function formatPathPoint(point: DashboardTasksCompletedPoint) {

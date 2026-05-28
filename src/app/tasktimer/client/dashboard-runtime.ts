@@ -27,7 +27,7 @@ type CreateDashboardRuntimeOptions = {
   setLastDashboardLiveSignature: (value: string) => void;
   getLastDashboardLiveSignature: () => string;
   isDashboardBusy: () => boolean;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardLiveWidgets: () => void;
   getDashboardShellScene: () => HTMLElement | null;
   getDashboardShellContent: () => HTMLElement | null;
@@ -62,11 +62,10 @@ export function createTaskTimerDashboardRuntime(options: CreateDashboardRuntimeO
 
   function renderDashboardWidgetsWithBusy(opts?: DashboardRenderOptions & { showBusy?: boolean; busyMessage?: string; showIndicator?: (message: string) => number; hideIndicator?: (key?: number) => void }) {
     const summary = buildDashboardRenderSummary(buildSummaryState(options));
-    const renderOpts = opts ? { includeAvgSession: opts.includeAvgSession } : undefined;
     const shouldShowBusy = options.getCurrentAppPage() === "dashboard" && opts?.showBusy === true;
     if (!shouldShowBusy) {
       measureDashboardRender("full", summary.fullSignature, false, () => {
-        options.renderDashboardWidgets(renderOpts);
+        options.renderDashboardWidgets(opts);
       });
       options.setLastDashboardLiveSignature(summary.liveSignature);
       return;
@@ -74,7 +73,7 @@ export function createTaskTimerDashboardRuntime(options: CreateDashboardRuntimeO
     const busyKey = opts?.showIndicator?.(opts.busyMessage || "Refreshing...");
     try {
       measureDashboardRender("full", summary.fullSignature, false, () => {
-        options.renderDashboardWidgets(renderOpts);
+        options.renderDashboardWidgets(opts);
       });
       options.setLastDashboardLiveSignature(summary.liveSignature);
     } finally {

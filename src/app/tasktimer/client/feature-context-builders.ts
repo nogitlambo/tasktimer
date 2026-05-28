@@ -7,7 +7,7 @@ import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { FocusModeTransitionOptions, TaskTimerAppPageOptions } from "./context";
-import type { AppPage, DashboardAvgRange, DashboardRenderOptions, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
+import type { AppPage, DashboardRenderOptions, DashboardTimelineDensity, HistoryViewState, MainMode } from "./types";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerAddTask } from "./add-task";
@@ -80,7 +80,6 @@ type CreatePreferencesOptionsArgs = {
   syncOwnFriendshipProfile: Parameters<typeof createTaskTimerPreferences>[0]["syncOwnFriendshipProfile"];
   saveDashboardWidgetState: Parameters<typeof createTaskTimerPreferences>[0]["saveDashboardWidgetState"];
   getDashboardCardSizeMapForStorage: Parameters<typeof createTaskTimerPreferences>[0]["getDashboardCardSizeMapForStorage"];
-  getDashboardAvgRange: Parameters<typeof createTaskTimerPreferences>[0]["getDashboardAvgRange"];
   taskCollectionBindings: {
     getTasks: () => Task[];
     setTasks: (value: Task[]) => void;
@@ -613,7 +612,6 @@ type CreateDashboardRenderOptionsArgs = {
     focusTrend: boolean;
     heatCalendar: boolean;
     modeDistribution: boolean;
-    avgSession: boolean;
     timeline: boolean;
   };
   dashboardBusyState: MutableStore;
@@ -641,7 +639,7 @@ type CreateDashboardRuntimeOptionsArgs = {
   setLastDashboardLiveSignature: (value: string) => void;
   getLastDashboardLiveSignature: () => string;
   isDashboardBusy: () => boolean;
-  renderDashboardWidgets: (opts?: { includeAvgSession?: boolean }) => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardLiveWidgets: () => void;
   getDashboardShellScene: () => HTMLElement | null;
   getDashboardShellContent: () => HTMLElement | null;
@@ -677,8 +675,6 @@ type CreateDashboardOptionsArgs = {
     | "setDashboardCardSizesDraftBeforeEdit"
     | "getDashboardCardVisibility"
     | "setDashboardCardVisibility"
-    | "getDashboardAvgRange"
-    | "setDashboardAvgRange"
     | "getDashboardTimelineDensity"
     | "setDashboardTimelineDensity"
   >;
@@ -956,7 +952,6 @@ export function createTaskTimerPreferencesContext(
     syncOwnFriendshipProfile: args.syncOwnFriendshipProfile,
     saveDashboardWidgetState: args.saveDashboardWidgetState,
     getDashboardCardSizeMapForStorage: args.getDashboardCardSizeMapForStorage,
-    getDashboardAvgRange: args.getDashboardAvgRange,
     getTasks: args.taskCollectionBindings.getTasks,
     setTasks: args.taskCollectionBindings.setTasks,
     getCurrentEditTask: args.getCurrentEditTask,
@@ -1507,8 +1502,6 @@ export function createTaskTimerDashboardRenderContext(
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerDashboardRender>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
-    getDashboardAvgRange: () => asType<DashboardAvgRange>(args.dashboardUiState.get("dashboardAvgRange")),
-    setDashboardAvgRange: (value) => args.dashboardUiState.set("dashboardAvgRange", value),
     getDashboardTimelineDensity: () => asType<DashboardTimelineDensity>(args.dashboardUiState.get("dashboardTimelineDensity")),
     setDashboardTimelineDensity: (value) => args.dashboardUiState.set("dashboardTimelineDensity", value),
     getDashboardWidgetHasRenderedData: () => args.dashboardWidgetHasRenderedData,
@@ -1615,7 +1608,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     createTaskTimerDashboardRuntimeContext({
       ...args.dashboardRuntime,
       isDashboardBusy: () => dashboardBusyApi.isBusy(),
-      renderDashboardWidgets: (opts) => renderDashboardWidgetsFromRenderApi(opts),
+      renderDashboardWidgets: () => renderDashboardWidgetsFromRenderApi(),
       renderDashboardLiveWidgets: () => renderDashboardLiveWidgets(),
     })
   );

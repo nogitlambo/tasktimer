@@ -57,20 +57,6 @@ export function startOfCurrentWeekMs(nowValue: number, weekStart: DashboardWeekS
   return d.getTime();
 }
 
-export function getDashboardAvgRangeWindow(
-  range: "past7" | "past30",
-  nowValue: number
-) {
-  const endMs = nowValue;
-  if (range === "past30") return { startMs: nowValue - 30 * 24 * 60 * 60 * 1000, endMs };
-  return { startMs: nowValue - 7 * 24 * 60 * 60 * 1000, endMs };
-}
-
-export function dashboardAvgRangeLabel(range: "past7" | "past30") {
-  if (range === "past30") return "Past 30 Days";
-  return "Past 7 Days";
-}
-
 export function formatDashboardDurationShort(ms: number) {
   const safeMs = Math.max(0, Math.floor(ms || 0));
   const totalMinutes = Math.floor(safeMs / 60000);

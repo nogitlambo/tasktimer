@@ -230,14 +230,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                       </section>
                     </section>
 
-                  <section className="dashboardCard dashboardAvgSessionCard" data-dashboard-id="avg-session-by-task" aria-label="Last ran by task" data-dashboard-label="Last Ran">
-                    <div className="dashboardCardTitle" id="dashboardAvgSessionTitle">Last Ran</div>
-                    <div className="dashboardLastRanList" id="dashboardLastRanList" aria-live="polite" />
-                    <p className="dashboardAvgSessionEmpty" id="dashboardAvgSessionEmpty" style={{ display: "none" }}>
-                      No tasks yet.
-                    </p>
-                  </section>
-
                   <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">
                     <div className="dashboardHeatFlipScene">
                       <div className="dashboardHeatFace dashboardHeatFaceFront" id="dashboardHeatFaceFront" aria-hidden="false">

@@ -705,7 +705,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const {
     saveDashboardWidgetState: saveDashboardWidgetStateApi,
     getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
-    getDashboardAvgRange: getDashboardAvgRangeApi,
     loadDashboardWidgetState: loadDashboardWidgetStateApi,
     applyDashboardCardVisibility: applyDashboardCardVisibilityApi,
     applyDashboardCardSizes: applyDashboardCardSizesApi,
@@ -1314,7 +1313,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncOwnFriendshipProfile,
       saveDashboardWidgetState: saveDashboardWidgetStateApi,
       getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
-      getDashboardAvgRange: getDashboardAvgRangeApi,
       taskCollectionBindings,
       getCurrentEditTask: () => editTaskApi?.getCurrentEditTask() ?? null,
       syncEditCheckpointAlertUi: (task) => editTaskApi?.syncEditCheckpointAlertUi(task),

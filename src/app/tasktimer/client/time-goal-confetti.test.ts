@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getTimeGoalConfettiStage, startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { getTimeGoalConfettiStage, startTimeGoalConfetti, startTimeGoalXpSplash, stopTimeGoalConfetti } from "./time-goal-confetti";
 
-function elementStub() {
+function elementStub(opts?: { closest?: HTMLElement | null }) {
   const classes = new Set<string>();
   return {
     dataset: {} as Record<string, string>,
     offsetWidth: 1,
+    closest: () => opts?.closest || null,
     classList: {
       add: (className: string) => classes.add(className),
       remove: (className: string) => classes.delete(className),
@@ -55,5 +56,27 @@ describe("time goal confetti", () => {
     } as unknown as HTMLElement;
 
     expect(getTimeGoalConfettiStage(overlay)).toBe(stage);
+  });
+
+  it("restarts the xp splash on the nearest xp fx wrapper", () => {
+    const fx = elementStub();
+    fx.classList.add("isPlaying");
+    fx.dataset.xpSplashState = "playing";
+    const text = elementStub({ closest: fx });
+
+    expect(startTimeGoalXpSplash(text)).toBe(true);
+
+    expect(fx.classList.contains("isPlaying")).toBe(true);
+    expect(fx.dataset.xpSplashState).toBe("playing");
+    expect(text.classList.contains("isPlaying")).toBe(false);
+  });
+
+  it("falls back to the xp text element when no wrapper exists", () => {
+    const text = elementStub();
+
+    expect(startTimeGoalXpSplash(text)).toBe(true);
+
+    expect(text.classList.contains("isPlaying")).toBe(true);
+    expect(text.dataset.xpSplashState).toBe("playing");
   });
 });

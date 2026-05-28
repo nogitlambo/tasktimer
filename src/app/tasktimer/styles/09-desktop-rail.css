@@ -445,6 +445,10 @@
     padding: 4px 2px !important;
   }
 
+#app[aria-label="TaskLaunch App"] .appFooterLabel{
+    display: none !important;
+  }
+
 #app[aria-label="TaskLaunch App"] .desktopAppRail,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail{
     display: none !important;
@@ -471,18 +475,6 @@
 #app[aria-label="TaskLaunch App"] .appFooterIconImage{
     width: 30px;
     height: 30px;
-  }
-
-#app[aria-label="TaskLaunch App"] .appFooterLabel{
-    display: block;
-    font-size: 9px;
-    line-height: 1.05;
-    letter-spacing: .04em;
-    white-space: nowrap;
-  }
-
-#app[aria-label="TaskLaunch App"] #footerTest2Btn .appFooterLabel{
-    transform: translateY(-1px);
   }
 
 #app[aria-label="TaskLaunch App"] .appFooterAlertBadge{

@@ -22,7 +22,7 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { startTimeGoalConfetti, startTimeGoalXpSplash, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -734,6 +734,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalCompleteNextTaskGrid();
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
+    startTimeGoalXpSplash(els.timeGoalCompleteText as HTMLElement | null);
     startTimeGoalCompleteConfetti();
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {

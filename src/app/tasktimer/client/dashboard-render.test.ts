@@ -5,6 +5,8 @@ import type { MomentumSnapshot } from "../lib/momentum";
 import type { Task } from "../lib/types";
 
 class ElementStub {
+  static labelRectOverride: ((element: ElementStub) => { left: number; top: number; right: number; bottom: number; width: number; height: number } | null) | null = null;
+
   id = "";
   className = "";
   textContent = "";
@@ -76,9 +78,35 @@ class ElementStub {
     return null;
   }
 
+  querySelectorAll(selector: string) {
+    if (selector.startsWith(".")) {
+      const className = selector.slice(1);
+      return this.children.filter((child) => child.className.split(/\s+/).includes(className));
+    }
+    return [];
+  }
+
   closest(selector: string) {
     void selector;
     return null;
+  }
+
+  getBoundingClientRect() {
+    const override = ElementStub.labelRectOverride?.(this);
+    if (override) return override;
+    if (this.id === "dashboardTasksCompletedLabels" || this.id === "dashboardTasksCompletedTicks") {
+      return { left: 0, top: 0, right: 380, bottom: 380, width: 380, height: 380 };
+    }
+    if (this.className.split(/\s+/).includes("dashboardTasksCompletedLabel")) {
+      const leftValue = typeof this.style.left === "string" ? Number.parseFloat(this.style.left) : 190;
+      const topValue = typeof this.style.top === "string" ? Number.parseFloat(this.style.top) : 190;
+      const width = 54;
+      const height = 30;
+      const left = leftValue - width / 2;
+      const top = topValue - height / 2;
+      return { left, top, right: left + width, bottom: top + height, width, height };
+    }
+    return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
   }
 }
 
@@ -133,12 +161,16 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardWeeklyGoalsProjectionFill");
   register("dashboardWeeklyGoalsProgressFill");
   register("dashboardWeeklyGoalsProgressText");
-  register("dashboardAvgSessionTitle");
-  register("dashboardLastRanList");
-  register("dashboardAvgSessionEmpty");
   register("dashboardHeatMonthLabel");
   register("dashboardHeatWeekdays");
   register("dashboardHeatCalendarGrid");
+  register("dashboardActivityChartGrid");
+  register("dashboardActivityPreviousBars");
+  register("dashboardActivityBars");
+  register("dashboardActivityGoalLine");
+  register("dashboardActivityYAxis");
+  register("dashboardActivityXAxis");
+  register("dashboardActivityEmpty");
 
   const headerXpCard = options?.includeHeaderXpCard ? new ElementStub() : null;
   const topbarXp = options?.includeHeaderXpCard ? new ElementStub() : null;
@@ -197,7 +229,7 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
 function createRenderHarness(
   tasks: Task[],
   options?: {
-    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number }>>;
+    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number; color?: string }>>;
     hasEntitlement?: boolean;
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
@@ -212,6 +244,14 @@ function createRenderHarness(
 
   const dashboardRender = createTaskTimerDashboardRender({
     els: {
+      dashboardActivityOverviewCard: new ElementStub(),
+      dashboardActivityChartGrid: byId.get("dashboardActivityChartGrid"),
+      dashboardActivityPreviousBars: byId.get("dashboardActivityPreviousBars"),
+      dashboardActivityBars: byId.get("dashboardActivityBars"),
+      dashboardActivityGoalLine: byId.get("dashboardActivityGoalLine"),
+      dashboardActivityYAxis: byId.get("dashboardActivityYAxis"),
+      dashboardActivityXAxis: byId.get("dashboardActivityXAxis"),
+      dashboardActivityEmpty: byId.get("dashboardActivityEmpty"),
       dashboardWeeklyGoalsValue: byId.get("dashboardWeeklyGoalsValue"),
       dashboardWeeklyGoalsMeta: byId.get("dashboardWeeklyGoalsMeta"),
       dashboardWeeklyGoalsProgressBar: byId.get("dashboardWeeklyGoalsProgressBar"),
@@ -219,9 +259,6 @@ function createRenderHarness(
       dashboardWeeklyGoalsProjectionFill: byId.get("dashboardWeeklyGoalsProjectionFill"),
       dashboardWeeklyGoalsProgressFill: byId.get("dashboardWeeklyGoalsProgressFill"),
       dashboardWeeklyGoalsProgressText: byId.get("dashboardWeeklyGoalsProgressText"),
-      dashboardAvgSessionTitle: byId.get("dashboardAvgSessionTitle"),
-      dashboardLastRanList: byId.get("dashboardLastRanList"),
-      dashboardAvgSessionEmpty: byId.get("dashboardAvgSessionEmpty"),
       dashboardHeatMonthLabel: byId.get("dashboardHeatMonthLabel"),
       dashboardHeatWeekdays: byId.get("dashboardHeatWeekdays"),
       dashboardHeatCalendarGrid: byId.get("dashboardHeatCalendarGrid"),
@@ -232,8 +269,6 @@ function createRenderHarness(
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => "mon",
     getOptimalProductivityDays: () => ["mon", "wed", "fri"],
-    getDashboardAvgRange: () => "past7",
-    setDashboardAvgRange: () => {},
     getDashboardTimelineDensity: () => "medium",
     setDashboardTimelineDensity: () => {},
     getDashboardWidgetHasRenderedData: () => ({
@@ -242,7 +277,6 @@ function createRenderHarness(
       focusTrend: false,
       heatCalendar: false,
       modeDistribution: false,
-      avgSession: false,
       timeline: false,
     }),
     getDashboardRefreshHoldActive: () => false,
@@ -263,12 +297,13 @@ function createRenderHarness(
     headerXpCard,
     topbarXp,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
+    renderActivityOverview: () => dashboardRender.renderDashboardActivityOverviewCard(),
     renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
-    renderLastRan: () => dashboardRender.renderDashboardAvgSessionChart(),
     renderHeat: () => dashboardRender.renderDashboardHeatCalendar(),
     restore: () => {
+      ElementStub.labelRectOverride = null;
       Object.defineProperty(globalThis, "document", {
         configurable: true,
         value: originalDocument,
@@ -277,97 +312,62 @@ function createRenderHarness(
   };
 }
 
-describe("last ran dashboard card", () => {
-  it("keeps full dashboard rendering safe when standalone Today and This Week cards are absent", () => {
-    const harness = createRenderHarness([task({ id: "focus", name: "Focus" })]);
-
-    try {
-      expect(() => harness.renderAll()).not.toThrow();
-    } finally {
-      harness.restore();
-    }
-  });
-
-  it("orders current tasks by newest completed history and places never-run tasks last", () => {
-    const now = Date.now();
+describe("dashboard activity overview card", () => {
+  it("uses goal-progress colors per day when a daily pace target exists", () => {
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
     const harness = createRenderHarness(
-      [
-        task({ id: "never", name: "Never Task", order: 1 }),
-        task({ id: "older", name: "Older Task", order: 2 }),
-        task({ id: "newer", name: "Newer Task", order: 3 }),
-      ],
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
       {
         historyByTaskId: {
-          older: [{ ts: now - 3 * 60 * 60 * 1000, name: "Older Task", ms: 25 * 60 * 1000 }],
-          newer: [{ ts: now - 60 * 60 * 1000, name: "Newer Task", ms: 10 * 60 * 1000 }],
-        },
-      }
-    );
-
-    try {
-      harness.renderLastRan();
-      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
-
-      expect(html.indexOf("Newer Task")).toBeLessThan(html.indexOf("Older Task"));
-      expect(html.indexOf("Older Task")).toBeLessThan(html.indexOf("Never Task"));
-      expect(html).toContain("Time since last ran");
-      expect(html).toContain("Never");
-    } finally {
-      harness.restore();
-    }
-  });
-
-  it("ignores invalid and zero-duration history when calculating last ran", () => {
-    const now = Date.now();
-    const harness = createRenderHarness(
-      [
-        task({ id: "invalid", name: "Invalid Task", order: 1 }),
-        task({ id: "valid", name: "Valid Task", order: 2 }),
-      ],
-      {
-        historyByTaskId: {
-          invalid: [
-            { ts: now - 30 * 60 * 1000, name: "Invalid Task", ms: 0 },
-            { ts: 0, name: "Invalid Task", ms: 20 * 60 * 1000 },
+          focus: [
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+            { ts: weekStart + 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 120 * 60000 },
           ],
-          valid: [{ ts: now - 90 * 60 * 1000, name: "Valid Task", ms: 20 * 60 * 1000 }],
         },
       }
     );
 
     try {
-      harness.renderLastRan();
-      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
+      harness.renderActivityOverview();
+      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const firstBar = bars[0]?.children[0];
+      const secondBar = bars[1]?.children[0];
+      const goalLine = harness.byId.get("dashboardActivityGoalLine");
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
-      expect(html.indexOf("Valid Task")).toBeLessThan(html.indexOf("Invalid Task"));
-      expect(html).toContain("Invalid Task");
-      expect(html).toContain("Never");
+      expect(firstBar?.getAttribute("fill")).toBe("rgb(255,140,0)");
+      expect(secondBar?.getAttribute("fill")).toBe("rgb(12,245,127)");
+      expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
+      expect(goalLine?.style.display).toBe("");
+      expect(previousBars?.children).toHaveLength(0);
     } finally {
       harness.restore();
     }
   });
 
-  it("does not treat a currently running task as last ran without logged history", () => {
-    const now = Date.now();
+  it("uses the dominant task color when no weekly goal exists", () => {
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
     const harness = createRenderHarness(
       [
-        task({ id: "running", name: "Running Task", order: 1, running: true, startMs: now - 5 * 60 * 1000 }),
-        task({ id: "logged", name: "Logged Task", order: 2 }),
+        task({ id: "focus", name: "Focus", timeGoalEnabled: false, color: "#ff5252" }),
+        task({ id: "build", name: "Build", timeGoalEnabled: false, color: "#00e5ff" }),
       ],
       {
         historyByTaskId: {
-          logged: [{ ts: now - 4 * 60 * 60 * 1000, name: "Logged Task", ms: 15 * 60 * 1000 }],
+          focus: [{ ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 45 * 60000, color: "#ff5252" }],
+          build: [{ ts: weekStart + 10 * 60 * 60 * 1000, name: "Build", ms: 90 * 60000, color: "#00e5ff" }],
         },
       }
     );
 
     try {
-      harness.renderLastRan();
-      const html = harness.byId.get("dashboardLastRanList")?.innerHTML || "";
+      harness.renderActivityOverview();
+      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const firstBar = bars[0]?.children[0];
+      const goalLine = harness.byId.get("dashboardActivityGoalLine");
 
-      expect(html.indexOf("Logged Task")).toBeLessThan(html.indexOf("Running Task"));
-      expect(html).toContain("Running Task");
-      expect(html).toContain("Never");
+      expect(firstBar?.getAttribute("fill")).toBe("#00e5ff");
+      expect(goalLine?.style.display).toBe("none");
     } finally {
       harness.restore();
     }
@@ -669,6 +669,61 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children.some((child) => child.innerHTML.includes("Quick 1"))).toBe(true);
       expect(connectorEls).toHaveLength(5);
       expect(connectorEls.every((child) => child.getAttribute("d")?.includes(" L "))).toBe(true);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("hides all task labels and connector paths when any label would overlap the donut area", () => {
+    const tasks = [
+      task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+      task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
+        ? { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
+        : null;
+
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
+
+      expect(labelsEl?.children).toHaveLength(0);
+      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(true);
+      expect(connectorEls).toHaveLength(0);
+      expect(centerEl?.innerHTML).toContain("Task Focus");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("hides all task labels and connector paths when the rendered chart viewport would clip a label", () => {
+    const tasks = [
+      task({ id: "goal-task", name: "Goal Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+      task({ id: "new-task", name: "New Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      Object.assign(labelsEl as object, {
+        getBoundingClientRect: () => ({ left: 0, top: 0, right: 300, bottom: 380, width: 300, height: 380 }),
+      });
+      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
+        ? { left: 280, top: 120, right: 340, bottom: 150, width: 60, height: 30 }
+        : null;
+
+      harness.render();
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
+
+      expect(labelsEl?.children).toHaveLength(0);
+      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(true);
+      expect(connectorEls).toHaveLength(0);
     } finally {
       harness.restore();
     }

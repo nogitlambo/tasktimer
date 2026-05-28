@@ -5296,26 +5296,117 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-align: center;
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteText{
-  color: var(--accent);
-  animation: timeGoalCompleteTextBounce 2s ease-in-out infinite;
-  will-change: transform;
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx{
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  margin: 0 0 12px;
+  overflow: visible;
 }
 
-@keyframes timeGoalCompleteTextBounce{
-  0%, 16.666%, 33.333%, 50%, 100%{
-    transform: translateY(0);
-  }
+#timeGoalCompleteOverlay #timeGoalCompleteText{
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  color: #f8c83d !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: clamp(1.04rem, 3.1vw, 1.42rem);
+  font-weight: 900;
+  letter-spacing: .09em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 8px rgba(255, 226, 88, .72),
+    0 0 20px rgba(255, 177, 39, .44),
+    0 6px 18px rgba(0, 0, 0, .55);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
 
-  8.333%, 25%, 41.666%{
-    transform: translateY(-8px);
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText{
+  animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteGoldFragment{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--fw);
+  height: var(--fh);
+  border-radius: 1px;
+  opacity: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .9), rgba(255, 238, 126, .75) 34%, rgba(224, 138, 18, .92));
+  box-shadow: 0 0 8px rgba(255, 207, 54, .62);
+  transform: translate(-50%, -50%) scale(.2) rotate(var(--fr));
+  transform-origin: center;
+  will-change: transform, opacity, filter;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
+  animation: timeGoalXpGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
+  animation-delay: var(--fd);
+}
+
+@keyframes timeGoalXpSplashText{
+  0%{
+    opacity: 0;
+    transform: scale(.18);
+    filter: blur(8px) brightness(1.15);
+  }34%{
+    opacity: 1;
+    transform: scale(1.82);
+    filter: blur(0) brightness(1.75);
+  }45%{
+    transform: scale(1.28);
+    filter: brightness(1.38);
+  }62%{
+    transform: scale(1.06);
+    filter: brightness(1.1);
+  }100%{
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes timeGoalXpGoldFragmentSplash{
+  0%{
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.15) rotate(var(--fr));
+    filter: blur(2px);
+  }20%{
+    opacity: 1;
+  }70%{
+    opacity: .9;
+  }100%{
+    opacity: 0;
+    transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(1) rotate(calc(var(--fr) + var(--fs)));
+    filter: blur(1px);
   }
 }
 
 @media (prefers-reduced-motion: reduce){
-#timeGoalCompleteOverlay #timeGoalCompleteText{
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
     animation: none;
     will-change: auto;
+  }
+
+  #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
+    display: none;
   }
 }
 

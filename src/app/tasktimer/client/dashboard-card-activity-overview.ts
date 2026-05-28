@@ -1,6 +1,7 @@
 import { localDayKey } from "../lib/history";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "../lib/historyChart";
 import type { DeletedTaskMeta, HistoryByTaskId, HistoryEntry, Task } from "../lib/types";
+import { fillBackgroundForPct } from "../lib/colors";
 import { normalizeTaskColor } from "../lib/taskColors";
 
 type ActivityHistoryEntry = HistoryEntry & {
@@ -36,6 +37,8 @@ export type DashboardActivityOverviewDay = {
   cumulativeMs: number;
   previousWeekTotalMs: number;
   previousWeekCumulativeMs: number;
+  activityBarColor: string;
+  activityProgressPct: number | null;
   taskRows: DashboardActivityOverviewTaskRow[];
   sessions: DashboardActivityOverviewSession[];
 };
@@ -53,6 +56,8 @@ export type DashboardActivityOverviewModel = {
   hasPreviousWeekActivity: boolean;
   days: DashboardActivityOverviewDay[];
 };
+
+const DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR = "#d9ff59";
 
 function formatWeekdayShort(ts: number) {
   return new Date(ts).toLocaleDateString(undefined, { weekday: "short" });
@@ -126,6 +131,8 @@ export function buildDashboardActivityOverviewModel(options: {
       cumulativeMs: 0,
       previousWeekTotalMs: 0,
       previousWeekCumulativeMs: 0,
+      activityBarColor: DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR,
+      activityProgressPct: null,
       taskRows: [],
       sessions: [],
     };
@@ -189,6 +196,8 @@ export function buildDashboardActivityOverviewModel(options: {
     });
   });
 
+  const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
+  const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
   let cumulativeMs = 0;
   let previousWeekCumulativeMs = 0;
   days.forEach((day, index) => {
@@ -216,11 +225,17 @@ export function buildDashboardActivityOverviewModel(options: {
       if (right.totalMs !== left.totalMs) return right.totalMs - left.totalMs;
       return left.taskName.localeCompare(right.taskName);
     });
+    if (dailyPaceTargetMs > 0) {
+      const progressPct = (day.totalMs / dailyPaceTargetMs) * 100;
+      day.activityProgressPct = progressPct;
+      day.activityBarColor = fillBackgroundForPct(progressPct);
+    } else {
+      day.activityProgressPct = null;
+      day.activityBarColor = day.taskRows[0]?.color || DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR;
+    }
     day.sessions.sort((left, right) => left.ts - right.ts);
   });
 
-  const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
-  const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
   const weekTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
   const previousWeekTotalMs = previousWeekTotals.reduce((sum, ms) => sum + ms, 0);
   const maxDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs, day.previousWeekTotalMs), 0);

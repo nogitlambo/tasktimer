@@ -1,5 +1,5 @@
 import type { TaskTimerDashboardContext } from "./context";
-import type { DashboardAvgRange, DashboardRenderOptions } from "./types";
+import type { DashboardRenderOptions } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -11,13 +11,11 @@ const DASHBOARD_PANEL_REGISTRY = [
   { panelId: "activity-overview", label: "Activity Overview" },
   { panelId: "tasks-completed", label: "Task Overview" },
   { panelId: "momentum", label: "Momentum" },
-  { panelId: "avg-session-by-task", label: "Last Ran" },
   { panelId: "heatmap", label: "Focus Heatmap" },
 ] as const;
 
 const DASHBOARD_SUPPORT_PANEL_IDS = [
   "momentum",
-  "avg-session-by-task",
   "heatmap",
 ] as const;
 
@@ -64,13 +62,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     if (cached && typeof cached === "object") return cached as { order?: unknown; widgets?: unknown };
     const loaded = ctx.loadCachedDashboard();
     return loaded && typeof loaded === "object" ? (loaded as { order?: unknown; widgets?: unknown }) : null;
-  }
-
-  function sanitizeDashboardAvgRange(value: unknown): DashboardAvgRange {
-    const raw = String(value || "").trim();
-    if (raw === "past30" || raw === "currentMonth") return "past30";
-    if (raw === "currentWeek") return "past7";
-    return "past7";
   }
 
   function ensureDashboardIncludedModesValid() {}
@@ -149,10 +140,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function loadDashboardWidgetState() {
-    const dashboard = getCloudDashboardRecord();
-    const widgets =
-      dashboard?.widgets && typeof dashboard.widgets === "object" ? (dashboard.widgets as Record<string, unknown>) : {};
-    ctx.setDashboardAvgRange(sanitizeDashboardAvgRange((widgets as any).avgSessionByTaskRange));
     ctx.setDashboardCardSizes({});
     ctx.setDashboardCardPlacements({});
     ctx.setDashboardCardVisibility({});
@@ -255,7 +242,6 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     renderDashboardWidgets,
     saveDashboardWidgetState,
     getDashboardCardSizeMapForStorage: () => ({}),
-    getDashboardAvgRange: () => ctx.getDashboardAvgRange(),
     ensureDashboardIncludedModesValid,
     loadDashboardWidgetState,
     applyDashboardCardVisibility,

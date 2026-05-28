@@ -74,7 +74,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "tasks",
     label: "Tasks",
     ariaLabel: "Tasks",
-    iconSrc: "/icons/icons_default/tasks.png",
+    iconSrc: "/icons/icons_default/task.png",
     desktopId: "commandCenterTasksBtn",
     mobileId: "footerTasksBtn",
     href: "/tasklaunch",

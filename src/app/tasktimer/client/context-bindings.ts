@@ -1,7 +1,6 @@
 import type { Task } from "../lib/types";
 import type { TaskTimerMutableStore } from "./mutable-store";
 import type {
-  DashboardAvgRange,
   DashboardCardPlacement,
   DashboardCardSize,
   DashboardTimelineDensity,
@@ -16,7 +15,6 @@ type DashboardLayoutState = {
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
-  dashboardAvgRange: DashboardAvgRange;
   dashboardTimelineDensity: DashboardTimelineDensity;
 };
 
@@ -102,10 +100,6 @@ export function createTaskTimerDashboardLayoutBindings(
     getDashboardCardVisibility: () => dashboardUiState.get("dashboardCardVisibility"),
     setDashboardCardVisibility: (value: Record<string, boolean>) => {
       dashboardUiState.set("dashboardCardVisibility", value);
-    },
-    getDashboardAvgRange: () => dashboardUiState.get("dashboardAvgRange"),
-    setDashboardAvgRange: (value: DashboardAvgRange) => {
-      dashboardUiState.set("dashboardAvgRange", value);
     },
     getDashboardTimelineDensity: () => dashboardUiState.get("dashboardTimelineDensity"),
     setDashboardTimelineDensity: (value: DashboardTimelineDensity) => {

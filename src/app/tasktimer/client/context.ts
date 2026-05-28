@@ -3,7 +3,6 @@ import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
 import type {
   AppPage,
-  DashboardAvgRange,
   DashboardCardPlacement,
   DashboardCardSize,
   DashboardMomentumDriverKey,
@@ -828,8 +827,6 @@ export type TaskTimerDashboardContext = {
   setDashboardCardSizesDraftBeforeEdit: (value: Record<string, DashboardCardSize> | null) => void;
   getDashboardCardVisibility: () => Record<string, boolean>;
   setDashboardCardVisibility: (value: Record<string, boolean>) => void;
-  getDashboardAvgRange: () => DashboardAvgRange;
-  setDashboardAvgRange: (value: DashboardAvgRange) => void;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
   setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
   getCloudDashboardCache: () => unknown;
@@ -859,8 +856,6 @@ export type TaskTimerDashboardRenderContext = {
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityDays: () => OptimalProductivityDays;
-  getDashboardAvgRange: () => DashboardAvgRange;
-  setDashboardAvgRange: (value: DashboardAvgRange) => void;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
   setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
   getDashboardWidgetHasRenderedData: () => {
@@ -869,7 +864,6 @@ export type TaskTimerDashboardRenderContext = {
     focusTrend: boolean;
     heatCalendar: boolean;
     modeDistribution: boolean;
-    avgSession: boolean;
     timeline: boolean;
   };
   getDashboardRefreshHoldActive: () => boolean;
@@ -961,7 +955,6 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined }) => Promise<unknown>;
   saveDashboardWidgetState: (partialWidgets: Record<string, unknown>) => void;
   getDashboardCardSizeMapForStorage: () => Record<string, unknown>;
-  getDashboardAvgRange: () => string;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
   getCurrentEditTask: () => Task | null;

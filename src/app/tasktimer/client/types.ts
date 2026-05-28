@@ -60,12 +60,10 @@ export type DashboardCardPlacement = {
   row: number;
 };
 
-export type DashboardAvgRange = "past7" | "past30";
 export type DashboardTimelineDensity = "low" | "medium" | "high";
 export type DashboardMomentumDriverKey = "recentActivity" | "consistency" | "weeklyProgress" | "liveBonus";
 export type TaskOrderBy = "custom" | "alpha" | "schedule";
 export type DashboardRenderOptions = {
-  includeAvgSession?: boolean;
   showBusy?: boolean;
   busyMessage?: string;
 };
@@ -158,7 +156,6 @@ export type TaskTimerMutableState = {
   dashboardCardSizes: Record<string, DashboardCardSize>;
   dashboardCardSizesDraftBeforeEdit: Record<string, DashboardCardSize> | null;
   dashboardCardVisibility: Record<string, boolean>;
-  dashboardAvgRange: DashboardAvgRange;
   dashboardTimelineDensity: DashboardTimelineDensity;
   dashboardMenuFlipped: boolean;
   currentAppPage: AppPage;
@@ -242,7 +239,6 @@ export type TaskTimerMutableState = {
       focusTrend: boolean;
       heatCalendar: boolean;
       modeDistribution: boolean;
-      avgSession: boolean;
       timeline: boolean;
     };
 };

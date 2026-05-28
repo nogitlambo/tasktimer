@@ -69,6 +69,41 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const statusWidth = statusLabel.length * 5.3;
     return Math.max(28, Math.min(DASHBOARD_COMPLETED_LABEL_MAX_WIDTH, Math.ceil(Math.max(nameWidth, statusWidth) + 4)));
   }
+  function getDashboardCompletedSafeRect(element: HTMLElement) {
+    if (typeof element.getBoundingClientRect !== "function") return null;
+    const rect = element.getBoundingClientRect();
+    if (!(Number(rect.width) > 0 && Number(rect.height) > 0)) return null;
+    return rect;
+  }
+
+  function dashboardCompletedRectIntersectsCircle(rect: DOMRect, centerX: number, centerY: number, radius: number) {
+    const closestX = Math.max(rect.left, Math.min(centerX, rect.right));
+    const closestY = Math.max(rect.top, Math.min(centerY, rect.bottom));
+    return Math.hypot(closestX - centerX, closestY - centerY) < radius;
+  }
+
+  function areDashboardCompletedRenderedLabelsSafe(labelsEl: HTMLElement, chartEl: HTMLElement) {
+    const bounds = getDashboardCompletedSafeRect(labelsEl) || getDashboardCompletedSafeRect(chartEl);
+    if (!bounds) return true;
+    const labels = Array.from(labelsEl.querySelectorAll?.(".dashboardTasksCompletedLabel") || []) as HTMLElement[];
+    if (!labels.length) return true;
+    const scaleX = bounds.width / DASHBOARD_COMPLETED_CHART_SIZE;
+    const scaleY = bounds.height / DASHBOARD_COMPLETED_CHART_SIZE;
+    const centerX = bounds.left + DASHBOARD_COMPLETED_CHART_CENTER * scaleX;
+    const centerY = bounds.top + DASHBOARD_COMPLETED_CHART_CENTER * scaleY;
+    const protectedRadius = Math.min(scaleX, scaleY) * DASHBOARD_COMPLETED_RING_RADIUS;
+    const padding = 1;
+
+    return labels.every((label) => {
+      const rect = getDashboardCompletedSafeRect(label);
+      if (!rect) return true;
+      const isClipped = rect.left < bounds.left - padding ||
+        rect.top < bounds.top - padding ||
+        rect.right > bounds.right + padding ||
+        rect.bottom > bounds.bottom + padding;
+      return !isClipped && !dashboardCompletedRectIntersectsCircle(rect, centerX, centerY, protectedRadius);
+    });
+  }
   type DashboardHeatHistoryEntry = {
     ts: number;
     ms: number;
@@ -1243,6 +1278,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         rect.setAttribute("width", barWidth.toFixed(1));
         rect.setAttribute("height", height.toFixed(1));
         rect.setAttribute("rx", "5");
+        rect.setAttribute("fill", day.activityBarColor);
         group.appendChild(rect);
         barsEl.appendChild(group);
       });
@@ -1324,6 +1360,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       svgEl.setAttribute("viewBox", `0 0 ${DASHBOARD_COMPLETED_CHART_SIZE} ${DASHBOARD_COMPLETED_CHART_SIZE}`);
       svgEl.innerHTML = `<circle class="dashboardTasksCompletedTrack" cx="${DASHBOARD_COMPLETED_CHART_CENTER}" cy="${DASHBOARD_COMPLETED_CHART_CENTER}" r="${DASHBOARD_COMPLETED_RING_RADIUS}" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="${DASHBOARD_COMPLETED_CHART_CENTER}" y1="${DASHBOARD_COMPLETED_CHART_CENTER - 54}" x2="${DASHBOARD_COMPLETED_CHART_CENTER}" y2="${DASHBOARD_COMPLETED_CHART_CENTER - 78}"></line>`;
       labelsEl.innerHTML = "";
+      labelsEl.classList.remove("isHiddenForLayout");
 
       if (totalCount <= 0) {
         centerEl.innerHTML = '<span class="dashboardTasksCompletedCenterLabel">No daily tasks due</span>';
@@ -1436,16 +1473,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         }
       });
 
-      positionedSliceEntries.forEach(({ key }) => {
-        const layout = labelLayoutByKey.get(key);
-        if (!layout?.connectorPath) return;
-        const connectorEl = document.createElementNS(svgNs, "path");
-        connectorEl.setAttribute("class", "dashboardTasksCompletedConnector");
-        connectorEl.setAttribute("d", layout.connectorPath);
-        connectorEl.setAttribute("aria-hidden", "true");
-        svgEl.appendChild(connectorEl);
-      });
-
       positionedSliceEntries.forEach(({ item, statusLabel, key }) => {
         const layout = labelLayoutByKey.get(key);
         if (!layout) return;
@@ -1460,6 +1487,22 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         linkEl.innerHTML = `<span class="dashboardTasksCompletedLabelName">${ctx.escapeHtmlUI(item.name)}</span><span class="dashboardTasksCompletedLabelStatus">${ctx.escapeHtmlUI(statusLabel)}</span>`;
         labelsEl.appendChild(linkEl);
       });
+
+      const labelsAreSafe = areDashboardCompletedRenderedLabelsSafe(labelsEl, ticksEl);
+      labelsEl.classList.toggle("isHiddenForLayout", !labelsAreSafe);
+      if (!labelsAreSafe) {
+        labelsEl.innerHTML = "";
+      } else {
+        positionedSliceEntries.forEach(({ key }) => {
+          const layout = labelLayoutByKey.get(key);
+          if (!layout?.connectorPath) return;
+          const connectorEl = document.createElementNS(svgNs, "path");
+          connectorEl.setAttribute("class", "dashboardTasksCompletedConnector");
+          connectorEl.setAttribute("d", layout.connectorPath);
+          connectorEl.setAttribute("aria-hidden", "true");
+          svgEl.appendChild(connectorEl);
+        });
+      }
       const needle = (document.getElementById("dashboardTasksCompletedNeedle") as SVGLineElement | null) || needleEl;
       if (needle) {
         const needlePct = runningNeedlePct != null ? runningNeedlePct : stoppedPartialNeedlePct ?? 0;
@@ -2487,80 +2530,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     gridEl.innerHTML = html.join("");
   }
 
-  function getDashboardLastRanRows() {
-    const historyByTaskId = ctx.getHistoryByTaskId();
-    const rows: Array<{ taskId: string; taskName: string; lastRanAtMs: number | null; taskOrder: number; sourceIndex: number }> = [];
-    getDashboardFilteredTasks().forEach((task, sourceIndex) => {
-      const taskId = String(task?.id || "").trim();
-      if (!taskId) return;
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      let lastRanAtMs: number | null = null;
-      entries.forEach((entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Number(entry?.ms);
-        if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(ms) || ms <= 0) return;
-        if (lastRanAtMs == null || ts > lastRanAtMs) lastRanAtMs = ts;
-      });
-      rows.push({
-        taskId,
-        taskName: String(task.name || "").trim() || "Task",
-        lastRanAtMs,
-        taskOrder: Number.isFinite(Number(task.order)) ? Number(task.order) : sourceIndex,
-        sourceIndex,
-      });
-    });
-    rows.sort((a, b) => {
-      const aHasHistory = a.lastRanAtMs != null;
-      const bHasHistory = b.lastRanAtMs != null;
-      if (aHasHistory && bHasHistory && a.lastRanAtMs !== b.lastRanAtMs) {
-        return (b.lastRanAtMs || 0) - (a.lastRanAtMs || 0);
-      }
-      if (aHasHistory !== bHasHistory) return aHasHistory ? -1 : 1;
-      if (a.taskOrder !== b.taskOrder) return a.taskOrder - b.taskOrder;
-      return a.sourceIndex - b.sourceIndex;
-    });
-    return rows;
-  }
-
-  function formatDashboardTimeSinceLastRan(lastRanAtMs: number | null, nowValue: number) {
-    if (lastRanAtMs == null) return "Never";
-    return formatDashboardDurationShort(Math.max(0, nowValue - lastRanAtMs));
-  }
-
-  function renderDashboardAvgSessionChart() {
-    const titleEl = els.dashboardAvgSessionTitle as HTMLElement | null;
-    const emptyEl = els.dashboardAvgSessionEmpty as HTMLElement | null;
-    const listEl =
-      (document.getElementById("dashboardLastRanList") as HTMLElement | null)
-      || ((els as any).dashboardLastRanList as HTMLElement | null);
-    const cardEl = listEl?.closest(".dashboardAvgSessionCard") as HTMLElement | null;
-    if (titleEl) titleEl.textContent = "Last Ran";
-    if (!listEl) return;
-    setDashboardPlanLockedState(cardEl, false);
-    const nowValue = nowMs();
-    const rows = getDashboardLastRanRows();
-    if (shouldHoldDashboardWidget("avgSession", rows.length > 0)) return;
-
-    if (!rows.length) {
-      listEl.innerHTML = "";
-      if (emptyEl) emptyEl.style.display = "block";
-      return;
-    }
-    if (emptyEl) emptyEl.style.display = "none";
-    listEl.innerHTML = rows
-      .map((row) => {
-        const value = formatDashboardTimeSinceLastRan(row.lastRanAtMs, nowValue);
-        const aria = `${row.taskName}: Time since last ran ${value}`;
-        return `<div class="dashboardLastRanRow${row.lastRanAtMs == null ? " isNever" : ""}" aria-label="${ctx.escapeHtmlUI(
-          aria
-        )}"><span class="dashboardLastRanTask">${ctx.escapeHtmlUI(row.taskName)}</span><span class="dashboardLastRanMeta"><span class="dashboardLastRanLabel">Time since last ran</span> <span class="dashboardLastRanValue">${ctx.escapeHtmlUI(
-          value
-        )}</span></span></div>`;
-      })
-      .join("");
-  }
-
-  function renderDashboardWidgets(opts?: { includeAvgSession?: boolean }) {
+  function renderDashboardWidgets() {
     renderRewardsHeaderProgressCard();
     renderDashboardActivityOverviewCard();
     renderDashboardActivityTodaySummary();
@@ -2569,7 +2539,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardWeeklyGoalsCard();
     renderDashboardTasksCompletedCard();
     renderDashboardFocusTrend();
-    if (opts?.includeAvgSession !== false) renderDashboardAvgSessionChart();
     renderDashboardHeatCalendar();
     try {
       renderDashboardMomentumCard();
@@ -2602,7 +2571,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardTimelineCard,
     renderDashboardFocusTrend,
     renderDashboardHeatCalendar,
-    renderDashboardAvgSessionChart,
     renderDashboardLiveWidgets,
     renderDashboardWidgets,
     selectDashboardTimelineSuggestion,

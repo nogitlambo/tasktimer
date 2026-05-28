@@ -180,7 +180,6 @@ export function createTaskTimerRuntimeComposition(
     dashboardCardSizes: initialState.dashboardCardSizes,
     dashboardCardSizesDraftBeforeEdit: initialState.dashboardCardSizesDraftBeforeEdit,
     dashboardCardVisibility: initialState.dashboardCardVisibility,
-    dashboardAvgRange: initialState.dashboardAvgRange,
     dashboardTimelineDensity: initialState.dashboardTimelineDensity,
   });
   const taskListRuntimeState = createTaskTimerMutableStore({

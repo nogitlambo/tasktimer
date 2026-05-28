@@ -100,7 +100,6 @@ function makeDashboardContext() {
   grid.appendChild(supportGrid);
   appendCard("tasks-completed", activityOverview);
   appendCard("momentum", grid);
-  appendCard("avg-session-by-task", grid);
   appendCard("heatmap", grid);
 
   const originalDocument = globalThis.document;
@@ -131,13 +130,11 @@ function makeDashboardContext() {
     setDashboardCardPlacements: () => {},
     syncDashboardRefreshButtonUi: () => {},
     syncDashboardMenuFlipUi: () => {},
-    setDashboardAvgRange: () => {},
     setDashboardEditMode: () => {},
     setDashboardDragEl: () => {},
     renderDashboardWidgets: () => {},
     on: () => {},
     hasEntitlement: () => true,
-    getDashboardAvgRange: () => "past7",
     navigateToAppRoute: () => {},
     jumpToTaskById: () => {},
     openDashboardHeatSummaryCard: () => {},
@@ -190,17 +187,14 @@ describe("dashboard drag interaction guards", () => {
     expect(isDashboardCardSizeOptionAllowed("quarter", "activity-overview")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("half", "activity-overview")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("full", "activity-overview")).toBe(false);
-    expect(sanitizeDashboardCardSize("quarter", "avg-session-by-task")).toBeNull();
     expect(sanitizeDashboardCardSize("quarter", "heatmap")).toBeNull();
     expect(sanitizeDashboardCardSize("quarter", "tasks-completed")).toBeNull();
     expect(sanitizeDashboardCardSize("eighth", "tasks-completed")).toBeNull();
-    expect(isDashboardCardSizeOptionAllowed("quarter", "avg-session-by-task")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("quarter", "heatmap")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("quarter", "tasks-completed")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("half", "tasks-completed")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("full", "tasks-completed")).toBe(false);
     expect(isDashboardCardSizeOptionAllowed("half", "heatmap")).toBe(false);
-    expect(isDashboardCardSizeOptionAllowed("full", "avg-session-by-task")).toBe(false);
   });
 
   it("normalizes support panels without moving Task Overview out of Activity Overview", () => {
@@ -210,7 +204,7 @@ describe("dashboard drag interaction guards", () => {
       harness.dashboard.applyDashboardOrder(["heatmap", "momentum"]);
       harness.dashboard.applyDashboardCardVisibility();
 
-      ["momentum", "avg-session-by-task", "heatmap"].forEach((cardId) => {
+      ["momentum", "heatmap"].forEach((cardId) => {
         const card = harness.cardsById.get(cardId);
         expect(card?.parentElement).toBe(harness.supportGrid);
         expect(card?.hidden).toBe(false);

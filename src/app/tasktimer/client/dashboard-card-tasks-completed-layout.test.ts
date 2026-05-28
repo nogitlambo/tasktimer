@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  areDashboardTasksCompletedLabelsSafe,
   buildDashboardTasksCompletedLabelLayout,
   dashboardTasksCompletedPathIntersectsRect,
   dashboardTasksCompletedRectsIntersect,
@@ -195,5 +196,37 @@ describe("dashboard task overview label layout", () => {
 
     expect(layouts.find((layout) => layout.key === "right")?.isRightSide).toBe(true);
     expect(layouts.find((layout) => layout.key === "left")?.isRightSide).toBe(false);
+  });
+
+  it("marks labels unsafe when any label exceeds the chart bounds", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "right", sliceStartPct: 25, slicePct: 10, labelWidth: 96 },
+    ]);
+
+    expect(areDashboardTasksCompletedLabelsSafe(layouts, { viewportWidth: 300 })).toBe(false);
+  });
+
+  it("marks normal side labels safe when they fit outside the visible donut area", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "right", sliceStartPct: 25, slicePct: 10, labelWidth: 96 },
+    ]);
+
+    expect(areDashboardTasksCompletedLabelsSafe(layouts)).toBe(true);
+  });
+
+  it("marks labels unsafe when any label intersects the protected donut area", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "overlap", sliceStartPct: 25, slicePct: 10, labelWidth: 96 },
+    ], { labelOrbitRadius: 108 });
+
+    expect(areDashboardTasksCompletedLabelsSafe(layouts)).toBe(false);
+  });
+
+  it("marks short external labels safe when they fit outside the protected donut area", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "right", sliceStartPct: 25, slicePct: 10, labelWidth: 50 },
+    ]);
+
+    expect(areDashboardTasksCompletedLabelsSafe(layouts)).toBe(true);
   });
 });
