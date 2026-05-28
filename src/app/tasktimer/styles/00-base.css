@@ -2289,7 +2289,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   overflow-x:hidden;
   padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
     calc(16px + var(--safe-left));
-  background: #000;
+  background:
+    linear-gradient(rgba(0, 0, 0, .42), rgba(0, 0, 0, .62)),
+    url("/gradient1.webp") center / cover no-repeat #000;
 }
 
 body.isFocusModeOpen #focusModeScreen{

@@ -61,6 +61,15 @@ export default function WebSignIn(props: WebSignInProps) {
   const canSendEmailLink = !authBusy && isValidAuthEmail;
   const canCompleteEmailLink = !authBusy && isValidAuthEmail;
 
+  const handlePrimaryEmailClick = () => {
+    if (!showEmailLoginForm) {
+      onToggleEmailLoginForm();
+      return;
+    }
+    if (!canSendEmailLink) return;
+    onSendEmailLink();
+  };
+
   const handleEmailFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSendEmailLink) return;
@@ -119,7 +128,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   <div className="relative flex flex-col gap-3 pt-8">
                     <button
                       type="button"
-                      onClick={onToggleEmailLoginForm}
+                      onClick={handlePrimaryEmailClick}
                       aria-expanded={showEmailLoginForm ? "true" : "false"}
                       disabled={authBusy}
                       className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
