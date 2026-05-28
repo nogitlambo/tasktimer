@@ -33,8 +33,8 @@ function makeElement(opts: {
 }
 
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
-const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
 
 describe("primary click audio", () => {
@@ -82,9 +82,25 @@ describe("primary click audio", () => {
     expect(getTaskLaunchClickTarget(element)).toBe(element);
   });
 
+  it("matches the stopped focus dial as a task launch control", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_LAUNCH_CLICK_SELECTOR]: true, "#focusDial.isStopped": true },
+    });
+
+    expect(getTaskLaunchClickTarget(element)).toBe(element);
+  });
+
   it("matches enabled task stop controls for alert audio", () => {
     const element = makeElement({
       selectorMatches: { [TASK_STOP_CLICK_SELECTOR]: true },
+    });
+
+    expect(getTaskStopClickTarget(element)).toBe(element);
+  });
+
+  it("matches the running focus dial as a task stop control", () => {
+    const element = makeElement({
+      selectorMatches: { [TASK_STOP_CLICK_SELECTOR]: true, "#focusDial.isRunning": true },
     });
 
     expect(getTaskStopClickTarget(element)).toBe(element);

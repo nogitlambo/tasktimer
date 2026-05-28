@@ -1772,7 +1772,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModal{
-  max-width: min(420px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
   border-radius: 0;
 }
 
@@ -1924,59 +1924,118 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats{
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
+  gap: 0;
   margin: 0 0 10px;
-  padding: 12px 0 14px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.04);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  padding: 18px 16px 20px;
+  border: 1px solid rgba(190, 202, 214, .28);
+  border-radius: 0;
+  background:
+    linear-gradient(135deg, rgba(190, 202, 214, .32) 0 10px, transparent 10px) top left / 54px 28px no-repeat,
+    linear-gradient(225deg, rgba(190, 202, 214, .28) 0 10px, transparent 10px) top right / 54px 28px no-repeat,
+    linear-gradient(45deg, rgba(190, 202, 214, .26) 0 10px, transparent 10px) bottom left / 54px 28px no-repeat,
+    linear-gradient(315deg, rgba(190, 202, 214, .26) 0 10px, transparent 10px) bottom right / 54px 28px no-repeat,
+    linear-gradient(180deg, rgba(20, 24, 26, .92), rgba(7, 10, 12, .96));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .06),
+    inset 0 0 28px rgba(174, 255, 0, .04),
+    0 0 22px rgba(174, 255, 0, .08),
+    0 12px 28px rgba(0, 0, 0, .32);
+  clip-path: polygon(14px 0, calc(50% - 56px) 0, calc(50% - 46px) 8px, calc(50% + 46px) 8px, calc(50% + 56px) 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, calc(50% + 56px) 100%, calc(50% + 46px) calc(100% - 8px), calc(50% - 46px) calc(100% - 8px), calc(50% - 56px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+#leaderboardPositionOverlay .leaderboardPositionStats::before,
+#leaderboardPositionOverlay .leaderboardPositionStats::after{
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionStats::before{
+  inset: 7px;
+  border: 1px solid rgba(170, 176, 184, .2);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, .38);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+
+#leaderboardPositionOverlay .leaderboardPositionStats::after{
+  inset: -1px;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 35px), #a7ff00 calc(50% - 35px) calc(50% + 35px), transparent calc(50% + 35px)) top center / 100% 7px no-repeat,
+    linear-gradient(90deg, transparent calc(50% - 35px), #a7ff00 calc(50% - 35px) calc(50% + 35px), transparent calc(50% + 35px)) bottom center / 100% 7px no-repeat,
+    linear-gradient(180deg, transparent 18%, #a7ff00 18% 36%, transparent 36% 44%, #a7ff00 44% 64%, transparent 64% 72%, #a7ff00 72% 90%, transparent 90%) left center / 7px 100% no-repeat,
+    linear-gradient(180deg, transparent 18%, #a7ff00 18% 36%, transparent 36% 44%, #a7ff00 44% 64%, transparent 64% 72%, #a7ff00 72% 90%, transparent 90%) right center / 7px 100% no-repeat;
+  filter: drop-shadow(0 0 7px rgba(167, 255, 0, .72));
+  clip-path: inherit;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStatsTitle{
+  position: relative;
+  z-index: 1;
   grid-column: 1 / -1;
-  margin: 0 0 8px;
-  padding-bottom: 8px;
+  margin: 0 0 16px;
+  padding: 0 0 12px;
   border-bottom: 1px solid rgba(170, 176, 184, 0.22);
   text-align: center;
-  color: rgba(238,242,246,.72);
+  color: rgba(247, 250, 252, .96);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  line-height: 1.1;
+  text-shadow: 0 0 10px rgba(255, 255, 255, .18);
   text-transform: uppercase;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats > div{
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: grid;
-  grid-template-rows: 44px auto;
+  grid-template-rows: minmax(36px, auto) auto;
   justify-items: center;
   align-items: center;
   align-content: center;
-  gap: 3px;
-  padding: 0;
+  gap: 7px;
+  padding: 3px 10px 0;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionStats > div + div{
+  border-left: 1px solid rgba(170, 176, 184, .34);
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats strong{
   max-width: 100%;
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
-  font-size: 26px;
+  font-size: clamp(21px, 7.4vw, 34px);
+  font-weight: 800;
   line-height: 1.1;
+  letter-spacing: .03em;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, .38),
+    0 0 13px rgba(255, 255, 255, .15);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats span{
-  color: rgba(238,242,246,.55);
-  font-size: 12px;
+  color: rgba(190, 198, 210, .78);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: clamp(10px, 3vw, 13px);
+  font-weight: 700;
+  line-height: 1.15;
+  text-shadow: 0 0 9px rgba(255, 255, 255, .08);
+  white-space: nowrap;
 }
 
 #leaderboardPositionOverlay .leaderboardMiniRow{
@@ -2033,7 +2092,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .friendUserSummaryModal{
-  max-width: min(420px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
   border-radius: 0;
 }
 
@@ -2231,64 +2290,123 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .friendUserSummaryStats{
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
+  gap: 0;
   margin: 0 0 10px;
-  padding: 12px 0 14px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.04);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  padding: 18px 16px 20px;
+  border: 1px solid rgba(190, 202, 214, .28);
+  border-radius: 0;
+  background:
+    linear-gradient(135deg, rgba(190, 202, 214, .32) 0 10px, transparent 10px) top left / 54px 28px no-repeat,
+    linear-gradient(225deg, rgba(190, 202, 214, .28) 0 10px, transparent 10px) top right / 54px 28px no-repeat,
+    linear-gradient(45deg, rgba(190, 202, 214, .26) 0 10px, transparent 10px) bottom left / 54px 28px no-repeat,
+    linear-gradient(315deg, rgba(190, 202, 214, .26) 0 10px, transparent 10px) bottom right / 54px 28px no-repeat,
+    linear-gradient(180deg, rgba(20, 24, 26, .92), rgba(7, 10, 12, .96));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .06),
+    inset 0 0 28px rgba(174, 255, 0, .04),
+    0 0 22px rgba(174, 255, 0, .08),
+    0 12px 28px rgba(0, 0, 0, .32);
+  clip-path: polygon(14px 0, calc(50% - 56px) 0, calc(50% - 46px) 8px, calc(50% + 46px) 8px, calc(50% + 56px) 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, calc(50% + 56px) 100%, calc(50% + 46px) calc(100% - 8px), calc(50% - 46px) calc(100% - 8px), calc(50% - 56px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+#friendProfileModal .friendUserSummaryStats::before,
+#friendProfileModal .friendUserSummaryStats::after{
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#friendProfileModal .friendUserSummaryStats::before{
+  inset: 7px;
+  border: 1px solid rgba(170, 176, 184, .2);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, .38);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+
+#friendProfileModal .friendUserSummaryStats::after{
+  inset: -1px;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 35px), #a7ff00 calc(50% - 35px) calc(50% + 35px), transparent calc(50% + 35px)) top center / 100% 7px no-repeat,
+    linear-gradient(90deg, transparent calc(50% - 35px), #a7ff00 calc(50% - 35px) calc(50% + 35px), transparent calc(50% + 35px)) bottom center / 100% 7px no-repeat,
+    linear-gradient(180deg, transparent 18%, #a7ff00 18% 36%, transparent 36% 44%, #a7ff00 44% 64%, transparent 64% 72%, #a7ff00 72% 90%, transparent 90%) left center / 7px 100% no-repeat,
+    linear-gradient(180deg, transparent 18%, #a7ff00 18% 36%, transparent 36% 44%, #a7ff00 44% 64%, transparent 64% 72%, #a7ff00 72% 90%, transparent 90%) right center / 7px 100% no-repeat;
+  filter: drop-shadow(0 0 7px rgba(167, 255, 0, .72));
+  clip-path: inherit;
 }
 
 #friendProfileModal .friendUserSummaryStatsTitle{
+  position: relative;
+  z-index: 1;
   grid-column: 1 / -1;
-  margin: 0 0 8px;
-  padding-bottom: 8px;
+  margin: 0 0 16px;
+  padding: 0 0 12px;
   border-bottom: 1px solid rgba(170, 176, 184, 0.22);
   text-align: center;
-  color: rgba(238,242,246,.72);
+  color: rgba(247, 250, 252, .96);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  line-height: 1.1;
+  text-shadow: 0 0 10px rgba(255, 255, 255, .18);
   text-transform: uppercase;
 }
 
 #friendProfileModal .friendUserSummaryStats > div{
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: grid;
-  grid-template-rows: 44px auto;
+  grid-template-rows: minmax(36px, auto) auto;
   justify-items: center;
   align-items: center;
   align-content: center;
-  gap: 3px;
-  padding: 0;
+  gap: 7px;
+  padding: 3px 10px 0;
+}
+
+#friendProfileModal .friendUserSummaryStats > div + div{
+  border-left: 1px solid rgba(170, 176, 184, .34);
 }
 
 #friendProfileModal .friendUserSummaryStats strong{
   max-width: 100%;
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
-  font-size: 26px;
+  font-size: clamp(21px, 7.4vw, 34px);
+  font-weight: 800;
   line-height: 1.1;
+  letter-spacing: .03em;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, .38),
+    0 0 13px rgba(255, 255, 255, .15);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #friendProfileModal .friendUserSummaryStats span{
-  color: rgba(238,242,246,.55);
-  font-size: 12px;
+  color: rgba(190, 198, 210, .78);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: clamp(10px, 3vw, 13px);
+  font-weight: 700;
+  line-height: 1.15;
+  text-shadow: 0 0 9px rgba(255, 255, 255, .08);
+  white-space: nowrap;
 }
 
 #friendProfileModal .friendUserSummaryStats #friendProfileXp{
-  font-size: 20px;
-  letter-spacing: .04em;
+  font-size: clamp(18px, 6.2vw, 30px);
+  letter-spacing: .05em;
   text-transform: uppercase;
 }
 

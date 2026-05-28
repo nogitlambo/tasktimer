@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getTimeGoalConfettiStage, startTimeGoalConfetti, startTimeGoalXpSplash, stopTimeGoalConfetti } from "./time-goal-confetti";
+import {
+  getTimeGoalConfettiStage,
+  startTimeGoalConfetti,
+  startTimeGoalXpSplash,
+  startTimeGoalXpSplashAfterConfetti,
+  stopTimeGoalConfetti,
+  TIME_GOAL_CONFETTI_DURATION_MS,
+} from "./time-goal-confetti";
 
 function elementStub(opts?: { closest?: HTMLElement | null }) {
   const classes = new Set<string>();
@@ -78,5 +85,56 @@ describe("time goal confetti", () => {
 
     expect(text.classList.contains("isPlaying")).toBe(true);
     expect(text.dataset.xpSplashState).toBe("playing");
+  });
+
+  it("delays the xp splash until the confetti animation finishes", () => {
+    const fx = elementStub();
+    const text = elementStub({ closest: fx });
+    const scheduledHandlers: Array<() => void> = [];
+    let scheduledDelay = 0;
+
+    expect(
+      startTimeGoalXpSplashAfterConfetti(text, {
+        setTimeoutFn: (handler, timeout) => {
+          scheduledHandlers.push(handler);
+          scheduledDelay = timeout;
+        },
+      })
+    ).toBe(true);
+
+    expect(scheduledDelay).toBe(TIME_GOAL_CONFETTI_DURATION_MS);
+    expect(fx.classList.contains("isPlaying")).toBe(false);
+
+    scheduledHandlers[0]?.();
+
+    expect(fx.classList.contains("isPlaying")).toBe(true);
+    expect(fx.dataset.xpSplashState).toBe("playing");
+  });
+
+  it("starts the xp splash immediately when reduced motion is enabled", () => {
+    const fx = elementStub();
+    const text = elementStub({ closest: fx });
+
+    expect(
+      startTimeGoalXpSplashAfterConfetti(text, {
+        setTimeoutFn: () => {
+          throw new Error("unexpected timer");
+        },
+        matchMediaFn: () => ({ matches: true }),
+      })
+    ).toBe(true);
+
+    expect(fx.classList.contains("isPlaying")).toBe(true);
+    expect(fx.dataset.xpSplashState).toBe("playing");
+  });
+
+  it("does not schedule an xp splash without a target", () => {
+    expect(
+      startTimeGoalXpSplashAfterConfetti(null, {
+        setTimeoutFn: () => {
+          throw new Error("unexpected timer");
+        },
+      })
+    ).toBe(false);
   });
 });

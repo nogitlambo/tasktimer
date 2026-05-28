@@ -483,6 +483,22 @@
   }
 }
 
+@media (max-width: 980px){
+body:not(.isFocusModeOpen) #app[aria-label="TaskLaunch App"] .appFooterNav{
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    left: var(--mobile-footer-offset, 10px) !important;
+    right: var(--mobile-footer-offset, 10px) !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: auto !important;
+    z-index: 80 !important;
+  }
+}
+
 @media (min-width: 981px){
 #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;

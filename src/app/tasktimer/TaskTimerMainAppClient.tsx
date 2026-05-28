@@ -1157,6 +1157,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
                             aria-disabled={row.isPlaceholder}
+                            data-leaderboard-profile-open={row.isPlaceholder ? undefined : row.profile.uid}
                             onClick={() => openWeeklyLeaderboardProfile(row.profile)}
                           >
                             <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
@@ -1204,6 +1205,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
                               disabled={row.isPlaceholder || row.isDummy}
                               aria-disabled={row.isPlaceholder || row.isDummy}
+                              data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
                               onClick={() => {
                                 if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
                               }}
@@ -1261,6 +1263,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
                             aria-disabled={row.isPlaceholder}
+                            data-leaderboard-profile-open={row.isPlaceholder ? undefined : row.profile.uid}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
                             <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
@@ -1308,6 +1311,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
                               disabled={row.isPlaceholder || row.isDummy}
                               aria-disabled={row.isPlaceholder || row.isDummy}
+                              data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
                               onClick={() => {
                                 if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
                               }}
@@ -1365,6 +1369,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             key={row.profile.uid}
                             disabled={row.isPlaceholder}
                             aria-disabled={row.isPlaceholder}
+                            data-leaderboard-profile-open={row.isPlaceholder ? undefined : row.profile.uid}
                             onClick={() => openLeaderboardProfile(row.profile)}
                           >
                             <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
@@ -1412,6 +1417,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
                               disabled={row.isPlaceholder || row.isDummy}
                               aria-disabled={row.isPlaceholder || row.isDummy}
+                              data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
                               onClick={() => {
                                 if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
                               }}

@@ -53,7 +53,7 @@ function makeElement(opts: {
 
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const SECONDARY_DIRECT_SELECTOR =
   '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
 const CHECKBOX_SELECTOR = 'input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption';

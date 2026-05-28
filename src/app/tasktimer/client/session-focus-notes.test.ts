@@ -82,6 +82,7 @@ function createHarness(overrides?: {
   liveSessionsByTaskId?: Record<string, { note?: string }>;
   focusModeTaskId?: string | null;
   focusSessionNotesScrollHeight?: number;
+  focusSessionNotesMinHeight?: string;
   focusSessionNotesMaxHeight?: string;
   windowInnerHeight?: number;
 }) {
@@ -117,7 +118,10 @@ function createHarness(overrides?: {
     },
     scrollTo: () => {},
     localStorage: storage,
-    getComputedStyle: () => ({ maxHeight: overrides?.focusSessionNotesMaxHeight ?? "220px" }),
+    getComputedStyle: () => ({
+      minHeight: overrides?.focusSessionNotesMinHeight ?? "96px",
+      maxHeight: overrides?.focusSessionNotesMaxHeight ?? "220px",
+    }),
     addEventListener: (type: string, handler: EventListener) => windowTarget.addEventListener(type, handler),
     removeEventListener: (type: string, handler: EventListener) => windowTarget.removeEventListener(type, handler),
     dispatchEvent: (event: Event) => windowTarget.dispatchEvent(event),
@@ -340,7 +344,7 @@ describe("task timer session focus notes", () => {
   it("autosizes focus notes to the typed content height", () => {
     const harness = createHarness({
       focusModeTaskId: "task-1",
-      focusSessionNotesScrollHeight: 96,
+      focusSessionNotesScrollHeight: 120,
     });
 
     harness.session.registerSessionEvents();
@@ -348,7 +352,7 @@ describe("task timer session focus notes", () => {
     harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
 
     const style = harness.focusSessionNotesInput.style as Record<string, string>;
-    expect(style.height).toBe("96px");
+    expect(style.height).toBe("120px");
     expect(style.overflowY).toBe("hidden");
   });
 
@@ -366,7 +370,23 @@ describe("task timer session focus notes", () => {
     harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
 
     const style = harness.focusSessionNotesInput.style as Record<string, string>;
-    expect(style.height).toBe("38px");
+    expect(style.height).toBe("96px");
+    expect(style.overflowY).toBe("hidden");
+  });
+
+  it("uses the responsive focus notes minimum height when CSS lowers it", () => {
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesMinHeight: "76px",
+      focusSessionNotesScrollHeight: 12,
+    });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("76px");
     expect(style.overflowY).toBe("hidden");
   });
 
@@ -382,7 +402,7 @@ describe("task timer session focus notes", () => {
 
     expect(harness.getBodyClassList().contains("isFocusModeOpen")).toBe(true);
     expect(harness.focusSessionNotesInput.value).toBe("cloud note");
-    expect((harness.focusSessionNotesInput.style as Record<string, string>).height).toBe("84px");
+    expect((harness.focusSessionNotesInput.style as Record<string, string>).height).toBe("96px");
   });
 
   it("falls back to the local draft when no live-session note exists", () => {

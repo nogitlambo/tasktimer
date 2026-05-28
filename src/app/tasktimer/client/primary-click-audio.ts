@@ -10,8 +10,8 @@ type ClosestCapable = {
 
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
-const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 
 function getClosestElement(target: EventTarget | null, selector: string): HTMLElement | null {
   const node = target as (ClosestCapable & Element) | null;

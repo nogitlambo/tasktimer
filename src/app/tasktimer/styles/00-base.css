@@ -1599,7 +1599,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 .focusDial{
   position:relative;
-  width:min(33.75vw, 40.5dvh, 351px);
+  width:min(39vw, 45dvh, 420px);
   aspect-ratio:1/1;
   border-radius:50%;
   container-type: inline-size;
@@ -1610,14 +1610,16 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   appearance:none;
-  --focus-inner-inset: clamp(36px, calc(8.7% + 13px), 54px);
+  --focus-inner-inset: clamp(54px, 16cqw, 78px);
   --focus-progress: 0%;
-  --focus-progress-color: rgba(0,238,255,1);
-  --focus-ring-track-color: rgba(110,134,170,.24);
-  --focus-ring-gap-color: rgba(5,10,20,.9);
-  --focus-ring-highlight-color: rgba(235,252,255,.2);
-  --focus-marker-radius: 42%;
+  --focus-progress-color: rgb(255,59,48);
+  --focus-cyan: #25f3ff;
+  --focus-cyan-soft: rgba(37,243,255,.72);
+  --focus-cyan-dim: rgba(37,243,255,.28);
+  --focus-shell: rgba(16,24,31,.96);
+  --focus-shell-edge: rgba(112,135,148,.76);
   overflow: visible;
+  filter: drop-shadow(0 0 18px rgba(0,238,255,.24));
 }
 
 .focusDial:focus-visible{
@@ -1625,12 +1627,43 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   outline-offset: 8px;
 }
 
+.focusDialArtwork{
+  position:absolute;
+  inset:-1.5%;
+  border-radius:50%;
+  z-index:1;
+  pointer-events:none;
+  background: url("/ui/focus_dial.png") center / cover no-repeat;
+  opacity:.98;
+  filter: saturate(1.08) contrast(1.06) drop-shadow(0 0 14px rgba(37,243,255,.16));
+}
+
+.focusDialArtwork::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,0) 0 47%, rgba(0,0,0,.7) 48% 68%, rgba(0,0,0,.08) 69% 100%);
+  mix-blend-mode:multiply;
+  opacity:.62;
+}
+
 .focusDialOuter{
   position:absolute;
   inset:0;
   border-radius:50%;
-  border:4px solid rgba(0,233,255,.95);
-  box-shadow: 0 0 14px rgba(0,233,255,.8), 0 0 42px rgba(0,174,255,.5);
+  z-index:2;
+  background:
+    radial-gradient(circle at center, transparent 73%, rgba(37,243,255,.24) 73.4%, transparent 74.2%),
+    radial-gradient(circle at center, transparent 87%, rgba(37,243,255,.58) 87.4%, transparent 88.2%);
+  box-shadow:
+    0 0 0 1px rgba(168,205,226,.22),
+    0 0 24px rgba(0,238,255,.26),
+    inset 0 0 0 2px rgba(0,0,0,.88),
+    inset 0 0 20px rgba(0,0,0,.72);
+  -webkit-mask: radial-gradient(circle at center, transparent 71%, #fff 72%, #fff 91%, transparent 92%);
+  mask: radial-gradient(circle at center, transparent 71%, #fff 72%, #fff 91%, transparent 92%);
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
@@ -1643,48 +1676,117 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   animation: focusDialPulseGlow 2.8s ease-in-out infinite;
 }
 
-.focusDial.isStopped .focusDialOuter{
-  border-color: rgba(255,77,77,.95);
-  box-shadow: 0 0 14px rgba(255,77,77,.72), 0 0 42px rgba(255,77,77,.42);
+.focusDial.isStopped .focusDialOuter,
+.focusDial.isDone .focusDialOuter{
+  box-shadow:
+    0 0 0 1px rgba(255,88,72,.16),
+    0 0 20px rgba(255,77,77,.16),
+    inset 0 0 0 2px rgba(0,0,0,.88),
+    inset 0 0 20px rgba(0,0,0,.72);
+}@keyframes focusDialPulseGlow{0%, 100%{
+    filter: drop-shadow(0 0 6px rgba(0,238,255,.35));
+  }50%{
+    filter: drop-shadow(0 0 18px rgba(0,238,255,.62));
+  }
 }
 
-.focusDial.isStopped .focusDialTime,
-.focusDial.isStopped .focusDialDays{
-  color:#ff4d4d;
-  text-shadow: 0 0 1px rgba(255,145,145,.95), 0 0 4px rgba(255,77,77,.7), 0 0 8px rgba(255,40,40,.45);
-}@keyframes focusDialPulseGlow{0%, 100%{
-    box-shadow: 0 0 10px rgba(0,233,255,.55), 0 0 26px rgba(0,174,255,.34);
-  }50%{
-    box-shadow: 0 0 18px rgba(0,233,255,.95), 0 0 56px rgba(0,174,255,.6);
-  }
+.focusDialArtwork,
+.focusDialChassis,
+.focusDialTickRing,
+.focusDialGlowRing,
+.focusDialFace{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.focusDialChassis{
+  z-index:3;
+  inset:clamp(7px, 2cqw, 12px);
+  background:
+    radial-gradient(circle at center, transparent 78.5%, rgba(8,13,19,.78) 79%, rgba(8,13,19,.84) 82%, transparent 82.6%),
+    repeating-conic-gradient(
+      from -90deg,
+      rgba(35,52,64,.18) 0deg 18deg,
+      rgba(10,18,25,.44) 18deg 21deg,
+      rgba(98,121,136,.26) 21deg 22deg,
+      rgba(7,11,17,.42) 22deg 30deg
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(145,174,190,.28),
+    inset 0 0 28px rgba(0,0,0,.9);
+  -webkit-mask: radial-gradient(circle at center, transparent 76%, #fff 77%);
+  mask: radial-gradient(circle at center, transparent 76%, #fff 77%);
+}
+
+.focusDialTickRing{
+  z-index:5;
+  inset:clamp(28px, 7.4cqw, 40px);
+  background:
+    repeating-conic-gradient(
+      from -90deg,
+      rgba(37,243,255,.92) 0deg 1deg,
+      transparent 1deg 6deg,
+      rgba(37,243,255,.42) 6deg 7deg,
+      transparent 7deg 12deg
+    );
+  opacity:.86;
+  filter: drop-shadow(0 0 6px rgba(37,243,255,.5));
+  -webkit-mask: radial-gradient(circle at center, transparent 73%, #fff 74%, #fff 76.5%, transparent 77.5%);
+  mask: radial-gradient(circle at center, transparent 73%, #fff 74%, #fff 76.5%, transparent 77.5%);
+}
+
+.focusDialGlowRing{
+  z-index:4;
+  inset:clamp(31px, 8.8cqw, 43px);
+  border:clamp(1px, .38cqw, 2px) solid rgba(37,243,255,.7);
+  background:
+    radial-gradient(circle at center, transparent 67.5%, rgba(2,8,12,.92) 68%, rgba(2,8,12,.92) 91.5%, transparent 92%),
+    conic-gradient(from 0deg, rgba(37,243,255,.18), rgba(37,243,255,.05), rgba(37,243,255,.18));
+  box-shadow:
+    0 0 14px rgba(37,243,255,.72),
+    inset 0 0 18px rgba(37,243,255,.18);
+  -webkit-mask: radial-gradient(circle at center, transparent 67%, #fff 68%, #fff 92%, transparent 93%);
+  mask: radial-gradient(circle at center, transparent 67%, #fff 68%, #fff 92%, transparent 93%);
 }
 
 .focusDialProgress{
   position:absolute;
-  inset:16px;
+  inset:clamp(31px, 8.8cqw, 43px);
   border-radius:50%;
+  z-index:7;
   overflow:hidden;
-  background:
-    radial-gradient(circle at 50% 32%, rgba(255,255,255,.18), transparent 34%),
-    conic-gradient(
-      from 0deg,
-      color-mix(in srgb, var(--focus-progress-color) 96%, white 4%) 0 var(--focus-progress),
-      var(--focus-ring-track-color) var(--focus-progress) 100%
-    );
+  opacity:0;
+  background: conic-gradient(
+    from 0deg,
+    var(--focus-progress-color) 0 var(--focus-progress),
+    rgba(37,243,255,.13) var(--focus-progress) 100%
+  );
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--focus-progress-color) 92%, white 8%) 0 var(--focus-progress),
+    rgba(37,243,255,.13) var(--focus-progress) 100%
+  );
   box-shadow:
-    0 0 16px rgba(0,220,255,.18),
-    inset 0 0 18px rgba(0,210,255,.18),
-    inset 0 1px 0 rgba(255,255,255,.1);
-  -webkit-mask: radial-gradient(circle at center, transparent 62%, #000 64%);
-  mask: radial-gradient(circle at center, transparent 62%, #000 64%);
+    0 0 18px color-mix(in srgb, var(--focus-progress-color) 62%, transparent),
+    inset 0 0 12px rgba(255,255,255,.16);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--focus-progress-color) 72%, transparent));
+  transition: opacity .16s ease;
+  -webkit-mask: radial-gradient(circle at center, transparent 69%, #fff 70%, #fff 89%, transparent 90%);
+  mask: radial-gradient(circle at center, transparent 69%, #fff 70%, #fff 89%, transparent 90%);
+}
+
+.focusDial.hasProgress .focusDialProgress{
+  opacity:1;
 }
 
 .focusCheckpointRing{
   position:absolute;
-  inset:16px;
+  inset:clamp(24px, 6.7cqw, 35px);
   border-radius:50%;
   pointer-events:none;
-  z-index:3;
+  z-index:8;
   overflow: visible;
 }
 
@@ -1692,20 +1794,24 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:absolute;
   top:50%;
   left:50%;
-  width:8px;
-  height:8px;
+  width:clamp(11px, 3.6cqw, 18px);
+  height:clamp(15px, 5cqw, 25px);
   margin:0;
-  border-radius:50%;
-  border:1px solid rgba(205,220,236,.72);
-  background: rgba(132,146,166,.82);
-  box-shadow: 0 0 4px rgba(90,105,128,.32);
-  transform: translate(calc(var(--mxpx, 0px) - 4px), calc(var(--mypx, 0px) - 4px));
+  border:0;
+  background: rgba(37,243,255,.82);
+  clip-path: polygon(50% 0, 100% 100%, 50% 78%, 0 100%);
+  box-shadow: 0 0 8px rgba(37,243,255,.58);
+  transform: translate(calc(var(--mxpx, 0px) - 50%), calc(var(--mypx, 0px) - 50%)) rotate(calc(var(--ma, -90deg) + 90deg));
+  transform-origin:50% 50%;
+  opacity:.78;
 }
 
 .focusCheckpointMark.reached{
-  border-color: rgba(236,244,255,.92);
-  background: rgba(0,238,255,.94);
-  box-shadow: 0 0 7px rgba(0,220,255,.5);
+  background: color-mix(in srgb, var(--focus-progress-color) 78%, white 22%);
+  box-shadow:
+    0 0 9px color-mix(in srgb, var(--focus-progress-color) 74%, transparent),
+    0 0 18px rgba(37,243,255,.26);
+  opacity:1;
 }
 
 .focusCheckpointFlag{
@@ -1785,13 +1891,29 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   position:absolute;
   inset: var(--focus-inner-inset);
   border-radius:50%;
-  border:3px solid rgba(0,210,255,.55);
-  box-shadow: inset 0 0 40px rgba(0,130,255,.15);
+  z-index:6;
+  border:2px solid rgba(37,243,255,.7);
+  box-shadow:
+    0 0 12px rgba(37,243,255,.54),
+    inset 0 0 42px rgba(0,130,255,.14);
+}
+
+.focusDialFace{
+  z-index:6;
+  inset: calc(var(--focus-inner-inset) + 4px);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(21,79,100,.18), transparent 48%),
+    radial-gradient(circle at 50% 63%, rgba(0,168,255,.13), transparent 50%),
+    #010508;
+  box-shadow:
+    inset 0 0 48px rgba(0,0,0,.88),
+    inset 0 0 22px rgba(0,196,255,.08);
 }
 
 .focusDialCenter{
   position:absolute;
   inset: calc(var(--focus-inner-inset) + 8px);
+  z-index:9;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -1996,10 +2118,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 .focusSessionNotesInput{
+  --focus-session-notes-min-height: 96px;
   width: 100%;
-  height: 38px;
-  min-height: 38px;
-  max-height: min(24dvh, 220px);
+  height: var(--focus-session-notes-min-height);
+  min-height: var(--focus-session-notes-min-height);
+  max-height: max(var(--focus-session-notes-min-height), min(24dvh, 220px));
   resize: none;
   overflow-x:hidden;
   overflow-y:hidden;
@@ -3032,8 +3155,9 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotesInput{
-    min-height:38px;
-    max-height:12dvh;
+    --focus-session-notes-min-height: 76px;
+    min-height:var(--focus-session-notes-min-height);
+    max-height:max(var(--focus-session-notes-min-height), 12dvh);
     resize:none;
   }
 }
@@ -3075,8 +3199,9 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotesInput{
-    min-height:38px;
-    max-height:12dvh;
+    --focus-session-notes-min-height: 76px;
+    min-height:var(--focus-session-notes-min-height);
+    max-height:max(var(--focus-session-notes-min-height), 12dvh);
     resize:none;
   }
 }
@@ -3148,7 +3273,8 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotesInput{
-    min-height: 38px;
+    --focus-session-notes-min-height: 76px;
+    min-height: var(--focus-session-notes-min-height);
   }
 }@keyframes signedInHeaderBadgeXpSlideIn{from{
     opacity:0;

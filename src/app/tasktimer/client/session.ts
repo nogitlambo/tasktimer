@@ -22,7 +22,7 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { startTimeGoalConfetti, startTimeGoalXpSplash, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -66,8 +66,9 @@ type FocusModeCloseOptions = {
 
 const FOCUS_MODE_ZOOM_MS = 380;
 const FOCUS_MODE_FADE_CLOSE_MS = 180;
-const FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX = 38;
+const FOCUS_SESSION_NOTES_DEFAULT_HEIGHT_PX = 96;
 const FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO = 0.24;
+const FOCUS_DIAL_FALLBACK_PROGRESS_SECONDS = 60 * 60;
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
 
 export type TimeGoalCompleteNextTaskOption = {
@@ -327,22 +328,33 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     setFocusDndSetupVisible(false);
   }
 
-  function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement) {
+  function getFocusSessionNotesMinHeight(input: HTMLTextAreaElement) {
+    const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
+    const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
+    const computedMinHeight = windowRef?.getComputedStyle
+      ? Number.parseFloat(windowRef.getComputedStyle(input).minHeight || "")
+      : Number.NaN;
+    return Number.isFinite(computedMinHeight) && computedMinHeight > 0
+      ? computedMinHeight
+      : FOCUS_SESSION_NOTES_DEFAULT_HEIGHT_PX;
+  }
+
+  function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement, minHeight: number) {
     const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
     const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
     const viewportHeight = Math.max(
-      FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX,
+      minHeight,
       Math.floor(Number(windowRef?.innerHeight || 0) || 0)
     );
     const fallbackMaxHeight = Math.max(
-      FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX,
+      minHeight,
       Math.floor((viewportHeight || 768) * FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO)
     );
     const computedMaxHeight = windowRef?.getComputedStyle
       ? Number.parseFloat(windowRef.getComputedStyle(input).maxHeight || "")
       : Number.NaN;
-    if (Number.isFinite(computedMaxHeight) && computedMaxHeight >= FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX) {
-      return Math.min(computedMaxHeight, fallbackMaxHeight);
+    if (Number.isFinite(computedMaxHeight) && computedMaxHeight >= minHeight) {
+      return Math.max(minHeight, Math.min(computedMaxHeight, fallbackMaxHeight));
     }
     return fallbackMaxHeight;
   }
@@ -351,8 +363,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const input = els.focusSessionNotesInput as HTMLTextAreaElement | null;
     if (!input) return;
     input.style.height = "auto";
-    const maxHeight = getFocusSessionNotesMaxHeight(input);
-    const nextHeight = Math.max(FOCUS_SESSION_NOTES_COMPACT_HEIGHT_PX, Math.ceil(Number(input.scrollHeight || 0) || 0));
+    const minHeight = getFocusSessionNotesMinHeight(input);
+    const maxHeight = getFocusSessionNotesMaxHeight(input, minHeight);
+    const nextHeight = Math.max(minHeight, Math.ceil(Number(input.scrollHeight || 0) || 0));
     const clampedHeight = Math.min(nextHeight, maxHeight);
     input.style.height = `${clampedHeight}px`;
     input.style.overflowY = nextHeight > maxHeight ? "auto" : "hidden";
@@ -734,8 +747,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalCompleteNextTaskGrid();
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
-    startTimeGoalXpSplash(els.timeGoalCompleteText as HTMLElement | null);
     startTimeGoalCompleteConfetti();
+    startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
+      matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
+    });
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {
         ...awardPreview,
@@ -1109,7 +1124,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         return `
           <span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
             1
-          )}px;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>
+          )}px;--ma:${angleDeg.toFixed(1)}deg;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>
           <span
             class="focusCheckpointLabel isActive${lx < 0 ? " left" : ""}${reached ? " reached" : ""}"
             style="--lxpx:${lx.toFixed(1)}px;--lypx:${ly.toFixed(1)}px;"
@@ -1136,8 +1151,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     updateFocusInsights(task);
     const hasTimeGoal = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
     const timeGoalSec = hasTimeGoal ? Number(task.timeGoalMinutes || 0) * 60 : 0;
-    const pct = hasTimeGoal && timeGoalSec > 0 ? Math.min((elapsedSec / timeGoalSec) * 100, 100) : 0;
+    const progressTargetSec = hasTimeGoal && timeGoalSec > 0 ? timeGoalSec : FOCUS_DIAL_FALLBACK_PROGRESS_SECONDS;
+    const pct = progressTargetSec > 0 ? Math.min((elapsedSec / progressTargetSec) * 100, 100) : 0;
+    const hasProgress = hasTimeGoal || elapsedSec > 0;
     if (els.focusDial) {
+      els.focusDial.classList.toggle("hasTimeGoal", hasTimeGoal);
+      els.focusDial.classList.toggle("hasProgress", hasProgress);
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress", `${pct}%`);
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", ctx.fillBackgroundForPct(pct));
     }

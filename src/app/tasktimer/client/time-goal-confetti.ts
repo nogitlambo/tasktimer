@@ -1,3 +1,5 @@
+export const TIME_GOAL_CONFETTI_DURATION_MS = 2700;
+
 export function startTimeGoalConfetti(stage: HTMLElement | null | undefined) {
   if (!stage) return false;
   if (stage.dataset.confettiState === "playing") return false;
@@ -27,5 +29,25 @@ export function startTimeGoalXpSplash(text: HTMLElement | null | undefined) {
   void fx.offsetWidth;
   fx.classList.add("isPlaying");
   fx.dataset.xpSplashState = "playing";
+  return true;
+}
+
+export function startTimeGoalXpSplashAfterConfetti(
+  text: HTMLElement | null | undefined,
+  opts?: {
+    delayMs?: number;
+    setTimeoutFn?: (handler: () => void, timeout: number) => unknown;
+    matchMediaFn?: (query: string) => { matches: boolean };
+  }
+) {
+  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  if (!fx) return false;
+  const delayMs = Math.max(0, Math.floor(Number(opts?.delayMs ?? TIME_GOAL_CONFETTI_DURATION_MS) || 0));
+  const reducedMotion = !!opts?.matchMediaFn?.("(prefers-reduced-motion: reduce)")?.matches;
+  if (reducedMotion || delayMs <= 0) return startTimeGoalXpSplash(text);
+  const setTimeoutFn = opts?.setTimeoutFn || globalThis.setTimeout;
+  setTimeoutFn(() => {
+    startTimeGoalXpSplash(text);
+  }, delayMs);
   return true;
 }

@@ -523,7 +523,7 @@ export default function TaskTimerAppFrame({
           onTestRankPromotion?.(rankId);
         }}
       />
-      <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} />
+      <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>
         <div className="initialAuthBusyPanel" role="status" aria-live="polite" aria-atomic="true">
           <h2 className="sr-only">Loading your workspace</h2>

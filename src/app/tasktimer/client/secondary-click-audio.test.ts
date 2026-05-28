@@ -6,16 +6,19 @@ import {
   CHECKBOX_CLICK_AUDIO_SRC,
   CLOSE_CLICK_AUDIO_SRC,
   DROPDOWN_CLICK_AUDIO_SRC,
+  MODAL_OPEN_AUDIO_SRC,
   getCheckboxClickTarget,
   getCancelClickTarget,
   getCloseClickTarget,
   getDropdownClickTarget,
+  getModalOpenClickTarget,
   getSecondaryClickTarget,
   getTaskFlipClickTarget,
   playCancelClickAudio,
   playCheckboxClickAudio,
   playCloseClickAudio,
   playDropdownClickAudio,
+  playModalOpenClickAudio,
   playSecondaryClickAudio,
   playTaskFlipClickAudio,
   registerSecondaryClickAudio,
@@ -146,8 +149,8 @@ describe("secondary click audio", () => {
   it("excludes controls handled by primary click audio selectors", () => {
     const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
     const taskLaunchSelector =
-      'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
-    const taskStopSelector = 'button[data-action="stop"][title="Stop"]';
+      'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+    const taskStopSelector = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 
     const saveButton = makeElement({
       selectorMatches: { [primarySelector]: true, "button,a": true },
@@ -163,10 +166,15 @@ describe("secondary click audio", () => {
       textContent: "Stop",
       attributes: { title: "Stop" },
     });
+    const runningFocusDial = makeElement({
+      selectorMatches: { [taskStopSelector]: true, "#focusDial.isRunning": true, "button,a": true },
+      attributes: { "aria-label": "Focus dial. tap to stop timer" },
+    });
 
     expect(getSecondaryClickTarget(saveButton)).toBeNull();
     expect(getSecondaryClickTarget(resumeButton)).toBeNull();
     expect(getSecondaryClickTarget(stopButton)).toBeNull();
+    expect(getSecondaryClickTarget(runningFocusDial)).toBeNull();
   });
 
   it("matches cancel controls for dedicated cancel audio", () => {
@@ -219,6 +227,28 @@ describe("secondary click audio", () => {
 
     expect(getTaskFlipClickTarget(flipButton)).toBe(flipButton);
     expect(getSecondaryClickTarget(flipButton)).toBeNull();
+  });
+
+  it("matches friend identity controls for dedicated modal open audio", () => {
+    const friendIdentityButton = makeElement({
+      selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-friend-profile-open]": true, "button,a": true },
+      attributes: { "data-friend-profile-open": "friend-1" },
+      textContent: "Open Friend profile",
+    });
+
+    expect(getModalOpenClickTarget(friendIdentityButton)).toBe(friendIdentityButton);
+    expect(getSecondaryClickTarget(friendIdentityButton)).toBeNull();
+  });
+
+  it("matches leaderboard identity controls for dedicated modal open audio", () => {
+    const leaderboardIdentityButton = makeElement({
+      selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-leaderboard-profile-open]": true, "button,a": true },
+      attributes: { "data-leaderboard-profile-open": "user-1" },
+      textContent: "Open user summary",
+    });
+
+    expect(getModalOpenClickTarget(leaderboardIdentityButton)).toBe(leaderboardIdentityButton);
+    expect(getSecondaryClickTarget(leaderboardIdentityButton)).toBeNull();
   });
 
   it("matches close controls for dedicated close audio", () => {
@@ -319,6 +349,16 @@ describe("secondary click audio", () => {
     expect(play).toHaveBeenCalledTimes(1);
   });
 
+  it("plays the configured modal open audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playModalOpenClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(MODAL_OPEN_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
   it("registers one scoped app click listener and skips already-prevented clicks", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
@@ -380,6 +420,54 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "[data-task-flip]": true } }) } as unknown as Event);
 
     expect(playTaskFlipAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes friend identity controls to the dedicated modal open audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playModalOpenAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playModalOpenAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-friend-profile-open]": true, "button,a": true } }),
+    } as unknown as Event);
+
+    expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes leaderboard identity controls to the dedicated modal open audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playModalOpenAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playModalOpenAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-leaderboard-profile-open]": true, "button,a": true } }),
+    } as unknown as Event);
+
+    expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();
   });
 
