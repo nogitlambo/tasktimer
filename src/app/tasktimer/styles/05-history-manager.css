@@ -704,7 +704,8 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 @media (max-width: 980px){
 #historyManagerScreen{
-    padding:12px;
+    padding:12px 12px calc(12px + var(--mobile-footer-reserved-space, 0px));
+    scroll-padding-bottom: var(--mobile-footer-reserved-space, 0px);
   }
 
 .hmDateGroup{
@@ -731,7 +732,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 @media (max-width: 360px){
 #historyManagerScreen{
-    padding:10px;
+    padding:10px 10px calc(10px + var(--mobile-footer-reserved-space, 0px));
   }
 
 .hmHead{

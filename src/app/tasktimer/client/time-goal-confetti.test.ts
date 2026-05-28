@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   getTimeGoalConfettiStage,
   startTimeGoalConfetti,
@@ -92,6 +92,7 @@ describe("time goal confetti", () => {
     const text = elementStub({ closest: fx });
     const scheduledHandlers: Array<() => void> = [];
     let scheduledDelay = 0;
+    const onStart = vi.fn();
 
     expect(
       startTimeGoalXpSplashAfterConfetti(text, {
@@ -99,21 +100,25 @@ describe("time goal confetti", () => {
           scheduledHandlers.push(handler);
           scheduledDelay = timeout;
         },
+        onStart,
       })
     ).toBe(true);
 
     expect(scheduledDelay).toBe(TIME_GOAL_CONFETTI_DURATION_MS);
     expect(fx.classList.contains("isPlaying")).toBe(false);
+    expect(onStart).not.toHaveBeenCalled();
 
     scheduledHandlers[0]?.();
 
     expect(fx.classList.contains("isPlaying")).toBe(true);
     expect(fx.dataset.xpSplashState).toBe("playing");
+    expect(onStart).toHaveBeenCalledTimes(1);
   });
 
   it("starts the xp splash immediately when reduced motion is enabled", () => {
     const fx = elementStub();
     const text = elementStub({ closest: fx });
+    const onStart = vi.fn();
 
     expect(
       startTimeGoalXpSplashAfterConfetti(text, {
@@ -121,11 +126,13 @@ describe("time goal confetti", () => {
           throw new Error("unexpected timer");
         },
         matchMediaFn: () => ({ matches: true }),
+        onStart,
       })
     ).toBe(true);
 
     expect(fx.classList.contains("isPlaying")).toBe(true);
     expect(fx.dataset.xpSplashState).toBe("playing");
+    expect(onStart).toHaveBeenCalledTimes(1);
   });
 
   it("does not schedule an xp splash without a target", () => {

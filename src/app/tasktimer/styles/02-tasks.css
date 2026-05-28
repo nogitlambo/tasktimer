@@ -773,8 +773,8 @@ body.isFocusModeTransitioning #focusModeScreen{
   content:"";
   position:absolute;
   inset:0;
-  background: rgba(0,0,0,.22);
-  backdrop-filter: blur(1px);
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
   pointer-events:none;
 }
 
@@ -786,25 +786,19 @@ body.isFocusModeTransitioning #focusModeScreen{
   grid-template-columns: 1fr;
   gap:8px;
   align-items:start;
-  background:#0d0f13;
-  border:2px solid rgba(255,220,80,.82);
+  background:var(--modal-bg, #0d0f13);
+  border:1px solid var(--modal-border, rgba(255,255,255,.14));
   clip-path: none;
-  box-shadow:0 16px 34px rgba(0,0,0,.45), 0 0 0 1px rgba(255,214,64,.28) inset, 0 0 18px rgba(255,220,80,.22);
-  padding:16px 16px 14px;
-  width:min(680px, calc(100vw - 28px));
+  box-shadow:var(--modal-shadow, 0 18px 44px rgba(0,0,0,.44));
+  padding:var(--modal-padding, 14px);
+  width:min(var(--modal-width-sm, 420px), calc(100vw - 28px));
   border-radius: 0;
   isolation:isolate;
+  font-family:var(--font-readable);
 }
 
 .checkpointToast::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  pointer-events:none;
-  border:2px solid rgba(255,220,80,.82);
-  box-shadow: 0 0 12px rgba(255,220,80,.18);
-  animation: taskAlertPulseShadow 1.15s ease-in-out infinite;
-  z-index:0;
+  content:none;
 }
 
 .checkpointToast > *{
@@ -814,65 +808,84 @@ body.isFocusModeTransitioning #focusModeScreen{
 
 .checkpointToastTitle{
   margin:0;
-  font-family:var(--font-tight);
-  font-size:11px;
-  letter-spacing:.16em;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:18px;
+  font-weight:700;
+  line-height:1.25;
+  letter-spacing:.1px;
   text-transform:uppercase;
   color:#fff;
   text-align:center;
 }
 
 .checkpointToastTaskName{
-  margin:0 0 4px;
-  font-family: var(--font-tight);
-  font-size:14px;
-  font-weight:700;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:#ffffff;
+  margin:0 0 2px;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:13px;
+  font-weight:400;
+  line-height:1.35;
+  letter-spacing:0;
+  text-transform:none;
+  color:rgba(170, 178, 190, .88);
   text-align:center;
-  text-shadow: 0 0 8px rgba(53,232,255,.14);
+  text-shadow:none;
 }
 
 .checkpointToastSummary{
-  margin-top:8px;
-  padding:10px 12px;
-  border:1px solid rgba(255,220,80,.2);
-  background: rgba(255,220,80,.04);
+  margin-top:6px;
+  padding:0;
+  border:0;
+  background:transparent;
 }
 
 .checkpointToastText{
   margin:0;
-  color:rgba(255,255,255,.84);
-  font-size:14px;
-  line-height:1.4;
+  color:rgba(170, 178, 190, .88);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:13px;
+  line-height:1.35;
   text-align:center;
 }
 
 .checkpointToastDesc{
   margin:6px 0 0;
-  color:#fff6b8;
-  font-size:14px;
+  color:rgba(170, 178, 190, .88);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:13px;
   line-height:1.35;
   text-align:center;
-  font-weight:700;
+  font-weight:400;
 }
 
 .checkpointToastActions{
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:8px;
-  margin-top:12px;
+  gap:10px;
+  margin-top:10px;
 }
 
 .checkpointToastActions .btn{
-  min-height:40px;
+  min-height:36px;
   width:100%;
   justify-content:center;
   position:relative;
   z-index:2;
   transform: translateZ(0);
   will-change: background-color, border-color, color, box-shadow;
+  border-color:rgba(170, 178, 190, .58) !important;
+  background:rgba(170, 178, 190, .12) !important;
+  box-shadow:none !important;
+  color:rgba(238, 242, 246, .88) !important;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:11px !important;
+  border-radius:0 !important;
+}
+
+.checkpointToastActions .btn:hover:not(:disabled),
+.checkpointToastActions .btn:focus-visible{
+  border-color:var(--accent) !important;
+  color:var(--accent) !important;
+  background:rgba(170, 178, 190, .16) !important;
 }
 
 @media (max-width: 980px){
@@ -881,7 +894,7 @@ body.isFocusModeTransitioning #focusModeScreen{
   }
 
 .checkpointToast{
-    width:min(680px, calc(100vw - 20px));
+    width:min(var(--modal-width-sm, 420px), calc(100vw - 20px));
   }
 
 .checkpointToastActions{
@@ -895,7 +908,6 @@ body.isFocusModeTransitioning #focusModeScreen{
 
 .checkpointToastJump{
   white-space:nowrap;
-  background: transparent !important;
 }
 
 .cloudSyncNoticeHost{

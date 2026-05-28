@@ -135,7 +135,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   align-items:center;
   justify-content:center;
   gap:4px;
-  text-align:center;
+  text-align:left;
 }
 
 .appFooterAlertBadge{
@@ -1000,7 +1000,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 .pill{
   min-width:52px;
-  text-align:center;
+  text-align:left;
   padding:8px 10px;
   border-radius: 999px;
   border:1px solid rgba(255,255,255,.12);
@@ -1627,33 +1627,12 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   outline-offset: 8px;
 }
 
-.focusDialArtwork{
-  position:absolute;
-  inset:-1.5%;
-  border-radius:50%;
-  z-index:1;
-  pointer-events:none;
-  background: url("/ui/focus_dial.png") center / cover no-repeat;
-  opacity:.98;
-  filter: saturate(1.08) contrast(1.06) drop-shadow(0 0 14px rgba(37,243,255,.16));
-}
-
-.focusDialArtwork::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  background:
-    radial-gradient(circle at center, rgba(0,0,0,0) 0 47%, rgba(0,0,0,.7) 48% 68%, rgba(0,0,0,.08) 69% 100%);
-  mix-blend-mode:multiply;
-  opacity:.62;
-}
-
 .focusDialOuter{
   position:absolute;
   inset:0;
   border-radius:50%;
   z-index:2;
+  border:2px solid rgba(37,243,255,.52);
   background:
     radial-gradient(circle at center, transparent 73%, rgba(37,243,255,.24) 73.4%, transparent 74.2%),
     radial-gradient(circle at center, transparent 87%, rgba(37,243,255,.58) 87.4%, transparent 88.2%);
@@ -1678,19 +1657,57 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 .focusDial.isStopped .focusDialOuter,
 .focusDial.isDone .focusDialOuter{
+  border-color: rgba(255,77,77,.96);
+  background:
+    radial-gradient(circle at center, transparent 73%, rgba(255,77,77,.28) 73.4%, transparent 74.2%),
+    radial-gradient(circle at center, transparent 87%, rgba(255,77,77,.72) 87.4%, transparent 88.2%);
   box-shadow:
-    0 0 0 1px rgba(255,88,72,.16),
-    0 0 20px rgba(255,77,77,.16),
+    0 0 0 1px rgba(255,120,112,.45),
+    0 0 16px rgba(255,77,77,.72),
+    0 0 46px rgba(255,77,77,.38),
     inset 0 0 0 2px rgba(0,0,0,.88),
-    inset 0 0 20px rgba(0,0,0,.72);
-}@keyframes focusDialPulseGlow{0%, 100%{
-    filter: drop-shadow(0 0 6px rgba(0,238,255,.35));
+    inset 0 0 22px rgba(255,45,45,.18);
+}
+
+.focusDial.isStopped .focusDialGlowRing,
+.focusDial.isDone .focusDialGlowRing{
+  border-color: rgba(255,77,77,.82);
+  background:
+    radial-gradient(circle at center, transparent 67.5%, rgba(18,4,6,.92) 68%, rgba(18,4,6,.92) 91.5%, transparent 92%),
+    conic-gradient(from 0deg, rgba(255,77,77,.2), rgba(255,77,77,.06), rgba(255,77,77,.2));
+  box-shadow:
+    0 0 16px rgba(255,77,77,.68),
+    inset 0 0 18px rgba(255,77,77,.2);
+}
+
+.focusDial.isStopped .focusDialTime,
+.focusDial.isStopped .focusDialDays,
+.focusDial.isDone .focusDialTime,
+.focusDial.isDone .focusDialDays{
+  color:#ff4d4d;
+  text-shadow: 0 0 1px rgba(255,145,145,.95), 0 0 4px rgba(255,77,77,.7), 0 0 8px rgba(255,40,40,.45);
+}
+
+.focusDial.isRunning .focusDialGlowRing{
+  animation: focusDialPulseGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes focusDialPulseGlow{
+  0%, 100%{
+    box-shadow:
+      0 0 0 1px rgba(117,231,255,.18),
+      0 0 12px rgba(0,233,255,.58),
+      0 0 30px rgba(0,174,255,.32),
+      inset 0 0 18px rgba(37,243,255,.18);
   }50%{
-    filter: drop-shadow(0 0 18px rgba(0,238,255,.62));
+    box-shadow:
+      0 0 0 1px rgba(180,249,255,.34),
+      0 0 22px rgba(0,233,255,.96),
+      0 0 62px rgba(0,174,255,.62),
+      inset 0 0 24px rgba(37,243,255,.3);
   }
 }
 
-.focusDialArtwork,
 .focusDialChassis,
 .focusDialTickRing,
 .focusDialGlowRing,
@@ -1761,17 +1778,17 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: conic-gradient(
     from 0deg,
     var(--focus-progress-color) 0 var(--focus-progress),
-    rgba(37,243,255,.13) var(--focus-progress) 100%
+    rgba(37,243,255,.2) var(--focus-progress) 100%
   );
   background: conic-gradient(
     from 0deg,
-    color-mix(in srgb, var(--focus-progress-color) 92%, white 8%) 0 var(--focus-progress),
-    rgba(37,243,255,.13) var(--focus-progress) 100%
+    var(--focus-progress-color) 0 var(--focus-progress),
+    rgba(37,243,255,.2) var(--focus-progress) 100%
   );
   box-shadow:
-    0 0 18px color-mix(in srgb, var(--focus-progress-color) 62%, transparent),
+    0 0 18px rgba(0,220,255,.28),
     inset 0 0 12px rgba(255,255,255,.16);
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--focus-progress-color) 72%, transparent));
+  filter: drop-shadow(0 0 8px rgba(0,220,255,.42));
   transition: opacity .16s ease;
   -webkit-mask: radial-gradient(circle at center, transparent 69%, #fff 70%, #fff 89%, transparent 90%);
   mask: radial-gradient(circle at center, transparent 69%, #fff 70%, #fff 89%, transparent 90%);
@@ -1779,6 +1796,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 .focusDial.hasProgress .focusDialProgress{
   opacity:1;
+  visibility:visible;
 }
 
 .focusCheckpointRing{
@@ -2132,17 +2150,24 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-size:12px;
   line-height:1.35;
   letter-spacing:.03em;
-  background: transparent !important;
-  background-color: transparent !important;
+  background: rgba(45, 48, 54, .5) !important;
+  background-color: rgba(45, 48, 54, .5) !important;
   background-image: none !important;
   box-shadow: none;
   color: rgba(230,245,255,.96);
-  border: 1px solid rgba(104,220,255,.18);
-  text-align:center;
+  border: 1px solid rgba(45, 48, 54, .78);
+  text-align:left;
 }
 
 .focusSessionNotesInput::placeholder{
   color: rgba(151,174,192,.9);
+}
+
+.focusSessionNotesInput:focus,
+.focusSessionNotesInput:focus-visible{
+  border-color: rgba(45, 48, 54, .78) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .focusSessionNotesBody{
@@ -2329,8 +2354,25 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks .taskPageHe
 }
 
 @media (max-width: 980px){
-body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
+body.isFocusModeOpen{
+    padding:0;
+  }
+
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .topbar,
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
     display:none !important;
+  }
+
+body.isFocusModeOpen #focusModeScreen{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100dvh;
+    max-height:100dvh;
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 }
 
@@ -3094,8 +3136,7 @@ body.isFocusModeOpen #focusModeScreen{
 @media (max-width: 760px){
 body.isFocusModeOpen #focusModeScreen{
     gap:clamp(5px, 1dvh, 10px) 8px;
-    padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
-      calc(8px + var(--safe-left));
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
 .focusDialWrap{
@@ -3166,8 +3207,7 @@ body.isFocusModeOpen #focusModeScreen{
 
 @media (max-height: 680px){
 #focusModeScreen{
-    padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom))
-      calc(10px + var(--safe-left));
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
 .focusModeTitle{
@@ -3216,8 +3256,7 @@ body.isFocusModeOpen #focusModeScreen{
 
 @media (max-width: 360px){
 #focusModeScreen{
-    padding: calc(10px + var(--safe-top)) calc(8px + var(--safe-right)) calc(10px + var(--safe-bottom))
-      calc(8px + var(--safe-left));
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
 .focusDialWrap{

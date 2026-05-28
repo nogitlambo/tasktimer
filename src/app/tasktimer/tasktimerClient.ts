@@ -304,6 +304,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getPresetIntervalValueNum,
     getPresetIntervalNextSeqNum,
     hasNonPositiveCheckpoint,
+    hasDuplicateCheckpointTime,
     formatCheckpointTimeGoalText,
     isCheckpointAtOrAboveTimeGoal,
     hasCheckpointAtOrAboveTimeGoal,
@@ -790,6 +791,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       showEditValidationError: (task, message) => editTaskApi?.showEditValidationError(task, message),
       editTaskHasActiveTimeGoal: () => editTaskApi?.editTaskHasActiveTimeGoal() ?? false,
       hasNonPositiveCheckpoint: (milestones) => hasNonPositiveCheckpoint(milestones),
+      hasDuplicateCheckpointTime: (milestones, unitSec) => hasDuplicateCheckpointTime(milestones, unitSec),
       hasCheckpointAtOrAboveTimeGoal: (milestones, unitSec, timeGoalMinutes) =>
         hasCheckpointAtOrAboveTimeGoal(milestones, unitSec, timeGoalMinutes),
       isCheckpointAtOrAboveTimeGoal: (checkpointHours, unitSec, timeGoalMinutes) =>

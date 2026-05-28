@@ -41,6 +41,7 @@ export type TaskTimerSharedTaskApi = {
   milestoneUnitSec: (task: Task | null | undefined) => number;
   milestoneUnitSuffix: (task: Task | null | undefined) => string;
   hasNonPositiveCheckpoint: (milestones: Task["milestones"] | null | undefined) => boolean;
+  hasDuplicateCheckpointTime: (milestones: Task["milestones"] | null | undefined, milestoneUnitSeconds: number) => boolean;
   formatCheckpointTimeGoalText: (
     task: Task | null | undefined,
     opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }
@@ -238,6 +239,25 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     return milestones.some((milestone) => !(Number(+milestone.hours) > 0));
   }
 
+  function getCheckpointTimeKey(checkpointHours: number | null | undefined, milestoneUnitSeconds: number): string | null {
+    const checkpointValue = Number(checkpointHours);
+    const unitSeconds = Number(milestoneUnitSeconds);
+    if (!(checkpointValue > 0) || !(unitSeconds > 0)) return null;
+    return String(Math.round(checkpointValue * unitSeconds));
+  }
+
+  function hasDuplicateCheckpointTime(milestones: Task["milestones"] | null | undefined, milestoneUnitSeconds: number): boolean {
+    if (!Array.isArray(milestones) || milestones.length < 2) return false;
+    const seen = new Set<string>();
+    return milestones.some((milestone) => {
+      const key = getCheckpointTimeKey(milestone?.hours, milestoneUnitSeconds);
+      if (!key) return false;
+      if (seen.has(key)) return true;
+      seen.add(key);
+      return false;
+    });
+  }
+
   function formatCheckpointTimeGoalText(task: Task | null | undefined, opts?: { timeGoalMinutes?: number | null; forEditDraft?: boolean }) {
     const effectiveMinutesRaw =
       opts && Object.prototype.hasOwnProperty.call(opts, "timeGoalMinutes")
@@ -277,6 +297,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     milestoneUnitSec,
     milestoneUnitSuffix,
     hasNonPositiveCheckpoint,
+    hasDuplicateCheckpointTime,
     formatCheckpointTimeGoalText,
     isCheckpointAtOrAboveTimeGoal,
     hasCheckpointAtOrAboveTimeGoal,

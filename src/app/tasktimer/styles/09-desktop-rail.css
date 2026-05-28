@@ -388,6 +388,14 @@
     overflow: hidden !important;
   }
 
+#app[aria-label="TaskLaunch Feedback"]{
+    --mobile-footer-offset: 10px;
+    --mobile-footer-height: 72px;
+    --mobile-footer-reserved-space: calc(
+      var(--mobile-footer-height) + env(safe-area-inset-bottom)
+    );
+  }
+
 #app[aria-label="TaskLaunch App"] .desktopAppShell,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppShell{
     display: flex;
@@ -412,14 +420,22 @@
     flex: 1 1 0;
     height: 0;
     min-height: 0;
+    margin-bottom: var(--mobile-footer-reserved-space);
     overflow-y: auto !important;
     overflow-x: hidden !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     padding-bottom: var(--mobile-footer-reserved-space) !important;
+    scroll-padding-bottom: var(--mobile-footer-reserved-space);
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterNav{
+#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+    margin-bottom: var(--mobile-footer-reserved-space);
+    padding-bottom: var(--mobile-footer-reserved-space);
+    scroll-padding-bottom: var(--mobile-footer-reserved-space);
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
     display: grid !important;
     position: fixed !important;
     left: var(--mobile-footer-offset) !important;
@@ -439,13 +455,13 @@
     padding-bottom: 0;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterBtn{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn{
     width: auto !important;
     min-height: 56px !important;
     padding: 4px 2px !important;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterLabel{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterLabel{
     display: none !important;
   }
 
@@ -454,37 +470,37 @@
     display: none !important;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterNav{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
     display: grid;
   }
 }
 
 @media (max-width: 640px){
-#app[aria-label="TaskLaunch App"] .appFooterNav{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
     gap: 6px !important;
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) !important;
     border: none !important;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterBtn{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn{
     min-height: 66px !important;
     padding: 6px 2px !important;
     gap: 3px;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterIconImage{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterIconImage{
     width: 30px;
     height: 30px;
   }
 
-#app[aria-label="TaskLaunch App"] .appFooterAlertBadge{
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterAlertBadge{
     top: 5px;
     right: 10%;
   }
 }
 
 @media (max-width: 980px){
-body:not(.isFocusModeOpen) #app[aria-label="TaskLaunch App"] .appFooterNav{
+body:not(.isFocusModeOpen) #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
     display: grid !important;
     visibility: visible !important;
     opacity: 1 !important;

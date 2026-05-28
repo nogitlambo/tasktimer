@@ -353,6 +353,7 @@ type CreateTasksOptionsArgs = {
   showEditValidationError: (task: Task, message: string) => void;
   editTaskHasActiveTimeGoal: () => boolean;
   hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
+  hasDuplicateCheckpointTime: (milestones: Task["milestones"], unitSec: number) => boolean;
   hasCheckpointAtOrAboveTimeGoal: (milestones: Task["milestones"], unitSec: number, timeGoalMinutes: number) => boolean;
   isCheckpointAtOrAboveTimeGoal: (checkpointHours: number, unitSec: number, timeGoalMinutes: number) => boolean;
   formatCheckpointTimeGoalText: Parameters<typeof createTaskTimerTasks>[0]["formatCheckpointTimeGoalText"];
@@ -1264,6 +1265,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     showEditValidationError: args.showEditValidationError,
     editTaskHasActiveTimeGoal: args.editTaskHasActiveTimeGoal,
     hasNonPositiveCheckpoint: args.hasNonPositiveCheckpoint,
+    hasDuplicateCheckpointTime: args.hasDuplicateCheckpointTime,
     hasCheckpointAtOrAboveTimeGoal: args.hasCheckpointAtOrAboveTimeGoal,
     isCheckpointAtOrAboveTimeGoal: args.isCheckpointAtOrAboveTimeGoal,
     formatCheckpointTimeGoalText: args.formatCheckpointTimeGoalText,

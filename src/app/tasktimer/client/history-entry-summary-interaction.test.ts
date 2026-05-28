@@ -227,10 +227,11 @@ describe("createHistoryEntrySummaryInteraction", () => {
     ]);
 
     expect(h.body.innerHTML).not.toContain('data-history-summary-action="trigger-xp-award"');
+    expect(h.body.innerHTML.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(3);
     expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
-    expect(h.body.innerHTML).toContain(">20</div>");
-    expect(h.body.innerHTML).toContain(">12</div>");
-    expect(h.body.innerHTML).toContain(">8</div>");
+    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">20</div>');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">12</div>');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">8</div>');
   });
 
   it("sets editable target dataset for a single entry", () => {

@@ -483,6 +483,7 @@ export type TaskTimerTasksContext = {
   showEditValidationError: (task: Task, message: string) => void;
   editTaskHasActiveTimeGoal: () => boolean;
   hasNonPositiveCheckpoint: (milestones: Task["milestones"]) => boolean;
+  hasDuplicateCheckpointTime: (milestones: Task["milestones"], unitSec: number) => boolean;
   hasCheckpointAtOrAboveTimeGoal: (
     milestones: Task["milestones"],
     unitSec: number,

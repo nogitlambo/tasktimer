@@ -3789,6 +3789,28 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     flex-wrap:wrap;
   }
 
+#historyEntryNoteOverlay .historyEntrySummaryValue.historyEntrySummaryXpRibbonValue{
+  min-width: 88px;
+  min-height: 42px;
+  padding: 9px 18px 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url("/icons/achievement/xp_ribbon.webp");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  color: rgba(247,251,255,.98);
+  font-family: var(--font-orbitron);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  word-break: normal;
+  text-shadow: 0 1px 2px rgba(0,0,0,.72);
+}
+
 #historyEntryNoteOverlay .historyEntrySummarySessions{
     display:grid;
     gap:0;
@@ -4079,9 +4101,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     resize: vertical;
     background: transparent;
     color: rgba(247,251,255,.96);
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.55;
-  font-family: var(--font-readable);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   white-space: pre-wrap;
   word-break: break-word;
 }

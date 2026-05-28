@@ -19,7 +19,6 @@ export default function FocusModeScreen() {
             aria-label="Focus dial. Tap to launch timer"
             aria-pressed="false"
           >
-            <div className="focusDialArtwork" aria-hidden="true" />
             <div className="focusDialOuter" aria-hidden="true" />
             <div className="focusDialChassis" aria-hidden="true" />
             <div className="focusDialTickRing" aria-hidden="true" />

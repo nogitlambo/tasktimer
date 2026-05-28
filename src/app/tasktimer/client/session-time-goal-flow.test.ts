@@ -62,12 +62,27 @@ describe("time goal completion flow guard", () => {
       scrollTop: 320,
       scrollLeft: 18,
       ownerDocument: doc,
+      parentElement: {
+        scrollTop: 410,
+        scrollLeft: 22,
+        parentElement: {
+          scrollTop: 275,
+          scrollLeft: 12,
+          parentElement: null,
+        },
+      },
     } as unknown as HTMLElement;
+    const focusModeParent = focusModeScreen.parentElement as HTMLElement;
+    const focusModeGrandparent = focusModeParent.parentElement as HTMLElement;
 
     resetFocusModeScrollPosition(focusModeScreen);
 
     expect(focusModeScreen.scrollTop).toBe(0);
     expect(focusModeScreen.scrollLeft).toBe(0);
+    expect(focusModeParent.scrollTop).toBe(0);
+    expect(focusModeParent.scrollLeft).toBe(0);
+    expect(focusModeGrandparent.scrollTop).toBe(0);
+    expect(focusModeGrandparent.scrollLeft).toBe(0);
     expect(doc.documentElement.scrollTop).toBe(0);
     expect(doc.documentElement.scrollLeft).toBe(0);
     expect(doc.body.scrollTop).toBe(0);

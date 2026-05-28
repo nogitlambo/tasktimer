@@ -70,6 +70,7 @@ const FOCUS_SESSION_NOTES_DEFAULT_HEIGHT_PX = 96;
 const FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO = 0.24;
 const FOCUS_DIAL_FALLBACK_PROGRESS_SECONDS = 60 * 60;
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
+const TIME_GOAL_XP_REWARD_AUDIO_SRC = "/xp-reward.mp3";
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -191,6 +192,12 @@ export function resetFocusModeScrollPosition(focusModeScreen: HTMLElement | null
   if (screen) {
     screen.scrollTop = 0;
     screen.scrollLeft = 0;
+    let parent = screen.parentElement;
+    while (parent) {
+      parent.scrollTop = 0;
+      parent.scrollLeft = 0;
+      parent = parent.parentElement;
+    }
   }
 
   const doc = screen?.ownerDocument ?? (typeof document !== "undefined" ? document : null);
@@ -272,6 +279,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
+  const timeGoalXpRewardPlayer = createClickAudioPlayer(TIME_GOAL_XP_REWARD_AUDIO_SRC);
 
   function setFocusDndSetupVisible(visible: boolean, message?: string) {
     if (els.focusDndSetup) {
@@ -721,6 +729,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
+    suppressCheckpointToastsForTask(taskId);
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
     if (els.timeGoalCompleteOverlay) {
@@ -750,6 +759,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     startTimeGoalCompleteConfetti();
     startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
+      onStart: () => {
+        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+      },
     });
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {
@@ -891,6 +903,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
     ctx.save();
     ctx.render();
+    suppressCheckpointToastsForTask(taskId);
     if (opts?.deferModal || shouldDeferTimeGoalModalForBlockingOverlay()) {
       queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
     } else {
@@ -1287,11 +1300,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     document.body.classList.add("isFocusModeOpen");
     resetFocusModeScrollPosition(els.focusModeScreen as HTMLElement | null);
     updateFocusDial(task);
-    window.requestAnimationFrame(() => {
+    const resetOpenFocusModeScrollAfterFrame = () => {
       const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
       if (!activeTaskId || activeTaskId !== String(task.id || "").trim()) return;
       resetFocusModeScrollPosition(els.focusModeScreen as HTMLElement | null);
       updateFocusDial(task);
+    };
+    window.requestAnimationFrame(() => {
+      resetOpenFocusModeScrollAfterFrame();
+      window.requestAnimationFrame(resetOpenFocusModeScrollAfterFrame);
     });
     syncFocusSessionNotesInput(String(task.id || ""));
     syncFocusSessionNotesAccordion(String(task.id || ""));
@@ -1679,6 +1696,23 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     renderCheckpointToast();
     if (!runtime.destroyed) ctx.render();
     if (getToastQueue().length) window.setTimeout(showNextCheckpointToast, 50);
+  }
+
+  function suppressCheckpointToastsForTask(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    const queue = getToastQueue();
+    for (let i = queue.length - 1; i >= 0; i -= 1) {
+      if (String(queue[i]?.taskId || "").trim() === taskId) queue.splice(i, 1);
+    }
+    const active = getActiveToast();
+    if (String(active?.taskId || "").trim() !== taskId) return;
+    if (ctx.getCheckpointToastAutoCloseTimer() != null) {
+      window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
+      ctx.setCheckpointToastAutoCloseTimer(null);
+    }
+    setActiveToast(null);
+    renderCheckpointToast();
   }
 
   function dismissCheckpointToastAndJumpToTask() {

@@ -125,6 +125,7 @@ function createEditHarness(overrides: {
     sharedTasks: {
       ensureMilestoneIdentity: vi.fn(),
       hasNonPositiveCheckpoint: vi.fn(() => false),
+      hasDuplicateCheckpointTime: vi.fn(() => false),
       hasCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
       milestoneUnitSec: vi.fn(() => 3600),
     },
@@ -444,6 +445,34 @@ describe("edit task planned start initialization", () => {
 });
 
 describe("edit task schedule conflict confirmation", () => {
+  it("blocks saving an edited task with duplicate checkpoint times", () => {
+    const harness = createEditHarness({
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartTime: "08:00",
+        plannedStartByDay: { mon: "08:00" },
+        milestonesEnabled: true,
+        milestoneTimeUnit: "hour",
+        milestones: [
+          { hours: 0.25, description: "Quarter" },
+          { hours: 0.25, description: "Duplicate quarter" },
+        ],
+      }),
+    });
+    vi.mocked(harness.ctx.sharedTasks.hasDuplicateCheckpointTime).mockReturnValue(true);
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.syncEditSaveAvailability).toHaveBeenCalled();
+    expect(harness.ctx.showEditValidationError).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "source" }),
+      "Checkpoint times must be unique."
+    );
+    expect(harness.ctx.save).not.toHaveBeenCalled();
+  });
+
   it("opens a conflict modal with schedule ranges for edit overlaps", () => {
     const harness = createEditHarness();
 

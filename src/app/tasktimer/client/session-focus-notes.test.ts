@@ -108,15 +108,19 @@ function createHarness(overrides?: {
     defaultView?: unknown;
   };
   const windowTarget = new EventTarget();
+  const scrollCalls: Array<[number, number]> = [];
+  const frameCallbacks: FrameRequestCallback[] = [];
   const windowStub = {
     innerHeight: overrides?.windowInnerHeight ?? 1000,
     setTimeout,
     clearTimeout,
     requestAnimationFrame: (cb: FrameRequestCallback) => {
-      cb(0);
-      return 1;
+      frameCallbacks.push(cb);
+      return frameCallbacks.length;
     },
-    scrollTo: () => {},
+    scrollTo: (left: number, top: number) => {
+      scrollCalls.push([left, top]);
+    },
     localStorage: storage,
     getComputedStyle: () => ({
       minHeight: overrides?.focusSessionNotesMinHeight ?? "96px",
@@ -135,6 +139,8 @@ function createHarness(overrides?: {
   const focusSessionNotesSection = createElementStub();
   const focusSessionNotesSavedText = createElementStub();
   const focusModeScreen = createElementStub();
+  const focusModeParent = createElementStub();
+  const focusModeGrandparent = createElementStub();
   const focusTaskName = createElementStub();
   const focusTimerDays = createElementStub();
   const focusTimerClock = createElementStub();
@@ -145,6 +151,9 @@ function createHarness(overrides?: {
   focusSessionNotesInput.ownerDocument = documentStub;
   focusSessionNotesSection.ownerDocument = documentStub;
   focusModeScreen.ownerDocument = documentStub;
+  focusModeScreen.parentElement = focusModeParent;
+  focusModeParent.parentElement = focusModeGrandparent;
+  focusModeGrandparent.parentElement = null;
 
   const calls: string[] = [];
   const tasks = [overrides?.task || task()];
@@ -302,10 +311,16 @@ function createHarness(overrides?: {
   return {
     session,
     calls,
+    documentStub,
     focusSessionNotesInput,
+    focusModeScreen,
+    focusModeParent,
+    focusModeGrandparent,
     windowStub,
+    scrollCalls,
     getDrafts: () => drafts,
     getBodyClassList: () => body.classList,
+    runNextAnimationFrame: () => frameCallbacks.shift()?.(0),
   };
 }
 
@@ -403,6 +418,68 @@ describe("task timer session focus notes", () => {
     expect(harness.getBodyClassList().contains("isFocusModeOpen")).toBe(true);
     expect(harness.focusSessionNotesInput.value).toBe("cloud note");
     expect((harness.focusSessionNotesInput.style as Record<string, string>).height).toBe("96px");
+  });
+
+  it("snaps running task focus mode to the top after open frames", () => {
+    const harness = createHarness({
+      task: task({ running: true }),
+      focusModeTaskId: null,
+    });
+    harness.focusModeScreen.scrollTop = 320;
+    harness.focusModeScreen.scrollLeft = 18;
+    harness.focusModeParent.scrollTop = 410;
+    harness.focusModeParent.scrollLeft = 22;
+    harness.focusModeGrandparent.scrollTop = 275;
+    harness.focusModeGrandparent.scrollLeft = 12;
+    harness.documentStub.documentElement.scrollTop = 250;
+    harness.documentStub.documentElement.scrollLeft = 9;
+    harness.documentStub.body.scrollTop = 140;
+    harness.documentStub.body.scrollLeft = 4;
+
+    harness.session.openFocusMode(0);
+
+    expect(harness.focusModeScreen.scrollTop).toBe(0);
+    expect(harness.focusModeScreen.scrollLeft).toBe(0);
+    expect(harness.focusModeParent.scrollTop).toBe(0);
+    expect(harness.focusModeParent.scrollLeft).toBe(0);
+    expect(harness.focusModeGrandparent.scrollTop).toBe(0);
+    expect(harness.focusModeGrandparent.scrollLeft).toBe(0);
+    expect(harness.documentStub.documentElement.scrollTop).toBe(0);
+    expect(harness.documentStub.documentElement.scrollLeft).toBe(0);
+    expect(harness.documentStub.body.scrollTop).toBe(0);
+    expect(harness.documentStub.body.scrollLeft).toBe(0);
+    expect(harness.scrollCalls).toEqual([[0, 0]]);
+
+    harness.focusModeScreen.scrollTop = 75;
+    harness.focusModeParent.scrollTop = 95;
+    harness.focusModeGrandparent.scrollTop = 115;
+    harness.documentStub.documentElement.scrollTop = 60;
+    harness.documentStub.body.scrollTop = 45;
+    harness.runNextAnimationFrame();
+
+    expect(harness.focusModeScreen.scrollTop).toBe(0);
+    expect(harness.focusModeParent.scrollTop).toBe(0);
+    expect(harness.focusModeGrandparent.scrollTop).toBe(0);
+    expect(harness.documentStub.documentElement.scrollTop).toBe(0);
+    expect(harness.documentStub.body.scrollTop).toBe(0);
+
+    harness.focusModeScreen.scrollTop = 35;
+    harness.focusModeParent.scrollTop = 55;
+    harness.focusModeGrandparent.scrollTop = 65;
+    harness.documentStub.documentElement.scrollTop = 25;
+    harness.documentStub.body.scrollTop = 15;
+    harness.runNextAnimationFrame();
+
+    expect(harness.focusModeScreen.scrollTop).toBe(0);
+    expect(harness.focusModeParent.scrollTop).toBe(0);
+    expect(harness.focusModeGrandparent.scrollTop).toBe(0);
+    expect(harness.documentStub.documentElement.scrollTop).toBe(0);
+    expect(harness.documentStub.body.scrollTop).toBe(0);
+    expect(harness.scrollCalls).toEqual([
+      [0, 0],
+      [0, 0],
+      [0, 0],
+    ]);
   });
 
   it("falls back to the local draft when no live-session note exists", () => {

@@ -585,6 +585,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       showAddTaskValidationError("Checkpoint times must be greater than 0", { checkpoints: true, checkpointRows: true });
       return false;
     }
+    if (milestonesEnabled && sharedTasks.hasDuplicateCheckpointTime(milestones, unitSec)) {
+      showAddTaskValidationError("Checkpoint times must be unique", { checkpoints: true, checkpointRows: true });
+      return false;
+    }
     if (milestonesEnabled && sharedTasks.hasCheckpointAtOrAboveTimeGoal(milestones, unitSec, timeGoalMinutes)) {
       showAddTaskValidationError("Checkpoint times must be less than the time goal", {
         checkpoints: true,

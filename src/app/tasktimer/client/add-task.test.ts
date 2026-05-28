@@ -125,6 +125,7 @@ function createHarness(
       isCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
       deriveCheckpointAlertEnabledState: vi.fn(() => ({ soundEnabled: false, toastEnabled: false })),
       hasNonPositiveCheckpoint: vi.fn(() => false),
+      hasDuplicateCheckpointTime: vi.fn(() => false),
       hasCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
       makeTask: vi.fn((name: string, order: number) => ({
         id: `task-${order}`,
@@ -231,6 +232,9 @@ function createHarness(
       addTaskPlannedStartTimeInput.value = value;
       handlers.get(addTaskPlannedStartTimeInput)?.get("input")?.();
     },
+    setMilestones: (value: Array<{ hours: number; description: string }>) => {
+      addTaskMilestones = value;
+    },
     clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
     clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
@@ -274,6 +278,22 @@ describe("createTaskTimerAddTask", () => {
 
     expect(harness.ctx.setAddTaskMilestonesEnabledState).toHaveBeenCalledWith(true);
     expect(harness.ctx.setAddTaskMilestonesState).toHaveBeenCalledWith([{ hours: 0, description: "" }]);
+  });
+
+  it("blocks adding a scheduled task with duplicate checkpoint times", () => {
+    const harness = createHarness("1");
+    harness.addTaskMsToggle.checked = true;
+    harness.setMilestones([
+      { hours: 0.25, description: "Quarter" },
+      { hours: 0.25, description: "Duplicate quarter" },
+    ]);
+    vi.mocked(harness.ctx.sharedTasks.hasDuplicateCheckpointTime).mockReturnValue(true);
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    expect(harness.ctx.sharedTasks.hasDuplicateCheckpointTime).toHaveBeenCalled();
+    expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 
   it("re-renders the task list immediately after a task is created", () => {

@@ -1,4 +1,3 @@
-import { completionDifficultyLabel } from "../lib/completionDifficulty";
 import { sessionColorForTaskMs } from "../lib/colors";
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { Task } from "../lib/types";
@@ -31,7 +30,6 @@ type HistoryEntrySummaryItem = {
   timeGoalText: string;
   noteText: string;
   hasNote: boolean;
-  sentimentText: string;
   xpEarned: number | null;
   xpText: string;
 };
@@ -159,16 +157,16 @@ function formatTimeGoalText(task?: Task | null) {
   const goalValue = Number.isFinite(goalValueRaw) ? Math.max(0, goalValueRaw) : 0;
 
   if (goalUnit && goalPeriod && goalValue > 0) {
-    const unitLabel = goalValue === 1 ? goalUnit : `${goalUnit}s`;
-    const periodLabel = goalPeriod === "day" ? "per day" : "per week";
+    const unitLabel = goalUnit === "minute" ? "min" : "hr";
+    const periodLabel = goalPeriod === "day" ? "daily" : "weekly";
     return `${goalValue} ${unitLabel} ${periodLabel}`;
   }
 
   if (effectiveMinutes % 60 === 0) {
     const hours = effectiveMinutes / 60;
-    return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+    return `${hours} hr`;
   }
-  return `${effectiveMinutes} ${effectiveMinutes === 1 ? "minute" : "minutes"}`;
+  return `${effectiveMinutes} min`;
 }
 
 function deriveXpEarned(entry: HistoryEntrySummarySource, taskId: string, rewardProgress?: RewardProgressV1 | null) {
@@ -236,7 +234,6 @@ function buildHistoryEntrySummaryItem(
     timeGoalText: formatTimeGoalText(task),
     noteText: hasNote ? noteText : NO_SESSION_NOTE_TEXT,
     hasNote,
-    sentimentText: completionDifficultyLabel(entry?.completionDifficulty) || NOT_TRACKED_TEXT,
     xpEarned,
     xpText: formatXpText(xpEarned),
   };
@@ -319,7 +316,7 @@ export function renderHistoryEntrySummaryHtml(
     return `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
-        <div class="historyEntrySummaryValue" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
+        <div class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
       </div>
     </div>`;
   };
@@ -357,7 +354,6 @@ export function renderHistoryEntrySummaryHtml(
         </div>
         <div class="historyEntrySummaryGrid">
           ${renderField("Time goal", session.timeGoalText)}
-          ${renderField("Sentiment", session.sentimentText)}
           ${renderXpField("XP earned", session.xpText)}
         </div>
         <div class="historyEntrySummaryNoteRow">

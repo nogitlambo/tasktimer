@@ -642,21 +642,32 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (!task) return;
     const noCheckpoints = !!task.milestonesEnabled && (!Array.isArray(task.milestones) || task.milestones.length === 0);
     const effectiveTimeGoalMinutes = task === getCurrentEditTask() ? getEditTaskTimeGoalMinutes() : Number(task.timeGoalMinutes || 0);
+    const milestoneUnitSeconds = sharedTasks.milestoneUnitSec(task);
     const invalidCheckpointTimes =
       !!task.milestonesEnabled &&
       (sharedTasks.hasNonPositiveCheckpoint(task.milestones) ||
-        sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, sharedTasks.milestoneUnitSec(task), effectiveTimeGoalMinutes));
+        sharedTasks.hasDuplicateCheckpointTime(task.milestones, milestoneUnitSeconds) ||
+        sharedTasks.hasCheckpointAtOrAboveTimeGoal(task.milestones, milestoneUnitSeconds, effectiveTimeGoalMinutes));
     els.msArea?.classList.toggle("isInvalid", noCheckpoints || invalidCheckpointTimes);
 
     const msRows = Array.from(els.msList?.querySelectorAll?.(".msRow") || []);
     const msSorted = Array.isArray(task.milestones) ? task.milestones.slice() : [];
+    const checkpointTimeCounts = new Map<string, number>();
+    msSorted.forEach((m) => {
+      const value = Number(m?.hours);
+      if (!(value > 0)) return;
+      const key = String(Math.round(value * milestoneUnitSeconds));
+      checkpointTimeCounts.set(key, (checkpointTimeCounts.get(key) || 0) + 1);
+    });
     msRows.forEach((row, idx) => {
       const m = msSorted[idx];
+      const checkpointTimeKey = Number(m?.hours) > 0 ? String(Math.round(Number(m?.hours) * milestoneUnitSeconds)) : "";
       const invalid =
         !!task.milestonesEnabled &&
         !!m &&
         (!(Number(+m.hours) > 0) ||
-          sharedTasks.isCheckpointAtOrAboveTimeGoal(m.hours, sharedTasks.milestoneUnitSec(task), effectiveTimeGoalMinutes));
+          (checkpointTimeKey && (checkpointTimeCounts.get(checkpointTimeKey) || 0) > 1) ||
+          sharedTasks.isCheckpointAtOrAboveTimeGoal(m.hours, milestoneUnitSeconds, effectiveTimeGoalMinutes));
       row.classList.toggle("isInvalid", invalid);
     });
   }
@@ -1464,6 +1475,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       if (checkpointingActiveForSave && sharedTasks.hasNonPositiveCheckpoint(t.milestones)) {
         ctx.syncEditSaveAvailability(t);
         return void ctx.showEditValidationError(t, "Checkpoint times must be greater than 0.");
+      }
+      if (checkpointingActiveForSave && sharedTasks.hasDuplicateCheckpointTime(t.milestones, sharedTasks.milestoneUnitSec(t))) {
+        ctx.syncEditSaveAvailability(t);
+        return void ctx.showEditValidationError(t, "Checkpoint times must be unique.");
       }
       if (
         checkpointingActiveForSave &&

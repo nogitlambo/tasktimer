@@ -38,16 +38,22 @@ export function startTimeGoalXpSplashAfterConfetti(
     delayMs?: number;
     setTimeoutFn?: (handler: () => void, timeout: number) => unknown;
     matchMediaFn?: (query: string) => { matches: boolean };
+    onStart?: () => void;
   }
 ) {
   const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
   if (!fx) return false;
   const delayMs = Math.max(0, Math.floor(Number(opts?.delayMs ?? TIME_GOAL_CONFETTI_DURATION_MS) || 0));
   const reducedMotion = !!opts?.matchMediaFn?.("(prefers-reduced-motion: reduce)")?.matches;
-  if (reducedMotion || delayMs <= 0) return startTimeGoalXpSplash(text);
+  const startSplash = () => {
+    const started = startTimeGoalXpSplash(text);
+    if (started) opts?.onStart?.();
+    return started;
+  };
+  if (reducedMotion || delayMs <= 0) return startSplash();
   const setTimeoutFn = opts?.setTimeoutFn || globalThis.setTimeout;
   setTimeoutFn(() => {
-    startTimeGoalXpSplash(text);
+    startSplash();
   }, delayMs);
   return true;
 }
