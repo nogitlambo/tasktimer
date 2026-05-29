@@ -2430,6 +2430,20 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 }
 
 @media (max-width: 700px){
+#app[aria-label="TaskLaunch App"] #rankLadderOverlay,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #rankLadderOverlay{
+    align-items:flex-end;
+    padding:0;
+  }
+
+#app[aria-label="TaskLaunch App"] .rankLadderModal,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderModal{
+    width:100%;
+    height:75dvh;
+    max-height:75dvh;
+    margin:0;
+  }
+
 #app[aria-label="TaskLaunch App"] .rankLadderList,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderList{
     grid-template-columns:minmax(0, 1fr);

@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
@@ -48,6 +49,44 @@ const TEMPORARY_MODAL_DROPDOWN_OPTIONS = [
   { value: "secondary", label: "Secondary option" },
   { value: "disabled", label: "Unavailable option" },
 ] as const;
+
+type DesktopRailDevEnvInput = {
+  hostname?: string;
+  protocol?: string;
+  nodeEnv?: string;
+  flag?: string;
+};
+
+const DESKTOP_RAIL_DEV_ENV_DISABLED_VALUES = new Set(["false", "0", "off"]);
+
+export function shouldShowDesktopRailDevEnv(input: DesktopRailDevEnvInput = {}) {
+  const nodeEnv = input.nodeEnv ?? process.env.NODE_ENV;
+  if (nodeEnv === "production") return false;
+
+  const flag = (input.flag ?? process.env.NEXT_PUBLIC_SHOW_DESKTOP_RAIL_DEV_ENV ?? "").trim().toLowerCase();
+  if (DESKTOP_RAIL_DEV_ENV_DISABLED_VALUES.has(flag)) return false;
+
+  const protocol = String(input.protocol || "").trim().toLowerCase();
+  if (protocol && protocol !== "http:" && protocol !== "https:") return false;
+
+  const hostname = String(input.hostname || "").trim().toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+}
+
+function subscribeToDesktopRailDevEnvSnapshot() {
+  return () => {};
+}
+
+function getDesktopRailDevEnvSnapshot() {
+  return shouldShowDesktopRailDevEnv({
+    hostname: window.location.hostname,
+    protocol: window.location.protocol,
+  });
+}
+
+function getDesktopRailDevEnvServerSnapshot() {
+  return false;
+}
 
 type NavItem = {
   page: DesktopRailPage;
@@ -399,6 +438,11 @@ export default function DesktopAppRail({
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
   const [temporaryDropdownOpen, setTemporaryDropdownOpen] = useState(false);
+  const showDesktopRailDevEnv = useSyncExternalStore(
+    subscribeToDesktopRailDevEnvSnapshot,
+    getDesktopRailDevEnvSnapshot,
+    getDesktopRailDevEnvServerSnapshot
+  );
   const [temporaryDropdownValue, setTemporaryDropdownValue] =
     useState<(typeof TEMPORARY_MODAL_DROPDOWN_OPTIONS)[number]["value"]>("standard");
   const profileMenuCloseTimerRef = useRef<number | null>(null);
@@ -653,22 +697,26 @@ export default function DesktopAppRail({
                   {item.page === "leaderboard" ? <div className="desktopRailNavDivider" aria-hidden="true" /> : null}
                 </Fragment>
               ))}
-              <div className="dashboardRailSectionLabel desktopRailDevEnvLabel">Dev env</div>
-              <button
-                className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
-                id="openTemporaryModalBtn"
-                type="button"
-                aria-label="Open modal preview"
-                onClick={openTemporaryModal}
-              >
-                <AppImg
-                  className="dashboardRailMenuIconImage"
-                  src="/icons/icons_default/question.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-                <span className="dashboardRailMenuLabel">Modal</span>
-              </button>
+              {showDesktopRailDevEnv ? (
+                <>
+                  <div className="dashboardRailSectionLabel desktopRailDevEnvLabel">Dev env</div>
+                  <button
+                    className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
+                    id="openTemporaryModalBtn"
+                    type="button"
+                    aria-label="Open modal preview"
+                    onClick={openTemporaryModal}
+                  >
+                    <AppImg
+                      className="dashboardRailMenuIconImage"
+                      src="/icons/icons_default/question.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span className="dashboardRailMenuLabel">Modal</span>
+                  </button>
+                </>
+              ) : null}
             </nav>
           </div>
 

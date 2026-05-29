@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import RankThumbnail from "./RankThumbnail";
 import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
 
@@ -29,8 +29,6 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     open,
     onClose,
     rankLabel,
-    totalXp,
-    rankSummary,
     currentRankId,
     currentRankIndex,
     rankThumbnailSrc,
@@ -40,6 +38,14 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   } = props;
 
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const currentRankItemRef = useRef<HTMLElement | null>(null);
+  const setCurrentRankButtonRef = (node: HTMLButtonElement | null) => {
+    currentRankItemRef.current = node;
+  };
+  const setCurrentRankDivRef = (node: HTMLDivElement | null) => {
+    currentRankItemRef.current = node;
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -50,6 +56,24 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     return () => mediaQuery.removeEventListener("change", syncLayout);
   }, []);
 
+  useLayoutEffect(() => {
+    if (!open || !isMobileLayout || typeof window === "undefined") return undefined;
+    const scrollContainer = scrollContainerRef.current;
+    const currentRankItem = currentRankItemRef.current;
+    if (!scrollContainer || !currentRankItem) return undefined;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const itemRect = currentRankItem.getBoundingClientRect();
+      const itemTop = itemRect.top - containerRect.top + scrollContainer.scrollTop;
+      const targetTop = itemTop - scrollContainer.clientHeight * 0.75 + itemRect.height / 2;
+      const maxScrollTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+      scrollContainer.scrollTop = Math.min(Math.max(0, targetTop), maxScrollTop);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [currentRankId, isMobileLayout, open]);
+
   if (!open) return null;
 
   const ladderRows = Array.from({ length: Math.ceil(RANK_LADDER.length / 4) }, (_, rowIndex) =>
@@ -58,16 +82,20 @@ export default function RankLadderModal(props: RankLadderModalProps) {
       index: rowIndex * 4 + columnIndex,
     }))
   );
-  const displayRanks = (isMobileLayout ? ladderRows : [...ladderRows].reverse()).flat();
+  const mobileDisplayRanks = RANK_LADDER.map((rank, index) => ({ rank, index })).reverse();
+  const displayRanks = isMobileLayout ? mobileDisplayRanks : [...ladderRows].reverse().flat();
 
   return (
     <div className="overlay" id="rankLadderOverlay" onClick={onClose}>
       <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
-        <div className="rankLadderModalScroll">
+        <button className="iconBtn rankLadderCloseBtn" type="button" onClick={onClose} aria-label="Close rank ladder">
+          <span aria-hidden="true">X</span>
+        </button>
+        <div className="rankLadderHeader">
           <h2>Rank Ladder</h2>
-          <p className="modalSubtext">
-            {rankLabel} is your current rank at {totalXp} XP. {rankSummary}
-          </p>
+          <p className="modalSubtext">Your rank is {rankLabel}.</p>
+        </div>
+        <div className="rankLadderModalScroll" ref={scrollContainerRef}>
           <div className="rankLadderList" role="list" aria-label="Available ranks">
             {displayRanks.map(({ rank, index }) => {
               const isCurrent = rank.id === currentRankId;
@@ -119,6 +147,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                     className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                     role="listitem"
                     onClick={handleRankClick}
+                    ref={isCurrent ? setCurrentRankButtonRef : undefined}
                   >
                     {content}
                   </button>
@@ -130,17 +159,13 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                   key={rank.id}
                   className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                   role="listitem"
+                  ref={isCurrent ? setCurrentRankDivRef : undefined}
                 >
                   {content}
                 </div>
               );
             })}
           </div>
-        </div>
-        <div className="confirmBtns">
-          <button className="btn btn-ghost" type="button" onClick={onClose}>
-            Close
-          </button>
         </div>
       </div>
     </div>
