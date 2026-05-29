@@ -119,6 +119,7 @@ import {
 import { createTaskTimerRuntimeFacade } from "./client/runtime-facade";
 import { createTaskTimerRuntimeComposition } from "./client/runtime-composition";
 import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
+import { Capacitor } from "@capacitor/core";
 
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
@@ -126,6 +127,18 @@ const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return { destroy: () => {} };
+  }
+  const isNativeOrFileRuntime = (() => {
+    try {
+      return Capacitor.isNativePlatform() || window.location.protocol === "file:";
+    } catch {
+      return window.location.protocol === "file:";
+    }
+  })();
+  if (isNativeOrFileRuntime) {
+    document.body.dataset.tasktimerNativeRuntime = "true";
+  } else {
+    delete document.body.dataset.tasktimerNativeRuntime;
   }
   const composition = createTaskTimerRuntimeComposition(initialAppPage, STORAGE_KEY);
   const {
@@ -205,6 +218,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   const destroy = () => {
+    delete document.body.dataset.tasktimerNativeRuntime;
     if (unsubscribeCheckpointAlertMuteSignals) {
       unsubscribeCheckpointAlertMuteSignals();
       unsubscribeCheckpointAlertMuteSignals = null;

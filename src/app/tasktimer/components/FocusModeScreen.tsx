@@ -23,7 +23,9 @@ export default function FocusModeScreen() {
             <div className="focusDialChassis" aria-hidden="true" />
             <div className="focusDialTickRing" aria-hidden="true" />
             <div className="focusDialGlowRing" aria-hidden="true" />
-            <div className="focusDialProgress" aria-hidden="true" />
+            <svg className="focusDialProgress" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+              <path className="focusDialProgressFill" d="" />
+            </svg>
             <div className="focusCheckpointRing" id="focusCheckpointRing" aria-hidden="true" />
             <div className="focusDialInner" aria-hidden="true" />
             <div className="focusDialFace" aria-hidden="true" />
@@ -54,11 +56,6 @@ export default function FocusModeScreen() {
               aria-label="Session Notes"
             />
             <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
-            <div className="focusSessionNotesActions">
-              <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
-                Exit
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -72,6 +69,11 @@ export default function FocusModeScreen() {
             DND Access
           </button>
         </div>
+      </div>
+      <div className="focusModeExitBar">
+        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+          Exit
+        </button>
       </div>
     </section>
   );

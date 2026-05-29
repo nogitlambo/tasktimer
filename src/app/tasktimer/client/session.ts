@@ -20,6 +20,7 @@ import { normalizeTaskColor } from "../lib/taskColors";
 import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
+import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
@@ -69,6 +70,9 @@ const FOCUS_MODE_FADE_CLOSE_MS = 180;
 const FOCUS_SESSION_NOTES_DEFAULT_HEIGHT_PX = 96;
 const FOCUS_SESSION_NOTES_FALLBACK_MAX_HEIGHT_RATIO = 0.24;
 const FOCUS_DIAL_FALLBACK_PROGRESS_SECONDS = 60 * 60;
+const FOCUS_PROGRESS_ARC_CENTER = 50;
+const FOCUS_PROGRESS_ARC_RADIUS = 41;
+const FOCUS_MODE_START_AUDIO_SRC = "/focus-mode-start.mp3";
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
 const TIME_GOAL_XP_REWARD_AUDIO_SRC = "/xp-reward.mp3";
 
@@ -278,6 +282,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let activeFocusTransitionTimer: number | null = null;
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
+  const focusModeStartPlayer = createClickAudioPlayer(FOCUS_MODE_START_AUDIO_SRC);
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
   const timeGoalXpRewardPlayer = createClickAudioPlayer(TIME_GOAL_XP_REWARD_AUDIO_SRC);
 
@@ -1102,12 +1107,20 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return;
     }
 
+    const ringWidthPx = Math.max(0, ringEl.clientWidth);
+    const ringHeightPx = Math.max(0, ringEl.clientHeight);
+    const dialRadiusPx = Math.max(0, Math.min(ringWidthPx, ringHeightPx) / 2);
+    const markerRadiusPx = Math.max(0, dialRadiusPx * 0.815);
+    const labelRadiusPx = Math.max(0, dialRadiusPx * 0.94);
     const timeGoalSec = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0 ? Number(task.timeGoalMinutes || 0) * 60 : 0;
     const maxTargetSec = Math.max(timeGoalSec, milestoneTargetsSec[milestoneTargetsSec.length - 1] || 0, 1);
     const signature = [
       String(task.id || ""),
       showCheckpoints ? "on" : "off",
       String(maxTargetSec),
+      `${ringWidthPx}x${ringHeightPx}`,
+      markerRadiusPx.toFixed(1),
+      labelRadiusPx.toFixed(1),
       ...sortedMilestones.map((m, idx) => {
         const targetSec = milestoneTargetsSec[idx] || 0;
         const reached = elapsedSec >= targetSec;
@@ -1117,11 +1130,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getFocusCheckpointSig() === signature) return;
     ctx.setFocusCheckpointSig(signature);
 
-    const ringWidthPx = Math.max(0, ringEl.clientWidth);
-    const ringHeightPx = Math.max(0, ringEl.clientHeight);
-    const dialRadiusPx = Math.max(0, Math.min(ringWidthPx, ringHeightPx) / 2);
-    const markerRadiusPx = Math.max(0, dialRadiusPx - 4);
-    const labelRadiusPx = Math.max(0, dialRadiusPx + Math.max(18, Math.round(dialRadiusPx * 0.12)));
+    const checkpointMarkerColor = normalizeTaskColor(task.color) || "";
+    const checkpointMarkerColorStyle = checkpointMarkerColor
+      ? `--focus-checkpoint-marker-color:${ctx.escapeHtmlUI(checkpointMarkerColor)};`
+      : "";
     ringEl.innerHTML = sortedMilestones
       .map((m, idx) => {
         const targetSec = milestoneTargetsSec[idx] || 0;
@@ -1134,20 +1146,41 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const ly = Math.sin(angleRad) * labelRadiusPx;
         const reached = elapsedSec >= targetSec;
         const title = formatCheckpointAlertText(task, m);
+        const label = formatCompactCheckpointDuration(targetSec);
         return `
           <span class="focusCheckpointMark${reached ? " reached" : ""}" style="--mxpx:${mx.toFixed(1)}px;--mypx:${my.toFixed(
             1
-          )}px;--ma:${angleDeg.toFixed(1)}deg;" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>
+          )}px;--ma:${angleDeg.toFixed(1)}deg;${checkpointMarkerColorStyle}" aria-hidden="true" title="${ctx.escapeHtmlUI(title)}"></span>
           <span
             class="focusCheckpointLabel isActive${lx < 0 ? " left" : ""}${reached ? " reached" : ""}"
             style="--lxpx:${lx.toFixed(1)}px;--lypx:${ly.toFixed(1)}px;"
             aria-hidden="true"
           >
-            <span class="focusCheckpointLabelTitle">${ctx.escapeHtmlUI(title)}</span>
+            <span class="focusCheckpointLabelTitle">${ctx.escapeHtmlUI(label)}</span>
           </span>
         `;
       })
       .join("");
+  }
+
+  function buildFocusProgressArcPath(pct: number) {
+    const clampedPct = Math.max(0, Math.min(pct, 100));
+    if (clampedPct <= 0) return "";
+
+    const center = FOCUS_PROGRESS_ARC_CENTER;
+    const radius = FOCUS_PROGRESS_ARC_RADIUS;
+    const topY = center - radius;
+    if (clampedPct >= 99.999) {
+      const bottomY = center + radius;
+      return `M ${center} ${topY} A ${radius} ${radius} 0 1 1 ${center} ${bottomY} A ${radius} ${radius} 0 1 1 ${center} ${topY}`;
+    }
+
+    const angleDeg = clampedPct * 3.6;
+    const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+    const x = center + Math.cos(angleRad) * radius;
+    const y = center + Math.sin(angleRad) * radius;
+    const largeArcFlag = angleDeg > 180 ? 1 : 0;
+    return `M ${center} ${topY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x.toFixed(3)} ${y.toFixed(3)}`;
   }
 
   function updateFocusDial(task: Task) {
@@ -1171,7 +1204,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       els.focusDial.classList.toggle("hasTimeGoal", hasTimeGoal);
       els.focusDial.classList.toggle("hasProgress", hasProgress);
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress", `${pct}%`);
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-value", `${pct}`);
+      (els.focusDial as HTMLElement).style.setProperty("--focus-progress-angle", `${pct * 3.6}deg`);
       (els.focusDial as HTMLElement).style.setProperty("--focus-progress-color", ctx.fillBackgroundForPct(pct));
+      const progressPath = els.focusDial.querySelector?.<SVGPathElement>(".focusDialProgressFill") || null;
+      progressPath?.setAttribute("d", buildFocusProgressArcPath(pct));
     }
     renderFocusCheckpointRing(task, elapsedSec);
     renderFocusCheckpointCompletionLog(task);
@@ -1284,6 +1321,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const task = ctx.getTasks()[index];
     if (!task) return;
     const taskId = String(task.id || "");
+    focusModeStartPlayer.play();
     const transitionSourceEl = opts?.sourceElement || null;
     const transitionSourceRect = transitionSourceEl?.getBoundingClientRect?.() || null;
     ctx.setFocusModeTaskId(String(task.id || ""));
@@ -2017,7 +2055,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
       playTimeGoalCompleteClickAudio();
       const task = getActiveTimeGoalModalTask();
-      if (task) await resolveTimeGoalCompletion(task, { logHistory: true });
+      const shouldExitFocusMode =
+        !!task && String(task.id || "").trim() === String(ctx.getFocusModeTaskId() || "").trim();
+      if (task) {
+        const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
+        if (completed && shouldExitFocusMode) closeFocusMode({ animate: true });
+      }
     });
     ctx.on(els.timeGoalCompleteLaunchNextBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();

@@ -249,7 +249,7 @@
 }
 
 .dashboardActivitySummaryMini .dashboardBigValue{
-  font-size:24px;
+  font-size:28px;
   line-height:1;
 }
 
@@ -262,6 +262,8 @@
 }
 
 .dashboardActivitySummaryMini .dashboardSummaryFoot{
+  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size:13px;
   min-height:18px;
 }
 
@@ -701,6 +703,11 @@ body[data-theme="lime"] .dashboardActivityGoalLine{
   margin-top:7px;
   font-size:12px;
   color: rgba(188,214,230,.76);
+}
+
+.dashboardSummaryFoot{
+  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size:13px;
 }
 
 .dashboardDelta.positive{
@@ -1551,6 +1558,13 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color: rgba(216,231,239,.68);
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCard > .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumTitleRow > .dashboardCardTitle,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardHeatCard .dashboardCardTitle{
+  width: 100%;
+  text-align: center;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardProfileCard{ grid-column: span 4; }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakCard{ grid-column: span 3; }
@@ -1610,7 +1624,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardStreakValue,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardBigValue{
-  font-size: clamp(26px, 3vw, 40px);
+  font-size: 28px;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGraphBars{
@@ -5953,7 +5967,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot span{
   min-height: 14px;
-  font-size: 11px;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
   line-height: 1.18;
 }
 
@@ -6335,15 +6350,23 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardBigValue{
     min-width: 0;
-    font-size: 24px !important;
+    font-size: 28px !important;
     line-height: 1 !important;
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryFoot,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryStatus{
     min-width: 0;
-    font-size: 10px !important;
     line-height: 1.2 !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryFoot{
+    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+    font-size: 13px !important;
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryStatus{
+    font-size: 10px !important;
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardWeekHoursCard,
@@ -7159,7 +7182,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 /* Dashboard momentum footer responsive ownership. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
     font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-    font-size: 12px !important;
+    font-size: 13px !important;
+    color: #fff !important;
     line-height: 1.22 !important;
     max-height: none !important;
     overflow: visible !important;
@@ -7167,7 +7191,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
     font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-    font-size: 12px !important;
+    font-size: 13px !important;
+    color: #fff !important;
     line-height: 1.22 !important;
   }
 
@@ -7892,7 +7917,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin:0 !important;
   max-height:none !important;
   overflow:visible !important;
-  font-size:12px !important;
+  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size:13px !important;
+  color:#fff !important;
   line-height:1.24 !important;
 }
 

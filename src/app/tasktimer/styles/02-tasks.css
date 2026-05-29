@@ -638,6 +638,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   gap:12px;
   grid-area: focusHead;
   margin-bottom:0;
+  padding-top:32px;
 }
 
 .focusModeTransitionClone{

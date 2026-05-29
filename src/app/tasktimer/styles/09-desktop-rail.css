@@ -516,6 +516,33 @@ body:not(.isFocusModeOpen) #app:is([aria-label="TaskLaunch App"], [aria-label="T
 }
 
 @media (min-width: 981px){
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail{
+    display: none !important;
+  }
+
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppShell{
+    display: block !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-height: 100dvh !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppMain,
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages,
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
+  body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View{
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
 #app[aria-label="TaskLaunch App"] .appPages{
     padding-left: 0 !important;
     --app-pages-bottom-padding: 102px;
