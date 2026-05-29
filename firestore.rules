@@ -750,6 +750,10 @@ service cloud.firestore {
         "focusTrend7dMs",
         "checkpointScaleMs",
         "taskCreatedAtMs",
+        "dailyGoalMs",
+        "todayLoggedMs",
+        "weekLoggedMs",
+        "weekGoalMs",
         "avgTimeLoggedThisWeekMs",
         "totalTimeLoggedMs",
         "sharedAt",
@@ -766,6 +770,10 @@ service cloud.firestore {
         "focusTrend7dMs",
         "checkpointScaleMs",
         "taskCreatedAtMs",
+        "dailyGoalMs",
+        "todayLoggedMs",
+        "weekLoggedMs",
+        "weekGoalMs",
         "avgTimeLoggedThisWeekMs",
         "totalTimeLoggedMs",
         "sharedAt",
@@ -789,6 +797,10 @@ service cloud.firestore {
       && request.resource.data.focusTrend7dMs[6] is int
       && (request.resource.data.checkpointScaleMs == null || request.resource.data.checkpointScaleMs is int)
       && (request.resource.data.taskCreatedAtMs == null || request.resource.data.taskCreatedAtMs is int)
+      && (request.resource.data.dailyGoalMs == null || request.resource.data.dailyGoalMs is int)
+      && request.resource.data.todayLoggedMs is int
+      && request.resource.data.weekLoggedMs is int
+      && (request.resource.data.weekGoalMs == null || request.resource.data.weekGoalMs is int)
       && request.resource.data.avgTimeLoggedThisWeekMs is int
       && request.resource.data.totalTimeLoggedMs is int
       && request.resource.data.sharedAt is timestamp

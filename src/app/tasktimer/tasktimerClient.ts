@@ -535,6 +535,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
         getHistoryByTaskId: getProjectedHistoryByTaskId,
       },
       appRuntimeState,
+      preferencesState,
       groupsState,
       openFriendSharedTaskUids,
       getCurrentUid: () => getCurrentTaskTimerUid(),

@@ -66,6 +66,10 @@ export type SharedTaskSummary = {
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
   taskCreatedAtMs: number | null;
+  dailyGoalMs: number | null;
+  todayLoggedMs: number;
+  weekLoggedMs: number;
+  weekGoalMs: number | null;
   avgTimeLoggedThisWeekMs: number;
   totalTimeLoggedMs: number;
   sharedAt: Timestamp | null;
@@ -86,6 +90,10 @@ export type SharedTaskSummaryInput = {
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
   taskCreatedAtMs: number | null;
+  dailyGoalMs: number | null;
+  todayLoggedMs: number;
+  weekLoggedMs: number;
+  weekGoalMs: number | null;
   avgTimeLoggedThisWeekMs: number;
   totalTimeLoggedMs: number;
 };
@@ -258,6 +266,10 @@ function asSharedTaskSummary(id: string, row: Record<string, unknown>): SharedTa
     focusTrend7dMs,
     checkpointScaleMs: row.checkpointScaleMs == null ? null : Math.max(0, Number(row.checkpointScaleMs || 0)),
     taskCreatedAtMs: row.taskCreatedAtMs == null ? null : Number(row.taskCreatedAtMs || 0),
+    dailyGoalMs: row.dailyGoalMs == null ? null : Math.max(0, Number(row.dailyGoalMs || 0)),
+    todayLoggedMs: Math.max(0, Number(row.todayLoggedMs || 0)),
+    weekLoggedMs: Math.max(0, Number(row.weekLoggedMs || 0)),
+    weekGoalMs: row.weekGoalMs == null ? null : Math.max(0, Number(row.weekGoalMs || 0)),
     avgTimeLoggedThisWeekMs: Math.max(0, Number(row.avgTimeLoggedThisWeekMs || 0)),
     totalTimeLoggedMs: Math.max(0, Number(row.totalTimeLoggedMs || 0)),
     sharedAt: (row.sharedAt as Timestamp) || null,
@@ -394,6 +406,10 @@ export async function upsertSharedTaskSummary(
     const ref = doc(db, "shared_task_summaries", shareDocId);
     const taskCreatedAtMs =
       summary.taskCreatedAtMs == null ? null : Math.max(0, Math.floor(Number(summary.taskCreatedAtMs) || 0));
+    const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Math.floor(Number(summary.dailyGoalMs) || 0));
+    const todayLoggedMs = Math.max(0, Math.floor(Number(summary.todayLoggedMs) || 0));
+    const weekLoggedMs = Math.max(0, Math.floor(Number(summary.weekLoggedMs) || 0));
+    const weekGoalMs = summary.weekGoalMs == null ? null : Math.max(0, Math.floor(Number(summary.weekGoalMs) || 0));
     const avgTimeLoggedThisWeekMs = Math.max(0, Math.floor(Number(summary.avgTimeLoggedThisWeekMs) || 0));
     const totalTimeLoggedMs = Math.max(0, Math.floor(Number(summary.totalTimeLoggedMs) || 0));
 
@@ -407,11 +423,15 @@ export async function upsertSharedTaskSummary(
       focusTrend7dMs,
       checkpointScaleMs,
       taskCreatedAtMs,
+      dailyGoalMs,
+      todayLoggedMs,
+      weekLoggedMs,
+      weekGoalMs,
       avgTimeLoggedThisWeekMs,
       totalTimeLoggedMs,
       sharedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      schemaVersion: 1,
+      schemaVersion: 2,
     });
     return { ok: true };
   } catch (err: unknown) {

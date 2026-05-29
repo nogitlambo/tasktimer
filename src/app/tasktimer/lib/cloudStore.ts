@@ -19,6 +19,7 @@ import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import { patchLeaderboardProfileFromUserRoot } from "./leaderboard";
+import { isTaskTimeGoalCompletedToday } from "./timeGoalCompletion";
 import {
   getTaskPlannedStartByDay,
   normalizeLocalDateValue,
@@ -832,6 +833,9 @@ function computePlannedStartPushDueAtMs(task: Task): number | null {
     sat: 6,
   };
   const now = new Date();
+  if (isTaskTimeGoalCompletedToday(task, now.getTime())) {
+    now.setHours(24, 0, 0, 0);
+  }
   let nextDueAtMs: number | null = null;
   for (const day of SCHEDULE_DAY_ORDER) {
     const time = normalizeScheduleStoredTime(byDay[day]);
@@ -854,6 +858,7 @@ function computePlannedStartPushDueAtMs(task: Task): number | null {
 
 function computeTimeGoalCompletePushDueAtMs(task: Task): number | null {
   if (!task.running || !task.timeGoalEnabled) return null;
+  if (isTaskTimeGoalCompletedToday(task)) return null;
   const timeGoalMinutes = normalizeTimeGoalValue(task.timeGoalMinutes);
   if (!(timeGoalMinutes > 0)) return null;
   const startMs = normalizeNullableInt(task.startMs);
@@ -867,7 +872,8 @@ function isUnscheduledGapPushCandidate(task: Task): boolean {
   return (
     normalizeDayTimeGoalMinutes(task) != null &&
     !getTaskPlannedStartByDay(task) &&
-    task.plannedStartOpenEnded !== true
+    task.plannedStartOpenEnded !== true &&
+    !isTaskTimeGoalCompletedToday(task)
   );
 }
 

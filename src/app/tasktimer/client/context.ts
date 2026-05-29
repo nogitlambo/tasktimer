@@ -314,6 +314,7 @@ export type TaskTimerGroupsContext = {
   on: TaskTimerRuntime["on"];
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  getWeekStarting: () => DashboardWeekStart;
   getCurrentUid: () => string | null;
   getCurrentAppPage: () => AppPage;
   applyMainMode: (mode: MainMode) => void;

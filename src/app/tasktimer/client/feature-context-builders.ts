@@ -36,6 +36,7 @@ type CreateGroupsOptionsArgs = {
     getHistoryByTaskId: () => HistoryByTaskId;
   };
   appRuntimeState: MutableStore;
+  preferencesState: MutableStore;
   groupsState: MutableStore;
   openFriendSharedTaskUids: Set<string>;
   getCurrentUid: () => string | null;
@@ -763,6 +764,7 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     on: args.on,
     getTasks: args.taskCollectionBindings.getTasks,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId as Parameters<typeof createTaskTimerGroups>[0]["getHistoryByTaskId"],
+    getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getCurrentUid: args.getCurrentUid,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     applyMainMode: args.applyMainMode,

@@ -574,6 +574,12 @@ function localDayKeyFromMs(ts) {
   return `${year}-${month}-${day}`;
 }
 
+function isTaskCompletedForScheduleDay(taskData, scheduleMs) {
+  const completedDayKey = asString(taskData && taskData.timeGoalCompletedDayKey);
+  if (!completedDayKey) return false;
+  return completedDayKey === localDayKeyFromMs(scheduleMs);
+}
+
 function startOfLocalDayMs(ts) {
   const date = new Date(ts);
   date.setHours(0, 0, 0, 0);
@@ -1002,6 +1008,34 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
+  if (isTaskCompletedForScheduleDay(taskData, missedScheduledStartDueAtMs || dueAtMs)) {
+    const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(
+      taskPlannedStartDay,
+      taskPlannedStartTime,
+      taskPlannedStartByDay,
+      nextLocalDayStartMs(missedScheduledStartDueAtMs || dueAtMs)
+    );
+    if (nextDueAtMs != null) {
+      await docSnap.ref.set({
+        dueAtMs: nextDueAtMs,
+        notificationKind: PLANNED_START_NOTIFICATION_KIND,
+        eventType: PLANNED_START_REMINDER_EVENT,
+        baseEventType: PLANNED_START_REMINDER_EVENT,
+        effectiveEventType: PLANNED_START_REMINDER_EVENT,
+        plannedStartDay: taskPlannedStartDay || null,
+        plannedStartTime: taskPlannedStartTime || null,
+        plannedStartByDay: taskPlannedStartByDay || null,
+        snoozedUntilMs: null,
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+        nextPlannedStartDueAtMs: null,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    } else {
+      await docSnap.ref.delete().catch(() => {});
+    }
+    return {status: "skipped"};
+  }
   const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(
     taskPlannedStartDay,
     taskPlannedStartTime,
@@ -1199,6 +1233,10 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
     if (!isUnscheduledGapCandidateTask(taskData)) continue;
     const taskMinutes = normalizeDayGoalMinutes(taskData);
     if (taskMinutes == null || taskMinutes > gapDurationMinutes) continue;
+    if (isTaskCompletedForScheduleDay(taskData, nowMs)) {
+      deferredDueAtByTaskId.set(id, dayEndMs);
+      continue;
+    }
     if (await hasLoggedTimeToday(uid, id, dayStartMs, dayEndMs)) {
       deferredDueAtByTaskId.set(id, dayEndMs);
       continue;
@@ -1331,6 +1369,10 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
   const goalMinutes = taskData.timeGoalEnabled === true ? Math.max(0, asNumber(taskData.timeGoalMinutes, 0) || 0) : 0;
   const goalMs = goalMinutes * MINUTE_MS;
 
+  if (isTaskCompletedForScheduleDay(taskData, dueAtMs)) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
   if (taskData.running !== true || startMs == null || !(goalMs > 0)) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
@@ -1665,5 +1707,6 @@ export const __testing = {
   buildWebPushPayload,
   extractAndroidDeviceRows,
   sendScheduledTaskNotification,
+  processDuePlannedStartTask,
   processDueTimeGoalCompleteTask,
 };

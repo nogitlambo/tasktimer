@@ -16,8 +16,8 @@ import {
   sendFriendRequest,
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
-import { getCalendarWeekStartMs } from "../lib/history";
-import { formatDashboardDurationShort } from "../lib/historyChart";
+import { localDayKey } from "../lib/history";
+import { formatDashboardDurationShort, startOfCurrentWeekMs } from "../lib/historyChart";
 import { getRankForXp, getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
@@ -35,6 +35,28 @@ type GroupsSnapshotLoaders = {
   loadSharedTaskSummariesForOwner: typeof loadSharedTaskSummariesForOwner;
 };
 
+type SharedTaskMetricsTask = {
+  timeGoalEnabled?: boolean;
+  timeGoalPeriod?: "day" | "week";
+  timeGoalMinutes?: number;
+  running?: boolean;
+  startMs?: number | null;
+};
+
+type SharedTaskCardSummary = {
+  dailyGoalMs?: number | null;
+  todayLoggedMs?: number;
+  weekLoggedMs?: number;
+  weekGoalMs?: number | null;
+  avgTimeLoggedThisWeekMs?: number;
+  totalTimeLoggedMs?: number;
+};
+
+type SharedTaskHistoryEntryLike = {
+  ts?: unknown;
+  ms?: unknown;
+};
+
 const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
   loadIncomingRequests,
   loadOutgoingRequests,
@@ -47,6 +69,111 @@ const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
 export function getFriendProfileOpenUidFromTarget(target: unknown) {
   const btn = (target as { closest?: (selector: string) => HTMLElement | null } | null)?.closest?.("[data-friend-profile-open]");
   return String(btn?.getAttribute?.("data-friend-profile-open") || "").trim();
+}
+
+export function getSharedTaskGoalMetrics(task: SharedTaskMetricsTask | null | undefined) {
+  const goalMinutes = Math.max(0, Number(task?.timeGoalMinutes || 0));
+  if (!(task?.timeGoalEnabled && goalMinutes > 0)) return { dailyGoalMs: null, weekGoalMs: null };
+  if (task.timeGoalPeriod === "day") {
+    return {
+      dailyGoalMs: Math.floor(goalMinutes * 60_000),
+      weekGoalMs: Math.floor(goalMinutes * 7 * 60_000),
+    };
+  }
+  if (task.timeGoalPeriod === "week") {
+    return {
+      dailyGoalMs: Math.floor((goalMinutes * 60_000) / 7),
+      weekGoalMs: Math.floor(goalMinutes * 60_000),
+    };
+  }
+  return { dailyGoalMs: null, weekGoalMs: null };
+}
+
+export function formatSharedTaskWeekPercent(summary: SharedTaskCardSummary): string {
+  const weekGoalMs = summary.weekGoalMs == null ? null : Math.max(0, Number(summary.weekGoalMs || 0));
+  if (!(weekGoalMs && weekGoalMs > 0)) return "No goal";
+  const weekLoggedMs = Math.max(0, Number(summary.weekLoggedMs || 0));
+  return `${Math.max(0, Math.min(100, Math.round((weekLoggedMs / weekGoalMs) * 100)))}%`;
+}
+
+function formatCompactDurationForSharedCard(msRaw: number): string {
+  const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
+  let totalSeconds = Math.floor(totalMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  totalSeconds -= days * 86400;
+  const hours = Math.floor(totalSeconds / 3600);
+  totalSeconds -= hours * 3600;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds - minutes * 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${String(days).padStart(2, "0")}d`);
+  if (hours > 0) parts.push(`${String(hours).padStart(2, "0")}h`);
+  if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
+  if (seconds > 0) parts.push(`${String(seconds).padStart(2, "0")}s`);
+  if (!parts.length) parts.push("00s");
+  return parts.join(" ");
+}
+
+export function renderSharedTaskMetricRows(summary: SharedTaskCardSummary, escapeHtmlUI: (value: unknown) => string) {
+  const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Number(summary.dailyGoalMs || 0));
+  const goalText = dailyGoalMs && dailyGoalMs > 0 ? formatCompactDurationForSharedCard(dailyGoalMs) : "No goal";
+  return `<div class="friendSharedTaskMeta">Goal: ${escapeHtmlUI(goalText)}</div>
+                  <div class="friendSharedTaskMeta">Today: ${escapeHtmlUI(
+                    formatCompactDurationForSharedCard(Number(summary.todayLoggedMs || 0))
+                  )}</div>
+                  <div class="friendSharedTaskMeta">This Week: ${escapeHtmlUI(formatSharedTaskWeekPercent(summary))}</div>
+                  <div class="friendSharedTaskMeta">Daily avg: ${escapeHtmlUI(
+                    formatCompactDurationForSharedCard(Number(summary.avgTimeLoggedThisWeekMs || 0))
+                  )}</div>
+                  <div class="friendSharedTaskMeta">Total logged: ${escapeHtmlUI(
+                    formatCompactDurationForSharedCard(Number(summary.totalTimeLoggedMs || 0))
+                  )}</div>`;
+}
+
+export function computeSharedTaskTimingMetrics(options: {
+  task: SharedTaskMetricsTask | null | undefined;
+  entries: SharedTaskHistoryEntryLike[];
+  nowMs: number;
+  weekStarting: Parameters<typeof startOfCurrentWeekMs>[1];
+  normalizeHistoryTimestampMs: (value: unknown) => number;
+}) {
+  const nowValue = Math.max(0, Math.floor(Number(options.nowMs) || 0));
+  const entries = Array.isArray(options.entries) ? options.entries : [];
+  const weekStartMs = startOfCurrentWeekMs(nowValue, options.weekStarting);
+  const todayKey = localDayKey(nowValue);
+  const weekEntries = entries.filter((entry) => options.normalizeHistoryTimestampMs(entry?.ts) >= weekStartMs);
+  const weekTotalMs = weekEntries.reduce((sum, entry) => sum + Math.max(0, Number(entry?.ms || 0)), 0);
+  const todayLoggedHistoryMs = entries
+    .filter((entry) => localDayKey(options.normalizeHistoryTimestampMs(entry?.ts)) === todayKey)
+    .reduce((sum, entry) => sum + Math.max(0, Number(entry?.ms || 0)), 0);
+  const daysElapsed = Math.max(1, Math.floor((nowValue - weekStartMs) / (24 * 60 * 60 * 1000)) + 1);
+  const avgWeekMs = Math.floor(weekTotalMs / daysElapsed);
+  const allHistoryMs = entries.reduce((sum, entry) => sum + Math.max(0, Number(entry?.ms || 0)), 0);
+  const runningMs =
+    options.task && options.task.running && Number.isFinite(Number(options.task.startMs))
+      ? Math.max(0, nowValue - Number(options.task.startMs || 0))
+      : 0;
+  const focusTrend7dMs = [0, 0, 0, 0, 0, 0, 0];
+  weekEntries.forEach((entry) => {
+    const ts = options.normalizeHistoryTimestampMs(entry?.ts);
+    if (!ts) return;
+    const dayIdx = new Date(ts).getDay();
+    if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += Math.max(0, Number(entry?.ms || 0));
+  });
+  if (runningMs > 0) {
+    const dayIdx = new Date(nowValue).getDay();
+    if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += runningMs;
+  }
+  const goalMetrics = getSharedTaskGoalMetrics(options.task);
+  return {
+    dailyGoalMs: goalMetrics.dailyGoalMs,
+    todayLoggedMs: Math.floor(todayLoggedHistoryMs + runningMs),
+    weekLoggedMs: Math.floor(weekTotalMs + runningMs),
+    weekGoalMs: goalMetrics.weekGoalMs,
+    avgWeekMs,
+    totalMs: Math.floor(allHistoryMs + runningMs),
+    focusTrend7dMs: focusTrend7dMs.map((value) => Math.max(0, Math.floor(Number(value) || 0))),
+  };
 }
 
 export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnapshotLoaders = defaultGroupsSnapshotLoaders) {
@@ -288,29 +415,15 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function computeTaskSharingMetrics(taskId: string) {
-    const weekStartMs = getCalendarWeekStartMs(new Date());
     const history = ctx.getHistoryByTaskId();
-    const weekEntries = (history[taskId] || []).filter((entry) => ctx.normalizeHistoryTimestampMs((entry as any)?.ts) >= weekStartMs);
-    const weekTotalMs = weekEntries.reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
-    const daysElapsed = Math.max(1, Math.floor((Date.now() - weekStartMs) / (24 * 60 * 60 * 1000)) + 1);
-    const avgWeekMs = Math.floor(weekTotalMs / daysElapsed);
-    const allHistoryMs = (history[taskId] || []).reduce((sum, entry) => sum + Math.max(0, Number((entry as any)?.ms || 0)), 0);
     const task = ctx.getTasks().find((row) => String(row.id || "") === String(taskId));
-    const runningMs =
-      task && task.running && Number.isFinite(Number(task.startMs))
-        ? Math.max(0, Date.now() - Number(task.startMs || 0))
-        : 0;
-    const focusTrend7dMs = [0, 0, 0, 0, 0, 0, 0];
-    weekEntries.forEach((entry) => {
-      const ts = ctx.normalizeHistoryTimestampMs((entry as any)?.ts);
-      if (!ts) return;
-      const dayIdx = new Date(ts).getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += Math.max(0, Number((entry as any)?.ms || 0));
+    const timingMetrics = computeSharedTaskTimingMetrics({
+      task,
+      entries: history[taskId] || [],
+      nowMs: Date.now(),
+      weekStarting: ctx.getWeekStarting(),
+      normalizeHistoryTimestampMs: ctx.normalizeHistoryTimestampMs,
     });
-    if (runningMs > 0) {
-      const dayIdx = new Date().getDay();
-      if (dayIdx >= 0 && dayIdx <= 6) focusTrend7dMs[dayIdx] += runningMs;
-    }
     let checkpointScaleMs: number | null = null;
     if (task && Array.isArray((task as any).milestones) && (task as any).milestones.length) {
       const unitSec =
@@ -328,29 +441,15 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     return {
       createdAtMs: getTaskCreatedAtMs(taskId),
-      avgWeekMs,
-      totalMs: Math.floor(allHistoryMs + runningMs),
-      focusTrend7dMs: focusTrend7dMs.map((value) => Math.max(0, Math.floor(Number(value) || 0))),
+      dailyGoalMs: timingMetrics.dailyGoalMs,
+      todayLoggedMs: timingMetrics.todayLoggedMs,
+      weekLoggedMs: timingMetrics.weekLoggedMs,
+      weekGoalMs: timingMetrics.weekGoalMs,
+      avgWeekMs: timingMetrics.avgWeekMs,
+      totalMs: timingMetrics.totalMs,
+      focusTrend7dMs: timingMetrics.focusTrend7dMs,
       checkpointScaleMs,
     };
-  }
-
-  function formatCompactDurationForSharedCard(msRaw: number): string {
-    const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
-    let totalSeconds = Math.floor(totalMs / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    totalSeconds -= days * 86400;
-    const hours = Math.floor(totalSeconds / 3600);
-    totalSeconds -= hours * 3600;
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds - minutes * 60;
-    const parts: string[] = [];
-    if (days > 0) parts.push(`${String(days).padStart(2, "0")}d`);
-    if (hours > 0) parts.push(`${String(hours).padStart(2, "0")}h`);
-    if (minutes > 0) parts.push(`${String(minutes).padStart(2, "0")}m`);
-    if (seconds > 0) parts.push(`${String(seconds).padStart(2, "0")}s`);
-    if (!parts.length) parts.push("00s");
-    return parts.join(" ");
   }
 
   function renderRankInsigniaMarkup(rankIdRaw: string): string {
@@ -633,6 +732,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (!ownerUid || ownerUid !== uid) return;
       const taskId = String(row?.taskId || "").trim();
       if (!taskId || !runningByTaskId.has(taskId)) return;
+      if (Math.floor(Number(row?.schemaVersion || 1) || 1) < 2) {
+        mismatched.add(taskId);
+        return;
+      }
       const summaryRunning = String(row?.timerState || "").trim().toLowerCase() === "running";
       const taskRunning = !!runningByTaskId.get(taskId);
       if (summaryRunning !== taskRunning) mismatched.add(taskId);
@@ -665,6 +768,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
           taskCreatedAtMs: metrics.createdAtMs,
+          dailyGoalMs: metrics.dailyGoalMs,
+          todayLoggedMs: metrics.todayLoggedMs,
+          weekLoggedMs: metrics.weekLoggedMs,
+          weekGoalMs: metrics.weekGoalMs,
           avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
           totalTimeLoggedMs: metrics.totalMs,
         })
@@ -753,6 +860,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
           taskCreatedAtMs: metrics.createdAtMs,
+          dailyGoalMs: metrics.dailyGoalMs,
+          todayLoggedMs: metrics.todayLoggedMs,
+          weekLoggedMs: metrics.weekLoggedMs,
+          weekGoalMs: metrics.weekGoalMs,
           avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
           totalTimeLoggedMs: metrics.totalMs,
         })
@@ -972,10 +1083,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .map((row, index) => {
         const summaryHtml = row.summaries
           .map((entry) => {
-            const createdDate =
-              entry.taskCreatedAtMs != null && Number.isFinite(Number(entry.taskCreatedAtMs))
-                ? new Date(Number(entry.taskCreatedAtMs)).toLocaleDateString()
-                : "Unknown";
             const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
             const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
             const timerStateClass =
@@ -987,13 +1094,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 <div class="friendSharedTaskInfo">
                   <div class="friendSharedTaskTitle">${ctx.escapeHtmlUI(entry.taskName)}</div>
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
-                  <div class="friendSharedTaskMeta">Created: ${ctx.escapeHtmlUI(createdDate)}</div>
-                  <div class="friendSharedTaskMeta">Daily avg: ${ctx.escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(entry.avgTimeLoggedThisWeekMs || 0))
-                  )}</div>
-                  <div class="friendSharedTaskMeta">Total logged: ${ctx.escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(entry.totalTimeLoggedMs || 0))
-                  )}</div>
+                  ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
                 </div>
               </div>
             </div>`;
