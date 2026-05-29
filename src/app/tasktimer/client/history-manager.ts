@@ -339,7 +339,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       meta: els.historyEntryNoteMeta as HTMLElement | null,
       body: els.historyEntryNoteBody as HTMLElement | null,
       editor: els.historyEntryNoteEditor as HTMLElement | null,
-      input: els.historyEntryNoteInput as HTMLTextAreaElement | null,
+      input: els.historyEntryNoteInput as HTMLElement | null,
       editBtn: els.historyEntryNoteEditBtn as HTMLButtonElement | null,
       cancelBtn: els.historyEntryNoteCancelBtn as HTMLButtonElement | null,
       saveBtn: els.historyEntryNoteSaveBtn as HTMLButtonElement | null,
@@ -364,29 +364,49 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
   async function saveHistoryManagerOverlayNote(options?: { reopen?: boolean }) {
     const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
     if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditable !== "true") return;
-    const taskId = String(overlay.dataset.historyEntryTaskId || "").trim();
-    const ts = Math.floor(Number(overlay.dataset.historyEntryTs || 0));
-    const ms = Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0)));
-    const name = String(overlay.dataset.historyEntryName || "").trim();
-    if (!taskId || ts <= 0 || !name) return;
+    const drafts = historyEntrySummaryInteraction.getEditedNoteDrafts();
+    const fallbackDraft = {
+      taskId: String(overlay.dataset.historyEntryTaskId || "").trim(),
+      ts: Math.floor(Number(overlay.dataset.historyEntryTs || 0)),
+      ms: Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0))),
+      name: String(overlay.dataset.historyEntryName || "").trim(),
+      note: historyEntrySummaryInteraction.getActiveInputValue().trim(),
+    };
+    const noteDrafts = drafts.length ? drafts : [fallbackDraft];
+    const validDrafts = noteDrafts.filter((draft) => draft.taskId && draft.ts > 0 && draft.name);
+    if (!validDrafts.length) return;
     const historyByTaskId = ctx.loadHistory();
-    const original = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
-    const pos = original.findIndex(
-      (entry: any) => Number(entry?.ts) === ts && Number(entry?.ms) === ms && String(entry?.name || "").trim() === name
-    );
-    if (pos < 0) return;
-    const nextEntry = { ...original[pos], taskId };
-    const note = historyEntrySummaryInteraction.getActiveInputValue().trim();
-    if (note) nextEntry.note = note;
-    else delete nextEntry.note;
-    const nextTaskHistory = original.slice();
-    nextTaskHistory[pos] = nextEntry;
-    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
+    const nextHistory = { ...historyByTaskId };
+    const updatedEntries: any[] = [];
+    const touchedTaskIds = new Set<string>();
+    validDrafts.forEach((draft) => {
+      const original = Array.isArray(nextHistory[draft.taskId]) ? nextHistory[draft.taskId] : [];
+      const pos = original.findIndex(
+        (entry: any) =>
+          Number(entry?.ts) === draft.ts &&
+          Number(entry?.ms) === draft.ms &&
+          String(entry?.name || "").trim() === draft.name
+      );
+      if (pos < 0) return;
+      const nextEntry = { ...original[pos], taskId: draft.taskId };
+      if (draft.note) nextEntry.note = draft.note;
+      else delete nextEntry.note;
+      const nextTaskHistory = original.slice();
+      nextTaskHistory[pos] = nextEntry;
+      nextHistory[draft.taskId] = nextTaskHistory;
+      updatedEntries.push(nextEntry);
+      touchedTaskIds.add(draft.taskId);
+    });
+    if (!updatedEntries.length) return;
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory);
     renderHistoryManager();
-    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    if (options?.reopen !== false) openHistoryManagerNoteOverlay(nextEntry);
+    touchedTaskIds.forEach((taskId) => {
+      void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    });
+    if (options?.reopen !== false && validDrafts[0]?.taskId) {
+      historyEntrySummaryInteraction.openSummary(validDrafts[0].taskId, updatedEntries);
+    }
   }
 
   function beginHistoryManagerNoteEdit(trigger: HTMLElement | null) {
@@ -1059,14 +1079,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.on(document, "input", (event: Event) => {
       const input = (event.target as HTMLElement | null)?.closest?.(
         "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing"
-      ) as HTMLTextAreaElement | null;
+      ) as HTMLElement | null;
       if (!input) return;
-      historyEntrySummaryInteraction.syncInputMirror(String(input.value || ""));
+      historyEntrySummaryInteraction.syncInputMirror(String(input.innerHTML || ""));
     });
     ctx.on(document, "focusin", (event: Event) => {
       const input = (event.target as HTMLElement | null)?.closest?.(
         "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing"
-      ) as HTMLTextAreaElement | null;
+      ) as HTMLElement | null;
       if (!input) return;
       historyEntrySummaryInteraction.expandActiveInlineNoteInput();
     });

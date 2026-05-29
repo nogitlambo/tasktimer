@@ -3889,6 +3889,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   font-family: var(--font-orbitron);
   font-size: 13px;
   font-weight: 800;
+  -webkit-text-stroke: 1.5px #000;
+  paint-order: stroke fill;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
@@ -3908,7 +3910,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay .historyEntryNoteEditor{
     margin-top: 14px;
     display: grid;
-    gap: 8px;
+    gap: 0;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteEditorLabel{
@@ -4197,18 +4199,40 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   color: rgba(174,184,194,.9);
 }
 
+#historyEntryNoteOverlay .historyEntrySummaryNoteInput:empty::before{
+  content: attr(data-placeholder);
+  color: rgba(174,184,194,.9);
+}
+
 #historyEntryNoteOverlay .historyEntrySummaryNoteInput:not(.isEditing){
   cursor: text;
   resize: none;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .richNoteToolbar{
+  display:none;
+  margin:0;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock:has(.historyEntrySummaryNoteInput.isEditing) .richNoteToolbar{
+  display:flex;
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing{
   min-height: 72px;
   padding: 8px 10px;
   border: 1px solid rgba(174,184,194,.45);
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
   background: rgba(255,255,255,.02);
   resize: none;
   overflow-y: hidden;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .richNoteToolbar:has(+ .historyEntrySummaryNoteInput.isEditing){
+  border-color: rgba(174,184,194,.45);
+  border-bottom-color: rgba(174,184,194,.16);
+  background: rgba(255,255,255,.02);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing.isCollapsed{
@@ -5435,6 +5459,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText{
+  animation: none;
+  opacity: 1;
+  transform: scale(1.28);
+  filter: brightness(1.38);
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
   position: absolute;
   left: 50%;
@@ -5507,8 +5538,11 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
 @media (prefers-reduced-motion: reduce){
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
     animation: none;
+    transform: none;
+    filter: none;
     will-change: auto;
   }
 

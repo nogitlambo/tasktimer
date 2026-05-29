@@ -37,6 +37,8 @@ function elementStub(id = "") {
       return [];
     }),
     getAttribute: vi.fn(),
+    setAttribute: vi.fn(),
+    closest: vi.fn(),
     focus: vi.fn(),
     getBoundingClientRect: vi.fn(() => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 })),
   };
@@ -188,6 +190,24 @@ function triggerStub() {
   };
 }
 
+function triggerStubFor(overrides: { taskId?: string; ts: string; ms?: string; name?: string; note?: string }) {
+  const input = inputStub();
+  const attrs: Record<string, string> = {
+    "data-history-summary-task-id": overrides.taskId ?? "task-1",
+    "data-history-summary-ts": overrides.ts,
+    "data-history-summary-ms": overrides.ms ?? "60000",
+    "data-history-summary-name": overrides.name ?? "Focus",
+  };
+  const trigger = {
+    getAttribute: vi.fn((name: string) => attrs[name] ?? null),
+    querySelector: vi.fn((selector: string) => selector === "[data-history-summary-note-input]" ? input : null),
+  };
+  input.closest = vi.fn((selector: string) => selector === '[data-history-summary-action="edit-note"]' ? trigger : null);
+  input.innerHTML = overrides.note ?? "";
+  input.value = overrides.note ?? "";
+  return { input, trigger: trigger as unknown as HTMLElement };
+}
+
 describe("createHistoryEntrySummaryInteraction", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -332,6 +352,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.style.height).toBe("180px");
     expect(input.style.overflowY).toBe("hidden");
 
+    input.innerHTML = "   ";
     input.value = "   ";
     h.interaction.syncInputMirror("   ");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
@@ -384,6 +405,145 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.classList.contains("isCollapsed")).toBe(false);
     expect(input.style.height).toBe("180px");
     expect(input.style.overflowY).toBe("hidden");
+  });
+
+  it("switches between session note editors while preserving the first unsaved draft", () => {
+    const first = triggerStubFor({ ts: "1000", note: "Original A" });
+    const second = triggerStubFor({ ts: "2000", note: "Original B" });
+    const h = createHarness({
+      entries: [
+        { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+        { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+      ],
+    });
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isActiveEditing") {
+        if (first.input.classList.contains("isActiveEditing")) return first.input;
+        if (second.input.classList.contains("isActiveEditing")) return second.input;
+        return null;
+      }
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") {
+        if (first.input.classList.contains("isEditing")) return first.input;
+        if (second.input.classList.contains("isEditing")) return second.input;
+        return null;
+      }
+      return null;
+    });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector !== ".historyEntrySummaryNoteInput.isEditing") return [];
+      return [first.input, second.input].filter((input) => input.classList.contains("isEditing"));
+    });
+    h.interaction.openSummary("task-1", [
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+      { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+    ]);
+
+    expect(h.interaction.beginEdit(first.trigger)).toBe(true);
+    first.input.innerHTML = "Draft A";
+    h.interaction.syncInputMirror("Draft A");
+    expect(h.interaction.beginEdit(second.trigger)).toBe(true);
+
+    expect(first.input.innerHTML).toBe("Draft A");
+    expect(first.input.classList.contains("isEditing")).toBe(true);
+    expect(first.input.classList.contains("isActiveEditing")).toBe(false);
+    expect(first.input.classList.contains("isCollapsed")).toBe(true);
+    expect(second.input.classList.contains("isEditing")).toBe(true);
+    expect(second.input.classList.contains("isActiveEditing")).toBe(true);
+    expect(second.input.focus).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns every edited note draft, including an empty draft that should clear a saved note", () => {
+    const first = triggerStubFor({ ts: "1000", note: "Original A" });
+    const second = triggerStubFor({ ts: "2000", note: "Original B" });
+    const h = createHarness({
+      entries: [
+        { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+        { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+      ],
+    });
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isActiveEditing") {
+        if (first.input.classList.contains("isActiveEditing")) return first.input;
+        if (second.input.classList.contains("isActiveEditing")) return second.input;
+        return null;
+      }
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") {
+        if (first.input.classList.contains("isEditing")) return first.input;
+        if (second.input.classList.contains("isEditing")) return second.input;
+        return null;
+      }
+      return null;
+    });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector !== ".historyEntrySummaryNoteInput.isEditing") return [];
+      return [first.input, second.input].filter((input) => input.classList.contains("isEditing"));
+    });
+    h.interaction.openSummary("task-1", [
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+      { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+    ]);
+    h.interaction.beginEdit(first.trigger);
+    first.input.innerHTML = "Draft A";
+    h.interaction.syncInputMirror("Draft A");
+    h.interaction.beginEdit(second.trigger);
+    second.input.innerHTML = "   ";
+    h.interaction.syncInputMirror("   ");
+
+    expect(h.interaction.getEditedNoteDrafts()).toEqual([
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Draft A" },
+      { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "" },
+    ]);
+  });
+
+  it("cancels all edited inline note drafts and restores each saved note", () => {
+    const first = triggerStubFor({ ts: "1000", note: "Original A" });
+    const second = triggerStubFor({ ts: "2000", note: "Original B" });
+    const h = createHarness({
+      entries: [
+        { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+        { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+      ],
+    });
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".historyEntrySummaryNoteInput.isActiveEditing") {
+        if (first.input.classList.contains("isActiveEditing")) return first.input;
+        if (second.input.classList.contains("isActiveEditing")) return second.input;
+        return null;
+      }
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") {
+        if (first.input.classList.contains("isEditing")) return first.input;
+        if (second.input.classList.contains("isEditing")) return second.input;
+        return null;
+      }
+      return null;
+    });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector !== ".historyEntrySummaryNoteInput.isEditing") return [];
+      return [first.input, second.input].filter((input) => input.classList.contains("isEditing"));
+    });
+    h.interaction.openSummary("task-1", [
+      { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original A" },
+      { taskId: "task-1", ts: 2000, ms: 60000, name: "Focus", note: "Original B" },
+    ]);
+    h.interaction.beginEdit(first.trigger);
+    first.input.innerHTML = "Draft A";
+    h.interaction.beginEdit(second.trigger);
+    second.input.innerHTML = "Draft B";
+
+    h.interaction.cancelEdit();
+
+    expect(first.input.value).toBe("Original A");
+    expect(second.input.value).toBe("Original B");
+    expect(first.input.classList.contains("isEditing")).toBe(false);
+    expect(second.input.classList.contains("isEditing")).toBe(false);
+    expect(first.input.classList.contains("isActiveEditing")).toBe(false);
+    expect(second.input.classList.contains("isActiveEditing")).toBe(false);
+    expect(h.overlay.dataset.historyEntryEditing).toBe("false");
   });
 
   it("cancels editing and restores the stored dataset note", () => {

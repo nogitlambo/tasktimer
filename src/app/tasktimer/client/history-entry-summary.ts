@@ -1,6 +1,7 @@
 import { sessionColorForTaskMs } from "../lib/colors";
 import type { RewardProgressV1 } from "../lib/rewards";
 import type { Task } from "../lib/types";
+import { prepareRichNoteForDisplay, richNoteHasMeaningfulText, richNoteToolbarHtml } from "./rich-session-notes";
 
 const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
@@ -216,8 +217,8 @@ function buildHistoryEntrySummaryItem(
   const ts = normalizeTimestamp(entry?.ts);
   const ms = normalizeElapsedMs(entry?.ms);
   const name = String(entry?.name || "").trim();
-  const noteText = String(getEntryNote(entry) || "").trim();
-  const hasNote = !!noteText;
+  const noteText = prepareRichNoteForDisplay(getEntryNote(entry) || "");
+  const hasNote = richNoteHasMeaningfulText(noteText);
   const timeGoalCompleted = deriveTimeGoalCompleted(entry, task);
   const xpEarned = deriveXpEarned(entry, taskId, rewardProgress);
   return {
@@ -331,7 +332,7 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryHeroLabel">Total Time Logged</div>
         <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
         <div class="historyEntrySummaryHeroStats">
-          ${[renderXpField("Total XP Earned", payload.aggregate.xpText)].join("")}
+          ${[renderXpField("Total XP", payload.aggregate.xpText)].join("")}
         </div>
       </section>`
     : "";
@@ -359,7 +360,8 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryNoteRow">
           <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">
             <div class="historyEntrySummaryLabel">Session note</div>
-            <textarea class="historyEntrySummaryNoteText historyEntrySummaryNoteInput" rows="2" readonly aria-label="Session note" placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}">${escapeHtml(session.hasNote ? session.noteText : "")}</textarea>
+            ${richNoteToolbarHtml(`historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}`)}
+            <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}">${session.hasNote ? session.noteText : ""}</div>
           </div>
         </div>
       </section>`;

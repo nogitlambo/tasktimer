@@ -2011,6 +2011,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   max-width:620px;
   margin:0 auto;
   min-height:0;
+  overflow-x:hidden;
 }
 
 .focusInsights{
@@ -2089,6 +2090,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   box-shadow:none;
   clip-path:none;
   text-align:center;
+  min-height:0;
 }
 
 .focusSessionNotesSummary{
@@ -2154,6 +2156,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   resize: none;
   overflow-x:hidden;
   overflow-y:hidden;
+  overscroll-behavior:contain;
   white-space:pre-wrap;
   overflow-wrap:anywhere;
   word-break:break-word;
@@ -2169,8 +2172,155 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   text-align:left;
 }
 
+.richNoteToolbar{
+  display:flex;
+  box-sizing:border-box;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  width:100%;
+  padding:6px;
+  background: rgba(45, 48, 54, .5);
+  background-color: rgba(45, 48, 54, .5);
+  border: 1px solid rgba(45, 48, 54, .78);
+  border-bottom-color: rgba(166,176,190,.16);
+  border-radius: 4px 4px 0 0;
+  box-shadow: none;
+}
+
+.richNoteToolbar + .richNoteEditor,
+.richNoteToolbar + .focusSessionNotesInput{
+  border-top: 0 !important;
+  border-radius: 0 0 4px 4px;
+}
+
+.richNoteToolbar + .focusSessionNotesInput{
+  background: rgba(45, 48, 54, .5) !important;
+  background-color: rgba(45, 48, 54, .5) !important;
+}
+
+.richNoteToolbar + .richNoteEditor:focus,
+.richNoteToolbar + .richNoteEditor:focus-visible,
+.richNoteToolbar:has(+ .richNoteEditor:focus),
+.richNoteToolbar:has(+ .richNoteEditor:focus-visible){
+  border-color: rgba(45, 48, 54, .78);
+}
+
+.richNoteToolbarBtn{
+  min-height:24px;
+  padding:4px 7px;
+  font-size:10px;
+  line-height:1;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(45,48,54,.72)) !important;
+  border-color: rgba(166,176,190,.34) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(0,0,0,.34),
+    0 2px 4px rgba(0,0,0,.32);
+  transform: translateY(0);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background-color .12s ease;
+}
+
+.richNoteToolbarBtn:hover,
+.richNoteToolbarBtn:focus-visible{
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(56,60,68,.78)) !important;
+  border-color: rgba(219,255,79,.42) !important;
+}
+
+.richNoteToolbarBtn:active,
+.richNoteToolbarBtn[aria-pressed="true"]{
+  background: linear-gradient(180deg, rgba(16,18,22,.92), rgba(37,40,47,.84)) !important;
+  border-color: rgba(219,255,79,.34) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,.62),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 1px 1px rgba(0,0,0,.18);
+  transform: translateY(1px);
+}
+
+.richNoteToolbarIcon{
+  display:block;
+  width:10px;
+  height:10px;
+  object-fit:contain;
+}
+
+.richNoteEditor{
+  outline:none;
+}
+
+.richNoteEditor:empty::before{
+  content: attr(data-placeholder);
+  color: rgba(151,174,192,.9);
+  pointer-events:none;
+}
+
+.richNoteEditor :where(ul, ol){
+  margin: 4px 0 4px 18px;
+  padding: 0;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  list-style-position: inside;
+}
+
+.richNoteEditor :where(ul){
+  list-style-type: disc !important;
+}
+
+.richNoteEditor :where(ol){
+  list-style-type: decimal !important;
+}
+
+.richNoteEditor :where(li){
+  display: list-item !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  list-style-position: inside;
+}
+
+.richNoteEditor :where(li)::marker{
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.richNoteEditor :where(li)::-webkit-marker{
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.richNoteEditor :where(ul, ol, li, li *),
+.focusSessionNotesInput.richNoteEditor :is(ul, ol, li, li *),
+.historyEntrySummaryNoteInput.richNoteEditor :is(ul, ol, li, li *){
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.focusSessionNotesInput.richNoteEditor :is(li)::marker,
+.historyEntrySummaryNoteInput.richNoteEditor :is(li)::marker{
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.richNoteEditor :where(p, div){
+  margin: 0 0 4px;
+}
+
+.richNoteEditor a{
+  color: rgba(117,231,255,.95);
+  text-decoration: underline;
+}
+
 #focusModeScreen .focusSessionNotesInput{
   padding: 2px;
+  background: #000 !important;
+  background-color: #000 !important;
+}
+
+#focusModeScreen .richNoteToolbar{
+  background: #000;
+  background-color: #000;
 }
 
 .focusSessionNotesInput::placeholder{
@@ -2187,7 +2337,8 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 .focusSessionNotesBody{
   display:grid;
   align-content:start;
-  gap:8px;
+  gap:0;
+  min-height:0;
 }
 
 .focusSessionNotesActions{

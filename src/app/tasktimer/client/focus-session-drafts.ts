@@ -1,3 +1,5 @@
+import { richNoteHasMeaningfulText, sanitizeRichNoteHtml } from "./rich-session-notes";
+
 export type FocusSessionDraftStorage = {
   load: () => Record<string, string>;
   persist: (drafts: Record<string, string>) => void;
@@ -24,7 +26,7 @@ function normalizeDrafts(source: Record<string, unknown> | null | undefined) {
   const next: Record<string, string> = {};
   Object.keys(source || {}).forEach((taskId) => {
     const taskKey = normalizeTaskId(taskId);
-    const value = String(source?.[taskId] || "").trim();
+    const value = sanitizeRichNoteHtml(source?.[taskId] || "");
     if (taskKey && value) next[taskKey] = value;
   });
   return next;
@@ -70,8 +72,8 @@ export function createFocusSessionDrafts(state: FocusSessionDraftState, storage:
     const taskKey = normalizeTaskId(taskId);
     if (!taskKey) return;
     const nextDrafts = { ...(state.getDrafts() || {}) };
-    const nextValue = String(noteRaw || "").trim();
-    if (nextValue) nextDrafts[taskKey] = nextValue;
+    const nextValue = sanitizeRichNoteHtml(noteRaw);
+    if (richNoteHasMeaningfulText(nextValue)) nextDrafts[taskKey] = nextValue;
     else delete nextDrafts[taskKey];
     state.setDrafts(nextDrafts);
     storage.persist(nextDrafts);
@@ -118,7 +120,7 @@ export function createFocusSessionDrafts(state: FocusSessionDraftState, storage:
     const taskKey = normalizeTaskId(taskId);
     if (!taskKey) return "";
     if (normalizeTaskId(state.getActiveTaskId()) !== taskKey) return "";
-    return String(state.getInputValue() || "").trim();
+    return sanitizeRichNoteHtml(state.getInputValue() || "");
   }
 
   function captureSnapshot(taskId?: string | null) {

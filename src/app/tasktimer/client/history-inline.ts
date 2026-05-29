@@ -29,6 +29,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
   const HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS = [0, 120, 280, HISTORY_REVEAL_OPEN_MS + 32] as const;
   const HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX = 12;
+  const HISTORY_INLINE_CHART_LABEL_COLOR = "#fff";
   const { sharedTasks } = ctx;
   const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
   const historyInlineSelection = createHistoryInlineSelectionInteraction();
@@ -501,7 +502,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       meta: els.historyEntryNoteMeta as HTMLElement | null,
       body: els.historyEntryNoteBody as HTMLElement | null,
       editor: els.historyEntryNoteEditor as HTMLElement | null,
-      input: els.historyEntryNoteInput as HTMLTextAreaElement | null,
+      input: els.historyEntryNoteInput as HTMLElement | null,
       editBtn: els.historyEntryNoteEditBtn as HTMLButtonElement | null,
       cancelBtn: els.historyEntryNoteCancelBtn as HTMLButtonElement | null,
       saveBtn: els.historyEntryNoteSaveBtn as HTMLButtonElement | null,
@@ -546,29 +547,46 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   function saveHistoryEntryOverlayNote() {
     const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
     if (!overlay || overlay.dataset.historyEntryOwner !== "inline" || overlay.dataset.historyEntryEditable !== "true") return;
-    const taskId = String(overlay.dataset.historyEntryTaskId || "").trim();
-    const ts = Math.floor(Number(overlay.dataset.historyEntryTs || 0));
-    const ms = Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0)));
-    const name = String(overlay.dataset.historyEntryName || "").trim();
-    if (!taskId || ts <= 0 || !name) return;
+    const drafts = historyEntrySummaryInteraction.getEditedNoteDrafts();
+    const fallbackDraft = {
+      taskId: String(overlay.dataset.historyEntryTaskId || "").trim(),
+      ts: Math.floor(Number(overlay.dataset.historyEntryTs || 0)),
+      ms: Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0))),
+      name: String(overlay.dataset.historyEntryName || "").trim(),
+      note: historyEntrySummaryInteraction.getActiveInputValue().trim(),
+    };
+    const noteDrafts = drafts.length ? drafts : [fallbackDraft];
+    const validDrafts = noteDrafts.filter((draft) => draft.taskId && draft.ts > 0 && draft.name);
+    if (!validDrafts.length) return;
     const historyByTaskId = ctx.getHistoryByTaskId() || {};
-    const original = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
-    const pos = original.findIndex(
-      (entry: any) => Number(entry?.ts) === ts && Number(entry?.ms) === ms && String(entry?.name || "").trim() === name
-    );
-    if (pos < 0) return;
-    const nextEntry = { ...original[pos] };
-    const note = historyEntrySummaryInteraction.getActiveInputValue().trim();
-    if (note) nextEntry.note = note;
-    else delete nextEntry.note;
-    const nextTaskHistory = original.slice();
-    nextTaskHistory[pos] = nextEntry;
-    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
+    const nextHistory = { ...historyByTaskId };
+    const updatedEntries: any[] = [];
+    const touchedTaskIds = new Set<string>();
+    validDrafts.forEach((draft) => {
+      const original = Array.isArray(nextHistory[draft.taskId]) ? nextHistory[draft.taskId] : [];
+      const pos = original.findIndex(
+        (entry: any) =>
+          Number(entry?.ts) === draft.ts &&
+          Number(entry?.ms) === draft.ms &&
+          String(entry?.name || "").trim() === draft.name
+      );
+      if (pos < 0) return;
+      const nextEntry = { ...original[pos] };
+      if (draft.note) nextEntry.note = draft.note;
+      else delete nextEntry.note;
+      const nextTaskHistory = original.slice();
+      nextTaskHistory[pos] = nextEntry;
+      nextHistory[draft.taskId] = nextTaskHistory;
+      updatedEntries.push(nextEntry);
+      touchedTaskIds.add(draft.taskId);
+    });
+    if (!updatedEntries.length) return;
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory);
     ctx.renderDashboardWidgets();
-    openHistoryEntryNoteOverlay(taskId, [nextEntry]);
-    renderHistory(taskId);
+    const reopenTaskId = validDrafts[0]?.taskId || "";
+    if (reopenTaskId) openHistoryEntryNoteOverlay(reopenTaskId, updatedEntries);
+    touchedTaskIds.forEach((taskId) => renderHistory(taskId));
   }
 
   function beginInlineHistoryEntryNoteEdit(trigger: HTMLElement | null) {
@@ -950,7 +968,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const labelAlpha = hasSelection ? (isSelected || isLocked ? 1 : 0.28) : 1;
         draw.save();
         draw.globalAlpha = labelAlpha;
-        draw.fillStyle = "rgba(255,255,255,.65)";
+        draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
         const baseDateFont = compactLabels ? 10 : 11;
         const labelFontScale = 1;
         draw.font = `${Math.round(baseDateFont * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
@@ -1053,7 +1071,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.moveTo(axisTickStartX, markerY);
         draw.lineTo(plotLeft, markerY);
         draw.stroke();
-        draw.fillStyle = "rgba(255,255,255,.96)";
+        draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
         draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
         draw.textAlign = "right";
         draw.textBaseline = "middle";
@@ -1090,7 +1108,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.moveTo(axisTickStartX, markerY);
         draw.lineTo(plotLeft, markerY);
         draw.stroke();
-        draw.fillStyle = "rgba(255,255,255,.96)";
+        draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
         draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
         draw.textAlign = "right";
         draw.textBaseline = "middle";
@@ -1131,7 +1149,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           draw.moveTo(axisTickStartX, markerY);
           draw.lineTo(plotLeft, markerY);
           draw.stroke();
-          draw.fillStyle = "rgba(50,217,107,.96)";
+          draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
           draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
           draw.textAlign = "right";
           draw.textBaseline = "middle";
@@ -1143,7 +1161,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         drawnLabelY.push(markerY);
 
         if (goal.kind !== "timeGoal") {
-          draw.fillStyle = "rgba(255,255,255,.92)";
+          draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
           draw.font = "10px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
           draw.textAlign = "right";
           draw.textBaseline = "middle";
@@ -1482,7 +1500,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.on(document, "input", (e: any) => {
       const input = findDelegatedElement(e.target, "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing");
       if (!input) return;
-      historyEntrySummaryInteraction.syncInputMirror(String((input as HTMLTextAreaElement).value || ""));
+      historyEntrySummaryInteraction.syncInputMirror(String((input as HTMLElement).innerHTML || ""));
     });
     ctx.on(document, "focusin", (e: any) => {
       const input = findDelegatedElement(e.target, "#historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing");

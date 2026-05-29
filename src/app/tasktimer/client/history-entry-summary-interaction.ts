@@ -4,6 +4,11 @@ import {
   buildHistoryEntrySummaryPayload,
   renderHistoryEntrySummaryHtml,
 } from "./history-entry-summary";
+import {
+  getRichNoteEditorValue,
+  richNoteHasMeaningfulText,
+  setRichNoteEditorValue,
+} from "./rich-session-notes";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 type HistoryEntrySummaryOwner = "inline" | "manager";
@@ -19,17 +24,31 @@ type HistoryEntrySummarySource = {
   completionDifficulty?: unknown;
 };
 
+export type HistoryEntrySummaryNoteDraft = {
+  taskId: string;
+  ts: number;
+  ms: number;
+  name: string;
+  note: string;
+};
+
 type HistoryEntrySummaryInteractionElements = {
   overlay: HTMLElement | null;
   title: HTMLElement | null;
   meta: HTMLElement | null;
   body: HTMLElement | null;
   editor: HTMLElement | null;
-  input: HTMLTextAreaElement | null;
+  input: HTMLElement | null;
   editBtn: HTMLButtonElement | null;
   cancelBtn: HTMLButtonElement | null;
   saveBtn: HTMLButtonElement | null;
   saveAndCloseBtn: HTMLButtonElement | null;
+};
+
+type RichNoteEditorElement = HTMLElement & {
+  placeholder?: string;
+  contentEditable?: string;
+  readOnly?: boolean;
 };
 
 type CreateHistoryEntrySummaryInteractionOptions = {
@@ -86,13 +105,13 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     return elements.overlay?.querySelector(".closePopup") as HTMLButtonElement | null;
   }
 
-  function resetInlineNoteAutosize(input: HTMLTextAreaElement | null) {
+  function resetInlineNoteAutosize(input: HTMLElement | null) {
     if (!input) return;
     input.style.height = "";
     input.style.overflowY = "";
   }
 
-  function getInlineNoteMaxHeight(input: HTMLTextAreaElement) {
+  function getInlineNoteMaxHeight(input: HTMLElement) {
     const overlay = elements.overlay;
     if (!overlay) return Number.POSITIVE_INFINITY;
     const modal = overlay.querySelector(".modal") as HTMLElement | null;
@@ -121,7 +140,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     return availableHeight > 0 ? availableHeight : INLINE_NOTE_COMPACT_HEIGHT_PX;
   }
 
-  function autosizeInlineNoteInput(input: HTMLTextAreaElement | null) {
+  function autosizeInlineNoteInput(input: HTMLElement | null) {
     if (!input || !input.classList.contains("isEditing")) return;
     input.classList.remove("isCollapsed");
     input.style.height = "auto";
@@ -136,27 +155,64 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const overlay = elements.overlay;
     if (!overlay) return;
     const isMobile = options.isMobileLayout();
-    overlay.querySelectorAll<HTMLTextAreaElement>("[data-history-summary-note-input]").forEach((input) => {
+    overlay.querySelectorAll<HTMLElement>("[data-history-summary-note-input]").forEach((input) => {
       const desktopText = String(input.dataset.emptyNotePlaceholderDesktop || "Click to add note");
       const mobileText = String(input.dataset.emptyNotePlaceholderMobile || "Tap to add note");
-      input.placeholder = isMobile ? mobileText : desktopText;
+      const placeholderText = isMobile ? mobileText : desktopText;
+      input.dataset.placeholder = placeholderText;
+      (input as RichNoteEditorElement).placeholder = placeholderText;
+      input.setAttribute?.("data-placeholder", placeholderText);
     });
   }
 
   function getActiveInput() {
     const overlay = elements.overlay;
     if (!overlay) return null;
-    return overlay.querySelector(".historyEntrySummaryNoteInput.isEditing") as HTMLTextAreaElement | null;
+    return (overlay.querySelector(".historyEntrySummaryNoteInput.isActiveEditing")
+      || overlay.querySelector(".historyEntrySummaryNoteInput.isEditing")) as HTMLElement | null;
+  }
+
+  function getEditedInputs() {
+    const overlay = elements.overlay;
+    if (!overlay) return [];
+    const editedInputs = Array.from(overlay.querySelectorAll<HTMLElement>(".historyEntrySummaryNoteInput.isEditing"));
+    if (editedInputs.length) return editedInputs;
+    const activeInput = getActiveInput();
+    return activeInput?.classList.contains("isEditing") ? [activeInput] : [];
   }
 
   function getActiveInputValue() {
-    return String(getActiveInput()?.value ?? elements.input?.value ?? "");
+    return getRichNoteEditorValue(getActiveInput() || elements.input);
+  }
+
+  function readDraftIdentity(input: HTMLElement) {
+    const source = input.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null;
+    const taskId = String(input.dataset.historySummaryTaskId || source?.getAttribute("data-history-summary-task-id") || "").trim();
+    const ts = normalizeTimestamp(input.dataset.historySummaryTs || source?.getAttribute("data-history-summary-ts"));
+    const ms = normalizeElapsedMs(input.dataset.historySummaryMs || source?.getAttribute("data-history-summary-ms"));
+    const name = normalizeName(input.dataset.historySummaryName || source?.getAttribute("data-history-summary-name"));
+    if (!taskId || ts <= 0 || !name) return null;
+    return { taskId, ts, ms, name };
+  }
+
+  function getEditedNoteDrafts(): HistoryEntrySummaryNoteDraft[] {
+    return getEditedInputs()
+      .map((input) => {
+        const identity = readDraftIdentity(input);
+        if (!identity) return null;
+        return {
+          ...identity,
+          note: getRichNoteEditorValue(input).trim(),
+        };
+      })
+      .filter((draft): draft is HistoryEntrySummaryNoteDraft => !!draft);
   }
 
   function collapseActiveInlineNoteInput() {
     const input = getActiveInput();
     if (!input) return false;
     input.classList.add("isCollapsed");
+    input.classList.remove("isActiveEditing");
     input.style.height = `${INLINE_NOTE_COMPACT_HEIGHT_PX}px`;
     input.style.overflowY = "hidden";
     return true;
@@ -175,7 +231,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     if (!overlay || !saveAndCloseBtn) return;
     const shouldShowSaveAndClose = overlay.dataset.historyEntryOwner === "inline"
       && overlay.dataset.historyEntryEditing === "true"
-      && !!getActiveInputValue().trim();
+      && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
     saveAndCloseBtn.style.display = shouldShowSaveAndClose ? "" : "none";
   }
 
@@ -228,7 +284,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     overlay.dataset.historyEntryName = editable ? name : "";
     overlay.dataset.historyEntryNote = editable ? note : "";
     overlay.dataset.historyEntryEditing = "false";
-    if (elements.input) elements.input.value = editable ? note : "";
+    if (elements.input) setRichNoteEditorValue(elements.input, editable ? note : "");
     syncEditorUi(false);
   }
 
@@ -269,7 +325,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       overlay.dataset.historyEntryNote = "";
       overlay.dataset.historyEntryEditing = "false";
     }
-    if (elements.input) elements.input.value = "";
+    if (elements.input) setRichNoteEditorValue(elements.input, "");
     syncEditorUi(false);
   }
 
@@ -280,7 +336,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
   function beginEdit(trigger: HTMLElement | null) {
     const overlay = elements.overlay;
     if (!overlay || overlay.dataset.historyEntryOwner !== options.owner) return false;
-    if (!trigger || overlay.dataset.historyEntryEditing === "true") return false;
+    if (!trigger) return false;
 
     const taskId = String(trigger.getAttribute("data-history-summary-task-id") || "").trim();
     const ts = normalizeTimestamp(trigger.getAttribute("data-history-summary-ts"));
@@ -298,14 +354,26 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     overlay.dataset.historyEntryMs = String(ms);
     overlay.dataset.historyEntryName = name;
     overlay.dataset.historyEntryNote = note;
-    if (elements.input) elements.input.value = note;
+    if (elements.input) setRichNoteEditorValue(elements.input, note);
 
-    const input = trigger.querySelector("[data-history-summary-note-input]") as HTMLTextAreaElement | null;
+    const input = trigger.querySelector("[data-history-summary-note-input]") as HTMLElement | null;
+    const activeInput = getActiveInput();
+    if (activeInput && activeInput !== input) collapseActiveInlineNoteInput();
     if (input) {
-      input.readOnly = false;
+      if (!input.classList.contains("isEditing")) {
+        setRichNoteEditorValue(input, note);
+      }
+      input.setAttribute?.("contenteditable", "true");
+      (input as RichNoteEditorElement).contentEditable = "true";
+      (input as RichNoteEditorElement).readOnly = false;
       input.classList.add("isEditing");
+      input.classList.add("isActiveEditing");
       input.classList.remove("isCollapsed");
-      input.value = note;
+      input.dataset.historySummaryTaskId = taskId;
+      input.dataset.historySummaryTs = String(ts);
+      input.dataset.historySummaryMs = String(ms);
+      input.dataset.historySummaryName = name;
+      input.dataset.historySummarySavedNote = note;
       autosizeInlineNoteInput(input);
     }
     syncEditorUi(true);
@@ -316,15 +384,22 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
   function cancelEdit() {
     const overlay = elements.overlay;
     if (!overlay || overlay.dataset.historyEntryOwner !== options.owner) return;
-    if (elements.input) elements.input.value = String(overlay.dataset.historyEntryNote || "");
-    const activeInput = getActiveInput();
-    if (activeInput) {
-      activeInput.value = String(overlay.dataset.historyEntryNote || "");
-      activeInput.readOnly = true;
-      activeInput.classList.remove("isEditing");
-      activeInput.classList.remove("isCollapsed");
-      resetInlineNoteAutosize(activeInput);
-    }
+    if (elements.input) setRichNoteEditorValue(elements.input, String(overlay.dataset.historyEntryNote || ""));
+    getEditedInputs().forEach((input) => {
+      setRichNoteEditorValue(input, String(input.dataset.historySummarySavedNote || ""));
+      input.setAttribute?.("contenteditable", "false");
+      (input as RichNoteEditorElement).contentEditable = "false";
+      (input as RichNoteEditorElement).readOnly = true;
+      input.classList.remove("isEditing");
+      input.classList.remove("isActiveEditing");
+      input.classList.remove("isCollapsed");
+      delete input.dataset.historySummaryTaskId;
+      delete input.dataset.historySummaryTs;
+      delete input.dataset.historySummaryMs;
+      delete input.dataset.historySummaryName;
+      delete input.dataset.historySummarySavedNote;
+      resetInlineNoteAutosize(input);
+    });
     syncEditorUi(false);
   }
 
@@ -337,7 +412,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
   function syncInputMirror(value: string) {
     const nextValue = String(value || "");
-    if (elements.input) elements.input.value = nextValue;
+    if (elements.input) setRichNoteEditorValue(elements.input, nextValue);
     autosizeInlineNoteInput(getActiveInput());
     syncCloseLabel();
   }
@@ -379,6 +454,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     cancelEdit,
     discardDraft,
     getActiveInputValue,
+    getEditedNoteDrafts,
     collapseActiveInlineNoteInput,
     expandActiveInlineNoteInput,
     syncInputMirror,

@@ -1,3 +1,4 @@
+import AppImg from "@/components/AppImg";
 
 export default function TimeGoalCompleteNoteOverlay() {
   return (
@@ -8,11 +9,35 @@ export default function TimeGoalCompleteNoteOverlay() {
           Add a note for this saved session before the timer resets.
         </p>
         <div className="timeGoalCompleteNoteBody">
-          <textarea
-            className="text focusSessionNotesInput"
+          <div
+            className="richNoteToolbar"
+            role="toolbar"
+            aria-label="Session note formatting"
+            data-rich-note-toolbar="true"
+            data-rich-note-for="timeGoalCompleteNoteInput"
+          >
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bold" aria-label="Bold" data-rich-note-command="bold" aria-pressed="false">B</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Italic" aria-label="Italic" data-rich-note-command="italic" aria-pressed="false">I</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Underline" aria-label="Underline" data-rich-note-command="underline" aria-pressed="false">U</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bulleted list" aria-label="Bulleted list" data-rich-note-command="insertUnorderedList" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/list.png" alt="" aria-hidden="true" />
+            </button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Numbered list" aria-label="Numbered list" data-rich-note-command="insertOrderedList" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/numbered_list.png" alt="" aria-hidden="true" />
+            </button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Add link" aria-label="Add link" data-rich-note-command="createLink" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/link.png" alt="" aria-hidden="true" />
+            </button>
+          </div>
+          <div
+            className="text focusSessionNotesInput richNoteEditor"
             id="timeGoalCompleteNoteInput"
-            rows={3}
+            role="textbox"
+            aria-multiline="true"
             aria-label="Notes for this session"
+            contentEditable
+            suppressContentEditableWarning
+            data-rich-note-editor="true"
           />
         </div>
         <div className="footerBtns">

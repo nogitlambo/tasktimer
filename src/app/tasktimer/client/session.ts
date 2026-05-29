@@ -23,7 +23,7 @@ import { buildTaskProgressModel } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -35,6 +35,15 @@ import {
 import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createClickAudioPlayer } from "./click-audio-player";
+import {
+  getRichNoteEditorValue,
+  handleRichNoteToolbarStateEvent,
+  handleRichNotePaste,
+  handleRichNoteToolbarClick,
+  richNoteHasMeaningfulText,
+  setRichNoteEditorValue,
+  syncRichNoteToolbarStates,
+} from "./rich-session-notes";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -341,7 +350,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     setFocusDndSetupVisible(false);
   }
 
-  function getFocusSessionNotesMinHeight(input: HTMLTextAreaElement) {
+  function getFocusSessionNotesMinHeight(input: HTMLElement) {
     const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
     const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
     const computedMinHeight = windowRef?.getComputedStyle
@@ -352,7 +361,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       : FOCUS_SESSION_NOTES_DEFAULT_HEIGHT_PX;
   }
 
-  function getFocusSessionNotesMaxHeight(input: HTMLTextAreaElement, minHeight: number) {
+  function getFocusSessionNotesMaxHeight(input: HTMLElement, minHeight: number) {
     const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
     const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
     const viewportHeight = Math.max(
@@ -373,7 +382,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function autosizeFocusSessionNotesInput() {
-    const input = els.focusSessionNotesInput as HTMLTextAreaElement | null;
+    const input = els.focusSessionNotesInput as HTMLElement | null;
     if (!input) return;
     input.style.height = "auto";
     const minHeight = getFocusSessionNotesMinHeight(input);
@@ -391,10 +400,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       getActiveTaskId: () => ctx.getFocusModeTaskId(),
       getPendingSaveTimer: () => ctx.getFocusSessionNoteSaveTimer(),
       setPendingSaveTimer: (next) => ctx.setFocusSessionNoteSaveTimer(next),
-      getInputValue: () => String(els.focusSessionNotesInput?.value || ""),
+      getInputValue: () => getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
       setInputValue: (next) => {
         if (els.focusSessionNotesInput) {
-          els.focusSessionNotesInput.value = next;
+          setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, next);
           autosizeFocusSessionNotesInput();
         }
       },
@@ -436,7 +445,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return;
     }
     const nextValue = getPreferredFocusSessionNote(normalizedTaskId);
-    if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = nextValue;
+    if (els.focusSessionNotesInput) setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, nextValue);
     autosizeFocusSessionNotesInput();
     clearFocusSessionNotesSavedStatus();
   }
@@ -461,7 +470,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const activeTaskId = String(ctx.getFocusModeTaskId() || "").trim();
     const targetTaskId = String(taskId || activeTaskId).trim();
     if (!activeTaskId || !targetTaskId || activeTaskId !== targetTaskId) return;
-    if (!String(els.focusSessionNotesInput?.value || "").trim()) {
+    if (!richNoteHasMeaningfulText(getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null))) {
       clearFocusSessionNotesSavedStatus();
       return;
     }
@@ -747,14 +756,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const awardPreview = opts?.awardPreview || getTimeGoalCompletionAwardPreview(task, elapsedMs);
     const awardedXp = awardPreview.awardedXp;
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = `You got ${awardedXp} XP!`;
+      els.timeGoalCompleteText.textContent = formatTimeGoalAwardText(awardedXp > 0 ? 0 : awardedXp);
     }
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";
       els.timeGoalCompleteMeta.hidden = true;
     }
     if (els.timeGoalCompleteNoteInput) {
-      els.timeGoalCompleteNoteInput.value = captureSessionNoteSnapshot(taskId);
+      setRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null, captureSessionNoteSnapshot(taskId));
     }
     syncTimeGoalCompleteLaunchNextButton();
     persistPendingTimeGoalFlow(task, "main", opts);
@@ -763,6 +772,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
     startTimeGoalCompleteConfetti();
     startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
+      awardedXp,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
       onStart: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
@@ -854,7 +864,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return true;
     }
     if (taskId && els.timeGoalCompleteNoteInput) {
-      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
+      setFocusSessionDraft(taskId, getRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null));
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
@@ -897,7 +907,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const safeElapsedMs = getTimeGoalCompletionElapsedMs(task, elapsedMs);
     const awardPreview = getTimeGoalCompletionAwardPreview(task, safeElapsedMs);
     if (taskId && els.timeGoalCompleteNoteInput) {
-      setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput.value || ""));
+      setFocusSessionDraft(taskId, getRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null));
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
@@ -1437,7 +1447,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const closingFocusTaskId = String(ctx.getFocusModeTaskId() || "").trim();
     flushPendingFocusSessionNoteSave(closingFocusTaskId);
     if (closingFocusTaskId && els.focusSessionNotesInput) {
-      setFocusSessionDraft(closingFocusTaskId, String(els.focusSessionNotesInput.value || ""));
+      setFocusSessionDraft(closingFocusTaskId, getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null));
     }
     if (opts?.animate && closingFocusTaskId) {
       runFocusCloseTransition(closingFocusTaskId, () => finishCloseFocusMode(closingFocusTaskId));
@@ -1994,6 +2004,27 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function registerSessionEvents() {
+    ctx.on(document, "click", (event: Event) => {
+      handleRichNoteToolbarClick(event);
+    });
+    ctx.on(document, "focusin", (event: Event) => {
+      handleRichNoteToolbarStateEvent(event);
+    });
+    ctx.on(document, "input", (event: Event) => {
+      handleRichNoteToolbarStateEvent(event);
+    });
+    ctx.on(document, "keyup", (event: Event) => {
+      handleRichNoteToolbarStateEvent(event);
+    });
+    ctx.on(document, "mouseup", (event: Event) => {
+      handleRichNoteToolbarStateEvent(event);
+    });
+    ctx.on(document, "selectionchange", () => {
+      syncRichNoteToolbarStates(document);
+    });
+    ctx.on(document, "paste", (event: Event) => {
+      handleRichNotePaste(event as ClipboardEvent);
+    });
     ctx.on(els.focusModeBackBtn, "click", () => {
       focusModeExitClickPlayer.play();
       closeFocusMode({ animate: true });
@@ -2039,7 +2070,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (!ctx.getFocusModeTaskId()) return;
       autosizeFocusSessionNotesInput();
       clearFocusSessionNotesSavedStatus();
-      scheduleFocusSessionNoteSave(String(ctx.getFocusModeTaskId() || ""), String(els.focusSessionNotesInput?.value || ""));
+      scheduleFocusSessionNoteSave(String(ctx.getFocusModeTaskId() || ""), getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null));
     });
     ctx.on(els.focusSessionNotesSection, "focusout", (event: Event) => {
       const container = els.focusSessionNotesSection as HTMLElement | null;
@@ -2084,7 +2115,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     ctx.on(els.timeGoalCompleteNoteInput, "input", () => {
       const taskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
-      if (taskId) setFocusSessionDraft(taskId, String(els.timeGoalCompleteNoteInput?.value || ""));
+      if (taskId) setFocusSessionDraft(taskId, getRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null));
     });
     if (typeof window !== "undefined") {
       ctx.on(window, "resize", () => autosizeFocusSessionNotesInput());

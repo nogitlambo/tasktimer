@@ -43,13 +43,30 @@ function createStyleStub() {
   const values = new Map<string, string>();
   return {
     values,
+    display: "",
     setProperty: (name: string, value: string) => {
       values.set(name, value);
     },
   };
 }
 
-function createFocusElementStub(options: { clientWidth?: number; clientHeight?: number } = {}) {
+type FocusElementStub = ReturnType<typeof createClassList> extends infer ClassList
+  ? {
+      classList: ClassList;
+      style: ReturnType<typeof createStyleStub>;
+      dataset: Record<string, string>;
+      textContent: string;
+      innerHTML: string;
+      offsetWidth: number;
+      clientWidth: number;
+      clientHeight: number;
+      setAttribute: ReturnType<typeof vi.fn>;
+      closest: ReturnType<typeof vi.fn>;
+      querySelector: ReturnType<typeof vi.fn>;
+    }
+  : never;
+
+function createFocusElementStub(options: { clientWidth?: number; clientHeight?: number } = {}): FocusElementStub {
   return {
     classList: createClassList(),
     style: createStyleStub(),

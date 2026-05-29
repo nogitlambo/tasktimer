@@ -533,8 +533,12 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:has(.historyInline){
   --task-inline-history-chart-height: 293px;
-  --task-history-drawer-space: calc(var(--task-inline-history-chart-height) + 178px);
+  --task-history-drawer-space: calc(var(--task-inline-history-chart-height) + 172px);
   padding-bottom: var(--task-history-drawer-space) !important;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyRangeRow{
+  margin-top: 6px;
 }
 
 @media (max-width: 640px){

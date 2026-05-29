@@ -118,6 +118,7 @@ import {
 } from "./client/runtime-coordinator";
 import { createTaskTimerRuntimeFacade } from "./client/runtime-facade";
 import { createTaskTimerRuntimeComposition } from "./client/runtime-composition";
+import { getRichNoteEditorValue, setRichNoteEditorValue } from "./client/rich-session-notes";
 import { normalizeInteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { Capacitor } from "@capacitor/core";
 
@@ -1475,9 +1476,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setPendingTaskJumpMemory: (value) => {
         cacheRuntimeState.set("pendingTaskJumpMemory", value);
       },
-      getFocusSessionNotesInputValue: () => String(els.focusSessionNotesInput?.value || ""),
+      getFocusSessionNotesInputValue: () => getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
       setFocusSessionNotesInputValue: (value) => {
-        if (els.focusSessionNotesInput) els.focusSessionNotesInput.value = value;
+        setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, value);
       },
       setFocusSessionNotesSectionOpen: () => {
         if (els.focusSessionNotesSection) {
