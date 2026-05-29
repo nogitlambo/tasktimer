@@ -329,6 +329,7 @@ type CreateTasksOptionsArgs = {
   clearRewardSessionTracker: Parameters<typeof createTaskTimerTasks>[0]["clearRewardSessionTracker"];
   upsertLiveSession: Parameters<typeof createTaskTimerTasks>[0]["upsertLiveSession"];
   finalizeLiveSession: Parameters<typeof createTaskTimerTasks>[0]["finalizeLiveSession"];
+  applyPendingTimeGoalXpForTask: Parameters<typeof createTaskTimerTasks>[0]["applyPendingTimeGoalXpForTask"];
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;
@@ -1242,6 +1243,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     clearRewardSessionTracker: args.clearRewardSessionTracker,
     upsertLiveSession: args.upsertLiveSession,
     finalizeLiveSession: args.finalizeLiveSession,
+    applyPendingTimeGoalXpForTask: args.applyPendingTimeGoalXpForTask,
     openFocusMode: args.openFocusMode,
     closeFocusMode: args.closeFocusMode,
     canLogSession: args.canLogSession,

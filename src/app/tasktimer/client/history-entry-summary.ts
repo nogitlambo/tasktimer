@@ -33,6 +33,7 @@ type HistoryEntrySummaryItem = {
   hasNote: boolean;
   xpEarned: number | null;
   xpText: string;
+  xpPending: boolean;
 };
 
 type HistoryEntrySummaryAggregate = {
@@ -42,6 +43,7 @@ type HistoryEntrySummaryAggregate = {
   timeGoalText: string;
   xpEarned: number | null;
   xpText: string;
+  xpPending: boolean;
 };
 
 type HistoryEntrySummaryPayload = {
@@ -74,6 +76,11 @@ function normalizeElapsedMs(raw: unknown) {
 function formatXpText(xpEarned: number | null) {
   if (typeof xpEarned !== "number") return NOT_TRACKED_TEXT;
   return String(Math.max(0, Math.floor(xpEarned)));
+}
+
+function formatSummaryXpText(xpEarned: number | null, xpPending: boolean) {
+  if (xpPending) return "Pending";
+  return formatXpText(xpEarned);
 }
 
 function formatOrdinalDay(day: number) {
@@ -185,6 +192,16 @@ function deriveXpEarned(entry: HistoryEntrySummarySource, taskId: string, reward
   return totalXp > 0 ? totalXp : 0;
 }
 
+function deriveXpPending(entry: HistoryEntrySummarySource, taskId: string, rewardProgress?: RewardProgressV1 | null) {
+  const normalizedTaskId = String(taskId || "").trim();
+  const awardedAt = normalizeTimestamp(entry?.ts);
+  if (!normalizedTaskId || awardedAt <= 0) return false;
+  const pendingByTaskId = rewardProgress?.pendingTimeGoalXp?.byTaskId;
+  const pending = pendingByTaskId && typeof pendingByTaskId === "object" ? pendingByTaskId[normalizedTaskId] : null;
+  const entries = Array.isArray(pending?.entries) ? pending.entries : [];
+  return entries.some((award) => normalizeTimestamp(award?.ts) === awardedAt && String(award?.taskId || "").trim() === normalizedTaskId);
+}
+
 function formatHistoryEntrySummaryElapsed(msRaw: unknown, formatTwo: (value: number) => string) {
   const totalSeconds = Math.max(0, Math.floor(Math.max(0, Number(msRaw) || 0) / 1000));
   const days = Math.floor(totalSeconds / 86400);
@@ -221,6 +238,7 @@ function buildHistoryEntrySummaryItem(
   const hasNote = richNoteHasMeaningfulText(noteText);
   const timeGoalCompleted = deriveTimeGoalCompleted(entry, task);
   const xpEarned = deriveXpEarned(entry, taskId, rewardProgress);
+  const xpPending = deriveXpPending(entry, taskId, rewardProgress);
   return {
     taskId,
     name,
@@ -236,7 +254,8 @@ function buildHistoryEntrySummaryItem(
     noteText: hasNote ? noteText : NO_SESSION_NOTE_TEXT,
     hasNote,
     xpEarned,
-    xpText: formatXpText(xpEarned),
+    xpPending,
+    xpText: formatSummaryXpText(xpEarned, xpPending),
   };
 }
 
@@ -259,6 +278,7 @@ function buildAggregateSummary(
       ? "No"
       : NOT_TRACKED_TEXT;
   const canSumXp = sortedByTime.every((session) => typeof session.xpEarned === "number");
+  const xpPending = sortedByTime.some((session) => session.xpPending);
   const totalXp = canSumXp
     ? sortedByTime.reduce((sum, session) => sum + Number(session.xpEarned || 0), 0)
     : null;
@@ -275,7 +295,8 @@ function buildAggregateSummary(
     totalElapsedText: formatHistoryEntrySummaryElapsed(totalElapsedMs, formatTwo),
     timeGoalText,
     xpEarned: totalXp,
-    xpText: formatXpText(totalXp),
+    xpPending,
+    xpText: formatSummaryXpText(totalXp, xpPending),
   };
 }
 
@@ -314,10 +335,11 @@ export function renderHistoryEntrySummaryHtml(
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
     </div>`;
   const renderXpField = (label: string, value: string) => {
+    const valueClass = value === "Pending" ? "historyEntrySummaryValue" : "historyEntrySummaryValue historyEntrySummaryXpRibbonValue";
     return `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
-        <div class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
+        <div class="${valueClass}" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
       </div>
     </div>`;
   };

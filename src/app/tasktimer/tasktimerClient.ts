@@ -781,6 +781,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       clearRewardSessionTracker: (taskIdRaw) => rewardSessionBridge.clearRewardSessionTracker(taskIdRaw),
       upsertLiveSession: (task, opts) => rewardSessionBridge.upsertLiveSession(task, opts),
       finalizeLiveSession: (task, opts) => rewardSessionBridge.finalizeLiveSession(task, opts),
+      applyPendingTimeGoalXpForTask: (taskIdRaw) => rewardSessionBridge.applyPendingTimeGoalXpForTask(taskIdRaw),
       openFocusMode: (index, opts) => sessionApi?.openFocusMode(index, opts),
       closeFocusMode: () => sessionApi?.closeFocusMode(),
       canLogSession: (task) => rewardSessionBridge.canLogSession(task),

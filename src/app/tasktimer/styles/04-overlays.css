@@ -5459,7 +5459,11 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying.isCounting #timeGoalCompleteText{
+  animation-name: timeGoalXpSplashTextHold;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting:not(.isPlaying) #timeGoalCompleteText{
   animation: none;
   opacity: 1;
   transform: scale(1.28);
@@ -5517,6 +5521,28 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     opacity: 1;
     transform: scale(1);
     filter: none;
+  }
+}
+
+@keyframes timeGoalXpSplashTextHold{
+  0%{
+    opacity: 0;
+    transform: scale(.18);
+    filter: blur(8px) brightness(1.15);
+  }34%{
+    opacity: 1;
+    transform: scale(1.82);
+    filter: blur(0) brightness(1.75);
+  }45%{
+    transform: scale(1.28);
+    filter: brightness(1.38);
+  }62%{
+    transform: scale(1.06);
+    filter: brightness(1.1);
+  }100%{
+    opacity: 1;
+    transform: scale(1.28);
+    filter: brightness(1.38);
   }
 }
 

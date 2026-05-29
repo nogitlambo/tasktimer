@@ -128,6 +128,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     clearRewardSessionTracker: ctx.clearRewardSessionTracker,
     upsertLiveSession: ctx.upsertLiveSession,
     finalizeLiveSession: ctx.finalizeLiveSession,
+    applyPendingTimeGoalXpForTask: ctx.applyPendingTimeGoalXpForTask,
     getElapsedMs: ctx.getElapsedMs,
     getTaskElapsedMs: ctx.getTaskElapsedMs,
     clearCheckpointBaseline: ctx.clearCheckpointBaseline,

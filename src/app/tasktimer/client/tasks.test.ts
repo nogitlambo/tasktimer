@@ -162,6 +162,7 @@ function createHarness() {
     clearRewardSessionTracker: vi.fn(),
     upsertLiveSession: vi.fn(),
     finalizeLiveSession: vi.fn(),
+    applyPendingTimeGoalXpForTask: vi.fn(),
     clearCheckpointBaseline: vi.fn(),
     resetCheckpointAlertTracking: vi.fn(),
     setCheckpointAutoResetDirty: vi.fn(),

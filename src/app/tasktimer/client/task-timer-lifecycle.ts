@@ -39,8 +39,9 @@ type TaskTimerLifecycleCommandAdapters = {
   upsertLiveSession: (task: Task, opts: { elapsedMs: number; resumedFromMs?: number; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts: { elapsedMs: number; note?: string; completionDifficulty?: CompletionDifficulty }
+    opts: { elapsedMs: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) => void;
+  applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   getElapsedMs: (task: Task) => number;
   getTaskElapsedMs: (task: Task) => number;
   clearCheckpointBaseline: (taskId: string) => void;
@@ -115,11 +116,17 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.flushPendingFocusSessionNoteSave(taskId);
     options.closeRewardSessionSegment(task, stopMs);
     task.accumulatedMs = options.getElapsedMs(task);
-    if (!isTaskTimeGoalCompletedToday(task, stopMs) && hasTaskReachedDailyTimeGoal(task, task.accumulatedMs)) {
+    const shouldCompleteGoalOnStop = !isTaskTimeGoalCompletedToday(task, stopMs) && hasTaskReachedDailyTimeGoal(task, task.accumulatedMs);
+    if (shouldCompleteGoalOnStop) {
       const goalElapsedMs = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) * 60_000));
       markTaskTimeGoalCompleted(task, stopMs, { reason: "goal", elapsedMs: goalElapsedMs });
     }
-    options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs });
+    const shouldDeferTimeGoalXp =
+      !!task.timeGoalEnabled &&
+      Number(task.timeGoalMinutes || 0) > 0 &&
+      !shouldCompleteGoalOnStop &&
+      !isTaskTimeGoalCompletedToday(task, stopMs);
+    options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs, deferTimeGoalXp: shouldDeferTimeGoalXp });
     task.running = false;
     task.startMs = null;
     task.resumePendingSinceDayKey = task.accumulatedMs > 0 ? localDayKey(stopMs) : null;
@@ -147,6 +154,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     const elapsedMs = options.getTaskElapsedMs(task);
     const shouldFinalizeHistory = opts?.logHistory !== false && !task.resumePendingSinceDayKey;
     let finalizeError: unknown = null;
+    options.applyPendingTimeGoalXpForTask(taskId);
     if (shouldFinalizeHistory) {
       try {
         options.finalizeLiveSession(task, {

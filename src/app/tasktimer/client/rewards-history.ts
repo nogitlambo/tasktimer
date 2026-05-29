@@ -1,5 +1,5 @@
-import type { RewardSessionSegment } from "../lib/rewards";
-import { awardCompletedSessionXp } from "../lib/rewards";
+import type { RewardAwardResult, RewardProgressV1, RewardSessionSegment } from "../lib/rewards";
+import { addPendingTimeGoalXpAward, applyPendingTimeGoalXpAward, awardCompletedSessionXp, hasPendingTimeGoalXp } from "../lib/rewards";
 import { computeMomentumSnapshot } from "../lib/momentum";
 import { localDayKey } from "../lib/history";
 import { nowMs } from "../lib/time";
@@ -512,7 +512,8 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     completedAtMs: number,
     elapsedMs: number,
     noteOverride?: string,
-    completionDifficultyRaw?: CompletionDifficulty
+    completionDifficultyRaw?: CompletionDifficulty,
+    opts?: { deferTimeGoalXp?: boolean }
   ) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!task || !task.id || safeElapsedMs <= 0) return;
@@ -552,20 +553,20 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, awardElapsedMs),
       completedSessionsDelta: historyResult.isNewEntry ? 1 : 0,
     });
-    ctx.setRewardProgress(nextAward.next);
+    const rewardProgress = opts?.deferTimeGoalXp === true
+      ? addPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId, nextAward, completedAtMs)
+      : nextAward.next;
+    ctx.setRewardProgress(rewardProgress);
     const promotion =
-      typeof window !== "undefined"
-        ? getRankPromotion(nextAward.previous.currentRankId, nextAward.next.currentRankId)
-        : null;
+      opts?.deferTimeGoalXp === true
+        ? null
+        : typeof window !== "undefined"
+          ? getRankPromotion(nextAward.previous.currentRankId, nextAward.next.currentRankId)
+          : null;
     clearRewardSessionTracker(taskId);
-    const nextPrefs = {
-      ...(ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences()),
-      rewards: nextAward.next,
-    };
-    ctx.setCloudPreferencesCache(nextPrefs);
-    ctx.saveCloudPreferences(nextPrefs);
+    persistRewardProgress(rewardProgress);
     const authUid = ctx.currentUid();
-    if (authUid) {
+    if (authUid && opts?.deferTimeGoalXp !== true) {
       void ctx
         .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
         .catch(() => {});
@@ -573,9 +574,40 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     if (promotion && typeof window !== "undefined") dispatchRankPromotionEvent(window, promotion);
   }
 
+  function persistRewardProgress(rewardProgress: RewardProgressV1) {
+    const nextPrefs = {
+      ...(ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences()),
+      rewards: rewardProgress,
+    };
+    ctx.setCloudPreferencesCache(nextPrefs);
+    ctx.saveCloudPreferences(nextPrefs);
+  }
+
+  function applyPendingTimeGoalXpForTask(taskIdRaw: string | null | undefined): RewardAwardResult {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!hasPendingTimeGoalXp(ctx.getRewardProgress(), taskId)) {
+      return applyPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId);
+    }
+    const nextAward = applyPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId);
+    ctx.setRewardProgress(nextAward.next);
+    persistRewardProgress(nextAward.next);
+    const authUid = ctx.currentUid();
+    if (authUid) {
+      void ctx
+        .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
+        .catch(() => {});
+    }
+    const promotion =
+      typeof window !== "undefined"
+        ? getRankPromotion(nextAward.previous.currentRankId, nextAward.next.currentRankId)
+        : null;
+    if (promotion && typeof window !== "undefined") dispatchRankPromotionEvent(window, promotion);
+    return nextAward;
+  }
+
   function finalizeLiveSession(
     task: Task,
-    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }
+    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
@@ -585,7 +617,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       Math.floor(Number(opts?.elapsedMs ?? liveSession?.elapsedMs ?? ctx.getTaskElapsedMs(task)) || 0)
     );
     if (elapsedMs > 0) {
-      appendCompletedSessionHistory(task, nowMs(), elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty);
+      appendCompletedSessionHistory(task, nowMs(), elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty, {
+        deferTimeGoalXp: opts?.deferTimeGoalXp === true,
+      });
     }
     clearRewardSessionTracker(taskId);
     const next = { ...(ctx.getLiveSessionsByTaskId() || {}) };
@@ -620,5 +654,6 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     getCurrentSessionNoteForTask,
     appendCompletedSessionHistory,
     finalizeLiveSession,
+    applyPendingTimeGoalXpForTask,
   };
 }

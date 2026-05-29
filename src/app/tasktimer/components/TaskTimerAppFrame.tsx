@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
+import {
+  getResetMobileSwipeCloseState,
+  getStartMobileSwipeCloseState,
+  shouldCloseFromMobileSwipe,
+  type MobileSwipeCloseState,
+} from "./mobileSwipeClose";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
@@ -193,19 +199,7 @@ export default function TaskTimerAppFrame({
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
-  const mobileMenuSwipeCloseRef = useRef<{
-    active: boolean;
-    pointerId: number | null;
-    startX: number;
-    startY: number;
-    consumed: boolean;
-  }>({
-    active: false,
-    pointerId: null,
-    startX: 0,
-    startY: 0,
-    consumed: false,
-  });
+  const mobileMenuSwipeCloseRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
   const railPage = activePage === "schedule" ? "tasks" : activePage;
   const searchParamsKey = searchParams.toString();
   const currentRankIndex = useMemo(
@@ -301,13 +295,7 @@ export default function TaskTimerAppFrame({
   }, []);
 
   const resetMobileMenuSwipeClose = useCallback(() => {
-    mobileMenuSwipeCloseRef.current = {
-      active: false,
-      pointerId: null,
-      startX: 0,
-      startY: 0,
-      consumed: false,
-    };
+    mobileMenuSwipeCloseRef.current = getResetMobileSwipeCloseState();
   }, []);
 
   const closeMobileMenuWithFlipAudio = useCallback(() => {
@@ -327,13 +315,7 @@ export default function TaskTimerAppFrame({
     const isInTopZone = event.clientY - panelRect.top <= MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX;
     if (!isInTopZone) return;
 
-    mobileMenuSwipeCloseRef.current = {
-      active: true,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      consumed: false,
-    };
+    mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -346,9 +328,7 @@ export default function TaskTimerAppFrame({
     const swipeClose = mobileMenuSwipeCloseRef.current;
     if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
 
-    const dx = event.clientX - swipeClose.startX;
-    const dy = event.clientY - swipeClose.startY;
-    if (dy <= 0 || dy < MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX || dy <= Math.abs(dx)) return;
+    if (!shouldCloseFromMobileSwipe(swipeClose, event.pointerId, event.clientX, event.clientY, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) return;
 
     event.preventDefault();
     mobileMenuSwipeCloseRef.current.consumed = true;
@@ -357,6 +337,37 @@ export default function TaskTimerAppFrame({
 
   const handleMobileMenuPanelPointerEnd = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (mobileMenuSwipeCloseRef.current.pointerId === event.pointerId) resetMobileMenuSwipeClose();
+  }, [resetMobileMenuSwipeClose]);
+
+  const handleMobileMenuPanelTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    resetMobileMenuSwipeClose();
+    if (event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const panelRect = event.currentTarget.getBoundingClientRect();
+    const isInTopZone = touch.clientY - panelRect.top <= MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX;
+    if (!isInTopZone) return;
+
+    mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(touch.identifier, touch.clientX, touch.clientY);
+  }, [resetMobileMenuSwipeClose]);
+
+  const handleMobileMenuPanelTouchMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    const swipeClose = mobileMenuSwipeCloseRef.current;
+    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId == null) return;
+
+    const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeClose.pointerId);
+    if (!touch) return;
+    if (!shouldCloseFromMobileSwipe(swipeClose, touch.identifier, touch.clientX, touch.clientY, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) return;
+
+    event.preventDefault();
+    mobileMenuSwipeCloseRef.current.consumed = true;
+    closeMobileMenuWithFlipAudio();
+  }, [closeMobileMenuWithFlipAudio]);
+
+  const handleMobileMenuPanelTouchEnd = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    const swipeClose = mobileMenuSwipeCloseRef.current;
+    if (swipeClose.pointerId == null) return;
+    if (Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) resetMobileMenuSwipeClose();
   }, [resetMobileMenuSwipeClose]);
 
   return (
@@ -462,6 +473,10 @@ export default function TaskTimerAppFrame({
           onPointerMove={handleMobileMenuPanelPointerMove}
           onPointerUp={handleMobileMenuPanelPointerEnd}
           onPointerCancel={handleMobileMenuPanelPointerEnd}
+          onTouchStart={handleMobileMenuPanelTouchStart}
+          onTouchMove={handleMobileMenuPanelTouchMove}
+          onTouchEnd={handleMobileMenuPanelTouchEnd}
+          onTouchCancel={handleMobileMenuPanelTouchEnd}
         >
           <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
           <div className="taskLaunchMobileMenuHeader" aria-label="TaskLaunch">

@@ -1,5 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type TouchEvent as ReactTouchEvent } from "react";
 import RankThumbnail from "./RankThumbnail";
+import {
+  getResetMobileSwipeCloseState,
+  getStartMobileSwipeCloseState,
+  shouldCloseFromMobileSwipe,
+  type MobileSwipeCloseState,
+} from "./mobileSwipeClose";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
 
@@ -43,19 +49,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const currentRankItemRef = useRef<HTMLElement | null>(null);
-  const swipeCloseRef = useRef<{
-    active: boolean;
-    pointerId: number | null;
-    startX: number;
-    startY: number;
-    consumed: boolean;
-  }>({
-    active: false,
-    pointerId: null,
-    startX: 0,
-    startY: 0,
-    consumed: false,
-  });
+  const swipeCloseRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
   const setCurrentRankButtonRef = (node: HTMLButtonElement | null) => {
     currentRankItemRef.current = node;
   };
@@ -91,13 +85,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   }, [currentRankId, isMobileLayout, open]);
 
   const resetSwipeClose = () => {
-    swipeCloseRef.current = {
-      active: false,
-      pointerId: null,
-      startX: 0,
-      startY: 0,
-      consumed: false,
-    };
+    swipeCloseRef.current = getResetMobileSwipeCloseState();
   };
 
   const closeMobilePanel = () => {
@@ -113,13 +101,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     const isInTopZone = event.clientY - modalRect.top <= MOBILE_SWIPE_CLOSE_START_ZONE_PX;
     if (!isInTopZone) return;
 
-    swipeCloseRef.current = {
-      active: true,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      consumed: false,
-    };
+    swipeCloseRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -132,9 +114,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     const swipeClose = swipeCloseRef.current;
     if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
 
-    const dx = event.clientX - swipeClose.startX;
-    const dy = event.clientY - swipeClose.startY;
-    if (dy <= 0 || dy < MOBILE_SWIPE_CLOSE_THRESHOLD_PX || dy <= Math.abs(dx)) return;
+    if (!shouldCloseFromMobileSwipe(swipeClose, event.pointerId, event.clientX, event.clientY, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) return;
 
     event.preventDefault();
     swipeCloseRef.current.consumed = true;
@@ -143,6 +123,37 @@ export default function RankLadderModal(props: RankLadderModalProps) {
 
   const handleModalPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
     if (swipeCloseRef.current.pointerId === event.pointerId) resetSwipeClose();
+  };
+
+  const handleModalTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    resetSwipeClose();
+    if (!isMobileLayout || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const modalRect = event.currentTarget.getBoundingClientRect();
+    const isInTopZone = touch.clientY - modalRect.top <= MOBILE_SWIPE_CLOSE_START_ZONE_PX;
+    if (!isInTopZone) return;
+
+    swipeCloseRef.current = getStartMobileSwipeCloseState(touch.identifier, touch.clientX, touch.clientY);
+  };
+
+  const handleModalTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const swipeClose = swipeCloseRef.current;
+    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId == null) return;
+
+    const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeClose.pointerId);
+    if (!touch) return;
+    if (!shouldCloseFromMobileSwipe(swipeClose, touch.identifier, touch.clientX, touch.clientY, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) return;
+
+    event.preventDefault();
+    swipeCloseRef.current.consumed = true;
+    closeMobilePanel();
+  };
+
+  const handleModalTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const swipeClose = swipeCloseRef.current;
+    if (swipeClose.pointerId == null) return;
+    if (Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) resetSwipeClose();
   };
 
   if (!open) return null;
@@ -168,6 +179,10 @@ export default function RankLadderModal(props: RankLadderModalProps) {
         onPointerMove={handleModalPointerMove}
         onPointerUp={handleModalPointerEnd}
         onPointerCancel={handleModalPointerEnd}
+        onTouchStart={handleModalTouchStart}
+        onTouchMove={handleModalTouchMove}
+        onTouchEnd={handleModalTouchEnd}
+        onTouchCancel={handleModalTouchEnd}
       >
         <div className="rankLadderSwipeHandle" aria-hidden="true" />
         {!isMobileLayout ? (

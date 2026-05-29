@@ -54,7 +54,11 @@ function createHarness(
     clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
     upsertLiveSession: (entry, opts) =>
       calls.push(`upsert-live:${entry.id}:${opts.elapsedMs}:${opts.resumedFromMs || 0}:${opts.forceCloudFlush === true ? "force" : "queued"}`),
-    finalizeLiveSession: (entry, opts) => calls.push(`finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}`),
+    finalizeLiveSession: (entry, opts) =>
+      calls.push(
+        `finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}:${opts.deferTimeGoalXp ? "defer" : "award"}`
+      ),
+    applyPendingTimeGoalXpForTask: (taskId) => calls.push(`apply-pending:${taskId || ""}`),
     getElapsedMs: () => 345,
     getTaskElapsedMs: () => 678,
     clearCheckpointBaseline: (taskId) => calls.push(`clear-checkpoint:${taskId}`),
@@ -231,7 +235,7 @@ describe("task timer lifecycle", () => {
       "clear-goal:task-1",
       "flush-note:task-1",
       "close-reward:task-1:123",
-      "finalize-live:task-1:345::",
+      "finalize-live:task-1:345:::award",
       "clear-native:task-1",
       "clear-checkpoint:task-1",
       "save:force",
@@ -267,6 +271,30 @@ describe("task timer lifecycle", () => {
     });
   });
 
+  it("defers XP when a daily time-goal task is stopped before reaching the goal", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          running: true,
+          startMs: 1,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+      ],
+    });
+
+    harness.lifecycle.stopTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: 345,
+      startMs: null,
+    });
+    expect(harness.tasks[0]?.timeGoalCompletedDayKey).toBeUndefined();
+    expect(harness.calls).toContain("finalize-live:task-1:345:::defer");
+  });
+
   it("resets task state and syncs focus note UI when the task is focused", () => {
     const harness = createHarness({
       tasks: [
@@ -295,7 +323,8 @@ describe("task timer lifecycle", () => {
     });
     expect(harness.calls).toEqual([
       "flush-note:task-1",
-      "finalize-live:task-1:678:done:4",
+      "apply-pending:task-1",
+      "finalize-live:task-1:678:done:4:award",
       "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",
@@ -329,6 +358,7 @@ describe("task timer lifecycle", () => {
       resumePendingSinceDayKey: null,
     });
     expect(harness.calls).not.toContain("finalize-live:task-1:678:done:");
+    expect(harness.calls).toContain("apply-pending:task-1");
   });
 
   it("resets task state and completes cleanup when live-session finalization throws", () => {
@@ -346,6 +376,7 @@ describe("task timer lifecycle", () => {
       finalizeLiveSession: () => {
         throw new Error("finalize failed");
       },
+      applyPendingTimeGoalXpForTask: (taskId) => calls.push(`apply-pending:${taskId || ""}`),
       getElapsedMs: () => 0,
       getTaskElapsedMs: () => 678,
       clearCheckpointBaseline: () => {},
@@ -379,6 +410,7 @@ describe("task timer lifecycle", () => {
     expect(entry).toMatchObject({ running: false, accumulatedMs: 0, startMs: null, hasStarted: false });
     expect(calls).toEqual([
       "flush-note:task-1",
+      "apply-pending:task-1",
       "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",

@@ -12,6 +12,7 @@ export type RewardProgressV1 = {
   lastAwardedAt: number | null;
   completedSessions: number;
   awardLedger: RewardLedgerEntry[];
+  pendingTimeGoalXp: PendingTimeGoalXpState;
 };
 
 export type RewardLedgerEntry = {
@@ -24,6 +25,17 @@ export type RewardLedgerEntry = {
   eligibleMs: number;
   reason: RewardReason;
   sourceKey: string;
+};
+
+export type PendingTimeGoalXpAward = {
+  taskId: string;
+  updatedAt: number;
+  completedSessionsDelta: number;
+  entries: RewardLedgerEntry[];
+};
+
+export type PendingTimeGoalXpState = {
+  byTaskId: Record<string, PendingTimeGoalXpAward>;
 };
 
 export type RankDefinition = {
@@ -130,6 +142,7 @@ export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
   lastAwardedAt: null,
   completedSessions: 0,
   awardLedger: [],
+  pendingTimeGoalXp: { byTaskId: {} },
 };
 
 export const RANK_LADDER: RankDefinition[] = [
@@ -236,8 +249,34 @@ export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
     completedSessions,
     lastAwardedAt,
     awardLedger,
+    pendingTimeGoalXp: normalizePendingTimeGoalXpState(obj.pendingTimeGoalXp),
     currentRankId: rawRankId && rawRankId === resolvedRank.id ? rawRankId : resolvedRank.id,
   };
+}
+
+function normalizePendingTimeGoalXpState(input: unknown): PendingTimeGoalXpState {
+  if (!input || typeof input !== "object") return { byTaskId: {} };
+  const obj = input as Record<string, unknown>;
+  const source = obj.byTaskId && typeof obj.byTaskId === "object" ? (obj.byTaskId as Record<string, unknown>) : obj;
+  const byTaskId: Record<string, PendingTimeGoalXpAward> = {};
+  Object.entries(source).forEach(([rawTaskId, value]) => {
+    if (!value || typeof value !== "object") return;
+    const award = value as Record<string, unknown>;
+    const taskId = String(award.taskId || rawTaskId || "").trim();
+    if (!taskId) return;
+    const entries = normalizeAwardLedger(award.entries);
+    const completedSessionsDelta = Math.max(0, Math.floor(Number(award.completedSessionsDelta || 0) || 0));
+    if (!entries.length && completedSessionsDelta <= 0) return;
+    const updatedAtRaw = Number(award.updatedAt || 0);
+    const updatedAt = Number.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.floor(updatedAtRaw) : Date.now();
+    byTaskId[taskId] = {
+      taskId,
+      updatedAt,
+      completedSessionsDelta,
+      entries,
+    };
+  });
+  return { byTaskId };
 }
 
 function normalizeAwardLedger(input: unknown): RewardLedgerEntry[] {
@@ -312,6 +351,14 @@ function getExistingSourceKeys(progress: RewardProgressV1): Set<string> {
   return new Set(progress.awardLedger.map((entry) => entry.sourceKey));
 }
 
+function getPendingTimeGoalSourceKeys(progress: RewardProgressV1): Set<string> {
+  const keys = new Set<string>();
+  Object.values(progress.pendingTimeGoalXp.byTaskId || {}).forEach((pending) => {
+    pending.entries.forEach((entry) => keys.add(entry.sourceKey));
+  });
+  return keys;
+}
+
 function getSessionEligibleMs(elapsedMs: number): number {
   const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
   if (safeElapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
@@ -368,6 +415,7 @@ function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], 
     lastAwardedAt,
     completedSessions: Math.max(0, previous.completedSessions + completedSessionsDelta),
     awardLedger: nextLedger,
+    pendingTimeGoalXp: previous.pendingTimeGoalXp,
   };
 
   return {
@@ -375,6 +423,85 @@ function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], 
     previous,
     next,
     rankChanged: previous.currentRankId !== next.currentRankId,
+  };
+}
+
+function getAddedAwardEntries(previous: RewardProgressV1, next: RewardProgressV1): RewardLedgerEntry[] {
+  const existing = getExistingSourceKeys(previous);
+  return next.awardLedger.filter((entry) => !existing.has(entry.sourceKey));
+}
+
+function getPendingTimeGoalAward(progress: RewardProgressV1, taskIdRaw: string | null | undefined): PendingTimeGoalXpAward | null {
+  const taskId = String(taskIdRaw || "").trim();
+  return taskId ? progress.pendingTimeGoalXp.byTaskId[taskId] || null : null;
+}
+
+export function hasPendingTimeGoalXp(progressRaw: unknown, taskIdRaw: string | null | undefined): boolean {
+  const progress = normalizeRewardProgress(progressRaw);
+  const pending = getPendingTimeGoalAward(progress, taskIdRaw);
+  return !!pending && (pending.entries.length > 0 || pending.completedSessionsDelta > 0);
+}
+
+export function addPendingTimeGoalXpAward(
+  progressRaw: unknown,
+  taskIdRaw: string | null | undefined,
+  award: RewardAwardResult,
+  updatedAtRaw?: number
+): RewardProgressV1 {
+  const progress = normalizeRewardProgress(progressRaw);
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId) return progress;
+  const entries = getAddedAwardEntries(award.previous, award.next);
+  const completedSessionsDelta = Math.max(0, award.next.completedSessions - award.previous.completedSessions);
+  if (!entries.length && completedSessionsDelta <= 0) return progress;
+  const current = getPendingTimeGoalAward(progress, taskId);
+  const currentEntries = current?.entries || [];
+  const existingSources = new Set(currentEntries.map((entry) => entry.sourceKey));
+  const mergedEntries = normalizeAwardLedger(
+    currentEntries.concat(entries.filter((entry) => !existingSources.has(entry.sourceKey)))
+  );
+  const updatedAt = Math.max(0, Math.floor(Number(updatedAtRaw || 0) || 0)) || Date.now();
+  return {
+    ...progress,
+    pendingTimeGoalXp: {
+      byTaskId: {
+        ...progress.pendingTimeGoalXp.byTaskId,
+        [taskId]: {
+          taskId,
+          updatedAt,
+          completedSessionsDelta: Math.max(0, (current?.completedSessionsDelta || 0) + completedSessionsDelta),
+          entries: mergedEntries,
+        },
+      },
+    },
+  };
+}
+
+export function applyPendingTimeGoalXpAward(progressRaw: unknown, taskIdRaw: string | null | undefined): RewardAwardResult {
+  const previous = normalizeRewardProgress(progressRaw);
+  const taskId = String(taskIdRaw || "").trim();
+  const pending = getPendingTimeGoalAward(previous, taskId);
+  if (!taskId || !pending) return awardEntries(previous, [], 0);
+  const existingSources = getExistingSourceKeys(previous);
+  const entries = pending.entries.filter((entry) => !existingSources.has(entry.sourceKey));
+  const nextPending = { ...previous.pendingTimeGoalXp.byTaskId };
+  delete nextPending[taskId];
+  const clearedPrevious: RewardProgressV1 = {
+    ...previous,
+    pendingTimeGoalXp: { byTaskId: nextPending },
+  };
+  return awardEntries(clearedPrevious, entries, pending.completedSessionsDelta);
+}
+
+export function clearPendingTimeGoalXpAward(progressRaw: unknown, taskIdRaw: string | null | undefined): RewardProgressV1 {
+  const progress = normalizeRewardProgress(progressRaw);
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId || !progress.pendingTimeGoalXp.byTaskId[taskId]) return progress;
+  const nextPending = { ...progress.pendingTimeGoalXp.byTaskId };
+  delete nextPending[taskId];
+  return {
+    ...progress,
+    pendingTimeGoalXp: { byTaskId: nextPending },
   };
 }
 
@@ -913,10 +1040,12 @@ export function reconcileRewardProgressWithHistory(context: {
     current.totalXp > 0 ||
     current.completedSessions > 0 ||
     current.lastAwardedAt != null;
-  if (!hasCanonicalRewards) return rebuilt;
+  const hasPendingTimeGoalRewards = getPendingTimeGoalSourceKeys(current).size > 0;
+  if (!hasCanonicalRewards && !hasPendingTimeGoalRewards) return rebuilt;
   if (!current.awardLedger.length) return current;
 
   const existingSourceKeys = getExistingSourceKeys(current);
+  getPendingTimeGoalSourceKeys(current).forEach((sourceKey) => existingSourceKeys.add(sourceKey));
   const missingEntries = rebuilt.awardLedger.filter((entry) => !existingSourceKeys.has(entry.sourceKey));
   if (!missingEntries.length) return current;
 
@@ -936,6 +1065,7 @@ export function reconcileRewardProgressWithHistory(context: {
     lastAwardedAt,
     completedSessions: Math.max(current.completedSessions, rebuilt.completedSessions),
     awardLedger: mergedLedger,
+    pendingTimeGoalXp: current.pendingTimeGoalXp,
   };
 }
 

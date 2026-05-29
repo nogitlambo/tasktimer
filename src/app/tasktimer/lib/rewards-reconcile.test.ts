@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addPendingTimeGoalXpAward,
+  awardCompletedSessionXp,
   DEFAULT_REWARD_PROGRESS,
   MIN_REWARD_ELIGIBLE_SESSION_MS,
   normalizeRewardProgress,
@@ -222,5 +224,60 @@ describe("rebuildRewardProgressFromHistory", () => {
     expect(result.totalXp).toBe(2);
     expect(result.completedSessions).toBe(2);
     expect(result.awardLedger).toHaveLength(2);
+  });
+
+  it("does not promote pending time-goal XP into the visible total during history reconciliation", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+    const completedAt = Date.parse("2026-05-05T09:50:00.000Z");
+    const historyByTaskId = {
+      "task-1": [
+        {
+          ts: completedAt,
+          name: "Focus",
+          ms: MIN_REWARD_ELIGIBLE_SESSION_MS,
+        },
+      ],
+    };
+    const tasks = [
+      {
+        id: "task-1",
+        name: "Focus",
+        order: 0,
+        accumulatedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+        running: false,
+        startMs: null,
+        collapsed: false,
+        milestonesEnabled: false,
+        milestones: [],
+        hasStarted: true,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day" as const,
+        timeGoalMinutes: 60,
+      },
+    ];
+    const pendingAward = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: completedAt,
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      historyByTaskId,
+      tasks,
+      weekStarting: "mon",
+      momentumEntitled: false,
+    });
+    const currentProgress = addPendingTimeGoalXpAward(DEFAULT_REWARD_PROGRESS, "task-1", pendingAward, completedAt);
+
+    const result = reconcileRewardProgressWithHistory({
+      currentProgress,
+      historyByTaskId,
+      tasks,
+      weekStarting: "mon",
+      momentumEntitled: false,
+    });
+
+    expect(result.totalXp).toBe(0);
+    expect(result.completedSessions).toBe(0);
+    expect(result.awardLedger).toHaveLength(0);
+    expect(result.pendingTimeGoalXp.byTaskId["task-1"]?.entries).toHaveLength(1);
   });
 });

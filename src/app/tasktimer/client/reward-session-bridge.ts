@@ -61,9 +61,12 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     },
     finalizeLiveSession(
       task: Task,
-      opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }
+      opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
     ) {
       return options.getRewardsHistoryApi()?.finalizeLiveSession(task, opts) ?? 0;
+    },
+    applyPendingTimeGoalXpForTask(taskIdRaw: string | null | undefined) {
+      return options.getRewardsHistoryApi()?.applyPendingTimeGoalXpForTask(taskIdRaw);
     },
     appendCompletedSessionHistory(
       task: Task,

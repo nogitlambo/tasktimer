@@ -8,7 +8,6 @@ import {
   getRedirectResult,
   isSignInWithEmailLink,
   onAuthStateChanged,
-  sendSignInLinkToEmail,
   signOut,
   signInWithCredential,
   signInWithEmailLink,
@@ -22,7 +21,6 @@ import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClie
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
-import { getEmailLinkActionCodeSettings, getEmailLinkSendErrorMessage } from "../login/emailLinkAuth";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
 import { resolveAuthSuccessRoute } from "./authRedirect";
 
@@ -42,6 +40,18 @@ function getErrorMessage(err: unknown, fallback: string) {
     if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
+}
+
+async function sendSignInLinkEmail(email: string) {
+  const response = await fetch("/api/auth/email-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as { error?: string };
+  if (!response.ok) {
+    throw new Error(payload.error || "Could not send sign-in link.");
+  }
 }
 
 function isMissingNativeFirebaseAuthPluginError(err: unknown) {
@@ -393,11 +403,7 @@ export default function SharedWebSignInClient({
     setAuthError("");
     setAuthStatus("Sending sign-in link...");
     try {
-      await sendSignInLinkToEmail(
-        auth,
-        email,
-        getEmailLinkActionCodeSettings(typeof window !== "undefined" ? window.location : null)
-      );
+      await sendSignInLinkEmail(email);
       try {
         localStorage.setItem(EMAIL_LINK_STORAGE_KEY, email);
       } catch {
@@ -409,7 +415,7 @@ export default function SharedWebSignInClient({
         flow: "auth_email_link_send",
         source_page: telemetrySource,
       });
-      setAuthError(getEmailLinkSendErrorMessage(err) || getErrorMessage(err, "Could not send sign-in link."));
+      setAuthError(getErrorMessage(err, "Could not send sign-in link."));
       setAuthStatus("");
     } finally {
       setAuthBusy(false);

@@ -152,6 +152,82 @@ describe("task timer rewards history", () => {
     expect(harness.calls).toContain("save-preferences:1");
   });
 
+  it("logs time-goal stop history while deferring XP from the visible total", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      tasks: [
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+      ],
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, {
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      deferTimeGoalXp: true,
+    });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
+    expect(harness.getRewardProgress().totalXp).toBe(0);
+    expect(harness.getRewardProgress().completedSessions).toBe(0);
+    expect(harness.getRewardProgress().pendingTimeGoalXp.byTaskId["task-1"]?.entries).toHaveLength(1);
+    expect(harness.calls).toContain("save-preferences:0");
+    expect(harness.calls.some((call) => call.startsWith("sync-profile:"))).toBe(false);
+  });
+
+  it("cashes out pending time-goal XP and clears the pending entry", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, {
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      deferTimeGoalXp: true,
+    });
+    const award = harness.api.applyPendingTimeGoalXpForTask("task-1");
+
+    expect(award?.amount).toBe(1);
+    expect(harness.getRewardProgress().totalXp).toBe(1);
+    expect(harness.getRewardProgress().completedSessions).toBe(1);
+    expect(harness.getRewardProgress().pendingTimeGoalXp.byTaskId["task-1"]).toBeUndefined();
+    expect(harness.calls).toContain("sync-profile:unranked:1");
+  });
+
+  it("combines pending XP with the final resumed time-goal increment", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, {
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      deferTimeGoalXp: true,
+    });
+
+    vi.setSystemTime(new Date(Date.now() + MIN_REWARD_ELIGIBLE_SESSION_MS));
+    harness.tasks[0]!.accumulatedMs = MIN_REWARD_ELIGIBLE_SESSION_MS;
+    harness.setLiveSessionsByTaskId({
+      "task-1": {
+        sessionId: "session-2",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: Date.now(),
+        elapsedMs: 2 * MIN_REWARD_ELIGIBLE_SESSION_MS,
+        resumedFromMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+        updatedAtMs: Date.now(),
+        status: "running",
+      },
+    });
+
+    harness.api.applyPendingTimeGoalXpForTask("task-1");
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: 2 * MIN_REWARD_ELIGIBLE_SESSION_MS });
+
+    expect(harness.getHistoryByTaskId()["task-1"]).toHaveLength(1);
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]?.ms).toBe(2 * MIN_REWARD_ELIGIBLE_SESSION_MS);
+    expect(harness.getRewardProgress().totalXp).toBe(2);
+    expect(harness.getRewardProgress().pendingTimeGoalXp.byTaskId["task-1"]).toBeUndefined();
+  });
+
   it("preserves live-session note behavior and clears live-session state", () => {
     vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
     const harness = createHarness({

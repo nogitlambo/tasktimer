@@ -107,4 +107,44 @@ describe("history entry summary", () => {
     expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">12</div>');
     expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">8</div>');
   });
+
+  it("shows pending for stopped incomplete time-goal session XP", () => {
+    const ts = 1_717_200_000_000;
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task({
+        accumulatedMs: 180_000,
+        timeGoalEnabled: true,
+        timeGoalValue: 10,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 10,
+      }),
+      rewardProgress: {
+        ...DEFAULT_REWARD_PROGRESS,
+        pendingTimeGoalXp: {
+          byTaskId: {
+            "task-1": {
+              taskId: "task-1",
+              updatedAt: ts,
+              completedSessionsDelta: 1,
+              entries: [rewardLedgerEntry({ ts, xp: 1, taskId: "task-1" })],
+            },
+          },
+        },
+      },
+      entries: [{ taskId: "task-1", ts, ms: 180_000, name: "Focus" }],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(payload?.sessions[0]?.xpText).toBe("Pending");
+    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">Pending</div>');
+    expect(html).not.toContain('data-history-summary-xp-source="true">1</div>');
+    expect(html).not.toContain('historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">Pending</div>');
+  });
 });

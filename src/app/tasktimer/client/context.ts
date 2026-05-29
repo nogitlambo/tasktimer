@@ -458,7 +458,11 @@ export type TaskTimerTasksContext = {
   closeRewardSessionSegment: (task: Task | null | undefined, endMs?: number | null) => void;
   clearRewardSessionTracker: (taskId: string | null | undefined) => void;
   upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) => void;
-  finalizeLiveSession: (task: Task, opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty }) => number;
+  finalizeLiveSession: (
+    task: Task,
+    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+  ) => number;
+  applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   closeFocusMode: () => void;
   canLogSession: (task: Task) => boolean;

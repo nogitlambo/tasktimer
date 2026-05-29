@@ -1,7 +1,7 @@
 import type { HistoryByTaskId, LiveTaskSession, Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { computeFocusInsights } from "../lib/focusInsights";
-import { awardCompletedSessionXp } from "../lib/rewards";
+import { applyPendingTimeGoalXpAward, awardCompletedSessionXp, hasPendingTimeGoalXp } from "../lib/rewards";
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
@@ -23,7 +23,7 @@ import { buildTaskProgressModel } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -715,14 +715,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function getTimeGoalCompletionAwardPreview(task: Task, elapsedMs: number): TimeGoalAwardPreview {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
+    const taskId = String(task.id || "").trim();
+    const pendingAward = applyPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId);
+    const hasPendingAward = hasPendingTimeGoalXp(ctx.getRewardProgress(), taskId);
+    const elapsedAlreadyLoggedMs = hasPendingAward ? Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0)) : 0;
+    const awardElapsedMs = Math.max(0, safeElapsedMs - elapsedAlreadyLoggedMs);
     if (safeElapsedMs <= 0) {
       const currentXp = Math.max(0, Math.floor(Number(ctx.getRewardProgress().totalXp || 0) || 0));
       return { fromXp: currentXp, toXp: currentXp, awardedXp: 0 };
     }
-    const award = awardCompletedSessionXp(ctx.getRewardProgress(), {
-      taskId: String(task.id || "").trim() || null,
+    const award = awardCompletedSessionXp(pendingAward.next, {
+      taskId: taskId || null,
       awardedAt: nowMs(),
-      elapsedMs: safeElapsedMs,
+      elapsedMs: awardElapsedMs,
       historyByTaskId: ctx.getHistoryByTaskId(),
       tasks: ctx.getTasks(),
       weekStarting: ctx.getWeekStarting(),
@@ -730,9 +735,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       momentumEntitled: true,
     });
     return {
-      fromXp: award.previous.totalXp,
+      fromXp: pendingAward.previous.totalXp,
       toXp: award.next.totalXp,
-      awardedXp: Math.max(0, Math.floor(Number(award.amount || 0) || 0)),
+      awardedXp: Math.max(0, Math.floor(Number((pendingAward.amount || 0) + (award.amount || 0)) || 0)),
     };
   }
 
@@ -756,7 +761,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const awardPreview = opts?.awardPreview || getTimeGoalCompletionAwardPreview(task, elapsedMs);
     const awardedXp = awardPreview.awardedXp;
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = formatTimeGoalAwardText(awardedXp > 0 ? 0 : awardedXp);
+      els.timeGoalCompleteText.textContent = awardedXp > 0 ? formatTimeGoalAwardCountText(0) : formatTimeGoalAwardText(awardedXp);
     }
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";

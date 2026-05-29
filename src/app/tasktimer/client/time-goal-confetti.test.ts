@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  formatTimeGoalAwardCountText,
   formatTimeGoalAwardText,
   getTimeGoalConfettiStage,
   getTimeGoalXpCountDurationMs,
@@ -32,7 +33,10 @@ function elementStub(opts?: { closest?: HTMLElement | null }) {
 describe("time goal confetti", () => {
   it("formats the task complete award text", () => {
     expect(formatTimeGoalAwardText(12)).toBe("You got 12 XP!");
-    expect(formatTimeGoalAwardText(-4)).toBe("You got 0 XP!");
+    expect(formatTimeGoalAwardText(0)).toBe("No XP awarded");
+    expect(formatTimeGoalAwardText(-4)).toBe("No XP awarded");
+    expect(formatTimeGoalAwardText(Number.NaN)).toBe("No XP awarded");
+    expect(formatTimeGoalAwardCountText(0)).toBe("You got 0 XP!");
   });
 
   it("scales xp count duration from one to three seconds by 50 XP", () => {
@@ -116,6 +120,7 @@ describe("time goal confetti", () => {
 
     expect(
       startTimeGoalXpSplashAfterConfetti(text, {
+        awardedXp: 8,
         setTimeoutFn: (handler, timeout) => {
           scheduledHandlers.push(handler);
           scheduledDelay = timeout;
@@ -192,15 +197,45 @@ describe("time goal confetti", () => {
     scheduledHandlers[0]?.();
 
     expect(fx.classList.contains("isPlaying")).toBe(true);
+    expect(fx.classList.contains("isCounting")).toBe(true);
     expect(text.textContent).toBe("You got 0 XP!");
     expect(scheduledDelays).toEqual([TIME_GOAL_CONFETTI_DURATION_MS, TIME_GOAL_XP_SPLASH_TEXT_DURATION_MS]);
 
     scheduledHandlers[1]?.();
+    expect(fx.classList.contains("isPlaying")).toBe(true);
+    expect(fx.classList.contains("isCounting")).toBe(true);
     frames[0]?.(0);
     frames[1]?.(1400);
 
     expect(text.textContent).toBe("You got 10 XP!");
+    expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
+  });
+
+  it("does not start xp splash, count, timers, or reward audio for zero xp", () => {
+    const fx = elementStub();
+    const text = elementStub({ closest: fx });
+    const onStart = vi.fn();
+
+    expect(
+      startTimeGoalXpSplashAfterConfetti(text, {
+        awardedXp: 0,
+        setTimeoutFn: () => {
+          throw new Error("unexpected timer");
+        },
+        requestAnimationFrameFn: () => {
+          throw new Error("unexpected frame");
+        },
+        onStart,
+      })
+    ).toBe(true);
+
+    expect(text.textContent).toBe("No XP awarded");
+    expect(fx.classList.contains("isPlaying")).toBe(false);
+    expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.dataset.xpSplashState).toBeUndefined();
+    expect(fx.dataset.xpCountState).toBeUndefined();
+    expect(onStart).not.toHaveBeenCalled();
   });
 
   it("shows final xp immediately when reduced motion is enabled", () => {
