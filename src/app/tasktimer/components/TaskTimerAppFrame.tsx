@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
+import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, buildXpProgressSubtext, getNextRank, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
@@ -65,6 +66,8 @@ export type DesktopInsigniaUpgradePayload = {
 
 const DESKTOP_INSIGNIA_UPGRADE_START_DELAY_MS = 600;
 const DESKTOP_INSIGNIA_UPGRADE_ACTIVE_DURATION_MS = 3400;
+const MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX = 78;
+const MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX = 70;
 
 function formatXpNumber(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
@@ -190,6 +193,19 @@ export default function TaskTimerAppFrame({
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
+  const mobileMenuSwipeCloseRef = useRef<{
+    active: boolean;
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    consumed: boolean;
+  }>({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    consumed: false,
+  });
   const railPage = activePage === "schedule" ? "tasks" : activePage;
   const searchParamsKey = searchParams.toString();
   const currentRankIndex = useMemo(
@@ -234,15 +250,19 @@ export default function TaskTimerAppFrame({
 
   useEffect(() => {
     if (!mobileMenuOpen || typeof window === "undefined") return;
+    const closeMobileMenuWithFlipAudio = () => {
+      playTaskFlipClickAudio();
+      setMobileMenuOpen(false);
+    };
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
       if (mobileMenuRef.current?.contains(target)) return;
       if (mobileMenuBtnRef.current?.contains(target)) return;
-      setMobileMenuOpen(false);
+      closeMobileMenuWithFlipAudio();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileMenuOpen(false);
+      if (event.key === "Escape") closeMobileMenuWithFlipAudio();
     };
     window.addEventListener("mousedown", handlePointerDown);
     window.addEventListener("touchstart", handlePointerDown);
@@ -280,6 +300,65 @@ export default function TaskTimerAppFrame({
     window.location.href = resolveTaskTimerRouteHref("/account");
   }, []);
 
+  const resetMobileMenuSwipeClose = useCallback(() => {
+    mobileMenuSwipeCloseRef.current = {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      consumed: false,
+    };
+  }, []);
+
+  const closeMobileMenuWithFlipAudio = useCallback(() => {
+    playTaskFlipClickAudio();
+    setMobileMenuOpen(false);
+  }, []);
+
+  const openRankLadderWithDropdownAudio = useCallback(() => {
+    setShowRankLadderModal(true);
+  }, []);
+
+  const handleMobileMenuPanelPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    resetMobileMenuSwipeClose();
+    if (event.button !== 0) return;
+
+    const panelRect = event.currentTarget.getBoundingClientRect();
+    const isInTopZone = event.clientY - panelRect.top <= MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX;
+    if (!isInTopZone) return;
+
+    mobileMenuSwipeCloseRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      consumed: false,
+    };
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture failures on older embedded browsers.
+    }
+  }, [resetMobileMenuSwipeClose]);
+
+  const handleMobileMenuPanelPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const swipeClose = mobileMenuSwipeCloseRef.current;
+    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
+
+    const dx = event.clientX - swipeClose.startX;
+    const dy = event.clientY - swipeClose.startY;
+    if (dy <= 0 || dy < MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX || dy <= Math.abs(dx)) return;
+
+    event.preventDefault();
+    mobileMenuSwipeCloseRef.current.consumed = true;
+    closeMobileMenuWithFlipAudio();
+  }, [closeMobileMenuWithFlipAudio]);
+
+  const handleMobileMenuPanelPointerEnd = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (mobileMenuSwipeCloseRef.current.pointerId === event.pointerId) resetMobileMenuSwipeClose();
+  }, [resetMobileMenuSwipeClose]);
+
   return (
     <div className={`wrap${isXpAwardSpotlightActive ? " isXpAwardSpotlightActive" : ""}`} id="app" aria-label="TaskLaunch App">
       <div className="topbar topbarBrandOnly taskLaunchAppTopbar">
@@ -314,8 +393,9 @@ export default function TaskTimerAppFrame({
                     <button
                       className="taskLaunchTopbarXpStatsTrigger taskLaunchTopbarXpTrigger"
                       type="button"
+                      data-rank-ladder-open
                       aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}. ${xpProgressSubtext}.`}
-                      onClick={() => setShowRankLadderModal(true)}
+                      onClick={openRankLadderWithDropdownAudio}
                     >
                       <span className="taskLaunchTopbarXpStats">
                         <span className="appShellHeaderXpStatsRow taskLaunchTopbarXpStatsRow">
@@ -350,10 +430,10 @@ export default function TaskTimerAppFrame({
         </div>
         <button
           ref={mobileMenuBtnRef}
-          className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isOn" : ""}`}
+          className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isHidden" : ""}`}
           id="menuIcon"
           type="button"
-          aria-label={mobileMenuOpen ? "Close app menu" : "Open app menu"}
+          aria-label="Open app menu"
           aria-expanded={mobileMenuOpen}
           aria-controls="mobileSettingsMenu"
           onClick={() => setMobileMenuOpen((current) => !current)}
@@ -364,12 +444,26 @@ export default function TaskTimerAppFrame({
             <span />
           </span>
         </button>
+      </div>
+      <div
+        className={`taskLaunchMobileMenu${mobileMenuOpen ? " isOpen" : ""}`}
+        id="mobileSettingsMenu"
+        aria-hidden={mobileMenuOpen ? "false" : "true"}
+        onClick={closeMobileMenuWithFlipAudio}
+      >
         <div
           ref={mobileMenuRef}
-          className={`taskLaunchMobileMenu${mobileMenuOpen ? " isOpen" : ""}`}
-          id="mobileSettingsMenu"
-          aria-hidden={mobileMenuOpen ? "false" : "true"}
+          className="taskLaunchMobileMenuPanel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="App menu"
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={handleMobileMenuPanelPointerDown}
+          onPointerMove={handleMobileMenuPanelPointerMove}
+          onPointerUp={handleMobileMenuPanelPointerEnd}
+          onPointerCancel={handleMobileMenuPanelPointerEnd}
         >
+          <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
           <div className="taskLaunchMobileMenuHeader" aria-label="TaskLaunch">
             <AppImg
               className="taskLaunchMobileMenuHeaderIcon"
@@ -389,12 +483,6 @@ export default function TaskTimerAppFrame({
                   role="menuitem"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <AppImg
-                    className="taskLaunchMobileMenuItemIcon"
-                    src={item.iconSrc}
-                    alt=""
-                    aria-hidden="true"
-                  />
                   <span className="taskLaunchMobileMenuItemText">{item.label}</span>
                 </a>
               ) : (
@@ -436,8 +524,9 @@ export default function TaskTimerAppFrame({
                 <button
                   className="appShellHeaderXpBottomRow appShellHeaderXpTrigger"
                   type="button"
+                  data-rank-ladder-open
                   aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}. ${xpProgressSubtext}.`}
-                  onClick={() => setShowRankLadderModal(true)}
+                  onClick={openRankLadderWithDropdownAudio}
                 >
                   <span className="appShellHeaderXpStats">
                     <span className="appShellHeaderXpStatsRow">

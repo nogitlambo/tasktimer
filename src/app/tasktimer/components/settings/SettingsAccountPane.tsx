@@ -45,6 +45,9 @@ export function SettingsAccountPane({
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
+  const openRankLadderWithDropdownAudio = () => {
+    avatar.setShowRankLadderModal(true);
+  };
 
   useEffect(() => {
     if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
@@ -152,8 +155,9 @@ export function SettingsAccountPane({
                     <button
                       className="settingsAccountRankBtn settingsAccountIdCardHeaderRankBtn"
                       type="button"
+                      data-rank-ladder-open
                       aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}
-                      onClick={() => avatar.setShowRankLadderModal(true)}
+                      onClick={openRankLadderWithDropdownAudio}
                     >
                       <div className="settingsAccountRankPlaceholder settingsAccountIdCardHeaderRankBadge">
                         <RankThumbnail

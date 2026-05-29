@@ -5742,6 +5742,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   align-items: stretch;
   min-height: 332px;
   min-width: 0;
+  padding-left: 12px;
   overflow: hidden;
   perspective: 1800px;
 }
@@ -8080,7 +8081,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 /* Dashboard card chrome cleanup for the primary overview cards. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityOverviewCard > .dashboardActivityTaskOverviewCard,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
-  padding-left:0 !important;
+  padding-left:12px !important;
   padding-right:0 !important;
   border:0 !important;
   background:transparent !important;

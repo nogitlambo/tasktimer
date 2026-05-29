@@ -195,7 +195,7 @@ describe("secondary click audio", () => {
   });
 
   it("matches modal preview dropdown trigger for dedicated dropdown audio", () => {
-    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
+    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]';
     const dropdownTrigger = makeElement({
       selectorMatches: { [dropdownSelector]: true, ".modalPreviewDropdownButton": true, "button,a": true },
       textContent: "Standard option",
@@ -203,6 +203,11 @@ describe("secondary click audio", () => {
     const mobileMenuTrigger = makeElement({
       selectorMatches: { [dropdownSelector]: true, "#menuIcon": true, "button,a": true },
       attributes: { id: "menuIcon" },
+    });
+    const rankLadderTrigger = makeElement({
+      selectorMatches: { [dropdownSelector]: true, "[data-rank-ladder-open]": true, "button,a": true },
+      attributes: { "data-rank-ladder-open": "" },
+      textContent: "Current rank",
     });
     const dropdownOption = makeElement({
       selectorMatches: { ".modalPreviewDropdownOption": true, "button,a": true, ['input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption']: true },
@@ -213,6 +218,8 @@ describe("secondary click audio", () => {
     expect(getSecondaryClickTarget(dropdownTrigger)).toBeNull();
     expect(getDropdownClickTarget(mobileMenuTrigger)).toBe(mobileMenuTrigger);
     expect(getSecondaryClickTarget(mobileMenuTrigger)).toBeNull();
+    expect(getDropdownClickTarget(rankLadderTrigger)).toBe(rankLadderTrigger);
+    expect(getSecondaryClickTarget(rankLadderTrigger)).toBeNull();
     expect(getDropdownClickTarget(dropdownOption)).toBeNull();
     expect(getCheckboxClickTarget(dropdownOption)).toBe(dropdownOption);
   });
@@ -590,7 +597,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
         textContent: "Standard option",
       }),
     } as unknown as Event);
@@ -617,7 +624,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, "#menuIcon": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, "#menuIcon": true, "button,a": true },
         attributes: { id: "menuIcon" },
       }),
     } as unknown as Event);
@@ -644,8 +651,40 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, '[data-action="history"]': true, "button,a": true },
         textContent: "View Chart",
+      }),
+    } as unknown as Event);
+
+    expect(playDropdownAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes rank ladder open triggers to dropdown audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playDropdownAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playDropdownAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: {
+          ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true,
+          "[data-rank-ladder-open]": true,
+          "button,a": true,
+        },
+        attributes: { "data-rank-ladder-open": "" },
+        textContent: "Current rank",
       }),
     } as unknown as Event);
 

@@ -508,4 +508,21 @@ describe("task timer session focus notes", () => {
     expect(style.height).toBe("160px");
     expect(style.overflowY).toBe("auto");
   });
+
+  it("uses half the viewport as the fallback cap when CSS allows taller focus notes", () => {
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesScrollHeight: 800,
+      focusSessionNotesMaxHeight: "620px",
+      windowInnerHeight: 1000,
+    });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "long note";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("500px");
+    expect(style.overflowY).toBe("auto");
+  });
 });

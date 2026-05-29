@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, type ComponentProps, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -35,6 +35,29 @@ import {
   type DesktopInsigniaUpgradePayload,
 } from "./TaskTimerAppFrame";
 
+const TaskTimerAppFrameForTest = TaskTimerAppFrame as ComponentType<Omit<ComponentProps<typeof TaskTimerAppFrame>, "children">>;
+
+function renderTaskTimerAppFrameMarkup() {
+  return renderToStaticMarkup(
+    createElement(
+      TaskTimerAppFrameForTest,
+      {
+        activePage: "tasks",
+        currentRankId: "operator",
+        currentUserLabel: "User",
+        rewardsHeader: {
+          rankLabel: "Operator",
+          totalXp: 60,
+          progressPct: 25,
+          progressLabel: "60/240 XP",
+          xpToNext: 180,
+        },
+      },
+      createElement("div")
+    )
+  );
+}
+
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -47,6 +70,25 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect(items.map((item) => item.label)).toEqual(["User Guide", "Settings", "Sign Out"]);
     expect(items.map((item) => item.label)).not.toContain("Account");
     expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/user-guide", "/settings"]);
+  });
+
+  it("keeps the hamburger and menu ids stable", () => {
+    const html = renderTaskTimerAppFrameMarkup();
+
+    expect(html).toContain('id="menuIcon"');
+    expect(html).toContain('aria-controls="mobileSettingsMenu"');
+    expect(html).toContain('id="mobileSettingsMenu"');
+  });
+
+  it("renders the mobile menu as a dialog-style bottom sheet structure", () => {
+    const html = renderTaskTimerAppFrameMarkup();
+
+    expect(html).toContain('class="taskLaunchMobileMenuPanel"');
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain('class="taskLaunchMobileMenuSwipeHandle"');
+    expect(html).toContain('class="taskLaunchMobileMenuList"');
+    expect(html).toContain('class="menuItem taskLaunchMobileMenuItem"');
   });
 });
 
@@ -69,10 +111,9 @@ describe("TaskTimerAppFrame XP header animation", () => {
   it("keeps the animation class on the desktop and mobile xp values only", () => {
     const html = renderToStaticMarkup(
       createElement(
-        TaskTimerAppFrame,
+        TaskTimerAppFrameForTest,
         {
           activePage: "tasks",
-          children: createElement("div"),
           currentRankId: "operator",
           currentUserLabel: "User",
           rewardsHeader: {
@@ -84,7 +125,8 @@ describe("TaskTimerAppFrame XP header animation", () => {
           },
           promotionLabelOverride: "180 XP to Technician",
           isXpCountAnimating: true,
-        }
+        },
+        createElement("div")
       )
     );
 

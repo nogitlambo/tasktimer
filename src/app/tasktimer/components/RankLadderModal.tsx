@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import RankThumbnail from "./RankThumbnail";
+import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
 
 type RankLadderModalProps = {
@@ -19,6 +20,8 @@ type RankLadderModalProps = {
 const RANK_PROMOTION_TEST_TRIGGER_ENABLED = ["1", "true"].includes(
   String(process.env.NEXT_PUBLIC_RANK_PROMOTION_TEST_TRIGGER || "").trim().toLowerCase()
 );
+const MOBILE_SWIPE_CLOSE_START_ZONE_PX = 78;
+const MOBILE_SWIPE_CLOSE_THRESHOLD_PX = 70;
 
 function formatXpValue(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
@@ -40,6 +43,19 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const currentRankItemRef = useRef<HTMLElement | null>(null);
+  const swipeCloseRef = useRef<{
+    active: boolean;
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    consumed: boolean;
+  }>({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    consumed: false,
+  });
   const setCurrentRankButtonRef = (node: HTMLButtonElement | null) => {
     currentRankItemRef.current = node;
   };
@@ -74,6 +90,61 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     return () => window.cancelAnimationFrame(frameId);
   }, [currentRankId, isMobileLayout, open]);
 
+  const resetSwipeClose = () => {
+    swipeCloseRef.current = {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      consumed: false,
+    };
+  };
+
+  const closeMobilePanel = () => {
+    if (isMobileLayout) playTaskFlipClickAudio();
+    onClose();
+  };
+
+  const handleModalPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    resetSwipeClose();
+    if (!isMobileLayout || event.button !== 0) return;
+
+    const modalRect = event.currentTarget.getBoundingClientRect();
+    const isInTopZone = event.clientY - modalRect.top <= MOBILE_SWIPE_CLOSE_START_ZONE_PX;
+    if (!isInTopZone) return;
+
+    swipeCloseRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      consumed: false,
+    };
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture failures on older embedded browsers.
+    }
+  };
+
+  const handleModalPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const swipeClose = swipeCloseRef.current;
+    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
+
+    const dx = event.clientX - swipeClose.startX;
+    const dy = event.clientY - swipeClose.startY;
+    if (dy <= 0 || dy < MOBILE_SWIPE_CLOSE_THRESHOLD_PX || dy <= Math.abs(dx)) return;
+
+    event.preventDefault();
+    swipeCloseRef.current.consumed = true;
+    closeMobilePanel();
+  };
+
+  const handleModalPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    if (swipeCloseRef.current.pointerId === event.pointerId) resetSwipeClose();
+  };
+
   if (!open) return null;
 
   const ladderRows = Array.from({ length: Math.ceil(RANK_LADDER.length / 4) }, (_, rowIndex) =>
@@ -86,11 +157,24 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   const displayRanks = isMobileLayout ? mobileDisplayRanks : [...ladderRows].reverse().flat();
 
   return (
-    <div className="overlay" id="rankLadderOverlay" onClick={onClose}>
-      <div className="modal rankLadderModal" role="dialog" aria-modal="true" aria-label="Rank ladder" onClick={(event) => event.stopPropagation()}>
-        <button className="iconBtn rankLadderCloseBtn" type="button" onClick={onClose} aria-label="Close rank ladder">
-          <span aria-hidden="true">X</span>
-        </button>
+    <div className="overlay" id="rankLadderOverlay" onClick={closeMobilePanel}>
+      <div
+        className="modal rankLadderModal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Rank ladder"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={handleModalPointerDown}
+        onPointerMove={handleModalPointerMove}
+        onPointerUp={handleModalPointerEnd}
+        onPointerCancel={handleModalPointerEnd}
+      >
+        <div className="rankLadderSwipeHandle" aria-hidden="true" />
+        {!isMobileLayout ? (
+          <button className="iconBtn rankLadderCloseBtn" type="button" onClick={onClose} aria-label="Close rank ladder">
+            <span aria-hidden="true">X</span>
+          </button>
+        ) : null}
         <div className="rankLadderHeader">
           <h2>Rank Ladder</h2>
           <p className="modalSubtext">Your rank is {rankLabel}.</p>

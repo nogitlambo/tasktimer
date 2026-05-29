@@ -2150,7 +2150,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   width: 100%;
   height: var(--focus-session-notes-min-height);
   min-height: var(--focus-session-notes-min-height);
-  max-height: max(var(--focus-session-notes-min-height), min(24dvh, 220px));
+  max-height: max(var(--focus-session-notes-min-height), min(50dvh, 420px));
   resize: none;
   overflow-x:hidden;
   overflow-y:hidden;
@@ -2167,6 +2167,10 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   color: rgba(230,245,255,.96);
   border: 1px solid rgba(45, 48, 54, .78);
   text-align:left;
+}
+
+#focusModeScreen .focusSessionNotesInput{
+  padding: 2px;
 }
 
 .focusSessionNotesInput::placeholder{
@@ -3228,7 +3232,7 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     --focus-session-notes-min-height: 76px;
     min-height:var(--focus-session-notes-min-height);
-    max-height:max(var(--focus-session-notes-min-height), 12dvh);
+    max-height:max(var(--focus-session-notes-min-height), 36dvh);
     resize:none;
   }
 }
@@ -3271,7 +3275,7 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     --focus-session-notes-min-height: 76px;
     min-height:var(--focus-session-notes-min-height);
-    max-height:max(var(--focus-session-notes-min-height), 12dvh);
+    max-height:max(var(--focus-session-notes-min-height), 34dvh);
     resize:none;
   }
 }
@@ -3279,6 +3283,10 @@ body.isFocusModeOpen #focusModeScreen{
 @media (max-width: 760px) and (max-height: 680px){
 .focusDial{
     width:min(55.5vw, 22.5dvh, 240px);
+  }
+
+.focusSessionNotesInput{
+    max-height:max(var(--focus-session-notes-min-height), 30dvh);
   }
 }
 

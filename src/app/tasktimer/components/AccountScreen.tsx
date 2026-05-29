@@ -52,6 +52,9 @@ export default function AccountScreen() {
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
+  const openRankLadderWithDropdownAudio = useCallback(() => {
+    avatar.setShowRankLadderModal(true);
+  }, [avatar]);
   const accountProfileReady = account.authProfileReady && avatar.avatarProfileReady && account.authPlanStatus === "confirmed";
   const [hasLoadedAccountProfile, setHasLoadedAccountProfile] = useState(false);
   const shouldRenderAccountProfile = hasLoadedAccountProfile || accountProfileReady;
@@ -194,11 +197,11 @@ export default function AccountScreen() {
                       <strong>{formatXp(rewardsHeader.totalXp)}</strong>
                       <span>XP</span>
                     </div>
-                    <button type="button" onClick={() => avatar.setShowRankLadderModal(true)} aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}>
+                    <button type="button" data-rank-ladder-open onClick={openRankLadderWithDropdownAudio} aria-label={`Open rank ladder. Current rank: ${rewardsHeader.rankLabel}`}>
                       <strong className="accountProfileRankText">{rewardsHeader.rankLabel}</strong>
                       <span>Rank</span>
                     </button>
-                    <button type="button" onClick={() => avatar.setShowRankLadderModal(true)} aria-label={`Open rank insignia. Current rank: ${rewardsHeader.rankLabel}`}>
+                    <button type="button" data-rank-ladder-open onClick={openRankLadderWithDropdownAudio} aria-label={`Open rank insignia. Current rank: ${rewardsHeader.rankLabel}`}>
                       <RankThumbnail
                         rankId={avatar.rewardProgress.currentRankId}
                         storedThumbnailSrc={avatar.rankThumbnailSrc}
