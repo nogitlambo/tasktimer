@@ -13,7 +13,7 @@ describe("resolveEmailLinkContinueUrl", () => {
         },
         appUrl: "https://tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasklaunch.app/login");
+    ).toBe("https://tasklaunch.app/login/");
   });
 
   it("prefers a non-local configured app URL when localhost is only the dev origin", () => {
@@ -26,10 +26,10 @@ describe("resolveEmailLinkContinueUrl", () => {
         },
         appUrl: "https://tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasktimer-prod.firebaseapp.com/login");
+    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
   });
 
-  it("falls back to the Firebase auth domain for localhost app URLs", () => {
+  it("uses the current localhost origin for localhost app URLs", () => {
     expect(
       resolveEmailLinkContinueUrl({
         location: {
@@ -40,7 +40,7 @@ describe("resolveEmailLinkContinueUrl", () => {
         appUrl: "http://localhost:3000",
         authDomain: "tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasktimer-prod.firebaseapp.com/login");
+    ).toBe("http://localhost:3000/login/");
   });
 
   it("uses the configured app URL for native and file launches", () => {
@@ -53,7 +53,7 @@ describe("resolveEmailLinkContinueUrl", () => {
         },
         appUrl: "https://tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasktimer-prod.firebaseapp.com/login");
+    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
   });
 
   it("falls back to the Firebase auth domain instead of a hardcoded project", () => {
@@ -63,7 +63,21 @@ describe("resolveEmailLinkContinueUrl", () => {
         appUrl: "",
         authDomain: "example-prod.firebaseapp.com",
       })
-    ).toBe("https://example-prod.firebaseapp.com/login");
+    ).toBe("https://example-prod.firebaseapp.com/login/");
+  });
+
+  it("does not fall back to the Firebase auth domain when the current origin can handle the callback", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: {
+          origin: "https://tasklaunch.app",
+          protocol: "https:",
+          hostname: "tasklaunch.app",
+        },
+        appUrl: "",
+        authDomain: "tasktimer-prod.firebaseapp.com",
+      })
+    ).toBe("https://tasklaunch.app/login/");
   });
 });
 

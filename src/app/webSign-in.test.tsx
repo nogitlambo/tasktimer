@@ -75,7 +75,10 @@ describe("WebSignIn", () => {
     expect(html).toContain("<form");
     expect(html).toContain('type="email"');
     expect(html).toContain('type="submit"');
+    expect(html).toContain("webSignInEmailActions");
+    expect(html).toContain("Cancel");
     expect(html).toContain("Send Link");
+    expect(html).toContain("webSignInSendLinkButton");
   });
 
   it("sends the sign-in link from the primary email option once a valid email is entered", () => {

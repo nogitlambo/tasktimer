@@ -76,7 +76,7 @@ describe("POST /api/auth/email-link", () => {
       "User@Example.com",
       expect.objectContaining({
         handleCodeInApp: true,
-        url: "https://tasklaunch.app/login",
+        url: "https://tasklaunch.app/login/",
       })
     );
     expect(mocks.generateSignInWithEmailLink.mock.calls[0][1]).not.toHaveProperty("linkDomain");

@@ -1,4 +1,4 @@
-const LOGIN_PATH = "/login";
+const LOGIN_PATH = "/login/";
 
 type LocationLike = Pick<Location, "origin" | "protocol" | "hostname">;
 
@@ -54,15 +54,11 @@ export function resolveEmailLinkContinueUrl(input?: {
     return `${configuredAppOrigin}${LOGIN_PATH}`;
   }
 
-  if (currentOrigin && isLocalhostHost(currentHost) && firebaseAuthOrigin) {
-    return `${firebaseAuthOrigin}${LOGIN_PATH}`;
-  }
-
   if (currentOrigin) return `${currentOrigin}${LOGIN_PATH}`;
   if (configuredAppOrigin) return `${configuredAppOrigin}${LOGIN_PATH}`;
   if (firebaseAuthOrigin) return `${firebaseAuthOrigin}${LOGIN_PATH}`;
 
-  return `https://tasktimer-prod.firebaseapp.com${LOGIN_PATH}`;
+  return `https://tasklaunch.app${LOGIN_PATH}`;
 }
 
 export function getEmailLinkActionCodeSettings(location?: LocationLike | null) {

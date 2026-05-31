@@ -392,6 +392,24 @@ body.webSignInNativeRoute .webSignInPage {
   justify-content: center;
 }
 
+.webSignInEmailActions {
+  flex-wrap: nowrap;
+  align-self: center;
+  width: min(280px, 100%);
+}
+
+.webSignInSendLinkButton {
+  border-color: #c9ff24;
+  color: #c9ff24;
+}
+
+.webSignInEmailActions .webSignInAuthButtonCompact {
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0 12px;
+}
+
 .webSignInStatus {
   align-self: center;
   color: rgba(248, 250, 252, 0.74);
@@ -556,6 +574,10 @@ body.webSignInNativeRoute .webSignInPage {
     left: 22px;
     right: 22px;
     width: auto;
+  }
+
+  .webSignInFooterText {
+    display: none;
   }
 }
 

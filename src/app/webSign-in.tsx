@@ -198,7 +198,7 @@ export default function WebSignIn(props: WebSignInProps) {
                           className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
                         />
 
-                        <div className="webSignInAuthActions flex flex-wrap justify-center gap-2">
+                        <div className="webSignInAuthActions webSignInEmailActions flex flex-wrap justify-center gap-2">
                           <button
                             type="button"
                             onClick={onToggleEmailLoginForm}
@@ -210,7 +210,7 @@ export default function WebSignIn(props: WebSignInProps) {
                           <button
                             type="submit"
                             disabled={!canSendEmailLink}
-                            className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
+                            className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton rounded-none"
                           >
                             Send Link
                           </button>
