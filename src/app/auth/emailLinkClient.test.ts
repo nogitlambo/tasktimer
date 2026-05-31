@@ -12,7 +12,7 @@ describe("sendSignInLinkEmail", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
-    mocks.getApiUrl.mockReturnValue("https://tasklaunch.app/api/auth/email-link");
+    mocks.getApiUrl.mockReturnValue("https://tasklaunch.app/api/auth/email-link/");
   });
 
   it("posts through the native-aware API URL resolver", async () => {
@@ -25,9 +25,9 @@ describe("sendSignInLinkEmail", () => {
 
     await sendSignInLinkEmail("user@example.com");
 
-    expect(mocks.getApiUrl).toHaveBeenCalledWith("/api/auth/email-link");
+    expect(mocks.getApiUrl).toHaveBeenCalledWith("/api/auth/email-link/");
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://tasklaunch.app/api/auth/email-link",
+      "https://tasklaunch.app/api/auth/email-link/",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ email: "user@example.com" }),
