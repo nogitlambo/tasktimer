@@ -23,7 +23,7 @@ vi.mock("@/lib/authEmailLink", () => ({
   sendAuthSignInEmail: mocks.sendAuthSignInEmail,
 }));
 
-import { POST } from "./route";
+import { OPTIONS, POST } from "./route";
 
 function emailLinkRequest(email = "User@Example.com") {
   return new Request("https://tasklaunch.app/api/auth/email-link", {
@@ -48,12 +48,30 @@ describe("POST /api/auth/email-link", () => {
     mocks.sendAuthSignInEmail.mockResolvedValue(undefined);
   });
 
+  it("allows native preflight requests", () => {
+    const response = OPTIONS(
+      new Request("https://tasklaunch.app/api/auth/email-link", {
+        method: "OPTIONS",
+        headers: {
+          origin: "capacitor://localhost",
+          "access-control-request-method": "POST",
+          "access-control-request-headers": "content-type",
+        },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
+    expect(response.headers.get("access-control-allow-headers")).toContain("Content-Type");
+  });
+
   it("generates a Firebase email sign-in link and sends it through app SMTP", async () => {
     const response = await POST(emailLinkRequest());
     const payload = await response.json();
 
     expect(response.status).toBe(200);
     expect(payload).toEqual({ ok: true });
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://tasklaunch.app");
     expect(mocks.generateSignInWithEmailLink).toHaveBeenCalledWith(
       "User@Example.com",
       expect.objectContaining({

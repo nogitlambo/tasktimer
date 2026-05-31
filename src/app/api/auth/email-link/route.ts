@@ -10,6 +10,7 @@ import {
   enforcePublicRateLimit,
   extractClientIp,
 } from "../../shared/rateLimit";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,10 @@ function getActionCodeSettings(req: Request): ActionCodeSettings {
   return actionCodeSettings;
 }
 
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -62,7 +67,10 @@ export async function POST(req: Request) {
     const emailNormalized = normalizeEmail(body.email);
 
     if (!emailNormalized || !isValidEmail(emailNormalized)) {
-      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 })
+      );
     }
 
     const clientIp = extractClientIp(req);
@@ -86,11 +94,17 @@ export async function POST(req: Request) {
     const signInLink = await getFirebaseAdminAuth().generateSignInWithEmailLink(email, getActionCodeSettings(req));
     await sendAuthSignInEmail({ email, signInLink });
 
-    return NextResponse.json({ ok: true });
+    return withAuthenticatedApiCors(req, NextResponse.json({ ok: true }));
   } catch (error: unknown) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json({ error: error.message, code: error.code }, { status: error.status })
+      );
     }
-    return NextResponse.json({ error: "Could not send sign-in email right now." }, { status: 500 });
+    return withAuthenticatedApiCors(
+      req,
+      NextResponse.json({ error: "Could not send sign-in email right now." }, { status: 500 })
+    );
   }
 }

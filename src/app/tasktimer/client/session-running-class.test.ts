@@ -458,7 +458,7 @@ describe("task timer session tick", () => {
       vi.advanceTimersByTime(500);
 
       expect(harness.audioPlay).not.toHaveBeenCalled();
-      expect(harness.timeGoalCompleteText.classList.contains("isGoldShattering")).toBe(false);
+      expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(false);
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();
@@ -487,7 +487,7 @@ describe("task timer session tick", () => {
       vi.advanceTimersByTime(500);
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(2);
-      expect(harness.timeGoalCompleteText.classList.contains("isGoldShattering")).toBe(true);
+      expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(true);
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();

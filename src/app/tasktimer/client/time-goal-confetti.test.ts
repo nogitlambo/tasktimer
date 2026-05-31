@@ -6,8 +6,8 @@ import {
   getTimeGoalXpCueDelaysMs,
   getTimeGoalXpCountDurationMs,
   startTimeGoalConfetti,
-  startTimeGoalGoldShatter,
   startTimeGoalXpCount,
+  startTimeGoalXpIntervalSplash,
   startTimeGoalXpSplash,
   startTimeGoalXpSplashAfterConfetti,
   stopTimeGoalConfetti,
@@ -123,15 +123,15 @@ describe("time goal confetti", () => {
     expect(text.dataset.xpSplashState).toBe("playing");
   });
 
-  it("restarts the gold shatter on the nearest xp fx wrapper", () => {
+  it("restarts the interval text splash and gold shatter on the nearest xp fx wrapper", () => {
     const fx = elementStub();
     const text = elementStub({ closest: fx });
 
-    expect(startTimeGoalGoldShatter(text)).toBe(true);
+    expect(startTimeGoalXpIntervalSplash(text)).toBe(true);
 
-    expect(fx.classList.contains("isGoldShattering")).toBe(true);
-    expect(fx.dataset.xpGoldShatterState).toBe("playing");
-    expect(text.classList.contains("isGoldShattering")).toBe(false);
+    expect(fx.classList.contains("isIntervalSplashing")).toBe(true);
+    expect(fx.dataset.xpIntervalSplashState).toBe("playing");
+    expect(text.classList.contains("isIntervalSplashing")).toBe(false);
   });
 
   it("delays the xp splash until the confetti animation finishes", () => {

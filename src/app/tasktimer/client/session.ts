@@ -23,7 +23,7 @@ import { buildTaskProgressModel } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalGoldShatter, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -790,7 +790,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       },
       onIntervalCue: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
-        startTimeGoalGoldShatter(els.timeGoalCompleteText as HTMLElement | null);
+        startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
       },
     });
     if (awardedXp > 0 && typeof window !== "undefined") {
@@ -819,7 +819,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       },
       onIntervalCue: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
-        startTimeGoalGoldShatter(els.timeGoalCompleteText as HTMLElement | null);
+        startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
       },
     });
   }

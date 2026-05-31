@@ -5470,6 +5470,10 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   filter: brightness(1.38);
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting.isIntervalSplashing #timeGoalCompleteText{
+  animation: timeGoalXpIntervalSplashTextHold 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
   position: absolute;
   left: 50%;
@@ -5497,9 +5501,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isGoldShattering .timeGoalCompleteGoldFragment{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
   animation: timeGoalXpGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
+  animation-delay: var(--fd);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
+  animation: timeGoalXpIntervalGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
   animation-delay: var(--fd);
 }
 
@@ -5547,7 +5555,45 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }
 
+@keyframes timeGoalXpIntervalSplashTextHold{
+  0%{
+    opacity: 0;
+    transform: scale(.18);
+    filter: blur(8px) brightness(1.15);
+  }34%{
+    opacity: 1;
+    transform: scale(1.82);
+    filter: blur(0) brightness(1.75);
+  }45%{
+    transform: scale(1.28);
+    filter: brightness(1.38);
+  }62%{
+    transform: scale(1.06);
+    filter: brightness(1.1);
+  }100%{
+    opacity: 1;
+    transform: scale(1.28);
+    filter: brightness(1.38);
+  }
+}
+
 @keyframes timeGoalXpGoldFragmentSplash{
+  0%{
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.15) rotate(var(--fr));
+    filter: blur(2px);
+  }20%{
+    opacity: 1;
+  }70%{
+    opacity: .9;
+  }100%{
+    opacity: 0;
+    transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(1) rotate(calc(var(--fr) + var(--fs)));
+    filter: blur(1px);
+  }
+}
+
+@keyframes timeGoalXpIntervalGoldFragmentSplash{
   0%{
     opacity: 0;
     transform: translate(-50%, -50%) scale(.15) rotate(var(--fr));
@@ -5566,8 +5612,9 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @media (prefers-reduced-motion: reduce){
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
-  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isGoldShattering .timeGoalCompleteGoldFragment{
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
     animation: none;
     transform: none;
     filter: none;

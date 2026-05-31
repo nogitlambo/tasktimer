@@ -121,13 +121,13 @@ export function startTimeGoalXpSplash(text: HTMLElement | null | undefined, opts
   return true;
 }
 
-export function startTimeGoalGoldShatter(text: HTMLElement | null | undefined) {
+export function startTimeGoalXpIntervalSplash(text: HTMLElement | null | undefined) {
   const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
   if (!fx) return false;
-  fx.classList.remove("isGoldShattering");
+  fx.classList.remove("isIntervalSplashing");
   void fx.offsetWidth;
-  fx.classList.add("isGoldShattering");
-  fx.dataset.xpGoldShatterState = "playing";
+  fx.classList.add("isIntervalSplashing");
+  fx.dataset.xpIntervalSplashState = "playing";
   return true;
 }
 

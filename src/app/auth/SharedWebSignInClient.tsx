@@ -23,6 +23,7 @@ import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
 import { resolveAuthSuccessRoute } from "./authRedirect";
+import { sendSignInLinkEmail } from "./emailLinkClient";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
@@ -40,18 +41,6 @@ function getErrorMessage(err: unknown, fallback: string) {
     if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
-}
-
-async function sendSignInLinkEmail(email: string) {
-  const response = await fetch("/api/auth/email-link", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  const payload = (await response.json().catch(() => ({}))) as { error?: string };
-  if (!response.ok) {
-    throw new Error(payload.error || "Could not send sign-in link.");
-  }
 }
 
 function isMissingNativeFirebaseAuthPluginError(err: unknown) {
