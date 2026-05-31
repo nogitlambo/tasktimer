@@ -586,6 +586,30 @@ describe("dashboard completed card", () => {
     }
   });
 
+  it("shows once-off tasks that have a current scheduled slot even when their target date is stale", () => {
+    const staleTargetDate = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const tasks = [
+      task({
+        id: "once-off-task",
+        name: "Once Off Task",
+        taskType: "once-off",
+        onceOffTargetDate: staleTargetDate,
+        plannedStartByDay: todaySchedule(),
+      }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+
+      expect(labelsEl?.children).toHaveLength(1);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Once Off Task");
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("excludes unscheduled tasks from the donut", () => {
     const tasks = [
       task({ id: "scheduled-task", name: "Scheduled Task", plannedStartByDay: todaySchedule() }),

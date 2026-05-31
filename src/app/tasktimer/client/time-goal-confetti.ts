@@ -1,8 +1,15 @@
 export const TIME_GOAL_CONFETTI_DURATION_MS = 2700;
 export const TIME_GOAL_XP_SPLASH_TEXT_DURATION_MS = 1050;
-export const TIME_GOAL_XP_COUNT_MIN_DURATION_MS = 1000;
-export const TIME_GOAL_XP_COUNT_MAX_DURATION_MS = 3000;
-export const TIME_GOAL_XP_COUNT_MAX_DURATION_AWARD = 50;
+export const TIME_GOAL_XP_COUNT_SMALL_DURATION_MS = 500;
+export const TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS = 1500;
+export const TIME_GOAL_XP_COUNT_LARGE_DURATION_MS = 2000;
+export const TIME_GOAL_XP_COUNT_EXTRA_LARGE_DURATION_MS = 2500;
+export const TIME_GOAL_XP_CUE_DELAYS_MS = [
+  TIME_GOAL_XP_COUNT_SMALL_DURATION_MS,
+  TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS,
+  TIME_GOAL_XP_COUNT_LARGE_DURATION_MS,
+  TIME_GOAL_XP_COUNT_EXTRA_LARGE_DURATION_MS,
+] as const;
 
 type TimeoutFn = (handler: () => void, timeout: number) => unknown;
 type ClearTimeoutFn = (handle: unknown) => void;
@@ -11,6 +18,7 @@ type CancelAnimationFrameFn = (handle: unknown) => void;
 
 type XpCountAnimation = {
   timeoutHandle: unknown | null;
+  timeoutHandles: unknown[];
   frameHandle: unknown | null;
   clearTimeoutFn: ClearTimeoutFn;
   cancelAnimationFrameFn: CancelAnimationFrameFn;
@@ -45,6 +53,7 @@ function cancelTimeGoalXpCount(text: HTMLElement, opts?: { preserveHoldClasses?:
   const active = xpCountAnimations.get(text);
   if (!active) return;
   if (active.timeoutHandle != null) active.clearTimeoutFn(active.timeoutHandle);
+  active.timeoutHandles.forEach((handle) => active.clearTimeoutFn(handle));
   if (active.frameHandle != null) active.cancelAnimationFrameFn(active.frameHandle);
   xpCountAnimations.delete(text);
   if (!opts?.preserveHoldClasses) {
@@ -66,8 +75,16 @@ export function formatTimeGoalAwardCountText(xp: number): string {
 export function getTimeGoalXpCountDurationMs(awardedXp: number): number {
   const xp = Math.max(0, Math.floor(Number(awardedXp) || 0));
   if (xp <= 0) return 0;
-  const ratio = Math.min(xp, TIME_GOAL_XP_COUNT_MAX_DURATION_AWARD) / TIME_GOAL_XP_COUNT_MAX_DURATION_AWARD;
-  return Math.round(TIME_GOAL_XP_COUNT_MIN_DURATION_MS + ratio * (TIME_GOAL_XP_COUNT_MAX_DURATION_MS - TIME_GOAL_XP_COUNT_MIN_DURATION_MS));
+  if (xp <= 10) return TIME_GOAL_XP_COUNT_SMALL_DURATION_MS;
+  if (xp <= 25) return TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS;
+  if (xp <= 50) return TIME_GOAL_XP_COUNT_LARGE_DURATION_MS;
+  return TIME_GOAL_XP_COUNT_EXTRA_LARGE_DURATION_MS;
+}
+
+export function getTimeGoalXpCueDelaysMs(awardedXp: number): number[] {
+  const durationMs = getTimeGoalXpCountDurationMs(awardedXp);
+  if (durationMs <= 0) return [];
+  return TIME_GOAL_XP_CUE_DELAYS_MS.filter((delayMs) => delayMs <= durationMs);
 }
 
 export function startTimeGoalConfetti(stage: HTMLElement | null | undefined) {
@@ -104,6 +121,16 @@ export function startTimeGoalXpSplash(text: HTMLElement | null | undefined, opts
   return true;
 }
 
+export function startTimeGoalGoldShatter(text: HTMLElement | null | undefined) {
+  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  if (!fx) return false;
+  fx.classList.remove("isGoldShattering");
+  void fx.offsetWidth;
+  fx.classList.add("isGoldShattering");
+  fx.dataset.xpGoldShatterState = "playing";
+  return true;
+}
+
 export function startTimeGoalXpCount(
   text: HTMLElement | null | undefined,
   awardedXp: number,
@@ -113,6 +140,7 @@ export function startTimeGoalXpCount(
     requestAnimationFrameFn?: AnimationFrameFn;
     cancelAnimationFrameFn?: CancelAnimationFrameFn;
     preserveHeldSplash?: boolean;
+    onIntervalCue?: (delayMs: number) => void;
   }
 ) {
   if (!text) return false;
@@ -127,12 +155,15 @@ export function startTimeGoalXpCount(
 
   const fx = (text.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text;
   const requestAnimationFrameFn = opts?.requestAnimationFrameFn || defaultRequestAnimationFrameFn;
+  const setTimeoutFn = opts?.setTimeoutFn || defaultSetTimeoutFn;
   const cancelAnimationFrameFn = opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn;
   const clearTimeoutFn = opts?.clearTimeoutFn || defaultClearTimeoutFn;
   let startMs: number | null = null;
+  const firedCueDelays = new Set<number>();
 
   const active: XpCountAnimation = {
     timeoutHandle: null,
+    timeoutHandles: [],
     frameHandle: null,
     clearTimeoutFn,
     cancelAnimationFrameFn,
@@ -141,8 +172,23 @@ export function startTimeGoalXpCount(
   fx.classList.add("isCounting");
   fx.dataset.xpCountState = "playing";
 
+  const fireIntervalCue = (delayMs: number) => {
+    if (xpCountAnimations.get(text) !== active || firedCueDelays.has(delayMs)) return;
+    firedCueDelays.add(delayMs);
+    opts?.onIntervalCue?.(delayMs);
+  };
+
+  active.timeoutHandles = getTimeGoalXpCueDelaysMs(targetXp).map((delayMs) =>
+    setTimeoutFn(() => {
+      fireIntervalCue(delayMs);
+    }, delayMs)
+  );
+
   const finish = () => {
     if (xpCountAnimations.get(text) !== active) return;
+    getTimeGoalXpCueDelaysMs(targetXp).forEach((delayMs) => fireIntervalCue(delayMs));
+    active.timeoutHandles.forEach((handle) => clearTimeoutFn(handle));
+    active.timeoutHandles = [];
     text.textContent = formatTimeGoalAwardText(targetXp);
     fx.classList.remove("isCounting");
     fx.classList.remove("isPlaying");
@@ -177,6 +223,7 @@ export function startTimeGoalXpSplashAfterConfetti(
     cancelAnimationFrameFn?: CancelAnimationFrameFn;
     matchMediaFn?: (query: string) => { matches: boolean };
     onStart?: () => void;
+    onIntervalCue?: (delayMs: number) => void;
   }
 ) {
   const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
@@ -209,10 +256,12 @@ export function startTimeGoalXpSplashAfterConfetti(
           requestAnimationFrameFn: opts?.requestAnimationFrameFn,
           cancelAnimationFrameFn: opts?.cancelAnimationFrameFn,
           preserveHeldSplash: true,
+          onIntervalCue: opts?.onIntervalCue,
         });
       }, TIME_GOAL_XP_SPLASH_TEXT_DURATION_MS);
       xpCountAnimations.set(text, {
         timeoutHandle,
+        timeoutHandles: [],
         frameHandle: null,
         clearTimeoutFn,
         cancelAnimationFrameFn: opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn,

@@ -88,6 +88,8 @@ function createCompletionHarness(options?: {
   withCheckpoint?: boolean;
   focusModeTaskId?: string | null;
   timeGoalModalTaskId?: string | null;
+  achievementSoundsEnabled?: boolean;
+  reducedMotion?: boolean;
 }) {
   const completedTask = task({
     id: "task-1",
@@ -141,9 +143,23 @@ function createCompletionHarness(options?: {
     getAttribute: () => null,
   };
   const timeGoalCompleteCloseBtn = createFocusElementStub();
+  const timeGoalCompleteText = createFocusElementStub();
   const handlers = new Map<string, (event?: Event) => unknown>();
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousDocument = (globalThis as { document?: unknown }).document;
+  const previousAudio = (globalThis as { Audio?: unknown }).Audio;
+  const audioPlay = vi.fn();
+  (globalThis as { Audio?: unknown }).Audio = vi.fn(function AudioStub() {
+    return {
+      currentTime: 0,
+      readyState: 4,
+      preload: "",
+      load: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      play: audioPlay,
+    };
+  });
   const windowStub = {
     requestAnimationFrame: vi.fn(() => 1),
     setTimeout: vi.fn(() => 1),
@@ -153,7 +169,11 @@ function createCompletionHarness(options?: {
       getItem: vi.fn(() => null),
       removeItem: vi.fn(),
     },
-    matchMedia: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    matchMedia: vi.fn(() => ({
+      matches: options?.reducedMotion ?? true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
     dispatchEvent: vi.fn(),
   };
   const documentStub = {
@@ -175,7 +195,7 @@ function createCompletionHarness(options?: {
       checkpointToastHost: toastHost as unknown as HTMLElement,
       timeGoalCompleteOverlay: timeGoalCompleteOverlay as unknown as HTMLElement,
       timeGoalCompleteTitle: createFocusElementStub() as unknown as HTMLElement,
-      timeGoalCompleteText: createFocusElementStub() as unknown as HTMLElement,
+      timeGoalCompleteText: timeGoalCompleteText as unknown as HTMLElement,
       timeGoalCompleteMeta: createFocusElementStub() as unknown as HTMLElement,
       timeGoalCompleteCloseBtn: timeGoalCompleteCloseBtn as unknown as HTMLButtonElement,
       timeGoalCompleteLaunchNextBtn: null,
@@ -246,6 +266,7 @@ function createCompletionHarness(options?: {
     hasEntitlement: () => false,
     on: (target: unknown, eventName: string, handler: (event?: Event) => unknown) => {
       if (target === timeGoalCompleteCloseBtn && eventName === "click") handlers.set("timeGoalCompleteCloseBtn:click", handler);
+      if (target === timeGoalCompleteText && eventName === "click") handlers.set("timeGoalCompleteText:click", handler);
     },
     openOverlay,
     closeOverlay,
@@ -298,7 +319,7 @@ function createCompletionHarness(options?: {
     getTimeGoalReminderAtMsByTaskId: () => ({}),
     getRewardProgress: () => ({}),
     getWeekStarting: () => "mon",
-    getAchievementSoundsEnabled: () => false,
+    getAchievementSoundsEnabled: () => !!options?.achievementSoundsEnabled,
   } as unknown as TaskTimerSessionContext);
 
   return {
@@ -307,9 +328,14 @@ function createCompletionHarness(options?: {
     checkpointToastQueue,
     clearTimeout,
     openOverlay,
+    timeGoalCompleteOverlay,
+    timeGoalCompleteText,
+    audioPlay,
+    windowStub,
     restoreWindow: () => {
       (globalThis as { window?: unknown }).window = previousWindow;
       (globalThis as { document?: unknown }).document = previousDocument;
+      (globalThis as { Audio?: unknown }).Audio = previousAudio;
     },
     getActiveCheckpointToast: () => activeCheckpointToast,
     getCheckpointToastAutoCloseTimer: () => checkpointToastAutoCloseTimer,
@@ -321,6 +347,11 @@ function createCompletionHarness(options?: {
       const handler = handlers.get("timeGoalCompleteCloseBtn:click");
       if (!handler) throw new Error("timeGoalCompleteCloseBtn click handler was not registered");
       await handler(new Event("click"));
+    },
+    triggerTimeGoalCompleteTextClick: () => {
+      const handler = handlers.get("timeGoalCompleteText:click");
+      if (!handler) throw new Error("timeGoalCompleteText click handler was not registered");
+      handler(new Event("click"));
     },
   };
 }
@@ -396,6 +427,104 @@ describe("task timer session tick", () => {
       expect(harness.getFocusModeTaskId()).toBe("task-2");
       expect(harness.getFocusModeTaskName()).toBe("Focus");
       expect(harness.closeOverlay).toHaveBeenCalled();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("stores the task completion awarded xp on the overlay", () => {
+    const harness = createCompletionHarness();
+
+    try {
+      harness.session.tick();
+
+      expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBeDefined();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("keeps zero-xp initial task completion from scheduling repeat cues", () => {
+    vi.useFakeTimers();
+    const harness = createCompletionHarness({ achievementSoundsEnabled: true, reducedMotion: false });
+
+    try {
+      harness.session.tick();
+      expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBe("0");
+      harness.audioPlay.mockClear();
+
+      vi.advanceTimersByTime(2700);
+      vi.advanceTimersByTime(1050);
+      vi.advanceTimersByTime(500);
+
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+      expect(harness.timeGoalCompleteText.classList.contains("isGoldShattering")).toBe(false);
+    } finally {
+      harness.restoreWindow();
+      vi.useRealTimers();
+    }
+  });
+
+  it("replays the task completion xp text animation and reward sound when the text is clicked", () => {
+    vi.useFakeTimers();
+    const harness = createCompletionHarness({ achievementSoundsEnabled: true, reducedMotion: false });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.style.display = "flex";
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
+      harness.windowStub.setTimeout.mockClear();
+      harness.audioPlay.mockClear();
+
+      harness.triggerTimeGoalCompleteTextClick();
+
+      expect(harness.timeGoalCompleteText.textContent).toBe("You got 0 XP!");
+      expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(true);
+      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(true);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(1050);
+      vi.advanceTimersByTime(500);
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
+      expect(harness.timeGoalCompleteText.classList.contains("isGoldShattering")).toBe(true);
+    } finally {
+      harness.restoreWindow();
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not replay reward sound when task completion xp text is clicked with sounds disabled", () => {
+    const harness = createCompletionHarness({ achievementSoundsEnabled: false, reducedMotion: false });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.style.display = "flex";
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
+
+      harness.triggerTimeGoalCompleteTextClick();
+
+      expect(harness.timeGoalCompleteText.textContent).toBe("You got 0 XP!");
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("does not replay the task completion xp text animation for zero xp", () => {
+    const harness = createCompletionHarness({ achievementSoundsEnabled: true, reducedMotion: false });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.style.display = "flex";
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "0";
+      harness.windowStub.setTimeout.mockClear();
+
+      harness.triggerTimeGoalCompleteTextClick();
+
+      expect(harness.timeGoalCompleteText.textContent).toBe("");
+      expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(false);
+      expect(harness.audioPlay).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
     }

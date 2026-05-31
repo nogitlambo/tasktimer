@@ -23,7 +23,7 @@ import { buildTaskProgressModel } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalGoldShatter, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -649,7 +649,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       String((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.taskId || "").trim() === normalizedTaskId
     ) {
       const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
-      if (overlay) delete overlay.dataset.taskId;
+      if (overlay) {
+        delete overlay.dataset.taskId;
+        delete overlay.dataset.awardedXp;
+      }
     }
     syncTimeGoalCompleteLaunchNextButton();
     syncTimeGoalCompleteNextTaskGrid();
@@ -760,6 +763,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const awardPreview = opts?.awardPreview || getTimeGoalCompletionAwardPreview(task, elapsedMs);
     const awardedXp = awardPreview.awardedXp;
+    if (els.timeGoalCompleteOverlay) {
+      (els.timeGoalCompleteOverlay as HTMLElement).dataset.awardedXp = String(awardedXp);
+    }
     if (els.timeGoalCompleteText) {
       els.timeGoalCompleteText.textContent = awardedXp > 0 ? formatTimeGoalAwardCountText(0) : formatTimeGoalAwardText(awardedXp);
     }
@@ -782,6 +788,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       onStart: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
       },
+      onIntervalCue: () => {
+        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        startTimeGoalGoldShatter(els.timeGoalCompleteText as HTMLElement | null);
+      },
     });
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {
@@ -793,6 +803,25 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         sourceRect: captureXpAwardRectSnapshot(els.timeGoalCompleteText),
       });
     }
+  }
+
+  function replayTimeGoalCompleteXpText() {
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    if (!isOverlayVisible(overlay)) return;
+    const awardedXp = Math.max(0, Math.floor(Number(overlay?.dataset.awardedXp || 0) || 0));
+    if (awardedXp <= 0) return;
+    startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
+      awardedXp,
+      delayMs: 0,
+      matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
+      onStart: () => {
+        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+      },
+      onIntervalCue: () => {
+        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        startTimeGoalGoldShatter(els.timeGoalCompleteText as HTMLElement | null);
+      },
+    });
   }
 
   function maybeRestorePendingTimeGoalFlow() {
@@ -2097,6 +2126,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
         if (completed && shouldExitFocusMode) closeFocusMode({ animate: true });
       }
+    });
+    ctx.on(els.timeGoalCompleteText, "click", () => {
+      replayTimeGoalCompleteXpText();
     });
     ctx.on(els.timeGoalCompleteLaunchNextBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();

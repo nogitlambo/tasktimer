@@ -5497,7 +5497,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isGoldShattering .timeGoalCompleteGoldFragment{
   animation: timeGoalXpGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
   animation-delay: var(--fd);
 }
@@ -5565,7 +5566,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @media (prefers-reduced-motion: reduce){
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
-  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isGoldShattering .timeGoalCompleteGoldFragment{
     animation: none;
     transform: none;
     filter: none;

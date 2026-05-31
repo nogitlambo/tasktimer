@@ -358,15 +358,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function isTaskDueToday(task: Task, todayMs: number) {
     if (!task) return false;
+    const todayScheduleDay = getScheduleDayForDate(todayMs);
+    const scheduledDays = getTaskScheduledDays(task);
+    if (scheduledDays.includes(todayScheduleDay)) return true;
     if (task.taskType === "once-off") {
       const targetDate = normalizeLocalDateValue(task.onceOffTargetDate);
       if (targetDate) return targetDate === formatLocalDateForToday(todayMs);
       const onceOffDay = String(task.onceOffDay || "").trim().toLowerCase();
-      return !!onceOffDay && onceOffDay === getScheduleDayForDate(todayMs);
+      return !!onceOffDay && onceOffDay === todayScheduleDay;
     }
-    const scheduledDays = getTaskScheduledDays(task);
-    if (!scheduledDays.length) return false;
-    return scheduledDays.includes(getScheduleDayForDate(todayMs));
+    return false;
   }
 
   function isDashboardTaskActivelyRunning(task: any) {
