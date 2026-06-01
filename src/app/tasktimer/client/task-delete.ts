@@ -19,6 +19,7 @@ type CreateTaskDeleteOptions = {
   deleteSharedTaskSummariesForTask: (ownerUid: string, taskId: string) => Promise<unknown>;
   refreshOwnSharedSummaries: () => Promise<unknown>;
   getCurrentUid: () => string | null;
+  showActionConfirmation: (message: string, durationMs?: number) => void;
   render: () => void;
 };
 
@@ -65,6 +66,7 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
         void options.refreshOwnSharedSummaries().catch(() => {});
         options.render();
         options.closeConfirm();
+        options.showActionConfirmation("Task deleted.");
       },
       onCancel: () => {
         clearDeleteTaskConfirmState();

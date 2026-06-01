@@ -204,6 +204,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         renderTasksPage();
         ctx.render();
         ctx.closeConfirm();
+        ctx.showActionConfirmation("Task archived.");
       },
       onCancel: () => ctx.closeConfirm(),
     });

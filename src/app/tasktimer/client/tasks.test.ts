@@ -148,6 +148,7 @@ function createHarness() {
     openEdit: vi.fn(),
     openFocusMode: vi.fn(),
     deleteTask: vi.fn(),
+    showActionConfirmation: vi.fn(),
     showUpgradePrompt: vi.fn(),
     openTaskExportModal: vi.fn(),
     openShareTaskModal: vi.fn(),

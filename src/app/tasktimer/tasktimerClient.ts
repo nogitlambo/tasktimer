@@ -218,8 +218,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     return hasTaskTimerEntitlement(getCurrentPlan(), entitlement);
   }
 
+  let actionConfirmationTimer: number | null = null;
+
   const destroy = () => {
     delete document.body.dataset.tasktimerNativeRuntime;
+    if (actionConfirmationTimer != null) {
+      window.clearTimeout(actionConfirmationTimer);
+      actionConfirmationTimer = null;
+    }
     if (unsubscribeCheckpointAlertMuteSignals) {
       unsubscribeCheckpointAlertMuteSignals();
       unsubscribeCheckpointAlertMuteSignals = null;
@@ -304,6 +310,24 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     host: els.cloudSyncNoticeHost as HTMLElement | null,
     on,
   });
+  function showActionConfirmation(message: string, durationMs = 3000) {
+    const host = els.actionConfirmationHost as HTMLElement | null;
+    const text = String(message || "").trim();
+    if (!host || !text) return;
+    if (actionConfirmationTimer != null) {
+      window.clearTimeout(actionConfirmationTimer);
+      actionConfirmationTimer = null;
+    }
+    host.textContent = text;
+    host.setAttribute("aria-hidden", "false");
+    host.classList.add("isActive");
+    actionConfirmationTimer = window.setTimeout(() => {
+      host.classList.remove("isActive");
+      host.setAttribute("aria-hidden", "true");
+      host.textContent = "";
+      actionConfirmationTimer = null;
+    }, Math.max(0, durationMs));
+  }
   const sharedTaskApi = createTaskTimerSharedTask({
     createId: () => cryptoRandomId(),
     getEditTimeGoalDraft: () => ({
@@ -559,6 +583,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
       hasEntitlement,
       getCurrentPlan,
+      showActionConfirmation,
       showUpgradePrompt,
     })
   );
@@ -847,6 +872,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
       hasEntitlement,
       getCurrentPlan,
+      showActionConfirmation,
       showUpgradePrompt,
     })
   );
@@ -900,6 +926,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openElapsedPadForMilestone: (task, milestone, ms, onApplied) =>
         openElapsedPadForMilestoneApi(task, milestone, ms, onApplied),
       hasEntitlement,
+      showActionConfirmation,
       showUpgradePrompt,
     })
   );
@@ -1190,6 +1217,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     deleteSharedTaskSummariesForTask,
     refreshOwnSharedSummaries,
     getCurrentUid: () => getCurrentTaskTimerUid(),
+    showActionConfirmation,
     render,
   });
 
@@ -1279,6 +1307,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getModeColor: (mode) => DEFAULT_MODE_COLORS[mode] || DEFAULT_MODE_COLORS.mode1,
       getDynamicColorsEnabled: () => preferencesState.get("dynamicColorsEnabled"),
       hasEntitlement,
+      showActionConfirmation,
       showUpgradePrompt,
     })
   );
@@ -1451,6 +1480,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     clearCheckpointBaseline: (taskId) => sessionApi?.clearCheckpointBaseline(taskId),
     syncSharedTaskSummariesForTask,
     hasEntitlement,
+    showActionConfirmation,
     showUpgradePrompt,
   });
   {

@@ -635,6 +635,7 @@ export default function TaskTimerAppFrame({
         </div>
       </div>
       <div className="cloudSyncNoticeHost" id="cloudSyncNoticeHost" aria-live="polite" aria-atomic="true" />
+      <div className="actionConfirmationHost" id="actionConfirmationHost" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true" />
       <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
       {isXpAwardSpotlightActive ? <div className="xpAwardSpotlightLayer" aria-hidden="true" /> : null}
       {xpAwardFx?.visible ? (

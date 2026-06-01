@@ -1002,6 +1002,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
     finishEditOverlayClose();
+    ctx.showActionConfirmation("Task saved.");
   }
 
   function finishEditOverlayClose() {
@@ -1421,6 +1422,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.setEditTaskDraft(null);
     ctx.setEditDraftSnapshot("");
     editTaskScheduleRestoreSnapshot = null;
+    ctx.showActionConfirmation("Task saved.");
     return true;
   }
 
@@ -1448,6 +1450,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const editIndex = ctx.getEditIndex();
     const sourceTask = editIndex != null ? ctx.getTasks()[editIndex] : null;
     const t = getCurrentEditTask();
+    let didSave = false;
     if (saveChanges && t && sourceTask) {
       if (!editTaskScheduleEnabled) {
         if (taskHasMeaningfulScheduleConfig(sourceTask)) {
@@ -1517,6 +1520,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
                 ctx.setEditIndex(null);
                 ctx.setEditTaskDraft(null);
                 ctx.setEditDraftSnapshot("");
+                ctx.showActionConfirmation("Task saved.");
               },
               onCancel: () => ctx.closeConfirm(),
             }
@@ -1524,8 +1528,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         }
       }
       if (!finalizeEditSave(sourceTask, t)) return;
+      didSave = true;
     }
     finishEditOverlayClose();
+    if (didSave) ctx.showActionConfirmation("Task saved.");
   }
 
   function handleEditNameInput() {

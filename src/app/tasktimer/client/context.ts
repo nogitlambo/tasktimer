@@ -89,6 +89,8 @@ export type TaskTimerConfirmOptions = {
   onCancel?: (() => void) | null;
 };
 
+export type TaskTimerActionConfirmation = (message: string, durationMs?: number) => void;
+
 export type TaskTimerBindingsContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
@@ -364,6 +366,7 @@ export type TaskTimerGroupsContext = {
   getOpenFriendSharedTaskUids: () => Set<string>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
+  showActionConfirmation: TaskTimerActionConfirmation;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
@@ -533,6 +536,7 @@ export type TaskTimerTasksContext = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
+  showActionConfirmation: TaskTimerActionConfirmation;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
@@ -611,6 +615,7 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   clearCheckpointBaseline: (taskId: string | null | undefined) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showActionConfirmation: TaskTimerActionConfirmation;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
   };
 
@@ -681,6 +686,7 @@ export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
     onApplied?: () => void
   ) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showActionConfirmation: TaskTimerActionConfirmation;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };
 
@@ -1085,5 +1091,6 @@ export type TaskTimerHistoryInlineContext = {
   getModeColor: (mode: MainMode) => string;
   getDynamicColorsEnabled: () => boolean;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
+  showActionConfirmation: TaskTimerActionConfirmation;
   showUpgradePrompt: (featureLabel: string, requiredPlan?: TaskTimerPlan) => void;
 };

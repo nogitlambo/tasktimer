@@ -878,7 +878,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         "error"
       );
     } else {
-      setShareTaskStatus("Task shared successfully.", "success");
+      setShareTaskStatus("");
+      ctx.showActionConfirmation("Task shared.");
     }
     await refreshOwnSharedSummaries();
     ctx.render();
@@ -1309,8 +1310,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       renderGroupsPage();
       return;
     }
-    setFriendRequestModalStatus("Friend request success.", "success");
-    setGroupsStatus("Friend request sent.");
+    setFriendRequestModalStatus("");
+    setGroupsStatus("");
+    ctx.showActionConfirmation("Friend request sent.");
     renderGroupsPage();
     void refreshGroupsData({ preserveStatus: true });
     window.setTimeout(() => {

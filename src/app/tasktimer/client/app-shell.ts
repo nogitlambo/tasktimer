@@ -35,6 +35,18 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     }, 220);
   }
 
+  function requestSettledTasksPageRender() {
+    const run = () => {
+      if (ctx.runtime.destroyed || (ctx.getCurrentAppPage() !== "tasks" && ctx.getCurrentAppPage() !== "schedule")) return;
+      ctx.render();
+    };
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(run);
+    });
+    window.setTimeout(run, 120);
+    window.setTimeout(run, 320);
+  }
+
   function isKnownAppRoute(path: string) {
     return (
       path === "/tasklaunch" ||
@@ -458,6 +470,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
         ctx.requestScheduleEntryScroll("open");
       }
       ctx.render();
+      requestSettledTasksPageRender();
       if (nextPage === "tasks") {
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {

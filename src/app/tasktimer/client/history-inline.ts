@@ -1650,6 +1650,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         onOk: () => {
           deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex);
           ctx.closeConfirm();
+          ctx.showActionConfirmation("History entry deleted.");
         },
       });
     });

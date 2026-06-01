@@ -58,6 +58,7 @@ type CreateGroupsOptionsArgs = {
   jumpToTaskById: (taskId: string) => void;
   hasEntitlement: Parameters<typeof createTaskTimerGroups>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerGroups>[0]["getCurrentPlan"];
+  showActionConfirmation: Parameters<typeof createTaskTimerGroups>[0]["showActionConfirmation"];
   showUpgradePrompt: Parameters<typeof createTaskTimerGroups>[0]["showUpgradePrompt"];
 };
 
@@ -255,6 +256,7 @@ type CreateHistoryInlineOptionsArgs = {
   getModeColor: (mode: MainMode) => string;
   getDynamicColorsEnabled: () => boolean;
   hasEntitlement: Parameters<typeof createTaskTimerHistoryInline>[0]["hasEntitlement"];
+  showActionConfirmation: Parameters<typeof createTaskTimerHistoryInline>[0]["showActionConfirmation"];
   showUpgradePrompt: Parameters<typeof createTaskTimerHistoryInline>[0]["showUpgradePrompt"];
 };
 
@@ -392,6 +394,7 @@ type CreateTasksOptionsArgs = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   hasEntitlement: Parameters<typeof createTaskTimerTasks>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerTasks>[0]["getCurrentPlan"];
+  showActionConfirmation: Parameters<typeof createTaskTimerTasks>[0]["showActionConfirmation"];
   showUpgradePrompt: Parameters<typeof createTaskTimerTasks>[0]["showUpgradePrompt"];
 };
 
@@ -453,6 +456,7 @@ type CreateAddTaskOptionsArgs = {
   jumpToTaskAndHighlight: (taskId: string) => void;
   openElapsedPadForMilestone: Parameters<typeof createTaskTimerAddTask>[0]["openElapsedPadForMilestone"];
   hasEntitlement: Parameters<typeof createTaskTimerAddTask>[0]["hasEntitlement"];
+  showActionConfirmation: Parameters<typeof createTaskTimerAddTask>[0]["showActionConfirmation"];
   showUpgradePrompt: Parameters<typeof createTaskTimerAddTask>[0]["showUpgradePrompt"];
 };
 
@@ -843,6 +847,7 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     getOpenFriendSharedTaskUids: () => args.openFriendSharedTaskUids,
     hasEntitlement: args.hasEntitlement,
     getCurrentPlan: args.getCurrentPlan,
+    showActionConfirmation: args.showActionConfirmation,
     showUpgradePrompt: args.showUpgradePrompt,
   };
 }
@@ -1184,6 +1189,7 @@ export function createTaskTimerHistoryInlineContext(
     getModeColor: args.getModeColor,
     getDynamicColorsEnabled: args.getDynamicColorsEnabled,
     hasEntitlement: args.hasEntitlement,
+    showActionConfirmation: args.showActionConfirmation,
     showUpgradePrompt: args.showUpgradePrompt,
   };
 }
@@ -1307,6 +1313,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerTasks>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     hasEntitlement: args.hasEntitlement,
     getCurrentPlan: args.getCurrentPlan,
+    showActionConfirmation: args.showActionConfirmation,
     showUpgradePrompt: args.showUpgradePrompt,
   };
 }
@@ -1349,6 +1356,7 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     jumpToTaskAndHighlight: args.jumpToTaskAndHighlight,
     openElapsedPadForMilestone: args.openElapsedPadForMilestone,
     hasEntitlement: args.hasEntitlement,
+    showActionConfirmation: args.showActionConfirmation,
     showUpgradePrompt: args.showUpgradePrompt,
   };
 }

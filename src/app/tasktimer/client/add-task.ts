@@ -629,6 +629,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.render();
     closeAddTaskModal();
     ctx.save();
+    ctx.showActionConfirmation("Task added.");
     void trackEvent("task_created", {
       source_page: ctx.getCurrentAppPage(),
       has_time_goal: Boolean(newTask.timeGoalEnabled && (newTask.timeGoalMinutes || 0) > 0),
@@ -881,6 +882,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.render();
       closeAddTaskModal();
       ctx.save();
+      ctx.showActionConfirmation("Task added.");
       void trackEvent("task_created", {
         source_page: ctx.getCurrentAppPage(),
         has_time_goal: false,

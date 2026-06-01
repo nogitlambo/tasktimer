@@ -15,6 +15,35 @@
 
 /* Overlays */
 
+.actionConfirmationHost{
+  position:fixed;
+  left:50%;
+  bottom:calc(18px + env(safe-area-inset-bottom));
+  z-index:170;
+  width:max-content;
+  max-width:min(360px, calc(100vw - 28px));
+  transform:translate(-50%, 10px);
+  opacity:0;
+  pointer-events:none;
+  background:var(--modal-bg, #0d0f13);
+  border:1px solid var(--modal-border, rgba(255,255,255,.14));
+  box-shadow:var(--modal-shadow, 0 18px 44px rgba(0,0,0,.44));
+  color:#fff;
+  padding:10px 14px;
+  border-radius:0;
+  font-family:var(--font-readable);
+  font-size:13px;
+  font-weight:700;
+  line-height:1.25;
+  text-align:center;
+  transition:opacity .16s ease, transform .16s ease;
+}
+
+.actionConfirmationHost.isActive{
+  opacity:1;
+  transform:translate(-50%, 0);
+}
+
 .overlay{
   position:fixed;
   inset:0;
