@@ -4,6 +4,13 @@ import type { Task } from "../lib/types";
 import type { TaskTimerSessionContext } from "./context";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
+
+vi.mock("./interaction-haptics", () => ({
+  playTaskCompleteConfettiHaptic: vi.fn(),
+  playTimeGoalXpCountHaptic: vi.fn(),
+}));
+
+import { playTimeGoalXpCountHaptic } from "./interaction-haptics";
 import { createTaskTimerSession } from "./session";
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -89,6 +96,8 @@ function createCompletionHarness(options?: {
   focusModeTaskId?: string | null;
   timeGoalModalTaskId?: string | null;
   achievementSoundsEnabled?: boolean;
+  interactionHapticsEnabled?: boolean;
+  interactionHapticsIntensity?: "max" | "medium" | "low";
   reducedMotion?: boolean;
 }) {
   const completedTask = task({
@@ -138,7 +147,7 @@ function createCompletionHarness(options?: {
   const focusModeScreen = createFocusElementStub();
   focusModeScreen.style = { ...focusModeScreen.style, display: "block" };
   const timeGoalCompleteOverlay = {
-    dataset: {},
+    dataset: {} as Record<string, string>,
     style: { display: "none" },
     getAttribute: () => null,
   };
@@ -310,8 +319,8 @@ function createCompletionHarness(options?: {
       focusShowCheckpoints = value;
     },
     setFocusCheckpointSig: () => {},
-    getInteractionHapticsEnabled: () => false,
-    getInteractionHapticsIntensity: () => "medium",
+    getInteractionHapticsEnabled: () => !!options?.interactionHapticsEnabled,
+    getInteractionHapticsIntensity: () => options?.interactionHapticsIntensity || "medium",
     getOptimalProductivityStartTime: () => "09:00",
     getOptimalProductivityEndTime: () => "17:00",
     getOptimalProductivityDays: () => ({ mon: true, tue: true, thu: true, fri: true, sat: false, sun: false }),
@@ -446,19 +455,25 @@ describe("task timer session tick", () => {
 
   it("keeps zero-xp initial task completion from scheduling repeat cues", () => {
     vi.useFakeTimers();
-    const harness = createCompletionHarness({ achievementSoundsEnabled: true, reducedMotion: false });
+    const harness = createCompletionHarness({ achievementSoundsEnabled: true, interactionHapticsEnabled: true, reducedMotion: false });
 
     try {
+      vi.mocked(playTimeGoalXpCountHaptic).mockClear();
       harness.session.tick();
       expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBe("0");
+      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
       harness.audioPlay.mockClear();
 
       vi.advanceTimersByTime(2700);
       vi.advanceTimersByTime(1050);
       vi.advanceTimersByTime(500);
 
+      expect(harness.timeGoalCompleteText.textContent).toBe("No XP awarded");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.audioPlay).not.toHaveBeenCalled();
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(false);
+      expect(playTimeGoalXpCountHaptic).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();
@@ -467,7 +482,12 @@ describe("task timer session tick", () => {
 
   it("replays the task completion xp text animation and reward sound when the text is clicked", () => {
     vi.useFakeTimers();
-    const harness = createCompletionHarness({ achievementSoundsEnabled: true, reducedMotion: false });
+    const harness = createCompletionHarness({
+      achievementSoundsEnabled: true,
+      interactionHapticsEnabled: true,
+      interactionHapticsIntensity: "low",
+      reducedMotion: false,
+    });
 
     try {
       harness.session.registerSessionEvents();
@@ -475,19 +495,37 @@ describe("task timer session tick", () => {
       harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
       harness.windowStub.setTimeout.mockClear();
       harness.audioPlay.mockClear();
+      vi.mocked(playTimeGoalXpCountHaptic).mockClear();
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("You got 0 XP!");
+      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(false);
+      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(2700);
+
+      expect(harness.timeGoalCompleteText.textContent).not.toBe("You got 0 XP!");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(true);
       expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(true);
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(1);
+      expect(playTimeGoalXpCountHaptic).toHaveBeenLastCalledWith({
+        isEnabled: expect.any(Function),
+        getIntensity: expect.any(Function),
+      });
+      const hapticOptions = vi.mocked(playTimeGoalXpCountHaptic).mock.calls[0]?.[0];
+      expect(hapticOptions?.isEnabled?.()).toBe(true);
+      expect(hapticOptions?.getIntensity?.()).toBe("low");
 
-      vi.advanceTimersByTime(1050);
       vi.advanceTimersByTime(500);
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(2);
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(true);
+      expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();
@@ -504,7 +542,8 @@ describe("task timer session tick", () => {
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("You got 0 XP!");
+      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
       expect(harness.audioPlay).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();

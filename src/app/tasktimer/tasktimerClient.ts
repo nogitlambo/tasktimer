@@ -318,13 +318,19 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       window.clearTimeout(actionConfirmationTimer);
       actionConfirmationTimer = null;
     }
-    host.textContent = text;
+    const messageEl = document.createElement("span");
+    messageEl.className = "actionConfirmationText";
+    messageEl.textContent = text;
+    const tickEl = document.createElement("span");
+    tickEl.className = "actionConfirmationTick";
+    tickEl.setAttribute("aria-hidden", "true");
+    host.replaceChildren(messageEl, tickEl);
     host.setAttribute("aria-hidden", "false");
     host.classList.add("isActive");
     actionConfirmationTimer = window.setTimeout(() => {
       host.classList.remove("isActive");
       host.setAttribute("aria-hidden", "true");
-      host.textContent = "";
+      host.replaceChildren();
       actionConfirmationTimer = null;
     }, Math.max(0, durationMs));
   }

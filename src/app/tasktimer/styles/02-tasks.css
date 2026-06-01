@@ -3691,8 +3691,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
 
 @media (max-width: 640px){
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
   }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePageShell,

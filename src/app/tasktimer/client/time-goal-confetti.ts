@@ -4,6 +4,7 @@ export const TIME_GOAL_XP_COUNT_SMALL_DURATION_MS = 500;
 export const TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS = 1500;
 export const TIME_GOAL_XP_COUNT_LARGE_DURATION_MS = 2000;
 export const TIME_GOAL_XP_COUNT_EXTRA_LARGE_DURATION_MS = 2500;
+export const TIME_GOAL_XP_CALCULATING_TEXT = "Calculating XP...";
 export const TIME_GOAL_XP_CUE_DELAYS_MS = [
   TIME_GOAL_XP_COUNT_SMALL_DURATION_MS,
   TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS,
@@ -25,6 +26,10 @@ type XpCountAnimation = {
 };
 
 const xpCountAnimations = new WeakMap<HTMLElement, XpCountAnimation>();
+
+function getTimeGoalXpFx(text: HTMLElement | null | undefined) {
+  return (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+}
 
 function defaultSetTimeoutFn(handler: () => void, timeout: number) {
   return globalThis.setTimeout(handler, timeout);
@@ -57,10 +62,32 @@ function cancelTimeGoalXpCount(text: HTMLElement, opts?: { preserveHoldClasses?:
   if (active.frameHandle != null) active.cancelAnimationFrameFn(active.frameHandle);
   xpCountAnimations.delete(text);
   if (!opts?.preserveHoldClasses) {
-    const fx = (text.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text;
+    const fx = getTimeGoalXpFx(text);
+    if (!fx) return;
+    fx.classList.remove("isCalculating");
     fx.classList.remove("isCounting");
     fx.classList.remove("isPlaying");
   }
+}
+
+export function startTimeGoalXpCalculating(text: HTMLElement | null | undefined) {
+  const fx = getTimeGoalXpFx(text);
+  if (!fx || !text) return false;
+  cancelTimeGoalXpCount(text);
+  fx.classList.remove("isPlaying");
+  fx.classList.remove("isCounting");
+  fx.classList.remove("isIntervalSplashing");
+  fx.classList.add("isCalculating");
+  fx.dataset.xpCalculatingState = "playing";
+  text.textContent = TIME_GOAL_XP_CALCULATING_TEXT;
+  return true;
+}
+
+function stopTimeGoalXpCalculating(text: HTMLElement | null | undefined) {
+  const fx = getTimeGoalXpFx(text);
+  if (!fx) return;
+  fx.classList.remove("isCalculating");
+  fx.dataset.xpCalculatingState = "stopped";
 }
 
 export function formatTimeGoalAwardText(xp: number): string {
@@ -109,8 +136,9 @@ export function getTimeGoalConfettiStage(overlay: HTMLElement | null | undefined
 }
 
 export function startTimeGoalXpSplash(text: HTMLElement | null | undefined, opts?: { holdForCount?: boolean }) {
-  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  const fx = getTimeGoalXpFx(text);
   if (!fx) return false;
+  fx.classList.remove("isCalculating");
   fx.classList.remove("isPlaying");
   fx.classList.remove("isCounting");
   fx.dataset.xpSplashState = "stopped";
@@ -122,7 +150,7 @@ export function startTimeGoalXpSplash(text: HTMLElement | null | undefined, opts
 }
 
 export function startTimeGoalXpIntervalSplash(text: HTMLElement | null | undefined) {
-  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  const fx = getTimeGoalXpFx(text);
   if (!fx) return false;
   fx.classList.remove("isIntervalSplashing");
   void fx.offsetWidth;
@@ -146,14 +174,14 @@ export function startTimeGoalXpCount(
   if (!text) return false;
   const targetXp = Math.max(0, Math.floor(Number(awardedXp) || 0));
   cancelTimeGoalXpCount(text, { preserveHoldClasses: opts?.preserveHeldSplash });
-  text.textContent = targetXp > 0 ? formatTimeGoalAwardCountText(0) : formatTimeGoalAwardText(0);
+  stopTimeGoalXpCalculating(text);
   const durationMs = getTimeGoalXpCountDurationMs(targetXp);
   if (durationMs <= 0) {
     text.textContent = formatTimeGoalAwardText(targetXp);
     return true;
   }
 
-  const fx = (text.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text;
+  const fx = getTimeGoalXpFx(text) || text;
   const requestAnimationFrameFn = opts?.requestAnimationFrameFn || defaultRequestAnimationFrameFn;
   const setTimeoutFn = opts?.setTimeoutFn || defaultSetTimeoutFn;
   const cancelAnimationFrameFn = opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn;
@@ -169,6 +197,7 @@ export function startTimeGoalXpCount(
     cancelAnimationFrameFn,
   };
   xpCountAnimations.set(text, active);
+  fx.classList.add("isPlaying");
   fx.classList.add("isCounting");
   fx.dataset.xpCountState = "playing";
 
@@ -200,7 +229,7 @@ export function startTimeGoalXpCount(
     if (xpCountAnimations.get(text) !== active) return;
     if (startMs == null) startMs = timestamp;
     const progress = Math.max(0, Math.min(1, (timestamp - startMs) / durationMs));
-    text.textContent = formatTimeGoalAwardCountText(Math.round(targetXp * progress));
+    text.textContent = formatTimeGoalAwardCountText(Math.max(1, Math.round(targetXp * progress)));
     if (progress >= 1) {
       finish();
       return;
@@ -226,7 +255,7 @@ export function startTimeGoalXpSplashAfterConfetti(
     onIntervalCue?: (delayMs: number) => void;
   }
 ) {
-  const fx = (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
+  const fx = getTimeGoalXpFx(text);
   if (!fx) return false;
   const awardedXp = Math.max(0, Math.floor(Number(opts?.awardedXp) || 0));
   const delayMs = Math.max(0, Math.floor(Number(opts?.delayMs ?? TIME_GOAL_CONFETTI_DURATION_MS) || 0));
@@ -234,44 +263,49 @@ export function startTimeGoalXpSplashAfterConfetti(
   const setTimeoutFn = opts?.setTimeoutFn || defaultSetTimeoutFn;
   const clearTimeoutFn = opts?.clearTimeoutFn || defaultClearTimeoutFn;
   if (text) cancelTimeGoalXpCount(text);
-  if (awardedXp <= 0) {
-    if (text) text.textContent = formatTimeGoalAwardText(0);
+  if (reducedMotion) {
+    stopTimeGoalXpCalculating(text);
+    if (text) text.textContent = formatTimeGoalAwardText(awardedXp);
+    if (awardedXp > 0) opts?.onStart?.();
     return true;
   }
-  if (text) text.textContent = formatTimeGoalAwardCountText(0);
+  if (text) startTimeGoalXpCalculating(text);
   const startSplash = () => {
-    if (reducedMotion) {
-      if (text) text.textContent = formatTimeGoalAwardText(awardedXp);
-      opts?.onStart?.();
+    if (text) {
+      const active = xpCountAnimations.get(text);
+      if (active) active.timeoutHandle = null;
+      xpCountAnimations.delete(text);
+    }
+    stopTimeGoalXpCalculating(text);
+    if (awardedXp <= 0) {
+      if (text) text.textContent = formatTimeGoalAwardText(0);
       return true;
     }
     const started = startTimeGoalXpSplash(text, { holdForCount: awardedXp > 0 });
     if (started) opts?.onStart?.();
     if (started && text && awardedXp > 0) {
-      const timeoutHandle = setTimeoutFn(() => {
-        const active = xpCountAnimations.get(text);
-        if (active) active.timeoutHandle = null;
-        startTimeGoalXpCount(text, awardedXp, {
-          clearTimeoutFn,
-          requestAnimationFrameFn: opts?.requestAnimationFrameFn,
-          cancelAnimationFrameFn: opts?.cancelAnimationFrameFn,
-          preserveHeldSplash: true,
-          onIntervalCue: opts?.onIntervalCue,
-        });
-      }, TIME_GOAL_XP_SPLASH_TEXT_DURATION_MS);
-      xpCountAnimations.set(text, {
-        timeoutHandle,
-        timeoutHandles: [],
-        frameHandle: null,
+      startTimeGoalXpCount(text, awardedXp, {
         clearTimeoutFn,
-        cancelAnimationFrameFn: opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn,
+        requestAnimationFrameFn: opts?.requestAnimationFrameFn,
+        cancelAnimationFrameFn: opts?.cancelAnimationFrameFn,
+        preserveHeldSplash: true,
+        onIntervalCue: opts?.onIntervalCue,
       });
     }
     return started;
   };
-  if (reducedMotion || delayMs <= 0) return startSplash();
-  setTimeoutFn(() => {
+  if (delayMs <= 0) return startSplash();
+  const timeoutHandle = setTimeoutFn(() => {
     startSplash();
   }, delayMs);
+  if (text) {
+    xpCountAnimations.set(text, {
+      timeoutHandle,
+      timeoutHandles: [],
+      frameHandle: null,
+      clearTimeoutFn,
+      cancelAnimationFrameFn: opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn,
+    });
+  }
   return true;
 }

@@ -17,6 +17,10 @@
 
 .actionConfirmationHost{
   position:fixed;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
   left:50%;
   bottom:calc(18px + env(safe-area-inset-bottom));
   z-index:170;
@@ -32,16 +36,77 @@
   padding:10px 14px;
   border-radius:0;
   font-family:var(--font-readable);
-  font-size:13px;
+  font-size:11px;
   font-weight:700;
   line-height:1.25;
   text-align:center;
   transition:opacity .16s ease, transform .16s ease;
 }
 
+.actionConfirmationText{
+  min-width:0;
+}
+
+.actionConfirmationTick{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+  border:1px solid rgba(201,255,36,.9);
+  border-radius:50%;
+  background:rgba(201,255,36,.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(201,255,36,.1),
+    0 0 12px rgba(201,255,36,.18);
+  transform:scale(.72);
+  opacity:0;
+  animation:actionConfirmationTickPop .22s ease-out .05s forwards;
+}
+
+.actionConfirmationTick::after{
+  content:"";
+  width:7px;
+  height:4px;
+  border-left:2px solid #c9ff24;
+  border-bottom:2px solid #c9ff24;
+  transform:rotate(-45deg) scale(.72);
+  opacity:0;
+  animation:actionConfirmationTickMark .18s ease-out .18s forwards;
+}
+
 .actionConfirmationHost.isActive{
   opacity:1;
   transform:translate(-50%, 0);
+}
+
+@keyframes actionConfirmationTickPop{
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
+
+@keyframes actionConfirmationTickMark{
+  to{
+    opacity:1;
+    transform:rotate(-45deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .actionConfirmationTick,
+  .actionConfirmationTick::after{
+    animation:none;
+    opacity:1;
+    transform:scale(1);
+  }
+
+  .actionConfirmationTick::after{
+    transform:rotate(-45deg) scale(1);
+  }
 }
 
 .overlay{
@@ -2651,11 +2716,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   padding: var(--modal-padding);
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmTitle,
-#confirmOverlay.isDeleteTaskConfirm .confirmText{
-  color: var(--warn);
-}
-
 #confirmOverlay.isDeleteTaskConfirm .confirmDanger{
   font-size: 13px;
 }
@@ -2672,15 +2732,22 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   justify-content: center;
 }
 
+#confirmOverlay.isDeleteTaskConfirm .confirmText,
+#confirmOverlay.isDeleteSessionEntryConfirm .confirmText{
+  color: #fff;
+}
+
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:hover:not(:disabled),
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:focus-visible:not(:disabled),
-#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:active:not(:disabled){
+#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:active:not(:disabled),
+#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn,
+#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:hover:not(:disabled),
+#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:focus-visible:not(:disabled),
+#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:active:not(:disabled){
   border-color: var(--warn) !important;
   color: var(--warn) !important;
-  background: rgba(255, 77, 77, .14) !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px !important;
+  background: rgba(255, 255, 255, .01) !important;
 }
 
 #confirmOverlay.isScheduleConflictConfirm .confirmBtns{
@@ -5488,6 +5555,10 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText{
+  animation: timeGoalXpCalculatingTextPulse 920ms ease-in-out infinite;
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying.isCounting #timeGoalCompleteText{
   animation-name: timeGoalXpSplashTextHold;
 }
@@ -5606,6 +5677,19 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }
 
+@keyframes timeGoalXpCalculatingTextPulse{
+  0%,
+  100%{
+    opacity: .78;
+    transform: scale(.98);
+    filter: brightness(1.04);
+  }50%{
+    opacity: 1;
+    transform: scale(1.06);
+    filter: brightness(1.34);
+  }
+}
+
 @keyframes timeGoalXpGoldFragmentSplash{
   0%{
     opacity: 0;
@@ -5642,6 +5726,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing #timeGoalCompleteText,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
     animation: none;

@@ -22,8 +22,8 @@ import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
-import { playTaskCompleteConfettiHaptic } from "./interaction-haptics";
-import { formatTimeGoalAwardCountText, formatTimeGoalAwardText, startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { playTaskCompleteConfettiHaptic, playTimeGoalXpCountHaptic } from "./interaction-haptics";
+import { startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti, TIME_GOAL_XP_CALCULATING_TEXT } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -767,7 +767,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.timeGoalCompleteOverlay as HTMLElement).dataset.awardedXp = String(awardedXp);
     }
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = awardedXp > 0 ? formatTimeGoalAwardCountText(0) : formatTimeGoalAwardText(awardedXp);
+      els.timeGoalCompleteText.textContent = TIME_GOAL_XP_CALCULATING_TEXT;
     }
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";
@@ -787,10 +787,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
       onStart: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        playTimeGoalXpCountHaptic({
+          isEnabled: ctx.getInteractionHapticsEnabled,
+          getIntensity: ctx.getInteractionHapticsIntensity,
+        });
       },
       onIntervalCue: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
         startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
+        playTimeGoalXpCountHaptic({
+          isEnabled: ctx.getInteractionHapticsEnabled,
+          getIntensity: ctx.getInteractionHapticsIntensity,
+        });
       },
     });
     if (awardedXp > 0 && typeof window !== "undefined") {
@@ -812,14 +820,21 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (awardedXp <= 0) return;
     startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
       awardedXp,
-      delayMs: 0,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
       onStart: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        playTimeGoalXpCountHaptic({
+          isEnabled: ctx.getInteractionHapticsEnabled,
+          getIntensity: ctx.getInteractionHapticsIntensity,
+        });
       },
       onIntervalCue: () => {
         if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
         startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
+        playTimeGoalXpCountHaptic({
+          isEnabled: ctx.getInteractionHapticsEnabled,
+          getIntensity: ctx.getInteractionHapticsIntensity,
+        });
       },
     });
   }

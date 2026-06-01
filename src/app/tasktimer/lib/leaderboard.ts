@@ -75,6 +75,7 @@ export type WeeklyLeaderboardRow = {
   rankLabel: string;
   playerLabel: string;
   isCurrentUser: boolean;
+  isPinnedCurrentUser?: boolean;
   isPlaceholder: boolean;
   isDummy: boolean;
 };
@@ -87,35 +88,6 @@ type LeaderboardIdentityFields = Pick<
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
-const LEADERBOARD_TABLE_START_RANK = 4;
-const LEADERBOARD_DUMMY_TOTAL_XP_FALLBACK_CAP = 900;
-const LEADERBOARD_DUMMY_WEEKLY_XP_FALLBACK_CAP = 180;
-const LEADERBOARD_DUMMY_ALIASES = [
-  "NovaPilot",
-  "CircuitFox",
-  "PixelForge",
-  "OrbitMason",
-  "SignalVale",
-  "ByteHarbor",
-  "ZenithQuill",
-  "AtlasBloom",
-  "EchoVector",
-  "NorthPulse",
-  "SolarMint",
-  "TempoDrift",
-];
-const LEADERBOARD_DUMMY_AVATAR_IDS = [
-  "bottts/bottts-1777441132037",
-  "bottts/bottts-1777442377436",
-  "bottts/bottts-1777442388888",
-  "bottts/bottts-1777442393598",
-  "bottts/bottts-1777442397847",
-  "bottts/bottts-1777442402287",
-  "toons/toon-01-cap-glasses",
-  "toons/toon-02-brown-hair",
-  "toons/toon-03-blonde-hair",
-  "toons/toon-07-green-shirt",
-];
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
   const id = String(avatar?.id || "").trim();
   const src = String(avatar?.src || "").trim();
@@ -497,137 +469,54 @@ function formatWeeklyRankLabel(rank: number | null): string {
   return `#${rank}`;
 }
 
-function createPlaceholderLeaderboardRow(rank: number): WeeklyLeaderboardRow {
-  return {
-    profile: {
-      uid: `leaderboard-placeholder-${rank}`,
-      username: "",
-      displayLabel: "",
-      rewardTotalXp: 0,
-      rewardCurrentRankId: "unranked",
-      weeklyXpGain: 0,
-      streakDays: 0,
-      totalFocusMs: 0,
-      weeklyFocusMs: 0,
-      memberSinceMs: null,
-      schemaVersion: LEADERBOARD_SCHEMA_VERSION,
-      avatarId: null,
-      avatarCustomSrc: null,
-      googlePhotoUrl: null,
-      rankThumbnailSrc: null,
-    },
-    rank,
-    rankLabel: formatWeeklyRankLabel(rank),
-    playerLabel: "",
-    isCurrentUser: false,
-    isPlaceholder: true,
-    isDummy: false,
-  };
-}
-
-type LeaderboardDummyMetric = "totalXp" | "weeklyXp";
-
-function hashLeaderboardSeed(seed: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function dummySeedForRows(scope: string, rows: WeeklyLeaderboardRow[]): string {
-  const rowSeed = rows
-    .filter((row) => !row.isPlaceholder && !row.isDummy)
-    .map((row) => `${row.rank || "x"}:${row.profile.uid}:${row.profile.rewardTotalXp}:${row.profile.weeklyXpGain}`)
-    .join("|");
-  return `${scope}:${rowSeed}`;
-}
-
-function leaderboardMetricValue(profile: LeaderboardProfile, metric: LeaderboardDummyMetric): number {
-  return metric === "weeklyXp" ? normalizeInt(profile.weeklyXpGain) : normalizeInt(profile.rewardTotalXp);
-}
-
-function leaderboardDummyFallbackCap(metric: LeaderboardDummyMetric): number {
-  return metric === "weeklyXp" ? LEADERBOARD_DUMMY_WEEKLY_XP_FALLBACK_CAP : LEADERBOARD_DUMMY_TOTAL_XP_FALLBACK_CAP;
-}
-
-function resolveDummyXpCap(rows: WeeklyLeaderboardRow[], metric: LeaderboardDummyMetric): number {
-  const podiumValues = rows
-    .filter((row) => row.rank && row.rank >= 1 && row.rank < LEADERBOARD_TABLE_START_RANK && !row.isPlaceholder && !row.isDummy)
-    .map((row) => leaderboardMetricValue(row.profile, metric));
-  if (!podiumValues.length) return leaderboardDummyFallbackCap(metric);
-  return Math.min(...podiumValues);
-}
-
-function createDummyLeaderboardRow(rank: number, options: { metric: LeaderboardDummyMetric; seed: string; cap: number }): WeeklyLeaderboardRow {
-  const maxXp = Math.max(0, normalizeInt(options.cap) - 1);
-  const seed = hashLeaderboardSeed(`${options.seed}:${rank}`);
-  const alias = LEADERBOARD_DUMMY_ALIASES[seed % LEADERBOARD_DUMMY_ALIASES.length] || `User ${rank}`;
-  const avatarId = LEADERBOARD_DUMMY_AVATAR_IDS[(seed >>> 8) % LEADERBOARD_DUMMY_AVATAR_IDS.length] || null;
-  const band = Math.max(1, Math.floor((maxXp + 1) / (WEEKLY_LEADERBOARD_DISPLAY_LIMIT - LEADERBOARD_TABLE_START_RANK + 2)));
-  const rankOffset = rank - LEADERBOARD_TABLE_START_RANK;
-  const jitter = band > 1 ? (seed >>> 16) % band : 0;
-  const xp = Math.max(0, maxXp - rankOffset * band - jitter);
-  const profile: LeaderboardProfile = {
-    uid: `leaderboard-dummy-${options.metric}-${rank}-${seed.toString(36)}`,
-    username: alias,
-    displayLabel: alias,
-    rewardTotalXp: options.metric === "weeklyXp" ? Math.max(xp, Math.floor(xp * 4)) : xp,
-    rewardCurrentRankId: getRankForXp(options.metric === "weeklyXp" ? Math.max(xp, Math.floor(xp * 4)) : xp).id,
-    weeklyXpGain: options.metric === "weeklyXp" ? xp : Math.max(0, Math.floor(xp / 8)),
-    streakDays: 0,
-    totalFocusMs: 0,
-    weeklyFocusMs: 0,
-    memberSinceMs: null,
-    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
-    avatarId,
-    avatarCustomSrc: null,
-    googlePhotoUrl: null,
-    rankThumbnailSrc: null,
-  };
-
-  return {
-    profile,
-    rank,
-    rankLabel: formatWeeklyRankLabel(rank),
-    playerLabel: alias,
-    isCurrentUser: false,
-    isPlaceholder: false,
-    isDummy: true,
-  };
-}
-
-function padLeaderboardRows(
-  rows: WeeklyLeaderboardRow[],
-  options: { dummyMetric: LeaderboardDummyMetric; dummySeedScope: string }
-): WeeklyLeaderboardRow[] {
-  const visibleRanks = new Set(
-    rows
-      .map((row) => row.rank)
-      .filter((rank): rank is number => !!rank && rank >= 1 && rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT)
-  );
-  const placeholders: WeeklyLeaderboardRow[] = [];
-  const dummyRows: WeeklyLeaderboardRow[] = [];
-  const dummyCap = resolveDummyXpCap(rows, options.dummyMetric);
-  const dummySeed = `${dummySeedForRows(options.dummySeedScope, rows)}:cap=${dummyCap}`;
-
-  for (let rank = 1; rank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT; rank += 1) {
-    if (visibleRanks.has(rank)) continue;
-    if (rank >= LEADERBOARD_TABLE_START_RANK) {
-      dummyRows.push(createDummyLeaderboardRow(rank, { metric: options.dummyMetric, seed: `${dummySeed}:rank=${rank}:cap=${dummyCap}`, cap: dummyCap }));
-    } else {
-      placeholders.push(createPlaceholderLeaderboardRow(rank));
-    }
-  }
-
-  return [...rows, ...placeholders, ...dummyRows].sort((left, right) => {
+function sortLeaderboardRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow[] {
+  return rows.slice().sort((left, right) => {
     const leftRank = left.rank && left.rank > 0 ? left.rank : Number.MAX_SAFE_INTEGER;
     const rightRank = right.rank && right.rank > 0 ? right.rank : Number.MAX_SAFE_INTEGER;
     if (leftRank !== rightRank) return leftRank - rightRank;
     if (left.isPlaceholder !== right.isPlaceholder) return left.isPlaceholder ? 1 : -1;
     return String(left.profile.uid).localeCompare(String(right.profile.uid));
   });
+}
+
+function getRankScope(profile: LeaderboardProfile | null | undefined): { id: string } | null {
+  if (!profile) return null;
+  const rank = getRankForXp(profile.rewardTotalXp);
+  return { id: rank.id };
+}
+
+function filterProfilesByRankScope(profiles: LeaderboardProfile[], rankScope: { id: string } | null): LeaderboardProfile[] {
+  if (!rankScope) return profiles;
+  return profiles.filter((profile) => getRankForXp(profile.rewardTotalXp).id === rankScope.id);
+}
+
+function createCurrentUserLeaderboardRow(
+  profile: LeaderboardProfile,
+  options: {
+    rank: number | null;
+    metric: "totalXp" | "weeklyXp";
+    visibleRows: WeeklyLeaderboardRow[];
+  }
+): WeeklyLeaderboardRow {
+  const currentMetric = options.metric === "weeklyXp" ? normalizeInt(profile.weeklyXpGain) : normalizeInt(profile.rewardTotalXp);
+  const inferredRank =
+    options.visibleRows.filter((row) => {
+      if (row.isPlaceholder || row.isCurrentUser) return false;
+      const rowMetric = options.metric === "weeklyXp" ? normalizeInt(row.profile.weeklyXpGain) : normalizeInt(row.profile.rewardTotalXp);
+      return rowMetric > currentMetric;
+    }).length + 1;
+  const rank = options.rank && options.rank > 0 ? options.rank : inferredRank;
+
+  return {
+    profile,
+    rank,
+    rankLabel: formatWeeklyRankLabel(rank),
+    playerLabel: "You",
+    isCurrentUser: true,
+    isPinnedCurrentUser: true,
+    isPlaceholder: false,
+    isDummy: false,
+  };
 }
 
 export function buildGlobalLeaderboardRows(input: {
@@ -651,21 +540,18 @@ export function buildGlobalLeaderboardRows(input: {
   });
 
   if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
-    return padLeaderboardRows(rows, { dummyMetric: "totalXp", dummySeedScope: "global" });
+    return sortLeaderboardRows(rows);
   }
 
-  return padLeaderboardRows([
-    {
-      profile: input.currentUserEntry,
+  const visibleRows = sortLeaderboardRows(rows);
+  return [
+    ...visibleRows,
+    createCurrentUserLeaderboardRow(input.currentUserEntry, {
       rank: input.currentUserRank,
-      rankLabel: formatWeeklyRankLabel(input.currentUserRank),
-      playerLabel: "You",
-      isCurrentUser: true,
-      isPlaceholder: false,
-      isDummy: false,
-    },
-    ...rows,
-  ], { dummyMetric: "totalXp", dummySeedScope: "global" });
+      metric: "totalXp",
+      visibleRows,
+    }),
+  ];
 }
 
 export function buildRivalLeaderboardRows(input: {
@@ -674,7 +560,9 @@ export function buildRivalLeaderboardRows(input: {
   currentUserRivalRank: number | null;
 }): WeeklyLeaderboardRow[] {
   const currentUid = String(input.currentUserEntry?.uid || "").trim();
-  const rows = (input.rivalEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
+  const rankScope = getRankScope(input.currentUserEntry);
+  const scopedRivalEntries = filterProfilesByRankScope(input.rivalEntries || [], rankScope);
+  const rows = scopedRivalEntries.slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
     const isCurrentUser = !!currentUid && profile.uid === currentUid;
     const rank = isCurrentUser && input.currentUserRivalRank ? input.currentUserRivalRank : index + 1;
     return {
@@ -688,28 +576,39 @@ export function buildRivalLeaderboardRows(input: {
     };
   });
 
-  if (input.currentUserEntry && !rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
-    const inferredRank =
-      input.currentUserRivalRank && input.currentUserRivalRank > 0
-        ? input.currentUserRivalRank
-        : Math.min(rows.length + 1, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
-    const currentUserRow: WeeklyLeaderboardRow = {
+  const currentUserRivalRank =
+    input.currentUserRivalRank && input.currentUserRivalRank > 0 ? input.currentUserRivalRank : rows.length + 1;
+  const currentUserIsInRows = input.currentUserEntry && rows.some((row) => row.profile.uid === input.currentUserEntry!.uid);
+  if (input.currentUserEntry && !currentUserIsInRows && currentUserRivalRank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+    rows.splice(Math.max(0, currentUserRivalRank - 1), 0, {
       profile: input.currentUserEntry,
-      rank: inferredRank,
-      rankLabel: formatWeeklyRankLabel(inferredRank),
+      rank: currentUserRivalRank,
+      rankLabel: formatWeeklyRankLabel(currentUserRivalRank),
       playerLabel: "You",
       isCurrentUser: true,
       isPlaceholder: false,
       isDummy: false,
-    };
-    if (inferredRank > WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
-      rows.unshift(currentUserRow);
-    } else {
-      rows.splice(Math.max(0, inferredRank - 1), 0, currentUserRow);
-    }
+    });
+    rows.splice(WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+    rows.forEach((row, index) => {
+      row.rank = index + 1;
+      row.rankLabel = formatWeeklyRankLabel(index + 1);
+    });
   }
 
-  return padLeaderboardRows(rows, { dummyMetric: "totalXp", dummySeedScope: "rivals" });
+  if (input.currentUserEntry && !currentUserIsInRows && currentUserRivalRank > WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+    const visibleRows = sortLeaderboardRows(rows);
+    return [
+      ...visibleRows,
+      createCurrentUserLeaderboardRow(input.currentUserEntry, {
+        rank: currentUserRivalRank,
+        metric: "totalXp",
+        visibleRows,
+      }),
+    ];
+  }
+
+  return sortLeaderboardRows(rows);
 }
 
 export function buildWeeklyLeaderboardRows(input: {
@@ -734,21 +633,18 @@ export function buildWeeklyLeaderboardRows(input: {
   });
 
   if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
-    return padLeaderboardRows(rows, { dummyMetric: "weeklyXp", dummySeedScope: "weekly" });
+    return sortLeaderboardRows(rows);
   }
 
-  return padLeaderboardRows([
-    {
-      profile: input.currentUserEntry,
+  const visibleRows = sortLeaderboardRows(rows);
+  return [
+    ...visibleRows,
+    createCurrentUserLeaderboardRow(input.currentUserEntry, {
       rank: input.currentUserWeeklyRank,
-      rankLabel: formatWeeklyRankLabel(input.currentUserWeeklyRank),
-      playerLabel: "You",
-      isCurrentUser: true,
-      isPlaceholder: false,
-      isDummy: false,
-    },
-    ...rows,
-  ], { dummyMetric: "weeklyXp", dummySeedScope: "weekly" });
+      metric: "weeklyXp",
+      visibleRows,
+    }),
+  ];
 }
 
 function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, identity: LeaderboardIdentityFields | null): LeaderboardProfile {
@@ -826,7 +722,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     };
   }
 
-  const currentUserRankId = currentUserEntryWithIdentity.rewardCurrentRankId || getRankForXp(currentUserEntryWithIdentity.rewardTotalXp).id;
+  const currentUserRankId = getRankForXp(currentUserEntryWithIdentity.rewardTotalXp).id;
   const [higherXpResult, aboveResult, rivalResult, higherRivalResult, higherWeeklyResult] = await Promise.allSettled([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),

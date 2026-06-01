@@ -27,6 +27,7 @@ import {
   isInteractionHapticsRuntimeAvailable,
   playTaskCompleteConfettiHaptic,
   playInteractionHaptic,
+  playTimeGoalXpCountHaptic,
   registerInteractionHaptics,
 } from "./interaction-haptics";
 
@@ -55,7 +56,7 @@ const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequest
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const SECONDARY_DIRECT_SELECTOR =
-  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
+  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],[data-onboarding-next-action="true"],#openFriendRequestModalBtn';
 const CHECKBOX_SELECTOR = 'input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption';
 const DESTRUCTIVE_CONFIRM_SELECTOR =
   "#confirmOverlay.isResetTaskConfirm #confirmOkBtn,#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn,#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,#confirmOverlay.isDeleteFriendConfirm #confirmOkBtn,#confirmOverlay #confirmOkBtn.btn-warn,#confirmOverlay #confirmAltBtn.btn-warn,.modal .btn-warn";
@@ -158,6 +159,22 @@ describe("interaction haptics", () => {
 
     expect(Haptics.impact).toHaveBeenCalledTimes(1);
     expect(Haptics.impact).toHaveBeenCalledWith({ style: ImpactStyle.Medium });
+  });
+
+  it("plays time-goal xp count haptics only when enabled with the selected intensity", () => {
+    playTimeGoalXpCountHaptic({
+      isEnabled: () => false,
+      getIntensity: () => "max",
+    });
+    expect(Haptics.impact).not.toHaveBeenCalled();
+
+    playTimeGoalXpCountHaptic({
+      isEnabled: () => true,
+      getIntensity: () => "low",
+    });
+
+    expect(Haptics.impact).toHaveBeenCalledTimes(1);
+    expect(Haptics.impact).toHaveBeenCalledWith({ style: ImpactStyle.Light });
   });
 
   it("registers one trusted-click listener gated by the haptics preference", () => {

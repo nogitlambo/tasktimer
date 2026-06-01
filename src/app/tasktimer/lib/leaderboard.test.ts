@@ -84,22 +84,26 @@ function querySnap(docs: Array<ReturnType<typeof docSnap>>) {
 }
 
 function tableRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow[] {
-  return rows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isCurrentUser && (!row.rank || row.rank > 10)));
+  return rows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
 }
 
-function expectDummyTableRows(rows: WeeklyLeaderboardRow[], metric: "weeklyXpGain" | "rewardTotalXp", cap: number) {
-  const dummyRows = tableRows(rows).filter((row) => row.isDummy);
+function expectPinnedCurrentRank(
+  rows: WeeklyLeaderboardRow[],
+  expectedRank: number,
+  uid = "me"
+) {
+  const currentRow = rows.find((row) => row.isCurrentUser && row.profile.uid === uid);
+  expect(currentRow).toBeTruthy();
 
-  expect(dummyRows).toHaveLength(7);
-  expect(dummyRows.every((row) => !row.isPlaceholder && !row.isCurrentUser)).toBe(true);
-  expect(dummyRows.every((row) => row.playerLabel && row.profile.username === row.playerLabel)).toBe(true);
-  expect(dummyRows.every((row) => row.profile[metric] < cap)).toBe(true);
-  expect(dummyRows.map((row) => row.profile[metric])).toEqual(
-    dummyRows
-      .map((row) => row.profile[metric])
-      .slice()
-      .sort((left, right) => right - left)
-  );
+  expect(currentRow).toMatchObject({
+    isCurrentUser: true,
+    isPinnedCurrentUser: true,
+    rank: expectedRank,
+    rankLabel: `#${expectedRank}`,
+    playerLabel: "You",
+    isPlaceholder: false,
+  });
+  expect(rows.at(-1)).toBe(currentRow);
 }
 
 describe("getLeaderboardResolvedRank", () => {
@@ -152,11 +156,11 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows.slice(0, 3).map((row) => row.profile.uid)).toEqual(["high", "mid", "low"]);
     expect(rows.slice(0, 3).map((row) => row.rankLabel)).toEqual(["#1", "#2", "#3"]);
-    expect(rows).toHaveLength(10);
-    expectDummyTableRows(rows, "weeklyXpGain", 40);
+    expect(rows).toHaveLength(3);
+    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 
-  it("pins the current user with their ladder rank when they are outside the weekly board with no weekly XP", () => {
+  it("pins the current user with their actual rank when they are outside the weekly board", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 240 }),
@@ -166,13 +170,8 @@ describe("buildWeeklyLeaderboardRows", () => {
       currentUserWeeklyRank: 12,
     });
 
-    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({
-      isCurrentUser: true,
-      rankLabel: "#12",
-      playerLabel: "You",
-      isPlaceholder: false,
-    });
-    expect(rows).toHaveLength(11);
+    expectPinnedCurrentRank(rows, 12);
+    expect(rows).toHaveLength(3);
     expect(rows.filter((row) => !row.isPlaceholder && !row.isDummy && !row.isCurrentUser).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
   });
 
@@ -184,13 +183,9 @@ describe("buildWeeklyLeaderboardRows", () => {
     });
     const rowsForTable = tableRows(rows);
 
-    expect(rowsForTable).toHaveLength(8);
-    expect(rowsForTable.filter((row) => row.isDummy)).toHaveLength(7);
-    expect(rowsForTable.find((row) => row.isCurrentUser)).toMatchObject({
-      isCurrentUser: true,
-      rankLabel: "#12",
-      playerLabel: "You",
-    });
+    expect(rowsForTable).toHaveLength(1);
+    expect(rowsForTable.filter((row) => row.isDummy)).toHaveLength(0);
+    expectPinnedCurrentRank(rows, 12);
   });
 
   it("does not duplicate the current user when they are already ranked in the weekly top entries", () => {
@@ -215,41 +210,17 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
   });
 
-  it("keeps podium slots blank and fills table slots with dummy rows on an empty weekly board", () => {
+  it("returns no rows on an empty weekly board", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
     });
 
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(0, 3).every((row) => row.isPlaceholder && !row.isDummy)).toBe(true);
-    expect(rows.slice(3).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
-    expect(rows.map((row) => row.rankLabel)).toEqual(["#1", "#2", "#3", "#4", "#5", "#6", "#7", "#8", "#9", "#10"]);
+    expect(rows).toEqual([]);
   });
 
-  it("fills the weekly table from fourth to tenth place without repeating the podium", () => {
-    const rows = buildWeeklyLeaderboardRows({
-      weeklyEntries: [
-        createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 400 }),
-        createProfile({ uid: "top-2", username: "top_2", weeklyXpGain: 320 }),
-        createProfile({ uid: "top-3", username: "top_3", weeklyXpGain: 280 }),
-        createProfile({ uid: "top-4", username: "top_4", weeklyXpGain: 240 }),
-      ],
-      currentUserEntry: null,
-      currentUserWeeklyRank: null,
-    });
-
-    const tableRows = rows.filter((row) => !!row.rank && row.rank >= 4 && row.rank <= 10);
-
-    expect(tableRows).toHaveLength(7);
-    expect(tableRows.map((row) => row.rankLabel)).toEqual(["#4", "#5", "#6", "#7", "#8", "#9", "#10"]);
-    expect(tableRows[0]?.profile.uid).toBe("top-4");
-    expect(tableRows.slice(1).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
-    expect(tableRows.slice(1).every((row) => row.profile.weeklyXpGain < 280)).toBe(true);
-  });
-
-  it("pads partial weekly boards", () => {
+  it("keeps partial weekly boards partial", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 260 }),
@@ -261,46 +232,23 @@ describe("buildWeeklyLeaderboardRows", () => {
 
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
-    expect(rows[2]?.isPlaceholder).toBe(true);
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(3).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
-  });
-
-  it("generates stable dummy weekly rows below the lowest available podium XP", () => {
-    const input = {
-      weeklyEntries: [
-        createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 260 }),
-        createProfile({ uid: "top-2", username: "top_2", weeklyXpGain: 190 }),
-      ],
-      currentUserEntry: null,
-      currentUserWeeklyRank: null,
-    };
-
-    const firstRows = buildWeeklyLeaderboardRows(input);
-    const secondRows = buildWeeklyLeaderboardRows(input);
-
-    expect(tableRows(firstRows).map((row) => [row.profile.uid, row.playerLabel, row.profile.weeklyXpGain])).toEqual(
-      tableRows(secondRows).map((row) => [row.profile.uid, row.playerLabel, row.profile.weeklyXpGain])
-    );
-    expect(firstRows[2]).toMatchObject({ rankLabel: "#3", isPlaceholder: true, isDummy: false });
-    expectDummyTableRows(firstRows, "weeklyXpGain", 190);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 });
 
 describe("buildGlobalLeaderboardRows", () => {
-  it("keeps podium slots blank and fills table slots with dummy rows on an empty global board", () => {
+  it("returns no rows on an empty global board", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [],
       currentUserEntry: null,
       currentUserRank: null,
     });
 
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(0, 3).every((row) => row.isPlaceholder && !row.isDummy)).toBe(true);
-    expect(rows.slice(3).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
+    expect(rows).toEqual([]);
   });
 
-  it("pads partial global boards", () => {
+  it("keeps partial global boards partial", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [
         createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 }),
@@ -310,29 +258,22 @@ describe("buildGlobalLeaderboardRows", () => {
       currentUserRank: null,
     });
 
-    expect(rows).toHaveLength(10);
+    expect(rows).toHaveLength(2);
     expect(rows.slice(0, 2).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
-    expect(rows[2]?.isPlaceholder).toBe(true);
-    expect(rows.slice(3).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
-    expect(rows.slice(3).every((row) => row.profile.rewardTotalXp < 700)).toBe(true);
+    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 
-  it("pins the current user with their global rank when outside the top board", () => {
+  it("pins the current user with their actual global rank when outside the top board", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 })],
       currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 200 }),
       currentUserRank: 42,
     });
 
-    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({
-      isCurrentUser: true,
-      rankLabel: "#42",
-      playerLabel: "You",
-      isPlaceholder: false,
-    });
-    expect(rows).toHaveLength(11);
+    expectPinnedCurrentRank(rows, 42);
+    expect(rows).toHaveLength(2);
   });
 
   it("keeps an out-of-top-ten current user available for the global table", () => {
@@ -343,75 +284,61 @@ describe("buildGlobalLeaderboardRows", () => {
     });
     const rowsForTable = tableRows(rows);
 
-    expect(rowsForTable).toHaveLength(8);
-    expect(rowsForTable.filter((row) => row.isDummy)).toHaveLength(7);
-    expect(rowsForTable.find((row) => row.isCurrentUser)).toMatchObject({
-      isCurrentUser: true,
-      rankLabel: "#42",
-      playerLabel: "You",
-    });
-    expectDummyTableRows(rows, "rewardTotalXp", 900);
-  });
-
-  it("generates stable dummy global rows below the lowest podium XP", () => {
-    const input = {
-      topEntries: [
-        createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 }),
-        createProfile({ uid: "top-2", username: "top_2", rewardTotalXp: 700 }),
-      ],
-      currentUserEntry: null,
-      currentUserRank: null,
-    };
-
-    const firstRows = buildGlobalLeaderboardRows(input);
-    const secondRows = buildGlobalLeaderboardRows(input);
-
-    expect(tableRows(firstRows).map((row) => [row.profile.uid, row.playerLabel, row.profile.rewardTotalXp])).toEqual(
-      tableRows(secondRows).map((row) => [row.profile.uid, row.playerLabel, row.profile.rewardTotalXp])
-    );
-    expect(firstRows[2]).toMatchObject({ rankLabel: "#3", isPlaceholder: true, isDummy: false });
-    expectDummyTableRows(firstRows, "rewardTotalXp", 700);
+    expect(rowsForTable).toHaveLength(1);
+    expect(rowsForTable.filter((row) => row.isDummy)).toHaveLength(0);
+    expectPinnedCurrentRank(rows, 42);
   });
 });
 
 describe("buildRivalLeaderboardRows", () => {
-  it("returns only the current user when rival rank is unavailable and there are no rivals", () => {
+  it("keeps a visible rank one current user in the rivals podium", () => {
     const rows = buildRivalLeaderboardRows({
       rivalEntries: [],
       currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
-      currentUserRivalRank: null,
+      currentUserRivalRank: 1,
     });
 
     expect(rows[0]).toMatchObject({
+      profile: expect.objectContaining({ uid: "me" }),
       isCurrentUser: true,
       rank: 1,
       rankLabel: "#1",
       playerLabel: "You",
       isPlaceholder: false,
+      isDummy: false,
     });
-    expect(rows).toHaveLength(10);
-    expect(rows.slice(1, 3).every((row) => row.isPlaceholder && !row.isDummy)).toBe(true);
-    expect(rows.slice(3).every((row) => row.isDummy && !row.isPlaceholder)).toBe(true);
-    expectDummyTableRows(rows, "rewardTotalXp", 1200);
+    expect(tableRows(rows).some((row) => row.isCurrentUser)).toBe(false);
+    expect(rows).toHaveLength(1);
+    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 
-  it("keeps the current user on their numeric rival ladder rank when outside the visible board", () => {
+  it("keeps the current user pinned on their actual rival rank when outside the visible board", () => {
     const rows = buildRivalLeaderboardRows({
       rivalEntries: [createProfile({ uid: "rival-1", username: "rival_1", rewardTotalXp: 1600 })],
       currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 900 }),
       currentUserRivalRank: 14,
     });
 
-    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({
-      isCurrentUser: true,
-      rank: 14,
-      rankLabel: "#14",
-      playerLabel: "You",
-      isPlaceholder: false,
-    });
+    expectPinnedCurrentRank(rows, 14);
     expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
-    expect(tableRows(rows).filter((row) => row.isDummy)).toHaveLength(7);
-    expectDummyTableRows(rows, "rewardTotalXp", 1600);
+    expect(tableRows(rows).filter((row) => row.isDummy)).toHaveLength(0);
+  });
+
+  it("filters rank rivals to the current user's resolved rank", () => {
+    const rows = buildRivalLeaderboardRows({
+      rivalEntries: [
+        createProfile({ uid: "same-1", username: "same_1", rewardTotalXp: 1400, rewardCurrentRankId: "engineer" }),
+        createProfile({ uid: "lower-1", username: "lower_1", rewardTotalXp: 700, rewardCurrentRankId: "engineer" }),
+        createProfile({ uid: "higher-1", username: "higher_1", rewardTotalXp: 3200, rewardCurrentRankId: "engineer" }),
+      ],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: 2,
+    });
+
+    const realNonCurrentRows = rows.filter((row) => !row.isCurrentUser && !row.isPlaceholder && !row.isDummy);
+    expect(realNonCurrentRows.map((row) => row.profile.uid)).toEqual(["same-1"]);
+    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({ rank: 2, rankLabel: "#2" });
+    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 });
 

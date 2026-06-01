@@ -86,7 +86,7 @@ export default function TimeGoalCompleteOverlay() {
         <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
         <div className="timeGoalCompleteXpFx" aria-live="polite">
           <p className="modalSubtext confirmText" id="timeGoalCompleteText">
-            You got 0 XP!
+            Calculating XP...
           </p>
           <span className="timeGoalCompleteGoldFragments" aria-hidden="true">
             {GOLD_FRAGMENTS.map((fragment, index) => (

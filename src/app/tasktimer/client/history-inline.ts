@@ -1453,6 +1453,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
       ctx.confirm("Delete Session Entry", `Delete this session entry (${ctx.formatTime(entry.ms || 0)})?`, {
         okLabel: "Delete",
+        overlayClassName: "isDeleteSessionEntryConfirm",
         onOk: () => {
           deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex);
           ctx.closeConfirm();
@@ -1463,7 +1464,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           openHistoryEntryNoteOverlay(taskId, selectedEntries.length ? selectedEntries : [entry]);
         },
       });
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteTaskConfirm");
       playDeleteAlertAudio();
     });
     ctx.on(
