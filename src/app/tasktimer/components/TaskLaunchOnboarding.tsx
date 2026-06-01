@@ -3,14 +3,15 @@
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 
+import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
+import { AVATAR_CATALOG, type AvatarOption } from "../lib/avatarCatalog";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
   TASKTIMER_ONBOARDING_DEFAULT_END_TIME,
   TASKTIMER_ONBOARDING_DEFAULT_START_TIME,
-  TASKTIMER_ONBOARDING_WEEKDAY_DEFAULTS,
   buildTaskTimerOnboardingPreferenceDraft,
   loadRemoteTaskTimerOnboardingState,
   loadTaskTimerOnboardingPreferencePresence,
@@ -20,26 +21,38 @@ import {
   type TaskTimerOnboardingPreferencePresence,
 } from "../lib/onboarding";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
-import { OPTIMAL_PRODUCTIVITY_DAY_LABELS, normalizeOptimalProductivityDays, normalizeTimeOfDay } from "../lib/productivityPeriod";
-import { ACCOUNT_PROFILE_UPDATED_EVENT, notifyAccountProfileUpdated } from "../lib/accountProfileStorage";
+import { DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS, OPTIMAL_PRODUCTIVITY_DAY_LABELS, normalizeTimeOfDay } from "../lib/productivityPeriod";
+import {
+  ACCOUNT_PROFILE_UPDATED_EVENT,
+  notifyAccountAvatarUpdated,
+  notifyAccountProfileUpdated,
+  readStoredAvatarId,
+  writeStoredAvatarId,
+} from "../lib/accountProfileStorage";
 import {
   TASKTIMER_OPEN_ONBOARDING_EVENT,
   resolveOnboardingPreferenceError,
   saveOnboardingPreferencesViaRuntime,
 } from "../client/onboarding-events";
-import { getErrorMessage, loadClaimedUsername, updateAliasFlow } from "./settings/settingsAccountService";
+import { getErrorMessage, loadClaimedUsername, saveUserDocPatch, updateAliasFlow } from "./settings/settingsAccountService";
 
 type TaskLaunchOnboardingProps = {
   preferences: UserPreferencesV1 | null;
 };
 
-type StepKey = "username" | "days" | "hours" | "push";
+type StepKey = "username" | "intro" | "days" | "hours" | "push" | "weekStart";
+type OnboardingTimeField = "start" | "end";
 
-const STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
+export const ONBOARDING_CHRONOTYPE_INTRO =
+  "Most productivity tools organize your time. TaskLaunch goes a step further by using chronotype alignment to help you match demanding work with your peak focus periods, so you can achieve more with less mental strain.";
+
+export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
+  { key: "intro", title: "Chronotype Alignment" },
   { key: "days", title: "Productivity Days" },
   { key: "hours", title: "Productivity Hours" },
   { key: "push", title: "Notifications" },
+  { key: "weekStart", title: "Week Start" },
 ];
 
 const WEEK_START_OPTIONS: ReadonlyArray<{ value: DashboardWeekStart; label: string }> = [
@@ -60,24 +73,105 @@ const PRODUCTIVITY_DAY_PILL_ROWS: ReadonlyArray<ReadonlyArray<DashboardWeekStart
 const PRODUCTIVITY_DAY_LABELS = new Map(
   OPTIMAL_PRODUCTIVITY_DAY_LABELS.map((day) => [normalizeDashboardWeekStart(day.value), day.label.slice(0, 3).toUpperCase()] as const)
 );
+const USERNAME_TAKEN_ERROR_MESSAGE = "That username is already taken.";
+export const ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE = "That username is already taken. Try another one.";
+const ONBOARDING_USERNAME_ERROR_ID = "onboardingUsernameError";
+
+export function isOnboardingUsernameTakenError(message: unknown) {
+  return String(message || "").trim() === USERNAME_TAKEN_ERROR_MESSAGE;
+}
+
+export function resolveOnboardingAvatarId(
+  savedAvatarId: unknown,
+  avatars: ReadonlyArray<Pick<AvatarOption, "id">>,
+  randomValue = Math.random()
+) {
+  if (!avatars.length) return "";
+  const saved = String(savedAvatarId || "").trim();
+  if (saved && avatars.some((avatar) => avatar.id === saved)) return saved;
+  const index = Math.max(0, Math.min(avatars.length - 1, Math.floor(Math.max(0, Math.min(0.999999, randomValue)) * avatars.length)));
+  return avatars[index]?.id || avatars[0]?.id || "";
+}
+
+export function onboardingAvatarProfilePatch(avatarId: string) {
+  return {
+    avatarId,
+    avatarCustomSrc: null,
+  };
+}
+
+export function normalizeOnboardingProductivityDays(value: unknown): DashboardWeekStart[] {
+  const source = Array.isArray(value) ? value : typeof value === "string" ? String(value).split(",") : [];
+  const seen = new Set<DashboardWeekStart>();
+  for (const entry of source) {
+    const day = normalizeDashboardWeekStart(entry);
+    if (String(entry || "").trim().toLowerCase() === day) seen.add(day);
+  }
+  return DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.filter((day) => seen.has(day));
+}
+
+export function canContinueOnboardingStep(step: StepKey, selectedDays: ReadonlyArray<DashboardWeekStart>) {
+  return step !== "days" || selectedDays.length > 0;
+}
 
 function stepIntro(step: StepKey, isNativeRuntime: boolean) {
   if (step === "username") return "Confirm the username people will see in TaskLaunch social surfaces.";
+  if (step === "intro") return ONBOARDING_CHRONOTYPE_INTRO;
   if (step === "days") return "Choose the days that count toward your productivity streaks, rewards, and dashboard insights.";
   if (step === "hours") return "Set the time block when you are usually at your best.";
-  return isNativeRuntime
-    ? "Enable device notifications for task reminders and completed task alerts."
-    : "Enable browser notifications for task reminders and completed task alerts.";
+  if (step === "weekStart") return "Choose which day your week starts on.";
+  void isNativeRuntime;
+  return "To receive task reminders and alerts, please enable push notifications.";
 }
 
 function alertUsernameError(message: string) {
   if (typeof window !== "undefined") window.alert(message);
 }
 
-function onboardingTitle(step: StepKey, username: string) {
+export function onboardingTitle(step: StepKey, username: string) {
   if (step === "username") return "Welcome";
-  if (step === "days") return `Good to meet you, ${username}!`;
-  return STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
+  if (step === "intro") return `Good to meet you, ${username}!`;
+  return ONBOARDING_STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
+}
+
+export function formatOnboardingClockTimeLabel(value: unknown, fallback: string) {
+  const normalized = normalizeTimeOfDay(value, fallback);
+  const [hourRaw, minuteRaw] = normalized.split(":");
+  const hour24 = Math.max(0, Math.min(23, Number(hourRaw || 0)));
+  const hour12 = hour24 % 12 || 12;
+  const meridiem = hour24 >= 12 ? "PM" : "AM";
+  return `${hour12}:${String(Number(minuteRaw || 0)).padStart(2, "0")} ${meridiem}`;
+}
+
+export function onboardingStepPreferencePayload(input: {
+  step: StepKey;
+  weekStarting: DashboardWeekStart;
+  selectedDays: ReadonlyArray<DashboardWeekStart>;
+  startTime: string;
+  endTime: string;
+  pushEnabled: boolean;
+  pushTouched: boolean;
+}) {
+  if (input.step === "days") {
+    return {
+      optimalProductivityDays: Array.from(input.selectedDays),
+    };
+  }
+  if (input.step === "hours") {
+    return {
+      optimalProductivityStartTime: input.startTime,
+      optimalProductivityEndTime: input.endTime,
+    };
+  }
+  if (input.step === "push") {
+    return input.pushTouched ? { pushNotificationsEnabled: input.pushEnabled } : null;
+  }
+  if (input.step === "weekStart") {
+    return {
+      weekStarting: input.weekStarting,
+    };
+  }
+  return null;
 }
 
 export function isOnboardingFinishDisabled(busy: boolean) {
@@ -90,26 +184,34 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [usernameDraft, setUsernameDraft] = useState("");
+  const [selectedAvatarId, setSelectedAvatarId] = useState("");
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [usernameConfirmedAtMs, setUsernameConfirmedAtMs] = useState<number | null>(null);
   const [weekStarting, setWeekStarting] = useState<DashboardWeekStart>("mon");
-  const [productivityDays, setProductivityDays] = useState(() => normalizeOptimalProductivityDays(TASKTIMER_ONBOARDING_WEEKDAY_DEFAULTS));
+  const [productivityDays, setProductivityDays] = useState<DashboardWeekStart[]>([]);
   const [startTime, setStartTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_START_TIME);
   const [endTime, setEndTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_END_TIME);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushTouched, setPushTouched] = useState(false);
   const [weekStartDropdownOpen, setWeekStartDropdownOpen] = useState(false);
+  const [visibleTimeFallback, setVisibleTimeFallback] = useState<OnboardingTimeField | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [usernameInlineError, setUsernameInlineError] = useState("");
   const openRef = useRef(false);
   const weekStartDropdownRef = useRef<HTMLDivElement | null>(null);
+  const startTimeInputRef = useRef<HTMLInputElement | null>(null);
+  const endTimeInputRef = useRef<HTMLInputElement | null>(null);
 
-  const activeStep = STEPS[stepIndex]?.key || "username";
+  const activeStep = ONBOARDING_STEPS[stepIndex]?.key || "username";
   const isNativeRuntime = isNativeOrFileRuntime();
   const usernameValidation = usernameDraft.trim() ? validateUsername(usernameDraft) : "Username is required.";
   const usernameConfirmed = !!usernameConfirmedAtMs && normalizeUsername(usernameDraft) === normalizeUsername(username);
-  const selectedDays = useMemo(() => normalizeOptimalProductivityDays(productivityDays), [productivityDays]);
+  const selectedDays = useMemo(() => normalizeOnboardingProductivityDays(productivityDays), [productivityDays]);
   const selectedWeekStartOption = WEEK_START_OPTIONS.find((option) => option.value === weekStarting) ?? WEEK_START_OPTIONS[0];
+  const onboardingHeadingText = onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there");
+  const selectedAvatar = AVATAR_CATALOG.find((avatar) => avatar.id === selectedAvatarId) || AVATAR_CATALOG[0] || null;
 
   useEffect(() => {
     openRef.current = open;
@@ -131,18 +233,23 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   }, [weekStartDropdownOpen]);
 
   useEffect(() => {
-    if (activeStep !== "days") setWeekStartDropdownOpen(false);
+    if (activeStep !== "weekStart") setWeekStartDropdownOpen(false);
+    if (activeStep !== "hours") setVisibleTimeFallback(null);
+    if (activeStep !== "username") setAvatarPickerOpen(false);
   }, [activeStep]);
 
   const resetDrafts = useCallback(
-    (nextUsername: string, nextPresence: TaskTimerOnboardingPreferencePresence | null) => {
+    (nextUid: string, nextUsername: string, nextPresence: TaskTimerOnboardingPreferencePresence | null) => {
       const normalizedUsername = normalizeUsername(nextUsername);
       const preferenceDraft = buildTaskTimerOnboardingPreferenceDraft(preferences, nextPresence);
+      const nextAvatarId = resolveOnboardingAvatarId(readStoredAvatarId(nextUid), AVATAR_CATALOG);
       setUsername(normalizedUsername);
       setUsernameDraft(normalizedUsername);
+      setSelectedAvatarId(nextAvatarId);
+      setAvatarPickerOpen(false);
       setUsernameConfirmedAtMs(null);
       setWeekStarting(preferenceDraft.weekStarting);
-      setProductivityDays(preferenceDraft.optimalProductivityDays);
+      setProductivityDays(normalizeOnboardingProductivityDays(preferenceDraft.optimalProductivityDays));
       setStartTime(preferenceDraft.optimalProductivityStartTime);
       setEndTime(preferenceDraft.optimalProductivityEndTime);
       setPushEnabled(isNativeRuntime ? !!preferences?.mobilePushAlertsEnabled : !!preferences?.webPushAlertsEnabled);
@@ -150,6 +257,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setStepIndex(0);
       setStatus("");
       setError("");
+      setUsernameInlineError("");
     },
     [isNativeRuntime, preferences]
   );
@@ -175,7 +283,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setUsername(normalizeUsername(claimedUsername));
 
       if (options?.forceOpen) {
-        resetDrafts(claimedUsername, nextPresence);
+        resetDrafts(nextUid, claimedUsername, nextPresence);
         setOpen(true);
         return;
       }
@@ -187,7 +295,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         preferencePresence: nextPresence,
       });
       if (shouldOpen && !openRef.current) {
-        resetDrafts(claimedUsername, nextPresence);
+        resetDrafts(nextUid, claimedUsername, nextPresence);
         setOpen(true);
       }
     },
@@ -236,11 +344,22 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     []
   );
 
+  const saveSelectedOnboardingAvatar = useCallback(async () => {
+    const avatarId = selectedAvatarId || AVATAR_CATALOG[0]?.id || "";
+    if (!uid || !avatarId) return;
+    const patch = onboardingAvatarProfilePatch(avatarId);
+    writeStoredAvatarId(uid, avatarId);
+    await saveUserDocPatch(uid, patch);
+    await syncOwnFriendshipProfile(uid, patch);
+    notifyAccountAvatarUpdated();
+  }, [selectedAvatarId, uid]);
+
   const confirmUsername = useCallback(async () => {
     const nextUsername = usernameDraft.trim();
     const validation = validateUsername(nextUsername);
     if (validation) {
       setError(validation);
+      setUsernameInlineError("");
       setUsernameConfirmedAtMs(null);
       alertUsernameError(validation);
       return false;
@@ -248,6 +367,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     if (!uid) {
       const message = "Sign in is required to update your username.";
       setError(message);
+      setUsernameInlineError("");
       setUsernameConfirmedAtMs(null);
       alertUsernameError(message);
       return false;
@@ -255,6 +375,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
     setBusy(true);
     setError("");
+    setUsernameInlineError("");
     setStatus("");
     setUsernameConfirmedAtMs(null);
     try {
@@ -270,20 +391,28 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         setUsername(normalizeUsername(nextUsername));
         setUsernameDraft(normalizeUsername(nextUsername));
       }
+      await saveSelectedOnboardingAvatar();
       const confirmedAtMs = Date.now();
       setUsernameConfirmedAtMs(confirmedAtMs);
+      setUsernameInlineError("");
       setStatus("Username confirmed.");
       return true;
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Unable to update username right now.");
       setUsernameConfirmedAtMs(null);
+      if (isOnboardingUsernameTakenError(message)) {
+        setError("");
+        setUsernameInlineError(ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE);
+        return false;
+      }
       setError(message);
+      setUsernameInlineError("");
       alertUsernameError(message);
       return false;
     } finally {
       setBusy(false);
     }
-  }, [uid, username, usernameDraft]);
+  }, [saveSelectedOnboardingAvatar, uid, username, usernameDraft]);
 
   const handlePushToggle = useCallback(
     async (nextEnabled: boolean) => {
@@ -309,20 +438,20 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const saveCurrentStep = useCallback(async () => {
     if (activeStep === "username") return confirmUsername();
-    if (activeStep === "days") {
-      return savePreferenceStep({
-        weekStarting,
-        optimalProductivityDays: selectedDays,
-      });
+    if (!canContinueOnboardingStep(activeStep, selectedDays)) {
+      setError("Select at least one productivity day before continuing.");
+      return false;
     }
-    if (activeStep === "hours") {
-      return savePreferenceStep({
-        optimalProductivityStartTime: startTime,
-        optimalProductivityEndTime: endTime,
-      });
-    }
-    if (pushTouched) return savePreferenceStep({ pushNotificationsEnabled: pushEnabled });
-    return true;
+    const preferencePayload = onboardingStepPreferencePayload({
+      step: activeStep,
+      weekStarting,
+      selectedDays,
+      startTime,
+      endTime,
+      pushEnabled,
+      pushTouched,
+    });
+    return preferencePayload ? savePreferenceStep(preferencePayload) : true;
   }, [activeStep, confirmUsername, pushEnabled, pushTouched, savePreferenceStep, selectedDays, startTime, endTime, weekStarting]);
 
   const closeWithState = useCallback(
@@ -349,7 +478,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const handleNext = useCallback(async () => {
     const saved = await saveCurrentStep();
     if (!saved) return;
-    setStepIndex((current) => Math.min(STEPS.length - 1, current + 1));
+    setStepIndex((current) => Math.min(ONBOARDING_STEPS.length - 1, current + 1));
     setStatus("");
   }, [saveCurrentStep]);
 
@@ -366,11 +495,36 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const toggleProductivityDay = (day: DashboardWeekStart) => {
     setProductivityDays((current) => {
-      const normalized = normalizeOptimalProductivityDays(current);
+      const normalized = normalizeOnboardingProductivityDays(current);
       const hasDay = normalized.includes(day);
       const next = hasDay ? normalized.filter((value) => value !== day) : normalized.concat(day);
-      return next.length ? normalizeOptimalProductivityDays(next) : normalized;
+      return normalizeOnboardingProductivityDays(next);
     });
+    setStatus("");
+    setError("");
+  };
+
+  const selectAllProductivityDays = () => {
+    setProductivityDays(Array.from(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS));
+    setStatus("");
+    setError("");
+  };
+
+  const openClockTimePicker = (field: OnboardingTimeField) => {
+    const input = field === "start" ? startTimeInputRef.current : endTimeInputRef.current;
+    if (!input) return;
+    input.focus();
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    if (typeof pickerInput.showPicker === "function") {
+      try {
+        pickerInput.showPicker();
+        return;
+      } catch {
+        // Fall back to the visible native field when browser picker access is blocked.
+      }
+    }
+    setVisibleTimeFallback(field);
+    window.setTimeout(() => input.focus(), 0);
   };
 
   const handleWeekStartDropdownKeyDown = useCallback((event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -396,37 +550,221 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         ) : null}
         {activeStep !== "username" ? (
           <div className="onboardingStepMeta" aria-label="Onboarding progress">
-            Step {stepIndex + 1} of {STEPS.length}
+            Step {stepIndex + 1} of {ONBOARDING_STEPS.length}
           </div>
         ) : null}
-        <h2>{onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there")}</h2>
+        <h2 className="onboardingGreetingTitle" key={`onboarding-heading-${activeStep}`}>
+          {onboardingHeadingText}
+        </h2>
+        <div className="onboardingGreetingDivider" key={`onboarding-divider-${activeStep}`} aria-hidden="true" />
         {activeStep !== "days" ? (
-          <p className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}`}>
-            {activeStep === "username" ? "Set a username for your account" : stepIntro(activeStep, isNativeRuntime)}
+          <p
+            className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
+              activeStep === "push" || activeStep === "weekStart" ? " onboardingNotificationsSubtext" : ""
+            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
+              activeStep === "weekStart" ? " onboardingWeekStartSubtext" : ""
+            }${activeStep === "intro" ? " onboardingIntroSubtext" : ""}${
+              activeStep === "username" ? " onboardingUsernameSubtext" : ""
+            }`}
+            key={`onboarding-subtext-${activeStep}`}
+          >
+            {activeStep === "username" ? (
+              "Choose an avatar and set a username for your account:"
+            ) : activeStep === "intro" ? (
+              <>
+                Most productivity tools organize your time. TaskLaunch goes a step further by using{" "}
+                <span className="onboardingChronotypeAccent">chronotype alignment</span> to help you match demanding work with your peak focus periods, so you can
+                achieve more with less mental strain.
+              </>
+            ) : (
+              stepIntro(activeStep, isNativeRuntime)
+            )}
           </p>
         ) : null}
 
         {activeStep === "username" ? (
-          <div className="field modalPreviewDropdownField onboardingField">
-            <input
-              id="onboardingUsernameInput"
-              className="onboardingTextInput"
-              type="text"
-              aria-label="Username"
-              value={usernameDraft}
-              onChange={(event) => {
-                setUsernameDraft(event.target.value);
-                setUsernameConfirmedAtMs(null);
-                setStatus("");
-                setError("");
-              }}
-              maxLength={20}
-              aria-invalid={!!usernameValidation}
-            />
+          <div className="field modalPreviewDropdownField onboardingField onboardingUsernameField">
+            <div className="onboardingUsernameRow">
+              <button
+                className="onboardingAvatarFrameBtn"
+                type="button"
+                aria-label="Choose avatar"
+                aria-expanded={avatarPickerOpen}
+                onClick={() => setAvatarPickerOpen((open) => !open)}
+              >
+                <span className="onboardingAvatarFrame">
+                  {selectedAvatar ? <AppImg className="onboardingAvatarImage" src={selectedAvatar.src} alt={`${selectedAvatar.label} avatar`} /> : null}
+                </span>
+              </button>
+              <div className="onboardingUsernameInputStack">
+                <input
+                  id="onboardingUsernameInput"
+                  className="onboardingTextInput"
+                  type="text"
+                  aria-label="Username"
+                  value={usernameDraft}
+                  onChange={(event) => {
+                    setUsernameDraft(event.target.value);
+                    setUsernameConfirmedAtMs(null);
+                    setStatus("");
+                    setError("");
+                    setUsernameInlineError("");
+                  }}
+                  maxLength={20}
+                  aria-describedby={usernameInlineError ? ONBOARDING_USERNAME_ERROR_ID : undefined}
+                  aria-invalid={!!usernameValidation || !!usernameInlineError}
+                />
+                {usernameInlineError ? (
+                  <p className="onboardingUsernameInlineError" id={ONBOARDING_USERNAME_ERROR_ID}>
+                    {usernameInlineError}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            {avatarPickerOpen ? (
+              <div className="onboardingAvatarPicker" role="list" aria-label="Available avatars">
+                {AVATAR_CATALOG.map((avatar) => (
+                  <button
+                    className={`onboardingAvatarOption${avatar.id === selectedAvatarId ? " isSelected" : ""}`}
+                    type="button"
+                    key={avatar.id}
+                    aria-label={`Select ${avatar.label} avatar`}
+                    aria-pressed={avatar.id === selectedAvatarId}
+                    onClick={() => {
+                      setSelectedAvatarId(avatar.id);
+                      setAvatarPickerOpen(false);
+                    }}
+                  >
+                    <AppImg className="onboardingAvatarOptionImage" src={avatar.src} alt="" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
         {activeStep === "days" ? (
+          <div className="onboardingFieldsGrid">
+            <div className="field modalPreviewDropdownField onboardingField">
+              <div className="onboardingProductivityIntroText">
+                <p className="onboardingProductivityDaysHelp">
+                  TaskLaunch helps schedule your highest-priority tasks on the days you&apos;re most likely to perform at your best.
+                  <br />
+                  <span id="onboardingProductivityDaysLabel">Select the day(s) of the week you are the most productive.</span>
+                  <br />
+                  <span className="onboardingProductivitySettingsNote">
+                    You can adjust your productivity days at any time from Settings &gt; Preferences.
+                  </span>
+                </p>
+              </div>
+              <div className="onboardingDayGrid" role="group" aria-labelledby="onboardingProductivityDaysLabel">
+                {PRODUCTIVITY_DAY_PILL_ROWS.map((row, rowIndex) => (
+                  <div className="onboardingDayPillRow" key={`productivity-days-row-${rowIndex}`}>
+                    {row.map((value, dayIndex) => {
+                      const checked = selectedDays.includes(value);
+                      const revealIndex = rowIndex === 0 ? dayIndex : 5 + dayIndex;
+                      return (
+                        <button
+                          className={`onboardingDayPill onboardingDayPillReveal${revealIndex}${checked ? " isSelected" : ""}`}
+                          type="button"
+                          key={value}
+                          aria-pressed={checked}
+                          aria-label={`${PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()} productivity day`}
+                          onClick={() => toggleProductivityDay(value)}
+                        >
+                          {PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                    {rowIndex === PRODUCTIVITY_DAY_PILL_ROWS.length - 1 ? (
+                      <button
+                        className={`onboardingDayPill onboardingDayPillReveal7${selectedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? " isSelected" : ""}`}
+                        type="button"
+                        aria-pressed={selectedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length}
+                        aria-label="Select all productivity days"
+                        onClick={selectAllProductivityDays}
+                      >
+                        ALL
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {activeStep === "hours" ? (
+          <div className="onboardingTimeGrid onboardingHoursTimeGrid">
+            <div className="field modalPreviewDropdownField onboardingField">
+              <label htmlFor="onboardingStartTimeInput">Start</label>
+              <button
+                className="onboardingClockButton"
+                type="button"
+                aria-label={`Choose start time, current ${formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}`}
+                onClick={() => openClockTimePicker("start")}
+              >
+                <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}</span>
+              </button>
+              <input
+                id="onboardingStartTimeInput"
+                ref={startTimeInputRef}
+                className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "start" ? " isFallbackVisible" : ""}`}
+                type="time"
+                value={startTime}
+                onChange={(event) => {
+                  setStartTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_START_TIME));
+                  setStatus("");
+                  setError("");
+                }}
+              />
+            </div>
+            <div className="field modalPreviewDropdownField onboardingField">
+              <label htmlFor="onboardingEndTimeInput">End</label>
+              <button
+                className="onboardingClockButton"
+                type="button"
+                aria-label={`Choose end time, current ${formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}`}
+                onClick={() => openClockTimePicker("end")}
+              >
+                <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}</span>
+              </button>
+              <input
+                id="onboardingEndTimeInput"
+                ref={endTimeInputRef}
+                className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "end" ? " isFallbackVisible" : ""}`}
+                type="time"
+                value={endTime}
+                onChange={(event) => {
+                  setEndTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_END_TIME));
+                  setStatus("");
+                  setError("");
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {activeStep === "push" ? (
+          <div className="onboardingFieldsGrid">
+            <div className={`chkRow modalPreviewCheckboxRow onboardingPushRow${pushEnabled ? " isPushEnabled" : ""}`}>
+              <input
+                id="onboardingPushToggle"
+                type="checkbox"
+                checked={pushEnabled}
+                disabled={busy}
+                onChange={(event) => void handlePushToggle(event.target.checked)}
+              />
+              <div className="modalPreviewCheckboxText">
+                <label className={`onboardingPushLabel${pushEnabled ? " isPushEnabled" : ""}`} htmlFor="onboardingPushToggle">
+                  Enable push notifications
+                </label>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {activeStep === "weekStart" ? (
           <div className="onboardingFieldsGrid">
             <div className="field modalPreviewDropdownField onboardingField">
               <label htmlFor="onboardingWeekStartSelect">Which day do you want your week to start on?</label>
@@ -445,12 +783,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                   <span aria-hidden="true">v</span>
                 </button>
                 {weekStartDropdownOpen ? (
-                  <div
-                    className="modalPreviewDropdownList"
-                    id="onboardingWeekStartSelectList"
-                    role="listbox"
-                    aria-labelledby="onboardingWeekStartSelect"
-                  >
+                  <div className="modalPreviewDropdownList" id="onboardingWeekStartSelectList" role="listbox" aria-labelledby="onboardingWeekStartSelect">
                     {WEEK_START_OPTIONS.map((option) => {
                       const selected = option.value === weekStarting;
                       return (
@@ -473,70 +806,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 ) : null}
               </div>
             </div>
-            <div className="field modalPreviewDropdownField onboardingField">
-              <label id="onboardingProductivityDaysLabel">Select the day(s) of the week you are the most productive.</label>
-              <div className="onboardingDayGrid" role="group" aria-label="Optimal productivity days">
-                {PRODUCTIVITY_DAY_PILL_ROWS.map((row, rowIndex) => (
-                  <div className="onboardingDayPillRow" key={`productivity-days-row-${rowIndex}`}>
-                    {row.map((value) => {
-                      const checked = selectedDays.includes(value);
-                      return (
-                        <button
-                          className={`onboardingDayPill${checked ? " isSelected" : ""}`}
-                          type="button"
-                          key={value}
-                          aria-pressed={checked}
-                          aria-label={`${PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()} productivity day`}
-                          onClick={() => toggleProductivityDay(value)}
-                        >
-                          {PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {activeStep === "hours" ? (
-          <div className="onboardingTimeGrid">
-            <div className="field modalPreviewDropdownField onboardingField">
-              <label htmlFor="onboardingStartTimeInput">Start</label>
-              <input
-                id="onboardingStartTimeInput"
-                className="onboardingTextInput"
-                type="time"
-                value={startTime}
-                onChange={(event) => setStartTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_START_TIME))}
-              />
-            </div>
-            <div className="field modalPreviewDropdownField onboardingField">
-              <label htmlFor="onboardingEndTimeInput">End</label>
-              <input
-                id="onboardingEndTimeInput"
-                className="onboardingTextInput"
-                type="time"
-                value={endTime}
-                onChange={(event) => setEndTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_END_TIME))}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {activeStep === "push" ? (
-          <div className="chkRow modalPreviewCheckboxRow onboardingPushRow">
-            <input
-              id="onboardingPushToggle"
-              type="checkbox"
-              checked={pushEnabled}
-              disabled={busy}
-              onChange={(event) => void handlePushToggle(event.target.checked)}
-            />
-            <div className="modalPreviewCheckboxText">
-              <label htmlFor="onboardingPushToggle">Enable push notifications</label>
-            </div>
           </div>
         ) : null}
 
@@ -549,8 +818,14 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               Back
             </button>
           ) : null}
-          {stepIndex < STEPS.length - 1 ? (
-            <button className="btn btn-accent modalPreviewPrimaryAction" type="button" onClick={() => void handleNext()} disabled={busy}>
+          {stepIndex < ONBOARDING_STEPS.length - 1 ? (
+            <button
+              className="btn btn-accent modalPreviewPrimaryAction"
+              type="button"
+              data-onboarding-next-action="true"
+              onClick={() => void handleNext()}
+              disabled={busy}
+            >
               Next
             </button>
           ) : (

@@ -6,7 +6,6 @@ import { normalizeDashboardWeekStart, type DashboardWeekStart } from "./historyC
 import { normalizeOptimalProductivityDays, normalizeTimeOfDay, type OptimalProductivityDays } from "./productivityPeriod";
 
 export const TASKTIMER_ONBOARDING_VERSION = 1;
-export const TASKTIMER_ONBOARDING_WEEKDAY_DEFAULTS = ["mon", "tue", "wed", "thu", "fri"] as const;
 export const TASKTIMER_ONBOARDING_DEFAULT_WEEK_START = "mon";
 export const TASKTIMER_ONBOARDING_DEFAULT_START_TIME = "09:00";
 export const TASKTIMER_ONBOARDING_DEFAULT_END_TIME = "17:00";
@@ -223,7 +222,7 @@ export function buildTaskTimerOnboardingPreferenceDraft(
     optimalProductivityDays:
       preferencePresence?.optimalProductivityDays && preferences?.optimalProductivityDays
         ? normalizeOptimalProductivityDays(preferences.optimalProductivityDays)
-        : normalizeOptimalProductivityDays(TASKTIMER_ONBOARDING_WEEKDAY_DEFAULTS),
+        : [],
     optimalProductivityStartTime:
       preferencePresence?.optimalProductivityStartTime && preferences?.optimalProductivityStartTime
         ? normalizeTimeOfDay(preferences.optimalProductivityStartTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)

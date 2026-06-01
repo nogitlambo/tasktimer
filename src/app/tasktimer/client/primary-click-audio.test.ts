@@ -36,6 +36,7 @@ const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
+const ONBOARDING_NEXT_CLICK_SELECTOR = '[data-onboarding-next-action="true"]';
 
 describe("primary click audio", () => {
   beforeEach(() => {
@@ -64,6 +65,18 @@ describe("primary click audio", () => {
     const element = makeElement({ selectorMatches: { [PRIMARY_CLICK_SELECTOR]: true, ".modalPreviewPrimaryAction": true } });
 
     expect(getPrimaryClickTarget(element)).toBe(element);
+  });
+
+  it("does not match onboarding Next as a primary action", () => {
+    const element = makeElement({
+      selectorMatches: {
+        [ONBOARDING_NEXT_CLICK_SELECTOR]: true,
+        [PRIMARY_CLICK_SELECTOR]: true,
+        ".modalPreviewPrimaryAction": true,
+      },
+    });
+
+    expect(getPrimaryClickTarget(element)).toBeNull();
   });
 
   it("matches enabled task launch controls", () => {

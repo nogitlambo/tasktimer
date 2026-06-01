@@ -66,6 +66,7 @@ describe("secondary click audio", () => {
       '[data-action="openAddTask"]',
       '[data-action="reset"]',
       '[data-action="edit"]',
+      '[data-onboarding-next-action="true"]',
       "#openFriendRequestModalBtn",
     ];
     const combinedSelector = directSelectors.join(",");
@@ -177,6 +178,38 @@ describe("secondary click audio", () => {
     expect(getSecondaryClickTarget(runningFocusDial)).toBeNull();
   });
 
+  it("matches onboarding Next for secondary audio even though it uses primary styling", () => {
+    const primarySelector = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
+    const directSelector = [
+      ".switch",
+      '[role="switch"]',
+      "#closeMenuBtn",
+      "[data-nav-page]",
+      ".appFooterBtn",
+      ".dashboardRailMenuBtn",
+      ".settingsNavTile",
+      ".taskLaunchMobileMenuItem",
+      "#openAddTaskBtn",
+      '[data-action="openAddTask"]',
+      '[data-action="reset"]',
+      '[data-action="edit"]',
+      '[data-onboarding-next-action="true"]',
+      "#openFriendRequestModalBtn",
+    ].join(",");
+    const nextButton = makeElement({
+      selectorMatches: {
+        [directSelector]: true,
+        '[data-onboarding-next-action="true"]': true,
+        [primarySelector]: true,
+        ".modalPreviewPrimaryAction": true,
+        "button,a": true,
+      },
+      textContent: "Next",
+    });
+
+    expect(getSecondaryClickTarget(nextButton)).toBe(nextButton);
+  });
+
   it("matches cancel controls for dedicated cancel audio", () => {
     const textSelector = "button,a";
     const cancelSelector = ".modalPreviewSecondaryAction";
@@ -273,7 +306,7 @@ describe("secondary click audio", () => {
   });
 
   it("ignores unrelated and disabled controls", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],[data-onboarding-next-action=\"true\"],#openFriendRequestModalBtn";
     const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
@@ -287,7 +320,7 @@ describe("secondary click audio", () => {
   });
 
   it("does not blanket-exclude accent controls from default secondary audio", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],[data-onboarding-next-action=\"true\"],#openFriendRequestModalBtn";
     const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
       textContent: "Done",
@@ -379,7 +412,7 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#menuIcon": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],[data-onboarding-next-action=\"true\"],#openFriendRequestModalBtn";
     handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 

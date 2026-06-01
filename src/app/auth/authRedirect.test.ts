@@ -12,7 +12,7 @@ const startupModuleMocks = vi.hoisted(() => ({
 
 vi.mock("../tasktimer/lib/startupModule", () => startupModuleMocks);
 
-import { resolveAuthSuccessRoute } from "./authRedirect";
+import { resolveAuthSuccessRoute, runAuthSuccessRedirect } from "./authRedirect";
 
 describe("resolveAuthSuccessRoute", () => {
   beforeEach(() => {
@@ -37,5 +37,60 @@ describe("resolveAuthSuccessRoute", () => {
   it("preserves an explicit leaderboards return route", () => {
     expect(resolveAuthSuccessRoute("/leaderboards")).toBe("/leaderboards");
     expect(startupModuleMocks.readStartupModulePreference).not.toHaveBeenCalled();
+  });
+
+  it("runs the success redirect once with the resolved startup route", () => {
+    startupModuleMocks.readStartupModulePreference.mockReturnValue("tasks");
+    const markRedirected = vi.fn();
+    const replace = vi.fn();
+
+    expect(
+      runAuthSuccessRedirect({
+        hasRedirected: false,
+        shouldStartProCheckout: false,
+        bypassAutoRedirect: false,
+        markRedirected,
+        replace,
+      })
+    ).toBe(true);
+
+    expect(markRedirected).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/tasklaunch");
+  });
+
+  it("does not redirect when checkout owns the next navigation", () => {
+    const markRedirected = vi.fn();
+    const replace = vi.fn();
+
+    expect(
+      runAuthSuccessRedirect({
+        hasRedirected: false,
+        shouldStartProCheckout: true,
+        bypassAutoRedirect: false,
+        markRedirected,
+        replace,
+      })
+    ).toBe(false);
+
+    expect(markRedirected).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect during a signed-out bypass handoff", () => {
+    const markRedirected = vi.fn();
+    const replace = vi.fn();
+
+    expect(
+      runAuthSuccessRedirect({
+        hasRedirected: false,
+        shouldStartProCheckout: false,
+        bypassAutoRedirect: true,
+        markRedirected,
+        replace,
+      })
+    ).toBe(false);
+
+    expect(markRedirected).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 });

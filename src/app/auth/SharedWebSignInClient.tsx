@@ -15,14 +15,14 @@ import {
   type User,
 } from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
 import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
-import { resolveAuthSuccessRoute } from "./authRedirect";
+import { runAuthSuccessRedirect } from "./authRedirect";
 import { sendSignInLinkEmail } from "./emailLinkClient";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
@@ -117,8 +117,23 @@ export default function SharedWebSignInClient({
   const [googlePopupPending, setGooglePopupPending] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
+
+  const redirectAfterAuthSuccess = useCallback(() => {
+    return runAuthSuccessRedirect({
+      hasRedirected: hasRedirectedRef.current,
+      shouldStartProCheckout,
+      bypassAutoRedirect,
+      redirectOnSuccess,
+      markRedirected: () => {
+        hasRedirectedRef.current = true;
+        setHasRedirected(true);
+      },
+      replace: router.replace,
+    });
+  }, [bypassAutoRedirect, redirectOnSuccess, router, shouldStartProCheckout]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -227,13 +242,10 @@ export default function SharedWebSignInClient({
           // ignore
         }
       }
-      if (email && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect) {
-        setHasRedirected(true);
-        router.replace(resolveAuthSuccessRoute(redirectOnSuccess));
-      }
+      if (email) redirectAfterAuthSuccess();
     });
     return () => unsub();
-  }, [router, hasRedirected, shouldStartProCheckout, bypassAutoRedirect, redirectOnSuccess]);
+  }, [bypassAutoRedirect, redirectAfterAuthSuccess]);
 
   useEffect(() => {
     if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;
@@ -323,6 +335,7 @@ export default function SharedWebSignInClient({
           // ignore
         }
         setIsEmailLinkFlow(false);
+        redirectAfterAuthSuccess();
       } catch (err: unknown) {
         void recordNonFatal(err, {
           flow: "auth_email_link_sign_in",
@@ -335,7 +348,7 @@ export default function SharedWebSignInClient({
       }
     };
     void complete();
-  }, [telemetrySource]);
+  }, [redirectAfterAuthSuccess, telemetrySource]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -443,6 +456,7 @@ export default function SharedWebSignInClient({
       }
       setAuthStatus("Signed in successfully.");
       setIsEmailLinkFlow(false);
+      redirectAfterAuthSuccess();
     } catch (err: unknown) {
       void recordNonFatal(err, {
         flow: "auth_email_link_sign_in",

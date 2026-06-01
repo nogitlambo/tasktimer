@@ -26,6 +26,7 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   '[data-action="openAddTask"]',
   '[data-action="reset"]',
   '[data-action="edit"]',
+  '[data-onboarding-next-action="true"]',
   "#openFriendRequestModalBtn",
 ].join(",");
 

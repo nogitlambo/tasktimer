@@ -170,7 +170,7 @@ describe("buildTaskTimerOnboardingPreferenceDraft", () => {
       weekStarting: "mon",
       optimalProductivityStartTime: "09:00",
       optimalProductivityEndTime: "17:00",
-      optimalProductivityDays: ["mon", "tue", "wed", "thu", "fri"],
+      optimalProductivityDays: [],
     });
   });
 
