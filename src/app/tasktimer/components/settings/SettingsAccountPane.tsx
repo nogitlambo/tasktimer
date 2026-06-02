@@ -53,11 +53,16 @@ export function SettingsAccountPane({
     if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
   }, [account.showDeleteAccountConfirm]);
 
+  const hasAccountSession = !!account.authUserUid;
+  const accountDisplayName = account.authIsAnonymous ? "Guest account" : account.authUserAlias || "-";
+  const accountEmailLabel = account.authIsAnonymous ? "Account Type" : "Email Address";
+  const accountEmailValue = account.authIsAnonymous ? "Continue without account" : account.authUserEmail || "Signed in account";
+
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Profile" subtitle="">
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
-          {account.authUserEmail ? (
+          {hasAccountSession ? (
             <div className="settingsAvatarPicker" aria-label="Avatar selection">
               <div className="settingsAccountIdCard" aria-label="Account profile card">
                 <div className="settingsAccountIdCardHeader">
@@ -126,24 +131,28 @@ export function SettingsAccountPane({
                           ) : (
                             <>
                               <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
-                                {account.authUserAlias || "-"}
+                                {accountDisplayName}
                               </div>
-                              <button
-                                className="iconBtn settingsAccountAliasAction"
-                                type="button"
-                                onClick={account.onStartAliasEdit}
-                                aria-label="Edit username"
-                                title="Edit username"
-                              >
-                                {"\u270e"}
-                              </button>
+                              {!account.authIsAnonymous ? (
+                                <button
+                                  className="iconBtn settingsAccountAliasAction"
+                                  type="button"
+                                  onClick={account.onStartAliasEdit}
+                                  aria-label="Edit username"
+                                  title="Edit username"
+                                >
+                                  {"\u270e"}
+                                </button>
+                              ) : null}
                             </>
                           )}
                         </div>
                       </div>
-                      <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
-                        Run Onboarding
-                      </button>
+                      {!account.authIsAnonymous ? (
+                        <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
+                          Run Onboarding
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 
@@ -177,8 +186,8 @@ export function SettingsAccountPane({
                 <div className="settingsAccountProfileRow settingsAccountIdCardBody">
                   <div className="settingsAccountIdCardMetaGrid">
                     <div className="settingsAccountIdCardMetaItem">
-                      <span className="settingsAccountUidLabel">Email Address</span>
-                      <span className="settingsAccountUidValue">{account.authUserEmail}</span>
+                      <span className="settingsAccountUidLabel">{accountEmailLabel}</span>
+                      <span className="settingsAccountUidValue">{accountEmailValue}</span>
                     </div>
                     {account.authUserUid ? (
                       <div className="settingsAccountIdCardMetaItem settingsAccountUidRow">
@@ -205,7 +214,7 @@ export function SettingsAccountPane({
             </div>
           ) : null}
 
-          {account.authUserEmail ? (
+          {hasAccountSession ? (
             <div className="settingsDetailNote settingsAccountIdCardFooter">
               <div className={`settingsSyncStatus is-${account.syncState}`}>
                 <span className="settingsSyncStatusDot" aria-hidden="true" />
@@ -216,6 +225,11 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
+              {account.authIsAnonymous ? (
+                <div className="settingsDetailNote">
+                  Add email or Google from <a href="/login">Sign in</a> to keep this guest workspace under a permanent account.
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -225,7 +239,7 @@ export function SettingsAccountPane({
             <div className={avatar.avatarSyncNoticeIsError ? "settingsAuthError" : "settingsAuthNotice"}>{avatar.avatarSyncNotice}</div>
           ) : null}
 
-          {account.authUserEmail ? (
+          {hasAccountSession ? (
             <>
               <div className="settingsDeleteAccountDivider" aria-hidden="true" />
               <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions">

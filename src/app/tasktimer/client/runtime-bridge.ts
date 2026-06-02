@@ -31,6 +31,10 @@ export function getCurrentTaskTimerEmail() {
   return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
 }
 
+export function getCurrentTaskTimerUserIsAnonymous() {
+  return !!getFirebaseAuthClient()?.currentUser?.isAnonymous;
+}
+
 export function clearTaskTimerPendingPushAction(storageKey: string) {
   if (typeof window === "undefined") return;
   try {

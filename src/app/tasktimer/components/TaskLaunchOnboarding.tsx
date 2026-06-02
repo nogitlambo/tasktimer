@@ -266,7 +266,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     async (user: User | null, options?: { forceOpen?: boolean }) => {
       const nextUid = String(user?.uid || "").trim();
       setUid(nextUid);
-      if (!nextUid) {
+      if (!nextUid || user?.isAnonymous) {
         setOpen(false);
         setUsername("");
         return;

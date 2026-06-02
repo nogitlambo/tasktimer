@@ -140,7 +140,7 @@ function HomeContent({ variant = "landing" }: HomePageClientProps) {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
-      if (user?.uid) void ensureUserProfileIndex(user.uid);
+      if (user?.uid && !user.isAnonymous) void ensureUserProfileIndex(user.uid);
       if (!email && bypassAutoRedirect) {
         setBypassAutoRedirect(false);
         try {

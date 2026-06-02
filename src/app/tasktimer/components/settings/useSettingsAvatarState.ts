@@ -74,6 +74,7 @@ function areStoredCustomAvatarUploadsEqual(a: StoredCustomAvatarUpload[], b: Sto
 export function useSettingsAvatarState({
   authUserUid,
   authUserEmail,
+  authIsAnonymous,
   authHasGoogleProvider,
   authGooglePhotoUrl,
   setAuthError,
@@ -81,6 +82,7 @@ export function useSettingsAvatarState({
 }: {
   authUserUid: string | null;
   authUserEmail: string | null;
+  authIsAnonymous?: boolean;
   authHasGoogleProvider: boolean;
   authGooglePhotoUrl: string | null;
   setAuthError: (value: string) => void;
@@ -118,9 +120,9 @@ export function useSettingsAvatarState({
   }, []);
 
   useEffect(() => {
-    if (!authUserUid) return;
+    if (!authUserUid || authIsAnonymous) return;
     void syncOwnFriendshipProfile(authUserUid, { currentRankId: rewardProgress.currentRankId, totalXp: rewardProgress.totalXp }).catch(() => {});
-  }, [authUserUid, rewardProgress.currentRankId, rewardProgress.totalXp]);
+  }, [authIsAnonymous, authUserUid, rewardProgress.currentRankId, rewardProgress.totalXp]);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +148,20 @@ export function useSettingsAvatarState({
         if (!cancelled) setAvatarProfileReady(true);
       });
       loadedAvatarUidRef.current = null;
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (authIsAnonymous) {
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        const cachedAvatarId = readStoredAvatarId(authUserUid);
+        const fallbackAvatarId = avatarOptions.some((avatar) => avatar.id === cachedAvatarId) ? cachedAvatarId : avatarOptions[0]?.id || "";
+        setSelectedAvatarId(fallbackAvatarId);
+        loadedAvatarUidRef.current = authUserUid;
+        setAvatarProfileReady(true);
+      });
       return () => {
         cancelled = true;
       };
@@ -239,7 +255,7 @@ export function useSettingsAvatarState({
     return () => {
       cancelled = true;
     };
-  }, [authUserUid, avatarOptions]);
+  }, [authIsAnonymous, authUserUid, avatarOptions]);
 
   useEffect(() => {
     if (!showAvatarPickerModal) return;
@@ -306,7 +322,7 @@ export function useSettingsAvatarState({
 
   const onSelectRankThumbnail = useCallback(
     async (rankId: string) => {
-      if (!authUserUid || !isAdminAccountEmail(authUserEmail)) return;
+      if (!authUserUid || authIsAnonymous || !isAdminAccountEmail(authUserEmail)) return;
       const nextRewards = buildRewardProgressForRankSelection(rewardProgress, rankId);
       const nextThumbnailSrc = String(RANK_MODAL_THUMBNAIL_BY_ID[rankId] || "").trim();
       setRankThumbnailSrc(nextThumbnailSrc);
@@ -324,7 +340,7 @@ export function useSettingsAvatarState({
         // ignore rank thumbnail save failures from the settings surface
       }
     },
-    [authUserEmail, authUserUid, rewardProgress],
+    [authIsAnonymous, authUserEmail, authUserUid, rewardProgress],
   );
 
   const onSelectAvatar = useCallback(
@@ -347,6 +363,12 @@ export function useSettingsAvatarState({
       if (isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, customAvatarSrc);
       writeStoredAvatarId(authUserUid, avatarId);
       setAuthError("");
+      if (authIsAnonymous) {
+        notifyAccountAvatarUpdated();
+        showAvatarSyncNotice("Avatar saved locally.");
+        setShowAvatarPickerModal(false);
+        return;
+      }
       try {
         await saveUserDocPatch(authUserUid, patch);
         await syncOwnFriendshipProfile(authUserUid, {
@@ -364,7 +386,7 @@ export function useSettingsAvatarState({
       }
       setShowAvatarPickerModal(false);
     },
-    [authGooglePhotoUrl, authHasGoogleProvider, authUserUid, setAuthError, setAuthStatus, showAvatarSyncNotice],
+    [authGooglePhotoUrl, authHasGoogleProvider, authIsAnonymous, authUserUid, setAuthError, setAuthStatus, showAvatarSyncNotice],
   );
 
   const onUploadAvatar = useCallback(
@@ -372,6 +394,11 @@ export function useSettingsAvatarState({
       if (!file) return;
       if (!authUserUid) {
         setAuthError("Sign in is required to upload an avatar.");
+        setAuthStatus("");
+        return;
+      }
+      if (authIsAnonymous) {
+        setAuthError("Add email or Google before uploading a public avatar.");
         setAuthStatus("");
         return;
       }
@@ -424,7 +451,7 @@ export function useSettingsAvatarState({
       }
       setShowAvatarPickerModal(false);
     },
-    [authUserUid, setAuthError, setAuthStatus, showAvatarSyncNotice],
+    [authIsAnonymous, authUserUid, setAuthError, setAuthStatus, showAvatarSyncNotice],
   );
 
   return {

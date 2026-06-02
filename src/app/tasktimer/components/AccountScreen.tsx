@@ -42,6 +42,7 @@ export default function AccountScreen() {
   const avatar = useSettingsAvatarState({
     authUserUid: accountState.authUserUid,
     authUserEmail: accountState.authUserEmail,
+    authIsAnonymous: accountState.authIsAnonymous,
     authHasGoogleProvider: accountState.authHasGoogleProvider,
     authGooglePhotoUrl: accountState.authGooglePhotoUrl,
     setAuthError: accountState.setAuthError,
@@ -118,7 +119,7 @@ export default function AccountScreen() {
     router.push(fallbackHref);
   }, [router]);
 
-  const profileName = account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
+  const profileName = account.authIsAnonymous ? "Guest account" : account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
@@ -184,7 +185,7 @@ export default function AccountScreen() {
                       ) : (
                         <h2>{profileName}</h2>
                       )}
-                      <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
+                      <p className="accountProfileEmail">{account.authIsAnonymous ? "Continue without account" : account.authUserEmail || "Signed in account"}</p>
                       {account.authUserUid ? <p className="accountProfileUserId">UserID: {account.authUserUid}</p> : null}
                       <p className="accountProfileBio">
                         Member since {formatMemberSinceDate(account.authMemberSince)}.

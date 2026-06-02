@@ -17,6 +17,7 @@ const baseProps = {
   showLaunchingScreen: false,
   onToggleEmailLoginForm: vi.fn(),
   onGoogleSignIn: vi.fn(),
+  onAnonymousSignIn: vi.fn(),
   onSendEmailLink: vi.fn(),
   onCompleteEmailLink: vi.fn(),
   onAuthEmailChange: vi.fn(),
@@ -56,7 +57,30 @@ describe("WebSignIn", () => {
 
     expect(html.indexOf("Continue with Google")).toBeGreaterThanOrEqual(0);
     expect(html.indexOf("Continue without account")).toBeGreaterThan(html.indexOf("Continue with Google"));
+    expect(html).not.toContain('href="/tasklaunch"');
+  });
+
+  it("runs the anonymous sign-in action from the guest option", () => {
+    const onAnonymousSignIn = vi.fn();
+    const tree = <WebSignIn {...baseProps} onAnonymousSignIn={onAnonymousSignIn} />;
+    const button = findElement(
+      WebSignIn(tree.props),
+      (node) => node.type === "button" && textContent(node).includes("Continue without account")
+    );
+
+    expect(button).not.toBeNull();
+    button?.props.onClick?.();
+
+    expect(onAnonymousSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders guest account actions for anonymous users", () => {
+    const html = renderToStaticMarkup(<WebSignIn {...baseProps} authIsAnonymous={true} />);
+
+    expect(html).toContain("Guest account");
+    expect(html).toContain("Continue to TaskLaunch");
     expect(html).toContain('href="/tasklaunch"');
+    expect(html).not.toContain("Continue without account");
   });
 
   it("omits the guest link for auth-only surfaces", () => {

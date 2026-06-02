@@ -22,6 +22,7 @@ export function useSettingsAccountState(): {
   account: SettingsAccountViewModel;
   authUserUid: string | null;
   authUserEmail: string | null;
+  authIsAnonymous: boolean;
   authHasGoogleProvider: boolean;
   authGooglePhotoUrl: string | null;
   setAuthError: (value: string) => void;
@@ -38,6 +39,7 @@ export function useSettingsAccountState(): {
   const [authPlanIsProvisional, setAuthPlanIsProvisional] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
+  const [authIsAnonymous, setAuthIsAnonymous] = useState(false);
   const [authUserAlias, setAuthUserAlias] = useState("");
   const [authUserAliasDraft, setAuthUserAliasDraft] = useState("");
   const [authUserAliasEditing, setAuthUserAliasEditing] = useState(false);
@@ -123,10 +125,12 @@ export function useSettingsAccountState(): {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       planRefreshIdRef.current += 1;
       const uid = String(user?.uid || "").trim();
+      const isAnonymous = !!user?.isAnonymous;
       const isNewUser = uid !== loadedAliasUidRef.current;
       if (isNewUser) setAuthProfileReady(false);
       setAuthUserEmail(user?.email || null);
       setAuthUserUid(user?.uid || null);
+      setAuthIsAnonymous(isAnonymous);
       if (isNewUser) {
         setAuthUserAlias("");
         setAuthUserAliasDraft("");
@@ -148,13 +152,15 @@ export function useSettingsAccountState(): {
         const hasConfirmedPlanForUid = lastConfirmedPlanUidRef.current === uid;
         const retainedPlan = hasConfirmedPlanForUid ? lastConfirmedPlanRef.current : cachedPlan;
         beginPlanRefresh(uid, retainedPlan, !hasConfirmedPlanForUid);
-        void saveUserDocPatch(user.uid, {
-          email: user.email || "",
-          displayName: user.displayName || null,
-          googlePhotoUrl: hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null,
-        }).catch(() => {});
+        if (!isAnonymous) {
+          void saveUserDocPatch(user.uid, {
+            email: user.email || "",
+            displayName: user.displayName || null,
+            googlePhotoUrl: hasGoogleProvider && googlePhotoCandidate ? googlePhotoCandidate : null,
+          }).catch(() => {});
+        }
         if (loadedAliasUidRef.current === uid) setAuthProfileReady(true);
-        markSynced();
+        markSynced(isAnonymous ? "Guest cloud data connected." : "Cloud data connected.");
       } else {
         pendingPlanRefreshRef.current = false;
         markPlanConfirmed("free", null);
@@ -169,9 +175,11 @@ export function useSettingsAccountState(): {
   }, [beginPlanRefresh, markPlanConfirmed, markSynced]);
 
   useEffect(() => {
-    if (!authUserUid) {
+    if (!authUserUid || authIsAnonymous) {
       setAuthUserAlias("");
       setAuthUserAliasDraft("");
+      loadedAliasUidRef.current = authUserUid && authIsAnonymous ? authUserUid : null;
+      setAuthProfileReady(true);
       return;
     }
     let cancelled = false;
@@ -198,7 +206,7 @@ export function useSettingsAccountState(): {
     return () => {
       cancelled = true;
     };
-  }, [authUserUid, authUserAliasEditing]);
+  }, [authIsAnonymous, authUserUid, authUserAliasEditing]);
 
   useEffect(() => {
     if (authUserAliasEditing) return;
@@ -277,6 +285,11 @@ export function useSettingsAccountState(): {
       setAuthStatus("");
       return;
     }
+    if (user.isAnonymous || authIsAnonymous) {
+      setAuthError("Add email or Google before setting a public username.");
+      setAuthStatus("");
+      return;
+    }
 
     setAuthUserAliasBusy(true);
     setAuthError("");
@@ -300,7 +313,7 @@ export function useSettingsAccountState(): {
     } finally {
       setAuthUserAliasBusy(false);
     }
-  }, [authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
+  }, [authIsAnonymous, authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
 
   const onOpenPlanAction = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -359,6 +372,7 @@ export function useSettingsAccountState(): {
       authPlanIsProvisional,
       authUserEmail,
       authUserUid,
+      authIsAnonymous,
       authUserAlias,
       authUserAliasDraft,
       authUserAliasEditing,
@@ -391,6 +405,7 @@ export function useSettingsAccountState(): {
     },
     authUserUid,
     authUserEmail,
+    authIsAnonymous,
     authHasGoogleProvider,
     authGooglePhotoUrl,
     setAuthError,

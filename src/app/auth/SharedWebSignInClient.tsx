@@ -4,12 +4,16 @@ import "../tasktimer/tasktimer.css";
 
 import type { PluginListenerHandle } from "@capacitor/core";
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   type Auth,
   getRedirectResult,
   isSignInWithEmailLink,
+  linkWithCredential,
+  linkWithPopup,
   onAuthStateChanged,
   signOut,
+  signInAnonymously,
   signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
@@ -126,6 +130,7 @@ export default function SharedWebSignInClient({
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
+  const [authIsAnonymous, setAuthIsAnonymous] = useState(false);
   const [isResolvingNativeLaunchAuth, setIsResolvingNativeLaunchAuth] = useState(() => isNativeLaunchRuntime);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
@@ -134,6 +139,7 @@ export default function SharedWebSignInClient({
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
   const hasRedirectedRef = useRef(false);
+  const anonymousRedirectPendingRef = useRef(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
@@ -218,9 +224,11 @@ export default function SharedWebSignInClient({
       if (cancelled) return;
       const email = user?.email || null;
       const uid = user?.uid || null;
+      const isAnonymous = !!user?.isAnonymous;
       setAuthUserEmail(email);
       setAuthUserUid(uid);
-      if (uid) void ensureUserProfileIndex(uid);
+      setAuthIsAnonymous(isAnonymous);
+      if (uid && !isAnonymous) void ensureUserProfileIndex(uid);
       setIsResolvingNativeLaunchAuth(false);
     };
     void resolveLaunchAuth();
@@ -235,10 +243,12 @@ export default function SharedWebSignInClient({
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       const uid = user?.uid || null;
+      const isAnonymous = !!user?.isAnonymous;
       setAuthUserEmail(email);
       setAuthUserUid(uid);
+      setAuthIsAnonymous(isAnonymous);
       if (email) setGooglePopupPending(false);
-      if (user?.uid) void ensureUserProfileIndex(user.uid);
+      if (user?.uid && !isAnonymous) void ensureUserProfileIndex(user.uid);
       if (!email && bypassAutoRedirect) {
         setBypassAutoRedirect(false);
         try {
@@ -258,7 +268,7 @@ export default function SharedWebSignInClient({
           // ignore
         }
       }
-      if (email) redirectAfterAuthSuccess();
+      if (email || (isAnonymous && anonymousRedirectPendingRef.current)) redirectAfterAuthSuccess();
     });
     return () => unsub();
   }, [bypassAutoRedirect, redirectAfterAuthSuccess]);
@@ -371,7 +381,13 @@ export default function SharedWebSignInClient({
       setAuthError("");
       setAuthStatus("Completing sign-in...");
       try {
-        await signInWithEmailLink(auth, email, href);
+        const currentUser = auth.currentUser;
+        if (currentUser?.isAnonymous) {
+          const credential = EmailAuthProvider.credentialWithLink(email, href);
+          await linkWithCredential(currentUser, credential);
+        } else {
+          await signInWithEmailLink(auth, email, href);
+        }
         try {
           localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
         } catch {
@@ -499,7 +515,13 @@ export default function SharedWebSignInClient({
     setAuthError("");
     setAuthStatus("Completing sign-in...");
     try {
-      await signInWithEmailLink(auth, email, href);
+      const currentUser = auth.currentUser;
+      if (currentUser?.isAnonymous) {
+        const credential = EmailAuthProvider.credentialWithLink(email, href);
+        await linkWithCredential(currentUser, credential);
+      } else {
+        await signInWithEmailLink(auth, email, href);
+      }
       try {
         localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
       } catch {
@@ -544,7 +566,11 @@ export default function SharedWebSignInClient({
             throw new Error("Google sign-in did not return an auth token.");
           }
           const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
-          await signInWithCredential(auth, nativeCredential);
+          if (auth.currentUser?.isAnonymous) {
+            await linkWithCredential(auth.currentUser, nativeCredential);
+          } else {
+            await signInWithCredential(auth, nativeCredential);
+          }
           setAuthStatus("Signed in successfully.");
           return;
         } catch (nativeErr: unknown) {
@@ -558,7 +584,11 @@ export default function SharedWebSignInClient({
       }
       const provider = createGoogleSignInProvider();
       setGooglePopupPending(true);
-      await signInWithPopup(auth, provider);
+      if (auth.currentUser?.isAnonymous) {
+        await linkWithPopup(auth.currentUser, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
       setGooglePopupPending(false);
       setAuthStatus("Signed in successfully.");
     } catch (err: unknown) {
@@ -581,9 +611,38 @@ export default function SharedWebSignInClient({
     }
   };
 
+  const handleAnonymousSignIn = async () => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) {
+      setAuthError("Sign-in is not configured for this environment.");
+      setAuthStatus("");
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthStatus("Continuing without account...");
+    try {
+      anonymousRedirectPendingRef.current = true;
+      await signInAnonymously(auth);
+      setAuthStatus("Guest account ready.");
+      redirectAfterAuthSuccess();
+    } catch (err: unknown) {
+      void recordNonFatal(err, {
+        flow: "auth_anonymous_sign_in",
+        source_page: telemetrySource,
+      });
+      setAuthError(getErrorMessage(err, "Could not continue without an account."));
+      setAuthStatus("");
+      anonymousRedirectPendingRef.current = false;
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   return (
     <WebSignIn
       authUserEmail={authUserEmail}
+      authIsAnonymous={authIsAnonymous}
       showEmailLoginForm={showEmailLoginForm}
       isEmailLinkFlow={isEmailLinkFlow}
       isValidAuthEmail={isValidAuthEmail}
@@ -593,6 +652,7 @@ export default function SharedWebSignInClient({
       authBusy={authBusy}
       onToggleEmailLoginForm={() => setShowEmailLoginForm((v) => !v)}
       onGoogleSignIn={handleGoogleSignIn}
+      onAnonymousSignIn={handleAnonymousSignIn}
       onSendEmailLink={handleSendEmailLink}
       onCompleteEmailLink={handleCompleteEmailLink}
       onAuthEmailChange={(value) => {

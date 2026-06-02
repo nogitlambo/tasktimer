@@ -198,6 +198,11 @@ function currentUid(): string {
   return String(auth?.currentUser?.uid || "").trim();
 }
 
+function currentUserIsAnonymous(): boolean {
+  const auth = getFirebaseAuthClient();
+  return !!auth?.currentUser?.isAnonymous;
+}
+
 function readStoredActiveUid(): string {
   if (typeof window === "undefined") return "";
   try {
@@ -966,9 +971,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
-  void ensureUserProfileIndex(uid).catch(() => {
-    // Profile bootstrap is best-effort and should not block workspace hydration.
-  });
+  if (!currentUserIsAnonymous()) {
+    void ensureUserProfileIndex(uid).catch(() => {
+      // Profile bootstrap is best-effort and should not block workspace hydration.
+    });
+  }
   void syncCurrentUserPlanCache(uid).catch(() => {
     // Keep the last confirmed per-user plan when the plan refresh is temporarily unavailable.
   });
@@ -1562,6 +1569,10 @@ function leaderboardProfileSyncSignature() {
 }
 
 function flushQueuedLeaderboardProfileSync(uid: string): void {
+  if (currentUserIsAnonymous()) {
+    queuedLeaderboardProfileSync = false;
+    return;
+  }
   if (inFlightLeaderboardProfileSync || !queuedLeaderboardProfileSync) return;
   const signature = leaderboardProfileSyncSignature();
   if (signature === lastSuccessfulLeaderboardProfileSignature) {
@@ -1590,7 +1601,7 @@ function flushQueuedLeaderboardProfileSync(uid: string): void {
 
 function scheduleLeaderboardProfileSync(uidRaw?: string): void {
   const uid = String(uidRaw || currentUid() || "").trim();
-  if (!uid) return;
+  if (!uid || currentUserIsAnonymous()) return;
   queuedLeaderboardProfileSync = true;
   if (leaderboardProfileSyncTimer != null || inFlightLeaderboardProfileSync) return;
   leaderboardProfileSyncTimer = window.setTimeout(() => {

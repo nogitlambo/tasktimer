@@ -186,9 +186,10 @@ export default function FeedbackScreen() {
       session = null;
     }
     const currentUser = session?.user || null;
+    const isAnonymousAuthUser = !!currentUser?.isAnonymous;
     const effectiveViewerUid = String(currentUser?.uid || viewerUid).trim();
     const effectiveViewerDisplayName = String(currentUser?.displayName || viewerDisplayName).trim();
-    const effectiveViewerEmail = feedbackAnonymous ? null : String(currentUser?.email || feedbackEmail).trim() || null;
+    const effectiveViewerEmail = feedbackAnonymous || isAnonymousAuthUser ? null : String(currentUser?.email || feedbackEmail).trim() || null;
     const saved = await createFeedbackItem({
       authToken: session?.idToken || "",
       ownerUid: effectiveViewerUid,
@@ -196,8 +197,8 @@ export default function FeedbackScreen() {
       authorEmail: effectiveViewerEmail,
       authorRankThumbnailSrc: viewerRankThumbnailSrc,
       authorCurrentRankId: viewerCurrentRankId,
-      isAnonymous: feedbackAnonymous || (!currentUser && !feedbackEmail.trim()),
-      guest: !currentUser,
+      isAnonymous: feedbackAnonymous || isAnonymousAuthUser || (!currentUser && !feedbackEmail.trim()),
+      guest: !currentUser || isAnonymousAuthUser,
       type: feedbackType as FeedbackType,
       title: feedbackTitle,
       details: feedbackDetails,

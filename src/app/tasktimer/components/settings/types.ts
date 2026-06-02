@@ -46,6 +46,7 @@ export type SettingsAccountViewModel = {
   authPlanIsProvisional: boolean;
   authUserEmail: string | null;
   authUserUid: string | null;
+  authIsAnonymous: boolean;
   authUserAlias: string;
   authUserAliasDraft: string;
   authUserAliasEditing: boolean;

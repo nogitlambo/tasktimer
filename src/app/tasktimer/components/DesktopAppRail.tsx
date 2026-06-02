@@ -214,6 +214,7 @@ function rememberRailTransition(fromPage: DesktopRailPage, toPage: DesktopRailPa
 }
 
 function labelFromUser(user: User | null) {
+  if (user?.isAnonymous) return "Guest account";
   const email = emailFromUser(user);
   if (email) return email.split("@")[0] || email;
   return "TaskLaunch User";
@@ -453,6 +454,7 @@ export default function DesktopAppRail({
     const fallbackLabel = labelFromUser(user);
     const email = emailFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
+    const isAnonymous = !!user?.isAnonymous;
 
     setProfileEmail(email);
 
@@ -470,6 +472,10 @@ export default function DesktopAppRail({
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
     setProfileLabel(fallbackLabel);
     setProfileAvatarSrc(resolveAvatarSrc(uid, storedAvatarId, storedCustomAvatarSrc, googlePhotoUrl));
+    if (isAnonymous) {
+      setProfileEmail("Guest account");
+      return;
+    }
 
     const db = getFirebaseFirestoreClient();
     if (!db) return;

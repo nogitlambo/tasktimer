@@ -85,6 +85,7 @@ import {
 import {
   broadcastTaskTimerCheckpointAlertMute,
   getCurrentTaskTimerEmail,
+  getCurrentTaskTimerUserIsAnonymous,
   getCurrentTaskTimerUid,
 } from "./client/runtime-bridge";
 import {
@@ -124,6 +125,11 @@ import { Capacitor } from "@capacitor/core";
 
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
+
+function syncOwnFriendshipProfileForAccountUser(uid: string, partial: Parameters<typeof syncOwnFriendshipProfile>[1]) {
+  if (getCurrentTaskTimerUserIsAnonymous()) return Promise.resolve(null);
+  return syncOwnFriendshipProfile(uid, partial);
+}
 
 export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTimerClientHandle {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -1143,7 +1149,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
       saveCloudPreferences: (prefs) => workspaceRepository.savePreferences(prefs),
       syncSharedTaskSummariesForTask,
-      syncOwnFriendshipProfile,
+      syncOwnFriendshipProfile: syncOwnFriendshipProfileForAccountUser,
     })
   );
   const {
@@ -1364,7 +1370,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       saveCloudPreferences: (prefs) => {
         workspaceRepository.savePreferences(prefs as UserPreferencesV1);
       },
-      syncOwnFriendshipProfile,
+      syncOwnFriendshipProfile: syncOwnFriendshipProfileForAccountUser,
       saveDashboardWidgetState: saveDashboardWidgetStateApi,
       getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
       taskCollectionBindings,

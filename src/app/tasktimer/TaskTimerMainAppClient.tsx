@@ -141,6 +141,7 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
 }
 
 function labelFromUser(user: User | null) {
+  if (user?.isAnonymous) return "Guest account";
   const email = String(user?.email || "").trim() || user?.providerData
     ?.map((provider) => String(provider.email || "").trim())
     .find(Boolean);
@@ -614,6 +615,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const uid = String(user?.uid || "").trim();
       const fallbackLabel = labelFromUser(user);
       const googlePhotoUrl = String(user?.photoURL || "").trim();
+      const isAnonymous = !!user?.isAnonymous;
 
       if (!uid) {
         setHydratedCurrentUserProfile(null);
@@ -630,6 +632,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         avatarCustomSrc: storedCustomAvatarSrc || null,
         googlePhotoUrl: googlePhotoUrl || null,
       });
+      if (isAnonymous) return;
 
       const db = getFirebaseFirestoreClient();
       if (!db) return;
@@ -727,9 +730,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     };
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      activeUid = String(user?.uid || "").trim();
-      setIsAuthenticated(!!user);
-      if (!activeUid) {
+      const isAnonymous = !!user?.isAnonymous;
+      activeUid = isAnonymous ? "" : String(user?.uid || "").trim();
+      setIsAuthenticated(!!user && !isAnonymous);
+      if (!activeUid || isAnonymous) {
         setLeaderboardData(EMPTY_LEADERBOARD_SCREEN_DATA);
         setLeaderboardState("signedOut");
         setLeaderboardError(null);
