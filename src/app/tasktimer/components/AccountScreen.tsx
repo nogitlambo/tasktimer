@@ -16,7 +16,7 @@ import {
   type RankPromotion,
 } from "../client/rank-promotion";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
-import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import { getErrorMessage, handleSignOutFlow, redirectGuestAccountToSignIn } from "./settings/settingsAccountService";
 import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
@@ -32,6 +32,19 @@ function formatMemberSinceDate(value: string | null) {
 
 function formatXp(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
+}
+
+export function getAccountSignOutActionCopy(authIsAnonymous: boolean, signOutBusy: boolean) {
+  if (authIsAnonymous) {
+    return {
+      label: "Sign In",
+      description: "Secure this guest account",
+    };
+  }
+  return {
+    label: signOutBusy ? "Signing Out" : "Sign Out",
+    description: "Log out of your account",
+  };
 }
 
 export default function AccountScreen() {
@@ -103,6 +116,10 @@ export default function AccountScreen() {
 
   const handleSignOut = useCallback(async () => {
     if (signOutBusy) return;
+    if (account.authIsAnonymous) {
+      redirectGuestAccountToSignIn();
+      return;
+    }
     setSignOutBusy(true);
     setSignOutError("");
     try {
@@ -111,7 +128,7 @@ export default function AccountScreen() {
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
     }
-  }, [signOutBusy]);
+  }, [account.authIsAnonymous, signOutBusy]);
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -120,6 +137,7 @@ export default function AccountScreen() {
   }, [router]);
 
   const profileName = account.authIsAnonymous ? "Guest account" : account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
+  const signOutActionCopy = getAccountSignOutActionCopy(account.authIsAnonymous, signOutBusy);
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
@@ -229,8 +247,8 @@ export default function AccountScreen() {
                     <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={handleSignOut} disabled={signOutBusy}>
                       <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
                       <span>
-                        <strong>{signOutBusy ? "Signing Out" : "Sign Out"}</strong>
-                        <small>Log out of your account</small>
+                        <strong>{signOutActionCopy.label}</strong>
+                        <small>{signOutActionCopy.description}</small>
                       </span>
                     </button>
                     <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDesktopRailProfileMenuItems, shouldShowDesktopRailDevEnv } from "./DesktopAppRail";
+import { getDesktopRailProfileMenuItems, getDesktopRailProfileSignOutLabel, shouldShowDesktopRailDevEnv } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
   it("shows Settings and User Guide in the profile menu", () => {
@@ -7,6 +7,15 @@ describe("DesktopAppRail profile menu", () => {
 
     expect(items.map((item) => item.label)).toEqual(["Settings", "User Guide"]);
     expect(items.map((item) => item.href)).toEqual(["/settings", "/user-guide"]);
+  });
+
+  it("labels anonymous guest exit as Sign In", () => {
+    expect(getDesktopRailProfileSignOutLabel(false, true)).toBe("Sign In");
+  });
+
+  it("keeps normal account sign-out labels", () => {
+    expect(getDesktopRailProfileSignOutLabel(false, false)).toBe("Sign Out");
+    expect(getDesktopRailProfileSignOutLabel(true, false)).toBe("Signing Out");
   });
 });
 

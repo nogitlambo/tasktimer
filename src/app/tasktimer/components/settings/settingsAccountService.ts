@@ -35,6 +35,11 @@ function redirectToSignedOutHome() {
   window.location.assign(resolveTaskTimerRouteHref("/?signedOut=1"));
 }
 
+export function redirectGuestAccountToSignIn() {
+  if (typeof window === "undefined") return;
+  window.location.assign(resolveTaskTimerRouteHref("/login"));
+}
+
 function accountStateDocRef(uid: string) {
   const db = getFirebaseFirestoreClient();
   if (!db) return null;
@@ -64,6 +69,9 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
+  if (auth.currentUser?.isAnonymous) {
+    throw new Error("Sign in with email or Google before signing out of this guest account.");
+  }
   await workspaceRepository.waitForPendingTaskSync().catch(() => {});
   await signOut(auth);
   workspaceRepository.clearScopedState();

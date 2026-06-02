@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import DesktopAppRail from "./DesktopAppRail";
 import {
   getResetMobileSwipeCloseState,
@@ -15,7 +17,7 @@ import RankThumbnail from "./RankThumbnail";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, buildXpProgressSubtext, getNextRank, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
-import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import { getErrorMessage, handleSignOutFlow, redirectGuestAccountToSignIn } from "./settings/settingsAccountService";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
@@ -138,7 +140,7 @@ function playDesktopInsigniaUpgradeAudio() {
   }
 }
 
-export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
+export function getTaskLaunchMobileMenuItems(isAnonymous = false): TaskLaunchMobileMenuItem[] {
   return [
     {
       kind: "link",
@@ -154,7 +156,7 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
     },
     {
       kind: "signOut",
-      label: "Sign Out",
+      label: isAnonymous ? "Sign In" : "Sign Out",
       iconSrc: "/icons/icons_default/signout.png",
     },
   ];
@@ -193,6 +195,7 @@ export default function TaskTimerAppFrame({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authIsAnonymous, setAuthIsAnonymous] = useState(() => !!getFirebaseAuthClient()?.currentUser?.isAnonymous);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
@@ -233,6 +236,15 @@ export default function TaskTimerAppFrame({
       getDesktopInsigniaUpgradeAudioCallback(achievementSoundsEnabled, playDesktopInsigniaUpgradeAudio)
     );
   }, [achievementSoundsEnabled, desktopInsigniaUpgrade]);
+
+  useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthIsAnonymous(!!user?.isAnonymous);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -279,6 +291,10 @@ export default function TaskTimerAppFrame({
   const handleMobileSignOut = useCallback(async () => {
     if (signOutBusy) return;
     setMobileMenuOpen(false);
+    if (authIsAnonymous) {
+      redirectGuestAccountToSignIn();
+      return;
+    }
     setSignOutBusy(true);
     setSignOutError("");
     try {
@@ -287,7 +303,7 @@ export default function TaskTimerAppFrame({
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
     }
-  }, [signOutBusy]);
+  }, [authIsAnonymous, signOutBusy]);
 
   const handleOpenMobileAccount = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -489,7 +505,7 @@ export default function TaskTimerAppFrame({
             <span className="taskLaunchMobileMenuHeaderText">TASKLAUNCH</span>
           </div>
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
-            {getTaskLaunchMobileMenuItems().map((item) =>
+            {getTaskLaunchMobileMenuItems(authIsAnonymous).map((item) =>
               item.kind === "link" ? (
                 <a
                   key={item.label}
@@ -516,7 +532,7 @@ export default function TaskTimerAppFrame({
                     alt=""
                     aria-hidden="true"
                   />
-                  <span className="taskLaunchMobileMenuItemText">{signOutBusy ? "Signing Out" : item.label}</span>
+                  <span className="taskLaunchMobileMenuItemText">{!authIsAnonymous && signOutBusy ? "Signing Out" : item.label}</span>
                 </button>
               )
             )}
