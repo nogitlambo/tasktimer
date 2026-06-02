@@ -2,6 +2,7 @@
 
 import "../tasktimer/tasktimer.css";
 
+import type { PluginListenerHandle } from "@capacitor/core";
 import {
   GoogleAuthProvider,
   type Auth,
@@ -68,6 +69,21 @@ function isNativeFirebaseAuthPluginAvailable() {
 
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
+}
+
+function buildNativeEmailLinkRedirect(auth: Auth, rawUrl: string) {
+  if (typeof window === "undefined") return "";
+  const sourceUrl = rawUrl.trim();
+  if (!sourceUrl || !isSignInWithEmailLink(auth, sourceUrl)) return "";
+  try {
+    const openedUrl = new URL(sourceUrl);
+    const targetUrl = new URL("/login/", window.location.href);
+    targetUrl.search = openedUrl.search;
+    targetUrl.hash = openedUrl.hash;
+    return targetUrl.href;
+  } catch {
+    return "";
+  }
 }
 
 async function resolveAuthUser(auth: Auth): Promise<User | null> {
@@ -292,6 +308,41 @@ export default function SharedWebSignInClient({
       cancelled = true;
     };
   }, [authUserUid, checkoutBusy, hasRedirected, shouldStartProCheckout, telemetrySource]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isNativeOrFileRuntime()) return;
+    const auth = getFirebaseAuthClient();
+    if (!auth) return;
+    let disposed = false;
+    let appUrlOpenHandle: PluginListenerHandle | null = null;
+
+    const openEmailLink = (rawUrl: string) => {
+      const targetUrl = buildNativeEmailLinkRedirect(auth, rawUrl);
+      if (!targetUrl || targetUrl === window.location.href) return;
+      window.location.assign(targetUrl);
+    };
+
+    const setupNativeEmailLinkHandling = async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const launchUrl = await App.getLaunchUrl().catch(() => undefined);
+        if (!disposed) openEmailLink(launchUrl?.url || "");
+        appUrlOpenHandle = await App.addListener("appUrlOpen", (event) => {
+          openEmailLink(event.url || "");
+        });
+      } catch {
+        // Ignore native deep-link setup failures; browser email-link handling still applies.
+      }
+    };
+
+    void setupNativeEmailLinkHandling();
+    return () => {
+      disposed = true;
+      if (appUrlOpenHandle) {
+        void appUrlOpenHandle.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

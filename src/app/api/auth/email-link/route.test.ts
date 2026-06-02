@@ -39,6 +39,7 @@ function emailLinkRequest(email = "User@Example.com") {
 
 describe("POST /api/auth/email-link", () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     vi.clearAllMocks();
     mocks.enforcePublicRateLimit.mockResolvedValue(undefined);
     mocks.generateSignInWithEmailLink.mockResolvedValue("https://tasktimer-prod.firebaseapp.com/auth/link");
@@ -84,6 +85,22 @@ describe("POST /api/auth/email-link", () => {
       email: "User@Example.com",
       signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
     });
+  });
+
+  it("uses a normalized Firebase Hosting custom link domain when configured", async () => {
+    vi.stubEnv("AUTH_EMAIL_LINK_DOMAIN", "https://tasklaunch.app/");
+
+    const response = await POST(emailLinkRequest());
+
+    expect(response.status).toBe(200);
+    expect(mocks.generateSignInWithEmailLink).toHaveBeenCalledWith(
+      "User@Example.com",
+      expect.objectContaining({
+        handleCodeInApp: true,
+        linkDomain: "tasklaunch.app",
+        url: "https://tasklaunch.app/login/",
+      })
+    );
   });
 
   it("returns an error when SMTP sending fails", async () => {
