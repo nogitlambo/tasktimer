@@ -11,6 +11,11 @@ import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspac
 type GuardStatus = "checking" | "ready";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
+export function resolveTaskLaunchAuthGuardAuthState(requireAuth: boolean, hasUser: boolean): GuardStatus | "redirect" {
+  if (hasUser || !requireAuth) return "ready";
+  return "redirect";
+}
+
 export default function TaskLaunchAuthGuard({
   children,
   requireAuth = true,
@@ -21,7 +26,7 @@ export default function TaskLaunchAuthGuard({
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>(() => {
     const auth = getFirebaseAuthClient();
-    return auth?.currentUser || !requireAuth ? "ready" : "checking";
+    return resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(auth?.currentUser)) === "ready" ? "ready" : "checking";
   });
 
   function readStoredMobilePushAlertsEnabled() {
@@ -52,7 +57,8 @@ export default function TaskLaunchAuthGuard({
       return;
     }
     const unsub = onAuthStateChanged(auth, (user) => {
-      if (user || !requireAuth) {
+      const nextState = resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(user));
+      if (nextState === "ready") {
         setStatus("ready");
         return;
       }

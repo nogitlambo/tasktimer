@@ -2,6 +2,7 @@
 
 import AppImg from "@/components/AppImg";
 import type { FormEvent } from "react";
+import { resolveTaskTimerRouteHref } from "./tasktimer/lib/routeHref";
 
 type WebSignInProps = {
   authUserEmail: string | null;
@@ -60,6 +61,7 @@ export default function WebSignIn(props: WebSignInProps) {
   } = props;
   const canSendEmailLink = !authBusy && isValidAuthEmail;
   const canCompleteEmailLink = !authBusy && isValidAuthEmail;
+  const guestHref = resolveTaskTimerRouteHref("/tasklaunch");
 
   const handlePrimaryEmailClick = () => {
     if (!showEmailLoginForm) {
@@ -176,7 +178,7 @@ export default function WebSignIn(props: WebSignInProps) {
 
                     {!showEmailLoginForm && showGuestLink ? (
                       <a
-                        href="/tasklaunch"
+                        href={guestHref}
                         className="webSignInGuestLink self-center"
                       >
                         Continue without account

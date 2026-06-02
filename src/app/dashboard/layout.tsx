@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <TaskLaunchAuthGuard>{children}</TaskLaunchAuthGuard>;
+  return <TaskLaunchAuthGuard requireAuth={false}>{children}</TaskLaunchAuthGuard>;
 }
