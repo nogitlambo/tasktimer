@@ -33,7 +33,7 @@ import {
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
 } from "../lib/accountProfileStorage";
-import { getErrorMessage, handleSignOutFlow, redirectGuestAccountToSignIn } from "./settings/settingsAccountService";
+import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "userGuide" | "none";
 
@@ -214,7 +214,6 @@ function rememberRailTransition(fromPage: DesktopRailPage, toPage: DesktopRailPa
 }
 
 function labelFromUser(user: User | null) {
-  if (user?.isAnonymous) return "Guest account";
   const email = emailFromUser(user);
   if (email) return email.split("@")[0] || email;
   return "TaskLaunch User";
@@ -399,19 +398,19 @@ function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNav
   );
 }
 
-export function getDesktopRailProfileSignOutLabel(signOutBusy: boolean, isAnonymous: boolean) {
-  return isAnonymous ? "Sign In" : signOutBusy ? "Signing Out" : "Sign Out";
+export function getDesktopRailProfileSignOutLabel(signOutBusy: boolean) {
+  return signOutBusy ? "Signing Out" : "Sign Out";
 }
 
-function renderProfileSignOutButton(signOutBusy: boolean, isAnonymous: boolean, onSignOut: () => void) {
-  const label = getDesktopRailProfileSignOutLabel(signOutBusy, isAnonymous);
+function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void) {
+  const label = getDesktopRailProfileSignOutLabel(signOutBusy);
   return (
     <button
       key="profile-sign-out"
       className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSignOutBtn"
       type="button"
       role="menuitem"
-      aria-label={isAnonymous ? "Sign In" : "Sign Out"}
+      aria-label="Sign Out"
       onClick={onSignOut}
       disabled={signOutBusy}
     >
@@ -440,7 +439,6 @@ export default function DesktopAppRail({
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
-  const [profileIsAnonymous, setProfileIsAnonymous] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
@@ -460,9 +458,6 @@ export default function DesktopAppRail({
     const fallbackLabel = labelFromUser(user);
     const email = emailFromUser(user);
     const googlePhotoUrl = String(user?.photoURL || "").trim();
-    const isAnonymous = !!user?.isAnonymous;
-
-    setProfileIsAnonymous(isAnonymous);
     setProfileEmail(email);
 
     if (!uid) {
@@ -479,11 +474,6 @@ export default function DesktopAppRail({
     const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
     setProfileLabel(fallbackLabel);
     setProfileAvatarSrc(resolveAvatarSrc(uid, storedAvatarId, storedCustomAvatarSrc, googlePhotoUrl));
-    if (isAnonymous) {
-      setProfileEmail("Guest account");
-      return;
-    }
-
     const db = getFirebaseFirestoreClient();
     if (!db) return;
 
@@ -635,10 +625,6 @@ export default function DesktopAppRail({
 
   const handleProfileSignOut = useCallback(async () => {
     if (signOutBusy) return;
-    if (profileIsAnonymous) {
-      redirectGuestAccountToSignIn();
-      return;
-    }
     setSignOutBusy(true);
     setSignOutError("");
     try {
@@ -647,7 +633,7 @@ export default function DesktopAppRail({
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
     }
-  }, [profileIsAnonymous, signOutBusy]);
+  }, [signOutBusy]);
 
   const handleOpenBillingPortal = useCallback(async () => {
     const auth = getFirebaseAuthClient();
@@ -776,7 +762,7 @@ export default function DesktopAppRail({
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
                 {getDesktopRailProfileMenuItems().map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
-                {renderProfileSignOutButton(signOutBusy, profileIsAnonymous, handleProfileSignOut)}
+                {renderProfileSignOutButton(signOutBusy, handleProfileSignOut)}
                 {signOutError ? (
                   <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">
                     {signOutError}

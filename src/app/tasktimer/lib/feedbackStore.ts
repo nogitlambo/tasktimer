@@ -60,7 +60,6 @@ export type CreateFeedbackItemInput = {
   details: string;
   jiraIssueBrowseUrl?: string | null;
   authToken?: string;
-  guest?: boolean;
   attachments?: FeedbackAttachmentUploadInput[];
 };
 
@@ -139,8 +138,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     const ownerUid = normalizeString(input.ownerUid, 120);
     const title = normalizeString(input.title, 160);
     const details = normalizeString(input.details, 8000);
-    const isGuest = input.guest === true;
-    if (!ownerUid && !isGuest) return { ok: false, message: "You must be signed in to submit feedback." };
+    if (!ownerUid) return { ok: false, message: "You must be signed in to submit feedback." };
     if (!title) return { ok: false, message: "A feedback title is required." };
     if (!details) return { ok: false, message: "Feedback details are required." };
     const attachments = Array.isArray(input.attachments) ? input.attachments : [];
@@ -153,7 +151,6 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
     if (hasAttachments) {
       const formData = new FormData();
       if (authToken) formData.append("authToken", authToken);
-      if (isGuest) formData.append("guest", "true");
       formData.append("authorCurrentRankId", normalizeNullableString(input.authorCurrentRankId, 120) || "");
       formData.append("authorDisplayName", normalizeNullableString(input.authorDisplayName, 120) || "");
       formData.append("authorEmail", normalizeNullableString(input.authorEmail, 320) || "");
@@ -180,7 +177,6 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       headers["Content-Type"] = "application/json";
       body = JSON.stringify({
         authToken,
-        guest: isGuest,
         authorCurrentRankId: normalizeNullableString(input.authorCurrentRankId, 120),
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
@@ -207,7 +203,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       ok: true,
       item: {
         feedbackId: "",
-        ownerUid: ownerUid || "guest",
+        ownerUid,
         authorDisplayName: normalizeNullableString(input.authorDisplayName, 120),
         authorEmail: normalizeNullableString(input.authorEmail, 320),
         authorRankThumbnailSrc: normalizeNullableString(input.authorRankThumbnailSrc, 1024),

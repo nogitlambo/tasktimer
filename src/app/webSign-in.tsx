@@ -2,11 +2,9 @@
 
 import AppImg from "@/components/AppImg";
 import type { FormEvent } from "react";
-import { resolveTaskTimerRouteHref } from "./tasktimer/lib/routeHref";
 
 type WebSignInProps = {
   authUserEmail: string | null;
-  authIsAnonymous?: boolean;
   showEmailLoginForm: boolean;
   isEmailLinkFlow: boolean;
   isValidAuthEmail: boolean;
@@ -15,10 +13,8 @@ type WebSignInProps = {
   authError: string;
   authBusy: boolean;
   showLaunchingScreen: boolean;
-  showGuestLink?: boolean;
   onToggleEmailLoginForm: () => void;
   onGoogleSignIn: () => void;
-  onAnonymousSignIn: () => void;
   onSendEmailLink: () => void;
   onCompleteEmailLink: () => void;
   onAuthEmailChange: (value: string) => void;
@@ -46,7 +42,6 @@ function RecaptchaDisclaimer() {
 export default function WebSignIn(props: WebSignInProps) {
   const {
     authUserEmail,
-    authIsAnonymous = false,
     showEmailLoginForm,
     isEmailLinkFlow,
     isValidAuthEmail,
@@ -55,17 +50,14 @@ export default function WebSignIn(props: WebSignInProps) {
     authError,
     authBusy,
     showLaunchingScreen,
-    showGuestLink = true,
     onToggleEmailLoginForm,
     onGoogleSignIn,
-    onAnonymousSignIn,
     onSendEmailLink,
     onCompleteEmailLink,
     onAuthEmailChange,
   } = props;
   const canSendEmailLink = !authBusy && isValidAuthEmail;
   const canCompleteEmailLink = !authBusy && isValidAuthEmail;
-  const taskLaunchHref = resolveTaskTimerRouteHref("/tasklaunch");
 
   const handlePrimaryEmailClick = () => {
     if (!showEmailLoginForm) {
@@ -130,7 +122,7 @@ export default function WebSignIn(props: WebSignInProps) {
                   </p>
                 </div>
 
-                {!authUserEmail && !authIsAnonymous ? (
+                {!authUserEmail ? (
                   <div className="relative flex flex-col gap-3 pt-8">
                     <button
                       type="button"
@@ -180,17 +172,6 @@ export default function WebSignIn(props: WebSignInProps) {
                       <span className="webSignInAuthButtonLabel">Continue with Google</span>
                     </button>
 
-                    {!showEmailLoginForm && showGuestLink ? (
-                      <button
-                        type="button"
-                        onClick={onAnonymousSignIn}
-                        disabled={authBusy}
-                        className="webSignInGuestLink self-center"
-                      >
-                        Continue without account
-                      </button>
-                    ) : null}
-
                     {showEmailLoginForm ? (
                       <form className="webSignInEmailFormContents" onSubmit={handleEmailFormSubmit}>
                         <label htmlFor="landingEmailInput" className="sr-only">
@@ -239,78 +220,6 @@ export default function WebSignIn(props: WebSignInProps) {
                       ) : null}
                     </div>
 
-                    {authStatus ? <div className="webSignInStatus text-xs">{authStatus}</div> : null}
-                    {authError ? <div className="webSignInError text-xs">{authError}</div> : null}
-                  </div>
-                ) : authIsAnonymous ? (
-                  <div className="relative flex flex-col gap-3 pt-8 text-center">
-                    <div className="webSignInSignedIn rounded-none p-4 text-center text-sm">
-                      Continuing as <strong>Guest account</strong>.
-                    </div>
-                    <a href={taskLaunchHref} className="webSignInAuthButton webSignInAuthButtonCompact rounded-none self-center">
-                      Continue to TaskLaunch
-                    </a>
-                    <button
-                      type="button"
-                      onClick={handlePrimaryEmailClick}
-                      aria-expanded={showEmailLoginForm ? "true" : "false"}
-                      disabled={authBusy}
-                      className="webSignInAuthButton webSignInAuthButtonCompact rounded-none self-center"
-                    >
-                      Add email
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onGoogleSignIn}
-                      disabled={authBusy}
-                      className="webSignInAuthButton webSignInAuthButtonCompact rounded-none self-center"
-                      style={showEmailLoginForm ? { display: "none" } : undefined}
-                    >
-                      Add Google
-                    </button>
-                    {showEmailLoginForm ? (
-                      <form className="webSignInEmailFormContents" onSubmit={handleEmailFormSubmit}>
-                        <label htmlFor="landingEmailInput" className="sr-only">
-                          Email address
-                        </label>
-                        <input
-                          id="landingEmailInput"
-                          type="email"
-                          autoComplete="email"
-                          placeholder="name@example.com"
-                          value={authEmail}
-                          onChange={(e) => onAuthEmailChange(e.target.value)}
-                          className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
-                        />
-                        <div className="webSignInAuthActions webSignInEmailActions flex flex-wrap justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={onToggleEmailLoginForm}
-                            disabled={authBusy}
-                            className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            disabled={!canSendEmailLink}
-                            className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton rounded-none"
-                          >
-                            Send Link
-                          </button>
-                        </div>
-                      </form>
-                    ) : null}
-                    {isEmailLinkFlow ? (
-                      <button
-                        type="button"
-                        onClick={onCompleteEmailLink}
-                        disabled={!canCompleteEmailLink}
-                        className="webSignInAuthButton webSignInAuthButtonCompact rounded-none self-center"
-                      >
-                        Complete Sign-In
-                      </button>
-                    ) : null}
                     {authStatus ? <div className="webSignInStatus text-xs">{authStatus}</div> : null}
                     {authError ? <div className="webSignInError text-xs">{authError}</div> : null}
                   </div>

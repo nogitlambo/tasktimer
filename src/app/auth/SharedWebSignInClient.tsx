@@ -4,16 +4,13 @@ import "../tasktimer/tasktimer.css";
 
 import type { PluginListenerHandle } from "@capacitor/core";
 import {
-  EmailAuthProvider,
+  deleteUser,
   GoogleAuthProvider,
   type Auth,
   getRedirectResult,
   isSignInWithEmailLink,
-  linkWithCredential,
-  linkWithPopup,
   onAuthStateChanged,
   signOut,
-  signInAnonymously,
   signInWithCredential,
   signInWithEmailLink,
   signInWithPopup,
@@ -25,17 +22,17 @@ import { useRouter } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
+import { createTaskTimerWorkspaceRepository } from "../tasktimer/lib/workspaceRepository";
 import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
 import { runAuthSuccessRedirect } from "./authRedirect";
 import { sendSignInLinkEmail } from "./emailLinkClient";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
-const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
+const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 type SharedWebSignInClientProps = {
   redirectOnSuccess?: string | null;
-  showGuestLink?: boolean;
   shouldStartProCheckout?: boolean;
   telemetrySource?: string;
 };
@@ -118,7 +115,6 @@ async function resolveAuthUser(auth: Auth): Promise<User | null> {
 
 export default function SharedWebSignInClient({
   redirectOnSuccess,
-  showGuestLink = true,
   shouldStartProCheckout = false,
   telemetrySource = "web_sign_in",
 }: SharedWebSignInClientProps) {
@@ -130,16 +126,14 @@ export default function SharedWebSignInClient({
   const [authBusy, setAuthBusy] = useState(false);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
-  const [authIsAnonymous, setAuthIsAnonymous] = useState(false);
   const [isResolvingNativeLaunchAuth, setIsResolvingNativeLaunchAuth] = useState(() => isNativeLaunchRuntime);
   const [isEmailLinkFlow, setIsEmailLinkFlow] = useState(false);
   const [showEmailLoginForm, setShowEmailLoginForm] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
   const [googlePopupPending, setGooglePopupPending] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
   const hasRedirectedRef = useRef(false);
-  const anonymousRedirectPendingRef = useRef(false);
+  const anonymousCleanupPendingRef = useRef(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
@@ -147,7 +141,7 @@ export default function SharedWebSignInClient({
     return runAuthSuccessRedirect({
       hasRedirected: hasRedirectedRef.current,
       shouldStartProCheckout,
-      bypassAutoRedirect,
+      bypassAutoRedirect: false,
       redirectOnSuccess,
       markRedirected: () => {
         hasRedirectedRef.current = true;
@@ -155,7 +149,7 @@ export default function SharedWebSignInClient({
       },
       replace: router.replace,
     });
-  }, [bypassAutoRedirect, redirectOnSuccess, router, shouldStartProCheckout]);
+  }, [redirectOnSuccess, router, shouldStartProCheckout]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -179,37 +173,7 @@ export default function SharedWebSignInClient({
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    let shouldBypass = false;
-    try {
-      const params = new URLSearchParams(window.location.search || "");
-      shouldBypass = params.get("signedOut") === "1";
-    } catch {
-      shouldBypass = false;
-    }
-    if (!shouldBypass) {
-      try {
-        shouldBypass = sessionStorage.getItem(SIGN_OUT_LANDING_BYPASS_KEY) === "1";
-      } catch {
-        shouldBypass = false;
-      }
-    }
-    if (!shouldBypass) return;
-    setBypassAutoRedirect(true);
-    const auth = getFirebaseAuthClient();
-    if (auth) {
-      void signOut(auth).catch(() => {
-        // ignore; auth state listener will settle the final UI state
-      });
-    }
-  }, []);
-
-  useEffect(() => {
     if (!isNativeLaunchRuntime) {
-      setIsResolvingNativeLaunchAuth(false);
-      return;
-    }
-    if (bypassAutoRedirect) {
       setIsResolvingNativeLaunchAuth(false);
       return;
     }
@@ -227,7 +191,6 @@ export default function SharedWebSignInClient({
       const isAnonymous = !!user?.isAnonymous;
       setAuthUserEmail(email);
       setAuthUserUid(uid);
-      setAuthIsAnonymous(isAnonymous);
       if (uid && !isAnonymous) void ensureUserProfileIndex(uid);
       setIsResolvingNativeLaunchAuth(false);
     };
@@ -235,7 +198,7 @@ export default function SharedWebSignInClient({
     return () => {
       cancelled = true;
     };
-  }, [bypassAutoRedirect, isNativeLaunchRuntime]);
+  }, [isNativeLaunchRuntime]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -244,34 +207,26 @@ export default function SharedWebSignInClient({
       const email = user?.email || null;
       const uid = user?.uid || null;
       const isAnonymous = !!user?.isAnonymous;
-      setAuthUserEmail(email);
-      setAuthUserUid(uid);
-      setAuthIsAnonymous(isAnonymous);
+      if (isAnonymous && user && !anonymousCleanupPendingRef.current) {
+        anonymousCleanupPendingRef.current = true;
+        workspaceRepository.clearScopedState();
+        void deleteUser(user)
+          .catch(() => signOut(auth).catch(() => {}))
+          .finally(() => {
+            anonymousCleanupPendingRef.current = false;
+            setAuthUserEmail(null);
+            setAuthUserUid(null);
+          });
+        return;
+      }
+      setAuthUserEmail(isAnonymous ? null : email);
+      setAuthUserUid(isAnonymous ? null : uid);
       if (email) setGooglePopupPending(false);
       if (user?.uid && !isAnonymous) void ensureUserProfileIndex(user.uid);
-      if (!email && bypassAutoRedirect) {
-        setBypassAutoRedirect(false);
-        try {
-          sessionStorage.removeItem(SIGN_OUT_LANDING_BYPASS_KEY);
-        } catch {
-          // ignore
-        }
-        try {
-          const params = new URLSearchParams(window.location.search || "");
-          if (params.get("signedOut") === "1") {
-            params.delete("signedOut");
-            const qs = params.toString();
-            const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash || ""}`;
-            window.history.replaceState({}, "", cleanUrl);
-          }
-        } catch {
-          // ignore
-        }
-      }
-      if (email || (isAnonymous && anonymousRedirectPendingRef.current)) redirectAfterAuthSuccess();
+      if (email) redirectAfterAuthSuccess();
     });
     return () => unsub();
-  }, [bypassAutoRedirect, redirectAfterAuthSuccess]);
+  }, [redirectAfterAuthSuccess]);
 
   useEffect(() => {
     if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;
@@ -381,13 +336,7 @@ export default function SharedWebSignInClient({
       setAuthError("");
       setAuthStatus("Completing sign-in...");
       try {
-        const currentUser = auth.currentUser;
-        if (currentUser?.isAnonymous) {
-          const credential = EmailAuthProvider.credentialWithLink(email, href);
-          await linkWithCredential(currentUser, credential);
-        } else {
-          await signInWithEmailLink(auth, email, href);
-        }
+        await signInWithEmailLink(auth, email, href);
         try {
           localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
         } catch {
@@ -515,13 +464,7 @@ export default function SharedWebSignInClient({
     setAuthError("");
     setAuthStatus("Completing sign-in...");
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser?.isAnonymous) {
-        const credential = EmailAuthProvider.credentialWithLink(email, href);
-        await linkWithCredential(currentUser, credential);
-      } else {
-        await signInWithEmailLink(auth, email, href);
-      }
+      await signInWithEmailLink(auth, email, href);
       try {
         localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
       } catch {
@@ -566,11 +509,7 @@ export default function SharedWebSignInClient({
             throw new Error("Google sign-in did not return an auth token.");
           }
           const nativeCredential = GoogleAuthProvider.credential(idToken ?? undefined, accessToken ?? undefined);
-          if (auth.currentUser?.isAnonymous) {
-            await linkWithCredential(auth.currentUser, nativeCredential);
-          } else {
-            await signInWithCredential(auth, nativeCredential);
-          }
+          await signInWithCredential(auth, nativeCredential);
           setAuthStatus("Signed in successfully.");
           return;
         } catch (nativeErr: unknown) {
@@ -584,11 +523,7 @@ export default function SharedWebSignInClient({
       }
       const provider = createGoogleSignInProvider();
       setGooglePopupPending(true);
-      if (auth.currentUser?.isAnonymous) {
-        await linkWithPopup(auth.currentUser, provider);
-      } else {
-        await signInWithPopup(auth, provider);
-      }
+      await signInWithPopup(auth, provider);
       setGooglePopupPending(false);
       setAuthStatus("Signed in successfully.");
     } catch (err: unknown) {
@@ -611,38 +546,9 @@ export default function SharedWebSignInClient({
     }
   };
 
-  const handleAnonymousSignIn = async () => {
-    const auth = getFirebaseAuthClient();
-    if (!auth) {
-      setAuthError("Sign-in is not configured for this environment.");
-      setAuthStatus("");
-      return;
-    }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Continuing without account...");
-    try {
-      anonymousRedirectPendingRef.current = true;
-      await signInAnonymously(auth);
-      setAuthStatus("Guest account ready.");
-      redirectAfterAuthSuccess();
-    } catch (err: unknown) {
-      void recordNonFatal(err, {
-        flow: "auth_anonymous_sign_in",
-        source_page: telemetrySource,
-      });
-      setAuthError(getErrorMessage(err, "Could not continue without an account."));
-      setAuthStatus("");
-      anonymousRedirectPendingRef.current = false;
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
   return (
     <WebSignIn
       authUserEmail={authUserEmail}
-      authIsAnonymous={authIsAnonymous}
       showEmailLoginForm={showEmailLoginForm}
       isEmailLinkFlow={isEmailLinkFlow}
       isValidAuthEmail={isValidAuthEmail}
@@ -652,17 +558,15 @@ export default function SharedWebSignInClient({
       authBusy={authBusy}
       onToggleEmailLoginForm={() => setShowEmailLoginForm((v) => !v)}
       onGoogleSignIn={handleGoogleSignIn}
-      onAnonymousSignIn={handleAnonymousSignIn}
       onSendEmailLink={handleSendEmailLink}
       onCompleteEmailLink={handleCompleteEmailLink}
       onAuthEmailChange={(value) => {
         setAuthEmail(value);
         setAuthError("");
       }}
-      showGuestLink={showGuestLink}
       showLaunchingScreen={
         isNativeLaunchRuntime &&
-        (isResolvingNativeLaunchAuth || (!!authUserEmail && !hasRedirected && !shouldStartProCheckout && !bypassAutoRedirect))
+        (isResolvingNativeLaunchAuth || (!!authUserEmail && !hasRedirected && !shouldStartProCheckout))
       }
     />
   );

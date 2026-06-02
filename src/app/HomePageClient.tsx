@@ -9,12 +9,11 @@ import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/l
 import Landing from "./landing";
 import LandingSoon from "./landingsoon";
 import type { LandingProps } from "./landing.types";
-import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
 
 const LOGO_PHASE_MS = 1200;
 const DIAL_PHASE_MS = 3000;
 const CTA_PHASE_MS = (LOGO_PHASE_MS + DIAL_PHASE_MS) / 2;
-const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 
 function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
@@ -79,7 +78,6 @@ function HomeContent({ variant = "landing" }: HomePageClientProps) {
   const [showTitlePhase, setShowTitlePhase] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [hasRedirected, setHasRedirected] = useState(false);
-  const [bypassAutoRedirect, setBypassAutoRedirect] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -106,67 +104,18 @@ function HomeContent({ variant = "landing" }: HomePageClientProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    let shouldBypass = false;
-    try {
-      const params = new URLSearchParams(window.location.search || "");
-      shouldBypass = params.get("signedOut") === "1";
-    } catch {
-      shouldBypass = false;
-    }
-    if (!shouldBypass) {
-      try {
-        shouldBypass = sessionStorage.getItem(SIGN_OUT_LANDING_BYPASS_KEY) === "1";
-      } catch {
-        shouldBypass = false;
-      }
-    }
-    const timer = window.setTimeout(() => {
-      if (shouldBypass) {
-        setBypassAutoRedirect(true);
-        const auth = getFirebaseAuthClient();
-        if (auth) {
-          void signOut(auth).catch(() => {
-            // ignore; onAuthStateChanged still drives the final UI state
-          });
-        }
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       const email = user?.email || null;
       if (user?.uid && !user.isAnonymous) void ensureUserProfileIndex(user.uid);
-      if (!email && bypassAutoRedirect) {
-        setBypassAutoRedirect(false);
-        try {
-          sessionStorage.removeItem(SIGN_OUT_LANDING_BYPASS_KEY);
-        } catch {
-          // ignore
-        }
-        try {
-          const params = new URLSearchParams(window.location.search || "");
-          if (params.get("signedOut") === "1") {
-            params.delete("signedOut");
-            const qs = params.toString();
-            const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash || ""}`;
-            window.history.replaceState({}, "", cleanUrl);
-          }
-        } catch {
-          // ignore
-        }
-      }
-      if (email && !hasRedirected && !bypassAutoRedirect) {
+      if (email && !hasRedirected) {
         setHasRedirected(true);
         router.replace(startupModuleToRoute(readStartupModulePreference()));
       }
     });
     return () => unsub();
-  }, [router, hasRedirected, bypassAutoRedirect]);
+  }, [router, hasRedirected]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();

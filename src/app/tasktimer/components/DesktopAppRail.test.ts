@@ -9,13 +9,9 @@ describe("DesktopAppRail profile menu", () => {
     expect(items.map((item) => item.href)).toEqual(["/settings", "/user-guide"]);
   });
 
-  it("labels anonymous guest exit as Sign In", () => {
-    expect(getDesktopRailProfileSignOutLabel(false, true)).toBe("Sign In");
-  });
-
   it("keeps normal account sign-out labels", () => {
-    expect(getDesktopRailProfileSignOutLabel(false, false)).toBe("Sign Out");
-    expect(getDesktopRailProfileSignOutLabel(true, false)).toBe("Signing Out");
+    expect(getDesktopRailProfileSignOutLabel(false)).toBe("Sign Out");
+    expect(getDesktopRailProfileSignOutLabel(true)).toBe("Signing Out");
   });
 });
 

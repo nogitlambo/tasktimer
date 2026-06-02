@@ -36,7 +36,6 @@
 - `/pricing`
 - `/privacy`
 - `/settings`
-- `/signed-out`
 - `/tasklaunch`
 - `/unsubscribe`
 - `/user-guide`

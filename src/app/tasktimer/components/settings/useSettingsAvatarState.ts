@@ -365,7 +365,7 @@ export function useSettingsAvatarState({
       setAuthError("");
       if (authIsAnonymous) {
         notifyAccountAvatarUpdated();
-        showAvatarSyncNotice("Avatar saved locally.");
+        showAvatarSyncNotice("Sign in with Google or email to save avatar changes.", true);
         setShowAvatarPickerModal(false);
         return;
       }
@@ -398,7 +398,7 @@ export function useSettingsAvatarState({
         return;
       }
       if (authIsAnonymous) {
-        setAuthError("Add email or Google before uploading a public avatar.");
+        setAuthError("Sign in with Google or email before uploading a public avatar.");
         setAuthStatus("");
         return;
       }

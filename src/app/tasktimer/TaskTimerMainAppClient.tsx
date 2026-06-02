@@ -141,7 +141,6 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
 }
 
 function labelFromUser(user: User | null) {
-  if (user?.isAnonymous) return "Guest account";
   const email = String(user?.email || "").trim() || user?.providerData
     ?.map((provider) => String(provider.email || "").trim())
     .find(Boolean);

@@ -160,7 +160,7 @@ export function useSettingsAccountState(): {
           }).catch(() => {});
         }
         if (loadedAliasUidRef.current === uid) setAuthProfileReady(true);
-        markSynced(isAnonymous ? "Guest cloud data connected." : "Cloud data connected.");
+        markSynced("Cloud data connected.");
       } else {
         pendingPlanRefreshRef.current = false;
         markPlanConfirmed("free", null);
@@ -286,7 +286,7 @@ export function useSettingsAccountState(): {
       return;
     }
     if (user.isAnonymous || authIsAnonymous) {
-      setAuthError("Add email or Google before setting a public username.");
+      setAuthError("Sign in with Google or email before setting a public username.");
       setAuthStatus("");
       return;
     }

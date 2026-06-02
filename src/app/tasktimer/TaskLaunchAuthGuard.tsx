@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+import { deleteUser, onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
 import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
@@ -11,8 +11,9 @@ import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspac
 type GuardStatus = "checking" | "ready";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
-export function resolveTaskLaunchAuthGuardAuthState(requireAuth: boolean, hasUser: boolean): GuardStatus | "redirect" {
-  if (hasUser || !requireAuth) return "ready";
+export function resolveTaskLaunchAuthGuardAuthState(requireAuth: boolean, hasUser: boolean, isAnonymous = false): GuardStatus | "redirect" {
+  if (!requireAuth) return "ready";
+  if (hasUser && !isAnonymous) return "ready";
   return "redirect";
 }
 
@@ -26,8 +27,20 @@ export default function TaskLaunchAuthGuard({
   const router = useRouter();
   const [status, setStatus] = useState<GuardStatus>(() => {
     const auth = getFirebaseAuthClient();
-    return resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(auth?.currentUser)) === "ready" ? "ready" : "checking";
+    return resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(auth?.currentUser), !!auth?.currentUser?.isAnonymous) === "ready"
+      ? "ready"
+      : "checking";
   });
+
+  async function removeAnonymousSession(user: User) {
+    workspaceRepository.clearScopedState();
+    try {
+      await deleteUser(user);
+    } catch {
+      const auth = getFirebaseAuthClient();
+      if (auth) await signOut(auth).catch(() => {});
+    }
+  }
 
   function readStoredMobilePushAlertsEnabled() {
     if (typeof window === "undefined") return false;
@@ -53,16 +66,23 @@ export default function TaskLaunchAuthGuard({
   useEffect(() => {
     const auth = getFirebaseAuthClient();
     if (!auth) {
-      if (requireAuth) router.replace("/");
+      workspaceRepository.clearScopedState();
+      if (requireAuth) router.replace("/login");
       return;
     }
     const unsub = onAuthStateChanged(auth, (user) => {
-      const nextState = resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(user));
+      const nextState = resolveTaskLaunchAuthGuardAuthState(requireAuth, Boolean(user), !!user?.isAnonymous);
       if (nextState === "ready") {
         setStatus("ready");
         return;
       }
-      router.replace("/");
+      setStatus("checking");
+      if (user?.isAnonymous) {
+        void removeAnonymousSession(user).finally(() => router.replace("/login"));
+        return;
+      }
+      workspaceRepository.clearScopedState();
+      router.replace("/login");
     });
     return () => unsub();
   }, [requireAuth, router]);

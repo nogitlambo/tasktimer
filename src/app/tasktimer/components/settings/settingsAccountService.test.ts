@@ -55,17 +55,17 @@ describe("handleSignOutFlow", () => {
     vi.mocked(signOut).mockClear();
     vi.stubGlobal("window", {
       location: { assign: vi.fn() },
-      sessionStorage: { setItem: vi.fn() },
     });
   });
 
-  it("blocks anonymous guest sign-out so the guest account stays recoverable", async () => {
+  it("signs out anonymous sessions and clears local workspace state", async () => {
     mocks.authState.currentUser = { isAnonymous: true };
 
-    await expect(handleSignOutFlow()).rejects.toThrow("Sign in with email or Google before signing out");
+    await handleSignOutFlow();
 
-    expect(signOut).not.toHaveBeenCalled();
-    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith("/login");
   });
 
   it("keeps normal account sign-out behavior", async () => {
@@ -76,6 +76,6 @@ describe("handleSignOutFlow", () => {
     expect(mocks.workspaceRepository.waitForPendingTaskSync).toHaveBeenCalledTimes(1);
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
-    expect(window.location.assign).toHaveBeenCalledWith("/?signedOut=1");
+    expect(window.location.assign).toHaveBeenCalledWith("/login");
   });
 });

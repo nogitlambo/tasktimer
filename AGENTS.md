@@ -60,7 +60,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `/privacy` back behavior must be history-aware: use browser back when history exists, else fallback to `/settings`.
 - Authenticated routes are auth-protected via route-specific layouts; unauthenticated users must be redirected to `/`.
 - Landing page auth UX does not include guest entry or authenticated shortcut buttons (`Guest Sign In`, `Go to Dashboard`, `Go to Tasks`).
-- Logout must land on `/` and preserve the one-time signed-out handoff (`?signedOut=1` + `tasktimer:authSignedOutRedirectBypass`) to avoid immediate auth redirect races.
+- Logout must clear local workspace cache and land on `/login`.
 - Preserve selector hooks used by delegated handlers (`data-action`, `data-history-action`, `data-menu`, `data-move-mode`).
 
 ## Styling guardrails

@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
-  return <TaskLaunchAuthGuard requireAuth={false}>{children}</TaskLaunchAuthGuard>;
+  return <TaskLaunchAuthGuard>{children}</TaskLaunchAuthGuard>;
 }

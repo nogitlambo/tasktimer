@@ -10,7 +10,6 @@ import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspac
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
-const SIGN_OUT_LANDING_BYPASS_KEY = "tasktimer:authSignedOutRedirectBypass";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
 export function getErrorMessage(err: unknown, fallback: string) {
@@ -25,17 +24,7 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
-function redirectToSignedOutHome() {
-  if (typeof window === "undefined") return;
-  try {
-    sessionStorage.setItem(SIGN_OUT_LANDING_BYPASS_KEY, "1");
-  } catch {
-    // ignore
-  }
-  window.location.assign(resolveTaskTimerRouteHref("/?signedOut=1"));
-}
-
-export function redirectGuestAccountToSignIn() {
+function redirectToLogin() {
   if (typeof window === "undefined") return;
   window.location.assign(resolveTaskTimerRouteHref("/login"));
 }
@@ -69,13 +58,10 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
-  if (auth.currentUser?.isAnonymous) {
-    throw new Error("Sign in with email or Google before signing out of this guest account.");
-  }
   await workspaceRepository.waitForPendingTaskSync().catch(() => {});
   await signOut(auth);
   workspaceRepository.clearScopedState();
-  redirectToSignedOutHome();
+  redirectToLogin();
 }
 
 export async function resumePendingDeleteFlow(uid: string) {
@@ -136,7 +122,7 @@ export async function resumePendingDeleteFlow(uid: string) {
   await callDeleteUserDataRoute(idToken, auth.currentUser.uid);
   await deleteUser(auth.currentUser);
   workspaceRepository.clearScopedState();
-  redirectToSignedOutHome();
+  redirectToLogin();
   return { resumed: true };
 }
 
@@ -182,7 +168,7 @@ export async function handleDeleteAccountFlow(user: User) {
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
     workspaceRepository.clearScopedState();
-    redirectToSignedOutHome();
+    redirectToLogin();
   };
 
   try {

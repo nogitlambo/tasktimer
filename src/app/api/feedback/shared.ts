@@ -8,7 +8,6 @@ import {
   hasFirebaseAdminCredentialConfig,
 } from "@/lib/firebaseAdmin";
 import { asString, type FeedbackType } from "../jira/feedback/shared";
-import { extractClientIp } from "../shared/rateLimit";
 
 const FEEDBACK_SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const FEEDBACK_SUBMISSION_LIMIT = 3;
@@ -73,17 +72,6 @@ export function getRequestIdToken(req: Request, body?: Record<string, unknown> |
 
 export async function verifyFeedbackRequestUser(req: Request, body?: Record<string, unknown> | null) {
   const idToken = getRequestIdToken(req, body);
-  const guestSubmission = body?.guest === true || asString(body?.guest, 16).toLowerCase() === "true";
-  if (!idToken && guestSubmission) {
-    const forwardedFor = asString(extractClientIp(req), 240);
-    const userAgent = asString(req.headers.get("user-agent"), 500);
-    const acceptLanguage = asString(req.headers.get("accept-language"), 240);
-    const fingerprint = createHash("sha256")
-      .update([forwardedFor, userAgent, acceptLanguage].join("::"))
-      .digest("hex")
-      .slice(0, 32);
-    return { uid: `guest:${fingerprint}`, email: null, idToken: "" };
-  }
   if (!idToken) {
     throw new FeedbackApiError("feedback/unauthenticated", "You must be signed in to use feedback.", 401);
   }

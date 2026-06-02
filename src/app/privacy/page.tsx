@@ -200,12 +200,12 @@ export default function PrivacyPolicyPage() {
               on the same device.
             </p>
             <p>
-              Session storage is also used for short-lived browser behavior, including signed-out redirect bypass
-              handling and related auth transition state. Current web auth persistence also relies on browser-local
-              persistence and IndexedDB-backed state. TaskLaunch does not treat cookies as its primary app storage
-              layer, but some authentication, security, or abuse-prevention services used with the product may use
-              cookies or similar technologies under their own implementations. Local data can remain on your device
-              until you clear it, reset app data, clear browser storage, or uninstall the app.
+              Session storage is also used for short-lived browser behavior and related auth transition state. Current
+              web auth persistence also relies on browser-local persistence and IndexedDB-backed state. TaskLaunch does
+              not treat cookies as its primary app storage layer, but some authentication, security, or abuse-prevention
+              services used with the product may use cookies or similar technologies under their own implementations.
+              Local data can remain on your device until you clear it, reset app data, clear browser storage, or uninstall
+              the app.
             </p>
           </PolicySection>
 

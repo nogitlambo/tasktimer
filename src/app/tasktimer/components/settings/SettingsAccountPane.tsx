@@ -54,9 +54,9 @@ export function SettingsAccountPane({
   }, [account.showDeleteAccountConfirm]);
 
   const hasAccountSession = !!account.authUserUid;
-  const accountDisplayName = account.authIsAnonymous ? "Guest account" : account.authUserAlias || "-";
-  const accountEmailLabel = account.authIsAnonymous ? "Account Type" : "Email Address";
-  const accountEmailValue = account.authIsAnonymous ? "Continue without account" : account.authUserEmail || "Signed in account";
+  const accountDisplayName = account.authUserAlias || "-";
+  const accountEmailLabel = "Email Address";
+  const accountEmailValue = account.authUserEmail || "Signed in account";
 
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Profile" subtitle="">
@@ -133,26 +133,22 @@ export function SettingsAccountPane({
                               <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
                                 {accountDisplayName}
                               </div>
-                              {!account.authIsAnonymous ? (
-                                <button
-                                  className="iconBtn settingsAccountAliasAction"
-                                  type="button"
-                                  onClick={account.onStartAliasEdit}
-                                  aria-label="Edit username"
-                                  title="Edit username"
-                                >
-                                  {"\u270e"}
-                                </button>
-                              ) : null}
+                              <button
+                                className="iconBtn settingsAccountAliasAction"
+                                type="button"
+                                onClick={account.onStartAliasEdit}
+                                aria-label="Edit username"
+                                title="Edit username"
+                              >
+                                {"\u270e"}
+                              </button>
                             </>
                           )}
                         </div>
                       </div>
-                      {!account.authIsAnonymous ? (
-                        <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
-                          Run Onboarding
-                        </button>
-                      ) : null}
+                      <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
+                        Run Onboarding
+                      </button>
                     </div>
                   </div>
 
@@ -225,11 +221,6 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
-              {account.authIsAnonymous ? (
-                <div className="settingsDetailNote">
-                  Add email or Google from <a href="/login">Sign in</a> to keep this guest workspace under a permanent account.
-                </div>
-              ) : null}
             </div>
           ) : null}
 

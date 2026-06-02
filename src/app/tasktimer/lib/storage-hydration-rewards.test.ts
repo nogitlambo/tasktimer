@@ -84,6 +84,7 @@ import {
   loadCachedPreferences,
   loadCachedDashboard,
   loadCachedTaskUi,
+  loadTasks,
   resetVolatileWorkspaceStateForAuthChange,
   saveCloudDashboard,
   saveCloudPreferences,
@@ -247,7 +248,7 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(1);
   });
 
-  it("replays a pending task delete to cloud after auth returns", async () => {
+  it("does not replay signed-out task deletes after auth returns", async () => {
     const deletedTask = task("task-1", "Focus");
     cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
       plan: "free",
@@ -270,27 +271,23 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
     await hydrateStorageFromCloud({ force: true });
 
-    await vi.waitFor(() => {
-      expect(cloudStoreMocks.deleteTask).toHaveBeenCalledWith("uid-1", "task-1");
-    });
+    await vi.runAllTimersAsync();
+    expect(cloudStoreMocks.deleteTask).not.toHaveBeenCalledWith("uid-1", "task-1");
   });
 
-  it("stores signed-out task changes under the guest shadow scope", () => {
+  it("clears signed-out task changes instead of storing guest shadow data", () => {
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
     const guestTask = task("guest-task-1", "Guest Focus");
 
     saveTasks([guestTask]);
 
     const raw = localStorage.getItem("taskticker_tasks_v1:shadow:tasks");
-    expect(raw).toBeTruthy();
-    expect(JSON.parse(String(raw))).toMatchObject({
-      uid: "__guest__",
-      data: [expect.objectContaining({ id: "guest-task-1", name: "Guest Focus" })],
-    });
+    expect(raw).toBeNull();
+    expect(loadTasks()).toEqual([]);
     expect(cloudStoreMocks.saveTask).not.toHaveBeenCalled();
   });
 
-  it("uploads guest tasks when a new empty cloud account hydrates", async () => {
+  it("does not upload discarded signed-out tasks when an account hydrates", async () => {
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
     const guestTask = task("guest-task-1", "Guest Focus");
     saveTasks([guestTask]);
@@ -310,9 +307,8 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
 
     await hydrateStorageFromCloud({ force: true });
 
-    await vi.waitFor(() => {
-      expect(cloudStoreMocks.saveTask).toHaveBeenCalledWith("uid-1", expect.objectContaining({ id: "guest-task-1" }));
-    });
+    await vi.runAllTimersAsync();
+    expect(cloudStoreMocks.saveTask).not.toHaveBeenCalledWith("uid-1", expect.objectContaining({ id: "guest-task-1" }));
   });
 
   it("skips cloud task writes when task signatures are unchanged", async () => {

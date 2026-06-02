@@ -182,7 +182,7 @@ Current code-backed examples:
 - notification preferences;
 - pending push action state;
 - mode settings;
-- signed-out redirect bypass state.
+- short-lived auth transition state.
 - Firebase Auth persistence uses IndexedDB and browser-local persistence in the current web implementation.
 
 ### 05. Cloud storage and app infrastructure

@@ -72,12 +72,6 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/user-guide", "/settings"]);
   });
 
-  it("labels anonymous guest exit as Sign In", () => {
-    const items = getTaskLaunchMobileMenuItems(true);
-
-    expect(items.map((item) => item.label)).toEqual(["User Guide", "Settings", "Sign In"]);
-  });
-
   it("keeps the hamburger and menu ids stable", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
