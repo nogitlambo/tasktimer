@@ -304,7 +304,7 @@ body.webSignInNativeRoute .webSignInPage {
     0 3px 8px rgba(0, 0, 0, 0.28);
   padding: 0 18px;
   color: rgba(248, 250, 252, 0.96);
-  font-size: 0.9rem;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -319,8 +319,52 @@ body.webSignInNativeRoute .webSignInPage {
   opacity: 1;
 }
 
-.webSignInGoogleButton {
+.webSignInAuthTransitionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
   margin-bottom: 32px;
+}
+
+.webSignInAuthTransitionRow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(280px, 100%);
+  min-height: 44px;
+}
+
+.webSignInAuthInitialLayer,
+.webSignInAuthEmailLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.webSignInAuthEmailLayer {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.webSignInAuthTransitionStack.isEmailMode .webSignInAuthInitialLayer {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.webSignInAuthTransitionStack.isEmailMode .webSignInAuthEmailLayer {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .webSignInAuthButtonIcon {
@@ -358,13 +402,14 @@ body.webSignInNativeRoute .webSignInPage {
 .webSignInAuthInput {
   height: 44px;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.28);
   background: rgba(7, 8, 10, 0.86);
   padding: 0 16px;
   color: rgba(248, 250, 252, 0.96);
   font-family: var(--font-readable);
   font-size: 0.92rem;
   outline: none;
+  box-shadow: none;
 }
 
 .webSignInAuthInputStandard {
@@ -378,8 +423,26 @@ body.webSignInNativeRoute .webSignInPage {
   color: rgba(248, 250, 252, 0.42);
 }
 
+.webSignInAuthInput:focus::placeholder {
+  color: transparent;
+}
+
 .webSignInAuthInput:focus {
-  border-color: rgba(167, 243, 92, 0.48);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: none;
+}
+
+.webSignInAuthInput:focus-visible {
+  border-color: rgba(148, 163, 184, 0.28);
+  outline: none;
+  box-shadow: none;
+}
+
+body[data-theme="lime"] #landingEmailInput.webSignInAuthInput,
+body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus,
+body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  box-shadow: none !important;
 }
 
 .webSignInEmailFormContents {
@@ -408,6 +471,7 @@ body.webSignInNativeRoute .webSignInPage {
   min-width: 0;
   flex: 1 1 0;
   padding: 0 12px;
+  font-size: 11px;
 }
 
 .webSignInStatus {

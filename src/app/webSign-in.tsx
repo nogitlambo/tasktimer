@@ -18,6 +18,7 @@ type WebSignInProps = {
   onSendEmailLink: () => void;
   onCompleteEmailLink: () => void;
   onAuthEmailChange: (value: string) => void;
+  onAuthEmailFocus: () => void;
 };
 
 function RecaptchaDisclaimer() {
@@ -55,17 +56,14 @@ export default function WebSignIn(props: WebSignInProps) {
     onSendEmailLink,
     onCompleteEmailLink,
     onAuthEmailChange,
+    onAuthEmailFocus,
   } = props;
   const canSendEmailLink = !authBusy && isValidAuthEmail;
   const canCompleteEmailLink = !authBusy && isValidAuthEmail;
 
   const handlePrimaryEmailClick = () => {
-    if (!showEmailLoginForm) {
-      onToggleEmailLoginForm();
-      return;
-    }
-    if (!canSendEmailLink) return;
-    onSendEmailLink();
+    if (showEmailLoginForm) return;
+    onToggleEmailLoginForm();
   };
 
   const handleEmailFormSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -124,88 +122,114 @@ export default function WebSignIn(props: WebSignInProps) {
 
                 {!authUserEmail ? (
                   <div className="relative flex flex-col gap-3 pt-8">
-                    <button
-                      type="button"
-                      onClick={handlePrimaryEmailClick}
-                      aria-expanded={showEmailLoginForm ? "true" : "false"}
-                      disabled={authBusy}
-                      className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
+                    <div
+                      className={`webSignInAuthTransitionStack${showEmailLoginForm ? " isEmailMode" : ""}`}
                     >
-                      <span className="webSignInAuthButtonIcon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
-                          <path
-                            fill="currentColor"
-                            d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z"
-                          />
-                        </svg>
-                      </span>
-                      <span className="webSignInAuthButtonLabel">Continue with email</span>
-                    </button>
+                      <div className="webSignInAuthTransitionRow">
+                        <div className="webSignInAuthInitialLayer" aria-hidden={showEmailLoginForm ? "true" : undefined}>
+                          <button
+                            type="button"
+                            onClick={handlePrimaryEmailClick}
+                            aria-expanded={showEmailLoginForm ? "true" : "false"}
+                            disabled={authBusy || showEmailLoginForm}
+                            tabIndex={showEmailLoginForm ? -1 : undefined}
+                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
+                          >
+                            <span className="webSignInAuthButtonIcon" aria-hidden="true">
+                              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
+                                <path
+                                  fill="currentColor"
+                                  d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm0 2v.4l8 5.1 8-5.1V8H4zm16 8V10.76l-7.46 4.75a1 1 0 0 1-1.08 0L4 10.76V16h16z"
+                                />
+                              </svg>
+                            </span>
+                            <span className="webSignInAuthButtonLabel">Continue with email</span>
+                          </button>
+                        </div>
 
-                    <button
-                      type="button"
-                      onClick={onGoogleSignIn}
-                      disabled={authBusy}
-                      className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary webSignInGoogleButton self-center rounded-none"
-                      style={showEmailLoginForm ? { display: "none" } : undefined}
-                    >
-                      <span className="webSignInAuthButtonIcon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
-                          <path
-                            fill="#EA4335"
-                            d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"
+                        <form
+                          className="webSignInAuthEmailLayer"
+                          onSubmit={handleEmailFormSubmit}
+                          aria-hidden={showEmailLoginForm ? undefined : "true"}
+                        >
+                          <label htmlFor="landingEmailInput" className="sr-only">
+                            Email address
+                          </label>
+                          <input
+                            id="landingEmailInput"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="name@example.com"
+                            value={authEmail}
+                            onChange={(e) => onAuthEmailChange(e.target.value)}
+                            onPointerDown={onAuthEmailFocus}
+                            onClick={onAuthEmailFocus}
+                            onFocus={onAuthEmailFocus}
+                            disabled={!showEmailLoginForm}
+                            tabIndex={showEmailLoginForm ? undefined : -1}
+                            className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
                           />
-                          <path
-                            fill="#4285F4"
-                            d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"
-                          />
-                        </svg>
-                      </span>
-                      <span className="webSignInAuthButtonLabel">Continue with Google</span>
-                    </button>
+                        </form>
+                      </div>
 
-                    {showEmailLoginForm ? (
-                      <form className="webSignInEmailFormContents" onSubmit={handleEmailFormSubmit}>
-                        <label htmlFor="landingEmailInput" className="sr-only">
-                          Email address
-                        </label>
-                        <input
-                          id="landingEmailInput"
-                          type="email"
-                          autoComplete="email"
-                          placeholder="name@example.com"
-                          value={authEmail}
-                          onChange={(e) => onAuthEmailChange(e.target.value)}
-                          className="webSignInAuthInput webSignInAuthInputStandard self-center rounded-none"
-                        />
+                      <div className="webSignInAuthTransitionRow">
+                        <div className="webSignInAuthInitialLayer" aria-hidden={showEmailLoginForm ? "true" : undefined}>
+                          <button
+                            type="button"
+                            onClick={onGoogleSignIn}
+                            disabled={authBusy || showEmailLoginForm}
+                            tabIndex={showEmailLoginForm ? -1 : undefined}
+                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary webSignInGoogleButton self-center rounded-none"
+                          >
+                            <span className="webSignInAuthButtonIcon" aria-hidden="true">
+                              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
+                                <path
+                                  fill="#EA4335"
+                                  d="M12.24 10.29v3.93h5.47c-.24 1.26-.96 2.33-2.04 3.05l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.72-.06-1.42-.19-2.09h-9.57z"
+                                />
+                                <path
+                                  fill="#4285F4"
+                                  d="M12 22c2.75 0 5.06-.91 6.74-2.47l-3.3-2.56c-.91.61-2.08.98-3.44.98-2.65 0-4.89-1.79-5.69-4.19H2.9v2.63A10 10 0 0 0 12 22z"
+                                />
+                                <path
+                                  fill="#FBBC05"
+                                  d="M6.31 13.76A5.99 5.99 0 0 1 6 12c0-.61.11-1.2.31-1.76V7.61H2.9A10 10 0 0 0 2 12c0 1.61.39 3.13.9 4.39l3.41-2.63z"
+                                />
+                                <path
+                                  fill="#34A853"
+                                  d="M12 6.05c1.49 0 2.82.51 3.87 1.51l2.9-2.9C17.05 3.05 14.74 2 12 2A10 10 0 0 0 2.9 7.61l3.41 2.63c.8-2.4 3.04-4.19 5.69-4.19z"
+                                />
+                              </svg>
+                            </span>
+                            <span className="webSignInAuthButtonLabel">Continue with Google</span>
+                          </button>
+                        </div>
 
-                        <div className="webSignInAuthActions webSignInEmailActions flex flex-wrap justify-center gap-2">
+                        <div
+                          className="webSignInAuthEmailLayer webSignInAuthActions webSignInEmailActions flex flex-wrap justify-center gap-2"
+                          aria-hidden={showEmailLoginForm ? undefined : "true"}
+                        >
                           <button
                             type="button"
                             onClick={onToggleEmailLoginForm}
-                            disabled={authBusy}
+                            disabled={authBusy || !showEmailLoginForm}
+                            tabIndex={showEmailLoginForm ? undefined : -1}
                             className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
                           >
                             Cancel
                           </button>
                           <button
-                            type="submit"
-                            disabled={!canSendEmailLink}
+                            type="button"
+                            onClick={onSendEmailLink}
+                            disabled={!showEmailLoginForm || !canSendEmailLink}
+                            tabIndex={showEmailLoginForm ? undefined : -1}
                             className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton rounded-none"
                           >
                             Send Link
                           </button>
                         </div>
-                      </form>
-                    ) : null}
+                      </div>
+                    </div>
 
                     <div className="webSignInAuthActions flex flex-wrap justify-center gap-2">
                       {isEmailLinkFlow ? (

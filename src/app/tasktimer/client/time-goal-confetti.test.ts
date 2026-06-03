@@ -191,6 +191,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isCalculating")).toBe(false);
     expect(fx.classList.contains("isPlaying")).toBe(true);
     expect(fx.classList.contains("isCounting")).toBe(true);
+    expect(fx.classList.contains("isCountComplete")).toBe(false);
 
     frames[0]?.(100);
     expect(text.textContent).toBe("You got 1 XP!");
@@ -204,6 +205,7 @@ describe("time goal confetti", () => {
     expect(text.textContent).toBe("You got 12 XP!");
     expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isCountComplete")).toBe(true);
     expect(fx.dataset.xpCountState).toBe("complete");
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
@@ -256,6 +258,7 @@ describe("time goal confetti", () => {
     expect(text.textContent).toBe("You got 51 XP!");
     expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isCountComplete")).toBe(true);
   });
 
   it("schedules xp interval cues during the count phase", () => {
@@ -341,6 +344,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isCalculating")).toBe(false);
     expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isCountComplete")).toBe(false);
     expect(fx.dataset.xpSplashState).toBeUndefined();
     expect(fx.dataset.xpCountState).toBeUndefined();
     expect(onStart).not.toHaveBeenCalled();
@@ -348,6 +352,7 @@ describe("time goal confetti", () => {
 
   it("shows final xp immediately when reduced motion is enabled", () => {
     const fx = elementStub();
+    fx.classList.add("isCountComplete");
     const text = elementStub({ closest: fx });
     const onStart = vi.fn();
     const onIntervalCue = vi.fn();
@@ -370,6 +375,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isCalculating")).toBe(false);
     expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isCountComplete")).toBe(false);
     expect(onStart).toHaveBeenCalledTimes(1);
     expect(onIntervalCue).not.toHaveBeenCalled();
     expect(onFinish).toHaveBeenCalledTimes(1);
@@ -410,6 +416,7 @@ describe("time goal confetti", () => {
 
     expect(text.textContent).toBe("You got 20 XP!");
     expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isCountComplete")).toBe(true);
   });
 
   it("does not schedule an xp splash without a target", () => {

@@ -26,6 +26,7 @@ import { createTaskTimerWorkspaceRepository } from "../tasktimer/lib/workspaceRe
 import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
 import { runAuthSuccessRedirect } from "./authRedirect";
+import { handOffEmailLink, listenForEmailLinkHandoff } from "./emailLinkHandoff";
 import { sendSignInLinkEmail } from "./emailLinkClient";
 import { getEmailLinkSignInErrorMessage } from "./emailLinkSignInError";
 
@@ -135,6 +136,7 @@ export default function SharedWebSignInClient({
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const hasRedirectedRef = useRef(false);
   const anonymousCleanupPendingRef = useRef(false);
+  const emailLinkCompletionPendingRef = useRef(false);
 
   const isValidAuthEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authEmail.trim());
 
@@ -234,6 +236,75 @@ export default function SharedWebSignInClient({
     return () => unsub();
   }, [redirectAfterAuthSuccess]);
 
+  const completeEmailLinkSignIn = useCallback(
+    async (href: string, options: { source: "local" | "handoff"; emailOverride?: string } = { source: "local" }) => {
+      const auth = getFirebaseAuthClient();
+      if (!auth || typeof window === "undefined") return false;
+      if (!isSignInWithEmailLink(auth, href) || emailLinkCompletionPendingRef.current) return false;
+
+      let email = String(options.emailOverride || "").trim();
+      if (!email) {
+        try {
+          email = (localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "").trim();
+        } catch {
+          email = "";
+        }
+      }
+      if (!email) {
+        setShowEmailLoginForm(true);
+        setAuthStatus("Email sign-in link detected. Enter your email below, then click Complete Sign-In.");
+        return false;
+      }
+
+      emailLinkCompletionPendingRef.current = true;
+      setAuthBusy(true);
+      setAuthError("");
+      setAuthStatus("Completing sign-in...");
+      try {
+        await signInWithEmailLink(auth, email, href);
+        try {
+          localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        setAuthEmail(email);
+        setAuthStatus("Signed in successfully.");
+        try {
+          const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
+          window.history.replaceState({}, "", cleanUrl);
+        } catch {
+          // ignore
+        }
+        setIsEmailLinkFlow(false);
+        redirectAfterAuthSuccess();
+        return true;
+      } catch (err: unknown) {
+        void recordNonFatal(err, {
+          flow: "auth_email_link_sign_in",
+          source_page: telemetrySource,
+          source: options.source,
+        });
+        setShowEmailLoginForm(true);
+        setAuthError(getEmailLinkSignInErrorMessage(err, "Could not complete email sign-in."));
+        setAuthStatus("");
+        return false;
+      } finally {
+        emailLinkCompletionPendingRef.current = false;
+        setAuthBusy(false);
+      }
+    },
+    [redirectAfterAuthSuccess, telemetrySource]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isNativeOrFileRuntime()) return;
+    const auth = getFirebaseAuthClient();
+    if (!auth || isSignInWithEmailLink(auth, window.location.href)) return;
+    return listenForEmailLinkHandoff((href) => {
+      void completeEmailLinkSignIn(href, { source: "handoff" });
+    });
+  }, [completeEmailLinkSignIn]);
+
   useEffect(() => {
     if (!shouldStartProCheckout || checkoutBusy || hasRedirected) return;
     const auth = getFirebaseAuthClient();
@@ -328,51 +399,21 @@ export default function SharedWebSignInClient({
     if (!emailLink) return;
 
     const complete = async () => {
-      let email = "";
-      try {
-        email = (localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "").trim();
-      } catch {
-        email = "";
-      }
-      if (!email) {
-        setShowEmailLoginForm(true);
-        setAuthStatus("Email sign-in link detected. Enter your email below, then click Complete Sign-In.");
-        return;
-      }
-      setAuthBusy(true);
-      setAuthError("");
-      setAuthStatus("Completing sign-in...");
-      try {
-        await signInWithEmailLink(auth, email, href);
-        try {
-          localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-        } catch {
-          // ignore
+      if (!isNativeOrFileRuntime()) {
+        const handedOff = await handOffEmailLink(href);
+        if (handedOff) {
+          setIsEmailLinkFlow(false);
+          setAuthBusy(false);
+          setAuthError("");
+          setAuthStatus("Sign-in continued in your original tab.");
+          window.setTimeout(() => window.close(), 100);
+          return;
         }
-        setAuthEmail(email);
-        setAuthStatus("Signed in successfully.");
-        try {
-          const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
-          window.history.replaceState({}, "", cleanUrl);
-        } catch {
-          // ignore
-        }
-        setIsEmailLinkFlow(false);
-        redirectAfterAuthSuccess();
-      } catch (err: unknown) {
-        void recordNonFatal(err, {
-          flow: "auth_email_link_sign_in",
-          source_page: telemetrySource,
-        });
-        setShowEmailLoginForm(true);
-        setAuthError(getEmailLinkSignInErrorMessage(err, "Could not complete email sign-in."));
-        setAuthStatus("");
-      } finally {
-        setAuthBusy(false);
       }
+      await completeEmailLinkSignIn(href, { source: "local" });
     };
     void complete();
-  }, [redirectAfterAuthSuccess, telemetrySource]);
+  }, [completeEmailLinkSignIn]);
 
   useEffect(() => {
     const auth = getFirebaseAuthClient();
@@ -468,30 +509,7 @@ export default function SharedWebSignInClient({
       setAuthStatus("");
       return;
     }
-    setAuthBusy(true);
-    setAuthError("");
-    setAuthStatus("Completing sign-in...");
-    try {
-      await signInWithEmailLink(auth, email, href);
-      try {
-        localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
-      } catch {
-        // ignore
-      }
-      setAuthStatus("Signed in successfully.");
-      setIsEmailLinkFlow(false);
-      redirectAfterAuthSuccess();
-    } catch (err: unknown) {
-      void recordNonFatal(err, {
-        flow: "auth_email_link_sign_in",
-        source_page: telemetrySource,
-      });
-      setShowEmailLoginForm(true);
-      setAuthError(getEmailLinkSignInErrorMessage(err, "Could not complete email sign-in."));
-      setAuthStatus("");
-    } finally {
-      setAuthBusy(false);
-    }
+    await completeEmailLinkSignIn(href, { source: "local", emailOverride: email });
   };
 
   const handleGoogleSignIn = async () => {
@@ -571,6 +589,10 @@ export default function SharedWebSignInClient({
       onCompleteEmailLink={handleCompleteEmailLink}
       onAuthEmailChange={(value) => {
         setAuthEmail(value);
+        setAuthError("");
+      }}
+      onAuthEmailFocus={() => {
+        setAuthStatus("");
         setAuthError("");
       }}
       showLaunchingScreen={

@@ -5588,12 +5588,16 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting:not(.isPlaying) #timeGoalCompleteText{
   animation: none;
   opacity: 1;
-  transform: scale(1.28);
-  filter: brightness(1.38);
+  transform: scale(1.82);
+  filter: brightness(1.75);
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting.isIntervalSplashing #timeGoalCompleteText{
   animation: timeGoalXpIntervalSplashTextHold 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText{
+  animation: timeGoalXpCountCompleteText 260ms cubic-bezier(.18,.84,.26,1) 1 both;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
@@ -5665,15 +5669,15 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     transform: scale(1.82);
     filter: blur(0) brightness(1.75);
   }45%{
-    transform: scale(1.28);
-    filter: brightness(1.38);
+    transform: scale(1.82);
+    filter: brightness(1.75);
   }62%{
-    transform: scale(1.06);
-    filter: brightness(1.1);
+    transform: scale(1.82);
+    filter: brightness(1.75);
   }100%{
     opacity: 1;
-    transform: scale(1.28);
-    filter: brightness(1.38);
+    transform: scale(1.82);
+    filter: brightness(1.75);
   }
 }
 
@@ -5687,15 +5691,27 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     transform: scale(1.82);
     filter: blur(0) brightness(1.75);
   }45%{
-    transform: scale(1.28);
-    filter: brightness(1.38);
+    transform: scale(1.82);
+    filter: brightness(1.75);
   }62%{
-    transform: scale(1.06);
-    filter: brightness(1.1);
+    transform: scale(1.82);
+    filter: brightness(1.75);
   }100%{
     opacity: 1;
-    transform: scale(1.28);
-    filter: brightness(1.38);
+    transform: scale(1.82);
+    filter: brightness(1.75);
+  }
+}
+
+@keyframes timeGoalXpCountCompleteText{
+  0%{
+    opacity: 1;
+    transform: scale(1.82);
+    filter: brightness(1.75);
+  }100%{
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
   }
 }
 
@@ -5747,6 +5763,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @media (prefers-reduced-motion: reduce){
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,

@@ -67,6 +67,7 @@ function cancelTimeGoalXpCount(text: HTMLElement, opts?: { preserveHoldClasses?:
     fx.classList.remove("isCalculating");
     fx.classList.remove("isCounting");
     fx.classList.remove("isPlaying");
+    fx.classList.remove("isCountComplete");
   }
 }
 
@@ -77,6 +78,7 @@ export function startTimeGoalXpCalculating(text: HTMLElement | null | undefined)
   fx.classList.remove("isPlaying");
   fx.classList.remove("isCounting");
   fx.classList.remove("isIntervalSplashing");
+  fx.classList.remove("isCountComplete");
   fx.classList.add("isCalculating");
   fx.dataset.xpCalculatingState = "playing";
   text.textContent = TIME_GOAL_XP_CALCULATING_TEXT;
@@ -141,6 +143,7 @@ export function startTimeGoalXpSplash(text: HTMLElement | null | undefined, opts
   fx.classList.remove("isCalculating");
   fx.classList.remove("isPlaying");
   fx.classList.remove("isCounting");
+  fx.classList.remove("isCountComplete");
   fx.dataset.xpSplashState = "stopped";
   void fx.offsetWidth;
   if (opts?.holdForCount) fx.classList.add("isCounting");
@@ -198,6 +201,7 @@ export function startTimeGoalXpCount(
     cancelAnimationFrameFn,
   };
   xpCountAnimations.set(text, active);
+  fx.classList.remove("isCountComplete");
   fx.classList.add("isPlaying");
   fx.classList.add("isCounting");
   fx.dataset.xpCountState = "playing";
@@ -222,6 +226,8 @@ export function startTimeGoalXpCount(
     text.textContent = formatTimeGoalAwardText(targetXp);
     fx.classList.remove("isCounting");
     fx.classList.remove("isPlaying");
+    fx.classList.remove("isIntervalSplashing");
+    fx.classList.add("isCountComplete");
     fx.dataset.xpCountState = "complete";
     xpCountAnimations.delete(text);
     opts?.onFinish?.();
@@ -266,6 +272,7 @@ export function startTimeGoalXpSplashAfterConfetti(
   const setTimeoutFn = opts?.setTimeoutFn || defaultSetTimeoutFn;
   const clearTimeoutFn = opts?.clearTimeoutFn || defaultClearTimeoutFn;
   if (text) cancelTimeGoalXpCount(text);
+  fx.classList.remove("isCountComplete");
   if (reducedMotion) {
     stopTimeGoalXpCalculating(text);
     if (text) text.textContent = formatTimeGoalAwardText(awardedXp);
