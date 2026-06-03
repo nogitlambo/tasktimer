@@ -36,6 +36,7 @@ import {
   readStoredCustomAvatarSrc,
 } from "../lib/accountProfileStorage";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import SignOutConfirmModal from "./SignOutConfirmModal";
 
 type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "userGuide" | "none";
 
@@ -446,6 +447,7 @@ export default function DesktopAppRail({
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
@@ -641,6 +643,7 @@ export default function DesktopAppRail({
     } catch (error: unknown) {
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
+      setShowSignOutConfirm(false);
     }
   }, [signOutBusy]);
 
@@ -785,7 +788,7 @@ export default function DesktopAppRail({
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
                 {getDesktopRailProfileMenuItems().map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
-                {renderProfileSignOutButton(signOutBusy, handleProfileSignOut)}
+                {renderProfileSignOutButton(signOutBusy, () => setShowSignOutConfirm(true))}
                 {signOutError ? (
                   <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">
                     {signOutError}
@@ -797,6 +800,13 @@ export default function DesktopAppRail({
 
         </aside>
       ) : null}
+
+      <SignOutConfirmModal
+        open={showSignOutConfirm}
+        busy={signOutBusy}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={() => void handleProfileSignOut()}
+      />
 
       {showMobileFooter ? (
         <>

@@ -894,6 +894,104 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   padding: 14px;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmOverlay,
+body > .deleteAccountConfirmOverlay{
+  position: fixed !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  padding: max(14px, var(--safe-top)) 14px max(14px, var(--safe-bottom)) !important;
+  background: rgba(0, 0, 0, .68) !important;
+  z-index: 10020 !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal{
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(var(--modal-width-sm), calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  background: #8f1d1d !important;
+  border: 1px solid rgba(255,255,255,.82) !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  box-shadow: var(--modal-shadow) !important;
+  padding: var(--modal-padding) !important;
+  font-family: var(--font-readable) !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :is(.settingsInlineConfirmTitle, .accountInlineConfirmTitle){
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  margin:0 0 8px !important;
+  font-family: var(--font-tight) !important;
+  font-size:15px !important;
+  font-weight:800 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:rgba(228,248,255,.96) !important;
+  animation:deleteAccountConfirmTitlePulse 1.05s ease-in-out infinite !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .inlineConfirmTitleIcon{
+  display:inline-flex !important;
+  width:17px !important;
+  height:17px !important;
+  flex:0 0 17px !important;
+  color:#fff !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .inlineConfirmTitleIcon svg{
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  fill:none !important;
+  stroke:currentColor !important;
+  stroke-width:2 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsInlineConfirmText, .accountInlineConfirmText){
+  margin:0 !important;
+  color:rgba(255,255,255,.88) !important;
+  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size:13px !important;
+  line-height:1.45 !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsInlineConfirmBtns, .accountInlineConfirmBtns){
+  margin-top:12px !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
+  border-color:rgba(255,255,255,.86) !important;
+  border-radius:0 !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:hover:not(:disabled),
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:focus-visible{
+  border-color:#fff !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:disabled{
+  opacity:.42 !important;
+  cursor:not-allowed !important;
+  border-color:rgba(255,255,255,.34) !important;
+  background:rgba(40,20,20,.28) !important;
+  color:rgba(255,255,255,.58) !important;
+  box-shadow:none !important;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal{
   width: min(420px, calc(100vw - 28px));
   background: #0d0f13;
@@ -2800,6 +2898,7 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   border-color: rgba(255,77,77,.72) !important;
   color: rgba(255,98,98,.96) !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
   box-shadow: 0 0 0 1px rgba(255,77,77,.24) inset, 0 0 10px rgba(255,77,77,.14) !important;
 }
 
@@ -5727,6 +5826,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #closeMenuBtn.settingsNavExitBtn{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,

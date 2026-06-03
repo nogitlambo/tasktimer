@@ -419,7 +419,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-theme="lime"] .taskLaunchMobileMenuPanel{
-  border-color: rgba(214,214,214,.34);
+  border-color: transparent;
 }
 
 body[data-theme="lime"] .taskLaunchMobileMenuBars > span{
@@ -1557,7 +1557,7 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     background: #0d0f13 !important;
-    border: 1px solid rgba(214,214,214,.34);
+    border: 1px solid transparent;
     border-bottom: 0;
     border-radius: 0;
     box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
@@ -1636,10 +1636,8 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     min-height: 54px;
     text-decoration: none;
     width: 100%;
-    border: 1px solid rgba(219,255,79,.18) !important;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-      rgba(18,20,24,.96) !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
     box-shadow: none !important;
     clip-path: none !important;
     font-family: var(--font-orbitron) !important;
@@ -1647,8 +1645,8 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
 
 .taskLaunchMobileMenuItem:hover,
   .taskLaunchMobileMenuItem:focus-visible{
-    border-color: rgba(219,255,79,.38) !important;
-    background: rgba(219,255,79,.08) !important;
+    border-color: transparent !important;
+    background: transparent !important;
   }
 
 .taskLaunchMobileMenuItem:disabled{

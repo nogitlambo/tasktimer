@@ -16,6 +16,7 @@ import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, buildXpProgressSubtext, getNextRank, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import SignOutConfirmModal from "./SignOutConfirmModal";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "friends" | "leaderboard" | "history";
 
@@ -196,6 +197,7 @@ export default function TaskTimerAppFrame({
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -278,7 +280,6 @@ export default function TaskTimerAppFrame({
 
   const handleMobileSignOut = useCallback(async () => {
     if (signOutBusy) return;
-    setMobileMenuOpen(false);
     setSignOutBusy(true);
     setSignOutError("");
     try {
@@ -286,6 +287,7 @@ export default function TaskTimerAppFrame({
     } catch (error: unknown) {
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
+      setShowSignOutConfirm(false);
     }
   }, [signOutBusy]);
 
@@ -507,7 +509,7 @@ export default function TaskTimerAppFrame({
                   type="button"
                   role="menuitem"
                   aria-label={item.label}
-                  onClick={handleMobileSignOut}
+                  onClick={() => setShowSignOutConfirm(true)}
                   disabled={signOutBusy}
                 >
                   <AppImg
@@ -626,6 +628,12 @@ export default function TaskTimerAppFrame({
           setShowRankLadderModal(false);
           onTestRankPromotion?.(rankId);
         }}
+      />
+      <SignOutConfirmModal
+        open={showSignOutConfirm}
+        busy={signOutBusy}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={() => void handleMobileSignOut()}
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>

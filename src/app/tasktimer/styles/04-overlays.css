@@ -129,6 +129,10 @@
   z-index:0;
 }
 
+#signOutConfirmOverlay{
+  z-index: 1400;
+}
+
 .modal{
   position:relative;
   z-index:1;
@@ -263,6 +267,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #confirmOverlay .modal,
 #elapsedPadOverlay .modal,
+#signOutConfirmOverlay .modal,
 #temporaryModalOverlay .modal,
 #timeGoalCompleteSaveNoteOverlay .modal,
 #timeGoalCompleteNoteOverlay .modal{
@@ -2728,8 +2733,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteTaskConfirm #confirmCancelBtn,
 #confirmOverlay.isDeleteTaskConfirm #confirmAltBtn,
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px !important;
+  line-height: 1;
   min-width: 92px;
   justify-content: center;
+  text-align: center;
 }
 
 #confirmOverlay.isDeleteTaskConfirm .confirmText,
@@ -3284,6 +3294,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #editOverlay #saveEditBtn{
   min-width: 92px;
   justify-content: center;
+}
+
+#editOverlay #cancelEditBtn,
+#editOverlay #saveEditBtn,
+#addTaskOverlay #addTaskCancelBtn,
+#addTaskOverlay #addTaskConfirmBtn{
+  font-size: 11px;
 }
 
 #editOverlay #cancelEditBtn,
@@ -6743,6 +6760,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #elapsedPadOverlay,
   #historyManagerManualEntryOverlay,
   #onboardingOverlay,
+  #signOutConfirmOverlay,
   #temporaryModalOverlay,
   #taskManualEntryOverlay,
   #exportTaskOverlay,
@@ -6761,7 +6779,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
+}:is(#confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
 }:is(#aboutOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #taskManualEntryOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
@@ -6769,13 +6787,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width:min(var(--modal-width-lg), 100%) !important;
 }#rankPromotionOverlay .modal{
   width:min(calc(var(--modal-width-lg) * .75), 100%) !important;
-}:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
+}:is(#confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;
 }
 
-:is(#confirmOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+:is(#confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
   color: rgba(170, 178, 190, .88) !important;
 }
 
@@ -6803,21 +6821,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
   border-color: #1a1b20 !important;
   background-color: rgba(26, 27, 32, .58) !important;
   color: rgba(238, 242, 246, .92) !important;
   border-radius: 0 !important;
 }
 
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
   border-color: var(--accent) !important;
   outline: 1px solid var(--accent) !important;
   outline-offset: 0 !important;
 }
 
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
   background: #0d0f13 !important;
   color: rgba(238, 242, 246, .92) !important;
 }
@@ -7045,7 +7063,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   border-radius: 0 !important;
   clip-path: none !important;
   box-shadow: var(--modal-shadow) !important;
-}:is(#confirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
+}:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
@@ -7057,7 +7075,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex-wrap:wrap !important;
 }
 
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
   border-color: rgba(170, 178, 190, .58) !important;
   background: rgba(170, 178, 190, .12) !important;
   color: rgba(238, 242, 246, .88) !important;
@@ -7066,8 +7084,24 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-size: 11px !important;
 }
 
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
-:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
+:is(#confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: rgba(170, 178, 190, .16) !important;
+}
+
+#signOutConfirmOverlay .modal .confirmBtns .btn-warn{
+  border-color: rgba(170, 178, 190, .58) !important;
+  background: rgba(170, 178, 190, .12) !important;
+  color: rgba(238, 242, 246, .88) !important;
+  box-shadow: none !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
+}
+
+#signOutConfirmOverlay .modal .confirmBtns .btn-warn:hover:not(:disabled),
+#signOutConfirmOverlay .modal .confirmBtns .btn-warn:focus-visible{
   border-color: var(--accent) !important;
   color: var(--accent) !important;
   background: rgba(170, 178, 190, .16) !important;
@@ -7079,6 +7113,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #elapsedPadOverlay,
   #historyManagerManualEntryOverlay,
   #onboardingOverlay,
+  #signOutConfirmOverlay,
   #temporaryModalOverlay,
   #taskManualEntryOverlay,
   #exportTaskOverlay,

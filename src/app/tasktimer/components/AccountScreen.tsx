@@ -19,6 +19,7 @@ import { playDeleteAlertAudio } from "../client/delete-alert-audio";
 import { DeleteAccountConfirmActions } from "./settings/DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
+import SignOutConfirmModal from "./SignOutConfirmModal";
 import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
@@ -61,6 +62,7 @@ export default function AccountScreen() {
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
 
   useEffect(() => {
@@ -125,6 +127,7 @@ export default function AccountScreen() {
     } catch (error: unknown) {
       setSignOutError(getErrorMessage(error, "Could not sign out."));
       setSignOutBusy(false);
+      setShowSignOutConfirm(false);
     }
   }, [signOutBusy]);
 
@@ -242,7 +245,7 @@ export default function AccountScreen() {
                   </div>
 
                   <div className="accountProfileActions" role="list" aria-label="Account actions">
-                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={handleSignOut} disabled={signOutBusy}>
+                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
                       <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
                       <span>
                         <strong>{signOutActionCopy.label}</strong>
@@ -281,9 +284,10 @@ export default function AccountScreen() {
         onClose={() => account.setShowDeleteAccountConfirm(false)}
         ariaLabel="Delete Account"
         title="Delete Account"
-        overlayClassName="accountInlineConfirmOverlay"
+        overlayClassName="accountInlineConfirmOverlay deleteAccountConfirmOverlay"
         modalClassName="accountInlineConfirmModal deleteAccountConfirmModal"
         titleClassName="accountInlineConfirmTitle"
+        portalToBody
         titleIcon={
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M12 3.4 21.1 20H2.9L12 3.4Z" />
@@ -300,6 +304,13 @@ export default function AccountScreen() {
           onDelete={() => void account.onDeleteAccount()}
         />
       </InlineConfirmModal>
+
+      <SignOutConfirmModal
+        open={showSignOutConfirm}
+        busy={signOutBusy}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={() => void handleSignOut()}
+      />
 
       <InlineConfirmModal
         open={avatar.showAvatarPickerModal}

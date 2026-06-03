@@ -206,6 +206,14 @@
   color:rgba(220,238,246,.46);
 }
 
+.dashboardActivityAxisDay.isCurrentDay small{
+  padding-bottom:8px;
+  text-decoration-line:underline;
+  text-decoration-color:#c9ff24;
+  text-decoration-thickness:2px;
+  text-underline-offset:4px;
+}
+
 .dashboardActivityEmpty{
   position:absolute;
   inset:60px 28px 56px 80px;
@@ -5717,6 +5725,13 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   clip-path: none !important;
   -webkit-mask-image: none !important;
   mask-image: none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard #dashboardActivityTodayHoursProgressBar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard #dashboardActivityWeeklyGoalsProgressBar{
+  border: 1px solid rgba(160, 168, 178, .28) !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardXpProgressCard .rewardSegmentedBar{

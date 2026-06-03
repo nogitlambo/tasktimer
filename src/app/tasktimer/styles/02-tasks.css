@@ -1564,7 +1564,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   border:0;
   padding:0;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:9px;
+  font-size:11px;
   font-weight:800;
   letter-spacing:.12em;
   text-transform:uppercase;
@@ -2065,6 +2065,11 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   padding-left: 0;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .mkTime{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .mkDesc{
   top: 32px;
   max-width: min(132px, calc(100% - 24px));
@@ -2079,8 +2084,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .mkGoalTime{
   top: 25px;
-  font-family: var(--font-tight);
-  font-size: 10px;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -3691,8 +3696,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
 
 @media (max-width: 640px){
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePageShell,
@@ -3803,7 +3808,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #ope
   }
 
 #app[aria-label="TaskLaunch App"] .appPageTasks .list{
-    padding:10px;
+    padding:10px 8px;
     gap:10px;
   }
 

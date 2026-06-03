@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type InlineConfirmModalProps = {
   open: boolean;
@@ -11,6 +12,7 @@ type InlineConfirmModalProps = {
   modalClassName?: string;
   titleClassName?: string;
   titleIcon?: ReactNode;
+  portalToBody?: boolean;
   children: ReactNode;
 };
 
@@ -23,11 +25,12 @@ export function InlineConfirmModal({
   modalClassName = "settingsInlineConfirmModal",
   titleClassName = "settingsInlineConfirmTitle",
   titleIcon,
+  portalToBody = false,
   children,
 }: InlineConfirmModalProps) {
   if (!open) return null;
 
-  return (
+  const modal = (
     <div className={`overlay ${overlayClassName}`.trim()} onClick={onClose}>
       <div className={`modal ${modalClassName}`.trim()} role="dialog" aria-modal="true" aria-label={ariaLabel} onClick={(event) => event.stopPropagation()}>
         <h3 className={titleClassName}>
@@ -38,4 +41,10 @@ export function InlineConfirmModal({
       </div>
     </div>
   );
+
+  if (portalToBody && typeof document !== "undefined") {
+    return createPortal(modal, document.body);
+  }
+
+  return modal;
 }

@@ -1201,10 +1201,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
     const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
     if (axisEl) {
+      const currentDayKey = localDayKey(nowMs());
       axisEl.innerHTML = model.days
         .map(
-          (day) =>
-            `<span class="dashboardActivityAxisDay" aria-label="${ctx.escapeHtmlUI(day.longLabel)}"><span>${ctx.escapeHtmlUI(day.label)}</span><small>${ctx.escapeHtmlUI(day.dateLabel)}</small></span>`
+          (day) => {
+            const currentDayClass = day.key === currentDayKey ? " isCurrentDay" : "";
+            return `<span class="dashboardActivityAxisDay${currentDayClass}" aria-label="${ctx.escapeHtmlUI(day.longLabel)}"><span>${ctx.escapeHtmlUI(day.label)}</span><small>${ctx.escapeHtmlUI(day.dateLabel)}</small></span>`;
+          }
         )
         .join("");
     }

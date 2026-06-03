@@ -459,6 +459,18 @@
     width: auto !important;
     min-height: 56px !important;
     padding: 4px 2px !important;
+    border-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn:is(.isOn, :hover, :focus-visible, :active){
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
+    border-top-color: transparent !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn{
+    border-bottom-color: #c9ff24 !important;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterLabel{
