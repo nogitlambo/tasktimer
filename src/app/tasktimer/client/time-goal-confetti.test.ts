@@ -171,6 +171,7 @@ describe("time goal confetti", () => {
     const fx = elementStub();
     const text = elementStub({ closest: fx });
     const frames: Array<(timestamp: number) => void> = [];
+    const onFinish = vi.fn();
     startTimeGoalXpCalculating(text);
     const calculatingText = text.textContent;
 
@@ -181,6 +182,7 @@ describe("time goal confetti", () => {
           return frames.length;
         },
         cancelAnimationFrameFn: vi.fn(),
+        onFinish,
       })
     ).toBe(true);
 
@@ -203,6 +205,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isPlaying")).toBe(false);
     expect(fx.classList.contains("isCounting")).toBe(false);
     expect(fx.dataset.xpCountState).toBe("complete");
+    expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
   it("delays the xp count until the confetti and zoom splash finish", () => {
@@ -348,6 +351,7 @@ describe("time goal confetti", () => {
     const text = elementStub({ closest: fx });
     const onStart = vi.fn();
     const onIntervalCue = vi.fn();
+    const onFinish = vi.fn();
 
     expect(
       startTimeGoalXpSplashAfterConfetti(text, {
@@ -358,6 +362,7 @@ describe("time goal confetti", () => {
         matchMediaFn: () => ({ matches: true }),
         onStart,
         onIntervalCue,
+        onFinish,
       })
     ).toBe(true);
 
@@ -367,6 +372,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isCounting")).toBe(false);
     expect(onStart).toHaveBeenCalledTimes(1);
     expect(onIntervalCue).not.toHaveBeenCalled();
+    expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
   it("replaces an active xp count when a new count starts on the same text", () => {

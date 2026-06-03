@@ -6,21 +6,24 @@ vi.mock("./interaction-haptics", () => ({
 
 import { playInteractionHaptic } from "./interaction-haptics";
 import {
+  playXpAwardDeliveryDoneAudio,
   playXpAwardDeliveryAudio,
   playXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
+  warmXpAwardDeliveryAudio,
   XP_AWARD_DELIVERY_DONE_AUDIO_SRC,
-  XP_AWARD_DELIVERY_DONE_DELAY_MS,
   XP_AWARD_DELIVERY_AUDIO_SRC,
 } from "./xp-award-feedback";
 
 type MockAudio = {
   currentTime: number;
+  loop: boolean;
   preload?: string;
   load: () => void;
   addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   play: () => void;
+  pause: () => void;
 };
 
 describe("xp award feedback", () => {
@@ -49,44 +52,132 @@ describe("xp award feedback", () => {
     expect(playInteractionHaptic).not.toHaveBeenCalled();
   });
 
-  it("plays the done audio 300ms after the xp delivery audio finishes", () => {
-    vi.useFakeTimers();
+  it("starts xp delivery audio and returns a handle that stops it", () => {
     const listeners = new Map<string, EventListenerOrEventListenerObject>();
     const play = vi.fn();
+    const pause = vi.fn();
     const load = vi.fn();
     const removeEventListener = vi.fn((type: string) => listeners.delete(type));
     const created: Array<{ src: string; audio: MockAudio }> = [];
     const audioFactory = vi.fn((src: string) => {
       const audio = {
         currentTime: 5,
+        loop: false,
         load,
         addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => listeners.set(type, listener),
         removeEventListener,
         play,
+        pause,
       };
       created.push({ src, audio });
       return audio;
     });
 
-    playXpAwardDeliveryAudio(audioFactory);
+    const handle = playXpAwardDeliveryAudio(audioFactory);
 
     expect(audioFactory).toHaveBeenCalledWith(XP_AWARD_DELIVERY_AUDIO_SRC);
     expect(created[0]?.audio.preload).toBe("auto");
+    expect(created[0]?.audio.loop).toBe(true);
     expect(created[0]?.audio.currentTime).toBe(0);
     expect(play).toHaveBeenCalledTimes(1);
 
     const endedListener = listeners.get("ended");
     expect(endedListener).toBeTypeOf("function");
-    (endedListener as EventListener)({} as Event);
+    handle?.stop();
+
     expect(removeEventListener).toHaveBeenCalledWith("ended", endedListener);
-
-    vi.advanceTimersByTime(XP_AWARD_DELIVERY_DONE_DELAY_MS - 1);
+    expect(created[0]?.audio.loop).toBe(false);
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(created[0]?.audio.currentTime).toBe(0);
     expect(audioFactory).toHaveBeenCalledTimes(1);
+  });
 
-    vi.advanceTimersByTime(1);
-    expect(audioFactory).toHaveBeenLastCalledWith(XP_AWARD_DELIVERY_DONE_AUDIO_SRC);
-    expect(created[1]?.audio.preload).toBe("auto");
-    expect(created[1]?.audio.currentTime).toBe(0);
-    expect(play).toHaveBeenCalledTimes(2);
+  it("reuses warmed xp delivery audio when playback starts", () => {
+    const firstPlay = vi.fn();
+    const secondPlay = vi.fn();
+    const created: Array<{ src: string; audio: MockAudio }> = [];
+    const audioFactory = vi
+      .fn()
+      .mockImplementationOnce((src: string) => {
+        const audio = {
+          currentTime: 5,
+          loop: false,
+          load: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          play: firstPlay,
+          pause: vi.fn(),
+        };
+        created.push({ src, audio });
+        return audio;
+      })
+      .mockImplementationOnce((src: string) => {
+        const audio = {
+          currentTime: 9,
+          loop: false,
+          load: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          play: secondPlay,
+          pause: vi.fn(),
+        };
+        created.push({ src, audio });
+        return audio;
+      });
+
+    warmXpAwardDeliveryAudio(audioFactory);
+    const handle = playXpAwardDeliveryAudio(audioFactory);
+
+    expect(audioFactory).toHaveBeenCalledTimes(1);
+    expect(created[0]?.audio.load).toHaveBeenCalledTimes(1);
+    expect(created[0]?.src).toBe(XP_AWARD_DELIVERY_AUDIO_SRC);
+    expect(firstPlay).toHaveBeenCalledTimes(1);
+    expect(secondPlay).not.toHaveBeenCalled();
+    handle?.stop();
+  });
+
+  it("does not throw or replay cleanup when stopped more than once", () => {
+    const pause = vi.fn();
+    const audioFactory = vi.fn(() => ({
+      currentTime: 5,
+      loop: false,
+      load: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      play: vi.fn(),
+      pause,
+    }));
+    const handle = playXpAwardDeliveryAudio(audioFactory);
+
+    expect(() => {
+      handle?.stop();
+      handle?.stop();
+    }).not.toThrow();
+    expect(pause).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the done audio when requested by the animation", () => {
+    const play = vi.fn();
+    const created: Array<{ src: string; audio: MockAudio }> = [];
+    const audioFactory = vi.fn((src: string) => {
+      const audio = {
+        currentTime: 5,
+        loop: false,
+        load: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        play,
+        pause: vi.fn(),
+      };
+      created.push({ src, audio });
+      return audio;
+    });
+
+    playXpAwardDeliveryDoneAudio(audioFactory);
+
+    expect(audioFactory).toHaveBeenCalledWith(XP_AWARD_DELIVERY_DONE_AUDIO_SRC);
+    expect(created[0]?.audio.preload).toBe("auto");
+    expect(created[0]?.audio.currentTime).toBe(0);
+    expect(play).toHaveBeenCalledTimes(1);
   });
 });

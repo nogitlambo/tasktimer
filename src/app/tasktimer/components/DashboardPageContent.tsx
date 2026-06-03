@@ -276,9 +276,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
               <div className="dashboardRefreshBusyPanel" role="status" aria-live="polite" aria-atomic="true">
                 <h2 className="sr-only">Refreshing</h2>
                 <p className="modalSubtext confirmText" id="dashboardRefreshBusyText">Refreshing...</p>
-                <div className="dashboardRefreshBusyProgress" aria-hidden="true">
-                  <span className="dashboardRefreshBusyProgressBar" />
-                </div>
               </div>
             </div>
             </div>

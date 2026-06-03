@@ -83,7 +83,8 @@ const FOCUS_PROGRESS_ARC_CENTER = 50;
 const FOCUS_PROGRESS_ARC_RADIUS = 41;
 const FOCUS_MODE_START_AUDIO_SRC = "/focus-mode-start.mp3";
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
-const TIME_GOAL_XP_REWARD_AUDIO_SRC = "/xp-reward.mp3";
+const TIME_GOAL_XP_COUNT_AUDIO_SRC = "/xp_increase.mp3";
+const TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -129,6 +130,19 @@ export function shouldKeepTimeGoalCompletionFlowForTask(
   if ((opts.getTaskTimeGoalAction?.(task) || "confirmModal") !== "confirmModal") return false;
   const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
   return elapsedMs >= Math.round(timeGoalMinutes * 60 * 1000);
+}
+
+export function shouldAutoStopDailyTimeGoalTask(
+  task: Task | null | undefined,
+  opts: { elapsedMs: number; historyByTaskId?: HistoryByTaskId | null; nowMs?: number }
+): boolean {
+  if (!task || !task.running) return false;
+  if (shouldSuppressTimeGoalCompletionForTask(task, { historyByTaskId: opts.historyByTaskId, nowMs: opts.nowMs })) return false;
+  const timeGoalMinutes = Number(task.timeGoalMinutes || 0);
+  if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && timeGoalMinutes > 0)) return false;
+  const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
+  const goalMs = Math.max(0, Math.round(timeGoalMinutes * 60_000));
+  return goalMs > 0 && elapsedMs >= goalMs;
 }
 
 export function shouldSuppressTimeGoalCompletionForTask(
@@ -190,6 +204,39 @@ export function didElapsedReachTimeGoalFromBaseline(
   if (timeGoalSec <= 0 || elapsedWholeSec < timeGoalSec) return false;
   const prevBaselineSec = Number(prevBaselineSecRaw);
   return !Number.isFinite(prevBaselineSec) || prevBaselineSec < timeGoalSec;
+}
+
+export function getCheckpointAlertCompletionPriority(
+  opts: {
+    prevBaselineSec: unknown;
+    elapsedWholeSec: unknown;
+    timeGoalSec: unknown;
+    activeTimeGoalModalTaskId?: unknown;
+    taskId?: unknown;
+    reminderAtMs?: unknown;
+    nowMs?: unknown;
+  }
+): { shouldOpenTimeGoalModal: boolean; reminder: boolean; suppressCheckpointAlertSideEffects: boolean } {
+  const taskId = String(opts.taskId || "").trim();
+  const activeTimeGoalModalTaskId = String(opts.activeTimeGoalModalTaskId || "").trim();
+  if (!taskId || activeTimeGoalModalTaskId === taskId) {
+    return { shouldOpenTimeGoalModal: false, reminder: false, suppressCheckpointAlertSideEffects: false };
+  }
+
+  const elapsedWholeSec = Math.floor(Math.max(0, Number(opts.elapsedWholeSec) || 0));
+  const timeGoalSec = Math.round(Math.max(0, Number(opts.timeGoalSec) || 0));
+  if (didElapsedReachTimeGoalFromBaseline(opts.prevBaselineSec, elapsedWholeSec, timeGoalSec)) {
+    return { shouldOpenTimeGoalModal: true, reminder: false, suppressCheckpointAlertSideEffects: true };
+  }
+
+  const reminderAtMs = Number(opts.reminderAtMs || 0);
+  const nowValueMs = Number(opts.nowMs || 0);
+  const shouldOpenReminder = timeGoalSec > 0 && reminderAtMs > 0 && nowValueMs >= reminderAtMs && elapsedWholeSec >= timeGoalSec;
+  return {
+    shouldOpenTimeGoalModal: shouldOpenReminder,
+    reminder: shouldOpenReminder,
+    suppressCheckpointAlertSideEffects: shouldOpenReminder,
+  };
 }
 
 export function getTimeGoalCompletionElapsedMs(task: Task | null | undefined, elapsedMsRaw: unknown): number {
@@ -287,13 +334,52 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const setActiveToast = (value: CheckpointToast | null) => ctx.setActiveCheckpointToast(value as unknown);
   let timeGoalCompleteAudio: HTMLAudioElement | null = null;
   let timeGoalCompleteClickAudio: HTMLAudioElement | null = null;
+  let timeGoalXpCountAudio: HTMLAudioElement | null = null;
   let activeFocusTransitionClone: HTMLElement | null = null;
   let activeFocusTransitionTimer: number | null = null;
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
   const focusModeStartPlayer = createClickAudioPlayer(FOCUS_MODE_START_AUDIO_SRC);
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
-  const timeGoalXpRewardPlayer = createClickAudioPlayer(TIME_GOAL_XP_REWARD_AUDIO_SRC);
+  const timeGoalXpCountDonePlayer = createClickAudioPlayer(TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC);
+
+  function stopTimeGoalXpCountAudio() {
+    if (!timeGoalXpCountAudio) return;
+    const audio = timeGoalXpCountAudio;
+    timeGoalXpCountAudio = null;
+    audio.loop = false;
+    try {
+      audio.pause();
+    } catch {
+      // Audio feedback is best-effort.
+    }
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // Some audio implementations may reject seeking before metadata is ready.
+    }
+  }
+
+  function playTimeGoalXpCountAudio() {
+    stopTimeGoalXpCountAudio();
+    if (typeof window === "undefined" || typeof Audio === "undefined") return;
+    try {
+      const audio = new Audio(TIME_GOAL_XP_COUNT_AUDIO_SRC);
+      audio.preload = "auto";
+      audio.loop = true;
+      audio.currentTime = 0;
+      timeGoalXpCountAudio = audio;
+      const playback = audio.play();
+      if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    } catch {
+      timeGoalXpCountAudio = null;
+    }
+  }
+
+  function finishTimeGoalXpCountAudio(playDone: boolean) {
+    stopTimeGoalXpCountAudio();
+    if (playDone) timeGoalXpCountDonePlayer.play();
+  }
 
   function setFocusDndSetupVisible(visible: boolean, message?: string) {
     if (els.focusDndSetup) {
@@ -640,6 +726,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ) {
       clearPendingTimeGoalFlow();
       stopTimeGoalCompleteConfetti();
+      stopTimeGoalXpCountAudio();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
@@ -786,7 +873,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       awardedXp,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
       onStart: () => {
-        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        if (ctx.getAchievementSoundsEnabled()) playTimeGoalXpCountAudio();
+        else stopTimeGoalXpCountAudio();
         playTimeGoalXpCountHaptic({
           isEnabled: ctx.getInteractionHapticsEnabled,
           getIntensity: ctx.getInteractionHapticsIntensity,
@@ -798,6 +886,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           isEnabled: ctx.getInteractionHapticsEnabled,
           getIntensity: ctx.getInteractionHapticsIntensity,
         });
+      },
+      onFinish: () => {
+        finishTimeGoalXpCountAudio(ctx.getAchievementSoundsEnabled());
       },
     });
     if (awardedXp > 0 && typeof window !== "undefined") {
@@ -821,7 +912,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       awardedXp,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
       onStart: () => {
-        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
+        if (ctx.getAchievementSoundsEnabled()) playTimeGoalXpCountAudio();
+        else stopTimeGoalXpCountAudio();
         playTimeGoalXpCountHaptic({
           isEnabled: ctx.getInteractionHapticsEnabled,
           getIntensity: ctx.getInteractionHapticsIntensity,
@@ -833,6 +925,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           isEnabled: ctx.getInteractionHapticsEnabled,
           getIntensity: ctx.getInteractionHapticsIntensity,
         });
+      },
+      onFinish: () => {
+        finishTimeGoalXpCountAudio(ctx.getAchievementSoundsEnabled());
       },
     });
   }
@@ -973,6 +1068,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     return true;
+  }
+
+  function autoStopDailyTimeGoalTaskIfReached(task: Task, elapsedMs: number) {
+    if (
+      !shouldAutoStopDailyTimeGoalTask(task, {
+        elapsedMs,
+        historyByTaskId: ctx.getHistoryByTaskId(),
+        nowMs: nowMs(),
+      })
+    ) {
+      return false;
+    }
+    return completeTimeGoalTask(task, elapsedMs);
   }
 
   function syncFocusRunButtons(task?: Task | null) {
@@ -1879,9 +1987,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const msSorted = hasMilestones ? ctx.sortMilestones((task.milestones || []).slice()) : [];
     const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task))) > 0);
     const totalCheckpoints = validMilestones.length;
+    const completionPriority = getCheckpointAlertCompletionPriority({
+      prevBaselineSec: prevBaseline,
+      elapsedWholeSec,
+      timeGoalSec,
+      activeTimeGoalModalTaskId: ctx.getTimeGoalModalTaskId(),
+      taskId,
+      reminderAtMs: ctx.getTimeGoalReminderAtMsByTaskId()[taskId],
+      nowMs: nowMs(),
+    });
+    const suppressCheckpointAlertSideEffects = completionPriority.suppressCheckpointAlertSideEffects;
     let beepCount = 0;
-    let shouldOpenTimeGoalModal = false;
-    let openTimeGoalModalAsReminder = false;
+    const shouldOpenTimeGoalModal = completionPriority.shouldOpenTimeGoalModal;
+    const openTimeGoalModalAsReminder = completionPriority.reminder;
     msSorted.forEach((m) => {
       const targetSec = Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task)));
       if (targetSec <= 0 || targetSec <= prevBaseline || targetSec > elapsedWholeSec) return;
@@ -1889,6 +2007,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const key = checkpointKeyForTask(m, task);
       if (fired.has(key)) return;
       fired.add(key);
+      if (suppressCheckpointAlertSideEffects) return;
       const text = formatCheckpointAlertText(task, m);
       const checkpointIndex = Math.max(1, validMilestones.findIndex((vm) => checkpointKeyForTask(vm, task) === key) + 1);
       const checkpointTimeText = ctx.formatTime(targetSec * 1000);
@@ -1907,20 +2026,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }
       if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
     });
-    if (didElapsedReachTimeGoalFromBaseline(prevBaseline, elapsedWholeSec, timeGoalSec) && ctx.getTimeGoalModalTaskId() !== taskId) {
-      shouldOpenTimeGoalModal = true;
-    }
-    if (
-      timeGoalSec > 0 &&
-      ctx.getTimeGoalModalTaskId() !== taskId &&
-      !shouldOpenTimeGoalModal &&
-      Number(ctx.getTimeGoalReminderAtMsByTaskId()[taskId] || 0) > 0 &&
-      nowMs() >= Number(ctx.getTimeGoalReminderAtMsByTaskId()[taskId] || 0) &&
-      elapsedWholeSec >= timeGoalSec
-    ) {
-      shouldOpenTimeGoalModal = true;
-      openTimeGoalModalAsReminder = true;
-    }
     baselineByTaskId[taskId] = elapsedWholeSec;
     if (beepCount > 0) {
       if (ctx.getCheckpointAlertSoundMode() === "repeat") startCheckpointRepeatAlert(taskId);
@@ -1973,6 +2078,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
+        if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
         updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
@@ -2024,11 +2130,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     tasks.forEach((task) => {
       const taskId = String(task.id || "");
       if (!taskId || processedCheckpointTaskIds.has(taskId)) return;
+      const elapsedMs = getElapsedMs(task);
+      if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
       if (task.running) {
         ctx.syncRewardSessionTrackerForTask(task, nowMs());
         ctx.syncLiveSessionForTask(task, nowMs());
       }
-      processCheckpointAlertsForTask(task, getElapsedMs(task) / 1000);
+      processCheckpointAlertsForTask(task, elapsedMs / 1000);
     });
     if (ctx.getCheckpointAutoResetDirty()) {
       ctx.setCheckpointAutoResetDirty(false);
@@ -2192,6 +2300,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getCheckpointRepeatCycleTimer() != null) window.clearTimeout(ctx.getCheckpointRepeatCycleTimer() as number);
     if (ctx.getCheckpointBeepQueueTimer() != null) window.clearTimeout(ctx.getCheckpointBeepQueueTimer() as number);
     stopCheckpointRepeatAlert();
+    stopTimeGoalXpCountAudio();
     setActiveToast(null);
     getToastQueue().length = 0;
     ctx.setFocusSessionNoteSaveTimer(null);

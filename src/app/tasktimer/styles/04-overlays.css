@@ -604,8 +604,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     height: 75dvh;
     max-height: 75dvh;
     margin: 0;
-    transform: translateY(0);
+    transform: translateY(var(--mobile-sheet-drag-y, 0px));
     animation: rankLadderSheetIn 0.22s ease-out both;
+  }
+
+#rankLadderOverlay .modal.isDragging{
+    animation: none;
+    transition: none;
   }
 
 .rankLadderModalScroll{

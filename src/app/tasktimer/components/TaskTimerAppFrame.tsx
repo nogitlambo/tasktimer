@@ -5,15 +5,17 @@ import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
 import {
+  getMobileSwipeCloseDragY,
   getResetMobileSwipeCloseState,
   getStartMobileSwipeCloseState,
+  getUpdatedMobileSwipeCloseState,
   shouldCloseFromMobileSwipe,
   type MobileSwipeCloseState,
 } from "./mobileSwipeClose";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
-import { RANK_LADDER, buildXpProgressSubtext, getNextRank, getRankLadderThumbnailSrc } from "../lib/rewards";
+import { RANK_LADDER, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
@@ -54,7 +56,6 @@ type TaskTimerAppFrameProps = {
     progressLabel: string;
     xpToNext: number | null;
   };
-  promotionLabelOverride?: string | null;
   isXpCountAnimating?: boolean;
   isXpAwardSpotlightActive?: boolean;
   onTestRankPromotion?: (rankId: string) => void;
@@ -165,13 +166,6 @@ export function getXpProgressSubtext(totalXp: number, xpToNext: number | null) {
   return buildXpProgressSubtext(totalXp, xpToNext);
 }
 
-export function getXpPromotionLabel(totalXp: number, xpToNext: number | null) {
-  const nextRankLabel = getNextRank(totalXp)?.label ?? "Max rank";
-  return xpToNext != null
-    ? `${formatXpNumber(xpToNext)} XP to ${nextRankLabel}`
-    : "Max rank reached";
-}
-
 export default function TaskTimerAppFrame({
   activePage,
   children,
@@ -185,7 +179,6 @@ export default function TaskTimerAppFrame({
   currentUserAvatarInitials = "U",
   currentUserLabel = "User",
   rewardsHeader,
-  promotionLabelOverride = null,
   isXpCountAnimating = false,
   isXpAwardSpotlightActive = false,
   onTestRankPromotion,
@@ -194,6 +187,8 @@ export default function TaskTimerAppFrame({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuDragY, setMobileMenuDragY] = useState(0);
+  const [isMobileMenuDragging, setIsMobileMenuDragging] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
@@ -209,7 +204,6 @@ export default function TaskTimerAppFrame({
     [currentRankId]
   );
   const showMaxXpAlert = rewardsHeader.xpToNext == null;
-  const promotionLabel = promotionLabelOverride ?? getXpPromotionLabel(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const rankSummary = rewardsHeader.xpToNext != null
     ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
     : "You have reached the highest configured rank.";
@@ -298,10 +292,14 @@ export default function TaskTimerAppFrame({
 
   const resetMobileMenuSwipeClose = useCallback(() => {
     mobileMenuSwipeCloseRef.current = getResetMobileSwipeCloseState();
+    setMobileMenuDragY(0);
+    setIsMobileMenuDragging(false);
   }, []);
 
   const closeMobileMenuWithFlipAudio = useCallback(() => {
     playTaskFlipClickAudio();
+    setMobileMenuDragY(0);
+    setIsMobileMenuDragging(false);
     setMobileMenuOpen(false);
   }, []);
 
@@ -318,6 +316,8 @@ export default function TaskTimerAppFrame({
     if (!isInTopZone) return;
 
     mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
+    setMobileMenuDragY(0);
+    setIsMobileMenuDragging(true);
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -330,16 +330,28 @@ export default function TaskTimerAppFrame({
     const swipeClose = mobileMenuSwipeCloseRef.current;
     if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
 
-    if (!shouldCloseFromMobileSwipe(swipeClose, event.pointerId, event.clientX, event.clientY, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) return;
+    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, event.pointerId, event.clientX, event.clientY);
+    mobileMenuSwipeCloseRef.current = nextSwipeClose;
+
+    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
+    if (dragY <= 0) return;
 
     event.preventDefault();
-    mobileMenuSwipeCloseRef.current.consumed = true;
-    closeMobileMenuWithFlipAudio();
-  }, [closeMobileMenuWithFlipAudio]);
+    setMobileMenuDragY(dragY);
+  }, []);
 
   const handleMobileMenuPanelPointerEnd = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (mobileMenuSwipeCloseRef.current.pointerId === event.pointerId) resetMobileMenuSwipeClose();
-  }, [resetMobileMenuSwipeClose]);
+    const swipeClose = mobileMenuSwipeCloseRef.current;
+    if (swipeClose.pointerId !== event.pointerId) return;
+
+    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) {
+      mobileMenuSwipeCloseRef.current.consumed = true;
+      closeMobileMenuWithFlipAudio();
+      return;
+    }
+
+    resetMobileMenuSwipeClose();
+  }, [closeMobileMenuWithFlipAudio, resetMobileMenuSwipeClose]);
 
   const handleMobileMenuPanelTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
     resetMobileMenuSwipeClose();
@@ -351,6 +363,8 @@ export default function TaskTimerAppFrame({
     if (!isInTopZone) return;
 
     mobileMenuSwipeCloseRef.current = getStartMobileSwipeCloseState(touch.identifier, touch.clientX, touch.clientY);
+    setMobileMenuDragY(0);
+    setIsMobileMenuDragging(true);
   }, [resetMobileMenuSwipeClose]);
 
   const handleMobileMenuPanelTouchMove = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
@@ -359,18 +373,36 @@ export default function TaskTimerAppFrame({
 
     const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeClose.pointerId);
     if (!touch) return;
-    if (!shouldCloseFromMobileSwipe(swipeClose, touch.identifier, touch.clientX, touch.clientY, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) return;
+    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, touch.identifier, touch.clientX, touch.clientY);
+    mobileMenuSwipeCloseRef.current = nextSwipeClose;
+
+    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
+    if (dragY <= 0) return;
 
     event.preventDefault();
-    mobileMenuSwipeCloseRef.current.consumed = true;
-    closeMobileMenuWithFlipAudio();
-  }, [closeMobileMenuWithFlipAudio]);
+    setMobileMenuDragY(dragY);
+  }, []);
 
   const handleMobileMenuPanelTouchEnd = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
     const swipeClose = mobileMenuSwipeCloseRef.current;
     if (swipeClose.pointerId == null) return;
-    if (Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) resetMobileMenuSwipeClose();
-  }, [resetMobileMenuSwipeClose]);
+    if (!Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) return;
+
+    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_MENU_SWIPE_CLOSE_THRESHOLD_PX)) {
+      mobileMenuSwipeCloseRef.current.consumed = true;
+      closeMobileMenuWithFlipAudio();
+      return;
+    }
+
+    resetMobileMenuSwipeClose();
+  }, [closeMobileMenuWithFlipAudio, resetMobileMenuSwipeClose]);
+
+  const mobileMenuPanelStyle = useMemo(
+    () => ({
+      "--mobile-sheet-drag-y": `${mobileMenuDragY}px`,
+    }) as CSSProperties,
+    [mobileMenuDragY]
+  );
 
   return (
     <div className={`wrap${isXpAwardSpotlightActive ? " isXpAwardSpotlightActive" : ""}`} id="app" aria-label="TaskLaunch App">
@@ -433,7 +465,6 @@ export default function TaskTimerAppFrame({
                             {showMaxXpAlert ? <span className="taskLaunchXpValueAlert" aria-hidden="true"> !</span> : null}
                           </strong>
                         </span>
-                        <span className="taskLaunchTopbarXpMetaLine">{promotionLabel}</span>
                       </span>
                     </button>
                   </span>
@@ -466,7 +497,8 @@ export default function TaskTimerAppFrame({
       >
         <div
           ref={mobileMenuRef}
-          className="taskLaunchMobileMenuPanel"
+          className={`taskLaunchMobileMenuPanel${isMobileMenuDragging ? " isDragging" : ""}`}
+          style={mobileMenuPanelStyle}
           role="dialog"
           aria-modal="true"
           aria-label="App menu"
@@ -593,7 +625,6 @@ export default function TaskTimerAppFrame({
                         >
                           <span className="appShellHeaderXpFill" style={{ width: `${rewardsHeader.progressPct}%` }} />
                         </div>
-                        <span className="appShellHeaderXpPromotionLabel">{promotionLabel}</span>
                       </span>
                       <span className="appShellHeaderXpValueWrap">
                         <strong

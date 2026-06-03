@@ -620,22 +620,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   line-height:1;
 }
 
-#app[aria-label="TaskLaunch App"] .appShellHeaderXpPromotionLabel{
-  display:block;
-  position:absolute;
-  top:calc(100% + 6px);
-  right:0;
-  max-width:none;
-  overflow:hidden;
-  text-overflow:clip;
-  white-space:nowrap;
-  text-align:right;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:9px;
-  line-height:1;
-  color:rgba(210, 216, 226, .8);
-}
-
 #app[aria-label="TaskLaunch App"] .appShellXpValueAlert,
 #app[aria-label="TaskLaunch App"] .taskLaunchXpValueAlert{
   color:#ff5252;
@@ -1101,19 +1085,6 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   gap:2px;
 }
 
-#app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpMetaLine{
-  display:block;
-  width:100%;
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
-  font-size:11px;
-  line-height:1.2;
-  color:rgba(210, 216, 226, .8);
-}
-
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpRankWrap{
   flex:0 0 auto;
   display:flex;
@@ -1572,7 +1543,11 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
   }
 
 .taskLaunchMobileMenu.isOpen .taskLaunchMobileMenuPanel{
-    transform: translateY(0);
+    transform: translateY(var(--mobile-sheet-drag-y, 0px));
+  }
+
+.taskLaunchMobileMenuPanel.isDragging{
+    transition: none;
   }
 
 .taskLaunchMobileMenuSwipeHandle{

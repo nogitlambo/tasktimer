@@ -28,7 +28,6 @@ import {
   getDesktopHeaderRankId,
   getDesktopInsigniaUpgradeAudioCallback,
   getTaskLaunchMobileMenuItems,
-  getXpPromotionLabel,
   getXpProgressSubtext,
   scheduleDesktopInsigniaUpgradeActivation,
   shouldRenderDesktopInsigniaUpgrade,
@@ -101,10 +100,6 @@ describe("TaskTimerAppFrame XP progress sub-text", () => {
     expect(getXpProgressSubtext(50000, null)).toBe("Max rank reached");
   });
 
-  it("formats the promotion label from the current xp and next-rank gap", () => {
-    expect(getXpPromotionLabel(60, 180)).toBe("180 XP to Technician");
-    expect(getXpPromotionLabel(50000, null)).toBe("Max rank reached");
-  });
 });
 
 describe("TaskTimerAppFrame XP header animation", () => {
@@ -123,7 +118,6 @@ describe("TaskTimerAppFrame XP header animation", () => {
             progressLabel: "60/240 XP",
             xpToNext: 180,
           },
-          promotionLabelOverride: "180 XP to Technician",
           isXpCountAnimating: true,
         },
         createElement("div")
@@ -134,10 +128,8 @@ describe("TaskTimerAppFrame XP header animation", () => {
     expect(html).toContain('class="taskLaunchTopbarXpValue isAnimatingXpCount"');
     expect(html).toContain('id="appShellHeaderXpValue"');
     expect(html).toContain('class="appShellHeaderXpValue isAnimatingXpCount"');
-    expect(html).toContain('class="taskLaunchTopbarXpMetaLine">180 XP to Technician<');
-    expect(html).toContain('class="appShellHeaderXpPromotionLabel">180 XP to Technician<');
-    expect(html).not.toContain("appShellHeaderXpPromotionLabel isAnimatingXpCount");
-    expect(html).not.toContain("taskLaunchTopbarXpMetaLine isAnimatingXpCount");
+    expect(html).not.toContain("taskLaunchTopbarXpMetaLine");
+    expect(html).not.toContain("appShellHeaderXpPromotionLabel");
   });
 });
 

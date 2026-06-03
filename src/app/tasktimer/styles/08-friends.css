@@ -2616,6 +2616,10 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     text-align:left;
   }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlayer .leaderboardWeeklyPodiumUserRankInline{
+    display:none;
+  }
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumName,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumMetric{
     max-width:100%;

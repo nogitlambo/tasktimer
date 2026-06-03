@@ -7,7 +7,7 @@ import {
 import { localDayKey } from "../lib/history";
 import { fillBackgroundForPct, sessionColorForTaskMs } from "../lib/colors";
 import { computeMomentumSnapshot, getMomentumBandLabel } from "../lib/momentum";
-import { buildRewardsHeaderViewModel, getNextRank } from "../lib/rewards";
+import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import {
   getLocalScheduleDay,
   getTaskScheduledDayEntries,
@@ -191,8 +191,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const topbarEl = document.querySelector("#app .taskLaunchTopbarXp") as HTMLElement | null;
     const valueEl = cardEl?.querySelector(".appShellHeaderXpValue") as HTMLElement | null;
     const topbarValueEl = topbarEl?.querySelector(".taskLaunchTopbarXpValue") as HTMLElement | null;
-    const promotionLabelEl = cardEl?.querySelector(".appShellHeaderXpPromotionLabel") as HTMLElement | null;
-    const topbarMetaLineEl = topbarEl?.querySelector(".taskLaunchTopbarXpMetaLine") as HTMLElement | null;
     const progressBarEl = cardEl?.querySelector(".appShellHeaderXpTrack") as HTMLElement | null;
     const topbarProgressBarEl = topbarEl?.querySelector(".taskLaunchTopbarXpTrack") as HTMLElement | null;
     const progressFillEl = cardEl?.querySelector(".appShellHeaderXpFill") as HTMLElement | null;
@@ -205,15 +203,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     };
     const isXpCountAnimating =
       valueEl?.classList.contains("isAnimatingXpCount") || topbarValueEl?.classList.contains("isAnimatingXpCount");
-    const nextRankLabel = getNextRank(rewardsHeader.totalXp)?.label ?? "Max rank";
-    const promotionLabel = rewardsHeader.xpToNext != null
-      ? `${rewardsHeader.xpToNext.toLocaleString()} XP to ${nextRankLabel}`
-      : "Max rank reached";
     if (!isXpCountAnimating) {
       syncXpValueAlert(valueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "appShellXpValueAlert");
       syncXpValueAlert(topbarValueEl, rewardsHeader.totalXp, rewardsHeader.xpToNext == null, "taskLaunchXpValueAlert");
-      if (promotionLabelEl) promotionLabelEl.textContent = promotionLabel;
-      if (topbarMetaLineEl) topbarMetaLineEl.textContent = promotionLabel;
       if (progressFillEl) {
         progressFillEl.style.width = `${rewardsHeader.progressPct}%`;
       }

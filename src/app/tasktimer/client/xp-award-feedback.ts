@@ -11,6 +11,13 @@ export type XpAwardDeliveryHapticsOptions = {
   intensity?: InteractionHapticsIntensity;
 };
 
+export type XpAwardDeliveryAudioHandle = {
+  stop: () => void;
+  playDone: () => void;
+};
+
+let warmedXpAwardDeliveryAudio: ClickAudioLike | null = null;
+
 export function shouldPlayXpAwardDeliveryHaptic(startXp: number, endXp: number, isEnabled: boolean): boolean {
   return isEnabled && Math.floor(Number(endXp) || 0) > Math.floor(Number(startXp) || 0);
 }
@@ -20,39 +27,75 @@ export function playXpAwardDeliveryHaptic(options?: XpAwardDeliveryHapticsOption
   playInteractionHaptic("light", undefined, normalizeInteractionHapticsIntensity(options.intensity));
 }
 
-export function playXpAwardDeliveryAudio(audioFactory?: ClickAudioFactory): void {
+export function warmXpAwardDeliveryAudio(audioFactory?: ClickAudioFactory): void {
   if (typeof window === "undefined" && !audioFactory) return;
 
   try {
     const audio = createXpAwardAudio(XP_AWARD_DELIVERY_AUDIO_SRC, audioFactory);
     if (!audio) return;
+    warmedXpAwardDeliveryAudio = audio;
+  } catch {
+    // Warming is optional; playback can still try to create audio later.
+  }
+}
 
-    const playDoneAudio = () => {
-      const timeout = typeof window !== "undefined" ? window.setTimeout.bind(window) : setTimeout;
-      timeout(() => {
-        try {
-          const doneAudio = createXpAwardAudio(XP_AWARD_DELIVERY_DONE_AUDIO_SRC, audioFactory);
-          if (!doneAudio) return;
-          doneAudio.currentTime = 0;
-          const donePlayback = doneAudio.play();
-          if (donePlayback && typeof donePlayback.catch === "function") donePlayback.catch(() => {});
-        } catch {
-          // Completion audio is optional.
-        }
-      }, XP_AWARD_DELIVERY_DONE_DELAY_MS);
-    };
+export function playXpAwardDeliveryAudio(audioFactory?: ClickAudioFactory): XpAwardDeliveryAudioHandle | null {
+  if (typeof window === "undefined" && !audioFactory) return null;
+
+  try {
+    const audio = warmedXpAwardDeliveryAudio || createXpAwardAudio(XP_AWARD_DELIVERY_AUDIO_SRC, audioFactory);
+    warmedXpAwardDeliveryAudio = null;
+    if (!audio) return null;
+
+    let stopped = false;
 
     const onEnded = () => {
       audio.removeEventListener?.("ended", onEnded);
-      playDoneAudio();
+      stopped = true;
     };
 
     audio.addEventListener?.("ended", onEnded);
+    audio.loop = true;
     audio.currentTime = 0;
     const playback = audio.play();
     if (playback && typeof playback.catch === "function") playback.catch(() => {});
+
+    return {
+      stop: () => {
+        if (stopped) return;
+        stopped = true;
+        audio.removeEventListener?.("ended", onEnded);
+        audio.loop = false;
+        try {
+          audio.pause?.();
+        } catch {
+          // Pausing feedback audio is best-effort.
+        }
+        try {
+          audio.currentTime = 0;
+        } catch {
+          // Some audio implementations may reject seeking before metadata is ready.
+        }
+      },
+      playDone: () => playXpAwardDeliveryDoneAudio(audioFactory),
+    };
   } catch {
     // Browser autoplay failures are non-blocking for XP feedback.
+    return null;
+  }
+}
+
+export function playXpAwardDeliveryDoneAudio(audioFactory?: ClickAudioFactory): void {
+  if (typeof window === "undefined" && !audioFactory) return;
+
+  try {
+    const doneAudio = createXpAwardAudio(XP_AWARD_DELIVERY_DONE_AUDIO_SRC, audioFactory);
+    if (!doneAudio) return;
+    doneAudio.currentTime = 0;
+    const donePlayback = doneAudio.play();
+    if (donePlayback && typeof donePlayback.catch === "function") donePlayback.catch(() => {});
+  } catch {
+    // Completion audio is optional.
   }
 }
 

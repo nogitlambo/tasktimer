@@ -1,11 +1,13 @@
 export type ClickAudioLike = {
   currentTime: number;
+  loop?: boolean;
   preload?: string;
   readyState?: number;
   load?: () => void;
   addEventListener?: (type: string, listener: EventListenerOrEventListenerObject) => void;
   removeEventListener?: (type: string, listener: EventListenerOrEventListenerObject) => void;
   play: () => Promise<unknown> | void;
+  pause?: () => void;
 };
 
 export type ClickAudioFactory = (src: string) => ClickAudioLike;

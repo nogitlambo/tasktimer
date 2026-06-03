@@ -27,7 +27,7 @@ import RankThumbnail from "./components/RankThumbnail";
 import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
-import TaskTimerAppFrame, { getXpPromotionLabel, type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
+import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
 import {
@@ -76,7 +76,13 @@ import {
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
 } from "./client/xp-award-animation";
-import { playXpAwardDeliveryAudio, playXpAwardDeliveryHaptic, shouldPlayXpAwardDeliveryHaptic } from "./client/xp-award-feedback";
+import {
+  playXpAwardDeliveryAudio,
+  playXpAwardDeliveryHaptic,
+  shouldPlayXpAwardDeliveryHaptic,
+  warmXpAwardDeliveryAudio,
+  type XpAwardDeliveryAudioHandle,
+} from "./client/xp-award-feedback";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
@@ -283,7 +289,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [xpAnimationState, setXpAnimationState] = useState(() => createXpAwardAnimationState());
   const [isXpCountAnimating, setIsXpCountAnimating] = useState(false);
   const [isXpAwardSpotlightActive, setIsXpAwardSpotlightActive] = useState(false);
-  const [xpPromotionLabelOverride, setXpPromotionLabelOverride] = useState<string | null>(null);
   const [pendingRankPromotion, setPendingRankPromotion] = useState<RankPromotion | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
   const [promotionOverlayRetrySeq, setPromotionOverlayRetrySeq] = useState(0);
@@ -306,6 +311,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpCountAnimationStartedRef = useRef(false);
+  const xpAwardDeliveryAudioRef = useRef<XpAwardDeliveryAudioHandle | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -431,18 +437,23 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const activeAward = xpAnimationState.active;
     const wasIdle = previousActiveAwardRef.current == null;
     previousActiveAwardRef.current = activeAward;
+    const stopXpAwardDeliveryAudio = () => {
+      xpAwardDeliveryAudioRef.current?.stop();
+      xpAwardDeliveryAudioRef.current = null;
+    };
     if (!activeAward) {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+      stopXpAwardDeliveryAudio();
       xpCountAnimationStartedRef.current = false;
-      setXpPromotionLabelOverride(null);
       return;
     }
 
     if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+    stopXpAwardDeliveryAudio();
     const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
@@ -462,19 +473,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       displayedXp: displayedXpRef.current,
     });
     displayedXpRef.current = startXp;
-    const frozenPromotionHeader = buildRewardsHeaderViewModel({
-      ...rewardProgress,
-      totalXp: startXp,
-      totalXpPrecise: startXp,
-      currentRankId: getRankForXp(startXp).id,
-    });
-    const frozenPromotionLabel = getXpPromotionLabel(frozenPromotionHeader.totalXp, frozenPromotionHeader.xpToNext);
-
     window.requestAnimationFrame(() => {
       setDisplayedXp(startXp);
       setIsXpCountAnimating(countAnimationStarted);
       setIsXpAwardSpotlightActive(true);
-      setXpPromotionLabelOverride(frozenPromotionLabel);
       setXpAwardFx({
         visible: true,
         payloadStyle,
@@ -488,7 +490,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
           setIsXpCountAnimating(false);
           setIsXpAwardSpotlightActive(false);
-          setXpPromotionLabelOverride(null);
           setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
           setXpAnimationState((current) => clearActiveXpAward(current));
         }, reducedMotion ? 160 : 360);
@@ -496,12 +497,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       return;
     }
 
+    if (endXp > startXp) {
+      warmXpAwardDeliveryAudio();
+    }
+
     const startCountAnimation = () => {
       countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
       if (endXp > startXp) {
-        playXpAwardDeliveryAudio();
+        xpAwardDeliveryAudioRef.current = playXpAwardDeliveryAudio();
       }
       if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
         playXpAwardDeliveryHaptic({
@@ -519,12 +524,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         displayedXpRef.current = nextXp;
         setDisplayedXp(nextXp);
         if (progress >= 1) {
+          const deliveryAudio = xpAwardDeliveryAudioRef.current;
+          xpAwardDeliveryAudioRef.current = null;
+          deliveryAudio?.stop();
+          deliveryAudio?.playDone();
           xpCountAnimationStartedRef.current = false;
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
           window.requestAnimationFrame(() => {
             setIsXpCountAnimating(false);
-            setXpPromotionLabelOverride(null);
           });
           xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
             setIsXpAwardSpotlightActive(false);
@@ -553,6 +561,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+      stopXpAwardDeliveryAudio();
       xpCountAnimationStartedRef.current = getXpAwardCountStartedAfterEffectCleanup({
         wasStartedBeforeEffect: countAnimationStarted,
         startedDuringEffect: countAnimationStartedDuringEffect,
@@ -930,7 +939,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         currentUserAvatarInitials={currentUserAvatarInitials}
         currentUserLabel={currentUserLabel}
         rewardsHeader={rewardsHeader}
-        promotionLabelOverride={xpPromotionLabelOverride}
         isXpCountAnimating={isXpCountAnimating}
         isXpAwardSpotlightActive={isXpAwardSpotlightActive}
         onTestRankPromotion={(rankId) => {
@@ -1176,6 +1184,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumUserRank leaderboardWeeklyPodiumUserRankInline">{getLeaderboardRankLabel(row.profile)}</span>}
                                 {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
                               </span>
                             </span>
@@ -1282,6 +1291,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumUserRank leaderboardWeeklyPodiumUserRankInline">{getLeaderboardRankLabel(row.profile)}</span>}
                                 {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                               </span>
                             </span>
@@ -1388,6 +1398,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
                               <span className="leaderboardWeeklyPodiumPlayer">
                                 <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+                                {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumUserRank leaderboardWeeklyPodiumUserRankInline">{getLeaderboardRankLabel(row.profile)}</span>}
                                 {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                               </span>
                             </span>

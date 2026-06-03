@@ -101,6 +101,7 @@ export async function POST(req: Request) {
 
     const userRef = db.collection("users").doc(uid);
     const subscriptionRef = db.collection("userSubscriptions").doc(uid);
+    const leaderboardProfileRef = db.collection("leaderboardProfiles").doc(uid);
     const userSnap = await userRef.get();
     const usernameKey = asString(userSnap.exists ? userSnap.get("usernameKey") : "");
     const userEmail = asString(userSnap.exists ? userSnap.get("email") : "") || asString(email);
@@ -111,6 +112,7 @@ export async function POST(req: Request) {
     await Promise.all([
       db.recursiveDelete(userRef),
       subscriptionRef.delete(),
+      leaderboardProfileRef.delete(),
       deleteQueryDocs(db.collection("scheduled_time_goal_pushes").where("ownerUid", "==", uid)),
       deleteQueryDocs(db.collection("shared_task_reminder_state").where("ownerUid", "==", uid)),
       deleteQueryDocs(db.collection("shared_task_reminder_state").where("lastSentByUid", "==", uid)),

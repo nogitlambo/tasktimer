@@ -178,14 +178,11 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
     headerXpCard.className = "appShellHeaderXp";
     const valueEl = new ElementStub();
     valueEl.className = "appShellHeaderXpValue";
-    const promotionLabelEl = new ElementStub();
-    promotionLabelEl.className = "appShellHeaderXpPromotionLabel";
     const progressBarEl = new ElementStub();
     progressBarEl.className = "appShellHeaderXpTrack";
     const progressFillEl = new ElementStub();
     progressFillEl.className = "appShellHeaderXpFill";
     headerXpCard.appendChild(valueEl);
-    headerXpCard.appendChild(promotionLabelEl);
     headerXpCard.appendChild(progressBarEl);
     headerXpCard.appendChild(progressFillEl);
   }
@@ -193,14 +190,11 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
     topbarXp.className = "taskLaunchTopbarXp";
     const valueEl = new ElementStub();
     valueEl.className = "taskLaunchTopbarXpValue";
-    const metaLineEl = new ElementStub();
-    metaLineEl.className = "taskLaunchTopbarXpMetaLine";
     const progressBarEl = new ElementStub();
     progressBarEl.className = "taskLaunchTopbarXpTrack";
     const progressFillEl = new ElementStub();
     progressFillEl.className = "taskLaunchTopbarXpFill";
     topbarXp.appendChild(valueEl);
-    topbarXp.appendChild(metaLineEl);
     topbarXp.appendChild(progressBarEl);
     topbarXp.appendChild(progressFillEl);
   }
@@ -414,22 +408,16 @@ describe("dashboard header XP progress", () => {
 
     try {
       const desktopValueEl = harness.headerXpCard?.querySelector(".appShellHeaderXpValue");
-      const desktopLabelEl = harness.headerXpCard?.querySelector(".appShellHeaderXpPromotionLabel");
       const mobileValueEl = harness.topbarXp?.querySelector(".taskLaunchTopbarXpValue");
-      const mobileLabelEl = harness.topbarXp?.querySelector(".taskLaunchTopbarXpMetaLine");
 
       desktopValueEl?.classList.add("isAnimatingXpCount");
       if (desktopValueEl) desktopValueEl.textContent = "42 XP";
-      if (desktopLabelEl) desktopLabelEl.textContent = "198 XP to Technician";
       if (mobileValueEl) mobileValueEl.textContent = "42 XP";
-      if (mobileLabelEl) mobileLabelEl.textContent = "198 XP to Technician";
 
       harness.renderHeaderXp();
 
       expect(desktopValueEl?.textContent).toBe("42 XP");
-      expect(desktopLabelEl?.textContent).toBe("198 XP to Technician");
       expect(mobileValueEl?.textContent).toBe("42 XP");
-      expect(mobileLabelEl?.textContent).toBe("198 XP to Technician");
     } finally {
       harness.restore();
     }

@@ -4,10 +4,12 @@ import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
+  getCheckpointAlertCompletionPriority,
   getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
   markTaskTimeGoalCompletedForResolution,
   resetFocusModeScrollPosition,
+  shouldAutoStopDailyTimeGoalTask,
   shouldOpenFocusModeForTimeGoalNextTask,
   shouldSuppressTimeGoalCompletionForTask,
   shouldKeepTimeGoalCompletionFlowForTask,
@@ -106,12 +108,107 @@ describe("time goal completion flow guard", () => {
     expect(didElapsedReachTimeGoalFromBaseline(undefined, 59, 60)).toBe(false);
   });
 
+  it("does not suppress checkpoint alerts below the time goal", () => {
+    expect(
+      getCheckpointAlertCompletionPriority({
+        prevBaselineSec: 20,
+        elapsedWholeSec: 30,
+        timeGoalSec: 60,
+        taskId: "task-1",
+      })
+    ).toEqual({
+      shouldOpenTimeGoalModal: false,
+      reminder: false,
+      suppressCheckpointAlertSideEffects: false,
+    });
+  });
+
+  it("suppresses same-tick checkpoint alerts when elapsed crosses the time goal", () => {
+    expect(
+      getCheckpointAlertCompletionPriority({
+        prevBaselineSec: 59,
+        elapsedWholeSec: 60,
+        timeGoalSec: 60,
+        taskId: "task-1",
+      })
+    ).toEqual({
+      shouldOpenTimeGoalModal: true,
+      reminder: false,
+      suppressCheckpointAlertSideEffects: true,
+    });
+  });
+
+  it("suppresses checkpoint alerts when a due time-goal reminder should open", () => {
+    expect(
+      getCheckpointAlertCompletionPriority({
+        prevBaselineSec: 75,
+        elapsedWholeSec: 80,
+        timeGoalSec: 60,
+        taskId: "task-1",
+        reminderAtMs: 200,
+        nowMs: 250,
+      })
+    ).toEqual({
+      shouldOpenTimeGoalModal: true,
+      reminder: true,
+      suppressCheckpointAlertSideEffects: true,
+    });
+  });
+
+  it("does not suppress checkpoint alerts when the task complete modal is already active for the task", () => {
+    expect(
+      getCheckpointAlertCompletionPriority({
+        prevBaselineSec: 59,
+        elapsedWholeSec: 60,
+        timeGoalSec: 60,
+        taskId: "task-1",
+        activeTimeGoalModalTaskId: "task-1",
+      })
+    ).toEqual({
+      shouldOpenTimeGoalModal: false,
+      reminder: false,
+      suppressCheckpointAlertSideEffects: false,
+    });
+  });
+
   it("clamps completed elapsed to the configured time goal", () => {
     expect(getTimeGoalCompletionElapsedMs(timeGoalTask({ timeGoalMinutes: 1 }), 61_250)).toBe(60_000);
   });
 
   it("does not clamp completed elapsed for tasks without a time goal", () => {
     expect(getTimeGoalCompletionElapsedMs(timeGoalTask({ timeGoalEnabled: false, timeGoalMinutes: 0 }), 61_250)).toBe(61_250);
+  });
+
+  it("auto-stops a running daily time-goal task once elapsed reaches the goal", () => {
+    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalMinutes: 1 }), { elapsedMs: 60_000 })).toBe(true);
+    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalMinutes: 1 }), { elapsedMs: 72_345 })).toBe(true);
+  });
+
+  it("does not auto-stop a daily time-goal task before elapsed reaches the goal", () => {
+    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalMinutes: 1 }), { elapsedMs: 59_999 })).toBe(false);
+  });
+
+  it("does not auto-stop weekly time goals", () => {
+    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalPeriod: "week", timeGoalMinutes: 1 }), { elapsedMs: 60_000 })).toBe(false);
+  });
+
+  it("does not auto-stop an already completed daily time-goal task with qualifying history", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+    const entry = timeGoalTask({
+      timeGoalCompletedDayKey: completedToday,
+      timeGoalCompletedAtMs: nowValue - 60_000,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(
+      shouldAutoStopDailyTimeGoalTask(entry, {
+        elapsedMs: 72_345,
+        historyByTaskId: { "task-1": [{ ts: nowValue, name: "Focus", ms: 60_000 }] },
+        nowMs: nowValue,
+      })
+    ).toBe(false);
   });
 
   it("keeps completion available for an active running live session over its goal", () => {

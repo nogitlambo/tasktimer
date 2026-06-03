@@ -169,6 +169,7 @@ export function startTimeGoalXpCount(
     cancelAnimationFrameFn?: CancelAnimationFrameFn;
     preserveHeldSplash?: boolean;
     onIntervalCue?: (delayMs: number) => void;
+    onFinish?: () => void;
   }
 ) {
   if (!text) return false;
@@ -223,6 +224,7 @@ export function startTimeGoalXpCount(
     fx.classList.remove("isPlaying");
     fx.dataset.xpCountState = "complete";
     xpCountAnimations.delete(text);
+    opts?.onFinish?.();
   };
 
   const tick = (timestamp: number) => {
@@ -253,6 +255,7 @@ export function startTimeGoalXpSplashAfterConfetti(
     matchMediaFn?: (query: string) => { matches: boolean };
     onStart?: () => void;
     onIntervalCue?: (delayMs: number) => void;
+    onFinish?: () => void;
   }
 ) {
   const fx = getTimeGoalXpFx(text);
@@ -267,6 +270,7 @@ export function startTimeGoalXpSplashAfterConfetti(
     stopTimeGoalXpCalculating(text);
     if (text) text.textContent = formatTimeGoalAwardText(awardedXp);
     if (awardedXp > 0) opts?.onStart?.();
+    if (awardedXp > 0) opts?.onFinish?.();
     return true;
   }
   if (text) startTimeGoalXpCalculating(text);
@@ -290,6 +294,7 @@ export function startTimeGoalXpSplashAfterConfetti(
         cancelAnimationFrameFn: opts?.cancelAnimationFrameFn,
         preserveHeldSplash: true,
         onIntervalCue: opts?.onIntervalCue,
+        onFinish: opts?.onFinish,
       });
     }
     return started;

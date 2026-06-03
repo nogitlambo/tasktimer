@@ -1,8 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type TouchEvent as ReactTouchEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type TouchEvent as ReactTouchEvent } from "react";
 import RankThumbnail from "./RankThumbnail";
 import {
+  getMobileSwipeCloseDragY,
   getResetMobileSwipeCloseState,
   getStartMobileSwipeCloseState,
+  getUpdatedMobileSwipeCloseState,
   shouldCloseFromMobileSwipe,
   type MobileSwipeCloseState,
 } from "./mobileSwipeClose";
@@ -47,6 +49,8 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   } = props;
 
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [rankLadderDragY, setRankLadderDragY] = useState(0);
+  const [isRankLadderDragging, setIsRankLadderDragging] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const currentRankItemRef = useRef<HTMLElement | null>(null);
   const swipeCloseRef = useRef<MobileSwipeCloseState>(getResetMobileSwipeCloseState());
@@ -86,10 +90,14 @@ export default function RankLadderModal(props: RankLadderModalProps) {
 
   const resetSwipeClose = () => {
     swipeCloseRef.current = getResetMobileSwipeCloseState();
+    setRankLadderDragY(0);
+    setIsRankLadderDragging(false);
   };
 
   const closeMobilePanel = () => {
     if (isMobileLayout) playTaskFlipClickAudio();
+    setRankLadderDragY(0);
+    setIsRankLadderDragging(false);
     onClose();
   };
 
@@ -102,6 +110,8 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     if (!isInTopZone) return;
 
     swipeCloseRef.current = getStartMobileSwipeCloseState(event.pointerId, event.clientX, event.clientY);
+    setRankLadderDragY(0);
+    setIsRankLadderDragging(true);
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -114,15 +124,27 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     const swipeClose = swipeCloseRef.current;
     if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== event.pointerId) return;
 
-    if (!shouldCloseFromMobileSwipe(swipeClose, event.pointerId, event.clientX, event.clientY, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) return;
+    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, event.pointerId, event.clientX, event.clientY);
+    swipeCloseRef.current = nextSwipeClose;
+
+    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
+    if (dragY <= 0) return;
 
     event.preventDefault();
-    swipeCloseRef.current.consumed = true;
-    closeMobilePanel();
+    setRankLadderDragY(dragY);
   };
 
   const handleModalPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-    if (swipeCloseRef.current.pointerId === event.pointerId) resetSwipeClose();
+    const swipeClose = swipeCloseRef.current;
+    if (swipeClose.pointerId !== event.pointerId) return;
+
+    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) {
+      swipeCloseRef.current.consumed = true;
+      closeMobilePanel();
+      return;
+    }
+
+    resetSwipeClose();
   };
 
   const handleModalTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
@@ -135,6 +157,8 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     if (!isInTopZone) return;
 
     swipeCloseRef.current = getStartMobileSwipeCloseState(touch.identifier, touch.clientX, touch.clientY);
+    setRankLadderDragY(0);
+    setIsRankLadderDragging(true);
   };
 
   const handleModalTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
@@ -143,18 +167,36 @@ export default function RankLadderModal(props: RankLadderModalProps) {
 
     const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeClose.pointerId);
     if (!touch) return;
-    if (!shouldCloseFromMobileSwipe(swipeClose, touch.identifier, touch.clientX, touch.clientY, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) return;
+    const nextSwipeClose = getUpdatedMobileSwipeCloseState(swipeClose, touch.identifier, touch.clientX, touch.clientY);
+    swipeCloseRef.current = nextSwipeClose;
+
+    const dragY = getMobileSwipeCloseDragY(nextSwipeClose);
+    if (dragY <= 0) return;
 
     event.preventDefault();
-    swipeCloseRef.current.consumed = true;
-    closeMobilePanel();
+    setRankLadderDragY(dragY);
   };
 
   const handleModalTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
     const swipeClose = swipeCloseRef.current;
     if (swipeClose.pointerId == null) return;
-    if (Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) resetSwipeClose();
+    if (!Array.from(event.changedTouches).some((touch) => touch.identifier === swipeClose.pointerId)) return;
+
+    if (shouldCloseFromMobileSwipe(swipeClose, MOBILE_SWIPE_CLOSE_THRESHOLD_PX)) {
+      swipeCloseRef.current.consumed = true;
+      closeMobilePanel();
+      return;
+    }
+
+    resetSwipeClose();
   };
+
+  const rankLadderModalStyle = useMemo(
+    () => ({
+      "--mobile-sheet-drag-y": `${rankLadderDragY}px`,
+    }) as CSSProperties,
+    [rankLadderDragY]
+  );
 
   if (!open) return null;
 
@@ -170,7 +212,8 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   return (
     <div className="overlay" id="rankLadderOverlay" onClick={closeMobilePanel}>
       <div
-        className="modal rankLadderModal"
+        className={`modal rankLadderModal${isRankLadderDragging ? " isDragging" : ""}`}
+        style={rankLadderModalStyle}
         role="dialog"
         aria-modal="true"
         aria-label="Rank ladder"
