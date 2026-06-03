@@ -793,7 +793,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         });
       },
       onIntervalCue: () => {
-        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
         startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
         playTimeGoalXpCountHaptic({
           isEnabled: ctx.getInteractionHapticsEnabled,
@@ -829,7 +828,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         });
       },
       onIntervalCue: () => {
-        if (ctx.getAchievementSoundsEnabled()) timeGoalXpRewardPlayer.play();
         startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
         playTimeGoalXpCountHaptic({
           isEnabled: ctx.getInteractionHapticsEnabled,

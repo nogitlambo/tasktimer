@@ -523,7 +523,7 @@ describe("task timer session tick", () => {
 
       vi.advanceTimersByTime(500);
 
-      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(true);
       expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(2);
     } finally {

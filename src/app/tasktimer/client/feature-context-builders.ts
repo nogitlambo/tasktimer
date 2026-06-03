@@ -322,6 +322,7 @@ type CreateTasksOptionsArgs = {
   isTaskSharedByOwner: (taskId: string) => boolean;
   confirm: Parameters<typeof createTaskTimerTasks>[0]["confirm"];
   closeConfirm: () => void;
+  navigateToAppRoute: (path: string) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;
@@ -1240,6 +1241,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     isTaskSharedByOwner: args.isTaskSharedByOwner,
     confirm: args.confirm,
     closeConfirm: args.closeConfirm,
+    navigateToAppRoute: args.navigateToAppRoute,
     openEdit: args.openEdit,
     clearTaskTimeGoalFlow: args.clearTaskTimeGoalFlow,
     flushPendingFocusSessionNoteSave: args.flushPendingFocusSessionNoteSave,

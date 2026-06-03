@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { USED_OR_EXPIRED_EMAIL_LINK_MESSAGE } from "./auth/emailLinkSignInError";
 import WebSignIn from "./webSign-in";
 
 type ElementWithProps = ReactElement<{ children?: ReactNode; onClick?: () => void }>;
@@ -99,5 +100,38 @@ describe("WebSignIn", () => {
 
     expect(onSendEmailLink).toHaveBeenCalledTimes(1);
     expect(onToggleEmailLoginForm).not.toHaveBeenCalled();
+  });
+
+  it("renders the email form and complete action during an email-link flow", () => {
+    const html = renderToStaticMarkup(
+      <WebSignIn
+        {...baseProps}
+        showEmailLoginForm={true}
+        isEmailLinkFlow={true}
+        isValidAuthEmail={true}
+        authEmail="user@example.com"
+      />
+    );
+
+    expect(html).toContain('id="landingEmailInput"');
+    expect(html).toContain("Send Link");
+    expect(html).toContain("Complete Sign-In");
+  });
+
+  it("renders invalid email-link guidance alongside the new-link controls", () => {
+    const html = renderToStaticMarkup(
+      <WebSignIn
+        {...baseProps}
+        showEmailLoginForm={true}
+        isEmailLinkFlow={true}
+        isValidAuthEmail={true}
+        authEmail="user@example.com"
+        authError={USED_OR_EXPIRED_EMAIL_LINK_MESSAGE}
+      />
+    );
+
+    expect(html).toContain(USED_OR_EXPIRED_EMAIL_LINK_MESSAGE);
+    expect(html).toContain("Continue with email");
+    expect(html).toContain("Send Link");
   });
 });

@@ -10,7 +10,6 @@ export default function ConfirmOverlay() {
           <input type="checkbox" id="confirmDeleteAll" />
           <label htmlFor="confirmDeleteAll" id="confirmChkLabel">
             <span className="confirmChkLabelText">Also delete all tasks</span>
-            <div className="switch on" id="confirmDeleteAllSwitch" role="switch" aria-checked="true" aria-hidden="true" />
           </label>
         </div>
         <div className="confirmChkNote" id="confirmChkNote" style={{ display: "none" }} />
@@ -29,7 +28,7 @@ export default function ConfirmOverlay() {
             id="confirmDangerInput"
             type="text"
             autoComplete="off"
-            autoCapitalize="characters"
+            autoCapitalize="none"
             spellCheck={false}
             placeholder="DELETE"
           />

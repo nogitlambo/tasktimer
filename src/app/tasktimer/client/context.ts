@@ -453,6 +453,7 @@ export type TaskTimerTasksContext = {
   isTaskSharedByOwner: (taskId: string) => boolean;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions & { checkbox2Label?: string | null; checkbox2Checked?: boolean }) => void;
   closeConfirm: () => void;
+  navigateToAppRoute: (path: string) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
   clearTaskTimeGoalFlow: (taskId: string) => void;
   flushPendingFocusSessionNoteSave: (taskId: string) => void;

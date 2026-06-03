@@ -15,6 +15,8 @@ import {
   stopRankPromotionCelebration,
   type RankPromotion,
 } from "../client/rank-promotion";
+import { playDeleteAlertAudio } from "../client/delete-alert-audio";
+import { DeleteAccountConfirmActions } from "./settings/DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
@@ -60,6 +62,12 @@ export default function AccountScreen() {
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
+
+  useEffect(() => {
+    if (!account.showDeleteAccountConfirm) return;
+    playDeleteAlertAudio(undefined, { repeatCount: 3 });
+  }, [account.showDeleteAccountConfirm]);
+
   const openRankLadderWithDropdownAudio = useCallback(() => {
     avatar.setShowRankLadderModal(true);
   }, [avatar]);
@@ -274,18 +282,23 @@ export default function AccountScreen() {
         ariaLabel="Delete Account"
         title="Delete Account"
         overlayClassName="accountInlineConfirmOverlay"
-        modalClassName="accountInlineConfirmModal"
+        modalClassName="accountInlineConfirmModal deleteAccountConfirmModal"
         titleClassName="accountInlineConfirmTitle"
+        titleIcon={
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3.4 21.1 20H2.9L12 3.4Z" />
+            <path d="M12 8.6v5.8" />
+            <path d="M12 17.4h.01" />
+          </svg>
+        }
       >
         <p className="accountInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
-        <div className="footerBtns accountInlineConfirmBtns">
-          <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
-            Cancel
-          </button>
-          <button className="btn btn-warn" type="button" onClick={() => void account.onDeleteAccount()} disabled={account.authBusy}>
-            Delete Account
-          </button>
-        </div>
+        <DeleteAccountConfirmActions
+          className="footerBtns accountInlineConfirmBtns"
+          authBusy={account.authBusy}
+          onCancel={() => account.setShowDeleteAccountConfirm(false)}
+          onDelete={() => void account.onDeleteAccount()}
+        />
       </InlineConfirmModal>
 
       <InlineConfirmModal

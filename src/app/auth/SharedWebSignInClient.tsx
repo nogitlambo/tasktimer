@@ -27,6 +27,7 @@ import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
 import { runAuthSuccessRedirect } from "./authRedirect";
 import { sendSignInLinkEmail } from "./emailLinkClient";
+import { getEmailLinkSignInErrorMessage } from "./emailLinkSignInError";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -147,7 +148,12 @@ export default function SharedWebSignInClient({
         hasRedirectedRef.current = true;
         setHasRedirected(true);
       },
-      replace: router.replace,
+      replace: (route) => router.replace(route),
+      fallbackReplace: (route) => window.location.replace(route),
+      getCurrentPathname: () => window.location.pathname,
+      scheduleFallback: (callback, delayMs) => {
+        window.setTimeout(callback, delayMs);
+      },
     });
   }, [redirectOnSuccess, router, shouldStartProCheckout]);
 
@@ -329,6 +335,7 @@ export default function SharedWebSignInClient({
         email = "";
       }
       if (!email) {
+        setShowEmailLoginForm(true);
         setAuthStatus("Email sign-in link detected. Enter your email below, then click Complete Sign-In.");
         return;
       }
@@ -357,7 +364,8 @@ export default function SharedWebSignInClient({
           flow: "auth_email_link_sign_in",
           source_page: telemetrySource,
         });
-        setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
+        setShowEmailLoginForm(true);
+        setAuthError(getEmailLinkSignInErrorMessage(err, "Could not complete email sign-in."));
         setAuthStatus("");
       } finally {
         setAuthBusy(false);
@@ -478,7 +486,8 @@ export default function SharedWebSignInClient({
         flow: "auth_email_link_sign_in",
         source_page: telemetrySource,
       });
-      setAuthError(getErrorMessage(err, "Could not complete email sign-in."));
+      setShowEmailLoginForm(true);
+      setAuthError(getEmailLinkSignInErrorMessage(err, "Could not complete email sign-in."));
       setAuthStatus("");
     } finally {
       setAuthBusy(false);

@@ -1,8 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
+import { playDeleteAlertAudio } from "./delete-alert-audio";
+
+vi.mock("./delete-alert-audio", () => ({
+  playDeleteAlertAudio: vi.fn(),
+}));
 
 type ConfirmCall = {
   title: string;
@@ -51,6 +56,7 @@ function createHarness(overrides: {
   const deletedSharedTaskIds: string[] = [];
   const syncedTaskIds: string[][] = [];
   const savedTaskOpts: Array<{ deletedTaskIds?: string[] } | undefined> = [];
+  const navigatedRoutes: string[] = [];
 
   const adapter = createTaskDestructiveActionEffects({
     getTasks: () => tasks,
@@ -108,6 +114,10 @@ function createHarness(overrides: {
     render: () => calls.push("render"),
     renderDashboardWidgets: () => calls.push("dashboard"),
     closeFocusMode: () => calls.push("closeFocus"),
+    navigateToAppRoute: (path) => {
+      navigatedRoutes.push(path);
+      calls.push(`navigate:${path}`);
+    },
     deleteSharedTaskSummariesForTask: async (_uid, taskId) => {
       deletedSharedTaskIds.push(taskId);
       calls.push(`deleteShared:${taskId}`);
@@ -138,10 +148,15 @@ function createHarness(overrides: {
     deletedSharedTaskIds,
     syncedTaskIds,
     savedTaskOpts,
+    navigatedRoutes,
   };
 }
 
 describe("task destructive action effects", () => {
+  beforeEach(() => {
+    vi.mocked(playDeleteAlertAudio).mockClear();
+  });
+
   it("opens reset confirmation and marks reset confirm state", () => {
     const harness = createHarness({ tasks: [createTask({ accumulatedMs: 120_000 })] });
 
@@ -262,13 +277,15 @@ describe("task destructive action effects", () => {
     harness.adapter.resetAll();
     harness.confirmCalls[0].opts.onOk();
 
+    expect(playDeleteAlertAudio).toHaveBeenCalledTimes(1);
     expect(harness.history).toEqual({});
     expect(harness.deletedMeta).toEqual({});
     expect(harness.tasks).toHaveLength(2);
     expect(harness.savedTaskOpts).toEqual([undefined]);
     expect(harness.syncedTaskIds).toEqual([["a", "b"]]);
-    expect(harness.confirmCalls[1]?.title).toBe("Delete Complete");
-    expect(harness.confirmCalls[1]?.text).toBe("3 history entries deleted.");
+    expect(harness.confirmCalls).toHaveLength(1);
+    expect(harness.calls).toContain("closeConfirm");
+    expect(harness.navigatedRoutes).toEqual(["/settings?pane=data"]);
     expect(harness.classes.has("isResetAllDeleteConfirm")).toBe(true);
   });
 
@@ -289,6 +306,7 @@ describe("task destructive action effects", () => {
     expect(harness.tasks).toEqual([]);
     expect(harness.savedTaskOpts).toEqual([{ deletedTaskIds: ["a", "b"] }]);
     expect(harness.deletedSharedTaskIds.sort()).toEqual(["a", "b"]);
-    expect(harness.confirmCalls[1]?.text).toBe("2 tasks and 2 history entries deleted.");
+    expect(harness.confirmCalls).toHaveLength(1);
+    expect(harness.navigatedRoutes).toEqual(["/settings?pane=data"]);
   });
 });

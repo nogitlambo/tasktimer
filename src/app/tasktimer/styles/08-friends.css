@@ -1981,8 +1981,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   position: relative;
   z-index: 1;
   min-width: 0;
+  container-type: inline-size;
   display: grid;
-  grid-template-rows: minmax(clamp(28px, 9vw, 36px), auto) auto;
+  grid-template-rows: minmax(clamp(28px, 30cqw, 34px), auto) auto;
   justify-items: center;
   align-items: center;
   align-content: center;
@@ -1990,19 +1991,21 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   padding: 3px clamp(3px, 2.4vw, 10px) 0;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats > div + div{
+#leaderboardPositionOverlay .leaderboardPositionStats > div:not(.leaderboardPositionStatsTitle) + div:not(.leaderboardPositionStatsTitle){
   border-left: 1px solid rgba(170, 176, 184, .34);
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats strong{
+  width: 100%;
   max-width: 100%;
-  min-height: clamp(28px, 9vw, 36px);
+  min-width: 0;
+  min-height: clamp(28px, 30cqw, 34px);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
-  font-size: clamp(13px, 7.4vw, 34px);
+  font-size: clamp(12px, 27cqw, 28px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: .03em;
@@ -2015,11 +2018,17 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats span{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   color: rgba(190, 198, 210, .78);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: clamp(8px, 3vw, 13px);
+  font-size: clamp(7px, 11cqw, 11px);
   font-weight: 700;
   line-height: 1.15;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
   text-shadow: 0 0 9px rgba(255, 255, 255, .08);
   white-space: nowrap;
 }
@@ -2332,8 +2341,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   position: relative;
   z-index: 1;
   min-width: 0;
+  container-type: inline-size;
   display: grid;
-  grid-template-rows: minmax(clamp(28px, 9vw, 36px), auto) auto;
+  grid-template-rows: minmax(clamp(28px, 30cqw, 34px), auto) auto;
   justify-items: center;
   align-items: center;
   align-content: center;
@@ -2341,19 +2351,21 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   padding: 3px clamp(3px, 2.4vw, 10px) 0;
 }
 
-#friendProfileModal .friendUserSummaryStats > div + div{
+#friendProfileModal .friendUserSummaryStats > div:not(.friendUserSummaryStatsTitle) + div:not(.friendUserSummaryStatsTitle){
   border-left: 1px solid rgba(170, 176, 184, .34);
 }
 
 #friendProfileModal .friendUserSummaryStats strong{
+  width: 100%;
   max-width: 100%;
-  min-height: clamp(28px, 9vw, 36px);
+  min-width: 0;
+  min-height: clamp(28px, 30cqw, 34px);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
-  font-size: clamp(13px, 7.4vw, 34px);
+  font-size: clamp(12px, 27cqw, 28px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: .03em;
@@ -2366,17 +2378,23 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .friendUserSummaryStats span{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   color: rgba(190, 198, 210, .78);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: clamp(8px, 3vw, 13px);
+  font-size: clamp(7px, 11cqw, 11px);
   font-weight: 700;
   line-height: 1.15;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
   text-shadow: 0 0 9px rgba(255, 255, 255, .08);
   white-space: nowrap;
 }
 
 #friendProfileModal .friendUserSummaryStats #friendProfileXp{
-  font-size: clamp(12px, 6.2vw, 30px);
+  font-size: clamp(11px, 22cqw, 24px);
   letter-spacing: .05em;
   text-transform: uppercase;
 }

@@ -7819,6 +7819,28 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   visibility:visible !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScoreStatus.isRunningTaskPulse{
+  animation: dashboardMomentumStatusPulse 1.45s ease-in-out infinite;
+}
+
+@keyframes dashboardMomentumStatusPulse{
+  0%,
+  100%{
+    opacity: .78;
+    filter: brightness(.92);
+  }
+  50%{
+    opacity: 1;
+    filter: brightness(1.22) drop-shadow(0 0 7px currentColor);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumScoreStatus.isRunningTaskPulse{
+    animation: none;
+  }
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid .dashboardMomentumNeedle{
   position:absolute !important;
   left:50% !important;

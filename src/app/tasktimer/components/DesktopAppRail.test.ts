@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getDesktopRailProfileMenuItems, getDesktopRailProfileSignOutLabel, shouldShowDesktopRailDevEnv } from "./DesktopAppRail";
+import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
+import {
+  getDesktopRailProfileMenuItems,
+  getDesktopRailProfileSignOutLabel,
+  openTaskLaunchOnboarding,
+  shouldShowDesktopRailDevEnv,
+} from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
   it("shows Settings and User Guide in the profile menu", () => {
@@ -50,6 +56,15 @@ describe("DesktopAppRail Dev env gate", () => {
       false
     );
     expect(shouldShowDesktopRailDevEnv({ hostname: "", protocol: "file:", nodeEnv: "development" })).toBe(false);
+  });
+
+  it("dispatches the onboarding event from the Dev env action", () => {
+    const target = new EventTarget();
+    const events: string[] = [];
+    target.addEventListener(TASKTIMER_OPEN_ONBOARDING_EVENT, (event) => events.push(event.type));
+
+    expect(openTaskLaunchOnboarding(target)).toBe(true);
+    expect(events).toEqual([TASKTIMER_OPEN_ONBOARDING_EVENT]);
   });
 });
 

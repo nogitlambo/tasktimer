@@ -84,7 +84,7 @@ export default function FriendsOverlays() {
           <div className="friendUserSummaryStats" aria-label="Friend summary">
             <div className="friendUserSummaryStatsTitle">STATS</div>
             <div>
-              <strong id="friendProfileXp">0 XP</strong>
+              <strong id="friendProfileXp">0</strong>
               <span>XP</span>
             </div>
             <div>

@@ -390,7 +390,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       }
     }
     if (els.friendProfileRank) els.friendProfileRank.textContent = getRankLabelById(row.currentRankId);
-    if (els.friendProfileXp) els.friendProfileXp.textContent = `${new Intl.NumberFormat().format(row.totalXp)} XP`;
+    if (els.friendProfileXp) els.friendProfileXp.textContent = new Intl.NumberFormat().format(row.totalXp);
     if (els.friendProfileSharedTaskCount) els.friendProfileSharedTaskCount.textContent = String(row.sharedCount);
     if (els.friendProfileSharedTime) els.friendProfileSharedTime.textContent = formatDashboardDurationShort(row.sharedTotalMs);
     if (els.friendProfileSharedAverage) els.friendProfileSharedAverage.textContent = formatDashboardDurationShort(row.sharedAverageMs);

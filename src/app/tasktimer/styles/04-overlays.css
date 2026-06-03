@@ -6479,35 +6479,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex: 1 1 auto;
 }
 
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch{
-  flex: 0 0 auto;
-  width: 39px;
-  height: 21px;
-  min-width: 39px;
-}
-
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch::after{
-  width: 18px;
-  height: 18px;
-  top: 1px;
-  left: 1px;
-}
-
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch.on::after{
-  left: 19px;
-}
-
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch{
-  outline: 2px solid rgba(0, 217, 245, 0.95);
-  outline-offset: 2px;
-}
-
 #confirmOverlay.isResetTaskConfirm #confirmChkRow.is-disabled{
   opacity: 0.68;
-}
-
-#confirmOverlay.isResetTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
-  opacity: 0.86;
 }
 
 #confirmOverlay.isDeleteTaskConfirm #confirmChkRow{
@@ -6556,10 +6529,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(238, 242, 246, .92);
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch{
-  display: none;
-}
-
 #confirmOverlay.isDeleteTaskConfirm #confirmDeleteAll:hover{
   background: #1a1b20;
 }
@@ -6589,86 +6558,89 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   opacity: 0.68;
 }
 
-#confirmOverlay.isDeleteTaskConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
-  opacity: 0.86;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm .modal{
-  background: linear-gradient(180deg, rgba(26, 11, 13, 0.98) 0%, rgba(13, 15, 19, 0.99) 100%);
-  border: 1px solid rgba(255, 92, 112, 0.56);
-  border-radius: 0;
-  clip-path: none;
-  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.52), inset 0 0 0 1px rgba(255, 92, 112, 0.14);
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmTitle,
-#confirmOverlay.isResetAllDeleteConfirm .confirmText,
-#confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel,
-#confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputLabel{
-  color: rgba(255, 219, 224, 0.95);
-}
-
 #confirmOverlay.isResetAllDeleteConfirm .confirmText{
   line-height: 1.5;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll{
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(26, 27, 32, .72);
+  border: 1px solid rgba(170, 178, 190, .72);
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  display: inline-grid;
+  height: 18px;
+  margin: 1px 0 0;
+  place-content: center;
+  position: relative;
+  width: 18px;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmChkRow{
-  align-items: center;
+  align-items: flex-start;
+  background: transparent;
+  border: 0;
   border-radius: 0;
-  padding: 12px 14px;
-  background: #16181d;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 0;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel{
-  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  line-height: 1.2;
+  min-width: 0;
+  width: auto;
   cursor: pointer;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmChkLabel .confirmChkLabelText{
+  align-items: center;
+  color: #fff;
   flex: 1 1 auto;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch{
-  margin-left: auto;
-  flex: 0 0 auto;
-  width: 39px;
-  height: 21px;
-  min-width: 39px;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch::after{
-  width: 18px;
-  height: 18px;
-  top: 1px;
-  left: 1px;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch.on::after{
-  left: 19px;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:focus-visible + #confirmChkLabel #confirmDeleteAllSwitch{
-  outline: 2px solid rgba(255, 133, 145, 0.95);
-  outline-offset: 2px;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.35;
+  min-height: 18px;
+  text-transform: none;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmChkRow.is-disabled{
   opacity: 0.68;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAllSwitch[aria-checked="false"]{
-  opacity: 0.86;
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:hover{
+  background: #1a1b20;
+}
+
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:checked{
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:checked:hover{
+  background: var(--accent);
+}
+
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:checked::after{
+  content: "";
+  width: 8px;
+  height: 5px;
+  border: solid #050607;
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+#confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll:focus-visible{
+  outline: 1px solid rgba(170, 178, 190, .5);
+  outline-offset: 2px;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmDangerInputRow{
@@ -6689,25 +6661,27 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput{
   width: 100%;
+  min-height: 34px;
   min-width: 0;
   border-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(13, 15, 19, 0.92);
-  color: rgba(255, 236, 239, 0.96);
-  padding: 11px 12px;
+  border: 0;
+  background: rgba(26, 27, 32, .58);
+  color: rgba(238, 242, 246, .92);
+  padding: 7px 10px;
   text-align: center;
   outline: none;
   box-shadow: none;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput::placeholder{
-  color: rgba(255, 184, 192, 0.5);
+  color: rgba(170, 178, 190, .58);
   font-style: italic;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm .confirmDangerInput:focus-visible{
-  border-color: rgba(255, 133, 145, 0.9);
-  box-shadow: 0 0 0 1px rgba(255, 133, 145, 0.18);
+  outline: 1px solid rgba(170, 178, 190, .28);
+  outline-offset: 0;
+  box-shadow: none;
 }
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmCancelBtn,
@@ -6716,24 +6690,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   justify-content: center;
 }
 
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn{
-  border-color: rgba(255, 92, 112, 0.5);
-  background: transparent;
-  color: rgba(255, 214, 220, 0.96);
-}
-
 #confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:focus-visible:not(:disabled),
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:active:not(:disabled){
-  background: rgba(211, 49, 76, 0.94);
-  border-color: rgba(255, 110, 132, 0.95);
-  color: #fff4f6;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:disabled{
-  background: rgba(62, 24, 29, 0.42);
-  border-color: rgba(130, 66, 76, 0.38);
-  color: rgba(255, 204, 210, 0.46);
+#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:focus-visible:not(:disabled){
+  border-color: #ff4d4d;
+  color: #ff4d4d;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid{

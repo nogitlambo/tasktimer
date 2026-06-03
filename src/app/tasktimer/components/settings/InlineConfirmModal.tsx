@@ -10,6 +10,7 @@ type InlineConfirmModalProps = {
   overlayClassName?: string;
   modalClassName?: string;
   titleClassName?: string;
+  titleIcon?: ReactNode;
   children: ReactNode;
 };
 
@@ -21,6 +22,7 @@ export function InlineConfirmModal({
   overlayClassName = "settingsInlineConfirmOverlay",
   modalClassName = "settingsInlineConfirmModal",
   titleClassName = "settingsInlineConfirmTitle",
+  titleIcon,
   children,
 }: InlineConfirmModalProps) {
   if (!open) return null;
@@ -28,7 +30,10 @@ export function InlineConfirmModal({
   return (
     <div className={`overlay ${overlayClassName}`.trim()} onClick={onClose}>
       <div className={`modal ${modalClassName}`.trim()} role="dialog" aria-modal="true" aria-label={ariaLabel} onClick={(event) => event.stopPropagation()}>
-        <h3 className={titleClassName}>{title}</h3>
+        <h3 className={titleClassName}>
+          {titleIcon ? <span className="inlineConfirmTitleIcon">{titleIcon}</span> : null}
+          <span>{title}</span>
+        </h3>
         {children}
       </div>
     </div>

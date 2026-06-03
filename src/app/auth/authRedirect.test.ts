@@ -12,7 +12,7 @@ const startupModuleMocks = vi.hoisted(() => ({
 
 vi.mock("../tasktimer/lib/startupModule", () => startupModuleMocks);
 
-import { resolveAuthSuccessRoute, runAuthSuccessRedirect } from "./authRedirect";
+import { resolveAuthSuccessRoute, runAuthSuccessRedirect, shouldFallbackFromAuthSuccessRoute } from "./authRedirect";
 
 describe("resolveAuthSuccessRoute", () => {
   beforeEach(() => {
@@ -92,5 +92,71 @@ describe("resolveAuthSuccessRoute", () => {
 
     expect(markRedirected).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("shouldFallbackFromAuthSuccessRoute", () => {
+  it("falls back only when auth success remains on the login route", () => {
+    expect(shouldFallbackFromAuthSuccessRoute("/login", "/dashboard")).toBe(true);
+    expect(shouldFallbackFromAuthSuccessRoute("/login/", "/tasklaunch?page=dashboard")).toBe(true);
+    expect(shouldFallbackFromAuthSuccessRoute("/dashboard", "/dashboard")).toBe(false);
+    expect(shouldFallbackFromAuthSuccessRoute("/login", "/login")).toBe(false);
+  });
+});
+
+describe("runAuthSuccessRedirect", () => {
+  beforeEach(() => {
+    startupModuleMocks.readStartupModulePreference.mockClear();
+    startupModuleMocks.startupModuleToRoute.mockClear();
+    startupModuleMocks.readStartupModulePreference.mockReturnValue("dashboard");
+  });
+
+  it("schedules a browser fallback when the login route is still active", () => {
+    const markRedirected = vi.fn();
+    const replace = vi.fn();
+    const fallbackReplace = vi.fn();
+    const scheduledCallbacks: Array<() => void> = [];
+    const scheduleFallback = vi.fn((callback: () => void) => {
+      scheduledCallbacks.push(callback);
+    });
+
+    expect(
+      runAuthSuccessRedirect({
+        hasRedirected: false,
+        shouldStartProCheckout: false,
+        bypassAutoRedirect: false,
+        markRedirected,
+        replace,
+        fallbackReplace,
+        getCurrentPathname: () => "/login",
+        scheduleFallback,
+      })
+    ).toBe(true);
+
+    expect(replace).toHaveBeenCalledWith("/dashboard");
+    expect(scheduleFallback).toHaveBeenCalledTimes(1);
+    scheduledCallbacks[0]?.();
+    expect(fallbackReplace).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("does not run the browser fallback after client navigation leaves login", () => {
+    const fallbackReplace = vi.fn();
+    const scheduledCallbacks: Array<() => void> = [];
+
+    runAuthSuccessRedirect({
+      hasRedirected: false,
+      shouldStartProCheckout: false,
+      bypassAutoRedirect: false,
+      markRedirected: vi.fn(),
+      replace: vi.fn(),
+      fallbackReplace,
+      getCurrentPathname: () => "/dashboard",
+      scheduleFallback: (callback) => {
+        scheduledCallbacks.push(callback);
+      },
+    });
+
+    scheduledCallbacks[0]?.();
+    expect(fallbackReplace).not.toHaveBeenCalled();
   });
 });

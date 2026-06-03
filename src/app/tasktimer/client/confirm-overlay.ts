@@ -22,19 +22,15 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   }
 
   function syncConfirmPrimaryToggleUi() {
-    const toggle = document.getElementById("confirmDeleteAllSwitch");
-    if (!(toggle instanceof HTMLElement)) return;
     const isOn = !!els.confirmDeleteAll?.checked;
     if (els.confirmChkRow) (els.confirmChkRow as HTMLElement).classList.toggle("is-checked", isOn);
-    toggle.classList.toggle("on", isOn);
-    toggle.setAttribute("aria-checked", isOn ? "true" : "false");
   }
 
   function syncConfirmDangerInputUi() {
     if (!els.confirmOkBtn) return;
     const requiresMatch = !!confirmDangerMatchValue;
     const value = String(els.confirmDangerInput?.value || "").trim();
-    const matches = !requiresMatch || value === confirmDangerMatchValue;
+    const matches = !requiresMatch || value.toLocaleLowerCase() === confirmDangerMatchValue.toLocaleLowerCase();
     (els.confirmOkBtn as HTMLButtonElement).disabled = !matches;
     (els.confirmOkBtn as HTMLElement).style.display = requiresMatch && !matches ? "none" : "inline-flex";
   }

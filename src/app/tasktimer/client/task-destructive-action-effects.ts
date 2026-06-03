@@ -6,6 +6,7 @@ import {
   markTaskTimeGoalResetCompleted,
 } from "../lib/timeGoalCompletion";
 import { awardCompletedSessionXp } from "../lib/rewards";
+import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
 type ConfirmOptions = {
@@ -47,6 +48,7 @@ type TaskDestructiveActionEffectsOptions = {
   render: () => void;
   renderDashboardWidgets: () => void;
   closeFocusMode: () => void;
+  navigateToAppRoute: (path: string) => void;
   deleteSharedTaskSummariesForTask: (uid: string, taskId: string) => Promise<unknown>;
   refreshOwnSharedSummaries: () => Promise<unknown>;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<unknown>;
@@ -137,21 +139,18 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     options.addConfirmOverlayClass(RESET_TASK_CONFIRM_CLASS);
   }
 
-  function showDeleteComplete(message: string) {
-    options.confirm("Delete Complete", message, {
-      okLabel: "Close",
-      cancelLabel: "Done",
-      onOk: () => options.closeConfirm(),
-      onCancel: () => options.closeConfirm(),
-    });
-  }
-
   function renderAfterReset() {
     options.render();
     options.renderDashboardWidgets();
   }
 
+  function returnToSettingsData() {
+    options.closeConfirm();
+    options.navigateToAppRoute("/settings?pane=data");
+  }
+
   function resetAll() {
+    playDeleteAlertAudio();
     const tasks = options.getTasks();
     options.confirm(
       "Delete Data",
@@ -162,7 +161,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
         checkboxChecked: false,
         dangerInputLabel: "",
         dangerInputMatch: "DELETE",
-        dangerInputPlaceholder: "Enter 'DELETE' to proceed.",
+        dangerInputPlaceholder: "Enter 'delete' to proceed.",
         onOk: () => {
           const alsoDelete = options.getConfirmDeleteAllChecked();
           const affectedTaskIds = tasks.map((row) => String(row.id || "")).filter(Boolean);
@@ -189,20 +188,14 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
                 .catch(() => {});
             }
             renderAfterReset();
-            options.closeConfirm();
-            showDeleteComplete(
-              `${deletedTaskCount} task${deletedTaskCount === 1 ? "" : "s"} and ${deletedHistoryEntryCount} history entr${
-                deletedHistoryEntryCount === 1 ? "y" : "ies"
-              } deleted.`
-            );
+            returnToSettingsData();
             return;
           }
 
           options.save();
           if (affectedTaskIds.length) void options.syncSharedTaskSummariesForTasks(affectedTaskIds).catch(() => {});
           renderAfterReset();
-          options.closeConfirm();
-          showDeleteComplete(`${deletedHistoryEntryCount} history entr${deletedHistoryEntryCount === 1 ? "y" : "ies"} deleted.`);
+          returnToSettingsData();
         },
       }
     );

@@ -204,6 +204,7 @@ function createHarness(
     getOptimalProductivityEndTime: () => overrides?.productivityEndTime || "17:00",
     getOptimalProductivityDays: () => overrides?.productivityDays || ["mon", "wed", "fri"],
     jumpToTaskAndHighlight: vi.fn(),
+    showActionConfirmation: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
   if (overrides?.tasks) {

@@ -790,7 +790,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setCheckpointAutoResetDirty: (value) => {
         sessionRuntimeState.set("checkpointAutoResetDirty", value);
       },
-      render,
+      render: () => render(),
       renderHistory,
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,
       syncTimeGoalModalWithTaskState: () => sessionApi?.syncTimeGoalModalWithTaskState(),
@@ -809,6 +809,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       isTaskSharedByOwner,
       confirm,
       closeConfirm,
+      navigateToAppRoute: navigateToAppRouteViaShell,
       openEdit: (index, sourceEl) => editTaskApi?.openEdit(index, sourceEl),
       clearTaskTimeGoalFlow: (taskId) => sessionApi?.clearTaskTimeGoalFlow(taskId),
       flushPendingFocusSessionNoteSave: (taskId) => sessionApi?.flushPendingFocusSessionNoteSave(taskId),
@@ -929,7 +930,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openOverlay: overlayBindings.openOverlay,
       closeOverlay: overlayBindings.closeOverlay,
       save: renderBindings.save,
-      render,
+      render: () => render(),
       confirm,
       closeConfirm,
       escapeHtmlUI,

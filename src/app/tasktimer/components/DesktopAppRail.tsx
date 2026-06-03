@@ -18,6 +18,8 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { AVATAR_CATALOG } from "../lib/avatarCatalog";
+import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
+import { playDropdownClickAudio, playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import {
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
@@ -86,6 +88,11 @@ function getDesktopRailDevEnvSnapshot() {
 
 function getDesktopRailDevEnvServerSnapshot() {
   return false;
+}
+
+export function openTaskLaunchOnboarding(target: Pick<EventTarget, "dispatchEvent"> | null = typeof window !== "undefined" ? window : null) {
+  if (!target) return false;
+  return target.dispatchEvent(new Event(TASKTIMER_OPEN_ONBOARDING_EVENT));
 }
 
 type NavItem = {
@@ -602,6 +609,7 @@ export default function DesktopAppRail({
       window.clearTimeout(profileMenuCloseTimerRef.current);
       profileMenuCloseTimerRef.current = null;
     }
+    playTaskFlipClickAudio();
     setProfileMenuClosing(true);
     profileMenuCloseTimerRef.current = window.setTimeout(() => {
       setProfileMenuOpen(false);
@@ -619,6 +627,7 @@ export default function DesktopAppRail({
       closeProfileMenu();
       return;
     }
+    playDropdownClickAudio();
     setProfileMenuOpen(true);
     setProfileMenuClosing(false);
   }, [closeProfileMenu, profileMenuClosing, profileMenuOpen]);
@@ -717,6 +726,20 @@ export default function DesktopAppRail({
                       aria-hidden="true"
                     />
                     <span className="dashboardRailMenuLabel">Modal</span>
+                  </button>
+                  <button
+                    className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
+                    type="button"
+                    aria-label="Run onboarding"
+                    onClick={() => openTaskLaunchOnboarding()}
+                  >
+                    <AppImg
+                      className="dashboardRailMenuIconImage"
+                      src="/icons/icons_default/question.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span className="dashboardRailMenuLabel">Onboarding</span>
                   </button>
                 </>
               ) : null}

@@ -13,21 +13,17 @@ import {
 import RankLadderModal from "../RankLadderModal";
 import RankPromotionOverlay from "../RankPromotionOverlay";
 import RankThumbnail from "../RankThumbnail";
+import { DeleteAccountConfirmActions } from "./DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
 import type { SettingsAccountViewModel, SettingsAvatarViewModel } from "./types";
 import { useAchievementSoundsEnabled } from "./useAchievementSoundsEnabled";
-import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../../client/onboarding-events";
 
 function formatMemberSinceDate(value: string | null) {
   if (!value) return "--";
   const nextDate = new Date(value);
   if (Number.isNaN(nextDate.getTime())) return "--";
   return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
-function openTaskLaunchOnboarding() {
-  window.dispatchEvent(new Event(TASKTIMER_OPEN_ONBOARDING_EVENT));
 }
 
 export function SettingsAccountPane({
@@ -50,7 +46,8 @@ export function SettingsAccountPane({
   };
 
   useEffect(() => {
-    if (account.showDeleteAccountConfirm) playDeleteAlertAudio();
+    if (!account.showDeleteAccountConfirm) return;
+    playDeleteAlertAudio(undefined, { repeatCount: 3 });
   }, [account.showDeleteAccountConfirm]);
 
   const hasAccountSession = !!account.authUserUid;
@@ -146,9 +143,6 @@ export function SettingsAccountPane({
                           )}
                         </div>
                       </div>
-                      <button className="btn btn-ghost small settingsRunOnboardingBtn" type="button" onClick={openTaskLaunchOnboarding}>
-                        Run Onboarding
-                      </button>
                     </div>
                   </div>
 
@@ -253,16 +247,22 @@ export function SettingsAccountPane({
         onClose={() => account.setShowDeleteAccountConfirm(false)}
         ariaLabel="Delete Account"
         title="Delete Account"
+        modalClassName="settingsInlineConfirmModal deleteAccountConfirmModal"
+        titleIcon={
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3.4 21.1 20H2.9L12 3.4Z" />
+            <path d="M12 8.6v5.8" />
+            <path d="M12 17.4h.01" />
+          </svg>
+        }
       >
         <p className="settingsInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
-        <div className="footerBtns settingsInlineConfirmBtns">
-          <button className="btn btn-ghost" type="button" onClick={() => account.setShowDeleteAccountConfirm(false)}>
-            Cancel
-          </button>
-          <button className="btn btn-warn" type="button" onClick={() => void account.onDeleteAccount()} disabled={account.authBusy}>
-            Delete Account
-          </button>
-        </div>
+        <DeleteAccountConfirmActions
+          className="footerBtns settingsInlineConfirmBtns"
+          authBusy={account.authBusy}
+          onCancel={() => account.setShowDeleteAccountConfirm(false)}
+          onDelete={() => void account.onDeleteAccount()}
+        />
       </InlineConfirmModal>
 
       <InlineConfirmModal

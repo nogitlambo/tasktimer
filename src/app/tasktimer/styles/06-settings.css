@@ -2796,6 +2796,20 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   justify-content: flex-start !important;
 }
 
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn{
+  border-color: rgba(255,77,77,.72) !important;
+  color: rgba(255,98,98,.96) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  box-shadow: 0 0 0 1px rgba(255,77,77,.24) inset, 0 0 10px rgba(255,77,77,.14) !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn:hover:not(:disabled),
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn:focus-visible{
+  border-color: rgba(255,120,120,.95) !important;
+  color: #ffd4d4 !important;
+  box-shadow: 0 0 0 1px rgba(255,77,77,.34) inset, 0 0 13px rgba(255,77,77,.2) !important;
+}
+
 /* Final Appearance layout override: keep setting labels left and values right on one line. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#themeToggleRow,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane:has(#themeToggleRow) .field#menuButtonStyleRow{
@@ -5818,6 +5832,81 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   width:min(var(--modal-width-sm), calc(100vw - 28px)) !important;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal{
+  background:#8f1d1d !important;
+  border-color:rgba(255,255,255,.82) !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :is(.settingsInlineConfirmTitle, .accountInlineConfirmTitle){
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  animation:deleteAccountConfirmTitlePulse 1.05s ease-in-out infinite !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal .inlineConfirmTitleIcon{
+  display:inline-flex !important;
+  width:17px !important;
+  height:17px !important;
+  flex:0 0 17px !important;
+  color:#fff !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal .inlineConfirmTitleIcon svg{
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  fill:none !important;
+  stroke:currentColor !important;
+  stroke-width:2 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+
+@keyframes deleteAccountConfirmTitlePulse{
+  0%,
+  100%{
+    opacity:.2;
+    text-shadow:0 0 0 rgba(255,255,255,0);
+  }
+  50%{
+    opacity:1;
+    text-shadow:0 0 14px rgba(255,255,255,.52);
+  }
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
+  border-color:rgba(255,255,255,.86) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:hover:not(:disabled),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:focus-visible{
+  border-color:#fff !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:disabled{
+  opacity:.42 !important;
+  cursor:not-allowed !important;
+  border-color:rgba(255,255,255,.34) !important;
+  background:rgba(40,20,20,.28) !important;
+  color:rgba(255,255,255,.58) !important;
+  box-shadow:none !important;
+}
+
+@media (max-width: 640px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns){
+    flex-wrap:nowrap !important;
+    justify-content:stretch !important;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
+    flex:1 1 0 !important;
+    min-width:0 !important;
+    white-space:nowrap !important;
+  }
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal.settingsAvatarModal{
   width:min(var(--modal-width-lg), calc(100vw - 28px)) !important;
 }
@@ -5842,7 +5931,3 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   flex-wrap:wrap !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsRunOnboardingBtn{
-  justify-self: start;
-  margin-top: 12px;
-}

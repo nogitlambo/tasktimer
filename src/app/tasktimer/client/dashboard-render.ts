@@ -923,6 +923,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       lastMomentumAnimatedTargetScore = null;
       lastMomentumAnimatedTargetBand = null;
       setDashboardPlanLockedState(cardEl, true);
+      scoreStatusEl.classList.remove("isRunningTaskPulse");
       dialEl.style.setProperty("--momentum-score", "0");
       dialEl.style.setProperty("--momentum-locked", "1");
       dialEl.setAttribute("aria-label", "Momentum dial locked. Upgrade to Pro to view the score.");
@@ -961,6 +962,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
     const score = momentum.score;
     const hasSignal = momentum.hasSignal;
+    scoreStatusEl.classList.toggle("isRunningTaskPulse", momentum.runningTaskCount > 0);
     if (shouldHoldDashboardWidget("momentum", hasSignal)) return;
 
     const bandLabel = getMomentumBandLabel(score);

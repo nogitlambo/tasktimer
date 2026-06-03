@@ -240,6 +240,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     render: ctx.render,
     renderDashboardWidgets: ctx.renderDashboardWidgets,
     closeFocusMode: ctx.closeFocusMode,
+    navigateToAppRoute: ctx.navigateToAppRoute,
     deleteSharedTaskSummariesForTask: ctx.deleteSharedTaskSummariesForTask,
     refreshOwnSharedSummaries: ctx.refreshOwnSharedSummaries,
     syncSharedTaskSummariesForTasks: ctx.syncSharedTaskSummariesForTasks,
