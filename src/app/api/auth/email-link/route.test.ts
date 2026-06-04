@@ -1,11 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  after: vi.fn(),
   enforcePublicRateLimit: vi.fn(),
   generateSignInWithEmailLink: vi.fn(),
   getFirebaseAdminAuth: vi.fn(),
   sendAuthSignInEmail: vi.fn(),
 }));
+
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return {
+    ...actual,
+    after: mocks.after,
+  };
+});
 
 vi.mock("../../shared/rateLimit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../shared/rateLimit")>();
@@ -47,6 +56,9 @@ describe("POST /api/auth/email-link", () => {
       generateSignInWithEmailLink: mocks.generateSignInWithEmailLink,
     });
     mocks.sendAuthSignInEmail.mockResolvedValue(undefined);
+    mocks.after.mockImplementation((callback: () => unknown) => {
+      void callback();
+    });
   });
 
   it("allows native preflight requests", () => {
@@ -66,7 +78,7 @@ describe("POST /api/auth/email-link", () => {
     expect(response.headers.get("access-control-allow-headers")).toContain("Content-Type");
   });
 
-  it("generates a Firebase email sign-in link and sends it through app SMTP", async () => {
+  it("generates a Firebase email sign-in link and schedules app SMTP delivery", async () => {
     const response = await POST(emailLinkRequest());
     const payload = await response.json();
 
@@ -81,6 +93,50 @@ describe("POST /api/auth/email-link", () => {
       })
     );
     expect(mocks.generateSignInWithEmailLink.mock.calls[0][1]).not.toHaveProperty("linkDomain");
+    expect(mocks.after).toHaveBeenCalledTimes(1);
+    expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
+      email: "User@Example.com",
+      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
+    });
+  });
+
+  it("starts independent rate-limit checks together before generating the link", async () => {
+    const releases: Array<() => void> = [];
+    mocks.enforcePublicRateLimit.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releases.push(resolve);
+        })
+    );
+
+    const pendingResponse = POST(emailLinkRequest());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mocks.enforcePublicRateLimit).toHaveBeenCalledTimes(2);
+    expect(mocks.generateSignInWithEmailLink).not.toHaveBeenCalled();
+
+    releases.forEach((release) => release());
+    const response = await pendingResponse;
+
+    expect(response.status).toBe(200);
+    expect(mocks.generateSignInWithEmailLink).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns once the Firebase link is generated without waiting for SMTP delivery", async () => {
+    let sendScheduled: (() => unknown) | undefined;
+    mocks.after.mockImplementation((callback: () => unknown) => {
+      sendScheduled = callback;
+    });
+
+    const response = await POST(emailLinkRequest());
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true });
+    expect(mocks.sendAuthSignInEmail).not.toHaveBeenCalled();
+
+    await sendScheduled?.();
+
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
       signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
@@ -103,13 +159,15 @@ describe("POST /api/auth/email-link", () => {
     );
   });
 
-  it("returns an error when SMTP sending fails", async () => {
+  it("logs scheduled SMTP failures without failing the already-returned response", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.sendAuthSignInEmail.mockRejectedValue(new Error("SMTP rejected the message"));
 
     const response = await POST(emailLinkRequest());
     const payload = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(payload).toEqual({ error: "Could not send sign-in email right now." });
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true });
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Could not send auth sign-in email.", expect.any(Error));
   });
 });

@@ -324,7 +324,6 @@ export function SettingsAccountPane({
       <RankLadderModal
         open={avatar.showRankLadderModal}
         onClose={() => avatar.setShowRankLadderModal(false)}
-        rankLabel={rewardsHeader.rankLabel}
         totalXp={rewardsHeader.totalXp}
         rankSummary={avatar.rankLadderSummary}
         currentRankId={avatar.rewardProgress.currentRankId}

@@ -5,6 +5,7 @@ import { getDoc } from "firebase/firestore";
 import { AVATAR_CATALOG, type AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import {
   isAdminAccountEmail,
+  buildRankLadderSummary,
   buildRewardProgressForRankSelection,
   DEFAULT_REWARD_PROGRESS,
   RANK_LADDER,
@@ -317,8 +318,7 @@ export function useSettingsAvatarState({
     };
   }, [rewardProgress.currentRankId, rewardProgress.totalXp]);
   const displayedRankLabel = rewardsHeader.rankLabel;
-  const rankLadderSummary =
-    rewardsHeader.xpToNext != null ? `${rewardsHeader.xpToNext} XP to reach the next rank.` : "You have reached the highest configured rank.";
+  const rankLadderSummary = useMemo(() => buildRankLadderSummary(rewardProgress.totalXp), [rewardProgress.totalXp]);
 
   const onSelectRankThumbnail = useCallback(
     async (rankId: string) => {

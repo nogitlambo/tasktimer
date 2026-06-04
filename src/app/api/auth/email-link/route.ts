@@ -1,5 +1,5 @@
 import type { ActionCodeSettings } from "firebase-admin/auth";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 import { sendAuthSignInEmail } from "@/lib/authEmailLink";
@@ -74,25 +74,33 @@ export async function POST(req: Request) {
     }
 
     const clientIp = extractClientIp(req);
-    await enforcePublicRateLimit({
-      namespace: "auth-email-link-burst",
-      actorKey: buildPublicRateLimitActorKey({ ip: clientIp, secondaryKey: emailNormalized }),
-      windowMs: 10 * 60 * 1000,
-      maxEvents: 5,
-      code: "auth-email-link/rate-limited",
-      message: "Too many sign-in email attempts. Please wait before trying again.",
-    });
-    await enforcePublicRateLimit({
-      namespace: "auth-email-link-email-repeat",
-      actorKey: buildPublicRateLimitActorKey({ ip: "email", secondaryKey: emailNormalized }),
-      windowMs: 60 * 60 * 1000,
-      maxEvents: 3,
-      code: "auth-email-link/repeat-rate-limited",
-      message: "This email was sent too many sign-in links recently. Please try again later.",
-    });
+    await Promise.all([
+      enforcePublicRateLimit({
+        namespace: "auth-email-link-burst",
+        actorKey: buildPublicRateLimitActorKey({ ip: clientIp, secondaryKey: emailNormalized }),
+        windowMs: 10 * 60 * 1000,
+        maxEvents: 5,
+        code: "auth-email-link/rate-limited",
+        message: "Too many sign-in email attempts. Please wait before trying again.",
+      }),
+      enforcePublicRateLimit({
+        namespace: "auth-email-link-email-repeat",
+        actorKey: buildPublicRateLimitActorKey({ ip: "email", secondaryKey: emailNormalized }),
+        windowMs: 60 * 60 * 1000,
+        maxEvents: 3,
+        code: "auth-email-link/repeat-rate-limited",
+        message: "This email was sent too many sign-in links recently. Please try again later.",
+      }),
+    ]);
 
     const signInLink = await getFirebaseAdminAuth().generateSignInWithEmailLink(email, getActionCodeSettings(req));
-    await sendAuthSignInEmail({ email, signInLink });
+    after(async () => {
+      try {
+        await sendAuthSignInEmail({ email, signInLink });
+      } catch (error) {
+        console.error("Could not send auth sign-in email.", error);
+      }
+    });
 
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true }));
   } catch (error: unknown) {

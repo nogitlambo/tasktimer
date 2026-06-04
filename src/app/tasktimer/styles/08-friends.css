@@ -722,6 +722,11 @@
 }
 
 #friendRequestModalStatus{
+  font-size: 11px;
+}
+
+#friendRequestEmailInput{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 13px;
 }
 
@@ -1594,7 +1599,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   font-size:11px;
   font-weight:700;
   line-height:1.15;
-  color:rgba(204,218,230,.72);
+  color:var(--leaderboard-rank-color, #f5d66f);
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumMetric{
@@ -1765,7 +1770,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  color:rgba(188,214,230,.72);
+  color:var(--leaderboard-rank-color, #f5d66f);
   font-size:11px;
   font-weight:700;
   line-height:1.15;
@@ -1809,7 +1814,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
 #leaderboardPositionOverlay .leaderboardPositionRankSummary strong{
   max-width: 108px;
-  color: rgba(233,252,255,.94);
+  color: var(--leaderboard-rank-color, #f5d66f);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 12px;
   font-weight: 700;

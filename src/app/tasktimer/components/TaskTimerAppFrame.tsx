@@ -15,7 +15,7 @@ import {
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
-import { RANK_LADDER, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
+import { RANK_LADDER, buildRankLadderSummary, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
@@ -204,9 +204,7 @@ export default function TaskTimerAppFrame({
     [currentRankId]
   );
   const showMaxXpAlert = rewardsHeader.xpToNext == null;
-  const rankSummary = rewardsHeader.xpToNext != null
-    ? `${rewardsHeader.xpToNext} XP to reach the next rank.`
-    : "You have reached the highest configured rank.";
+  const rankSummary = useMemo(() => buildRankLadderSummary(rewardsHeader.totalXp), [rewardsHeader.totalXp]);
   const xpProgressSubtext = getXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
@@ -647,7 +645,6 @@ export default function TaskTimerAppFrame({
       <RankLadderModal
         open={showRankLadderModal}
         onClose={() => setShowRankLadderModal(false)}
-        rankLabel={rewardsHeader.rankLabel}
         totalXp={rewardsHeader.totalXp}
         rankSummary={rankSummary}
         currentRankId={currentRankId}

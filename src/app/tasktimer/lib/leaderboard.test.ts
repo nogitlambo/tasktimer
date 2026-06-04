@@ -134,10 +134,10 @@ describe("getLeaderboardResolvedRank", () => {
     });
   });
 
-  it("falls back to a placeholder when the configured insignia asset is missing", () => {
+  it("resolves the unranked insignia asset", () => {
     expect(getRankThumbnailDescriptor("unranked")).toMatchObject({
-      kind: "placeholder",
-      label: "U",
+      kind: "image",
+      src: "/insignias/000_unranked.png",
       rankId: "unranked",
     });
   });

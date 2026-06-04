@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   awardCompletedSessionXp,
+  buildRankLadderSummary,
   DEFAULT_REWARD_PROGRESS,
   getRankForXp,
   MIN_REWARD_ELIGIBLE_SESSION_MS,
@@ -391,5 +392,17 @@ describe("rank ladder", () => {
     expect(getRankForXp(59).id).toBe("initiate");
     expect(getRankForXp(60).id).toBe("operator");
     expect(getRankForXp(50000).id).toBe("mythic");
+  });
+
+  it("builds the rank ladder summary for unranked users", () => {
+    expect(buildRankLadderSummary(0)).toBe("Your current rank is: Unranked.\nYou need 10 XP to move up to Initiate.");
+  });
+
+  it("builds the rank ladder summary near the next threshold", () => {
+    expect(buildRankLadderSummary(59)).toBe("Your current rank is: Initiate.\nYou need 1 XP to move up to Operator.");
+  });
+
+  it("builds the rank ladder summary for max-rank users", () => {
+    expect(buildRankLadderSummary(50000)).toBe("Your current rank is: Mythic.\nYou have reached the highest configured rank.");
   });
 });

@@ -14,7 +14,6 @@ import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
 type RankLadderModalProps = {
   open: boolean;
   onClose: () => void;
-  rankLabel: string;
   totalXp: number;
   rankSummary: string;
   currentRankId: string;
@@ -39,7 +38,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
   const {
     open,
     onClose,
-    rankLabel,
+    rankSummary,
     currentRankId,
     currentRankIndex,
     rankThumbnailSrc,
@@ -235,7 +234,14 @@ export default function RankLadderModal(props: RankLadderModalProps) {
         ) : null}
         <div className="rankLadderHeader">
           <h2>Rank Ladder</h2>
-          <p className="modalSubtext">Your rank is {rankLabel}.</p>
+          <p className="modalSubtext">
+            {rankSummary.split("\n").map((line, index) => (
+              <span key={line}>
+                {index > 0 ? <br /> : null}
+                {line}
+              </span>
+            ))}
+          </p>
         </div>
         <div className="rankLadderModalScroll" ref={scrollContainerRef}>
           <div className="rankLadderList" role="list" aria-label="Available ranks">

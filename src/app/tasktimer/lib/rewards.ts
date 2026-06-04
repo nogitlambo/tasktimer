@@ -165,7 +165,7 @@ export const RANK_LADDER: RankDefinition[] = [
 ];
 
 export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
-  unranked: "/insignias/badge_unranked.png",
+  unranked: "/insignias/000_unranked.png",
   initiate: "/insignias/001_initiate.png",
   operator: "/insignias/002_operator.png",
   technician: "/insignias/003_technician.png",
@@ -184,6 +184,7 @@ export const RANK_MODAL_THUMBNAIL_BY_ID: Record<string, string> = {
 };
 
 const AVAILABLE_RANK_MODAL_THUMBNAIL_SRCS = new Set([
+  "/insignias/000_unranked.png",
   "/insignias/001_initiate.png",
   "/insignias/002_operator.png",
   "/insignias/003_technician.png",
@@ -204,7 +205,7 @@ const AVAILABLE_RANK_MODAL_THUMBNAIL_SRCS = new Set([
 export const ADMIN_ACCOUNT_EMAIL = "aniven82@gmail.com";
 
 const RANK_MODAL_THUMBNAIL_FALLBACK_BY_ID: Record<string, string> = {
-  unranked: "/insignias/badge_unranked.png",
+  unranked: "/insignias/000_unranked.png",
   initiate: "/insignias/001_initiate.png",
   operator: "/insignias/002_operator.png",
   technician: "/insignias/003_technician.png",
@@ -904,6 +905,16 @@ export function buildXpProgressSubtext(totalXp: number, xpToNext: number | null)
   const nextRank = getNextRank(totalXp);
   if (xpToNext == null || !nextRank) return "Max rank reached";
   return `You are ${Math.max(0, Math.floor(Number(xpToNext) || 0)).toLocaleString()} XP away from ${nextRank.label}`;
+}
+
+export function buildRankLadderSummary(totalXp: number): string {
+  const normalizedTotalXp = Math.max(0, Math.floor(Number(totalXp) || 0));
+  const currentRank = getRankForXp(normalizedTotalXp);
+  const nextRank = getNextRank(normalizedTotalXp);
+  const currentRankLine = `Your current rank is: ${currentRank.label}.`;
+  if (!nextRank) return `${currentRankLine}\nYou have reached the highest configured rank.`;
+  const xpToNext = Math.max(0, nextRank.minXp - normalizedTotalXp).toLocaleString();
+  return `${currentRankLine}\nYou need ${xpToNext} XP to move up to ${nextRank.label}.`;
 }
 
 export function getRankById(rankId: string): RankDefinition {
