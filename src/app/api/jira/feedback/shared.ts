@@ -7,6 +7,8 @@ export function asString(value: unknown, maxLength = 0) {
   return maxLength > 0 ? normalized.slice(0, maxLength) : normalized;
 }
 
+type JiraErrorPayload = { errorMessages?: unknown; errors?: Record<string, unknown>; [key: string]: unknown } | null;
+
 function getRequiredEnv(name: string) {
   const value = asString(process.env[name]);
   if (!value) throw new Error(`Missing ${name}.`);
@@ -26,6 +28,7 @@ function getJiraAuthHeaders() {
   return {
     Authorization: `Basic ${auth}`,
     Accept: "application/json",
+    "Accept-Language": "en-US",
     "Content-Type": "application/json",
   };
 }
@@ -37,8 +40,46 @@ function getJiraAttachmentHeaders() {
   return {
     Authorization: `Basic ${auth}`,
     Accept: "application/json",
+    "Accept-Language": "en-US",
     "X-Atlassian-Token": "no-check",
   };
+}
+
+function getJiraErrorMessage(payload: JiraErrorPayload) {
+  const errorMessages = Array.isArray(payload?.errorMessages)
+    ? payload.errorMessages
+        .map((value) => asString(value))
+        .filter(Boolean)
+    : [];
+  const fieldErrors =
+    payload?.errors && typeof payload.errors === "object"
+      ? Object.values(payload.errors)
+          .map((value) => asString(value))
+          .filter(Boolean)
+      : [];
+  return errorMessages[0] || fieldErrors[0] || "";
+}
+
+function createJiraRequestError(input: {
+  operation: string;
+  status: number;
+  payload: JiraErrorPayload;
+  jiraProjectKey?: string;
+  issueTypeName?: string;
+}) {
+  const context = [
+    `HTTP ${input.status}`,
+    input.jiraProjectKey ? `project ${input.jiraProjectKey}` : "",
+    input.issueTypeName ? `issue type ${input.issueTypeName}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const jiraMessage = getJiraErrorMessage(input.payload);
+  const hint =
+    input.status === 401
+      ? "Check JIRA_EMAIL and JIRA_API_TOKEN."
+      : "Check JIRA_PROJECT_KEY, JIRA_ISSUE_TYPE_* values, the Jira API token, and Create issues permission.";
+  return new Error(`${input.operation} failed (${context})${jiraMessage ? `: ${jiraMessage}` : "."} ${hint}`);
 }
 
 function buildSubmissionSignature(input: {
@@ -86,14 +127,12 @@ async function searchJiraIssueBySubmissionLabel(input: {
     | null;
 
   if (!response.ok) {
-    const errorMessages = payload && "errorMessages" in payload && Array.isArray(payload.errorMessages) ? payload.errorMessages : [];
-    const fieldErrors =
-      payload && "errors" in payload && payload.errors && typeof payload.errors === "object"
-        ? Object.values(payload.errors)
-            .map((value) => asString(value))
-            .filter(Boolean)
-        : [];
-    throw new Error(errorMessages[0] || fieldErrors[0] || "Jira search failed.");
+    throw createJiraRequestError({
+      operation: "Jira duplicate feedback search",
+      status: response.status,
+      payload,
+      jiraProjectKey: input.jiraProjectKey,
+    });
   }
 
   const issue = payload && "issues" in payload ? payload.issues?.[0] : null;
@@ -277,9 +316,13 @@ export async function createJiraIssue(input: {
     | null;
 
   if (!response.ok) {
-    const fieldErrors = payload?.errors ? Object.values(payload.errors).filter(Boolean) : [];
-    const message = payload?.errorMessages?.[0] || fieldErrors[0] || "Jira issue creation failed.";
-    throw new Error(message);
+    throw createJiraRequestError({
+      operation: "Jira issue creation",
+      status: response.status,
+      payload,
+      jiraProjectKey,
+      issueTypeName,
+    });
   }
 
   return {
@@ -320,11 +363,11 @@ export async function uploadJiraIssueAttachment(input: {
     | { errorMessages?: string[]; errors?: Record<string, string> }
     | null;
   if (!response.ok) {
-    const fieldErrors =
-      payload && !Array.isArray(payload) && payload.errors ? Object.values(payload.errors).filter(Boolean) : [];
-    const errorMessages =
-      payload && !Array.isArray(payload) && Array.isArray(payload.errorMessages) ? payload.errorMessages : [];
-    throw new Error(errorMessages[0] || fieldErrors[0] || "Jira attachment upload failed.");
+    throw createJiraRequestError({
+      operation: "Jira attachment upload",
+      status: response.status,
+      payload: payload && !Array.isArray(payload) ? payload : null,
+    });
   }
   return Array.isArray(payload) ? payload : [];
 }
@@ -344,9 +387,11 @@ export async function syncJiraIssueVote(input: {
     const payload = (await response.json().catch(() => null)) as
       | { errorMessages?: string[]; errors?: Record<string, string> }
       | null;
-    const fieldErrors = payload?.errors ? Object.values(payload.errors).filter(Boolean) : [];
-    const message = payload?.errorMessages?.[0] || fieldErrors[0] || "Jira vote update failed.";
-    throw new Error(message);
+    throw createJiraRequestError({
+      operation: "Jira vote update",
+      status: response.status,
+      payload,
+    });
   }
 
   const issueResponse = await fetch(`${input.jiraBaseUrl}/rest/api/3/issue/${input.jiraIssueKey}?fields=description`, {
@@ -358,9 +403,11 @@ export async function syncJiraIssueVote(input: {
     | { fields?: { description?: unknown }; errorMessages?: string[]; errors?: Record<string, string> }
     | null;
   if (!issueResponse.ok) {
-    const fieldErrors = issuePayload?.errors ? Object.values(issuePayload.errors).filter(Boolean) : [];
-    const message = issuePayload?.errorMessages?.[0] || fieldErrors[0] || "Jira issue lookup failed.";
-    throw new Error(message);
+    throw createJiraRequestError({
+      operation: "Jira issue lookup",
+      status: issueResponse.status,
+      payload: issuePayload,
+    });
   }
 
   const nextDescription = upsertUpvoteLineInDescription(issuePayload?.fields?.description, input.upvoteCount);
@@ -378,9 +425,11 @@ export async function syncJiraIssueVote(input: {
     | { errorMessages?: string[]; errors?: Record<string, string> }
     | null;
   if (!updateResponse.ok) {
-    const fieldErrors = updatePayload?.errors ? Object.values(updatePayload.errors).filter(Boolean) : [];
-    const message = updatePayload?.errorMessages?.[0] || fieldErrors[0] || "Jira issue update failed.";
-    throw new Error(message);
+    throw createJiraRequestError({
+      operation: "Jira issue update",
+      status: updateResponse.status,
+      payload: updatePayload,
+    });
   }
 }
 
@@ -408,9 +457,12 @@ export async function fetchJiraIssueStatuses(input: {
         | null;
 
       if (!response.ok) {
-        const fieldErrors = payload?.errors ? Object.values(payload.errors).filter(Boolean) : [];
-        const message = payload?.errorMessages?.[0] || fieldErrors[0] || "Jira status lookup failed.";
-        throw new Error(`${jiraIssueKey}: ${message}`);
+        const error = createJiraRequestError({
+          operation: "Jira status lookup",
+          status: response.status,
+          payload,
+        });
+        throw new Error(`${jiraIssueKey}: ${error.message}`);
       }
 
       return {

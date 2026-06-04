@@ -5035,6 +5035,15 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     padding-left:8px;
     padding-right:8px;
   }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .toggleRow,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .unitRow,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .field,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane:is(.settingsHelpPane, .settingsAboutPane, .settingsDataPane) .settingsDataListItem{
+    box-sizing:border-box;
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
 }
 
 @media (min-width: 981px){

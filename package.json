@@ -21,6 +21,7 @@
     "lint": "node scripts/check-font-contract.mjs && eslint",
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
     "security:check": "node scripts/security-check.mjs",
+    "jira:check": "node scripts/check-jira-credentials.mjs",
     "media:landing-video": "node scripts/generate-landing-video.mjs",
     "avatars:webp": "node scripts/convert-toon-avatars-webp.mjs",
     "avatars:toons:webp": "npm run avatars:webp",

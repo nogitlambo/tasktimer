@@ -291,7 +291,7 @@ describe("dashboard heatmap click handling", () => {
         jumpToTaskById: () => {},
         openDashboardHeatSummaryCard: () => {},
         renderDashboardHeatTaskList: () => {},
-        openDashboardHeatTaskSummary: (dayKey, taskId) => {
+        openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => {
           calls.push({ dayKey, taskId });
           return true;
         },

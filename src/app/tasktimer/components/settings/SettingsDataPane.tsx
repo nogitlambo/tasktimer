@@ -46,7 +46,7 @@ export function SettingsDataPane({ active, exiting = false }: { active: boolean;
               {showBackupLock ? <span className="settingsPlanLockIcon" aria-hidden="true">&#128274;</span> : null}
             </button>
             <button className="menuItem settingsDataListItem settingsDataListItemDanger" id="resetAllBtn" type="button">
-              <MenuIconLabel icon="/History_Manager.svg" label="Reset All" helper="Permanently clear current local tasks and history." />
+              <MenuIconLabel icon="/History_Manager.svg" label="Reset All" helper="Permanently delete history entries and tasks." />
             </button>
           </div>
         </section>
