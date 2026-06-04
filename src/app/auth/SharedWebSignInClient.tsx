@@ -22,6 +22,11 @@ import { useRouter } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
+import {
+  clearPendingEmailLinkOnboardingHint,
+  writeLocalTaskTimerOnboardingNewUserHint,
+  writePendingEmailLinkOnboardingHint,
+} from "../tasktimer/lib/onboarding";
 import { createTaskTimerWorkspaceRepository } from "../tasktimer/lib/workspaceRepository";
 import WebSignIn from "../webSign-in";
 import { createGoogleSignInProvider, createNativeGoogleSignInOptions } from "../login/googleAuth";
@@ -261,7 +266,13 @@ export default function SharedWebSignInClient({
       setAuthError("");
       setAuthStatus("Completing sign-in...");
       try {
-        await signInWithEmailLink(auth, email, href);
+        writePendingEmailLinkOnboardingHint();
+        const result = await signInWithEmailLink(auth, email, href);
+        const uid = String(result.user?.uid || "").trim();
+        if (uid) {
+          writeLocalTaskTimerOnboardingNewUserHint(uid);
+        }
+        clearPendingEmailLinkOnboardingHint();
         try {
           localStorage.removeItem(EMAIL_LINK_STORAGE_KEY);
         } catch {
@@ -279,6 +290,7 @@ export default function SharedWebSignInClient({
         redirectAfterAuthSuccess();
         return true;
       } catch (err: unknown) {
+        clearPendingEmailLinkOnboardingHint();
         void recordNonFatal(err, {
           flow: "auth_email_link_sign_in",
           source_page: telemetrySource,

@@ -1642,16 +1642,16 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 
 .settingsMenu .settingsAvatarOption{
   width:120px;
-  min-height:156px;
+  min-height:0;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.02);
-  padding:6px 6px 8px;
+  padding:6px;
   cursor:pointer;
   overflow:hidden;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:6px;
+  gap:0;
   border-radius:0;
 }
 
@@ -1669,13 +1669,6 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   object-position:center center;
   background:rgba(13,15,19,.55);
   display:block;
-}
-
-.settingsMenu .settingsAvatarOptionLabel{
-  font-size:10px;
-  line-height:1.2;
-  color:#d8fbff;
-  text-align:center;
 }
 
 /* Final Settings Account-module override: footer-style border outline language on account controls. */
@@ -5680,15 +5673,15 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app[aria-label="TaskLaunch Account"] .accountAvatarOption{
   width:120px;
-  min-height:156px;
+  min-height:0;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:6px;
+  gap:0;
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.02);
   color:var(--text);
-  padding:6px 6px 8px;
+  padding:6px;
   cursor:pointer;
   overflow:hidden;
   border-radius:0;
@@ -5708,14 +5701,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   object-position:center center;
   background:rgba(13,15,19,.55);
   display:block;
-}
-
-#app[aria-label="TaskLaunch Account"] .accountAvatarOptionLabel{
-  max-width:100%;
-  color:#d8fbff;
-  font-size:10px;
-  line-height:1.2;
-  text-align:center;
 }
 
 @media (min-width: 981px){

@@ -294,7 +294,6 @@ export function SettingsAccountPane({
                       className="settingsAvatarOptionImg"
                       referrerPolicy={/^https?:\/\//i.test(option.src) ? "no-referrer" : undefined}
                     />
-                    <span className="settingsAvatarOptionLabel">{option.label}</span>
                   </button>
                 ))}
               </div>

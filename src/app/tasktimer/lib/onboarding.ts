@@ -32,6 +32,7 @@ export type TaskTimerOnboardingGateInput = {
   username: string | null | undefined;
   state: TaskTimerOnboardingState | null;
   preferencePresence: TaskTimerOnboardingPreferencePresence | null;
+  newUserHint?: boolean;
 };
 
 export type TaskTimerOnboardingPreferenceDraft = {
@@ -50,6 +51,14 @@ export type TaskTimerOnboardingPreferenceSource = Partial<{
 
 export function taskTimerOnboardingStorageKey(uid: string) {
   return `${STORAGE_KEY}:onboarding:v1:${uid}`;
+}
+
+export function taskTimerOnboardingNewUserHintStorageKey(uid: string) {
+  return `${STORAGE_KEY}:onboarding:newUserHint:v1:${uid}`;
+}
+
+export function taskTimerOnboardingPendingEmailLinkStorageKey() {
+  return `${STORAGE_KEY}:onboarding:pendingEmailLink:v1`;
 }
 
 function normalizeStatus(value: unknown): TaskTimerOnboardingStatus | null {
@@ -102,6 +111,63 @@ export function writeLocalTaskTimerOnboardingState(uid: string, state: TaskTimer
   }
 }
 
+export function writeLocalTaskTimerOnboardingNewUserHint(uid: string): void {
+  if (typeof window === "undefined" || !uid) return;
+  try {
+    window.localStorage.setItem(taskTimerOnboardingNewUserHintStorageKey(uid), "true");
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+export function readLocalTaskTimerOnboardingNewUserHint(uid: string): boolean {
+  if (typeof window === "undefined" || !uid) return false;
+  try {
+    return window.localStorage.getItem(taskTimerOnboardingNewUserHintStorageKey(uid)) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function clearLocalTaskTimerOnboardingNewUserHint(uid: string): void {
+  if (typeof window === "undefined" || !uid) return;
+  try {
+    window.localStorage.removeItem(taskTimerOnboardingNewUserHintStorageKey(uid));
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+export function writePendingEmailLinkOnboardingHint(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(taskTimerOnboardingPendingEmailLinkStorageKey(), "true");
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+export function clearPendingEmailLinkOnboardingHint(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(taskTimerOnboardingPendingEmailLinkStorageKey());
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+export function consumePendingEmailLinkOnboardingHint(uid: string): boolean {
+  if (typeof window === "undefined" || !uid) return false;
+  try {
+    if (window.localStorage.getItem(taskTimerOnboardingPendingEmailLinkStorageKey()) !== "true") return false;
+    writeLocalTaskTimerOnboardingNewUserHint(uid);
+    window.localStorage.removeItem(taskTimerOnboardingPendingEmailLinkStorageKey());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function accountStateDoc(uid: string) {
   const db = getFirebaseFirestoreClient();
   if (!db || !uid) return null;
@@ -141,6 +207,8 @@ export async function saveTaskTimerOnboardingState(
   if (next.onboardingStatus === "dismissed" && !next.onboardingDismissedAtMs) next.onboardingDismissedAtMs = nowMs;
 
   writeLocalTaskTimerOnboardingState(uid, next);
+  clearLocalTaskTimerOnboardingNewUserHint(uid);
+  clearPendingEmailLinkOnboardingHint();
 
   const ref = accountStateDoc(uid);
   if (ref) {
@@ -206,6 +274,7 @@ export function shouldAutoOpenTaskTimerOnboarding(input: TaskTimerOnboardingGate
   const uid = String(input.uid || "").trim();
   if (!uid) return false;
   if (input.state?.onboardingStatus === "completed" || input.state?.onboardingStatus === "dismissed") return false;
+  if (input.newUserHint) return true;
   const missingUsername = !String(input.username || "").trim();
   return missingUsername || hasIncompleteTaskTimerOnboardingPreferences(input.preferencePresence);
 }

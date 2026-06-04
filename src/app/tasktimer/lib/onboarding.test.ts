@@ -18,11 +18,19 @@ vi.mock("@/lib/firebaseFirestoreClient", () => ({
 
 import {
   buildTaskTimerOnboardingPreferenceDraft,
+  clearPendingEmailLinkOnboardingHint,
+  consumePendingEmailLinkOnboardingHint,
+  clearLocalTaskTimerOnboardingNewUserHint,
   hasIncompleteTaskTimerOnboardingPreferences,
   normalizeTaskTimerOnboardingState,
+  readLocalTaskTimerOnboardingNewUserHint,
   saveTaskTimerOnboardingState,
   shouldAutoOpenTaskTimerOnboarding,
+  taskTimerOnboardingPendingEmailLinkStorageKey,
+  taskTimerOnboardingNewUserHintStorageKey,
   taskTimerOnboardingStorageKey,
+  writePendingEmailLinkOnboardingHint,
+  writeLocalTaskTimerOnboardingNewUserHint,
 } from "./onboarding";
 
 const completePresence = {
@@ -124,6 +132,30 @@ describe("TaskTimer onboarding gating", () => {
       })
     ).toBe(false);
   });
+
+  it("auto-opens for a new email-link user hint even when preference presence is not ready", () => {
+    expect(
+      shouldAutoOpenTaskTimerOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: null,
+        preferencePresence: null,
+        newUserHint: true,
+      })
+    ).toBe(true);
+  });
+
+  it("does not auto-open from a new-user hint after onboarding is completed", () => {
+    expect(
+      shouldAutoOpenTaskTimerOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: { onboardingVersion: 1, onboardingStatus: "completed", onboardingCompletedAtMs: 1000 },
+        preferencePresence: null,
+        newUserHint: true,
+      })
+    ).toBe(false);
+  });
 });
 
 describe("normalizeTaskTimerOnboardingState", () => {
@@ -195,6 +227,19 @@ describe("buildTaskTimerOnboardingPreferenceDraft", () => {
 });
 
 describe("saveTaskTimerOnboardingState", () => {
+  it("clears the email-link new-user hint after saving onboarding state", async () => {
+    writeLocalTaskTimerOnboardingNewUserHint("uid-1");
+    writePendingEmailLinkOnboardingHint();
+
+    await saveTaskTimerOnboardingState("uid-1", {
+      onboardingStatus: "dismissed",
+    });
+
+    expect(readLocalTaskTimerOnboardingNewUserHint("uid-1")).toBe(false);
+    expect(window.localStorage.getItem(taskTimerOnboardingNewUserHintStorageKey("uid-1"))).toBeNull();
+    expect(window.localStorage.getItem(taskTimerOnboardingPendingEmailLinkStorageKey())).toBeNull();
+  });
+
   it("does not block completion when the account-state cloud write is denied", async () => {
     firebaseMocks.setDoc.mockRejectedValueOnce({ code: "permission-denied" });
 
@@ -207,5 +252,37 @@ describe("saveTaskTimerOnboardingState", () => {
     expect(result.onboardingCompletedAtMs).toBeGreaterThan(0);
     expect(window.localStorage.getItem(taskTimerOnboardingStorageKey("uid-1"))).toContain('"onboardingStatus":"completed"');
     expect(firebaseMocks.setDoc).toHaveBeenCalledOnce();
+  });
+});
+
+describe("TaskTimer onboarding new-user hint storage", () => {
+  it("stores and clears the per-user new-user hint", () => {
+    expect(readLocalTaskTimerOnboardingNewUserHint("uid-1")).toBe(false);
+
+    writeLocalTaskTimerOnboardingNewUserHint("uid-1");
+
+    expect(readLocalTaskTimerOnboardingNewUserHint("uid-1")).toBe(true);
+    expect(window.localStorage.getItem(taskTimerOnboardingNewUserHintStorageKey("uid-1"))).toBe("true");
+
+    clearLocalTaskTimerOnboardingNewUserHint("uid-1");
+
+    expect(readLocalTaskTimerOnboardingNewUserHint("uid-1")).toBe(false);
+  });
+
+  it("promotes a pending email-link hint to the signed-in user", () => {
+    writePendingEmailLinkOnboardingHint();
+
+    expect(consumePendingEmailLinkOnboardingHint("uid-1")).toBe(true);
+
+    expect(readLocalTaskTimerOnboardingNewUserHint("uid-1")).toBe(true);
+    expect(window.localStorage.getItem(taskTimerOnboardingPendingEmailLinkStorageKey())).toBeNull();
+  });
+
+  it("clears a pending email-link hint without a signed-in user", () => {
+    writePendingEmailLinkOnboardingHint();
+
+    clearPendingEmailLinkOnboardingHint();
+
+    expect(window.localStorage.getItem(taskTimerOnboardingPendingEmailLinkStorageKey())).toBeNull();
   });
 });

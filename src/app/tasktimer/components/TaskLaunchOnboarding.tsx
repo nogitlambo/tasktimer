@@ -13,8 +13,10 @@ import {
   TASKTIMER_ONBOARDING_DEFAULT_END_TIME,
   TASKTIMER_ONBOARDING_DEFAULT_START_TIME,
   buildTaskTimerOnboardingPreferenceDraft,
+  consumePendingEmailLinkOnboardingHint,
   loadRemoteTaskTimerOnboardingState,
   loadTaskTimerOnboardingPreferencePresence,
+  readLocalTaskTimerOnboardingNewUserHint,
   readLocalTaskTimerOnboardingState,
   saveTaskTimerOnboardingState,
   shouldAutoOpenTaskTimerOnboarding,
@@ -273,6 +275,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       }
 
       const localState = readLocalTaskTimerOnboardingState(nextUid);
+      const newUserHint = readLocalTaskTimerOnboardingNewUserHint(nextUid) || consumePendingEmailLinkOnboardingHint(nextUid);
 
       const [remoteState, nextPresence, claimedUsername] = await Promise.all([
         loadRemoteTaskTimerOnboardingState(nextUid).catch(() => localState),
@@ -293,6 +296,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         username: claimedUsername,
         state: remoteState || localState || null,
         preferencePresence: nextPresence,
+        newUserHint,
       });
       if (shouldOpen && !openRef.current) {
         resetDrafts(nextUid, claimedUsername, nextPresence);

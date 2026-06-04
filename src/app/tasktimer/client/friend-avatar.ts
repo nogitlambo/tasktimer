@@ -1,4 +1,5 @@
 import type { FriendProfile } from "../lib/friendsStore";
+import { normalizeBundledAvatarWebpSrc } from "../lib/avatarCatalog";
 
 type FriendAvatarEnvironment = {
   exportBasePath: string;
@@ -26,7 +27,7 @@ export function normalizeFriendAvatarSrc(src: string, env: FriendAvatarEnvironme
   const value = String(src || "").trim();
   if (!value) return "";
   if (/^(?:data:|blob:|https?:\/\/|file:)/i.test(value)) return value;
-  const normalizedValue = value.replace(/^\/tasklaunch(?=\/avatars\/)/i, "");
+  const normalizedValue = normalizeBundledAvatarWebpSrc(value.replace(/^\/tasklaunch(?=\/avatars\/)/i, ""));
   if (/^avatars\//i.test(normalizedValue)) return `/${normalizedValue}`;
   if (/^\/avatars\//i.test(normalizedValue)) {
     const usesExportedHtmlPaths =

@@ -38,6 +38,7 @@ import {
   buildGlobalLeaderboardRows,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
+  getLeaderboardAvatarSrc,
   getLeaderboardResolvedRank,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
@@ -139,6 +140,49 @@ describe("getLeaderboardResolvedRank", () => {
       label: "U",
       rankId: "unranked",
     });
+  });
+});
+
+describe("getLeaderboardAvatarSrc", () => {
+  it("maps legacy direct bundled avatar paths to WebP", () => {
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarId: "/avatars/toons/toonHead-male.svg",
+        })
+      )
+    ).toBe("/avatars/toons/toonHead-male.webp");
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarId: "/avatars/action-heroes/commando.svg",
+        })
+      )
+    ).toBe("/avatars/action-heroes/commando.webp");
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarId: "/tasklaunch/avatars/bottts/bottts-1777441132037.svg",
+        })
+      )
+    ).toBe("/tasklaunch/avatars/bottts/bottts-1777441132037.webp");
+  });
+
+  it("maps legacy custom bundled avatar paths to WebP", () => {
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarCustomSrc: "/avatars/toons/Bugs-Bunny.jpg",
+        })
+      )
+    ).toBe("/avatars/toons/Bugs-Bunny.webp");
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarCustomSrc: "/avatars/bottts/bottts-1777442377436.svg",
+        })
+      )
+    ).toBe("/avatars/bottts/bottts-1777442377436.webp");
   });
 });
 

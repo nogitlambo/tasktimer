@@ -29,7 +29,7 @@ import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
 import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import type { AppPage } from "./client/types";
-import { AVATAR_CATALOG } from "./lib/avatarCatalog";
+import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./lib/avatarCatalog";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
   ACCOUNT_PROFILE_UPDATED_EVENT,
@@ -157,7 +157,7 @@ function labelFromUser(user: User | null) {
 function resolveCurrentUserAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
   const normalizedAvatarId = String(avatarId || "").trim();
   if (normalizedAvatarId && isCustomAvatarIdForUid(uid, normalizedAvatarId)) {
-    return (
+    return normalizeBundledAvatarWebpSrc(
       findStoredCustomAvatarUploadSrc(uid, normalizedAvatarId) ||
       String(avatarCustomSrc || "").trim() ||
       readStoredCustomAvatarSrc(uid)
@@ -167,8 +167,9 @@ function resolveCurrentUserAvatarSrc(uid: string, avatarId: string, avatarCustom
   if (normalizedAvatarId) {
     const match = AVATAR_CATALOG.find((avatar) => avatar.id === normalizedAvatarId);
     if (match?.src) return match.src;
+    if (/^\/(?:tasklaunch\/)?avatars\//i.test(normalizedAvatarId)) return normalizeBundledAvatarWebpSrc(normalizedAvatarId);
   }
-  return googlePhotoUrl;
+  return normalizeBundledAvatarWebpSrc(googlePhotoUrl);
 }
 
 function withCurrentUserProfileHydration(

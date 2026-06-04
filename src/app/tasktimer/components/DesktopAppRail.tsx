@@ -17,7 +17,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
-import { AVATAR_CATALOG } from "../lib/avatarCatalog";
+import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "../lib/avatarCatalog";
 import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import { playDropdownClickAudio, playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import {
@@ -238,13 +238,16 @@ function emailFromUser(user: User | null) {
 
 function resolveAvatarSrc(uid: string, avatarId: string, avatarCustomSrc: string, googlePhotoUrl: string) {
   const normalizedAvatarId = String(avatarId || "").trim();
-  if (normalizedAvatarId && isCustomAvatarIdForUid(uid, normalizedAvatarId) && avatarCustomSrc) return avatarCustomSrc;
+  if (normalizedAvatarId && isCustomAvatarIdForUid(uid, normalizedAvatarId) && avatarCustomSrc) {
+    return normalizeBundledAvatarWebpSrc(avatarCustomSrc);
+  }
   if (normalizedAvatarId && normalizedAvatarId === googleAvatarIdForUid(uid) && googlePhotoUrl) return googlePhotoUrl;
   if (normalizedAvatarId) {
     const match = AVATAR_CATALOG.find((avatar) => avatar.id === normalizedAvatarId);
     if (match?.src) return match.src;
+    if (/^\/(?:tasklaunch\/)?avatars\//i.test(normalizedAvatarId)) return normalizeBundledAvatarWebpSrc(normalizedAvatarId);
   }
-  return googlePhotoUrl;
+  return normalizeBundledAvatarWebpSrc(googlePhotoUrl);
 }
 
 function initialsFromLabel(label: string) {

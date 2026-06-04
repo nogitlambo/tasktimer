@@ -22,6 +22,8 @@
     "validate": "npm run typecheck && npm run lint && npm run css:audit:tasktimer",
     "security:check": "node scripts/security-check.mjs",
     "media:landing-video": "node scripts/generate-landing-video.mjs",
+    "avatars:webp": "node scripts/convert-toon-avatars-webp.mjs",
+    "avatars:toons:webp": "npm run avatars:webp",
     "fonts:check": "node scripts/check-font-contract.mjs",
     "css:audit:tasktimer": "node scripts/audit-tasktimer-css.mjs",
     "css:audit:tasktimer:duplicates": "node scripts/audit-tasktimer-css.mjs --focus=duplicates",
@@ -81,6 +83,7 @@
     "eslint-config-next": "16.2.6",
     "googleapis": "^171.4.0",
     "postcss": "^8.5.12",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.5"

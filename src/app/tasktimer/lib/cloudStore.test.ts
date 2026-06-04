@@ -1,12 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   applyHistoryReplaceModeToSyncPlan,
+  buildScheduledTimeGoalPushPlan,
   buildCanonicalHistoryEntryDocId,
   buildIdentitySyncResponseError,
   isLargeImplicitHistoryDelete,
   planHistorySyncOperations,
 } from "./cloudStore";
+import type { Task } from "./types";
 
 describe("buildIdentitySyncResponseError", () => {
   it("preserves reportable identity sync response fields", async () => {
@@ -91,5 +93,55 @@ describe("buildCanonicalHistoryEntryDocId", () => {
     const retried = buildCanonicalHistoryEntryDocId("task-1", { ts: 300, ms: 400, name: "Renamed", sessionId: "session-1" });
 
     expect(retried).toBe(first);
+  });
+});
+
+function task(overrides: Partial<Task> = {}): Task {
+  return {
+    id: "task-1",
+    name: "Task 1",
+    order: 1,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestones: [],
+    hasStarted: false,
+    plannedStartPushRemindersEnabled: true,
+    ...overrides,
+  };
+}
+
+describe("buildScheduledTimeGoalPushPlan", () => {
+  it("uses planned start as the source of truth when a scheduled task is also running toward a time goal", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 5, 1, 8, 0, 0));
+
+    try {
+      const plannedStartAtMs = new Date(2026, 5, 1, 9, 0, 0).getTime();
+      const lateTimeGoalAtMs = new Date(2026, 5, 1, 22, 0, 0).getTime();
+
+      const plan = buildScheduledTimeGoalPushPlan(
+        task({
+          running: true,
+          startMs: new Date(2026, 5, 1, 8, 0, 0).getTime(),
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 14 * 60,
+          plannedStartDay: "mon",
+          plannedStartTime: "09:00",
+          plannedStartByDay: { mon: "09:00" },
+        })
+      );
+
+      expect(plan.plannedStartDueAtMs).toBe(plannedStartAtMs);
+      expect(plan.timeGoalCompleteDueAtMs).toBe(lateTimeGoalAtMs);
+      expect(plan.dueAtMs).toBe(plannedStartAtMs);
+      expect(plan.notificationKind).toBe("plannedStart");
+      expect(plan.eventType).toBe("plannedStartReminder");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

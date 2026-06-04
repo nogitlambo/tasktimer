@@ -22,7 +22,7 @@ import {
   readStoredAvatarId,
   readStoredCustomAvatarSrc,
 } from "./accountProfileStorage";
-import { AVATAR_CATALOG } from "./avatarCatalog";
+import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./avatarCatalog";
 import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
 import { getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
@@ -770,7 +770,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
 export function getLeaderboardAvatarSrc(profile: LeaderboardProfile | null | undefined): string {
   if (!profile) return "";
   const customSrc = String(profile.avatarCustomSrc || "").trim();
-  if (customSrc) return customSrc;
+  if (customSrc) return normalizeBundledAvatarWebpSrc(customSrc);
   const avatarId = String(profile.avatarId || "").trim();
   if (avatarId) {
     if (/^google\/profile-photo:/i.test(avatarId)) {
@@ -778,7 +778,9 @@ export function getLeaderboardAvatarSrc(profile: LeaderboardProfile | null | und
     }
     const builtInSrc = resolveBuiltInAvatarSrc(avatarId);
     if (builtInSrc) return builtInSrc;
-    if (/^(?:data:|blob:|https?:\/\/|file:)/i.test(avatarId) || /^\/(?:tasklaunch\/)?avatars\//i.test(avatarId)) return avatarId;
+    if (/^(?:data:|blob:|https?:\/\/|file:)/i.test(avatarId) || /^\/(?:tasklaunch\/)?avatars\//i.test(avatarId)) {
+      return normalizeBundledAvatarWebpSrc(avatarId);
+    }
   }
   const googlePhotoUrl = String(profile.googlePhotoUrl || "").trim();
   if (googlePhotoUrl) return googlePhotoUrl;

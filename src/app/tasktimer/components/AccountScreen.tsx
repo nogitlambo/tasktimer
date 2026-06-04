@@ -336,7 +336,6 @@ export default function AccountScreen() {
                     title={option.label}
                   >
                     <AppImg src={option.src} alt={option.label} className="accountAvatarOptionImg" referrerPolicy={/^https?:\/\//i.test(option.src) ? "no-referrer" : undefined} />
-                    <span className="accountAvatarOptionLabel">{option.label}</span>
                   </button>
                 ))}
               </div>
