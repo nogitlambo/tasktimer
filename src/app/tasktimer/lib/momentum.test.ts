@@ -35,15 +35,79 @@ function entry(ts: number, ms: number) {
 
 describe("computeMomentumSnapshot multiplier thresholds", () => {
   it.each([
-    [29, "Low", 1],
-    [30, "Building", 1.2],
-    [59, "Building", 1.2],
-    [60, "Strong", 1.5],
+    [39, "Low", 1],
+    [40, "Building", 1.2],
+    [69, "Building", 1.2],
+    [70, "Strong", 1.5],
     [89, "Strong", 1.5],
     [90, "Surging", 2],
   ])("maps %i momentum points to %s and x%s", (score, bandLabel, multiplier) => {
     expect(getMomentumBandLabel(score)).toBe(bandLabel);
     expect(getMomentumMultiplier(score)).toBe(multiplier);
+  });
+});
+
+describe("computeMomentumSnapshot driver weights", () => {
+  const nowValue = new Date("2026-05-05T12:00:00").getTime();
+  const todayStart = dayStartMs("2026-05-05");
+
+  it("scores weekly progress up to 35 points", () => {
+    const task = buildTask({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 60,
+    });
+    const historyByTaskId: HistoryByTaskId = {
+      [task.id]: [entry(todayStart + 60 * 60 * 1000, 60 * 60 * 1000)],
+    };
+
+    const result = computeMomentumSnapshot({
+      tasks: [task],
+      historyByTaskId,
+      weekStarting: "mon",
+      nowValue,
+    });
+
+    expect(result.weeklyProgressScore).toBe(35);
+  });
+
+  it("awards exactly 5 live bonus points for one running task", () => {
+    const runningTask = buildTask({
+      running: true,
+      startMs: nowValue,
+    });
+
+    const result = computeMomentumSnapshot({
+      tasks: [runningTask],
+      historyByTaskId: {},
+      weekStarting: "mon",
+      nowValue,
+    });
+
+    expect(result.activeSessionBonus).toBe(5);
+  });
+
+  it("keeps live bonus at 5 points for multiple running tasks", () => {
+    const runningTaskOne = buildTask({
+      id: "task-running-1",
+      running: true,
+      startMs: nowValue,
+    });
+    const runningTaskTwo = buildTask({
+      id: "task-running-2",
+      running: true,
+      startMs: nowValue,
+    });
+
+    const result = computeMomentumSnapshot({
+      tasks: [runningTaskOne, runningTaskTwo],
+      historyByTaskId: {},
+      weekStarting: "mon",
+      nowValue,
+    });
+
+    expect(result.runningTaskCount).toBe(2);
+    expect(result.activeSessionBonus).toBe(5);
   });
 });
 

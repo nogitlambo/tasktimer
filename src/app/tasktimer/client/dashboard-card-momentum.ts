@@ -16,12 +16,12 @@ export function buildMomentumDriverMessages(momentum: MomentumSnapshot) {
     consistency: consistencyMessage,
     weeklyProgress:
       weeklyPct == null
-        ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 30 momentum points. Add weekly or daily time goals to give this driver more signal.`
-        : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 30 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
+        ? `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 35 momentum points. Add weekly or daily time goals to give this driver more signal.`
+        : `Weekly Progress contributed ${Math.round(momentum.weeklyProgressScore)} of 35 momentum points from ${formatDashboardDurationShort(momentum.currentWeekLoggedMs)} logged against ${formatDashboardDurationShort(momentum.currentWeekGoalMs)} of weekly goal time, about ${weeklyPct}%.`,
     liveBonus:
       momentum.runningTaskCount > 0
-        ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 10 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`
-        : "Live Bonus contributed 0 of 10 momentum points because no task is currently running.",
+        ? `Live Bonus contributed ${Math.round(momentum.activeSessionBonus)} of 5 momentum points because ${momentum.runningTaskCount} task${momentum.runningTaskCount === 1 ? " is" : "s are"} currently running.`
+        : "Live Bonus contributed 0 of 5 momentum points because no task is currently running.",
   } satisfies Record<DashboardMomentumDriverKey, string>;
 }
 

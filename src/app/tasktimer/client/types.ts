@@ -62,7 +62,7 @@ export type DashboardCardPlacement = {
 
 export type DashboardTimelineDensity = "low" | "medium" | "high";
 export type DashboardMomentumDriverKey = "recentActivity" | "consistency" | "weeklyProgress" | "liveBonus";
-export type TaskOrderBy = "custom" | "alpha" | "schedule";
+export type TaskOrderBy = "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
 export type DashboardRenderOptions = {
   showBusy?: boolean;
   busyMessage?: string;

@@ -71,6 +71,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       taskType: "recurring",
       onceOffDay: null,
       onceOffTargetDate: null,
+      createdAtMs: Date.now(),
       order: order || 1,
       accumulatedMs: 0,
       resumePendingSinceDayKey: null,
@@ -130,6 +131,10 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
     task.taskType = task.taskType === "once-off" ? "once-off" : "recurring";
+    task.createdAtMs =
+      Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0
+        ? Math.floor(Number(task.createdAtMs))
+        : Math.max(0, Math.floor(Number(task.order) || 0));
     task.onceOffDay = task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null;
     task.onceOffTargetDate = task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null;
     task.plannedStartDay = normalizePlannedStartDay(task.plannedStartDay);

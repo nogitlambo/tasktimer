@@ -157,25 +157,34 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                               <path d="M22 79 A72 72 0 0 1 165 79" id="dashboardMomentumArcActive" fill="none" stroke="url(#momentumGaugeGradient)" strokeWidth="17" strokeLinecap="butt" filter="url(#momentumGaugeGlow)" pathLength="100" strokeDasharray="0 100" />
                               <path d="M22 79 A72 72 0 0 1 165 79" fill="none" stroke="#4b291f" strokeWidth="1.4" opacity="0.7" />
                               {(() => {
-                                const centerX = 93.5;
-                                const centerY = 79;
-                                const markerInnerRadius = 55.5;
-                                const markerOuterRadius = 72.5;
-                                const markerValues = [30, 60, 90];
+                                const arcStartX = 22;
+                                const arcEndX = 165;
+                                const arcBaseY = 79;
+                                const arcRadius = 72;
+                                const arcStrokeWidth = 17;
+                                const markerStrokeWidth = 1.35;
+                                const centerX = (arcStartX + arcEndX) / 2;
+                                const centerY = arcBaseY + Math.sqrt(arcRadius * arcRadius - Math.pow((arcEndX - arcStartX) / 2, 2));
+                                const markerInnerRadius = arcRadius - arcStrokeWidth / 2;
+                                const markerOuterRadius = arcRadius + arcStrokeWidth / 2;
+                                const arcStartAngleDeg = (Math.acos((arcStartX - centerX) / arcRadius) * 180) / Math.PI;
+                                const arcEndAngleDeg = (Math.acos((arcEndX - centerX) / arcRadius) * 180) / Math.PI;
+                                const arcSweepDeg = arcStartAngleDeg - arcEndAngleDeg;
+                                const markerValues = [40, 70, 90];
                                 const labelRadius = 46;
                                 return (
                                   <g className="dashboardMomentumMarkers" aria-hidden="true">
                                     {markerValues.map((value) => {
                                       const ratio = value / 100;
-                                      const angleDeg = 180 - ratio * 180;
+                                      const angleDeg = arcStartAngleDeg - ratio * arcSweepDeg;
                                       const angleRad = (angleDeg * Math.PI) / 180;
                                       const x1 = centerX + Math.cos(angleRad) * markerInnerRadius;
                                       const y1 = centerY - Math.sin(angleRad) * markerInnerRadius;
                                       const x2 = centerX + Math.cos(angleRad) * markerOuterRadius;
                                       const y2 = centerY - Math.sin(angleRad) * markerOuterRadius;
-                                      const tierLabel = value === 30 ? "x1.2" : value === 60 ? "x1.5" : value === 90 ? "x2.0" : "";
+                                      const tierLabel = value === 40 ? "x1.2" : value === 70 ? "x1.5" : value === 90 ? "x2.0" : "";
                                       const labelX = centerX + Math.cos(angleRad) * labelRadius;
-                                      const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 60 ? 4 : 2);
+                                      const labelY = centerY - Math.sin(angleRad) * labelRadius + (value === 70 ? 4 : 2);
                                       return (
                                         <g key={`momentum-marker-${value}`}>
                                           <line
@@ -184,8 +193,8 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                                             x2={x2}
                                             y2={y2}
                                             stroke="rgba(0, 0, 0, 0.92)"
-                                            strokeWidth="1.35"
-                                            strokeLinecap="round"
+                                            strokeWidth={markerStrokeWidth}
+                                            strokeLinecap="butt"
                                             vectorEffect="non-scaling-stroke"
                                             opacity="0.92"
                                           />

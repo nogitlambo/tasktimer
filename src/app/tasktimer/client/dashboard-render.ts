@@ -51,8 +51,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const MOMENTUM_DRIVER_DEFS = [
     { key: "recentActivity", label: "Recent activity", max: 30 },
     { key: "consistency", label: "Consistency", max: 30 },
-    { key: "weeklyProgress", label: "Weekly Progress", max: 30 },
-    { key: "liveBonus", label: "Live Bonus", max: 10 },
+    { key: "weeklyProgress", label: "Weekly Progress", max: 35 },
+    { key: "liveBonus", label: "Live Bonus", max: 5 },
   ] as const;
   const MOMENTUM_DRIVER_AUTO_RESET_MS = 10000;
   const DASHBOARD_TREND_MIN_BASELINE_MS = 15 * 60 * 1000;
@@ -120,20 +120,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function formatXpNumber(value: number) {
     return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
-  }
-
-  function formatDashboardHeatSessionDateTime(ts: number) {
-    const date = new Date(ts);
-    if (!Number.isFinite(date.getTime())) return "";
-    const month = formatTwo(date.getMonth() + 1);
-    const day = formatTwo(date.getDate());
-    const year = date.getFullYear();
-    let hours = date.getHours();
-    const minutes = formatTwo(date.getMinutes());
-    const suffix = hours >= 12 ? "PM" : "AM";
-    hours %= 12;
-    if (hours === 0) hours = 12;
-    return `${month}/${day}/${year} ${hours}:${minutes} ${suffix}`;
   }
 
   function syncXpValueAlert(valueEl: HTMLElement | null, totalXp: number, showAlert: boolean, alertClassName: string) {
@@ -2289,7 +2275,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
             const buttonLabel =
               row.entries.length === 1
                 ? `Open session summary for ${row.taskName}`
-                : `View ${row.entries.length} sessions for ${row.taskName}`;
+                : `Open combined session summary for ${row.taskName}`;
             return `<button class="dashboardHeatSummaryRow dashboardHeatSummaryRowBtn" type="button" role="listitem" data-heat-summary-mode="task" data-heat-date="${ctx.escapeHtmlUI(
               dayKey
             )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" data-heat-task-id="${ctx.escapeHtmlUI(
@@ -2305,64 +2291,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return true;
   }
 
-  function renderDashboardHeatSessionList(dayKey: string, dateLabel: string, taskIdRaw: string) {
+  function openDashboardHeatTaskSummary(dayKey: string, taskIdRaw: string) {
     const taskId = String(taskIdRaw || "").trim();
     const taskRow = getDashboardHeatDaySummaryRows(dayKey).find((row) => row.taskId === taskId) || null;
-    if (!taskRow || !els.dashboardHeatSummaryBody) return false;
-    if (taskRow.entries.length === 1) {
-      const entry = taskRow.entries[0];
-      return !!entry && openDashboardHeatSessionSummary(taskRow.taskId, { ts: entry.ts, ms: entry.ms, name: entry.name });
-    }
-    els.dashboardHeatSummaryBody.innerHTML = `
-      <div class="dashboardHeatSummaryDrilldownHead">
-        <button class="btn btn-ghost small dashboardHeatSummaryBackBtn" type="button" data-heat-summary-back="tasks" data-heat-date="${ctx.escapeHtmlUI(
-          dayKey
-        )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" aria-label="Back to task totals">
-          Back
-        </button>
-        <div class="dashboardHeatSummaryDrilldownTitle">${ctx.escapeHtmlUI(taskRow.taskName)}</div>
-      </div>
-      <div class="dashboardHeatSummaryList" role="list" aria-label="Sessions for ${ctx.escapeHtmlUI(taskRow.taskName)} on ${ctx.escapeHtmlUI(dateLabel)}">
-        ${taskRow.entries
-          .map((entry) => {
-            const metaText = formatDashboardHeatSessionDateTime(entry.ts);
-            const meta = ctx.escapeHtmlUI(metaText);
-            const buttonLabel = `${entry.name} ${formatTime(entry.ms)} ${metaText}`;
-            return `<button class="dashboardHeatSummaryRow dashboardHeatSummaryRowBtn dashboardHeatSummarySessionRow" type="button" role="listitem" data-heat-summary-mode="session" data-heat-date="${ctx.escapeHtmlUI(
-              dayKey
-            )}" data-heat-date-label="${ctx.escapeHtmlUI(dateLabel)}" data-heat-task-id="${ctx.escapeHtmlUI(
-              taskRow.taskId
-            )}" data-heat-task-name="${ctx.escapeHtmlUI(taskRow.taskName)}" data-heat-entry-ts="${ctx.escapeHtmlUI(
-              String(entry.ts)
-            )}" data-heat-entry-ms="${ctx.escapeHtmlUI(String(entry.ms))}" data-heat-entry-name="${ctx.escapeHtmlUI(
-              entry.name
-            )}" aria-label="${ctx.escapeHtmlUI(buttonLabel)}">
-              <span class="dashboardHeatSummaryTaskWrap">
-                <span class="dashboardHeatSummaryTask">${ctx.escapeHtmlUI(entry.name)}</span>
-                <span class="dashboardHeatSummaryMeta">${meta}</span>
-              </span>
-              <span class="dashboardHeatSummaryTime">${ctx.escapeHtmlUI(formatTime(entry.ms))}</span>
-            </button>`;
-          })
-          .join("")}
-      </div>
-    `;
-    return true;
-  }
-
-  function openDashboardHeatSessionSummary(taskIdRaw: string, identity: { ts: number; ms: number; name: string }) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return false;
-    const entries = Array.isArray(ctx.getHistoryByTaskId()?.[taskId]) ? ctx.getHistoryByTaskId()[taskId] : [];
-    const match =
-      entries.find(
-        (entry: any) =>
-          ctx.normalizeHistoryTimestampMs(entry?.ts) === identity.ts &&
-          Math.max(0, Number(entry?.ms) || 0) === identity.ms &&
-          String(entry?.name || "").trim() === identity.name
-      ) || null;
-    if (!match) return false;
-    ctx.openHistoryEntryNoteOverlay(taskId, [match]);
+    if (!taskRow || !taskRow.entries.length) return false;
+    ctx.openHistoryEntryNoteOverlay(taskRow.taskId, taskRow.entries);
     return true;
   }
 
@@ -2577,8 +2510,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
-    renderDashboardHeatSessionList,
     renderDashboardHeatTaskList,
-    openDashboardHeatSessionSummary,
+    openDashboardHeatTaskSummary,
   };
 }

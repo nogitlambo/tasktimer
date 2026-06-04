@@ -934,6 +934,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
                 <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">A-Z</button>
                 <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">Schedule/Time</button>
+                <button className="tasksModeMenuItem" type="button" data-task-order-by="dateAdded" role="menuitem">Date Added</button>
                 <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">Custom</button>
               </div>
             </details>
@@ -1035,6 +1036,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </button>
                       <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">
                         Schedule/Time
+                      </button>
+                      <button className="tasksModeMenuItem" type="button" data-task-order-by="dateAdded" role="menuitem">
+                        Date Added
                       </button>
                       <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">
                         Custom

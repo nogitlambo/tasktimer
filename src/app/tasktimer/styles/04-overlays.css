@@ -5852,7 +5852,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   min-width: 0;
   min-height: 54px;
   border: 1px solid color-mix(in srgb, var(--task-color) 72%, rgba(255,255,255,.34));
-  background: linear-gradient(180deg, color-mix(in srgb, var(--task-color) 82%, rgba(255,255,255,.18)), color-mix(in srgb, var(--task-color) 68%, #05070a));
+  background: rgba(5,7,10,.32);
   box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 12px color-mix(in srgb, var(--task-color) 26%, transparent);
   color: #fff;
   cursor: pointer;
@@ -5873,6 +5873,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:hover,
 #timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:focus-visible{
   border-color: color-mix(in srgb, var(--task-color) 62%, #fff);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--task-color) 82%, rgba(255,255,255,.18)), color-mix(in srgb, var(--task-color) 68%, #05070a));
   box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px color-mix(in srgb, var(--task-color) 42%, transparent);
   filter: saturate(1.12) brightness(1.06);
   outline: none;

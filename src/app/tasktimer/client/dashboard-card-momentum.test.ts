@@ -36,6 +36,17 @@ describe("dashboard momentum card module", () => {
     });
 
     expect(getPrimaryMomentumDriverKey(snapshot)).toBe("weeklyProgress");
-    expect(buildMomentumSummaryMessage(snapshot)).toContain("Weekly Progress contributed 20 of 30 momentum points");
+    expect(buildMomentumSummaryMessage(snapshot)).toContain("Weekly Progress contributed 20 of 35 momentum points");
+  });
+
+  it("describes live bonus as a flat 5-point driver", () => {
+    const snapshot = momentum({
+      score: 5,
+      activeSessionBonus: 5,
+      runningTaskCount: 2,
+    });
+
+    expect(getPrimaryMomentumDriverKey(snapshot)).toBe("liveBonus");
+    expect(buildMomentumSummaryMessage(snapshot)).toContain("Live Bonus contributed 5 of 5 momentum points");
   });
 });

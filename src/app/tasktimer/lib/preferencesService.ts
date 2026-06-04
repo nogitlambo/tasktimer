@@ -14,6 +14,8 @@ import {
 } from "./productivityPeriod";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./interactionHapticsIntensity";
 
+type TaskOrderByPreference = "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
+
 type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
@@ -39,7 +41,7 @@ type PreferencesStateSnapshot = {
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
-  taskOrderBy: "custom" | "alpha" | "schedule";
+  taskOrderBy: TaskOrderByPreference;
   autoFocusOnTaskLaunchEnabled: boolean;
   dynamicColorsEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
@@ -100,6 +102,16 @@ function parseStoredBoolean(raw: string): boolean | null {
   if (value === "true" || value === "1" || value === "on") return true;
   if (value === "false" || value === "0" || value === "off") return false;
   return null;
+}
+
+function normalizeTaskOrderBy(raw: unknown): TaskOrderByPreference {
+  const value = String(raw || "").trim();
+  if (value === "dateAddedAsc" || value === "dateAddedDesc") return value;
+  const lowerValue = value.toLowerCase();
+  if (lowerValue === "alpha") return "alpha";
+  if (lowerValue === "schedule") return "schedule";
+  if (lowerValue === "custom") return "custom";
+  return "custom";
 }
 
 export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
@@ -245,14 +257,12 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return "tile";
   }
 
-  function loadTaskOrderBy(): "custom" | "alpha" | "schedule" {
-    const cloudRaw = String(getStoredPreferencesWithoutDefaults()?.taskOrderBy || "").trim().toLowerCase();
-    if (cloudRaw === "alpha" || cloudRaw === "schedule" || cloudRaw === "custom") {
-      return cloudRaw === "alpha" ? "alpha" : cloudRaw === "schedule" ? "schedule" : "custom";
-    }
-    const localRaw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.TASK_ORDER_BY_KEY).toLowerCase() : "";
-    if (localRaw === "alpha" || localRaw === "schedule" || localRaw === "custom") return localRaw;
-    return cloudRaw === "alpha" ? "alpha" : cloudRaw === "schedule" ? "schedule" : "custom";
+  function loadTaskOrderBy(): TaskOrderByPreference {
+    const cloudRaw = String(getStoredPreferencesWithoutDefaults()?.taskOrderBy || "").trim();
+    if (cloudRaw) return normalizeTaskOrderBy(cloudRaw);
+    const localRaw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.TASK_ORDER_BY_KEY) : "";
+    if (localRaw) return normalizeTaskOrderBy(localRaw);
+    return "custom";
   }
 
   function loadAutoFocusOnTaskLaunchEnabled(): boolean {

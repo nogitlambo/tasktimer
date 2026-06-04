@@ -5027,6 +5027,14 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsDetailHead{
     display:none;
   }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane{
+    box-sizing:border-box;
+    padding-left:8px;
+    padding-right:8px;
+  }
 }
 
 @media (min-width: 981px){
@@ -5572,6 +5580,15 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   filter: sepia(1) saturate(8) hue-rotate(315deg) brightness(1.18);
 }
 
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction{
+  margin-left: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction span{
+  gap: 4px;
+}
+
 #app[aria-label="TaskLaunch Account"] .accountInlineConfirmOverlay{
   position: fixed;
   inset: 0;
@@ -5704,6 +5721,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 @media (min-width: 981px){
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction{
+    display:none;
+  }
+
 #app[aria-label="TaskLaunch Account"] .desktopAppShell{
     min-height: calc(100vh - 88px);
   }
@@ -5737,7 +5758,38 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 @media (max-width: 980px){
+#app[aria-label="TaskLaunch Account"]{
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden !important;
+  }
+
+#app[aria-label="TaskLaunch Account"] .desktopAppShell,
+  #app[aria-label="TaskLaunch Account"] .desktopAppMain,
+  #app[aria-label="TaskLaunch Account"] .accountPageList,
+  #app[aria-label="TaskLaunch Account"] .accountDashboardShell{
+    height: 100%;
+    min-height: 0;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountPageList{
+    flex: 1 1 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountDashboardShell{
+    display: flex;
+    flex-direction: column;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileActions{
+    margin-top: 0;
+  }
+
 #app[aria-label="TaskLaunch Account"] .accountDetailPanel{
+    flex: 1 1 0;
+    height: 100%;
     min-height:0;
     max-height:none;
   }
@@ -5752,7 +5804,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 @media (max-width: 640px){
 #app[aria-label="TaskLaunch Account"] .accountRouteMain{
-    min-height: calc(100vh - 76px);
+    min-height: 100dvh;
     padding: 0;
   }
 
@@ -5761,9 +5813,9 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     max-width:100%;
   }
 
-.accountProfilePage{
+#app[aria-label="TaskLaunch Account"] .accountProfilePage{
     width: 100%;
-    min-height: calc(100vh - 76px);
+    min-height: 100%;
     padding: 24px 14px 30px;
     border: 0;
     box-shadow: none;

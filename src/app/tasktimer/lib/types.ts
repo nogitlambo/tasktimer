@@ -17,6 +17,7 @@ export type Task = {
   taskType?: "recurring" | "once-off";
   onceOffDay?: TaskPlannedStartDay | null;
   onceOffTargetDate?: string | null;
+  createdAtMs?: number;
   order: number;
   accumulatedMs: number;
   resumePendingSinceDayKey?: string | null;

@@ -854,9 +854,8 @@ export type TaskTimerDashboardContext = {
   hasSelectedDashboardMomentumDriver: () => boolean;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
-  renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
-  openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
+  openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => boolean;
   navigateToAppRoute: (path: string) => void;
   jumpToTaskById: (taskId: string) => void;
 };

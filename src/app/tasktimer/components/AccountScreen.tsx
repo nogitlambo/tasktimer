@@ -142,19 +142,6 @@ export default function AccountScreen() {
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
-      <div className="topbar topbarBrandOnly" aria-label="TaskLaunch header">
-        <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
-          <AppImg
-            className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
-            src="/logo/launch-icon-original-transparent.png"
-            alt=""
-          />
-          <span className="appBrandLandingReplicaText">TaskLaunch</span>
-        </div>
-        <button className="accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
-          Back
-        </button>
-      </div>
       <div className="desktopAppShell">
         <DesktopAppRail activePage="account" useClientNavButtons={false} showMobileFooter={false} />
         <div className="desktopAppMain">
@@ -235,23 +222,7 @@ export default function AccountScreen() {
                     </button>
                   </div>
 
-                  <div className="accountProfileStatus" aria-live="polite">
-                    {account.authStatus ? <div className="accountAuthNotice">{account.authStatus}</div> : null}
-                    {account.authError ? <div className="accountAuthError">{account.authError}</div> : null}
-                    {avatar.avatarSyncNotice ? (
-                      <div className={avatar.avatarSyncNoticeIsError ? "accountAuthError" : "accountAuthNotice"}>{avatar.avatarSyncNotice}</div>
-                    ) : null}
-                    {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
-                  </div>
-
                   <div className="accountProfileActions" role="list" aria-label="Account actions">
-                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
-                      <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>{signOutActionCopy.label}</strong>
-                        <small>{signOutActionCopy.description}</small>
-                      </span>
-                    </button>
                     <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
                       <AppImg src="/icons/icons_default/trash.png" alt="" aria-hidden="true" />
                       <span>
@@ -259,6 +230,28 @@ export default function AccountScreen() {
                         <small>Permanently remove this sign-in account</small>
                       </span>
                     </button>
+                    <button className="accountProfileAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+                      <span>
+                        <strong>Back</strong>
+                        <small>Return to the previous page</small>
+                      </span>
+                    </button>
+                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
+                      <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
+                      <span>
+                        <strong>{signOutActionCopy.label}</strong>
+                        <small>{signOutActionCopy.description}</small>
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="accountProfileStatus" aria-live="polite">
+                    {account.authStatus ? <div className="accountAuthNotice">{account.authStatus}</div> : null}
+                    {account.authError ? <div className="accountAuthError">{account.authError}</div> : null}
+                    {avatar.avatarSyncNotice ? (
+                      <div className={avatar.avatarSyncNoticeIsError ? "accountAuthError" : "accountAuthNotice"}>{avatar.avatarSyncNotice}</div>
+                    ) : null}
+                    {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
                   </div>
                 </section>
                 ) : (

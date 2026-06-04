@@ -57,7 +57,7 @@ function createHarness(
   overrides: Partial<{
     tasks: Task[];
     taskView: "list" | "tile";
-    taskOrderBy: "custom" | "alpha" | "schedule";
+    taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
     appPage: string;
     tileColumnCount: number;
     historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
@@ -116,16 +116,29 @@ function createHarness(
 }
 
 describe("task list renderer", () => {
-  it("sorts displayed tasks by custom, alpha, and schedule order", () => {
+  it("sorts displayed tasks by custom, alpha, schedule, and date added order", () => {
     const tasks = [
-      task({ id: "late", name: "Zulu", order: 3, plannedStartByDay: { mon: "14:00" } }),
-      task({ id: "early", name: "Bravo", order: 2, plannedStartByDay: { mon: "08:00" } }),
-      task({ id: "unscheduled", name: "Alpha", order: 1 }),
+      task({ id: "late", name: "Zulu", order: 3, createdAtMs: 30, plannedStartByDay: { mon: "14:00" } }),
+      task({ id: "early", name: "Bravo", order: 2, createdAtMs: 10, plannedStartByDay: { mon: "08:00" } }),
+      task({ id: "unscheduled", name: "Alpha", order: 1, createdAtMs: 20 }),
     ];
 
     expect(buildDisplayedTasks(tasks, "custom").map((entry) => entry.id)).toEqual(["unscheduled", "early", "late"]);
     expect(buildDisplayedTasks(tasks, "alpha").map((entry) => entry.id)).toEqual(["unscheduled", "early", "late"]);
     expect(buildDisplayedTasks(tasks, "schedule").map((entry) => entry.id)).toEqual(["early", "late", "unscheduled"]);
+    expect(buildDisplayedTasks(tasks, "dateAddedAsc").map((entry) => entry.id)).toEqual(["early", "unscheduled", "late"]);
+    expect(buildDisplayedTasks(tasks, "dateAddedDesc").map((entry) => entry.id)).toEqual(["late", "unscheduled", "early"]);
+  });
+
+  it("falls back to custom order for date added sorting when legacy tasks have no created timestamp", () => {
+    const tasks = [
+      task({ id: "late", name: "Zulu", order: 3 }),
+      task({ id: "early", name: "Bravo", order: 2 }),
+      task({ id: "first", name: "Alpha", order: 1 }),
+    ];
+
+    expect(buildDisplayedTasks(tasks, "dateAddedAsc").map((entry) => entry.id)).toEqual(["first", "early", "late"]);
+    expect(buildDisplayedTasks(tasks, "dateAddedDesc").map((entry) => entry.id)).toEqual(["late", "early", "first"]);
   });
 
   it("leaves the task list empty and runs post-render syncs when no tasks exist", () => {

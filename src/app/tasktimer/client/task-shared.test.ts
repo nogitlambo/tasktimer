@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Task } from "../lib/types";
 import { createTaskTimerSharedTask } from "./task-shared";
 
 describe("createTaskTimerSharedTask checkpoint validation", () => {
@@ -26,5 +27,24 @@ describe("createTaskTimerSharedTask checkpoint validation", () => {
         3600
       )
     ).toBe(false);
+  });
+
+  it("normalizes missing task creation timestamps from custom order", () => {
+    const task = {
+      id: "task-1",
+      name: "Focus",
+      order: 7,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestones: [],
+      hasStarted: false,
+    } as Task;
+
+    sharedTasks.normalizeLoadedTask(task);
+
+    expect(task.createdAtMs).toBe(7);
   });
 });

@@ -11,7 +11,7 @@ type TaskListRendererOptions = {
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
   getTaskView: () => "list" | "tile";
-  getTaskOrderBy: () => "custom" | "alpha" | "schedule";
+  getTaskOrderBy: () => "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
   getTileColumnCount: () => number;
   setCurrentTileColumnCount: (value: number) => void;
   getOpenHistoryTaskIds: () => Set<string>;
@@ -86,10 +86,34 @@ function compareTasksBySchedule(a: Task, b: Task) {
   return compareTasksByCustomOrder(a, b);
 }
 
-export function buildDisplayedTasks(tasks: Task[], taskOrderBy: "custom" | "alpha" | "schedule") {
+function getTaskCreatedAtMsForSort(task: Task | null | undefined) {
+  const createdAtMs = Number(task?.createdAtMs);
+  if (Number.isFinite(createdAtMs) && createdAtMs > 0) return Math.floor(createdAtMs);
+  return Math.max(0, Math.floor(Number(task?.order) || 0));
+}
+
+function compareTasksByDateAddedAsc(a: Task, b: Task) {
+  const createdCompare = getTaskCreatedAtMsForSort(a) - getTaskCreatedAtMsForSort(b);
+  if (createdCompare !== 0) return createdCompare;
+  const customCompare = compareTasksByCustomOrder(a, b);
+  if (customCompare !== 0) return customCompare;
+  return normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
+}
+
+function compareTasksByDateAddedDesc(a: Task, b: Task) {
+  const createdCompare = getTaskCreatedAtMsForSort(b) - getTaskCreatedAtMsForSort(a);
+  if (createdCompare !== 0) return createdCompare;
+  const customCompare = compareTasksByCustomOrder(a, b);
+  if (customCompare !== 0) return customCompare;
+  return normalizeTaskNameForSort(a).localeCompare(normalizeTaskNameForSort(b));
+}
+
+export function buildDisplayedTasks(tasks: Task[], taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc") {
   const nextTasks = tasks.slice();
   if (taskOrderBy === "alpha") return nextTasks.sort(compareTasksByAlpha);
   if (taskOrderBy === "schedule") return nextTasks.sort(compareTasksBySchedule);
+  if (taskOrderBy === "dateAddedAsc") return nextTasks.sort(compareTasksByDateAddedAsc);
+  if (taskOrderBy === "dateAddedDesc") return nextTasks.sort(compareTasksByDateAddedDesc);
   return nextTasks.sort(compareTasksByCustomOrder);
 }
 

@@ -144,15 +144,15 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
   return [
     {
       kind: "link",
-      label: "User Guide",
-      href: resolveTaskTimerRouteHref("/user-guide"),
-      iconSrc: "/User_Guide.svg",
-    },
-    {
-      kind: "link",
       label: "Settings",
       href: resolveTaskTimerRouteHref("/settings"),
       iconSrc: "/icons/icons_default/settings.png",
+    },
+    {
+      kind: "link",
+      label: "User Guide",
+      href: resolveTaskTimerRouteHref("/user-guide"),
+      iconSrc: "/User_Guide.svg",
     },
     {
       kind: "signOut",
@@ -511,15 +511,6 @@ export default function TaskTimerAppFrame({
           onTouchCancel={handleMobileMenuPanelTouchEnd}
         >
           <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
-          <div className="taskLaunchMobileMenuHeader" aria-label="TaskLaunch">
-            <AppImg
-              className="taskLaunchMobileMenuHeaderIcon"
-              src="/logo/launch-icon-original-transparent.png"
-              alt=""
-              aria-hidden="true"
-            />
-            <span className="taskLaunchMobileMenuHeaderText">TASKLAUNCH</span>
-          </div>
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
             {getTaskLaunchMobileMenuItems().map((item) =>
               item.kind === "link" ? (

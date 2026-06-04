@@ -250,6 +250,7 @@ Allowed fields (`isPreferencesV1`):
 - `menuButtonStyle: "square"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
 - `taskView: "list" | "tile"`
+- `taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc"`
 - `autoFocusOnTaskLaunchEnabled: bool`
 - `dynamicColorsEnabled: bool`
 - `checkpointAlertSoundEnabled: bool`
@@ -365,6 +366,7 @@ Allowed fields (`isTaskDoc`):
 Runtime mapping notes (`cloudStore.ts`):
 
 - App `Task` and Firestore now both persist `checkpoints*` and `milestones*` fields.
+- Firestore `createdAt` is mapped to local `Task.createdAtMs` for Date Added sorting.
 
 Legacy subcollection:
 

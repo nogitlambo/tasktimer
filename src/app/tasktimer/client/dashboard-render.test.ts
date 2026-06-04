@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildMomentumSummaryMessage, createTaskTimerDashboardRender, getPrimaryMomentumDriverKey } from "./dashboard-render";
 import { startOfCurrentWeekMs } from "../lib/historyChart";
+import { localDayKey } from "../lib/history";
 import type { MomentumSnapshot } from "../lib/momentum";
 import type { Task } from "../lib/types";
 
@@ -164,6 +165,7 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardHeatMonthLabel");
   register("dashboardHeatWeekdays");
   register("dashboardHeatCalendarGrid");
+  register("dashboardHeatSummaryBody");
   register("dashboardActivityChartGrid");
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
@@ -223,13 +225,14 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
 function createRenderHarness(
   tasks: Task[],
   options?: {
-    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number; color?: string }>>;
+    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number; color?: string; note?: string }>>;
     hasEntitlement?: boolean;
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
+  const openSummaryCalls: Array<{ taskId: string; entries: Array<{ ts: number; name: string; ms: number; note?: string }> }> = [];
   const originalDocument = globalThis.document;
   Object.defineProperty(globalThis, "document", {
     configurable: true,
@@ -256,6 +259,7 @@ function createRenderHarness(
       dashboardHeatMonthLabel: byId.get("dashboardHeatMonthLabel"),
       dashboardHeatWeekdays: byId.get("dashboardHeatWeekdays"),
       dashboardHeatCalendarGrid: byId.get("dashboardHeatCalendarGrid"),
+      dashboardHeatSummaryBody: byId.get("dashboardHeatSummaryBody"),
     } as never,
     getRewardProgress: () => (options?.rewardProgress || {}) as never,
     getTasks: () => tasks,
@@ -281,7 +285,9 @@ function createRenderHarness(
     normalizeHistoryTimestampMs: (value) => Number(value) || 0,
     getModeColor: () => "#00ffff",
     addRangeMsToLocalDayMap: () => {},
-    openHistoryEntryNoteOverlay: () => {},
+    openHistoryEntryNoteOverlay: (taskId, entries) => {
+      openSummaryCalls.push({ taskId, entries: entries as Array<{ ts: number; name: string; ms: number; note?: string }> });
+    },
     hasEntitlement: () => options?.hasEntitlement ?? true,
     getCurrentPlan: () => "pro",
   });
@@ -296,6 +302,9 @@ function createRenderHarness(
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
     renderHeat: () => dashboardRender.renderDashboardHeatCalendar(),
+    renderHeatTaskList: (dayKey: string, dateLabel = dayKey) => dashboardRender.renderDashboardHeatTaskList(dayKey, dateLabel),
+    openHeatTaskSummary: (dayKey: string, taskId: string) => dashboardRender.openDashboardHeatTaskSummary(dayKey, taskId),
+    openSummaryCalls,
     restore: () => {
       ElementStub.labelRectOverride = null;
       Object.defineProperty(globalThis, "document", {
@@ -443,6 +452,103 @@ describe("dashboard availability", () => {
 
       expect(gridHtml).toContain("data-heat-date");
       expect(gridHtml).not.toContain('aria-hidden="true"><span class="dashboardHeatDayNum">1</span>');
+    } finally {
+      harness.restore();
+    }
+  });
+});
+
+describe("dashboard heatmap summaries", () => {
+  function middayToday(offsetHours = 0) {
+    const date = new Date();
+    date.setHours(12 + offsetHours, 0, 0, 0);
+    return date.getTime();
+  }
+
+  it("opens a combined session summary for all same-day task entries", () => {
+    const firstTs = middayToday(-1);
+    const secondTs = middayToday(1);
+    const otherDayTs = firstTs - 24 * 60 * 60 * 1000;
+    const dayKey = localDayKey(firstTs);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" }), task({ id: "admin", name: "Admin" })],
+      {
+        historyByTaskId: {
+          focus: [
+            { ts: firstTs, name: "Focus", ms: 30 * 60 * 1000, note: "First" },
+            { ts: secondTs, name: "Focus", ms: 45 * 60 * 1000, note: "Second" },
+            { ts: otherDayTs, name: "Focus", ms: 15 * 60 * 1000, note: "Yesterday" },
+          ],
+          admin: [{ ts: firstTs, name: "Admin", ms: 10 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      expect(harness.openHeatTaskSummary(dayKey, "focus")).toBe(true);
+
+      expect(harness.openSummaryCalls).toHaveLength(1);
+      expect(harness.openSummaryCalls[0]?.taskId).toBe("focus");
+      expect(harness.openSummaryCalls[0]?.entries).toEqual([
+        { ts: secondTs, ms: 45 * 60 * 1000, name: "Focus", note: "Second" },
+        { ts: firstTs, ms: 30 * 60 * 1000, name: "Focus", note: "First" },
+      ]);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("opens a single-session summary for one same-day task entry", () => {
+    const ts = middayToday();
+    const dayKey = localDayKey(ts);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        historyByTaskId: {
+          focus: [{ ts, name: "Focus", ms: 30 * 60 * 1000 }],
+        },
+      }
+    );
+
+    try {
+      expect(harness.openHeatTaskSummary(dayKey, "focus")).toBe(true);
+
+      expect(harness.openSummaryCalls).toEqual([
+        {
+          taskId: "focus",
+          entries: [{ ts, ms: 30 * 60 * 1000, name: "Focus", note: undefined }],
+        },
+      ]);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders task rows without heatmap session drilldown hooks", () => {
+    const firstTs = middayToday(-1);
+    const secondTs = middayToday(1);
+    const dayKey = localDayKey(firstTs);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        historyByTaskId: {
+          focus: [
+            { ts: firstTs, name: "Focus", ms: 30 * 60 * 1000 },
+            { ts: secondTs, name: "Focus", ms: 45 * 60 * 1000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      expect(harness.renderHeatTaskList(dayKey, "Today")).toBe(true);
+      const html = harness.byId.get("dashboardHeatSummaryBody")?.innerHTML || "";
+
+      expect(html).toContain('data-heat-summary-mode="task"');
+      expect(html).toContain("Open combined session summary for Focus");
+      expect(html).not.toContain('data-heat-summary-mode="session"');
+      expect(html).not.toContain("data-heat-summary-back");
+      expect(html).not.toContain("dashboardHeatSummarySessionRow");
     } finally {
       harness.restore();
     }
@@ -764,7 +870,7 @@ describe("momentum summary copy", () => {
     };
 
     expect(getPrimaryMomentumDriverKey(momentum)).toBe("weeklyProgress");
-    expect(buildMomentumSummaryMessage(momentum)).toContain("Weekly Progress contributed 20 of 30 momentum points");
+    expect(buildMomentumSummaryMessage(momentum)).toContain("Weekly Progress contributed 20 of 35 momentum points");
     expect(buildMomentumSummaryMessage(momentum)).not.toContain("driven by 3 active days this week");
   });
 

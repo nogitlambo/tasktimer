@@ -37,8 +37,8 @@ type MomentumComputationContext = {
 };
 
 const MOMENTUM_THRESHOLDS = {
-  building: 30,
-  strong: 60,
+  building: 40,
+  strong: 70,
   surging: 90,
 } as const;
 const RECENT_ACTIVITY_DAY_WEIGHTS: readonly [number, number, number] = [1, 0.65, 0.35];
@@ -48,8 +48,8 @@ const MOMENTUM_RECENT_ACTIVITY_SELECTED_DAYS_MAX = 25;
 const MOMENTUM_RECENT_ACTIVITY_OFF_DAY_BONUS_MAX = 5;
 const MOMENTUM_CONSISTENCY_ACTIVE_DAYS_MAX = 18;
 const MOMENTUM_CONSISTENCY_STREAK_MAX = 12;
-const MOMENTUM_WEEKLY_PROGRESS_MAX = 30;
-const MOMENTUM_LIVE_BONUS_MAX = 10;
+const MOMENTUM_WEEKLY_PROGRESS_MAX = 35;
+const MOMENTUM_LIVE_BONUS_MAX = 5;
 const DAY_MS = 86400000;
 
 function clampMomentumScore(value: number): number {
@@ -212,7 +212,7 @@ export function computeMomentumSnapshot(ctx: MomentumComputationContext): Moment
 
   const weeklyProgressRatio = currentWeekGoalMs > 0 ? currentWeekLoggedMs / currentWeekGoalMs : 0;
   const weeklyProgressScore = Math.max(0, Math.min(MOMENTUM_WEEKLY_PROGRESS_MAX, weeklyProgressRatio * MOMENTUM_WEEKLY_PROGRESS_MAX));
-  const activeSessionBonus = Math.min(MOMENTUM_LIVE_BONUS_MAX, runningTaskCount > 0 ? 6 + Math.min(4, runningTaskCount - 1) : 0);
+  const activeSessionBonus = runningTaskCount > 0 ? MOMENTUM_LIVE_BONUS_MAX : 0;
 
   const score = clampMomentumScore(recentActivityScore + consistencyScore + weeklyProgressScore + activeSessionBonus);
   const hasSignal =

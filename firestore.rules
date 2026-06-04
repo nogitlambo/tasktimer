@@ -213,7 +213,7 @@ service cloud.firestore {
       && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
       && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "friends", "leaderboard"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
-      && (!("taskOrderBy" in request.resource.data) || request.resource.data.taskOrderBy in ["custom", "alpha", "schedule"])
+      && (!("taskOrderBy" in request.resource.data) || request.resource.data.taskOrderBy in ["custom", "alpha", "schedule", "dateAddedAsc", "dateAddedDesc"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
       && (!("mobilePushAlertsEnabled" in request.resource.data) || request.resource.data.mobilePushAlertsEnabled is bool)
       && (!("webPushAlertsEnabled" in request.resource.data) || request.resource.data.webPushAlertsEnabled is bool)

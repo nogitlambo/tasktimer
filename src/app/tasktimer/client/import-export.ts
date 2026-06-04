@@ -124,6 +124,10 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     const nextTask = ctx.makeTask(String(rawTask.name || "Task"), 1);
     nextTask.id = String(rawTask.id || ctx.createId());
     nextTask.order = Number.isFinite(+rawTask.order) ? +rawTask.order : 1;
+    nextTask.createdAtMs =
+      Number.isFinite(Number(rawTask.createdAtMs)) && Number(rawTask.createdAtMs) > 0
+        ? Math.floor(Number(rawTask.createdAtMs))
+        : Math.max(0, Math.floor(Number(nextTask.order) || 0));
     nextTask.accumulatedMs = Number.isFinite(+rawTask.accumulatedMs) ? Math.max(0, +rawTask.accumulatedMs) : 0;
     nextTask.running = false;
     nextTask.startMs = null;

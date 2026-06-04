@@ -310,6 +310,10 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? plannedStartDay : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
+    createdAtMs:
+      Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0
+        ? Math.floor(Number(task.createdAtMs))
+        : Math.max(0, Math.floor(Number(task.order) || 0)),
     timeGoalAction,
     timeGoalEnabled: !!task.timeGoalEnabled,
     timeGoalValue: Number.isFinite(Number(task.timeGoalValue)) ? Math.max(0, Number(task.timeGoalValue)) : 0,

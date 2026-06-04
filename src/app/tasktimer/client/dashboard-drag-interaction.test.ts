@@ -139,8 +139,7 @@ function makeDashboardContext() {
     jumpToTaskById: () => {},
     openDashboardHeatSummaryCard: () => {},
     renderDashboardHeatTaskList: () => {},
-    renderDashboardHeatSessionList: () => {},
-    openDashboardHeatSessionSummary: () => {},
+    openDashboardHeatTaskSummary: () => {},
     selectDashboardMomentumDriver: () => {},
     hasSelectedDashboardMomentumDriver: () => false,
     clearDashboardMomentumDriverSelection: () => {},
@@ -230,6 +229,93 @@ describe("dashboard drag interaction guards", () => {
       expect(taskOverview?.style["grid-row-start"]).toBeUndefined();
       expect(harness.cardsById.get("activity-overview")?.parentElement).toBe(harness.grid);
     } finally {
+      harness.restore();
+    }
+  });
+});
+
+describe("dashboard heatmap click handling", () => {
+  function makeAttributeTarget(selector: string, attrs: Record<string, string>) {
+    return {
+      closest: (candidate: string) =>
+        candidate === selector
+          ? {
+              getAttribute: (name: string) => attrs[name] ?? null,
+            }
+          : null,
+    };
+  }
+
+  it("opens the task-level heatmap summary from task rows", () => {
+    const harness = makeDashboardContext();
+    const calls: Array<{ dayKey: string; taskId: string }> = [];
+    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
+    const originalWindow = (globalThis as { window?: unknown }).window;
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: {},
+      });
+
+      const dashboardWithTaskSummary = createTaskTimerDashboard({
+        els: { dashboardGrid: harness.grid, appPageDashboard: harness.grid } as never,
+        getCloudDashboardCache: () => null,
+        loadCachedDashboard: () => null,
+        setCloudDashboardCache: () => {},
+        saveCloudDashboard: () => {},
+        getDashboardCardVisibility: () => ({ momentum: false, heatmap: false }),
+        setDashboardCardVisibility: () => {},
+        getDashboardCardSizes: () => ({ momentum: "half" }),
+        setDashboardCardSizes: () => {},
+        getDashboardCardPlacements: () => ({ momentum: { col: 7, row: 4 } }),
+        setDashboardCardPlacements: () => {},
+        syncDashboardRefreshButtonUi: () => {},
+        syncDashboardMenuFlipUi: () => {},
+        setDashboardEditMode: () => {},
+        setDashboardDragEl: () => {},
+        renderDashboardWidgets: () => {},
+        on: (_target: unknown, type: string, handler: (event: unknown) => void) => {
+          if (_target === harness.grid && type === "click") {
+            handler({
+              target: makeAttributeTarget("[data-heat-summary-mode='task'][data-heat-task-id][data-heat-date]", {
+                "data-heat-date": "2026-06-05",
+                "data-heat-task-id": "focus",
+              }),
+              preventDefault: () => calls.push({ dayKey: "prevented", taskId: "default" }),
+            });
+          }
+        },
+        hasEntitlement: () => true,
+        navigateToAppRoute: () => {},
+        jumpToTaskById: () => {},
+        openDashboardHeatSummaryCard: () => {},
+        renderDashboardHeatTaskList: () => {},
+        openDashboardHeatTaskSummary: (dayKey, taskId) => {
+          calls.push({ dayKey, taskId });
+          return true;
+        },
+        selectDashboardMomentumDriver: () => {},
+        hasSelectedDashboardMomentumDriver: () => false,
+        clearDashboardMomentumDriverSelection: () => {},
+        closeDashboardHeatSummaryCard: () => {},
+      } as never);
+
+      dashboardWithTaskSummary.registerDashboardEvents();
+
+      expect(calls).toEqual([
+        { dayKey: "2026-06-05", taskId: "focus" },
+        { dayKey: "prevented", taskId: "default" },
+      ]);
+    } finally {
+      if (hadWindow) {
+        Object.defineProperty(globalThis, "window", {
+          configurable: true,
+          value: originalWindow,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
       harness.restore();
     }
   });

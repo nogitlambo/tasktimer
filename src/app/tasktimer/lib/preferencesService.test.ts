@@ -213,6 +213,46 @@ describe("createTaskTimerPreferencesService", () => {
     expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
   });
 
+  it("loads date added task order values from cloud and local storage", () => {
+    window.localStorage.setItem(storageKeys.TASK_ORDER_BY_KEY, "dateAddedDesc");
+
+    expect(createService().loadTaskOrderBy()).toBe("dateAddedDesc");
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), taskOrderBy: "dateAddedAsc" },
+      }).loadTaskOrderBy()
+    ).toBe("dateAddedAsc");
+  });
+
+  it("persists date added task order values", () => {
+    const savePreferences = vi.fn();
+    const setCloudPreferencesCache = vi.fn();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      repository: {
+        loadCachedPreferences: () => null,
+        buildDefaultPreferences,
+        savePreferences,
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      taskOrderBy: "dateAddedDesc",
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("dateAddedDesc");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
+    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
+  });
+
   it("normalizes missing and legacy menu button styles to square", () => {
     window.localStorage.setItem(storageKeys.MENU_BUTTON_STYLE_KEY, "legacy-shape");
 

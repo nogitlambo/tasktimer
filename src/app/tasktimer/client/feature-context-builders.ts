@@ -698,9 +698,8 @@ type CreateDashboardOptionsArgs = {
   hasSelectedDashboardMomentumDriver: () => boolean;
   openDashboardHeatSummaryCard: (dayKey: string, dateLabel: string) => void;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
-  renderDashboardHeatSessionList: (dayKey: string, dateLabel: string, taskId: string) => boolean;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
-  openDashboardHeatSessionSummary: (taskId: string, identity: { ts: number; ms: number; name: string }) => boolean;
+  openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => boolean;
   navigateToAppRoute: (path: string) => void;
   jumpToTaskById: (taskId: string) => void;
 };
@@ -724,9 +723,8 @@ type CreateDashboardFeatureOptionsArgs = {
     | "hasSelectedDashboardMomentumDriver"
     | "openDashboardHeatSummaryCard"
     | "closeDashboardHeatSummaryCard"
-    | "renderDashboardHeatSessionList"
     | "renderDashboardHeatTaskList"
-    | "openDashboardHeatSessionSummary"
+    | "openDashboardHeatTaskSummary"
   >;
 };
 
@@ -871,7 +869,7 @@ export function createTaskTimerPreferencesContext(
     setTaskViewState: (value) => {
       args.preferencesState.set("taskView", value);
     },
-    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),
+    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc">(args.preferencesState.get("taskOrderBy")),
     setTaskOrderByState: (value) => {
       args.preferencesState.set("taskOrderBy", value);
     },
@@ -1205,7 +1203,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getGroupsFriendships: () => asType<Friendship[]>(args.groupsState.get("groupsFriendships")),
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getTaskView: () => asType<"list" | "tile">(args.preferencesState.get("taskView")),
-    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule">(args.preferencesState.get("taskOrderBy")),
+    getTaskOrderBy: () => asType<"custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc">(args.preferencesState.get("taskOrderBy")),
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getCurrentTileColumnCount: () => asType<number>(args.appRuntimeState.get("currentTileColumnCount")),
     setCurrentTileColumnCount: (value) => args.appRuntimeState.set("currentTileColumnCount", value),
@@ -1591,9 +1589,8 @@ export function createTaskTimerDashboardContext(
     hasSelectedDashboardMomentumDriver: args.hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard: args.openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard: args.closeDashboardHeatSummaryCard,
-    renderDashboardHeatSessionList: args.renderDashboardHeatSessionList,
     renderDashboardHeatTaskList: args.renderDashboardHeatTaskList,
-    openDashboardHeatSessionSummary: args.openDashboardHeatSessionSummary,
+    openDashboardHeatTaskSummary: args.openDashboardHeatTaskSummary,
     navigateToAppRoute: args.navigateToAppRoute,
     jumpToTaskById: args.jumpToTaskById,
   };
@@ -1613,9 +1610,8 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     hasSelectedDashboardMomentumDriver,
     openDashboardHeatSummaryCard,
     closeDashboardHeatSummaryCard,
-    renderDashboardHeatSessionList,
     renderDashboardHeatTaskList,
-    openDashboardHeatSessionSummary,
+    openDashboardHeatTaskSummary,
   } = dashboardRenderApi;
 
   let dashboardBusyApi: { isBusy: () => boolean } = { isBusy: () => false };
@@ -1649,10 +1645,8 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       openDashboardHeatSummaryCard: (dayKey, dateLabel) =>
         openDashboardHeatSummaryCard(dayKey, dateLabel),
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
-      renderDashboardHeatSessionList: (dayKey, dateLabel, taskId) =>
-        renderDashboardHeatSessionList(dayKey, dateLabel, taskId),
       renderDashboardHeatTaskList: (dayKey, dateLabel) => renderDashboardHeatTaskList(dayKey, dateLabel),
-      openDashboardHeatSessionSummary: (taskId, identity) => openDashboardHeatSessionSummary(taskId, identity),
+      openDashboardHeatTaskSummary: (dayKey, taskId) => openDashboardHeatTaskSummary(dayKey, taskId),
     })
   );
 

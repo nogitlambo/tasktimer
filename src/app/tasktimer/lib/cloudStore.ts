@@ -57,7 +57,7 @@ export type UserPreferencesV1 = {
   menuButtonStyle: "square";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
-  taskOrderBy: "custom" | "alpha" | "schedule";
+  taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
@@ -472,6 +472,20 @@ function pickSupportedUserRootFields(data: Record<string, unknown> | null): Reco
 
 function isTimestampLike(value: unknown): boolean {
   return !!value && typeof value === "object" && typeof (value as { toMillis?: unknown }).toMillis === "function";
+}
+
+function timestampLikeToMillis(value: unknown): number | null {
+  if (!isTimestampLike(value)) return null;
+  const millis = Number((value as { toMillis: () => number }).toMillis());
+  return Number.isFinite(millis) && millis > 0 ? Math.floor(millis) : null;
+}
+
+function normalizeTaskOrderBy(raw: unknown): UserPreferencesV1["taskOrderBy"] {
+  const value = String(raw || "").trim();
+  if (value === "dateAddedAsc" || value === "dateAddedDesc") return value;
+  if (value === "alpha") return "alpha";
+  if (value === "schedule") return "schedule";
+  return "custom";
 }
 
 function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | null): Record<string, unknown> {
@@ -1119,6 +1133,11 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
       ? row.resumePendingSinceDayKey
       : null;
   row.taskType = row.taskType === "once-off" ? "once-off" : "recurring";
+  row.createdAtMs =
+    timestampLikeToMillis(row.createdAt) ||
+    (Number.isFinite(Number(row.createdAtMs)) && Number(row.createdAtMs) > 0
+      ? Math.floor(Number(row.createdAtMs))
+      : Math.max(0, Math.floor(Number(row.order) || 0)));
   row.onceOffDay = row.taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null;
   row.onceOffTargetDate = row.taskType === "once-off" ? normalizeLocalDateValue(row.onceOffTargetDate) : null;
   row.plannedStartDay = normalizePlannedStartDay(row.plannedStartDay);
@@ -1452,12 +1471,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         menuButtonStyle: "square",
         startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
         taskView: "tile",
-        taskOrderBy:
-          prefSnap.get("taskOrderBy") === "alpha"
-            ? "alpha"
-            : prefSnap.get("taskOrderBy") === "schedule"
-              ? "schedule"
-              : "custom",
+        taskOrderBy: normalizeTaskOrderBy(prefSnap.get("taskOrderBy")),
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
         mobilePushAlertsEnabled: asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
@@ -2054,7 +2068,7 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
     menuButtonStyle: "square",
     startupModule: normalizeStartupModule(data.startupModule),
     taskView: "tile",
-    taskOrderBy: data.taskOrderBy === "alpha" ? "alpha" : data.taskOrderBy === "schedule" ? "schedule" : "custom",
+    taskOrderBy: normalizeTaskOrderBy(data.taskOrderBy),
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
     mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),

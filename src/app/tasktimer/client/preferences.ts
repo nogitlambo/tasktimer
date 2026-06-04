@@ -168,7 +168,28 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   function getTaskOrderByLabel(value: TaskOrderBy) {
     if (value === "alpha") return "A-Z";
     if (value === "schedule") return "Schedule/Time";
+    if (value === "dateAddedAsc") return "Date Added ↑";
+    if (value === "dateAddedDesc") return "Date Added ↓";
     return "Custom";
+  }
+
+  function normalizeTaskOrderByValue(raw: unknown): TaskOrderBy {
+    const value = String(raw || "").trim();
+    if (value === "dateAddedAsc" || value === "dateAddedDesc") return value;
+    if (value === "alpha") return "alpha";
+    if (value === "schedule") return "schedule";
+    return "custom";
+  }
+
+  function resolveClickedTaskOrderBy(raw: unknown): TaskOrderBy {
+    const value = String(raw || "").trim();
+    if (value === "dateAdded") {
+      const current = ctx.getTaskOrderBy();
+      if (current === "dateAddedAsc") return "dateAddedDesc";
+      if (current === "dateAddedDesc") return "dateAddedAsc";
+      return "dateAddedAsc";
+    }
+    return normalizeTaskOrderByValue(value);
   }
 
   function getLiveTaskOrderByMenus() {
@@ -194,8 +215,14 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     getLiveTaskOrderByMenus().forEach((menuEl) => {
       Array.from(menuEl.querySelectorAll<HTMLElement>(".tasksModeMenuItem[data-task-order-by]")).forEach((item) => {
-        const itemValue = item.dataset.taskOrderBy === "alpha" ? "alpha" : item.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
-        const isOn = itemValue === taskOrderBy;
+        const itemValue = String(item.dataset.taskOrderBy || "");
+        const isOn =
+          itemValue === "dateAdded"
+            ? taskOrderBy === "dateAddedAsc" || taskOrderBy === "dateAddedDesc"
+            : normalizeTaskOrderByValue(itemValue) === taskOrderBy;
+        if (itemValue === "dateAdded") {
+          item.textContent = taskOrderBy === "dateAddedDesc" ? "Date Added ↓" : taskOrderBy === "dateAddedAsc" ? "Date Added ↑" : "Date Added";
+        }
         item.classList.toggle("isOn", isOn);
         item.setAttribute("aria-pressed", isOn ? "true" : "false");
       });
@@ -203,7 +230,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function applyTaskOrderByPreference(next: TaskOrderBy) {
-    const taskOrderBy = next === "alpha" ? "alpha" : next === "schedule" ? "schedule" : "custom";
+    const taskOrderBy = normalizeTaskOrderByValue(next);
     ctx.setTaskOrderByState(taskOrderBy);
     syncTaskOrderByMenuUi();
   }
@@ -796,7 +823,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       const target = event.target as HTMLElement | null;
       const button = target?.closest?.(".tasksModeMenu .tasksModeMenuItem[data-task-order-by]") as HTMLButtonElement | null;
       if (!button) return;
-      const nextValue = button.dataset.taskOrderBy === "alpha" ? "alpha" : button.dataset.taskOrderBy === "schedule" ? "schedule" : "custom";
+      const nextValue = resolveClickedTaskOrderBy(button.dataset.taskOrderBy);
       applyTaskOrderByPreference(nextValue);
       ctx.clearTaskFlipStates();
       ctx.render();
