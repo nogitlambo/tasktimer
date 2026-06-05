@@ -780,11 +780,11 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackBoardIte
   }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
-    padding: 12px calc(14px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(14px + var(--safe-left));
+    padding: 12px calc(8px + var(--safe-right)) calc(12px + var(--safe-bottom)) calc(8px + var(--safe-left));
   }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
-    padding: 16px;
+    padding: 16px 8px;
   }
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackFormHead{
@@ -932,5 +932,376 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachme
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
   color: rgba(229,240,190,.72);
+}
+
+/* User Guide-inspired Feedback content treatment. */
+#app[aria-label="TaskLaunch Feedback"]{
+  --feedback-guide-lime: #d6f674;
+  --feedback-guide-text: rgba(248,255,229,.96);
+  --feedback-guide-muted: rgba(222,234,221,.82);
+  --feedback-guide-panel: rgba(9,11,18,.7);
+  --feedback-guide-field: rgba(5,7,11,.82);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
+  width: min(1180px, calc(100% - 24px));
+  padding: 8px 0 64px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
+  display: grid;
+  gap: 0;
+  background: transparent !important;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow{
+  width: min(980px, 100%);
+  padding: 8px 0 18px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .dashboardKicker{
+  color: var(--feedback-guide-lime);
+  font-family: var(--font-display-ui);
+  letter-spacing: .14em;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBackBtn{
+  border-color: rgba(214,246,116,.24) !important;
+  border-radius: 0 !important;
+  color: rgba(245,255,226,.82) !important;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackBackBtn:hover,
+#app[aria-label="TaskLaunch Feedback"] .feedbackBackBtn:focus-visible{
+  border-color: rgba(214,246,116,.54) !important;
+  color: var(--feedback-guide-lime) !important;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
+  display: grid;
+  gap: 20px;
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    var(--feedback-guide-panel) !important;
+  box-shadow: none !important;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideLabel{
+  display: grid;
+  grid-template-columns: auto minmax(42px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideIndex{
+  color: var(--feedback-guide-lime);
+  font-family: var(--font-display-ui);
+  font-size: .72rem;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideLine{
+  height: 1px;
+  min-width: 42px;
+  background: rgba(214,246,116,.52);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideName{
+  color: rgba(245,248,244,.74);
+  font-family: var(--font-display-ui);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormHead{
+  align-items: flex-start;
+  gap: 16px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormIcon{
+  width: 44px;
+  height: 44px;
+  margin-top: 2px;
+  padding: 5px;
+  border: 1px solid rgba(214,246,116,.16);
+  background: rgba(214,246,116,.045);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormTitle{
+  margin: 0;
+  color: var(--feedback-guide-text);
+  font-family: var(--font-display-ui);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext{
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--feedback-guide-muted);
+  font-family: var(--font-readable);
+  font-size: .95rem;
+  line-height: 1.7;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormBody{
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField{
+  display: grid;
+  gap: 8px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField > label,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow > span{
+  color: var(--feedback-guide-lime);
+  font-family: var(--font-display-ui);
+  font-size: .72rem;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  min-height: 48px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 0;
+  background: var(--feedback-guide-field);
+  box-shadow: none;
+  color: var(--feedback-guide-text);
+  font-family: var(--font-readable);
+  font-size: .95rem;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea{
+  min-height: 178px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input::placeholder,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea::placeholder{
+  color: rgba(222,234,221,.52);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField input:focus-visible,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select:focus-visible,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField textarea:focus-visible{
+  outline: none;
+  border-color: rgba(214,246,116,.58);
+  box-shadow: 0 0 0 1px rgba(214,246,116,.18);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField select.isPlaceholderValue{
+  color: rgba(222,234,221,.52);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField.isDisabled input{
+  color: rgba(222,234,221,.46);
+  background: rgba(5,7,11,.56);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow{
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 34px;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 0;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+  border: 1px solid rgba(214,246,116,.16);
+  background: rgba(214,246,116,.045);
+  box-shadow: none;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentMeta{
+  font-family: var(--font-readable);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentName{
+  color: var(--feedback-guide-text);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentDetails{
+  color: rgba(222,234,221,.7);
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackSuccessNote,
+#app[aria-label="TaskLaunch Feedback"] .feedbackErrorNote,
+#app[aria-label="TaskLaunch Feedback"] .feedbackSubmitBusy .confirmText{
+  font-family: var(--font-readable);
+  line-height: 1.55;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions{
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormActions .btn{
+  min-height: 38px;
+  border-radius: 0 !important;
+  font-family: var(--font-display-ui);
+  font-size: .68rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Feedback"] #feedbackBtn{
+  border-color: rgba(214,246,116,.44) !important;
+}
+
+@media (max-width: 640px){
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
+    width: 100%;
+    padding: 0 0 calc(32px + var(--safe-bottom));
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow{
+    padding: 8px 0 14px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
+    gap: 16px;
+    padding: 16px 12px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideLabel{
+    grid-template-columns: auto minmax(28px, 1fr) auto;
+    gap: 10px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackGuideName{
+    font-size: .66rem;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormIcon{
+    width: 36px;
+    height: 36px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormTitle{
+    font-size: 1.36rem;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormSubtext{
+    font-size: .9rem;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackAttachmentItem{
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 881px){
+#app[aria-label="TaskLaunch Feedback"]{
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .topbar{
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    padding: calc(max(18px, env(safe-area-inset-top, 0px)) + 18px) 48px 18px;
+    border: 0;
+    background: transparent;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppRail{
+    display: none !important;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppShell{
+    display: block;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0 48px 64px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
+    width: min(1180px, 100%);
+    max-width: none;
+    margin: 0 auto;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
+    width: 100%;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackPageTopRow{
+    min-height: 86px;
+    padding: 28px 0 24px;
+    align-items: center;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .dashboardKicker{
+    margin: 0;
+    font-size: clamp(3.25rem, 5.833vw, 5.25rem);
+    font-weight: 800;
+    line-height: .96;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--feedback-guide-text);
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormCard{
+    padding: 24px;
+  }
+}
+
+@media (min-width: 1180px){
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormBody{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField:has(#feedbackEmailInput),
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormAnonymousRow,
+#app[aria-label="TaskLaunch Feedback"] .feedbackFormField:has(#feedbackDetailsInput){
+    grid-column: 1 / -1;
+  }
 }
 

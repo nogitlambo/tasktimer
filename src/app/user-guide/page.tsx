@@ -10,6 +10,7 @@ import {
 } from "../seo";
 import { USER_GUIDE_MODULES } from "./content";
 import UserGuideExplorer from "./UserGuideExplorer";
+import UserGuideHeaderActions from "./UserGuideHeaderActions";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "User Guide",
@@ -51,12 +52,7 @@ export default function UserGuidePage() {
           </Link>
 
           <div className="landingV2HeaderActions">
-            <Link href="/" className="landingV2HeaderBack displayFont">
-              Home
-            </Link>
-            <Link href="/login" className="landingV2HeaderBack displayFont">
-              Sign In
-            </Link>
+            <UserGuideHeaderActions />
           </div>
         </header>
 

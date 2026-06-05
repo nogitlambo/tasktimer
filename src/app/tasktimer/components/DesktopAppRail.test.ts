@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import {
+  getDesktopRailHelpCenterMenuItems,
   getDesktopRailProfileMenuItems,
   getDesktopRailProfileSignOutLabel,
   openTaskLaunchOnboarding,
@@ -8,11 +9,18 @@ import {
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
-  it("shows Settings and User Guide in the profile menu", () => {
+  it("shows Settings as the flat profile menu item", () => {
     const items = getDesktopRailProfileMenuItems();
 
-    expect(items.map((item) => item.label)).toEqual(["Settings", "User Guide"]);
-    expect(items.map((item) => item.href)).toEqual(["/settings", "/user-guide"]);
+    expect(items.map((item) => item.label)).toEqual(["Settings"]);
+    expect(items.map((item) => item.href)).toEqual(["/settings"]);
+  });
+
+  it("shows User Guide and Feedback in the Help Center submenu", () => {
+    const items = getDesktopRailHelpCenterMenuItems();
+
+    expect(items.map((item) => item.label)).toEqual(["User Guide", "Feedback"]);
+    expect(items.map((item) => item.href)).toEqual(["/user-guide", "/feedback"]);
   });
 
   it("keeps normal account sign-out labels", () => {

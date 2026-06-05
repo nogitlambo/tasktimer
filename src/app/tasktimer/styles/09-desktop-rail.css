@@ -918,6 +918,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     --flat-accent: rgba(214,246,116,.9);
   }
 
+  #app[aria-label="TaskLaunch Feedback"]{
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
   #app[aria-label="TaskLaunch App"] .topbar,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .topbar,
   #app[aria-label="TaskLaunch Feedback"] .topbar,
@@ -948,6 +954,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     margin: 0 !important;
     align-items: stretch;
     background: var(--flat-shell-bg);
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppShell{
+    display: block !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail,
@@ -988,6 +1002,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     background: var(--flat-main-bg) !important;
     border-left: 0;
     box-shadow: inset 1px 0 0 var(--flat-main-border, rgba(255,255,255,.08)) !important;
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailTopSection,
@@ -1079,6 +1105,24 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     overflow-y: auto !important;
     overflow-x: hidden !important;
     background: transparent !important;
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 48px 64px !important;
+    overflow: visible !important;
+  }
+
+  #app[aria-label="TaskLaunch Feedback"] .feedbackPageMain,
+  #app[aria-label="TaskLaunch Feedback"] .feedbackPageShell{
+    width: min(1180px, 100%) !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
   }
 
   body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
@@ -1345,6 +1389,24 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     border-top: 1px solid rgba(233, 246, 252, 0.16);
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu:first-child,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenu:first-child,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu:first-child,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:first-child{
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuDivider,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuDivider,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuDivider,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileMenuDivider{
+    height: 1px;
+    margin: 0 8px;
+    background: rgba(233, 246, 252, 0.16);
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenuTrigger,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenuTrigger,
@@ -1383,15 +1445,26 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuList,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuList,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuList,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:hover .desktopRailProfileSubmenuList,
-  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList{
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu:focus-within .desktopRailProfileSubmenuList,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuList{
     opacity: 1;
     transform: translateX(0);
     pointer-events: auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuTrigger::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuTrigger::after,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuTrigger::after,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuTrigger::after{
+    transform: rotate(90deg);
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileSecondaryMenuBtn,

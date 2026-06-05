@@ -275,7 +275,7 @@ export default function FeedbackScreen() {
         </div>
       </div>
       <div className="desktopAppShell">
-        <DesktopAppRail activePage="none" useClientNavButtons={false} showMobileFooter />
+        <DesktopAppRail activePage="none" useClientNavButtons={false} showDesktopRail={false} showMobileFooter />
         <div className="desktopAppMain">
           <div className="dashboardNeonLayout feedbackPageLayout">
             <div className="dashboardMain feedbackPageMain">
@@ -292,73 +292,83 @@ export default function FeedbackScreen() {
                 </div>
 
                 <section className="dashboardCard feedbackFormCard" aria-label="Feedback form">
+                  <div className="feedbackGuideLabel" aria-hidden="true">
+                    <span className="feedbackGuideIndex displayFont">01</span>
+                    <span className="feedbackGuideLine" />
+                    <span className="feedbackGuideName">Product Feedback</span>
+                  </div>
+
                   <div className="feedbackFormHead">
                     <AppImg className="feedbackFormIcon" src="/Feedback.svg" alt="" aria-hidden="true" />
                     <div className="feedbackFormHeadCopy">
-                      <div className="dashboardCardTitle feedbackFormTitle">Feedback Form</div>
-                      <p className="modalSubtext feedbackFormSubtext">Share product feedback, bug reports, and feature ideas.</p>
+                      <h1 className="dashboardCardTitle feedbackFormTitle">Feedback Form</h1>
+                      <p className="modalSubtext feedbackFormSubtext">
+                        Share product feedback, bug reports, feature ideas, and optional screenshots.
+                      </p>
                     </div>
                   </div>
 
-                  <div className={`field feedbackFormField${feedbackAnonymous ? " isDisabled" : ""}`}>
-                    <label className={feedbackAnonymous ? "isDisabled" : undefined} htmlFor="feedbackEmailInput">
-                      {feedbackAnonymous ? "Email Address (anonymous)" : "Email Address"}
+                  <div className="feedbackFormBody">
+                    <div className={`field feedbackFormField${feedbackAnonymous ? " isDisabled" : ""}`}>
+                      <label className={feedbackAnonymous ? "isDisabled" : undefined} htmlFor="feedbackEmailInput">
+                        {feedbackAnonymous ? "Email Address (anonymous)" : "Email Address"}
+                      </label>
+                      <input
+                        id="feedbackEmailInput"
+                        type="email"
+                        placeholder="name@example.com"
+                        autoComplete="email"
+                        value={feedbackEmail}
+                        disabled={feedbackAnonymous}
+                        onChange={(e) => setFeedbackEmail(e.target.value)}
+                      />
+                    </div>
+
+                    <label className="chkRow feedbackFormAnonymousRow">
+                      <input type="checkbox" checked={feedbackAnonymous} onChange={(e) => setFeedbackAnonymous(e.target.checked)} />
+                      <span>Log as anonymous</span>
                     </label>
-                    <input
-                      id="feedbackEmailInput"
-                      type="email"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      value={feedbackEmail}
-                      disabled={feedbackAnonymous}
-                      onChange={(e) => setFeedbackEmail(e.target.value)}
-                    />
-                  </div>
 
-                  <label className="chkRow feedbackFormAnonymousRow">
-                    <input type="checkbox" checked={feedbackAnonymous} onChange={(e) => setFeedbackAnonymous(e.target.checked)} />
-                    <span>Log as anonymous</span>
-                  </label>
+                    <div className="field feedbackFormField">
+                      <label htmlFor="feedbackTypeSelect">Feedback Type</label>
+                      <select
+                        id="feedbackTypeSelect"
+                        className={!feedbackType ? "isPlaceholderValue" : undefined}
+                        value={feedbackType}
+                        onChange={(e) => setFeedbackType(e.target.value as FeedbackType | "")}
+                      >
+                        <option value="" disabled>
+                          --Please Select--
+                        </option>
+                        <option value="bug">Report a bug</option>
+                        <option value="general">General feedback</option>
+                        <option value="feature">Request a feature/enhancement</option>
+                      </select>
+                    </div>
 
-                  <div className="field feedbackFormField">
-                    <label htmlFor="feedbackTypeSelect">Feedback Type</label>
-                    <select
-                      id="feedbackTypeSelect"
-                      className={!feedbackType ? "isPlaceholderValue" : undefined}
-                      value={feedbackType}
-                      onChange={(e) => setFeedbackType(e.target.value as FeedbackType | "")}
-                    >
-                      <option value="" disabled>
-                        --Please Select--
-                      </option>
-                      <option value="bug">Report a bug</option>
-                      <option value="general">General feedback</option>
-                      <option value="feature">Request a feature/enhancement</option>
-                    </select>
-                  </div>
+                    <div className="field feedbackFormField">
+                      <label htmlFor="feedbackTitleInput">Title</label>
+                      <input
+                        id="feedbackTitleInput"
+                        type="text"
+                        maxLength={160}
+                        placeholder="Short summary of the issue or idea"
+                        value={feedbackTitle}
+                        onChange={(e) => setFeedbackTitle(e.target.value)}
+                      />
+                    </div>
 
-                  <div className="field feedbackFormField">
-                    <label htmlFor="feedbackTitleInput">Title</label>
-                    <input
-                      id="feedbackTitleInput"
-                      type="text"
-                      maxLength={160}
-                      placeholder="Short summary of the issue or idea"
-                      value={feedbackTitle}
-                      onChange={(e) => setFeedbackTitle(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="field feedbackFormField">
-                    <label htmlFor="feedbackDetailsInput">Details</label>
-                    <textarea
-                      id="feedbackDetailsInput"
-                      rows={8}
-                      placeholder="Please provide steps to reproduce or what you would like improved. Screenshots can be pasted here."
-                      value={feedbackDetails}
-                      onChange={(e) => setFeedbackDetails(e.target.value)}
-                      onPaste={handleDetailsPaste}
-                    />
+                    <div className="field feedbackFormField">
+                      <label htmlFor="feedbackDetailsInput">Details</label>
+                      <textarea
+                        id="feedbackDetailsInput"
+                        rows={8}
+                        placeholder="Please provide steps to reproduce or what you would like improved. Screenshots can be pasted here."
+                        value={feedbackDetails}
+                        onChange={(e) => setFeedbackDetails(e.target.value)}
+                        onPaste={handleDetailsPaste}
+                      />
+                    </div>
                   </div>
 
                   {feedbackAttachmentDrafts.length ? (

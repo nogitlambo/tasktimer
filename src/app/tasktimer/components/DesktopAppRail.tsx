@@ -38,7 +38,17 @@ import {
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
 
-type DesktopRailPage = "dashboard" | "tasks" | "friends" | "leaderboard" | "account" | "history" | "settings" | "userGuide" | "none";
+type DesktopRailPage =
+  | "dashboard"
+  | "tasks"
+  | "friends"
+  | "leaderboard"
+  | "account"
+  | "history"
+  | "settings"
+  | "userGuide"
+  | "feedback"
+  | "none";
 
 type DesktopAppRailProps = {
   activePage: DesktopRailPage;
@@ -184,13 +194,35 @@ const NAV_ITEMS: NavItem[] = [
     href: "/user-guide",
     showInMobileFooter: false,
   },
+  {
+    page: "feedback",
+    label: "Feedback",
+    ariaLabel: "Feedback",
+    iconSrc: "/Feedback.svg",
+    desktopId: "commandCenterFeedbackBtn",
+    mobileId: "footerFeedbackBtn",
+    href: "/feedback",
+    showInMobileFooter: false,
+  },
 ];
 
-const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter((item) => item.page !== "account" && item.page !== "history" && item.page !== "settings" && item.page !== "userGuide");
-const PROFILE_MENU_PAGES = ["settings", "userGuide"] as const;
+const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter(
+  (item) =>
+    item.page !== "account" &&
+    item.page !== "history" &&
+    item.page !== "settings" &&
+    item.page !== "userGuide" &&
+    item.page !== "feedback"
+);
+const PROFILE_MENU_PAGES = ["settings"] as const;
+const HELP_CENTER_MENU_PAGES = ["userGuide", "feedback"] as const;
 
 export function getDesktopRailProfileMenuItems() {
   return PROFILE_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
+}
+
+export function getDesktopRailHelpCenterMenuItems() {
+  return HELP_CENTER_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
 }
 
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
@@ -202,7 +234,8 @@ function railPageOrder(page: DesktopRailPage) {
   if (page === "account") return 4;
   if (page === "settings") return 5;
   if (page === "userGuide") return 6;
-  if (page === "history") return 7;
+  if (page === "feedback") return 7;
+  if (page === "history") return 8;
   return -1;
 }
 
@@ -381,7 +414,15 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   );
 }
 
-function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNavigate?: () => void) {
+function ProfileMenuLink({
+  item,
+  activePage,
+  onNavigate,
+}: {
+  item: NavItem;
+  activePage: DesktopRailPage;
+  onNavigate?: () => void;
+}) {
   const isActive = activePage === item.page;
   const profileLabel = item.page === "history" ? "History Manager" : item.label;
   return (
@@ -405,6 +446,41 @@ function renderProfileMenuLink(item: NavItem, activePage: DesktopRailPage, onNav
         aria-hidden="true"
       />
       <span className="dashboardRailMenuLabel">{profileLabel}</span>
+    </a>
+  );
+}
+
+function HelpCenterSubmenuLink({
+  item,
+  activePage,
+  onNavigate,
+}: {
+  item: NavItem;
+  activePage: DesktopRailPage;
+  onNavigate?: () => void;
+}) {
+  const isActive = activePage === item.page;
+  return (
+    <a
+      key={`help-center-${item.page}`}
+      className={`btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSecondaryMenuBtn${isActive ? " isOn" : ""}`}
+      href={item.href}
+      aria-label={item.ariaLabel}
+      data-nav-page={item.page}
+      role="menuitem"
+      {...(isActive ? { "aria-current": "page" as const } : {})}
+      onClick={() => {
+        onNavigate?.();
+        rememberRailTransition(activePage, item.page);
+      }}
+    >
+      <AppImg
+        className="dashboardRailMenuIconImage"
+        src={item.iconSrc}
+        alt=""
+        aria-hidden="true"
+      />
+      <span className="dashboardRailMenuLabel">{item.label}</span>
     </a>
   );
 }
@@ -453,6 +529,7 @@ export default function DesktopAppRail({
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
+  const [helpCenterMenuOpen, setHelpCenterMenuOpen] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
   const [temporaryDropdownOpen, setTemporaryDropdownOpen] = useState(false);
   const showDesktopRailDevEnv = useSyncExternalStore(
@@ -619,6 +696,7 @@ export default function DesktopAppRail({
     profileMenuCloseTimerRef.current = window.setTimeout(() => {
       setProfileMenuOpen(false);
       setProfileMenuClosing(false);
+      setHelpCenterMenuOpen(false);
       profileMenuCloseTimerRef.current = null;
     }, 320);
   }, []);
@@ -636,6 +714,11 @@ export default function DesktopAppRail({
     setProfileMenuOpen(true);
     setProfileMenuClosing(false);
   }, [closeProfileMenu, profileMenuClosing, profileMenuOpen]);
+
+  const toggleHelpCenterMenu = useCallback(() => {
+    playDropdownClickAudio();
+    setHelpCenterMenuOpen((open) => !open);
+  }, []);
 
   const handleProfileSignOut = useCallback(async () => {
     if (signOutBusy) return;
@@ -790,7 +873,35 @@ export default function DesktopAppRail({
                 </span>
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
-                {getDesktopRailProfileMenuItems().map((item) => renderProfileMenuLink(item, navActivePage, closeProfileMenu))}
+                <details className="desktopRailProfileSubmenu" open={helpCenterMenuOpen}>
+                  <summary
+                    className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSubmenuTrigger"
+                    aria-label="Help Center"
+                    aria-expanded={helpCenterMenuOpen}
+                    role="menuitem"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      toggleHelpCenterMenu();
+                    }}
+                  >
+                    <AppImg
+                      className="dashboardRailMenuIconImage"
+                      src="/icons/icons_default/question.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span className="dashboardRailMenuLabel">Help Center</span>
+                  </summary>
+                  <div className="desktopRailProfileSubmenuList" role="menu" aria-label="Help Center menu">
+                    {getDesktopRailHelpCenterMenuItems().map((item) => (
+                      <HelpCenterSubmenuLink key={`help-center-${item.page}`} item={item} activePage={navActivePage} onNavigate={closeProfileMenu} />
+                    ))}
+                  </div>
+                </details>
+                <div className="desktopRailProfileMenuDivider" role="separator" aria-hidden="true" />
+                {getDesktopRailProfileMenuItems().map((item) => (
+                  <ProfileMenuLink key={`profile-${item.page}`} item={item} activePage={navActivePage} onNavigate={closeProfileMenu} />
+                ))}
                 {renderProfileSignOutButton(signOutBusy, () => setShowSignOutConfirm(true))}
                 {signOutError ? (
                   <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">

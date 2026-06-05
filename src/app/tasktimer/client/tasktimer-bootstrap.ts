@@ -52,9 +52,7 @@ export function bootstrapTaskTimerRuntime(options: BootstrapOptions) {
     .then(() => options.reconcileOwnedSharedSummaryStates())
     .then(() => {
       options.render();
-      if (options.currentAppPage === "friends") {
-        void options.refreshGroupsData().catch(() => {});
-      }
+      void options.refreshGroupsData().catch(() => {});
       if (options.currentAppPage === "tasks") {
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {

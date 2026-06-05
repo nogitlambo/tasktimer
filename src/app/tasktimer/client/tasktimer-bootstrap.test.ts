@@ -44,7 +44,7 @@ describe("bootstrapTaskTimerRuntime", () => {
     expect(refreshGroupsData).toHaveBeenCalledTimes(1);
   });
 
-  it("does not refresh Friends data when booting other pages", async () => {
+  it("refreshes Friends data when booting other pages so nav request badges have state", async () => {
     const refreshOwnSharedSummaries = vi.fn(async () => undefined);
     const refreshGroupsData = vi.fn(async () => undefined);
     const options = createBootstrapOptions({
@@ -57,7 +57,7 @@ describe("bootstrapTaskTimerRuntime", () => {
     await refreshOwnSharedSummaries.mock.results[0].value;
     await Promise.resolve();
 
-    expect(refreshGroupsData).not.toHaveBeenCalled();
+    expect(refreshGroupsData).toHaveBeenCalledTimes(1);
   });
 });
 
