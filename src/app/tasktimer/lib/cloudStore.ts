@@ -452,6 +452,7 @@ const USER_ROOT_ALLOWED_KEYS = new Set([
   "rankThumbnailSrc",
   "rewardCurrentRankId",
   "rewardTotalXp",
+  "completedTaskCount",
   "plan",
   "planUpdatedAt",
   "createdAt",
@@ -509,6 +510,7 @@ function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | nu
     next.rewardCurrentRankId = source.rewardCurrentRankId;
   }
   if (Number.isInteger(source.rewardTotalXp)) next.rewardTotalXp = source.rewardTotalXp;
+  if (Number.isInteger(source.completedTaskCount)) next.completedTaskCount = source.completedTaskCount;
   if (source.plan === "free" || source.plan === "pro") next.plan = source.plan;
   if (isTimestampLike(source.planUpdatedAt)) next.planUpdatedAt = source.planUpdatedAt;
   if (isTimestampLike(source.createdAt)) next.createdAt = source.createdAt;
@@ -2044,6 +2046,7 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
     await saveUserRootPatch(uid, {
       rewardCurrentRankId: normalizedRewards.currentRankId,
       rewardTotalXp: normalizedRewards.totalXp,
+      completedTaskCount: normalizedRewards.completedSessions,
     });
   } catch (error) {
     if (!isPermissionDeniedError(error)) throw error;

@@ -101,6 +101,7 @@ service cloud.firestore {
         "rankThumbnailSrc",
         "rewardCurrentRankId",
         "rewardTotalXp",
+        "completedTaskCount",
         "plan",
         "planUpdatedAt",
         "createdAt",
@@ -117,6 +118,7 @@ service cloud.firestore {
       && (!("rankThumbnailSrc" in request.resource.data) || request.resource.data.rankThumbnailSrc == null || request.resource.data.rankThumbnailSrc is string)
       && (!("rewardCurrentRankId" in request.resource.data) || request.resource.data.rewardCurrentRankId == null || request.resource.data.rewardCurrentRankId is string)
       && (!("rewardTotalXp" in request.resource.data) || request.resource.data.rewardTotalXp is int)
+      && (!("completedTaskCount" in request.resource.data) || request.resource.data.completedTaskCount is int)
       && (!("plan" in request.resource.data) || isValidUserPlanValue(request.resource.data.plan))
       && (!("planUpdatedAt" in request.resource.data) || request.resource.data.planUpdatedAt is timestamp)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
@@ -151,6 +153,7 @@ service cloud.firestore {
         "rankThumbnailSrc",
         "rewardCurrentRankId",
         "rewardTotalXp",
+        "completedTaskCount",
         "streakDays",
         "totalFocusMs",
         "weeklyFocusMs",
@@ -168,6 +171,7 @@ service cloud.firestore {
       && (!("rankThumbnailSrc" in request.resource.data) || request.resource.data.rankThumbnailSrc == null || request.resource.data.rankThumbnailSrc is string)
       && (!("rewardCurrentRankId" in request.resource.data) || request.resource.data.rewardCurrentRankId == null || request.resource.data.rewardCurrentRankId is string)
       && request.resource.data.rewardTotalXp is int
+      && request.resource.data.completedTaskCount is int
       && request.resource.data.streakDays is int
       && request.resource.data.totalFocusMs is int
       && request.resource.data.weeklyFocusMs is int

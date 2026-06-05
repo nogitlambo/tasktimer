@@ -45,7 +45,7 @@ import {
   type LeaderboardProfile,
   type WeeklyLeaderboardRow,
 } from "./leaderboard";
-import { getRankThumbnailDescriptor } from "./rewards";
+import { DEFAULT_REWARD_PROGRESS, getRankThumbnailDescriptor } from "./rewards";
 
 function createProfile(overrides: Partial<LeaderboardProfile> = {}): LeaderboardProfile {
   return {
@@ -58,6 +58,7 @@ function createProfile(overrides: Partial<LeaderboardProfile> = {}): Leaderboard
     rankThumbnailSrc: null,
     rewardCurrentRankId: "unranked",
     rewardTotalXp: 0,
+    completedTaskCount: 0,
     streakDays: 0,
     totalFocusMs: 0,
     weeklyFocusMs: 0,
@@ -394,6 +395,7 @@ describe("loadLeaderboardScreenData", () => {
       displayLabel: "pilot",
       rewardCurrentRankId: "initiate",
       rewardTotalXp: 120,
+      completedTaskCount: 7,
       streakDays: 2,
       totalFocusMs: 60_000,
       weeklyXpGain: 20,
@@ -447,6 +449,7 @@ describe("saveLeaderboardProfile", () => {
     await saveLeaderboardProfile("uid-1", {
       rewardCurrentRankId: "initiate",
       rewardTotalXp: 120,
+      completedTaskCount: 7,
       streakDays: 2,
       totalFocusMs: 60_000,
       weeklyFocusMs: 15_000,
@@ -460,6 +463,7 @@ describe("saveLeaderboardProfile", () => {
         totalFocusMs: 60_000,
         weeklyFocusMs: 15_000,
         weeklyXpGain: 20,
+        completedTaskCount: 7,
         schemaVersion: 1,
       }),
       { merge: true }
@@ -488,5 +492,18 @@ describe("buildLeaderboardMetricsSnapshot", () => {
 
     expect(snapshot.totalFocusMs).toBe(65 * 60 * 1000);
     expect(snapshot.weeklyFocusMs).toBe(25 * 60 * 1000);
+  });
+
+  it("derives completed task count from reward completed sessions", () => {
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        completedSessions: 42,
+      },
+    });
+
+    expect(snapshot.completedTaskCount).toBe(42);
   });
 });

@@ -39,6 +39,7 @@ export type LeaderboardProfile = {
   rankThumbnailSrc: string | null;
   rewardCurrentRankId: string | null;
   rewardTotalXp: number;
+  completedTaskCount: number;
   streakDays: number;
   totalFocusMs: number;
   weeklyFocusMs: number;
@@ -50,6 +51,7 @@ export type LeaderboardProfile = {
 type LeaderboardMetricsSnapshot = {
   rewardCurrentRankId: string | null;
   rewardTotalXp: number;
+  completedTaskCount: number;
   streakDays: number;
   totalFocusMs: number;
   weeklyFocusMs: number;
@@ -143,6 +145,7 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
   const displayLabel = username || "User";
   const rewardTotalXp = normalizeInt(raw.rewardTotalXp);
   const rewardCurrentRankId = getRankForXp(rewardTotalXp).id;
+  const completedTaskCount = normalizeInt(raw.completedTaskCount);
   return {
     uid,
     username,
@@ -153,6 +156,7 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
     rankThumbnailSrc: normalizeString(raw.rankThumbnailSrc, 900_000),
     rewardCurrentRankId,
     rewardTotalXp,
+    completedTaskCount,
     streakDays: normalizeInt(raw.streakDays),
     totalFocusMs: normalizeInt(raw.totalFocusMs),
     weeklyFocusMs: normalizeInt(raw.weeklyFocusMs),
@@ -337,6 +341,7 @@ export function buildLeaderboardMetricsSnapshot(input: {
   return {
     rewardCurrentRankId: normalizeString(rewards.currentRankId, 120),
     rewardTotalXp: normalizeInt(rewards.totalXp),
+    completedTaskCount: normalizeInt(rewards.completedSessions),
     streakDays: getRewardStreakLength(projectedHistory),
     totalFocusMs,
     weeklyFocusMs,
@@ -364,6 +369,7 @@ export async function saveLeaderboardProfile(
       rankThumbnailSrc: identity.rankThumbnailSrc,
       rewardCurrentRankId: normalizeString(metrics.rewardCurrentRankId, 120) || identity.rewardCurrentRankId,
       rewardTotalXp: normalizeInt(metrics.rewardTotalXp),
+      completedTaskCount: normalizeInt(metrics.completedTaskCount),
       streakDays: normalizeInt(metrics.streakDays),
       totalFocusMs: normalizeInt(metrics.totalFocusMs),
       weeklyFocusMs: normalizeInt(metrics.weeklyFocusMs),
@@ -410,6 +416,9 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
   }
   if (Object.prototype.hasOwnProperty.call(patch, "rewardTotalXp")) {
     nextPatch.rewardTotalXp = normalizeInt(patch.rewardTotalXp);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "completedTaskCount")) {
+    nextPatch.completedTaskCount = normalizeInt(patch.completedTaskCount);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "createdAt")) {
     nextPatch.memberSinceMs = normalizeOptionalTimestampMs(patch.createdAt);
