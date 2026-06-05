@@ -17,6 +17,7 @@ import FocusModeScreen from "./components/FocusModeScreen";
 import FriendsOverlays from "./components/FriendsOverlays";
 import GlobalTaskAlerts from "./components/GlobalTaskAlerts";
 import DashboardPageContent from "./components/DashboardPageContent";
+import HoldingSpacePageContent from "./components/HoldingSpacePageContent";
 import HistoryManagerScreen from "./components/HistoryManagerScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
@@ -1058,6 +1059,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           </section>
 
           <DashboardPageContent active={initialPage === "dashboard"} />
+
+          <HoldingSpacePageContent active={initialPage === "holding-space"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">

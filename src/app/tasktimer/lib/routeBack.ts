@@ -15,6 +15,7 @@ function normalizeKnownRoute(pathRaw: string) {
   if (/^\/$/.test(normalizedPath)) return `/${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/tasklaunch$/i.test(normalizedPath)) return `/tasklaunch${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/dashboard$/i.test(normalizedPath)) return `/dashboard${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  if (/\/holding-space$/i.test(normalizedPath)) return `/holding-space${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/friends$/i.test(normalizedPath)) return `/friends${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/leaderboards?$/i.test(normalizedPath)) return `/leaderboards${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
   if (/\/settings$/i.test(normalizedPath)) return `/settings${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
@@ -26,10 +27,11 @@ function normalizeKnownRoute(pathRaw: string) {
 }
 
 function pathForAppToken(token: string) {
-  const match = String(token || "").match(/\|page=(tasks|schedule|dashboard|friends|leaderboard|history)$/);
+  const match = String(token || "").match(/\|page=(tasks|schedule|dashboard|holding-space|friends|leaderboard|history)$/);
   if (!match) return "";
   const page = match[1];
   if (page === "dashboard") return "/dashboard";
+  if (page === "holding-space") return "/holding-space";
   if (page === "friends") return "/friends";
   if (page === "leaderboard") return "/leaderboards";
   if (page === "history") return "/history-manager";
@@ -95,6 +97,7 @@ function isAuthenticatedBackRoute(pathRaw: string) {
   return (
     path === "/tasklaunch" ||
     path === "/dashboard" ||
+    path === "/holding-space" ||
     path === "/friends" ||
     path === "/leaderboards" ||
     path === "/settings" ||

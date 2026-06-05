@@ -14,9 +14,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const normalized = page === "schedule" ? "tasks" : page;
     if (normalized === "dashboard") return 0;
     if (normalized === "tasks") return 1;
-    if (normalized === "friends") return 2;
-    if (normalized === "leaderboard") return 3;
-    if (normalized === "history") return 4;
+    if (normalized === "holding-space") return 2;
+    if (normalized === "friends") return 3;
+    if (normalized === "leaderboard") return 4;
+    if (normalized === "history") return 5;
     return -1;
   }
 
@@ -51,6 +52,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return (
       path === "/tasklaunch" ||
       path === "/dashboard" ||
+      path === "/holding-space" ||
       path === "/friends" ||
       path === "/leaderboards" ||
       path === "/account" ||
@@ -111,6 +113,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return /\/friends$/i.test(path) || /\/friends\/index\.html$/i.test(path);
   }
 
+  function isTaskTimerHoldingSpacePath(path: string) {
+    return /\/holding-space$/i.test(path) || /\/holding-space\/index\.html$/i.test(path);
+  }
+
   function isTaskTimerLeaderboardPath(path: string) {
     return /\/leaderboards$/i.test(path) || /\/leaderboards\/index\.html$/i.test(path) || /\/leaderboard$/i.test(path) || /\/leaderboard\/index\.html$/i.test(path);
   }
@@ -119,6 +125,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     return (
       isTaskTimerTasksPath(path) ||
       isTaskTimerDashboardPath(path) ||
+      isTaskTimerHoldingSpacePath(path) ||
       isTaskTimerFriendsPath(path) ||
       isTaskTimerLeaderboardPath(path) ||
       /\/history-manager$/i.test(path) ||
@@ -128,6 +135,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
   function appPathForPage(page: AppPage) {
     if (page === "dashboard") return appRoute("/dashboard");
+    if (page === "holding-space") return appRoute("/holding-space");
     if (page === "friends") return appRoute("/friends");
     if (page === "leaderboard") return appRoute("/leaderboards");
     if (page === "history") return appRoute("/history-manager");
@@ -163,6 +171,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       const page = String(params.get("page") || "").toLowerCase();
       if (page === "dashboard") return "dashboard";
       if (page === "schedule") return "schedule";
+      if (page === "holding-space") return "holding-space";
       if (page === "friends") return "friends";
       if (page === "leaderboard") return "leaderboard";
       if (page === "history") return "history";
@@ -170,6 +179,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
         return ctx.getCurrentAppPage();
       }
       if (isTaskTimerDashboardPath(path)) return "dashboard";
+      if (isTaskTimerHoldingSpacePath(path)) return "holding-space";
       if (isTaskTimerFriendsPath(path)) return "friends";
       if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       if (/\/history-manager(?:\/index\.html)?$/i.test(path)) return "history";
@@ -194,6 +204,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     if (/\/history-manager(?:\/index)?$/i.test(normalized) || /\/history-manager\.html$/i.test(normalized)) return "/history-manager";
     if (/\/feedback(?:\/index)?$/i.test(normalized) || /\/feedback\.html$/i.test(normalized)) return "/feedback";
     if (/\/dashboard(?:\/index)?$/i.test(normalized)) return "/dashboard";
+    if (/\/holding-space(?:\/index)?$/i.test(normalized)) return "/holding-space";
     if (/\/friends(?:\/index)?$/i.test(normalized)) return "/friends";
     if (/\/leaderboards?(?:\/index)?$/i.test(normalized)) return "/leaderboards";
     if (/\/tasklaunch(?:\/index)?$/i.test(normalized)) return "/tasklaunch";
@@ -204,6 +215,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     const path = normalizeTaskTimerRoutePath(pathRaw);
     return (
       path === "/tasklaunch" ||
+      path === "/holding-space" ||
       path === "/account" ||
       path === "/settings" ||
       path === "/history-manager" ||
@@ -221,10 +233,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function parseAppPageFromToken(token: string | null | undefined): AppPage | null {
-    const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|friends|leaderboard|history)$/);
+    const m = String(token || "").match(/\|page=(tasks|schedule|dashboard|holding-space|friends|leaderboard|history)$/);
     if (!m) return null;
     const p = m[1];
-    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "friends" || p === "leaderboard" || p === "history") return p;
+    if (p === "tasks" || p === "schedule" || p === "dashboard" || p === "holding-space" || p === "friends" || p === "leaderboard" || p === "history") return p;
     return null;
   }
 
@@ -371,6 +383,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
 
     const hasTasksPage = !!ctx.els.appPageTasks;
     const hasDashboardPage = !!ctx.els.appPageDashboard;
+    const hasHoldingSpacePage = !!ctx.els.appPageHoldingSpace;
     const hasFriendsPage = !!ctx.els.appPageFriends;
     const hasLeaderboardPage = !!ctx.els.appPageLeaderboard;
 
@@ -378,6 +391,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       (page === "tasks" && !hasTasksPage) ||
       (page === "schedule" && !ctx.els.appPageSchedule) ||
       (page === "dashboard" && !hasDashboardPage) ||
+      (page === "holding-space" && !hasHoldingSpacePage) ||
       (page === "friends" && !hasFriendsPage) ||
       (page === "leaderboard" && !hasLeaderboardPage) ||
       (page === "history" && !ctx.els.appPageHistory);
@@ -412,15 +426,18 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.els.appPageSchedule?.classList.toggle("isOpen", nextPage === "schedule");
     ctx.els.appPageSchedule?.setAttribute("aria-hidden", nextPage === "schedule" ? "false" : "true");
     ctx.els.appPageDashboard?.classList.toggle("appPageOn", nextPage === "dashboard");
+    ctx.els.appPageHoldingSpace?.classList.toggle("appPageOn", nextPage === "holding-space");
     ctx.els.appPageFriends?.classList.toggle("appPageOn", nextPage === "friends");
     ctx.els.appPageLeaderboard?.classList.toggle("appPageOn", nextPage === "leaderboard");
     ctx.els.appPageHistory?.classList.toggle("appPageOn", nextPage === "history");
     ctx.els.footerTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.footerDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
+    ctx.els.footerHoldingSpaceBtn?.classList.toggle("isOn", nextPage === "holding-space");
     ctx.els.footerTest2Btn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.footerLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterTasksBtn?.classList.toggle("isOn", nextPage === "tasks" || nextPage === "schedule");
     ctx.els.commandCenterDashboardBtn?.classList.toggle("isOn", nextPage === "dashboard");
+    ctx.els.commandCenterHoldingSpaceBtn?.classList.toggle("isOn", nextPage === "holding-space");
     ctx.els.commandCenterGroupsBtn?.classList.toggle("isOn", nextPage === "friends");
     ctx.els.commandCenterLeaderboardBtn?.classList.toggle("isOn", nextPage === "leaderboard");
     ctx.els.commandCenterHistoryBtn?.classList.toggle("isOn", nextPage === "history");
@@ -610,6 +627,10 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.footerDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })
     );
+    ctx.on(ctx.els.footerHoldingSpaceBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      applyAppPage("holding-space", { pushNavStack: true, syncUrl: "push" });
+    });
     ctx.on(ctx.els.footerTest2Btn, "click", (e: any) => {
       e?.preventDefault?.();
       applyAppPage("friends", { pushNavStack: true, syncUrl: "push" });
@@ -630,6 +651,11 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     ctx.on(ctx.els.commandCenterDashboardBtn, "click", (e: any) => {
       if (e?.defaultPrevented) return;
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" });
+    });
+    ctx.on(ctx.els.commandCenterHoldingSpaceBtn, "click", (e: any) => {
+      if (e?.defaultPrevented) return;
+      e?.preventDefault?.();
+      applyAppPage("holding-space", { pushNavStack: true, syncUrl: "push" });
     });
     ctx.on(ctx.els.commandCenterGroupsBtn, "click", (e: any) => {
       if (e?.defaultPrevented) return;
@@ -679,6 +705,7 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
     appRoute,
     isTaskTimerTasksPath,
     isTaskTimerDashboardPath,
+    isTaskTimerHoldingSpacePath,
     isTaskTimerFriendsPath,
     isTaskTimerLeaderboardPath,
     isTaskTimerMainAppPath,

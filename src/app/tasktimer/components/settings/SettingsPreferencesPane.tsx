@@ -28,6 +28,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Default module on app startup">
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
+              <option value="holding-space">Holding Space</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>
             </SettingsDownwardSelect>

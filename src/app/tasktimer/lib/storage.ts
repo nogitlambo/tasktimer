@@ -66,6 +66,7 @@ const SHADOW_LIVE_SESSIONS_KEY = `${STORAGE_KEY}:shadow:liveSessions`;
 const SHADOW_DELETED_META_KEY = `${STORAGE_KEY}:shadow:deletedMeta`;
 const SHADOW_PREFERENCES_KEY = `${STORAGE_KEY}:shadow:preferences`;
 const SHADOW_DASHBOARD_KEY = `${STORAGE_KEY}:shadow:dashboard`;
+const SHADOW_HOLDING_SPACE_KEY = `${STORAGE_KEY}:shadow:holdingSpace`;
 const PENDING_TASK_DELETES_KEY = `${STORAGE_KEY}:pendingTaskDeletes`;
 const PENDING_TASK_SYNC_KEY = `${STORAGE_KEY}:pendingTaskSync`;
 const PENDING_HISTORY_SYNC_KEY = `${STORAGE_KEY}:pendingHistorySync`;
@@ -1237,6 +1238,7 @@ export function clearScopedStorageState(): void {
       window.localStorage.removeItem(SHADOW_DELETED_META_KEY);
       window.localStorage.removeItem(SHADOW_PREFERENCES_KEY);
       window.localStorage.removeItem(SHADOW_DASHBOARD_KEY);
+      window.localStorage.removeItem(SHADOW_HOLDING_SPACE_KEY);
       window.localStorage.removeItem(PENDING_TASK_DELETES_KEY);
       window.localStorage.removeItem(PENDING_TASK_SYNC_KEY);
       window.localStorage.removeItem(PENDING_HISTORY_SYNC_KEY);
@@ -1659,6 +1661,7 @@ function clearGuestWorkspaceShadow(): void {
     SHADOW_DELETED_META_KEY,
     SHADOW_PREFERENCES_KEY,
     SHADOW_DASHBOARD_KEY,
+    SHADOW_HOLDING_SPACE_KEY,
     PENDING_TASK_DELETES_KEY,
     PENDING_TASK_SYNC_KEY,
     PENDING_HISTORY_SYNC_KEY,

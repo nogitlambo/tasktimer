@@ -215,7 +215,7 @@ service cloud.firestore {
       && (!("menuButtonStyle" in request.resource.data) || request.resource.data.menuButtonStyle in ["square"])
       && (!("defaultTaskTimerFormat" in request.resource.data) || request.resource.data.defaultTaskTimerFormat in ["day", "hour", "minute"])
       && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
-      && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "friends", "leaderboard"])
+      && (!("startupModule" in request.resource.data) || request.resource.data.startupModule in ["dashboard", "tasks", "holding-space", "friends", "leaderboard"])
       && (!("taskView" in request.resource.data) || request.resource.data.taskView in ["list", "tile"])
       && (!("taskOrderBy" in request.resource.data) || request.resource.data.taskOrderBy in ["custom", "alpha", "schedule", "dateAddedAsc", "dateAddedDesc"])
       && (!("autoFocusOnTaskLaunchEnabled" in request.resource.data) || request.resource.data.autoFocusOnTaskLaunchEnabled is bool)
@@ -275,6 +275,67 @@ service cloud.firestore {
       && (!("historyRangeModeByTaskId" in request.resource.data) || request.resource.data.historyRangeModeByTaskId is map)
       && (!("pinnedHistoryTaskIds" in request.resource.data) || request.resource.data.pinnedHistoryTaskIds is list)
       && (!("customTaskNames" in request.resource.data) || request.resource.data.customTaskNames is list)
+      && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
+    }
+
+    function isHoldingSpaceAttachment(userId, value) {
+      return value is map
+      && value.keys().hasOnly([
+        "id",
+        "name",
+        "contentType",
+        "size",
+        "storagePath",
+        "downloadUrl",
+        "createdAtMs"
+      ])
+      && value.id is string
+      && value.id.size() <= 160
+      && value.name is string
+      && value.name.size() <= 160
+      && value.contentType is string
+      && value.contentType.size() <= 160
+      && value.size is int
+      && value.size >= 0
+      && value.size <= 10485760
+      && value.storagePath is string
+      && value.storagePath.size() <= 500
+      && value.storagePath.matches("^users/" + userId + "/holding-space/[^/]+/.+$")
+      && value.downloadUrl is string
+      && value.downloadUrl.size() <= 2048
+      && value.createdAtMs is int;
+    }
+
+    function isHoldingSpaceAttachmentList(userId, listValue) {
+      return listValue is list
+      && listValue.size() <= 10
+      && (listValue.size() < 1 || isHoldingSpaceAttachment(userId, listValue[0]))
+      && (listValue.size() < 2 || isHoldingSpaceAttachment(userId, listValue[1]))
+      && (listValue.size() < 3 || isHoldingSpaceAttachment(userId, listValue[2]))
+      && (listValue.size() < 4 || isHoldingSpaceAttachment(userId, listValue[3]))
+      && (listValue.size() < 5 || isHoldingSpaceAttachment(userId, listValue[4]))
+      && (listValue.size() < 6 || isHoldingSpaceAttachment(userId, listValue[5]))
+      && (listValue.size() < 7 || isHoldingSpaceAttachment(userId, listValue[6]))
+      && (listValue.size() < 8 || isHoldingSpaceAttachment(userId, listValue[7]))
+      && (listValue.size() < 9 || isHoldingSpaceAttachment(userId, listValue[8]))
+      && (listValue.size() < 10 || isHoldingSpaceAttachment(userId, listValue[9]));
+    }
+
+    function isHoldingSpaceV1(userId) {
+      return onlyKeys([
+        "schemaVersion",
+        "contentHtml",
+        "attachments",
+        "updatedAtMs",
+        "updatedAt"
+      ])
+      && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion == 1)
+      && (!("contentHtml" in request.resource.data) || (
+        request.resource.data.contentHtml is string
+        && request.resource.data.contentHtml.size() <= 200000
+      ))
+      && (!("attachments" in request.resource.data) || isHoldingSpaceAttachmentList(userId, request.resource.data.attachments))
+      && (!("updatedAtMs" in request.resource.data) || request.resource.data.updatedAtMs is int)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
@@ -927,6 +988,12 @@ service cloud.firestore {
     match /users/{userId}/taskUi/{docId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && docId == "v1" && isTaskUiV1();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/holdingSpace/{docId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && docId == "v1" && isHoldingSpaceV1(userId);
       allow delete: if isOwner(userId);
     }
 

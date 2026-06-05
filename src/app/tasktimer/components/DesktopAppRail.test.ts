@@ -2,13 +2,32 @@ import { describe, expect, it } from "vitest";
 import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import {
   getDesktopRailHelpCenterMenuItems,
+  getDesktopRailPrimaryNavItems,
   getDesktopRailProfileMenuItems,
   getDesktopRailProfileSignOutLabel,
+  getMobileFooterNavItems,
   openTaskLaunchOnboarding,
   shouldShowDesktopRailDevEnv,
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
+  it("keeps Holding Space under Tasks in the desktop rail and third in the mobile footer", () => {
+    expect(getDesktopRailPrimaryNavItems().map((item) => item.label)).toEqual([
+      "Dashboard",
+      "Tasks",
+      "Holding Space",
+      "Friends",
+      "Leaderboards",
+    ]);
+    expect(getMobileFooterNavItems().map((item) => item.mobileId)).toEqual([
+      "footerDashboardBtn",
+      "footerTasksBtn",
+      "footerHoldingSpaceBtn",
+      "footerTest2Btn",
+      "footerLeaderboardBtn",
+    ]);
+  });
+
   it("shows Settings as the flat profile menu item", () => {
     const items = getDesktopRailProfileMenuItems();
 

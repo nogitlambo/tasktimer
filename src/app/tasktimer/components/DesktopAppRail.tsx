@@ -41,6 +41,7 @@ import SignOutConfirmModal from "./SignOutConfirmModal";
 type DesktopRailPage =
   | "dashboard"
   | "tasks"
+  | "holding-space"
   | "friends"
   | "leaderboard"
   | "account"
@@ -137,6 +138,15 @@ const NAV_ITEMS: NavItem[] = [
     href: "/tasklaunch",
   },
   {
+    page: "holding-space",
+    label: "Holding Space",
+    ariaLabel: "Holding Space",
+    iconSrc: "/file.svg",
+    desktopId: "commandCenterHoldingSpaceBtn",
+    mobileId: "footerHoldingSpaceBtn",
+    href: "/holding-space",
+  },
+  {
     page: "friends",
     label: "Friends",
     ariaLabel: "Friends",
@@ -225,17 +235,26 @@ export function getDesktopRailHelpCenterMenuItems() {
   return HELP_CENTER_MENU_PAGES.map((page) => NAV_ITEMS.find((item) => item.page === page)).filter((item): item is NavItem => !!item);
 }
 
+export function getDesktopRailPrimaryNavItems() {
+  return DESKTOP_NAV_ITEMS.slice();
+}
+
+export function getMobileFooterNavItems() {
+  return NAV_ITEMS.filter((item) => item.showInMobileFooter !== false);
+}
+
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "tasks") return 1;
-  if (page === "friends") return 2;
-  if (page === "leaderboard") return 3;
-  if (page === "account") return 4;
-  if (page === "settings") return 5;
-  if (page === "userGuide") return 6;
-  if (page === "feedback") return 7;
-  if (page === "history") return 8;
+  if (page === "holding-space") return 2;
+  if (page === "friends") return 3;
+  if (page === "leaderboard") return 4;
+  if (page === "account") return 5;
+  if (page === "settings") return 6;
+  if (page === "userGuide") return 7;
+  if (page === "feedback") return 8;
+  if (page === "history") return 9;
   return -1;
 }
 
@@ -1001,12 +1020,12 @@ export default function DesktopAppRail({
             <p className="modalSubtext">
               This temporary modal uses the standard TaskLaunch modal styling baseline.
             </p>
-            <div className="field modalPreviewDropdownField">
+            <div className="field modalDropdownField modalPreviewDropdownField">
               <label htmlFor="temporaryModalPreviewDropdown">Dropdown label</label>
               <p className="modalDropdownHelp">Helper text describes how this dropdown affects the action.</p>
-              <div className="modalPreviewDropdown" ref={temporaryDropdownRef}>
+              <div className="modalDropdown modalPreviewDropdown" ref={temporaryDropdownRef}>
                 <button
-                  className="modalPreviewDropdownButton"
+                  className="modalDropdownButton modalPreviewDropdownButton"
                   id="temporaryModalPreviewDropdown"
                   type="button"
                   aria-haspopup="listbox"
@@ -1020,7 +1039,7 @@ export default function DesktopAppRail({
                 </button>
                 {temporaryDropdownOpen ? (
                   <div
-                    className="modalPreviewDropdownList"
+                    className="modalDropdownList modalPreviewDropdownList"
                     id="temporaryModalPreviewDropdownList"
                     role="listbox"
                     aria-labelledby="temporaryModalPreviewDropdown"
@@ -1029,7 +1048,7 @@ export default function DesktopAppRail({
                       const selected = option.value === temporaryDropdownValue;
                       return (
                         <button
-                          className={`modalPreviewDropdownOption${selected ? " isSelected" : ""}`}
+                          className={`modalDropdownOption modalPreviewDropdownOption${selected ? " isSelected" : ""}`}
                           key={option.value}
                           type="button"
                           role="option"
@@ -1047,9 +1066,9 @@ export default function DesktopAppRail({
                 ) : null}
               </div>
             </div>
-            <div className="chkRow modalPreviewCheckboxRow">
+            <div className="chkRow modalCheckboxRow modalPreviewCheckboxRow">
               <input id="temporaryModalPreviewCheckbox" type="checkbox" />
-              <div className="modalPreviewCheckboxText">
+              <div className="modalCheckboxText modalPreviewCheckboxText">
                 <label htmlFor="temporaryModalPreviewCheckbox">Checkbox label</label>
                 <p className="modalDropdownHelp">Description explains the checkbox setting.</p>
               </div>

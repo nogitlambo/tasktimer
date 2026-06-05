@@ -1,16 +1,17 @@
 import type { AppPage } from "../client/types";
 import { STORAGE_KEY, loadCachedPreferences } from "./storage";
 
-export type StartupModulePreference = "dashboard" | "tasks" | "friends" | "leaderboard";
+export type StartupModulePreference = "dashboard" | "tasks" | "holding-space" | "friends" | "leaderboard";
 
 export function normalizeStartupModule(raw: unknown): StartupModulePreference {
   const value = String(raw || "").trim().toLowerCase();
-  if (value === "tasks" || value === "friends" || value === "leaderboard") return value;
+  if (value === "tasks" || value === "holding-space" || value === "friends" || value === "leaderboard") return value;
   return "dashboard";
 }
 
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {
   if (startupModule === "tasks") return "tasks";
+  if (startupModule === "holding-space") return "holding-space";
   if (startupModule === "friends") return "friends";
   if (startupModule === "leaderboard") return "leaderboard";
   return "dashboard";
@@ -18,6 +19,7 @@ export function startupModuleToAppPage(startupModule: StartupModulePreference): 
 
 export function startupModuleToRoute(startupModule: StartupModulePreference): string {
   if (startupModule === "tasks") return "/tasklaunch";
+  if (startupModule === "holding-space") return "/holding-space";
   if (startupModule === "friends") return "/friends";
   if (startupModule === "leaderboard") return "/leaderboards";
   return "/dashboard";

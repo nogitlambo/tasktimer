@@ -1,0 +1,223 @@
+#app[aria-label="TaskLaunch Primitives"]{
+  width: 100%;
+  min-height: 100dvh;
+  background: #0d0f13;
+  color: var(--text);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveShell{
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: max(22px, var(--safe-top)) 0 max(44px, var(--safe-bottom));
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveHero{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 0 20px;
+  border-bottom: 1px solid rgba(201,255,36,.18);
+  margin-bottom: 22px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveHero h1{
+  margin: 0;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--accent);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveEyebrow{
+  margin: 0 0 8px;
+  color: rgba(233,238,249,.72);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveHero .modalSubtext{
+  max-width: 720px;
+  margin: 12px 0 0;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSection{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 14px;
+  align-items: stretch;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSectionHeader{
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSection h2{
+  margin: 0;
+  font-family: var(--font-tight);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSectionHeader .modalSubtext{
+  margin: 6px 0 0;
+  max-width: 760px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveExamplePanel,
+#app[aria-label="TaskLaunch Primitives"] .primitiveCode{
+  min-width: 0;
+  border: 1px solid rgba(160,232,255,.16);
+  background: rgba(9,11,18,.68);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveExamplePanel{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveCode{
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  color: rgba(233,238,249,.9);
+  font-family: var(--font-readable);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveInlineGrid,
+#app[aria-label="TaskLaunch Primitives"] .primitiveControlStack,
+#app[aria-label="TaskLaunch Primitives"] .primitiveFieldGrid,
+#app[aria-label="TaskLaunch Primitives"] .primitiveCardGrid{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveTypeStack{
+  display: grid;
+  gap: 8px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveDisplaySample{
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveIconRow{
+  align-items: center;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveModalInline .modal{
+  width: min(420px, 100%);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveField{
+  display: grid;
+  gap: 8px;
+  width: min(360px, 100%);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveField input,
+#app[aria-label="TaskLaunch Primitives"] .primitiveField textarea,
+#app[aria-label="TaskLaunch Primitives"] .primitiveField select{
+  width: 100%;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveControlStack{
+  align-items: stretch;
+  flex-direction: column;
+  width: min(420px, 100%);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveControlRow{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.035);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveCheckRow{
+  margin: 0;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveDashboardCard{
+  width: min(320px, 100%);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveDashboardCard .dashboardCardTitle{
+  margin-bottom: 8px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSwatchGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSwatch{
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.035);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSwatchColor{
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSwatchName{
+  font-family: var(--font-tight);
+  font-size: 12px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSwatchValue{
+  color: rgba(233,238,249,.68);
+  font-family: var(--font-readable);
+  font-size: 12px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLiveOverlay{
+  z-index: 1500;
+}
+
+@media (max-width: 820px){
+  #app[aria-label="TaskLaunch Primitives"] .primitiveHero,
+  #app[aria-label="TaskLaunch Primitives"] .primitiveSectionHeader{
+    display: grid;
+  }
+
+  #app[aria-label="TaskLaunch Primitives"] .primitiveSection{
+    grid-template-columns: 1fr;
+  }
+
+  #app[aria-label="TaskLaunch Primitives"] .primitiveShell{
+    width: min(100% - 18px, 680px);
+  }
+}

@@ -212,8 +212,14 @@ export async function buildIdentitySyncResponseError(response: Response): Promis
   logId?: string;
 }> {
   const responseText = await response.text().catch(() => "");
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  const isHtmlResponse =
+    contentType.includes("text/html") ||
+    /^\s*<!doctype\s+html\b/i.test(responseText) ||
+    /^\s*<html[\s>]/i.test(responseText);
   const payload = ((): { error?: string; code?: string; logId?: string } => {
     if (!responseText) return {};
+    if (isHtmlResponse) return {};
     try {
       return JSON.parse(responseText) as { error?: string; code?: string; logId?: string };
     } catch {
@@ -223,7 +229,11 @@ export async function buildIdentitySyncResponseError(response: Response): Promis
   const status = Number(response.status || 0) || null;
   const code = String(payload.code || "").trim();
   const logId = String(payload.logId || "").trim();
-  const message = String(payload.error || "").trim() || "Could not sync user identity lookup.";
+  const message =
+    String(payload.error || "").trim() ||
+    (isHtmlResponse
+      ? "Could not reach account identity sync endpoint."
+      : "Could not sync user identity lookup.");
   const nextError = new Error(status ? `${message} (status ${status})` : message) as Error & {
     code?: string;
     status?: number | null;

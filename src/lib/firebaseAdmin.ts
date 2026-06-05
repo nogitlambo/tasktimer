@@ -1,6 +1,7 @@
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
 
@@ -61,4 +62,10 @@ export function getFirebaseAdminDb() {
 
 export function getFirebaseAdminAuth() {
   return getAuth(getFirebaseAdminApp());
+}
+
+export function getFirebaseAdminStorageBucket() {
+  const app = getFirebaseAdminApp();
+  const bucketName = asString(process.env.FIREBASE_ADMIN_STORAGE_BUCKET) || asString(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+  return bucketName ? getStorage(app).bucket(bucketName) : getStorage(app).bucket();
 }

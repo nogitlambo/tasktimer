@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue, type DocumentData, type Firestore, type Query } from "firebase-admin/firestore";
 
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getFirebaseAdminDb, getFirebaseAdminStorageBucket } from "@/lib/firebaseAdmin";
 import {
   createApiAuthErrorResponse,
   createApiInternalErrorResponse,
@@ -85,6 +85,14 @@ async function deleteFeedbackVotesForUser(db: Firestore, uid: string, authoredFe
   return deletedCount;
 }
 
+async function deleteHoldingSpaceStorageFiles(uid: string) {
+  const bucket = getFirebaseAdminStorageBucket();
+  await bucket.deleteFiles({
+    prefix: `users/${uid}/holding-space/`,
+    force: true,
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -125,6 +133,7 @@ export async function POST(req: Request) {
       deleteQueryDocs(db.collection("feedback_private").where("ownerUid", "==", uid)),
       deleteFeedbackVotesForUser(db, uid, authoredFeedbackIds),
       deleteQueryDocs(db.collection("api_rate_limits").where("uid", "==", uid)),
+      deleteHoldingSpaceStorageFiles(uid),
       db.collection("feedback_limits").doc(uid).delete(),
       (usernameKey ? db.collection("usernames").doc(usernameKey).delete() : Promise.resolve()),
       (emailKey ? db.collection("userEmailLookup").doc(emailKey).delete() : Promise.resolve()),

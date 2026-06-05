@@ -28,6 +28,18 @@ describe("buildIdentitySyncResponseError", () => {
     expect(error.status).toBe(500);
     expect(error.logId).toBe("acct-sync-ABC123");
   });
+
+  it("does not use HTML error documents as the identity sync error message", async () => {
+    const error = await buildIdentitySyncResponseError(
+      new Response("<!DOCTYPE html><html><body><h1>Page Not Found</h1></body></html>", {
+        status: 404,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      })
+    );
+
+    expect(error.message).toBe("Could not reach account identity sync endpoint. (status 404)");
+    expect(error.status).toBe(404);
+  });
 });
 
 describe("isLargeImplicitHistoryDelete", () => {

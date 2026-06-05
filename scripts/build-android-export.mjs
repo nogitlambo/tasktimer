@@ -5,8 +5,10 @@ import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const apiDir = path.join(root, "src", "app", "api");
-const stagingRoot = path.join(root, "workspace", "android-export-staging");
+const primitivesDir = path.join(root, "src", "app", "primitives");
+const stagingRoot = path.join(root, "node_modules", ".cache", "tasklaunch-android-export-staging");
 const stagedApiDir = path.join(stagingRoot, "api");
+const stagedPrimitivesDir = path.join(stagingRoot, "primitives");
 
 function parseCliArgs(argv) {
   const args = { envFile: "" };
@@ -63,6 +65,15 @@ async function restoreApiDir() {
   await rm(stagedApiDir, { recursive: true, force: true });
 }
 
+async function restorePrimitivesDir() {
+  if (!existsSync(stagedPrimitivesDir)) return;
+  if (existsSync(primitivesDir)) {
+    throw new Error(`Cannot restore primitives route because ${primitivesDir} already exists.`);
+  }
+  await cp(stagedPrimitivesDir, primitivesDir, { recursive: true, force: true });
+  await rm(stagedPrimitivesDir, { recursive: true, force: true });
+}
+
 async function stageApiDir() {
   if (!existsSync(apiDir)) return false;
   await mkdir(stagingRoot, { recursive: true });
@@ -74,12 +85,25 @@ async function stageApiDir() {
   return true;
 }
 
+async function stagePrimitivesDir() {
+  if (!existsSync(primitivesDir)) return false;
+  await mkdir(stagingRoot, { recursive: true });
+  if (existsSync(stagedPrimitivesDir)) {
+    await rm(stagedPrimitivesDir, { recursive: true, force: true });
+  }
+  await cp(primitivesDir, stagedPrimitivesDir, { recursive: true, force: true });
+  await rm(primitivesDir, { recursive: true, force: true });
+  return true;
+}
+
 let apiDirMoved = false;
+let primitivesDirMoved = false;
 
 try {
   const cliArgs = parseCliArgs(process.argv.slice(2));
   const envOverrides = await loadEnvOverrides(cliArgs.envFile);
   apiDirMoved = await stageApiDir();
+  primitivesDirMoved = await stagePrimitivesDir();
 
   const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
   const result = spawnSync(process.execPath, [nextBin, "build", "--webpack"], {
@@ -99,6 +123,9 @@ try {
 
   process.exitCode = result.status ?? 1;
 } finally {
+  if (primitivesDirMoved) {
+    await restorePrimitivesDir();
+  }
   if (apiDirMoved) {
     await restoreApiDir();
   }
