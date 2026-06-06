@@ -69,17 +69,21 @@ export default function FocusModeScreen() {
               <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Add link" aria-label="Add link" data-rich-note-command="createLink" aria-pressed="false">
                 <AppImg className="richNoteToolbarIcon" src="/icons/link.png" alt="" aria-hidden="true" />
               </button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Attach File(s)" aria-label="Attach File(s)" data-rich-note-command="attachFiles" aria-pressed="false">Attach File(s)</button>
             </div>
-            <div
-              className="text focusSessionNotesInput richNoteEditor"
-              id="focusSessionNotesInput"
-              role="textbox"
-              aria-multiline="true"
-              aria-label="Session Notes"
-              contentEditable
-              suppressContentEditableWarning
-              data-rich-note-editor="true"
-            />
+            <div className="sessionNoteEditorGrid">
+              <div
+                className="text focusSessionNotesInput richNoteEditor"
+                id="focusSessionNotesInput"
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Session Notes"
+                contentEditable
+                suppressContentEditableWarning
+                data-rich-note-editor="true"
+              />
+              <div className="sessionNoteAttachments" id="focusSessionNoteAttachments" aria-live="polite" />
+            </div>
             <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
           </div>
         </div>
@@ -96,7 +100,7 @@ export default function FocusModeScreen() {
         </div>
       </div>
       <div className="focusModeExitBar">
-        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button">
+        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button" aria-label="Close Focus Mode">
           Exit
         </button>
       </div>

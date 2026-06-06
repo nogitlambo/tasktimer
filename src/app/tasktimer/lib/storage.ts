@@ -8,6 +8,7 @@ import {
   finalizeLiveSessionHistory,
   deleteDeletedTaskMeta,
   deleteTask,
+  loadUserTimerState,
   loadUserWorkspace,
   loadDashboard,
   loadPreferences,
@@ -42,6 +43,7 @@ import {
   normalizeOptimalProductivityDays,
   normalizeTimeOfDay,
 } from "./productivityPeriod";
+import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
 import {
   hasLocalDatePassed,
   normalizeLocalDateValue,
@@ -474,6 +476,7 @@ function normalizeLiveTaskSession(row: unknown): LiveTaskSession | null {
   const note = typeof (row as LiveTaskSession).note === "string" && String((row as LiveTaskSession).note).trim()
     ? String((row as LiveTaskSession).note).trim()
     : undefined;
+  const attachments = normalizeSessionNoteAttachments((row as LiveTaskSession).attachments);
   return {
     sessionId,
     taskId,
@@ -485,6 +488,7 @@ function normalizeLiveTaskSession(row: unknown): LiveTaskSession | null {
     status: "running",
     ...(color ? { color } : {}),
     ...(note ? { note } : {}),
+    ...(attachments.length ? { attachments } : {}),
   };
 }
 
@@ -917,7 +921,7 @@ function historyRowsSignature(rows: HistoryEntry[] | null | undefined): string {
   return arr
     .map(
       (row) =>
-        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}|${String(row?.sessionId || "")}`
+        `${Number(row?.ts || 0)}|${Number(row?.ms || 0)}|${String(row?.name || "")}|${String(row?.note || "")}|${JSON.stringify(normalizeSessionNoteAttachments(row?.attachments))}|${normalizeCompletionDifficulty(row?.completionDifficulty) || ""}|${String(row?.sessionId || "")}`
     )
     .join(",");
 }
@@ -934,6 +938,7 @@ function liveSessionSignature(session: LiveTaskSession | null | undefined): stri
     normalized.elapsedMs,
     normalized.resumedFromMs || 0,
     normalized.note || "",
+    JSON.stringify(normalizeSessionNoteAttachments(normalized.attachments)),
     normalized.color || "",
     normalized.status,
   ].join("|");
@@ -948,10 +953,12 @@ function normalizeHistoryEntry(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const attachments = normalizeSessionNoteAttachments((row as HistoryEntry).attachments);
   const sessionId = (row as HistoryEntry).sessionId;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
+  if (attachments.length) next.attachments = attachments;
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   if (typeof sessionId === "string" && sessionId.trim()) next.sessionId = sessionId.trim();
   return next;
@@ -1178,6 +1185,103 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   scheduleLeaderboardProfileSync(uid);
   emitPreferenceChange();
+}
+
+export async function hydrateTimerStateFromCloud(opts?: { force?: boolean }): Promise<void> {
+  const uid = currentUid();
+  if (!uid) {
+    clearScopedStorageState();
+    return;
+  }
+  writeStoredActiveUid(uid);
+  if (!opts?.force && hydratedUid === uid) return;
+
+  const snapshot = await loadUserTimerState(uid);
+  const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
+  const nextLiveSessions = snapshot.liveSessionsByTaskId || {};
+  const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
+  const pendingTaskSync = loadPendingMap(PENDING_TASK_SYNC_KEY);
+  const pendingLiveSessionSync = loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY);
+  const shadowTasks = loadShadowTasks(uid);
+  const shadowLiveSessions = loadShadowLiveSessions(uid);
+
+  const filteredTasks = nextTasks.filter((task) => !pendingTaskDeletes[String(task?.id || "")]);
+  if (Object.keys(pendingTaskSync).length) {
+    const shadowTaskById = new Map(shadowTasks.map((task) => [String(task?.id || ""), task] as const));
+    const filteredTaskById = new Map(filteredTasks.map((task) => [String(task?.id || ""), task] as const));
+    Object.keys(pendingTaskSync).forEach((taskId) => {
+      const shadowTask = shadowTaskById.get(taskId);
+      if (!shadowTask) return;
+      filteredTaskById.set(taskId, shadowTask);
+    });
+    filteredTasks.length = 0;
+    filteredTaskById.forEach((task) => {
+      filteredTasks.push(task);
+    });
+  }
+
+  const filteredLiveSessions: LiveSessionsByTaskId = { ...nextLiveSessions };
+  Object.keys(pendingTaskDeletes).forEach((taskId) => {
+    delete filteredLiveSessions[taskId];
+  });
+  Object.keys(pendingLiveSessionSync).forEach((taskId) => {
+    if (Object.prototype.hasOwnProperty.call(shadowLiveSessions, taskId)) {
+      const session = normalizeLiveTaskSession(shadowLiveSessions[taskId]);
+      if (session) filteredLiveSessions[taskId] = session;
+    } else {
+      delete filteredLiveSessions[taskId];
+    }
+  });
+
+  const cloudTaskIdSet = new Set(nextTasks.map((task) => String(task?.id || "")));
+  Object.keys(pendingTaskDeletes).forEach((taskId) => {
+    if (!cloudTaskIdSet.has(taskId)) clearPendingTaskDelete(taskId);
+  });
+  const cloudTaskById = new Map(nextTasks.map((task) => [String(task?.id || ""), task] as const));
+  const shadowTaskById = new Map(shadowTasks.map((task) => [String(task?.id || ""), task] as const));
+  Object.keys(pendingTaskSync).forEach((taskId) => {
+    const cloudTask = cloudTaskById.get(taskId);
+    const shadowTask = shadowTaskById.get(taskId);
+    if (!shadowTask) {
+      clearPendingTaskSync(taskId);
+      return;
+    }
+    if (cloudTask && taskSignature(cloudTask) === taskSignature(shadowTask)) {
+      clearPendingTaskSync(taskId);
+    }
+  });
+  Object.keys(pendingLiveSessionSync).forEach((taskId) => {
+    const cloudSig = liveSessionSignature(nextLiveSessions[taskId]);
+    const shadowSig = liveSessionSignature(shadowLiveSessions[taskId]);
+    if (cloudSig === shadowSig) clearPendingLiveSessionSync(taskId);
+  });
+
+  cachedTasks = cloneTasks(filteredTasks);
+  cachedLiveSessions = filteredLiveSessions;
+  saveShadowTasks(cachedTasks);
+  saveShadowLiveSessions(cachedLiveSessions);
+  hydratedUid = uid;
+
+  const pendingTaskDeleteIds = Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).filter(Boolean);
+  const pendingTaskSyncIds = Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).filter(Boolean);
+  if (pendingTaskDeleteIds.length || pendingTaskSyncIds.length) {
+    const cachedTaskById = new Map(cachedTasks.map((task) => [String(task?.id || ""), task] as const));
+    enqueueTaskSync(uid, cachedTaskById, pendingTaskSyncIds, pendingTaskDeleteIds);
+  }
+  const pendingFinalizedSessionSync = loadPendingFinalizedSessionSync();
+  Object.entries(pendingFinalizedSessionSync).forEach(([taskId, entry]) => {
+    enqueueLiveSessionFinalize(uid, taskId, entry, { force: true, reason: "timer-state-hydrate-finalize" });
+  });
+  const pendingLiveSessionSyncIds = Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).filter(Boolean);
+  pendingLiveSessionSyncIds.forEach((taskId) => {
+    if (pendingFinalizedSessionSync[taskId]) return;
+    const session = normalizeLiveTaskSession(cachedLiveSessions?.[taskId]);
+    if (session) {
+      enqueueLiveSessionUpsert(uid, session);
+      return;
+    }
+    enqueueLiveSessionClear(uid, taskId);
+  });
 }
 
 export function clearScopedStorageState(): void {
@@ -2070,6 +2174,15 @@ export function hasPendingTaskOrHistorySync(): boolean {
     Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).length > 0 ||
     Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).length > 0 ||
     Object.keys(loadPendingMap(PENDING_HISTORY_SYNC_KEY)).length > 0 ||
+    Object.keys(loadPendingFinalizedSessionSync()).length > 0 ||
+    Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).length > 0
+  );
+}
+
+export function hasPendingTaskOrLiveSessionSync(): boolean {
+  return (
+    Object.keys(loadPendingMap(PENDING_TASK_SYNC_KEY)).length > 0 ||
+    Object.keys(loadPendingMap(PENDING_TASK_DELETES_KEY)).length > 0 ||
     Object.keys(loadPendingFinalizedSessionSync()).length > 0 ||
     Object.keys(loadPendingMap(PENDING_LIVE_SESSION_SYNC_KEY)).length > 0
   );

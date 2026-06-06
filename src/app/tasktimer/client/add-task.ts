@@ -7,6 +7,7 @@ import {
 import {
   formatAddTaskDurationReadout,
   formatAggregateTimeGoalValidationMessage,
+  formatTaskScheduleSummary,
   getAddTaskDurationMaxForPeriod,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
@@ -152,9 +153,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       return ctx.getAddTaskDurationUnit() === "minute" ? value : value * 60;
     }
     if (ctx.getAddTaskDurationUnit() === "minute") {
-      return ctx.getAddTaskDurationPeriod() === "day" ? value : value * 7;
+      return value;
     }
-    return ctx.getAddTaskDurationPeriod() === "day" ? value * 60 : value * 60 * 7;
+    return value * 60;
   }
 
   function getAddTaskTimeGoalMinutes() {
@@ -196,6 +197,26 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       els.addTaskPlannedStartInput.value = nextValue;
     }
     syncAddTaskPlannedStartUi();
+    syncAddTaskScheduleSummary();
+  }
+
+  function syncAddTaskScheduleSummary() {
+    const text =
+      addTaskScheduleEnabled && getAddTaskTimeGoalMinutes() > 0
+        ? formatTaskScheduleSummary({
+            taskType: isOnceOffTaskType() ? "once-off" : "recurring",
+            durationValue: ctx.getAddTaskDurationValue(),
+            durationUnit: ctx.getAddTaskDurationUnit(),
+            durationPeriod: isOnceOffTaskType() ? "day" : ctx.getAddTaskDurationPeriod(),
+            plannedStartTime: ctx.getAddTaskPlannedStartTime() || "09:00",
+            productivityDays: ctx.getOptimalProductivityDays(),
+            onceOffDay: ctx.getAddTaskOnceOffDay(),
+          })
+        : "";
+    if (els.addTaskScheduleSummaryText) {
+      els.addTaskScheduleSummaryText.textContent = text;
+    }
+    els.addTaskScheduleSummary?.classList.toggle("isHidden", !text);
   }
 
   function buildAddTaskScheduleDraft(plannedStartTime: string): Task {
@@ -364,6 +385,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncPill(els.addTaskDurationPeriodDay, ctx.getAddTaskDurationPeriod() === "day", !canUseDay || onceOff);
     syncPill(els.addTaskDurationPeriodWeek, ctx.getAddTaskDurationPeriod() === "week", onceOff);
     syncAddTaskDurationReadout();
+    syncAddTaskScheduleSummary();
   }
 
   function syncAddTaskTimeGoalUi() {
@@ -813,6 +835,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskMsToggle) els.addTaskMsToggle.checked = false;
     if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
     if (els.addTaskAdvancedMenu) els.addTaskAdvancedMenu.open = false;
+    if (els.addTaskScheduleSummary) els.addTaskScheduleSummary.open = false;
     setAddTaskColorPopoverOpen(false);
     if (els.addTaskColorPalette) {
       els.addTaskColorPalette.setAttribute("data-view", "main");
@@ -963,6 +986,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       addTaskScheduleEnabled = !!els.addTaskScheduleToggle?.checked;
       clearAddTaskValidationState();
       syncAddTaskScheduleToggleUi();
+      syncAddTaskScheduleSummary();
       if (addTaskScheduleEnabled) {
         syncAddTaskTypeUi();
         syncAddTaskDurationUi();
@@ -990,6 +1014,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskOnceOffDaySelect, "change", () => {
       ctx.setAddTaskOnceOffDayState((els.addTaskOnceOffDaySelect?.value || "mon") as ScheduleDay);
       clearAddTaskValidationState();
+      syncAddTaskScheduleSummary();
       maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskName, "input", () => {
@@ -1074,14 +1099,19 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskDurationUi();
       maybeAutoFillAddTaskPlannedStart();
     });
-    ctx.on(els.addTaskPlannedStartHourSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartHourSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartMinuteSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartMinuteSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartTimeInput, "change", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
-    ctx.on(els.addTaskPlannedStartTimeInput, "input", () => syncPlannedStartValueFromSelectors({ markTouched: true }));
+    const syncTouchedPlannedStart = () => {
+      syncPlannedStartValueFromSelectors({ markTouched: true });
+      syncAddTaskScheduleSummary();
+    };
+    ctx.on(els.addTaskPlannedStartHourSelect, "change", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartHourSelect, "input", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartMinuteSelect, "change", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartMinuteSelect, "input", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartMeridiemSelect, "change", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartTimeInput, "change", syncTouchedPlannedStart);
+    ctx.on(els.addTaskPlannedStartTimeInput, "input", syncTouchedPlannedStart);
+    ctx.on(typeof window !== "undefined" ? window : null, "tasktimer:optimal-productivity-days-changed", syncAddTaskScheduleSummary);
     ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
       if (!els.addTaskPlannedStartPushReminders?.checked) return;
       void enablePushAlertsForCurrentRuntime();
@@ -1175,6 +1205,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     applyAddTaskCheckpointValidationHighlights,
     showAddTaskValidationError,
     syncAddTaskDurationReadout,
+    syncAddTaskScheduleSummary,
     renderAddTaskMilestoneEditor,
     syncAddTaskCheckpointAlertUi,
     setAddTaskMilestoneUnitUi: () => {},

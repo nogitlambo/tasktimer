@@ -50,6 +50,8 @@ import {
 } from "./productivityPeriod";
 import { normalizeStartupModule, type StartupModulePreference } from "./startupModule";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./interactionHapticsIntensity";
+import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
+import type { SessionNoteAttachment } from "./types";
 
 export type UserPreferencesV1 = {
   schemaVersion: 1;
@@ -98,6 +100,11 @@ export type WorkspaceSnapshot = {
   preferences: UserPreferencesV1 | null;
   dashboard: DashboardConfig | null;
   taskUi: TaskUiConfig | null;
+};
+
+export type TimerStateSnapshot = {
+  tasks: Task[];
+  liveSessionsByTaskId: LiveSessionsByTaskId;
 };
 
 function describeError(error: unknown): Record<string, unknown> {
@@ -300,10 +307,12 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   };
   const color = (row as HistoryEntry).color;
   const note = (row as HistoryEntry).note;
+  const attachments = normalizeSessionNoteAttachments((row as HistoryEntry).attachments);
   const sessionId = (row as HistoryEntry).sessionId;
   const completionDifficulty = normalizeCompletionDifficulty((row as HistoryEntry).completionDifficulty);
   if (typeof color === "string" && color.trim()) next.color = color;
   if (typeof note === "string" && note.trim()) next.note = note.trim();
+  if (attachments.length) next.attachments = attachments;
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   if (typeof sessionId === "string" && sessionId.trim()) next.sessionId = sessionId.trim();
   return next;
@@ -331,6 +340,7 @@ function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTa
   const resumedFromMs = Number.isFinite(Number((row as LiveTaskSession).resumedFromMs)) ? Math.max(0, Math.floor(Number((row as LiveTaskSession).resumedFromMs))) : 0;
   const name = String((row as LiveTaskSession).name || "").trim() || "Task";
   const note = typeof (row as LiveTaskSession).note === "string" ? String((row as LiveTaskSession).note).trim() : "";
+  const attachments = normalizeSessionNoteAttachments((row as LiveTaskSession).attachments);
   const color = typeof (row as LiveTaskSession).color === "string" ? String((row as LiveTaskSession).color).trim() : "";
   return {
     sessionId,
@@ -342,6 +352,7 @@ function normalizeLiveTaskSessionRecord(taskIdRaw: string, row: unknown): LiveTa
     ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
     status: "running",
     ...(note ? { note } : {}),
+    ...(attachments.length ? { attachments } : {}),
     ...(color ? { color } : {}),
   };
 }
@@ -1536,6 +1547,45 @@ export async function loadLiveSessions(uid: string): Promise<LiveSessionsByTaskI
   return snapshot.liveSessionsByTaskId || {};
 }
 
+export async function loadUserTimerState(uid: string): Promise<TimerStateSnapshot> {
+  const db = dbOrNull();
+  if (!db || !uid) {
+    return {
+      tasks: [],
+      liveSessionsByTaskId: {},
+    };
+  }
+
+  const taskDocs = await safeGetDocsArray(
+    () => getDocs(collection(db, "users", uid, "tasks")),
+    "timer tasks collection",
+    { uid }
+  );
+  const liveSessionsByTaskId: LiveSessionsByTaskId = {};
+  const rows = await Promise.all(
+    taskDocs.map(async (d) => {
+      const task = mapTaskFromFirestore(d.id, d.data() as Record<string, unknown>);
+      const liveSessionRef = taskLiveSessionDoc(uid, d.id);
+      const liveSessionSnap = liveSessionRef
+        ? await safeGetDoc(
+            () => getDoc(liveSessionRef),
+            null as Awaited<ReturnType<typeof getDoc>> | null,
+            "timer live session doc",
+            { uid, taskId: d.id }
+          )
+        : null;
+      const liveSession = liveSessionSnap?.exists() ? normalizeLiveTaskSessionRecord(d.id, liveSessionSnap.data()) : null;
+      if (liveSession) liveSessionsByTaskId[d.id] = liveSession;
+      return task;
+    })
+  );
+
+  return {
+    tasks: rows,
+    liveSessionsByTaskId,
+  };
+}
+
 export async function saveTask(uid: string, task: Task): Promise<void> {
   const ref = taskDoc(uid, String(task.id || ""));
   if (!ref) {
@@ -1690,7 +1740,9 @@ export function subscribeToTaskCollection(uid: string, listener: () => void): ()
   if (!col || !uid) return () => {};
   const unsub = onSnapshot(
     col,
-    () => {
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      if (snapshot.metadata.hasPendingWrites) return;
       listener();
     },
     () => {
@@ -1714,7 +1766,9 @@ export function subscribeToTaskLiveSessionDocs(uid: string, taskIds: string[], l
     if (!ref) return;
     const unsub = onSnapshot(
       ref,
-      () => {
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        if (snapshot.metadata.hasPendingWrites) return;
         listener();
       },
       () => {
@@ -1780,6 +1834,8 @@ export async function saveLiveSession(uid: string, session: LiveTaskSession): Pr
     serverUpdatedAt: serverTimestamp(),
   };
   if (typeof session.note === "string" && session.note.trim()) payload.note = session.note.trim();
+  const attachments = normalizeSessionNoteAttachments(session.attachments);
+  if (attachments.length) payload.attachments = attachments;
   if (typeof session.color === "string" && session.color.trim()) payload.color = session.color.trim();
   await setDoc(ref, payload, { merge: true });
 }
@@ -1845,6 +1901,7 @@ type HistoryDocPayload = {
   name: string;
   color?: string;
   note?: string;
+  attachments?: SessionNoteAttachment[];
   sessionId?: string;
   completionDifficulty?: 1 | 2 | 3 | 4 | 5;
 };
@@ -1862,6 +1919,7 @@ function buildHistoryDocPayload(taskId: string, entry: HistoryEntry): HistoryDoc
     name: String(entry?.name || ""),
     ...(entry?.color != null ? { color: String(entry.color) } : {}),
     ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+    ...(normalizeSessionNoteAttachments(entry?.attachments).length ? { attachments: normalizeSessionNoteAttachments(entry.attachments) } : {}),
     ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
     ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
       ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) as 1 | 2 | 3 | 4 | 5 }
@@ -1877,6 +1935,7 @@ function normalizeComparableHistoryPayload(row: Record<string, unknown> | Histor
     name: String(row.name || ""),
     ...(row.color != null ? { color: String(row.color) } : {}),
     ...(typeof row.note === "string" && row.note.trim() ? { note: row.note.trim() } : {}),
+    ...(normalizeSessionNoteAttachments(row.attachments).length ? { attachments: normalizeSessionNoteAttachments(row.attachments) } : {}),
     ...(typeof row.sessionId === "string" && row.sessionId.trim() ? { sessionId: row.sessionId.trim() } : {}),
     ...(normalizeCompletionDifficulty(row.completionDifficulty)
       ? { completionDifficulty: normalizeCompletionDifficulty(row.completionDifficulty) as 1 | 2 | 3 | 4 | 5 }
@@ -1943,6 +2002,7 @@ export async function replaceTaskHistory(
       name: String(entry?.name || ""),
       ...(entry?.color != null ? { color: String(entry.color) } : {}),
       ...(typeof entry?.note === "string" && entry.note.trim() ? { note: entry.note.trim() } : {}),
+      ...(normalizeSessionNoteAttachments(entry?.attachments).length ? { attachments: normalizeSessionNoteAttachments(entry.attachments) } : {}),
       ...(typeof entry?.sessionId === "string" && entry.sessionId.trim() ? { sessionId: entry.sessionId.trim() } : {}),
       ...(normalizeCompletionDifficulty(entry?.completionDifficulty)
         ? { completionDifficulty: normalizeCompletionDifficulty(entry?.completionDifficulty) }

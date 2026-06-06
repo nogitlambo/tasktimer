@@ -130,6 +130,21 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
     expect(getScheduleTaskDurationMinutesForDay(weekly, "fri")).toBe(33);
   });
 
+  it("splits a 6 hour weekly recurring task into 2 hour scheduled days", () => {
+    const weekly = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 360,
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "mon")).toBe(120);
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "wed")).toBe(120);
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "fri")).toBe(120);
+  });
+
   it("checks conflicts using weekly per-day split durations", () => {
     const weekly = task({
       id: "weekly",

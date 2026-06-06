@@ -7,11 +7,13 @@ import {
   CLOSE_CLICK_AUDIO_SRC,
   DROPDOWN_CLICK_AUDIO_SRC,
   MODAL_OPEN_AUDIO_SRC,
+  NOTE_TOOLBAR_CLICK_AUDIO_SRC,
   getCheckboxClickTarget,
   getCancelClickTarget,
   getCloseClickTarget,
   getDropdownClickTarget,
   getModalOpenClickTarget,
+  getNoteToolbarClickTarget,
   getSecondaryClickTarget,
   getTaskFlipClickTarget,
   playCancelClickAudio,
@@ -19,6 +21,7 @@ import {
   playCloseClickAudio,
   playDropdownClickAudio,
   playModalOpenClickAudio,
+  playNoteToolbarClickAudio,
   playSecondaryClickAudio,
   playTaskFlipClickAudio,
   registerSecondaryClickAudio,
@@ -291,6 +294,18 @@ describe("secondary click audio", () => {
     expect(getSecondaryClickTarget(leaderboardIdentityButton)).toBeNull();
   });
 
+  it("matches rich note toolbar controls for dedicated note toolbar audio", () => {
+    const noteToolbarSelector = ".richNoteToolbar [data-rich-note-command]";
+    const toolbarButton = makeElement({
+      selectorMatches: { [noteToolbarSelector]: true, "button,a": true },
+      attributes: { "data-rich-note-command": "bold", "aria-label": "Bold" },
+      textContent: "B",
+    });
+
+    expect(getNoteToolbarClickTarget(toolbarButton)).toBe(toolbarButton);
+    expect(getSecondaryClickTarget(toolbarButton)).toBeNull();
+  });
+
   it("matches close controls for dedicated close audio", () => {
     const textSelector = "button,a";
     const closeByText = makeElement({ selectorMatches: { [textSelector]: true }, textContent: "Close" });
@@ -396,6 +411,16 @@ describe("secondary click audio", () => {
     expect(() => playModalOpenClickAudio(audioFactory)).not.toThrow();
 
     expect(audioFactory).toHaveBeenCalledWith(MODAL_OPEN_AUDIO_SRC);
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the configured note toolbar audio source without surfacing playback failures", () => {
+    const play = vi.fn(() => Promise.reject(new Error("blocked")));
+    const audioFactory = vi.fn(() => ({ currentTime: 12, play }));
+
+    expect(() => playNoteToolbarClickAudio(audioFactory)).not.toThrow();
+
+    expect(audioFactory).toHaveBeenCalledWith(NOTE_TOOLBAR_CLICK_AUDIO_SRC);
     expect(play).toHaveBeenCalledTimes(1);
   });
 
@@ -509,6 +534,60 @@ describe("secondary click audio", () => {
 
     expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes rich note toolbar controls to the dedicated note toolbar audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playNoteToolbarAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playNoteToolbarAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({
+        selectorMatches: { ".richNoteToolbar [data-rich-note-command]": true, "button,a": true },
+        attributes: { "data-rich-note-command": "bold", "aria-label": "Bold" },
+        textContent: "B",
+      }),
+    } as unknown as Event);
+
+    expect(playNoteToolbarAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("creates and warms the note toolbar audio player with the configured source", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const mockPlayers: Array<{
+      warm: ReturnType<typeof vi.fn>;
+      play: ReturnType<typeof vi.fn>;
+      isReady: ReturnType<typeof vi.fn>;
+      playWhenReady: ReturnType<typeof vi.fn>;
+    }> = [];
+    vi.spyOn(clickAudioPlayerModule, "createClickAudioPlayer").mockImplementation(() => {
+      const player = {
+        warm: vi.fn(),
+        play: vi.fn(),
+        isReady: vi.fn(() => true),
+        playWhenReady: vi.fn(() => Promise.resolve("played" as const)),
+      };
+      mockPlayers.push(player);
+      return player as never;
+    });
+
+    registerSecondaryClickAudio({ on, documentRef: documentRef as unknown as Document });
+
+    expect(clickAudioPlayerModule.createClickAudioPlayer).toHaveBeenCalledWith(NOTE_TOOLBAR_CLICK_AUDIO_SRC);
+    expect(mockPlayers.at(-1)?.warm).toHaveBeenCalledTimes(1);
   });
 
   it("routes close controls to the dedicated close audio callback", () => {

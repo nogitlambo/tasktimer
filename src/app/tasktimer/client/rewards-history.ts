@@ -6,6 +6,8 @@ import { nowMs } from "../lib/time";
 import type { HistoryEntry, LiveTaskSession, Task } from "../lib/types";
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 import { ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS } from "../lib/storage";
+import { normalizeSessionNoteAttachments } from "../lib/sessionNoteAttachments";
+import type { SessionNoteAttachment } from "../lib/types";
 import { dispatchRankPromotionEvent, getRankPromotion } from "./rank-promotion";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 
@@ -452,7 +454,8 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     task: Task,
     elapsedMsOverride?: number | null,
     noteOverride?: string,
-    resumedFromMsOverride?: number | null
+    resumedFromMsOverride?: number | null,
+    attachmentsOverride?: SessionNoteAttachment[] | null
   ): LiveTaskSession | null {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return null;
@@ -470,6 +473,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         ? Math.max(0, Math.floor(Number(resumedFromMsOverride) || 0))
         : Math.max(0, Math.floor(Number(existing?.resumedFromMs || 0) || 0));
     const note = String(noteOverride || getCurrentSessionNoteForTask(taskId) || "").trim();
+    const attachments = normalizeSessionNoteAttachments(
+      attachmentsOverride != null ? attachmentsOverride : existing?.attachments
+    );
     return {
       sessionId: String(existing?.sessionId || `${taskId}:${startedAtMs}`),
       taskId,
@@ -481,11 +487,12 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       status: "running",
       color: ctx.historyEntryColorForTaskMs(task, elapsedMs),
       ...(note ? { note } : {}),
+      ...(attachments.length ? { attachments } : {}),
     };
   }
 
-  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) {
-    const session = buildLiveSession(task, opts?.elapsedMs, opts?.note, opts?.resumedFromMs);
+  function upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) {
+    const session = buildLiveSession(task, opts?.elapsedMs, opts?.note, opts?.resumedFromMs, opts?.attachments);
     if (!session) return;
     ctx.setLiveSessionsByTaskId({
       ...(ctx.getLiveSessionsByTaskId() || {}),
@@ -513,7 +520,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     elapsedMs: number,
     noteOverride?: string,
     completionDifficultyRaw?: CompletionDifficulty,
-    opts?: { deferTimeGoalXp?: boolean }
+    opts?: { deferTimeGoalXp?: boolean; attachments?: SessionNoteAttachment[] }
   ) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!task || !task.id || safeElapsedMs <= 0) return;
@@ -523,6 +530,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const canMergeLatestSameDay = Math.max(0, Math.floor(Number(liveSession?.resumedFromMs || 0) || 0)) > 0 || (!liveSession && Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0)) > 0);
     const liveNote = getCurrentSessionNoteForTask(taskId);
     const note = String(noteOverride || liveNote || "").trim();
+    const attachments = normalizeSessionNoteAttachments(opts?.attachments ?? liveSession?.attachments);
     const completionDifficulty = normalizeCompletionDifficulty(completionDifficultyRaw);
     if (note) ctx.setFocusSessionDraft(taskId, note);
     const historyResult = upsertCompletedHistory(task.id, {
@@ -531,6 +539,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       ms: safeElapsedMs,
       color: ctx.historyEntryColorForTaskMs(task, safeElapsedMs),
       ...(note ? { note } : {}),
+      ...(attachments.length ? { attachments } : {}),
       ...(sessionId ? { sessionId } : {}),
       ...(completionDifficulty ? { completionDifficulty } : {}),
     }, { canMergeLatestSameDay });
@@ -607,7 +616,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
 
   function finalizeLiveSession(
     task: Task,
-    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
@@ -619,6 +628,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     if (elapsedMs > 0) {
       appendCompletedSessionHistory(task, nowMs(), elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty, {
         deferTimeGoalXp: opts?.deferTimeGoalXp === true,
+        attachments: opts?.attachments ?? liveSession?.attachments,
       });
     }
     clearRewardSessionTracker(taskId);

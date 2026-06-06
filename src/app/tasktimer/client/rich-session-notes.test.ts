@@ -50,7 +50,9 @@ describe("rich session notes", () => {
   it("renders toolbar buttons as unpressed by default", () => {
     const html = richNoteToolbarHtml("note-editor");
 
-    expect(html.match(/aria-pressed="false"/g)).toHaveLength(6);
+    expect(html.match(/aria-pressed="false"/g)).toHaveLength(7);
+    expect(html).toContain('data-rich-note-command="attachFiles"');
+    expect(html).toContain("Attach File(s)");
   });
 
   it("syncs pressed state from rich text command state", () => {

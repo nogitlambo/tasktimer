@@ -12,7 +12,13 @@ import { isOverlayVisible } from "./overlay-visibility";
 type CreateTaskTimerCloudSyncOptions = {
   workspaceRepository: Pick<
     TaskTimerWorkspaceRepository,
-    "hasPendingTaskOrHistorySync" | "hydrateFromCloud" | "subscribeTaskCollection" | "resetVolatileStateForAuthChange"
+    | "hasPendingTaskOrHistorySync"
+    | "hasPendingTaskOrLiveSessionSync"
+    | "hydrateFromCloud"
+    | "hydrateTimerStateFromCloud"
+    | "subscribeTaskCollection"
+    | "subscribeTaskLiveSessions"
+    | "resetVolatileStateForAuthChange"
   >;
   runtime: TaskTimerRuntime;
   on: (target: EventTarget | null | undefined, type: string, handler: EventListenerOrEventListenerObject) => void;
@@ -29,6 +35,7 @@ type CreateTaskTimerCloudSyncOptions = {
   deferredCloudRefreshTimer: TaskTimerStateAccessor<number | null>;
   lastUiInteractionAtMs: TaskTimerStateAccessor<number>;
   hydrateUiStateFromCaches: (opts?: { skipDashboardWidgetsRender?: boolean }) => void;
+  hydrateTimerStateFromCaches: (opts?: { skipDashboardWidgetsRender?: boolean }) => void;
   syncTimeGoalModalWithTaskState: () => void;
   render: () => void;
   renderDashboardWidgets?: (opts?: DashboardRenderOptions) => void;
@@ -57,8 +64,11 @@ function hasRemoveHandle(value: unknown): value is CapListenerHandle {
 
 export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOptions) {
   const CLOUD_REFRESH_TIMEOUT_MS = 15000;
+  const TIMER_STATE_REFRESH_DEBOUNCE_MS = 300;
   let lastObservedAuthUid = String(options.currentUid() || "").trim();
   let activeRefreshRequestId = 0;
+  let timerStateRefreshInFlight: Promise<void> | null = null;
+  let timerStateRefreshTimer: number | null = null;
 
   function isDashboardPageActive() {
     return typeof document !== "undefined" && document.body?.getAttribute("data-app-page") === "dashboard";
@@ -190,6 +200,79 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     void rehydrateFromCloudAndRender({ force: true });
   }
 
+  function clearTimerStateRefreshTimer() {
+    if (timerStateRefreshTimer == null) return;
+    window.clearTimeout(timerStateRefreshTimer);
+    timerStateRefreshTimer = null;
+  }
+
+  function refreshTimerStateFromCloudAndRender() {
+    if (options.runtime.destroyed) return Promise.resolve();
+    if (timerStateRefreshInFlight) return timerStateRefreshInFlight;
+    const activeDashboardPage = isDashboardPageActive();
+    const nextInFlight = options.workspaceRepository
+      .hydrateTimerStateFromCloud({ force: true })
+      .then(() => {
+        if (options.runtime.destroyed) return;
+        options.hydrateTimerStateFromCaches({ skipDashboardWidgetsRender: activeDashboardPage });
+        options.syncTimeGoalModalWithTaskState();
+        if (!activeDashboardPage) {
+          options.render();
+        } else {
+          options.renderDashboardWidgets?.();
+        }
+        options.maybeHandlePendingTaskJump();
+        options.maybeHandlePendingPushAction?.();
+        options.maybeRestorePendingTimeGoalFlow();
+        syncCloudTaskLiveSessionsListener();
+      })
+      .catch((error: unknown) => {
+        void recordNonFatal(error, {
+          flow: "cloud_sync_timer_state_refresh",
+          current_page: isDashboardPageActive() ? "dashboard" : "app",
+        });
+      })
+      .finally(() => {
+        timerStateRefreshInFlight = null;
+      });
+    timerStateRefreshInFlight = nextInFlight;
+    return nextInFlight;
+  }
+
+  function scheduleTimerStateRefresh() {
+    if (options.runtime.destroyed) return;
+    const delayMs = options.workspaceRepository.hasPendingTaskOrLiveSessionSync() ? 1000 : TIMER_STATE_REFRESH_DEBOUNCE_MS;
+    clearTimerStateRefreshTimer();
+    timerStateRefreshTimer = window.setTimeout(() => {
+      timerStateRefreshTimer = null;
+      if (options.runtime.destroyed) return;
+      if (options.workspaceRepository.hasPendingTaskOrLiveSessionSync()) {
+        scheduleTimerStateRefresh();
+        return;
+      }
+      void refreshTimerStateFromCloudAndRender();
+    }, delayMs);
+  }
+
+  function syncCloudTaskLiveSessionsListener() {
+    if (options.runtime.removeCloudTaskLiveSessionsListener) {
+      try {
+        options.runtime.removeCloudTaskLiveSessionsListener();
+      } catch {
+        // ignore
+      }
+      options.runtime.removeCloudTaskLiveSessionsListener = null;
+    }
+    const uid = options.currentUid();
+    if (!uid) return;
+    const taskIds = options.getTasks().map((task) => String(task?.id || "").trim()).filter(Boolean);
+    if (!taskIds.length) return;
+    const removeTaskLiveSessionsListener = options.workspaceRepository.subscribeTaskLiveSessions(uid, taskIds, scheduleTimerStateRefresh);
+    options.runtime.removeCloudTaskLiveSessionsListener = () => {
+      removeTaskLiveSessionsListener();
+    };
+  }
+
   function syncCloudTaskCollectionListener() {
     if (options.runtime.removeCloudTaskCollectionListener) {
       try {
@@ -201,17 +284,11 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     }
     const uid = options.currentUid();
     if (!uid) return;
-    const handleCloudActivity = () => {
-      if (options.workspaceRepository.hasPendingTaskOrHistorySync()) {
-        scheduleDeferredCloudRefresh(5000);
-        return;
-      }
-      refreshCloudStateIfStale(1500);
-    };
-    const removeTaskCollectionListener = options.workspaceRepository.subscribeTaskCollection(uid, handleCloudActivity);
+    const removeTaskCollectionListener = options.workspaceRepository.subscribeTaskCollection(uid, scheduleTimerStateRefresh);
     options.runtime.removeCloudTaskCollectionListener = () => {
       removeTaskCollectionListener();
     };
+    syncCloudTaskLiveSessionsListener();
   }
 
   function initCloudRefreshSync() {
@@ -284,6 +361,7 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
     scheduleDeferredCloudRefresh,
     refreshCloudStateIfStale,
     syncCloudTaskCollectionListener,
+    syncCloudTaskLiveSessionsListener,
     initCloudRefreshSync,
   };
 }

@@ -2479,6 +2479,16 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   min-width:0;
 }
 
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.hasRecurringBadge .taskColorPill{
+  top:13px;
+  right:30px;
+}
+
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard .taskColorPill{
+  top:13px;
+  right:10px;
+}
+
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
   position:absolute;
   top:10px;

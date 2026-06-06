@@ -161,6 +161,14 @@ export function handleRichNoteToolbarClick(event: Event) {
   event.preventDefault();
   editor.focus();
   const command = String(button.dataset.richNoteCommand || "");
+  if (command === "attachFiles") {
+    toolbar?.dispatchEvent(new CustomEvent("richnote:attach-files", {
+      bubbles: true,
+      detail: { editorId, editor },
+    }));
+    syncRichNoteToolbarState(toolbar, editor);
+    return true;
+  }
   const doc = editor.ownerDocument || (typeof document !== "undefined" ? document : null);
   if (!doc || typeof doc.execCommand !== "function") return true;
   if (command === "createLink") {
@@ -251,6 +259,7 @@ export function richNoteToolbarHtml(editorId: string) {
     { command: "insertUnorderedList", icon: "/icons/list.png", title: "Bulleted list" },
     { command: "insertOrderedList", icon: "/icons/numbered_list.png", title: "Numbered list" },
     { command: "createLink", icon: "/icons/link.png", title: "Add link" },
+    { command: "attachFiles", label: "Attach File(s)", title: "Attach File(s)" },
   ];
   return `<div class="richNoteToolbar" role="toolbar" aria-label="Session note formatting" data-rich-note-toolbar="true" data-rich-note-for="${escapeHtml(editorId)}">${buttons
     .map(

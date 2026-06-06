@@ -21,6 +21,7 @@ function task(overrides: Partial<Task> = {}): Task {
 function createHarness(overrides?: {
   liveSessionsByTaskId?: LiveSessionsByTaskId;
   loadedDrafts?: Record<string, string>;
+  snapshotTasks?: Task[];
 }) {
   const localStorageValues = new Map<string, string>();
   const windowStub = {
@@ -43,18 +44,29 @@ function createHarness(overrides?: {
   let liveSessions: LiveSessionsByTaskId = {};
   let focusNotes: Record<string, string> = {};
   let inputValue = "";
+  let loadWorkspaceSnapshotCalls = 0;
+  let setHistoryCalls = 0;
+  let primeDashboardCalls = 0;
+  let loadAddTaskCustomNamesCalls = 0;
   const api = createTaskTimerPersistence({
     workspaceRepository: {
-      loadWorkspaceSnapshot: () => ({
-        tasks: [task({ running: true, startMs: 1000 })],
-        historyByTaskId: {},
-        cleanedHistoryByTaskId: {},
-        historyWasCleaned: false,
+      loadWorkspaceSnapshot: () => {
+        loadWorkspaceSnapshotCalls += 1;
+        return {
+          tasks: overrides?.snapshotTasks || [task({ running: true, startMs: 1000 })],
+          historyByTaskId: {},
+          cleanedHistoryByTaskId: {},
+          historyWasCleaned: false,
+          liveSessionsByTaskId: overrides?.liveSessionsByTaskId || {},
+          deletedTaskMeta: {},
+          preferences: null,
+          dashboard: null,
+          taskUi: null,
+        };
+      },
+      loadTimerStateSnapshot: () => ({
+        tasks: overrides?.snapshotTasks || [task({ running: true, startMs: 1000 })],
         liveSessionsByTaskId: overrides?.liveSessionsByTaskId || {},
-        deletedTaskMeta: {},
-        preferences: null,
-        dashboard: null,
-        taskUi: null,
       }),
       saveTasks: () => {},
     },
@@ -70,6 +82,7 @@ function createHarness(overrides?: {
     },
     getHistoryByTaskId: () => history,
     setHistoryByTaskId: (value) => {
+      setHistoryCalls += 1;
       history = value;
     },
     getLiveSessionsByTaskId: () => liveSessions,
@@ -103,9 +116,13 @@ function createHarness(overrides?: {
     loadCachedTaskUi: () => null,
     loadDeletedMeta: () => ({}),
     setDeletedTaskMeta: () => {},
-    primeDashboardCacheFromShadow: () => {},
+    primeDashboardCacheFromShadow: () => {
+      primeDashboardCalls += 1;
+    },
     loadFocusSessionNotes: () => overrides?.loadedDrafts || {},
-    loadAddTaskCustomNames: () => {},
+    loadAddTaskCustomNames: () => {
+      loadAddTaskCustomNamesCalls += 1;
+    },
     loadWeekStartingPreference: () => {},
     loadStartupModulePreference: () => {},
     loadTaskViewPreference: () => {},
@@ -144,6 +161,12 @@ function createHarness(overrides?: {
     api,
     getInputValue: () => inputValue,
     getFocusNotes: () => focusNotes,
+    getTasks: () => tasks,
+    getLiveSessions: () => liveSessions,
+    getLoadWorkspaceSnapshotCalls: () => loadWorkspaceSnapshotCalls,
+    getSetHistoryCalls: () => setHistoryCalls,
+    getPrimeDashboardCalls: () => primeDashboardCalls,
+    getLoadAddTaskCustomNamesCalls: () => loadAddTaskCustomNamesCalls,
   };
 }
 
@@ -183,5 +206,21 @@ describe("task timer persistence focus notes", () => {
     harness.api.hydrateUiStateFromCaches();
 
     expect(harness.getInputValue()).toBe("local draft");
+  });
+
+  it("hydrates focused timer state without running full cache hydration", () => {
+    const harness = createHarness({
+      snapshotTasks: [task({ running: false, startMs: null, accumulatedMs: 5000 })],
+      liveSessionsByTaskId: {},
+    });
+
+    harness.api.hydrateTimerStateFromCaches();
+
+    expect(harness.getTasks()[0]).toMatchObject({ running: false, startMs: null, accumulatedMs: 5000 });
+    expect(harness.getLiveSessions()).toEqual({});
+    expect(harness.getLoadWorkspaceSnapshotCalls()).toBe(0);
+    expect(harness.getSetHistoryCalls()).toBe(0);
+    expect(harness.getPrimeDashboardCalls()).toBe(0);
+    expect(harness.getLoadAddTaskCustomNamesCalls()).toBe(0);
   });
 });

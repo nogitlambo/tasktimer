@@ -63,6 +63,7 @@ export type HistoryEntry = {
   ms: number;
   color?: string;
   note?: string;
+  attachments?: SessionNoteAttachment[];
   completionDifficulty?: CompletionDifficulty;
   sessionId?: string;
 };
@@ -77,12 +78,23 @@ export type LiveTaskSession = {
   elapsedMs: number;
   resumedFromMs?: number;
   note?: string;
+  attachments?: SessionNoteAttachment[];
   color?: string;
   status: "running";
   updatedAtMs: number;
 };
 
 export type LiveSessionsByTaskId = Record<string, LiveTaskSession>;
+
+export type SessionNoteAttachment = {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+  storagePath: string;
+  downloadUrl: string;
+  createdAtMs: number;
+};
 
 export type ProjectedHistoryEntry = HistoryEntry & {
   isLiveSession?: boolean;

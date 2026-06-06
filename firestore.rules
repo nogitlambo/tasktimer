@@ -339,6 +339,49 @@ service cloud.firestore {
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 
+    function isSessionNoteAttachment(userId, value) {
+      return value is map
+      && value.keys().hasOnly([
+        "id",
+        "name",
+        "contentType",
+        "size",
+        "storagePath",
+        "downloadUrl",
+        "createdAtMs"
+      ])
+      && value.id is string
+      && value.id.size() <= 160
+      && value.name is string
+      && value.name.size() <= 160
+      && value.contentType is string
+      && value.contentType.size() <= 160
+      && value.size is int
+      && value.size >= 0
+      && value.size <= 10485760
+      && value.storagePath is string
+      && value.storagePath.size() <= 500
+      && value.storagePath.matches("^users/" + userId + "/session-notes/[^/]+/.+$")
+      && value.downloadUrl is string
+      && value.downloadUrl.size() <= 2048
+      && value.createdAtMs is int;
+    }
+
+    function isSessionNoteAttachmentList(userId, listValue) {
+      return listValue is list
+      && listValue.size() <= 10
+      && (listValue.size() < 1 || isSessionNoteAttachment(userId, listValue[0]))
+      && (listValue.size() < 2 || isSessionNoteAttachment(userId, listValue[1]))
+      && (listValue.size() < 3 || isSessionNoteAttachment(userId, listValue[2]))
+      && (listValue.size() < 4 || isSessionNoteAttachment(userId, listValue[3]))
+      && (listValue.size() < 5 || isSessionNoteAttachment(userId, listValue[4]))
+      && (listValue.size() < 6 || isSessionNoteAttachment(userId, listValue[5]))
+      && (listValue.size() < 7 || isSessionNoteAttachment(userId, listValue[6]))
+      && (listValue.size() < 8 || isSessionNoteAttachment(userId, listValue[7]))
+      && (listValue.size() < 9 || isSessionNoteAttachment(userId, listValue[8]))
+      && (listValue.size() < 10 || isSessionNoteAttachment(userId, listValue[9]));
+    }
+
     function isAccountStateV1() {
       return onlyKeys([
         "schemaVersion",
@@ -520,6 +563,7 @@ service cloud.firestore {
         "ms",
         "color",
         "note",
+        "attachments",
         "xpDisqualifiedUntilReset",
         "sessionId",
         "taskId",
@@ -531,6 +575,7 @@ service cloud.firestore {
       && (!("ms" in request.resource.data) || request.resource.data.ms is int)
       && (!("color" in request.resource.data) || request.resource.data.color == null || request.resource.data.color is string)
       && (!("note" in request.resource.data) || request.resource.data.note == null || request.resource.data.note is string)
+      && (!("attachments" in request.resource.data) || isSessionNoteAttachmentList(request.auth.uid, request.resource.data.attachments))
       && (!("xpDisqualifiedUntilReset" in request.resource.data) || request.resource.data.xpDisqualifiedUntilReset is bool)
       && (!("sessionId" in request.resource.data) || request.resource.data.sessionId is string)
       && (!("taskId" in request.resource.data) || request.resource.data.taskId is string)
@@ -569,6 +614,7 @@ service cloud.firestore {
         "updatedAtMs",
         "status",
         "note",
+        "attachments",
         "color",
         "createdAt",
         "serverUpdatedAt"
@@ -582,6 +628,7 @@ service cloud.firestore {
       && request.resource.data.updatedAtMs is int
       && request.resource.data.status == "running"
       && (!("note" in request.resource.data) || request.resource.data.note is string)
+      && (!("attachments" in request.resource.data) || isSessionNoteAttachmentList(request.auth.uid, request.resource.data.attachments))
       && (!("color" in request.resource.data) || request.resource.data.color is string)
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt is timestamp)
       && (!("serverUpdatedAt" in request.resource.data) || request.resource.data.serverUpdatedAt is timestamp);

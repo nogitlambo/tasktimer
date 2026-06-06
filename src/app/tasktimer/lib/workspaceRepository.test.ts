@@ -13,7 +13,9 @@ const storageMocks = vi.hoisted(() => ({
   loadHistory: vi.fn(),
   loadLiveSessions: vi.fn(),
   hasPendingTaskOrHistorySync: vi.fn(),
+  hasPendingTaskOrLiveSessionSync: vi.fn(),
   hydrateStorageFromCloud: vi.fn(),
+  hydrateTimerStateFromCloud: vi.fn(),
   loadTasks: vi.fn(),
   primeDashboardCacheFromShadow: vi.fn(),
   refreshHistoryFromCloud: vi.fn(),
@@ -82,6 +84,7 @@ describe("TaskTimer workspace repository snapshots", () => {
     storageMocks.loadCachedDashboard.mockReturnValue({ order: ["momentum"] });
     storageMocks.loadCachedTaskUi.mockReturnValue({ pinnedHistoryTaskIds: ["task-1"] });
     storageMocks.hydrateStorageFromCloud.mockResolvedValue(undefined);
+    storageMocks.hydrateTimerStateFromCloud.mockResolvedValue(undefined);
   });
 
   it("loads task, history, live session, deleted metadata, and cache state through one snapshot", () => {
@@ -108,6 +111,36 @@ describe("TaskTimer workspace repository snapshots", () => {
       taskUi: { pinnedHistoryTaskIds: ["task-1"] },
     });
     expect(storageMocks.cleanupHistory).toHaveBeenCalledWith(snapshot.historyByTaskId);
+  });
+
+  it("loads a focused timer-state snapshot without history cleanup", () => {
+    const repository = createTaskTimerWorkspaceRepository();
+
+    const snapshot = repository.loadTimerStateSnapshot();
+
+    expect(snapshot).toEqual({
+      tasks: [task("task-1", "Focus")],
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: 10,
+          elapsedMs: 200,
+          status: "running",
+          updatedAtMs: 20,
+        },
+      },
+    });
+    expect(storageMocks.cleanupHistory).not.toHaveBeenCalled();
+  });
+
+  it("reports pending timer-state writes separately from history writes", () => {
+    const repository = createTaskTimerWorkspaceRepository();
+
+    storageMocks.hasPendingTaskOrLiveSessionSync.mockReturnValue(true);
+
+    expect(repository.hasPendingTaskOrLiveSessionSync()).toBe(true);
   });
 
   it("loads history cleanup state through a focused history snapshot", () => {
@@ -140,5 +173,28 @@ describe("TaskTimer workspace repository snapshots", () => {
     expect(snapshot.cleanedHistoryByTaskId).toEqual({
       "task-1": [{ ts: 1, name: "Focus", ms: 1000 }],
     });
+  });
+
+  it("returns a focused timer-state snapshot after timer hydration completes", async () => {
+    const repository = createTaskTimerWorkspaceRepository();
+
+    const snapshot = await repository.hydrateTimerStateFromCloud({ force: true });
+
+    expect(storageMocks.hydrateTimerStateFromCloud).toHaveBeenCalledWith({ force: true });
+    expect(snapshot).toEqual({
+      tasks: [task("task-1", "Focus")],
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: 10,
+          elapsedMs: 200,
+          status: "running",
+          updatedAtMs: 20,
+        },
+      },
+    });
+    expect(storageMocks.cleanupHistory).not.toHaveBeenCalled();
   });
 });

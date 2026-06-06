@@ -699,6 +699,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
     syncTaskScheduleDaysHelper(els.addTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     syncTaskScheduleDaysHelper(els.editTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tasktimer:optimal-productivity-days-changed"));
+    }
     if (els.optimalProductivityDaysTrigger) {
       const expanded = !els.optimalProductivityDaysMenu?.hasAttribute("hidden");
       els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", expanded ? "true" : "false");

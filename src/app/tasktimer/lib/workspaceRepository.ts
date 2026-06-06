@@ -13,6 +13,8 @@ import {
   loadHistory,
   loadLiveSessions,
   hasPendingTaskOrHistorySync,
+  hasPendingTaskOrLiveSessionSync,
+  hydrateTimerStateFromCloud,
   hydrateStorageFromCloud,
   loadTasks,
   primeDashboardCacheFromShadow,
@@ -51,6 +53,8 @@ export type TaskTimerWorkspaceSnapshot = {
   dashboard: DashboardConfig | null;
   taskUi: TaskUiConfig | null;
 };
+
+export type TaskTimerTimerStateSnapshot = Pick<TaskTimerWorkspaceSnapshot, "tasks" | "liveSessionsByTaskId">;
 
 export type TaskTimerWorkspaceRepository = ReturnType<typeof createTaskTimerWorkspaceRepository>;
 
@@ -101,6 +105,13 @@ function buildWorkspaceSnapshot(): TaskTimerWorkspaceSnapshot {
   };
 }
 
+function buildTimerStateSnapshot(): TaskTimerTimerStateSnapshot {
+  return {
+    tasks: loadTasks() || [],
+    liveSessionsByTaskId: loadLiveSessions(),
+  };
+}
+
 export function createTaskTimerWorkspaceHistoryPersistence(
   repository: Pick<TaskTimerWorkspaceRepository, "loadHistorySnapshot" | "saveHistory">
 ) {
@@ -118,6 +129,7 @@ export function createTaskTimerWorkspaceRepository() {
   return {
     buildDefaultPreferences: () => buildDefaultCloudPreferences(),
     loadWorkspaceSnapshot: () => buildWorkspaceSnapshot(),
+    loadTimerStateSnapshot: () => buildTimerStateSnapshot(),
     loadHistorySnapshot: () => buildHistorySnapshot(),
     loadTasks: () => loadTasks(),
     saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[] }) => saveTasks(tasks, opts),
@@ -127,7 +139,12 @@ export function createTaskTimerWorkspaceRepository() {
       await hydrateStorageFromCloud(opts);
       return buildWorkspaceSnapshot();
     },
+    hydrateTimerStateFromCloud: async (opts?: { force?: boolean }) => {
+      await hydrateTimerStateFromCloud(opts);
+      return buildTimerStateSnapshot();
+    },
     hasPendingTaskOrHistorySync: () => hasPendingTaskOrHistorySync(),
+    hasPendingTaskOrLiveSessionSync: () => hasPendingTaskOrLiveSessionSync(),
     subscribeTaskCollection: (uid: string, listener: () => void) => subscribeCloudTaskCollection(uid, listener),
     subscribeTaskLiveSessions: (uid: string, taskIds: string[], listener: () => void) =>
       subscribeCloudTaskLiveSessions(uid, taskIds, listener),

@@ -1,4 +1,4 @@
-import type { Task } from "../lib/types";
+import type { SessionNoteAttachment, Task } from "../lib/types";
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import type { createTaskTimerRewardsHistory } from "./rewards-history";
 
@@ -53,7 +53,7 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     clearRewardSessionTracker(taskIdRaw: string | null | undefined) {
       options.getRewardsHistoryApi()?.clearRewardSessionTracker(taskIdRaw);
     },
-    upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) {
+    upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) {
       options.getRewardsHistoryApi()?.upsertLiveSession(task, opts);
     },
     syncLiveSessionForTask(task: Task | null | undefined, nowValue?: number) {
@@ -61,7 +61,7 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     },
     finalizeLiveSession(
       task: Task,
-      opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+      opts?: { elapsedMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
     ) {
       return options.getRewardsHistoryApi()?.finalizeLiveSession(task, opts) ?? 0;
     },

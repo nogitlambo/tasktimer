@@ -11,7 +11,7 @@ import type {
   HistoryViewState,
   MainMode,
 } from "./types";
-import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, Task } from "../lib/types";
+import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, SessionNoteAttachment, Task } from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
@@ -461,10 +461,10 @@ export type TaskTimerTasksContext = {
   openRewardSessionSegment: (task: Task | null | undefined, startMs?: number | null) => void;
   closeRewardSessionSegment: (task: Task | null | undefined, endMs?: number | null) => void;
   clearRewardSessionTracker: (taskId: string | null | undefined) => void;
-  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) => void;
+  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts?: { elapsedMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) => number;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
@@ -704,6 +704,8 @@ export type TaskTimerSessionContext = {
   getTasks: () => Task[];
   getCurrentAppPage: () => AppPage;
   getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   getWeekStarting: () => DashboardWeekStart;
   getRewardProgress: () => RewardProgressV1;
@@ -802,7 +804,7 @@ export type TaskTimerSessionContext = {
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
-  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; forceCloudFlush?: boolean; reason?: string }) => void;
+  upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;

@@ -4,8 +4,7 @@
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesShell{
   width: min(980px, 100%);
-  margin: 0 auto;
-  padding: 18px 16px 92px;
+  padding: 18px 8px 92px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -52,8 +51,6 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskGroup{
-  border: 1px solid #1f251f;
-  background: #11151a;
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -120,6 +117,7 @@
   color: #edf2e8;
   font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
   font-size: 14px;
+  font-weight: 300;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -136,14 +134,27 @@
   color: #b1ff59;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteContentGrid{
+  grid-template-columns:minmax(0, 1fr) minmax(190px, 260px);
+}
+
 @media (max-width: 720px){
   #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesShell{
-    padding: 14px 12px 88px;
+    padding: 14px 8px 88px;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesHeader,
   #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskHeader{
     flex-direction: column;
     align-items: stretch;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskGroup{
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteContentGrid{
+    grid-template-columns:1fr;
   }
 }

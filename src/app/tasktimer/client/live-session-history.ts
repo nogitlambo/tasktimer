@@ -11,6 +11,7 @@ function buildLiveHistoryEntry(taskId: string, session: LiveSessionsByTaskId[str
     name: String(session.name || "").trim() || "Task",
     ...(session.color ? { color: session.color } : {}),
     ...(session.note ? { note: session.note } : {}),
+    ...(Array.isArray(session.attachments) && session.attachments.length ? { attachments: session.attachments } : {}),
     isLiveSession: true,
     liveSessionId: String(session.sessionId || "").trim() || undefined,
     liveSessionStatus: "running",

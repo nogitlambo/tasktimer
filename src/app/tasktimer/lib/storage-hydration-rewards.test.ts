@@ -6,6 +6,7 @@ const authMocks = vi.hoisted(() => ({
 
 const cloudStoreMocks = vi.hoisted(() => ({
   loadUserWorkspace: vi.fn(),
+  loadUserTimerState: vi.fn(),
   savePreferences: vi.fn(() => Promise.resolve()),
   ensureUserProfileIndex: vi.fn(() => Promise.resolve()),
   loadDashboard: vi.fn(() => Promise.resolve(null)),
@@ -58,6 +59,7 @@ vi.mock("./cloudStore", () => ({
   loadPreferences: cloudStoreMocks.loadPreferences,
   loadTaskUi: cloudStoreMocks.loadTaskUi,
   loadUserWorkspace: cloudStoreMocks.loadUserWorkspace,
+  loadUserTimerState: cloudStoreMocks.loadUserTimerState,
   replaceTaskHistory: cloudStoreMocks.replaceTaskHistory,
   saveDashboard: cloudStoreMocks.saveDashboard,
   saveDeletedTaskMeta: cloudStoreMocks.saveDeletedTaskMeta,
@@ -80,11 +82,14 @@ import {
   ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS,
   appendHistoryEntry,
   hydrateStorageFromCloud,
+  hydrateTimerStateFromCloud,
   flushPendingCloudWrites,
   loadCachedPreferences,
   loadCachedDashboard,
   loadCachedTaskUi,
   loadTasks,
+  loadLiveSessions,
+  loadHistory,
   resetVolatileWorkspaceStateForAuthChange,
   saveCloudDashboard,
   saveCloudPreferences,
@@ -115,7 +120,7 @@ class MemoryStorage {
   }
 }
 
-function task(id: string, name: string) {
+function task(id: string, name: string, overrides: Record<string, unknown> = {}) {
   return {
     id,
     name,
@@ -127,6 +132,7 @@ function task(id: string, name: string) {
     milestonesEnabled: false,
     milestones: [],
     hasStarted: true,
+    ...overrides,
   };
 }
 
@@ -155,6 +161,7 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       writable: true,
     });
     cloudStoreMocks.loadUserWorkspace.mockReset();
+    cloudStoreMocks.loadUserTimerState.mockReset();
     cloudStoreMocks.savePreferences.mockClear();
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
     leaderboardMocks.buildLeaderboardMetricsSnapshot.mockClear();
@@ -324,6 +331,89 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     await vi.runAllTimersAsync();
 
     expect(cloudStoreMocks.saveTask).not.toHaveBeenCalled();
+  });
+
+  it("hydrates only task timer state without replacing history or preference caches", async () => {
+    const initialPrefs = { ...buildDefaultCloudPreferences(), updatedAtMs: Date.now() };
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [task("task-1", "Focus")],
+      historyByTaskId: {
+        "task-1": [{ ts: Date.parse("2026-05-05T09:50:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+      },
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: initialPrefs,
+      dashboard: { order: ["momentum"] },
+      taskUi: { pinnedHistoryTaskIds: ["task-1"] },
+    });
+    await hydrateStorageFromCloud({ force: true });
+
+    cloudStoreMocks.loadUserTimerState.mockResolvedValue({
+      tasks: [task("task-1", "Focus", { running: true, startMs: 2000 })],
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: 2000,
+          updatedAtMs: 2000,
+          elapsedMs: 0,
+          status: "running",
+        },
+      },
+    });
+
+    await hydrateTimerStateFromCloud({ force: true });
+
+    expect(loadTasks()?.[0]).toMatchObject({ id: "task-1", running: true, startMs: 2000 });
+    expect(loadLiveSessions()).toEqual({
+      "task-1": expect.objectContaining({ sessionId: "session-1", taskId: "task-1" }),
+    });
+    expect(loadHistory()).toEqual({
+      "task-1": [{ ts: Date.parse("2026-05-05T09:50:00.000Z"), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+    });
+    expect(loadCachedPreferences()).toEqual(expect.objectContaining({ schemaVersion: 1 }));
+    expect(loadCachedDashboard()).toEqual({ order: ["momentum"] });
+    expect(loadCachedTaskUi()).toEqual({ pinnedHistoryTaskIds: ["task-1"] });
+    expect(cloudStoreMocks.loadUserWorkspace).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears a stale cached live session when timer-state hydration sees the task stopped remotely", async () => {
+    const runningTask = task("task-1", "Focus", { running: true, startMs: 1000 });
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [runningTask],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: 1000,
+          updatedAtMs: 1000,
+          elapsedMs: 0,
+          status: "running",
+        },
+      },
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    });
+    await hydrateStorageFromCloud({ force: true });
+    expect(loadTasks()?.[0]).toMatchObject({ running: true });
+    expect(loadLiveSessions()["task-1"]).toBeTruthy();
+
+    cloudStoreMocks.loadUserTimerState.mockResolvedValue({
+      tasks: [task("task-1", "Focus", { running: false, startMs: null, accumulatedMs: 5000 })],
+      liveSessionsByTaskId: {},
+    });
+
+    await hydrateTimerStateFromCloud({ force: true });
+
+    expect(loadLiveSessions()).toEqual({});
+    expect(loadTasks()?.[0]).toMatchObject({ running: false, startMs: null, accumulatedMs: 5000 });
   });
 
   it("deduplicates direct dashboard and task-ui writes by payload signature", async () => {

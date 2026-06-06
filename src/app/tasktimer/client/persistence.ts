@@ -14,7 +14,7 @@ type TaskUiCacheShape = {
 } | null;
 
 type CreateTaskTimerPersistenceOptions = {
-  workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "saveTasks">;
+  workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "loadTimerStateSnapshot" | "saveTasks">;
   historyPersistence: TaskTimerWorkspaceHistoryPersistence;
   focusSessionNotesKey: string;
   pendingTaskJumpKey: string;
@@ -298,6 +298,17 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     }
   }
 
+  function hydrateTimerStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
+    applyTaskSnapshot(options.workspaceRepository.loadTimerStateSnapshot());
+    const activeFocusTaskId = options.getFocusModeTaskId();
+    syncFocusSessionNotesInput(activeFocusTaskId);
+    syncFocusSessionNotesAccordion(activeFocusTaskId);
+    options.syncTaskSettingsUi();
+    if (!opts?.skipDashboardWidgetsRender && options.getCurrentAppPage() === "dashboard") {
+      options.renderDashboardWidgets();
+    }
+  }
+
   return {
     load,
     save,
@@ -317,5 +328,6 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     maybeRepairHistoryNotesInCloud,
     loadHistoryRangePrefs,
     hydrateUiStateFromCaches,
+    hydrateTimerStateFromCaches,
   };
 }

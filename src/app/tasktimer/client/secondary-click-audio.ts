@@ -8,6 +8,7 @@ export const CHECKBOX_CLICK_AUDIO_SRC = "/click_checkbox.mp3";
 export const DROPDOWN_CLICK_AUDIO_SRC = "/click-dropdown.mp3";
 export const TASK_FLIP_CLICK_AUDIO_SRC = "/click_flip.mp3";
 export const MODAL_OPEN_AUDIO_SRC = "/modal_open.mp3";
+export const NOTE_TOOLBAR_CLICK_AUDIO_SRC = "/click_notetoolbar.mp3";
 
 type ClosestCapable = {
   closest?: (selector: string) => Element | null;
@@ -34,6 +35,7 @@ const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]', 
 const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]';
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip]";
 const MODAL_OPEN_CLICK_SELECTOR = "[data-friend-profile-open],[data-leaderboard-profile-open]";
+const NOTE_TOOLBAR_CLICK_SELECTOR = ".richNoteToolbar [data-rich-note-command]";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
 const SECONDARY_CLICK_EXCLUDED_SELECTOR = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
@@ -91,6 +93,7 @@ export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement
   if (getDropdownClickTarget(target)) return null;
   if (getClosestElement(target, TASK_FLIP_CLICK_SELECTOR)) return null;
   if (getModalOpenClickTarget(target)) return null;
+  if (getNoteToolbarClickTarget(target)) return null;
   if (getTaskStopClickTarget(target) || getTaskLaunchClickTarget(target) || getPrimaryClickTarget(target)) return null;
 
   const directTarget = getClosestElement(target, SECONDARY_CLICK_DIRECT_SELECTOR);
@@ -126,6 +129,12 @@ export function getModalOpenClickTarget(target: EventTarget | null): HTMLElement
   const modalOpenTarget = getClosestElement(target, MODAL_OPEN_CLICK_SELECTOR);
   if (!modalOpenTarget) return null;
   return isDisabledControl(modalOpenTarget) ? null : modalOpenTarget;
+}
+
+export function getNoteToolbarClickTarget(target: EventTarget | null): HTMLElement | null {
+  const noteToolbarTarget = getClosestElement(target, NOTE_TOOLBAR_CLICK_SELECTOR);
+  if (!noteToolbarTarget) return null;
+  return isDisabledControl(noteToolbarTarget) ? null : noteToolbarTarget;
 }
 
 export function getCancelClickTarget(target: EventTarget | null): HTMLElement | null {
@@ -185,6 +194,12 @@ export function playModalOpenClickAudio(audioFactory?: ClickAudioFactory) {
   createClickAudioPlayer(MODAL_OPEN_AUDIO_SRC, audioFactory).play();
 }
 
+export function playNoteToolbarClickAudio(audioFactory?: ClickAudioFactory) {
+  if (typeof window === "undefined" && !audioFactory) return;
+
+  createClickAudioPlayer(NOTE_TOOLBAR_CLICK_AUDIO_SRC, audioFactory).play();
+}
+
 export function registerSecondaryClickAudio(options: {
   on: (
     el: EventTarget | null | undefined,
@@ -200,6 +215,7 @@ export function registerSecondaryClickAudio(options: {
   playDropdownAudio?: () => void;
   playTaskFlipAudio?: () => void;
   playModalOpenAudio?: () => void;
+  playNoteToolbarAudio?: () => void;
   isEnabled?: () => boolean;
 }) {
   const player = options.playAudio ? null : createClickAudioPlayer(SECONDARY_CLICK_AUDIO_SRC);
@@ -209,6 +225,7 @@ export function registerSecondaryClickAudio(options: {
   const dropdownPlayer = options.playDropdownAudio ? null : createClickAudioPlayer(DROPDOWN_CLICK_AUDIO_SRC);
   const taskFlipPlayer = options.playTaskFlipAudio ? null : createClickAudioPlayer(TASK_FLIP_CLICK_AUDIO_SRC);
   const modalOpenPlayer = options.playModalOpenAudio ? null : createClickAudioPlayer(MODAL_OPEN_AUDIO_SRC);
+  const noteToolbarPlayer = options.playNoteToolbarAudio ? null : createClickAudioPlayer(NOTE_TOOLBAR_CLICK_AUDIO_SRC);
   player?.warm();
   cancelPlayer?.warm();
   closePlayer?.warm();
@@ -216,6 +233,7 @@ export function registerSecondaryClickAudio(options: {
   dropdownPlayer?.warm();
   taskFlipPlayer?.warm();
   modalOpenPlayer?.warm();
+  noteToolbarPlayer?.warm();
 
   options.on(
     options.documentRef,
@@ -229,8 +247,9 @@ export function registerSecondaryClickAudio(options: {
       const dropdownTarget = closeTarget || cancelTarget || checkboxTarget ? null : getDropdownClickTarget(event.target);
       const taskFlipTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget ? null : getTaskFlipClickTarget(event.target);
       const modalOpenTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget ? null : getModalOpenClickTarget(event.target);
-      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget ? null : getSecondaryClickTarget(event.target);
-      const target = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || secondaryTarget;
+      const noteToolbarTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget ? null : getNoteToolbarClickTarget(event.target);
+      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget ? null : getSecondaryClickTarget(event.target);
+      const target = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || secondaryTarget;
       if (!target) return;
       if ("isTrusted" in event && event.isTrusted === false) return;
 
@@ -246,7 +265,9 @@ export function registerSecondaryClickAudio(options: {
               ? options.playTaskFlipAudio || (() => taskFlipPlayer?.play())
               : modalOpenTarget
                 ? options.playModalOpenAudio || (() => modalOpenPlayer?.play())
-                : options.playAudio || (() => player?.play());
+                : noteToolbarTarget
+                  ? options.playNoteToolbarAudio || (() => noteToolbarPlayer?.play())
+                  : options.playAudio || (() => player?.play());
 
       playAudio();
     },

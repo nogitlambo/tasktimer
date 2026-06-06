@@ -142,6 +142,14 @@ describe("getLeaderboardResolvedRank", () => {
       rankId: "unranked",
     });
   });
+
+  it("resolves the analyst insignia asset as WebP", () => {
+    expect(getRankThumbnailDescriptor("analyst")).toMatchObject({
+      kind: "image",
+      src: "/insignias/005_analyst.webp",
+      rankId: "analyst",
+    });
+  });
 });
 
 describe("getLeaderboardAvatarSrc", () => {

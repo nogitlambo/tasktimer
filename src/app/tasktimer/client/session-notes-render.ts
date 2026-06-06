@@ -1,6 +1,8 @@
 import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
+import type { SessionNoteAttachment } from "../lib/types";
 import { normalizeHistoryTimestampMs } from "../lib/history";
 import { prepareRichNoteForDisplay, richNoteHasMeaningfulText, richNotePlainText } from "./rich-session-notes";
+import { normalizeSessionNoteAttachments } from "../lib/sessionNoteAttachments";
 
 type SessionNotesRenderArgs = {
   listEl: HTMLElement | null;
@@ -18,6 +20,7 @@ type SessionNoteRow = {
   elapsedMs: number;
   noteHtml: string;
   noteText: string;
+  attachments: SessionNoteAttachment[];
   isLive: boolean;
 };
 
@@ -63,6 +66,26 @@ function formatElapsed(msRaw: unknown) {
   return `${minutes}m`;
 }
 
+function formatFileSize(sizeRaw: unknown) {
+  const size = Math.max(0, Math.floor(Number(sizeRaw || 0) || 0));
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+  if (size >= 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${size} B`;
+}
+
+function renderAttachmentList(attachments: SessionNoteAttachment[]) {
+  if (!attachments.length) return "";
+  return `<div class="sessionNoteAttachments" aria-label="Session note attachments">${attachments
+    .map((attachment) => {
+      const name = attachment.name || "Attachment";
+      return `<div class="sessionNoteAttachmentRow">
+        <a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>
+        <span class="sessionNoteAttachmentMeta">${escapeHtml(formatFileSize(attachment.size))}</span>
+      </div>`;
+    })
+    .join("")}</div>`;
+}
+
 function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): SessionNoteRow[] {
   const taskById = new Map((args.tasks || []).map((task) => [String(task.id), task] as const));
   const rows: SessionNoteRow[] = [];
@@ -75,7 +98,8 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
     const taskName = String(task?.name || deletedMeta?.name || "Task").trim() || "Task";
     (entries || []).forEach((entry) => {
       const noteHtml = prepareRichNoteForDisplay(entry?.note);
-      if (!richNoteHasMeaningfulText(noteHtml)) return;
+      const attachments = normalizeSessionNoteAttachments(entry?.attachments);
+      if (!richNoteHasMeaningfulText(noteHtml) && !attachments.length) return;
       const ts = normalizeHistoryTimestampMs(entry?.ts);
       if (!ts) return;
       rows.push({
@@ -86,6 +110,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
         elapsedMs: Math.max(0, Math.floor(Number(entry?.ms) || 0)),
         noteHtml,
         noteText: richNotePlainText(noteHtml),
+        attachments,
         isLive: false,
       });
     });
@@ -95,7 +120,8 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
     const task = taskById.get(String(taskId));
     if (!task) return;
     const noteHtml = prepareRichNoteForDisplay(session?.note);
-    if (!richNoteHasMeaningfulText(noteHtml)) return;
+    const attachments = normalizeSessionNoteAttachments(session?.attachments);
+    if (!richNoteHasMeaningfulText(noteHtml) && !attachments.length) return;
     const ts = normalizeHistoryTimestampMs(session?.startedAtMs || session?.updatedAtMs);
     if (!ts) return;
     rows.push({
@@ -106,6 +132,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
       elapsedMs: Math.max(0, Math.floor(Number(session?.elapsedMs) || 0)),
       noteHtml,
       noteText: richNotePlainText(noteHtml),
+      attachments,
       isLive: true,
     });
   });
@@ -146,7 +173,10 @@ export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listE
                     <span>${escapeHtml(formatElapsed(row.elapsedMs))}</span>
                     ${row.isLive ? '<span class="sessionNoteLive">Live</span>' : ""}
                   </div>
-                  <div class="sessionNoteBody" title="${escapeHtml(row.noteText)}">${row.noteHtml}</div>
+                  <div class="sessionNoteContentGrid">
+                    <div class="sessionNoteBody" title="${escapeHtml(row.noteText)}">${row.noteHtml || '<span class="sessionNoteAttachmentOnly">Attachment-only note</span>'}</div>
+                    ${renderAttachmentList(row.attachments)}
+                  </div>
                 </article>
               `
             )

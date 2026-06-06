@@ -89,6 +89,79 @@ describe("schedule render", () => {
     expect(html).toContain('class="schedulePlannerDayChip" data-schedule-day="sun"');
   });
 
+  it("renders a task color pill on scheduled task cards", () => {
+    const ctx = createScheduleRenderContext("mon");
+    ctx.scheduleRuntime.buildViewModel = () => ({
+      scheduled: [
+        {
+          task: {
+            id: "task-1",
+            name: "Colored Task",
+            order: 1,
+            accumulatedMs: 0,
+            running: false,
+            startMs: null,
+            collapsed: false,
+            milestonesEnabled: false,
+            milestones: [],
+            hasStarted: false,
+            color: "#ff5252",
+            timeGoalEnabled: true,
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+          },
+          day: "mon",
+          startMinutes: 9 * 60,
+          durationMinutes: 60,
+        },
+      ],
+      unscheduled: [],
+    });
+
+    const html = buildTaskTimerScheduleGridHtml(ctx);
+
+    expect(html).toContain('class="taskColorPill"');
+    expect(html).toContain('style="--task-color:#ff5252"');
+  });
+
+  it("does not color the recurring badge when a scheduled task has a color pill", () => {
+    const ctx = createScheduleRenderContext("mon");
+    ctx.scheduleRuntime.buildViewModel = () => ({
+      scheduled: [
+        {
+          task: {
+            id: "task-1",
+            name: "Daily Colored Task",
+            order: 1,
+            color: "#3f51b5",
+            timeGoalEnabled: true,
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+            plannedStartByDay: {
+              mon: "08:00",
+              tue: "08:00",
+              wed: "08:00",
+              thu: "08:00",
+              fri: "08:00",
+              sat: "08:00",
+              sun: "08:00",
+            },
+          },
+          day: "mon",
+          startMinutes: 8 * 60,
+          durationMinutes: 60,
+        },
+      ],
+      unscheduled: [],
+    });
+
+    const html = buildTaskTimerScheduleGridHtml(ctx);
+
+    expect(html).toContain('class="taskColorPill"');
+    expect(html).toContain('class="scheduleTaskCardRecurringBadge"');
+    expect(html).not.toContain("scheduleTaskCardRecurringBadge hasTaskColor");
+  });
+
   it("highlights mobile day tabs for selected optimal productivity days", () => {
     const monTab = createFakeScheduleDayTab("mon");
     const tueTab = createFakeScheduleDayTab("tue");

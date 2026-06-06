@@ -4,6 +4,7 @@ import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 import {
   clearTaskScheduleConfig,
   createTaskTimerEditTask,
+  getEditTimeGoalSaveFields,
   normalizeRecurringScheduleFieldsForSave,
   restoreEditScheduleFieldsFromSnapshot,
   taskHasMeaningfulScheduleConfig,
@@ -63,6 +64,8 @@ function createEditHarness(overrides: {
   busyTask?: Task;
   durationValue?: string;
   durationUnit?: "minute" | "hour";
+  durationPeriod?: "day" | "week";
+  productivityDays?: string[];
   plannedStartSelectors?: { hour: string; minute: string; meridiem: "AM" | "PM" };
 } = {}) {
   vi.stubGlobal("HTMLElement", class HTMLElementStub {});
@@ -103,8 +106,14 @@ function createEditHarness(overrides: {
   const editPlannedStartHourSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.hour) : selectStub("");
   const editPlannedStartMinuteSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : selectStub("");
   const editPlannedStartMeridiemSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.meridiem) : selectStub("");
-  const editPlannedStartTimeInput = timeInputStub();
+  const editPlannedStartTimeInput = timeInputStub(String(sourceTask.plannedStartTime || ""));
   const editPlannedStartInput = { value: "" } as HTMLInputElement;
+  const editTaskScheduleSummary = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLDetailsElement;
+  const editTaskScheduleSummaryText = {
+    textContent: "",
+  } as HTMLElement;
   const ctx = {
     els: {
       editName: { value: "Focus" } as HTMLInputElement,
@@ -119,6 +128,8 @@ function createEditHarness(overrides: {
       editPlannedStartMeridiemSelect,
       editPlannedStartInput,
       editPlannedStartPushReminders: null,
+      editTaskScheduleSummary,
+      editTaskScheduleSummaryText,
       editOverlay,
       confirmOverlay: null,
     },
@@ -127,6 +138,7 @@ function createEditHarness(overrides: {
       hasNonPositiveCheckpoint: vi.fn(() => false),
       hasDuplicateCheckpointTime: vi.fn(() => false),
       hasCheckpointAtOrAboveTimeGoal: vi.fn(() => false),
+      deriveCheckpointAlertEnabledState: vi.fn(() => ({ soundEnabled: false, toastEnabled: false })),
       milestoneUnitSec: vi.fn(() => 3600),
     },
     getTasks: () => tasks,
@@ -139,7 +151,7 @@ function createEditHarness(overrides: {
     setEditDraftSnapshot: vi.fn(),
     getEditTaskDurationUnit: () => overrides.durationUnit || "hour",
     setEditTaskDurationUnit: vi.fn(),
-    getEditTaskDurationPeriod: () => "day",
+    getEditTaskDurationPeriod: () => overrides.durationPeriod || "day",
     setEditTaskDurationPeriod: vi.fn(),
     validateEditTimeGoal: () => true,
     editTaskHasActiveTimeGoal: () => true,
@@ -153,11 +165,12 @@ function createEditHarness(overrides: {
     closeConfirm: vi.fn(),
     save: vi.fn(),
     render: vi.fn(),
+    showActionConfirmation: vi.fn(),
     clearEditValidationState: vi.fn(),
     showEditValidationError: vi.fn(),
     on: vi.fn(),
     escapeHtmlUI: (value: unknown) => String(value ?? ""),
-    getOptimalProductivityDays: () => ["mon"],
+    getOptimalProductivityDays: () => overrides.productivityDays || ["mon"],
     syncEditTaskTimeGoalUi: vi.fn(),
     syncEditCheckpointAlertUi: vi.fn(),
     syncEditMilestoneSectionUi: vi.fn(),
@@ -192,7 +205,7 @@ function createEditHarness(overrides: {
   } as unknown as Parameters<typeof createTaskTimerEditTask>[0];
 
   const api = createTaskTimerEditTask(ctx);
-  return { api, ctx, sourceTask, busyTask, editOverlay, getEditIndex: () => editIndex };
+  return { api, ctx, sourceTask, busyTask, editOverlay, editTaskScheduleSummary, editTaskScheduleSummaryText, getEditIndex: () => editIndex };
 }
 
 function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditHarness>) {
@@ -208,6 +221,49 @@ function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditH
   expect(harness.ctx.setEditDraftSnapshot).toHaveBeenCalledWith("");
   expect(harness.getEditIndex()).toBeNull();
 }
+
+describe("edit task schedule summary", () => {
+  it("updates the summary for a loaded recurring weekly task", () => {
+    const harness = createEditHarness({
+      durationValue: "1",
+      durationPeriod: "week",
+      productivityDays: ["mon", "tue", "wed", "thu", "fri"],
+      sourceTask: task({
+        taskType: "recurring",
+        timeGoalValue: 1,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 60,
+        plannedStartTime: "08:00",
+        plannedStartByDay: { mon: "08:00", tue: "08:00", wed: "08:00", thu: "08:00", fri: "08:00" },
+      }),
+    });
+
+    harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
+
+    expect(harness.editTaskScheduleSummaryText.textContent).toBe(
+      "Task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
+    );
+    expect(harness.editTaskScheduleSummary.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
+  });
+
+  it("updates the summary for a once-off edited task", () => {
+    const harness = createEditHarness({
+      durationValue: "1",
+      sourceTask: task({
+        taskType: "once-off",
+        onceOffDay: "fri",
+        plannedStartDay: "fri",
+        plannedStartTime: "08:00",
+        plannedStartByDay: { fri: "08:00" },
+      }),
+    });
+
+    harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
+
+    expect(harness.editTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 hour scheduled block at 8:00 AM on Friday.");
+  });
+});
 
 describe("normalizeRecurringScheduleFieldsForSave", () => {
   it("expands a once-off task schedule to every day when saving as recurring", () => {
@@ -267,6 +323,17 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
 });
 
 describe("edit task schedule toggle helpers", () => {
+  it("stores edited recurring weekly time goals as weekly totals", () => {
+    expect(getEditTimeGoalSaveFields("recurring", 4, "hour", "week")).toEqual({
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 240,
+    });
+    expect(getEditTimeGoalSaveFields("recurring", 30, "minute", "week")).toEqual({
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 30,
+    });
+  });
+
   it("treats a true name-only task as unscheduled on edit open", () => {
     expect(
       taskHasMeaningfulScheduleConfig(

@@ -959,6 +959,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getTasks: taskCollectionBindings.getTasks,
       appRuntimeState,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
+      setHistoryByTaskId: (value) => taskCollectionBindings.setHistoryByTaskId(value as TaskTimerMutableState["historyByTaskId"]),
+      saveHistory: (history, opts) => workspaceRepository.saveHistory(history as TaskTimerMutableState["historyByTaskId"], opts),
       getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
       preferencesState,
       dashboardUiState,
@@ -1595,6 +1597,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     deferredCloudRefreshTimer: cloudSyncState.accessor("deferredCloudRefreshTimer"),
     lastUiInteractionAtMs: cloudSyncState.accessor("lastUiInteractionAtMs"),
     hydrateUiStateFromCaches,
+    hydrateTimerStateFromCaches,
     syncTimeGoalModalWithTaskState: () => syncTimeGoalModalWithTaskStateApi(),
     render,
     renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
@@ -1694,6 +1697,10 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
 
   function hydrateUiStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
     persistenceApi?.hydrateUiStateFromCaches(opts);
+  }
+
+  function hydrateTimerStateFromCaches(opts?: { skipDashboardWidgetsRender?: boolean }) {
+    persistenceApi?.hydrateTimerStateFromCaches(opts);
   }
 
   startTaskTimerRootLifecycle({

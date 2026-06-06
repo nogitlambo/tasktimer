@@ -391,8 +391,50 @@ export default function RankPromotionOverlay({
         aria-label="Rank promotion"
         onClick={handleClose}
       >
-        <div className="rankPromotionLightBeam" aria-hidden="true">
-          <span className="rankPromotionLightBeamPulse" />
+        <svg
+          className="rankPromotionShieldFrame"
+          viewBox="0 0 320 390"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <defs>
+            <linearGradient id="rankPromotionShieldFill" x1="62" y1="26" x2="258" y2="356" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#191d21" />
+              <stop offset=".52" stopColor="#101318" />
+              <stop offset="1" stopColor="#090b0f" />
+            </linearGradient>
+            <linearGradient id="rankPromotionShieldStroke" x1="58" y1="48" x2="262" y2="344" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#f3ff7a" stopOpacity=".9" />
+              <stop offset=".46" stopColor="#c6c8c6" stopOpacity=".76" />
+              <stop offset="1" stopColor="#35e8ff" stopOpacity=".64" />
+            </linearGradient>
+            <filter id="rankPromotionShieldGlow" x="-22%" y="-18%" width="144%" height="136%">
+              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feColorMatrix
+                in="blur"
+                type="matrix"
+                values="0 0 0 0 0.78 0 0 0 0 1 0 0 0 0 0.18 0 0 0 .55 0"
+                result="glow"
+              />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <path
+            className="rankPromotionShieldGlow"
+            d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
+          />
+          <path
+            className="rankPromotionShieldFill"
+            d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
+          />
+        </svg>
+        <div className="rankPromotionShieldClipLayer" aria-hidden="true">
+          <div className="rankPromotionLightBeam">
+            <span className="rankPromotionLightBeamPulse" />
+          </div>
         </div>
         <h2>You&apos;ve been promoted!</h2>
         <div className="rankPromotionStage" id="rankPromotionText" aria-live="polite">

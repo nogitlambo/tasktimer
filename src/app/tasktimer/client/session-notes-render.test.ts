@@ -52,4 +52,38 @@ describe("renderSessionNotesHtml", () => {
     expect(html).not.toContain("Deleted Task");
     expect(html).not.toContain("<script");
   });
+
+  it("renders note attachments beside note content", () => {
+    const html = renderSessionNotesHtml({
+      tasks: [{ id: "task-1", name: "Deep Work" } as never],
+      deletedTaskMeta: {},
+      liveSessionsByTaskId: {},
+      historyByTaskId: {
+        "task-1": [
+          {
+            ts: new Date("2026-01-01T09:00:00").getTime(),
+            name: "Deep Work",
+            ms: 60000,
+            note: "",
+            attachments: [
+              {
+                id: "file-1",
+                name: "<report>.pdf",
+                contentType: "application/pdf",
+                size: 2048,
+                storagePath: "users/uid/session-notes/file-1/report.pdf",
+                downloadUrl: "https://example.test/report.pdf",
+                createdAtMs: 1,
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain("sessionNoteContentGrid");
+    expect(html).toContain("sessionNoteAttachments");
+    expect(html).toContain("-report-.pdf");
+    expect(html).toContain("Attachment-only note");
+  });
 });

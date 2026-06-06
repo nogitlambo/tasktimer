@@ -72,6 +72,8 @@ type NormalizeConflict = {
   taskName: string;
 };
 
+type SchedulePlacementDuration = number | ((day: ScheduleDay) => number);
+
 export function isScheduleMobileLayout() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
 }
@@ -191,9 +193,12 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     taskId: string,
     days: ScheduleDay[],
     startMinutes: number,
-    durationMinutes: number
+    durationMinutes: SchedulePlacementDuration
   ) {
-    return days.some((day) => placementHasOverlap(taskId, day, startMinutes, durationMinutes));
+    return days.some((day) => {
+      const dayDurationMinutes = typeof durationMinutes === "function" ? durationMinutes(day) : durationMinutes;
+      return placementHasOverlap(taskId, day, startMinutes, dayDurationMinutes);
+    });
   }
 
   function setTaskScheduleByDay(task: Task, byDay: TaskPlannedStartByDay, opts?: { flexible?: boolean }) {
@@ -214,7 +219,9 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
     const placementDays = getSchedulePlacementDays(task, day, sourceDay);
-    if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, durationMinutes)) return;
+    const getPlacementDurationMinutes = (placementDay: ScheduleDay) =>
+      getScheduleTaskDurationMinutesForDay(task, placementDay) || getScheduleTaskDurationMinutes(task);
+    if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, getPlacementDurationMinutes)) return;
     const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
     const scheduledDays = getScheduleDaysForTask(task);
     const nextTime = formatScheduleStoredTime(startMinutes);
@@ -246,11 +253,12 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const sourceTime = getTaskScheduledTime(task, sourceDay);
     if (!sourceTime) return [];
     const startMinutes = parseScheduleTimeMinutes(sourceTime);
-    const durationMinutes = getScheduleTaskDurationMinutesForDay(task, sourceDay) || getScheduleTaskDurationMinutes(task);
-    if (startMinutes == null || !(durationMinutes > 0)) return [];
+    if (startMinutes == null) return [];
     return getScheduleDaysForTask(task)
       .filter((day) => day !== sourceDay)
       .flatMap((day) => {
+        const durationMinutes = getScheduleTaskDurationMinutesForDay(task, day) || getScheduleTaskDurationMinutes(task);
+        if (!(durationMinutes > 0)) return [];
         const { scheduled } = buildViewModel();
         const conflicts = scheduled.filter((entry) => {
           if (String(entry.task.id || "") === taskId) return false;
@@ -327,13 +335,15 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
       getScheduleTaskDurationMinutesForDay(task, dragPreviewDay) || getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return null;
     const placementDays = getSchedulePlacementDays(task, dragPreviewDay, dragSourceDay);
+    const getPlacementDurationMinutes = (placementDay: ScheduleDay) =>
+      getScheduleTaskDurationMinutesForDay(task, placementDay) || getScheduleTaskDurationMinutes(task);
     return {
       taskId,
       task,
       day: dragPreviewDay,
       startMinutes: dragPreviewStartMinutes,
       durationMinutes,
-      hasOverlap: placementHasOverlapOnAnyDay(taskId, placementDays, dragPreviewStartMinutes, durationMinutes),
+      hasOverlap: placementHasOverlapOnAnyDay(taskId, placementDays, dragPreviewStartMinutes, getPlacementDurationMinutes),
     };
   }
 

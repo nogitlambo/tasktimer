@@ -470,6 +470,8 @@ type CreateSessionOptionsArgs = {
   getTasks: () => Task[];
   appRuntimeState: MutableStore;
   getHistoryByTaskId: () => HistoryByTaskId;
+  setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   preferencesState: MutableStore;
   dashboardUiState: MutableStore;
@@ -1371,6 +1373,8 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getTasks: args.getTasks,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     getHistoryByTaskId: args.getHistoryByTaskId,
+    setHistoryByTaskId: args.setHistoryByTaskId,
+    saveHistory: args.saveHistory,
     getLiveSessionsByTaskId: () => asType<Parameters<typeof createTaskTimerSession>[0]["getLiveSessionsByTaskId"] extends () => infer T ? T : never>(args.getLiveSessionsByTaskId()),
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),

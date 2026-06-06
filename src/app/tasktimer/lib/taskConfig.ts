@@ -1,4 +1,6 @@
+import { formatScheduleSlotTime, parseScheduleTimeMinutes, type ScheduleDay } from "./schedule-placement";
 import type { Task } from "./types";
+import { normalizeOptimalProductivityDays } from "./productivityPeriod";
 
 type DurationUnit = "minute" | "hour";
 type DurationPeriod = "day" | "week";
@@ -18,6 +20,16 @@ type TaskConfigReadoutOptions = {
   taskType?: "recurring" | "once-off";
   noTimeGoal?: boolean;
   [key: string]: unknown;
+};
+
+type TaskScheduleSummaryOptions = {
+  taskType: "recurring" | "once-off";
+  durationValue: string | number;
+  durationUnit: DurationUnit;
+  durationPeriod: DurationPeriod;
+  plannedStartTime: string;
+  productivityDays: readonly unknown[];
+  onceOffDay?: ScheduleDay | string | null;
 };
 
 type AggregateTimeGoalTotals = {
@@ -157,4 +169,85 @@ export function formatAddTaskDurationReadout({
   if (taskType === "once-off") return `${parsedValue} ${unitLabel} once`;
   const periodLabel = durationPeriod === "day" ? "day" : "week";
   return `${parsedValue} ${unitLabel} per ${periodLabel}`;
+}
+
+function formatScheduleSummaryDuration(minutes: number): string {
+  const totalMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  if (totalMinutes > 0 && totalMinutes % 60 === 0) {
+    const hours = totalMinutes / 60;
+    return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+  return `${totalMinutes} ${totalMinutes === 1 ? "minute" : "minutes"}`;
+}
+
+function formatScheduleSummaryDurationRange(minMinutes: number, maxMinutes: number): string {
+  const min = Math.max(0, Math.round(Number(minMinutes) || 0));
+  const max = Math.max(0, Math.round(Number(maxMinutes) || 0));
+  if (min === max) {
+    if (min > 0 && min % 60 === 0) return `${min / 60} hour`;
+    return `${min} minute`;
+  }
+  const bothWholeHours = min > 0 && max > 0 && min % 60 === 0 && max % 60 === 0;
+  if (bothWholeHours) {
+    return `${min / 60}-${max / 60} hour`;
+  }
+  return `${min}-${max} minute`;
+}
+
+function getTaskScheduleSummaryGoalMinutes(value: string | number, unit: DurationUnit): number {
+  const parsedValue = Math.max(0, Math.floor(Number(value) || 0));
+  if (!(parsedValue > 0)) return 0;
+  return unit === "minute" ? parsedValue : parsedValue * 60;
+}
+
+function formatScheduleSummaryDay(day: string | null | undefined): string {
+  const labels: Record<string, string> = {
+    mon: "Monday",
+    tue: "Tuesday",
+    wed: "Wednesday",
+    thu: "Thursday",
+    fri: "Friday",
+    sat: "Saturday",
+    sun: "Sunday",
+  };
+  return labels[String(day || "").trim().toLowerCase()] || "Monday";
+}
+
+export function formatTaskScheduleSummary({
+  taskType,
+  durationValue,
+  durationUnit,
+  durationPeriod,
+  plannedStartTime,
+  productivityDays,
+  onceOffDay,
+}: TaskScheduleSummaryOptions): string {
+  const goalMinutes = getTaskScheduleSummaryGoalMinutes(durationValue, durationUnit);
+  const startMinutes = parseScheduleTimeMinutes(plannedStartTime);
+  if (!(goalMinutes > 0) || startMinutes == null) return "";
+
+  const startText = formatScheduleSlotTime(startMinutes);
+  if (taskType === "once-off") {
+    return `Task will be added as a ${formatScheduleSummaryDuration(goalMinutes)} scheduled block at ${startText} on ${formatScheduleSummaryDay(
+      onceOffDay
+    )}.`;
+  }
+
+  const days = normalizeOptimalProductivityDays(productivityDays);
+  const dayCount = days.length;
+  const dayLabel = dayCount === 1 ? "productivity day" : "productivity days";
+  if (durationPeriod === "week") {
+    const baseMinutes = Math.floor(goalMinutes / dayCount);
+    const remainder = goalMinutes % dayCount;
+    const minMinutes = baseMinutes;
+    const maxMinutes = baseMinutes + (remainder > 0 ? 1 : 0);
+    return `Task will be split into ${formatScheduleSummaryDurationRange(
+      minMinutes,
+      maxMinutes
+    )} daily scheduled blocks at ${startText} on your ${dayCount} ${dayLabel}.`;
+  }
+
+  return `Task will be added as ${formatScheduleSummaryDuration(
+    goalMinutes
+  )} daily scheduled blocks at ${startText} on your ${dayCount} ${dayLabel}.`;
 }

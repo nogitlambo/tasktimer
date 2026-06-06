@@ -51,3 +51,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
     scroll-behavior:auto !important;
   }
 }
+@media (max-width: 720px){
+  .sessionNoteEditorGrid,
+  .sessionNoteContentGrid{
+    grid-template-columns:1fr;
+  }
+}

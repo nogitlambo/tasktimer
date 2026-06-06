@@ -44,6 +44,11 @@ import {
   setRichNoteEditorValue,
   syncRichNoteToolbarStates,
 } from "./rich-session-notes";
+import {
+  deleteSessionNoteAttachmentFile,
+  normalizeSessionNoteAttachments,
+  uploadSessionNoteAttachment,
+} from "../lib/sessionNoteAttachments";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -533,6 +538,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const nextValue = getPreferredFocusSessionNote(normalizedTaskId);
     if (els.focusSessionNotesInput) setRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null, nextValue);
     autosizeFocusSessionNotesInput();
+    syncFocusSessionNoteAttachments(normalizedTaskId);
     clearFocusSessionNotesSavedStatus();
   }
 
@@ -550,6 +556,183 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!els.focusSessionNotesSavedText) return;
     els.focusSessionNotesSavedText.textContent = "Session note automatically saved to this session.";
     (els.focusSessionNotesSavedText as HTMLElement).style.display = "block";
+  }
+
+  function formatAttachmentSize(sizeRaw: unknown) {
+    const size = Math.max(0, Math.floor(Number(sizeRaw || 0) || 0));
+    if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+    if (size >= 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+    return `${size} B`;
+  }
+
+  function escapeAttr(value: unknown) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderSessionNoteAttachments(container: HTMLElement | null | undefined, attachmentsRaw: unknown, opts?: { editable?: boolean; editorId?: string }) {
+    if (!container) return;
+    const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
+    container.dataset.sessionNoteAttachmentEditor = String(opts?.editorId || "");
+    if (!attachments.length) {
+      container.innerHTML = "";
+      container.setAttribute("data-empty", "true");
+      return;
+    }
+    container.setAttribute("data-empty", "false");
+    container.innerHTML = attachments
+      .map(
+        (attachment) => `<div class="sessionNoteAttachmentRow" data-session-note-attachment-id="${escapeAttr(attachment.id)}">
+          <a class="sessionNoteAttachmentLink" href="${escapeAttr(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeAttr(attachment.name || "Attachment")}</a>
+          <span class="sessionNoteAttachmentMeta">${escapeAttr(formatAttachmentSize(attachment.size))}</span>
+          ${opts?.editable !== false ? `<button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeAttr(attachment.id)}">x</button>` : ""}
+        </div>`
+      )
+      .join("");
+  }
+
+  function getTaskById(taskId: string) {
+    return ctx.getTasks().find((row) => String(row.id || "").trim() === String(taskId || "").trim()) || null;
+  }
+
+  function getFocusNoteAttachments(taskIdRaw?: string | null) {
+    const taskId = String(taskIdRaw || ctx.getFocusModeTaskId() || "").trim();
+    if (!taskId) return [];
+    return normalizeSessionNoteAttachments(ctx.getLiveSessionsByTaskId()?.[taskId]?.attachments);
+  }
+
+  function syncFocusSessionNoteAttachments(taskIdRaw?: string | null) {
+    renderSessionNoteAttachments(els.focusSessionNoteAttachments as HTMLElement | null, getFocusNoteAttachments(taskIdRaw), {
+      editorId: "focusSessionNotesInput",
+    });
+  }
+
+  function setFocusNoteAttachments(taskIdRaw: string, attachmentsRaw: unknown) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    const task = getTaskById(taskId);
+    const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
+    if (task?.running) {
+      ctx.upsertLiveSession(task, {
+        elapsedMs: ctx.getTaskElapsedMs(task),
+        note: getRichNoteEditorValue(els.focusSessionNotesInput as HTMLElement | null),
+        attachments,
+        forceCloudFlush: true,
+        reason: "focus-note-attachments",
+      });
+    }
+    syncFocusSessionNoteAttachments(taskId);
+  }
+
+  function getHistoryEntryByIdentity(taskId: string, editor: HTMLElement | null) {
+    const source = editor?.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null;
+    const ts = Math.floor(Number(editor?.dataset.historySummaryTs || source?.getAttribute("data-history-summary-ts") || 0));
+    const ms = Math.max(0, Math.floor(Number(editor?.dataset.historySummaryMs || source?.getAttribute("data-history-summary-ms") || 0)));
+    const name = String(editor?.dataset.historySummaryName || source?.getAttribute("data-history-summary-name") || "").trim();
+    if (!taskId || ts <= 0 || !name) return null;
+    const history = ctx.getHistoryByTaskId() || {};
+    const rows = Array.isArray(history[taskId]) ? history[taskId] : [];
+    const index = rows.findIndex((entry: any) => Number(entry?.ts) === ts && Number(entry?.ms) === ms && String(entry?.name || "").trim() === name);
+    if (index < 0) return null;
+    return { taskId, index, entry: rows[index], rows, history };
+  }
+
+  function setHistoryEntryAttachments(taskId: string, editor: HTMLElement | null, attachmentsRaw: unknown) {
+    const found = getHistoryEntryByIdentity(taskId, editor);
+    if (!found) return;
+    const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
+    const nextEntry = { ...(found.entry as any) };
+    if (attachments.length) nextEntry.attachments = attachments;
+    else delete nextEntry.attachments;
+    const nextRows = found.rows.slice();
+    nextRows[found.index] = nextEntry;
+    const nextHistory = { ...found.history, [found.taskId]: nextRows };
+    ctx.setHistoryByTaskId(nextHistory);
+    ctx.saveHistory(nextHistory);
+    ctx.renderDashboardWidgets();
+    renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor?.id });
+  }
+
+  function resolveAttachmentContainerForEditor(editor: HTMLElement | null) {
+    if (!editor) return null;
+    if (editor.id === "focusSessionNotesInput") return els.focusSessionNoteAttachments as HTMLElement | null;
+    if (editor.id === "timeGoalCompleteNoteInput") return els.timeGoalCompleteNoteAttachments as HTMLElement | null;
+    if (editor.id === "historyEntryNoteInput") return els.historyEntryNoteAttachments as HTMLElement | null;
+    const parent = editor.closest?.(".historyEntrySummaryNoteBlock") as HTMLElement | null;
+    return parent?.querySelector<HTMLElement>(".sessionNoteAttachments") || null;
+  }
+
+  function readAttachmentsForEditor(editor: HTMLElement | null) {
+    if (!editor) return [];
+    if (editor.id === "focusSessionNotesInput") {
+      return getFocusNoteAttachments(ctx.getFocusModeTaskId());
+    }
+    if (editor.id === "timeGoalCompleteNoteInput") {
+      return getFocusNoteAttachments(ctx.getTimeGoalModalTaskId());
+    }
+    const taskId = String(
+      editor.dataset.historySummaryTaskId ||
+      (editor.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null)?.getAttribute("data-history-summary-task-id") ||
+      (els.historyEntryNoteOverlay as HTMLElement | null)?.dataset.historyEntryTaskId ||
+      ""
+    ).trim();
+    const found = getHistoryEntryByIdentity(taskId, editor);
+    return normalizeSessionNoteAttachments(found?.entry?.attachments);
+  }
+
+  function writeAttachmentsForEditor(editor: HTMLElement | null, attachmentsRaw: unknown) {
+    const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
+    if (!editor) return;
+    if (editor.id === "focusSessionNotesInput") {
+      setFocusNoteAttachments(String(ctx.getFocusModeTaskId() || ""), attachments);
+      renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor.id });
+      return;
+    }
+    if (editor.id === "timeGoalCompleteNoteInput") {
+      setFocusNoteAttachments(String(ctx.getTimeGoalModalTaskId() || ""), attachments);
+      renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor.id });
+      return;
+    }
+    const taskId = String(
+      editor.dataset.historySummaryTaskId ||
+      (editor.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null)?.getAttribute("data-history-summary-task-id") ||
+      (els.historyEntryNoteOverlay as HTMLElement | null)?.dataset.historyEntryTaskId ||
+      ""
+    ).trim();
+    setHistoryEntryAttachments(taskId, editor, attachments);
+  }
+
+  async function attachFilesToEditor(editor: HTMLElement | null, files: FileList | File[]) {
+    if (!editor || !files.length) return;
+    const container = resolveAttachmentContainerForEditor(editor);
+    if (container) container.setAttribute("data-uploading", "true");
+    try {
+      let next = readAttachmentsForEditor(editor);
+      for (const file of Array.from(files)) {
+        const attachment = await uploadSessionNoteAttachment(file, next);
+        next = [attachment, ...next];
+      }
+      writeAttachmentsForEditor(editor, next);
+    } catch (error) {
+      if (container) {
+        container.innerHTML = `<div class="sessionNoteAttachmentError">${escapeAttr(error instanceof Error ? error.message : "Could not upload file.")}</div>${container.innerHTML}`;
+      }
+    } finally {
+      if (container) container.removeAttribute("data-uploading");
+    }
+  }
+
+  async function removeAttachmentFromEditor(editor: HTMLElement | null, attachmentId: string) {
+    if (!editor || !attachmentId) return;
+    const current = readAttachmentsForEditor(editor);
+    const target = current.find((attachment) => attachment.id === attachmentId);
+    const next = current.filter((attachment) => attachment.id !== attachmentId);
+    writeAttachmentsForEditor(editor, next);
+    await deleteSessionNoteAttachmentFile(target);
   }
 
   function maybeShowFocusSessionNotesSavedStatus(taskId?: string | null) {
@@ -863,6 +1046,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteNoteInput) {
       setRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null, captureSessionNoteSnapshot(taskId));
     }
+    renderSessionNoteAttachments(els.timeGoalCompleteNoteAttachments as HTMLElement | null, getFocusNoteAttachments(taskId), {
+      editorId: "timeGoalCompleteNoteInput",
+    });
     syncTimeGoalCompleteLaunchNextButton();
     persistPendingTimeGoalFlow(task, "main", opts);
     syncTimeGoalCompleteNextTaskGrid();
@@ -2161,6 +2347,33 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function registerSessionEvents() {
     ctx.on(document, "click", (event: Event) => {
       handleRichNoteToolbarClick(event);
+      const removeBtn = (event.target as HTMLElement | null)?.closest?.("[data-session-note-attachment-remove]") as HTMLElement | null;
+      if (removeBtn) {
+        event.preventDefault();
+        const container = removeBtn.closest(".sessionNoteAttachments") as HTMLElement | null;
+        const editorId = String(container?.dataset.sessionNoteAttachmentEditor || "").trim();
+        const editor = editorId ? (document.getElementById(editorId) as HTMLElement | null) : null;
+        void removeAttachmentFromEditor(editor, String(removeBtn.dataset.sessionNoteAttachmentRemove || "").trim());
+      }
+    });
+    ctx.on(document, "richnote:attach-files", (event: Event) => {
+      const customEvent = event as CustomEvent<{ editorId?: string; editor?: HTMLElement | null }>;
+      const editorId = String(customEvent.detail?.editorId || "").trim();
+      const editor = customEvent.detail?.editor || (editorId ? (document.getElementById(editorId) as HTMLElement | null) : null);
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.style.width = "1px";
+      input.style.height = "1px";
+      input.addEventListener("change", () => {
+        const files = input.files;
+        if (files?.length) void attachFilesToEditor(editor, files);
+        input.remove();
+      });
+      document.body.appendChild(input);
+      input.click();
     });
     ctx.on(document, "focusin", (event: Event) => {
       handleRichNoteToolbarStateEvent(event);

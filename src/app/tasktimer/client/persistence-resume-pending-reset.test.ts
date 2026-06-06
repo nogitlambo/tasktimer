@@ -37,6 +37,10 @@ function createHarness(snapshotTasks: Task[], nowValue = new Date(2026, 4, 3, 8)
         dashboard: null,
         taskUi: null,
       }),
+      loadTimerStateSnapshot: () => ({
+        tasks: snapshotTasks,
+        liveSessionsByTaskId: liveSessions,
+      }),
       saveTasks,
     },
     historyPersistence: {

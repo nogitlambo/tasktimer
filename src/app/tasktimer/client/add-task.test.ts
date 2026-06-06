@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskTimerAddTask } from "./add-task";
+import { getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
+import type { Task } from "../lib/types";
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
@@ -68,6 +70,13 @@ function createHarness(
   const addTaskPlannedStartInput = {
     value: addTaskPlannedStartTime,
   } as HTMLInputElement;
+  const addTaskScheduleSummary = {
+    open: false,
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLDetailsElement;
+  const addTaskScheduleSummaryText = {
+    textContent: "",
+  } as HTMLElement;
 
   const on = vi.fn((target: object | null | undefined, type: string, handler: (event?: Event) => void) => {
     if (!target) return;
@@ -114,6 +123,8 @@ function createHarness(
       addTaskOverlay: null,
       addTaskOnceOffDayField: null,
       addTaskDurationReadout: null,
+      addTaskScheduleSummary,
+      addTaskScheduleSummaryText,
       addTaskDurationRow: null,
       addTaskDurationPerLabel: null,
       addTaskDurationPeriodPills: null,
@@ -223,6 +234,8 @@ function createHarness(
     addTaskDurationValueInput,
     addTaskMsToggle,
     addTaskPlannedStartTimeInput,
+    addTaskScheduleSummary,
+    addTaskScheduleSummaryText,
     ctx,
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
     toggleSchedule: (checked = true) => {
@@ -238,6 +251,11 @@ function createHarness(
     },
     clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
     clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
+    clickOnceOffType: () => handlers.get(addTaskTypeOnceOffBtn)?.get("click")?.(),
+    setOnceOffDay: (day: string) => {
+      addTaskOnceOffDaySelect.value = day;
+      handlers.get(addTaskOnceOffDaySelect)?.get("change")?.();
+    },
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
     toggleCheckpoints: () => handlers.get(addTaskMsToggle)?.get("change")?.(),
@@ -245,6 +263,34 @@ function createHarness(
 }
 
 describe("createTaskTimerAddTask", () => {
+  it("updates the schedule summary for weekly recurring planned blocks", () => {
+    const harness = createHarness("1", { productivityDays: ["mon", "tue", "wed", "thu", "fri"] });
+
+    harness.toggleSchedule();
+    harness.clickWeeklyPeriod();
+    harness.setManualPlannedStart("08:00");
+
+    expect(harness.addTaskScheduleSummaryText.textContent).toBe(
+      "Task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
+    );
+    expect(harness.addTaskScheduleSummary.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
+  });
+
+  it("updates the schedule summary when Add Task planned start and type change", () => {
+    const harness = createHarness("1", { productivityDays: ["mon", "tue", "wed", "thu", "fri"] });
+
+    harness.toggleSchedule();
+    harness.setManualPlannedStart("08:00");
+    expect(harness.addTaskScheduleSummaryText.textContent).toBe(
+      "Task will be added as 1 hour daily scheduled blocks at 8:00 AM on your 5 productivity days."
+    );
+
+    harness.clickOnceOffType();
+    harness.setOnceOffDay("fri");
+
+    expect(harness.addTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 hour scheduled block at 8:00 AM on Friday.");
+  });
+
   it("clears the add-task time goal input on focus when the value is the default zero", () => {
     const harness = createHarness("0");
 
@@ -514,11 +560,32 @@ describe("createTaskTimerAddTask", () => {
     expect(setTasksMock).toHaveBeenCalledWith([
       expect.objectContaining({
         timeGoalPeriod: "week",
-        timeGoalMinutes: 840,
+        timeGoalMinutes: 120,
         plannedStartTime: "09:00",
         plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
       }),
     ]);
+  });
+
+  it("stores weekly time goals as weekly totals before splitting across productivity days", () => {
+    const harness = createHarness("4", { productivityDays: ["mon", "tue", "wed", "thu", "fri"] });
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+    harness.ctx.getAddTaskDurationPeriod = () => "week";
+
+    harness.toggleSchedule(true);
+    harness.submit();
+
+    const savedTask = setTasksMock.mock.calls[0]?.[0]?.[0] as Task | undefined;
+    expect(savedTask).toEqual(
+      expect.objectContaining({
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 240,
+        plannedStartByDay: { mon: "09:00", tue: "09:00", wed: "09:00", thu: "09:00", fri: "09:00" },
+      })
+    );
+    expect(savedTask ? getScheduleTaskDurationMinutesForDay(savedTask, "mon") : 0).toBe(48);
+    expect(savedTask ? getScheduleTaskDurationMinutesForDay(savedTask, "fri") : 0).toBe(48);
   });
 
   it("schedules daily recurring tasks only across optimal productivity days", () => {

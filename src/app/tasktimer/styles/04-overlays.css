@@ -4338,7 +4338,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteInput.isEditing{
   min-height: 72px;
-  padding: 8px 10px;
+  padding: 8px;
   border: 1px solid rgba(174,184,194,.45);
   border-top: 0;
   border-radius: 0 0 4px 4px;
@@ -4608,11 +4608,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay .modal{
   position: relative;
   z-index: 2;
-  background: #0d0f13;
+  display: flex;
+  min-height: clamp(430px, 72dvh, 540px);
+  flex-direction: column;
+  justify-content: center;
+  background: transparent;
+  border: 0;
   border-radius: 0;
-  padding: 16px 16px 14px;
-  border: 1px solid rgba(53,232,255,.28);
-  box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(126,243,255,.08);
+  box-shadow: none;
+  padding: clamp(66px, 9vh, 82px) clamp(42px, 8vw, 64px) clamp(76px, 10vh, 96px);
 }
 
 #rankPromotionOverlay::before{
@@ -4653,9 +4657,45 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #rankPromotionOverlay .rankPromotionModal{
-  overflow: hidden;
+  overflow: visible;
   --rank-promotion-birdseye-scale: 4.35;
   --rank-promotion-beam-pulse-width: 62%;
+}
+
+#rankPromotionOverlay .rankPromotionShieldFrame{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 24px 54px rgba(0,0,0,.58));
+}
+
+#rankPromotionOverlay .rankPromotionShieldGlow{
+  fill: none;
+  stroke: rgba(201,255,36,.34);
+  stroke-width: 16;
+  filter: url("#rankPromotionShieldGlow");
+}
+
+#rankPromotionOverlay .rankPromotionShieldFill{
+  fill: url("#rankPromotionShieldFill");
+  stroke: url("#rankPromotionShieldStroke");
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+
+#rankPromotionOverlay .rankPromotionShieldClipLayer{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 390'%3E%3Cpath fill='white' d='M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 390'%3E%3Cpath fill='white' d='M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 
 #rankPromotionOverlay .rankPromotionLightBeam{
@@ -4764,7 +4804,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #rankPromotionOverlay .rankPromotionStage{
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   place-items: center;
   min-height: 176px;
@@ -4773,7 +4813,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay h2,
 #rankPromotionOverlay .confirmBtns{
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 #rankPromotionOverlay .rankPromotionRank{
@@ -5052,10 +5092,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .modal{
-  border-color: rgba(214,214,214,.34);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(18,20,24,.96);
+  border-color: transparent;
+  background: transparent;
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShieldGlow{
+  stroke: rgba(243,255,122,.42);
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShieldFill{
+  stroke: url("#rankPromotionShieldStroke");
 }
 
 body[data-theme="lime"] #rankPromotionOverlay h2{
@@ -6238,6 +6284,42 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   color: #f6ffd9;
 }
 
+#editOverlay .taskScheduleSummary,
+#addTaskOverlay .taskScheduleSummary{
+  margin: 8px 0 0;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.025);
+  color: rgba(245,248,244,.62);
+}
+
+#editOverlay .taskScheduleSummary.isHidden,
+#addTaskOverlay .taskScheduleSummary.isHidden{
+  display: none;
+}
+
+#editOverlay .taskScheduleSummary summary,
+#addTaskOverlay .taskScheduleSummary summary{
+  min-height: 32px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: rgba(245,248,244,.78);
+  font-family: var(--font-orbitron) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+#editOverlay .taskScheduleSummary p,
+#addTaskOverlay .taskScheduleSummary p{
+  margin: 0;
+  padding: 0 10px 10px;
+  color: rgba(245,248,244,.62);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 #editOverlay .milestonesBody,
 #editOverlay .presetIntervalsInfoSlot,
 #editOverlay .btn{
@@ -6797,7 +6879,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #historyAnalysisOverlay,
   #rewardsInfoOverlay,
   #rankLadderOverlay,
-  #rankPromotionOverlay,
   #timeGoalCompleteOverlay,
   #timeGoalCompleteSaveNoteOverlay,
   #timeGoalCompleteNoteOverlay

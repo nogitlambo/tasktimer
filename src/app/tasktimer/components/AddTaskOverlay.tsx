@@ -1,5 +1,3 @@
-import { resolveTaskTimerRouteHref } from "../lib/routeHref";
-import { buildSettingsPreferencesOptimalProductivityDaysHref } from "../lib/settingsRoute";
 import TaskColorPickerPopover from "./TaskColorPickerPopover";
 
 export default function AddTaskOverlay() {
@@ -57,18 +55,6 @@ export default function AddTaskOverlay() {
                   Once-Off
                 </button>
               </div>
-              <p className="taskScheduleDaysHelper" id="addTaskOptimalProductivityDaysHelper">
-                Task will be scheduled on your optimal productivity days:{" "}
-                <span data-optimal-productivity-days-summary="true">Su, Mo, Tu, We, Th, Fr, Sa</span>
-                {" - "}
-                <a
-                  className="taskScheduleDaysHelperLink"
-                  href={resolveTaskTimerRouteHref(buildSettingsPreferencesOptimalProductivityDaysHref())}
-                >
-                  Change
-                </a>
-              </p>
-
               <div className="field editTaskTimeGoalField">
                 <div className="editTaskTimeGoalHeader" id="addTaskTimeGoalToggleRow">
                   <span className="editTaskTimeGoalHeaderLabel">Time Goal</span>
@@ -187,6 +173,11 @@ export default function AddTaskOverlay() {
                   </button>
                 </div>
               </div>
+
+              <details className="taskScheduleSummary" id="addTaskScheduleSummary">
+                <summary>Summary</summary>
+                <p id="addTaskScheduleSummaryText" />
+              </details>
             </div>
           </form>
           <div className="footerBtns addTaskFooterBtns">

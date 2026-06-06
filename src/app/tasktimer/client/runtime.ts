@@ -31,6 +31,7 @@ export function createTaskTimerRuntime() {
     removeCapBackListener: null as null | (() => void),
     removeCapAppStateListener: null as null | (() => void),
     removeCloudTaskCollectionListener: null as null | (() => void),
+    removeCloudTaskLiveSessionsListener: null as null | (() => void),
     removeAuthStateListener: null as null | (() => void),
   };
 }
@@ -89,6 +90,14 @@ export function destroyTaskTimerRuntime(opts: DestroyTaskTimerRuntimeOptions) {
       // ignore
     }
     runtime.removeCloudTaskCollectionListener = null;
+  }
+  if (runtime.removeCloudTaskLiveSessionsListener) {
+    try {
+      runtime.removeCloudTaskLiveSessionsListener();
+    } catch {
+      // ignore
+    }
+    runtime.removeCloudTaskLiveSessionsListener = null;
   }
   if (runtime.removeAuthStateListener) {
     try {

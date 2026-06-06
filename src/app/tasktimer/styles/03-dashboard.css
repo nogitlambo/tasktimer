@@ -178,7 +178,7 @@
   bottom:8px;
   height:34px;
   display:grid;
-  grid-template-columns:repeat(7, minmax(0, 1fr));
+  grid-template-columns:repeat(14, minmax(0, 1fr));
   gap:4px;
 }
 
@@ -7180,19 +7180,28 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 }
 
-/* Dashboard scroll chrome ownership. */
-/* Dashboard scroll chrome: keep desktop dashboard scrollable without showing the right scrollbar. */
-@media (min-width: 981px){
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+/* Dashboard scroll chrome: keep dashboard scrollable without showing scrollbars. */
+:root:has(> body[data-app-page="dashboard"]),
+body[data-app-page="dashboard"],
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"],
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppShell,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppMain,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
-  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar{
-    width: 0;
-    height: 0;
-    display: none;
-  }
+:root:has(> body[data-app-page="dashboard"])::-webkit-scrollbar,
+body[data-app-page="dashboard"]::-webkit-scrollbar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrollbar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppShell::-webkit-scrollbar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail::-webkit-scrollbar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppMain::-webkit-scrollbar,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* Dashboard momentum footer responsive ownership. */

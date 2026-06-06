@@ -30,6 +30,14 @@ service firebase.storage {
         && isAllowedHoldingSpaceContentType();
     }
 
+    match /users/{userId}/session-notes/{attachmentId}/{fileName} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size <= 10485760
+        && isAllowedHoldingSpaceContentType();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

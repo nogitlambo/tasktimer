@@ -316,6 +316,20 @@ function createRenderHarness(
 }
 
 describe("dashboard activity overview card", () => {
+  it("renders one x-axis label for each fortnight day", () => {
+    const harness = createRenderHarness([]);
+
+    try {
+      harness.renderActivityOverview();
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
+
+      expect(axisDayCount).toBe(14);
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("uses goal-progress colors per day when a daily pace target exists", () => {
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
     const harness = createRenderHarness(
