@@ -363,7 +363,7 @@ export function renderHistoryEntrySummaryHtml(
     .map((session, index) => {
       const deleteButtonHtml =
         session.taskId && session.ts > 0 && session.name
-          ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.png" alt="" aria-hidden="true" /></button>`
+          ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" /></button>`
           : "";
       return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
         <div class="historyEntrySummarySessionHead">

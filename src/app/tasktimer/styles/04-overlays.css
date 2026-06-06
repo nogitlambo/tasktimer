@@ -2156,8 +2156,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   width:20px;
   height:20px;
   background-color: currentColor;
-  -webkit-mask: url("/icons/icons_default/bell-notification.svg") center / contain no-repeat;
-  mask: url("/icons/icons_default/bell-notification.svg") center / contain no-repeat;
+  -webkit-mask: url("/icons/icons_default/bell-notification.webp") center / contain no-repeat;
+  mask: url("/icons/icons_default/bell-notification.webp") center / contain no-repeat;
 }
 
 #editOverlay .msRow input[type="text"]{

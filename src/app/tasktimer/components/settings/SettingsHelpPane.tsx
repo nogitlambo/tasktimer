@@ -15,7 +15,7 @@ export function SettingsHelpPane({ active, exiting = false }: { active: boolean;
               href={resolveTaskTimerRouteHref("/feedback")}
               aria-label="Feedback"
             >
-              <MenuIconLabel icon="/icons/icons_default/message.svg" label="Feedback" helper="Share product feedback and suggestions." />
+              <MenuIconLabel icon="/icons/icons_default/message.webp" label="Feedback" helper="Share product feedback and suggestions." />
             </a>
           </div>
         </section>

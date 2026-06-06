@@ -2010,7 +2010,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   justify-content: center;
   color: #fff;
   font-family: var(--font-tight);
-  font-size: clamp(12px, 27cqw, 28px);
+  font-size: clamp(12px, 18cqw, 20px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: .03em;

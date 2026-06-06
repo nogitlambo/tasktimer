@@ -40,7 +40,7 @@ import SignOutConfirmModal from "./SignOutConfirmModal";
 type DesktopRailPage =
   | "dashboard"
   | "tasks"
-  | "holding-space"
+  | "session-notes"
   | "friends"
   | "leaderboard"
   | "account"
@@ -116,7 +116,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "dashboard",
     label: "Dashboard",
     ariaLabel: "Dashboard",
-    iconSrc: "/icons/icons_default/dashboard.png",
+    iconSrc: "/icons/icons_default/dashboard.webp",
     desktopId: "commandCenterDashboardBtn",
     mobileId: "footerDashboardBtn",
     href: "/dashboard",
@@ -125,25 +125,25 @@ const NAV_ITEMS: NavItem[] = [
     page: "tasks",
     label: "Tasks",
     ariaLabel: "Tasks",
-    iconSrc: "/icons/icons_default/task.png",
+    iconSrc: "/icons/icons_default/task.webp",
     desktopId: "commandCenterTasksBtn",
     mobileId: "footerTasksBtn",
     href: "/tasklaunch",
   },
   {
-    page: "holding-space",
-    label: "Holding Space",
-    ariaLabel: "Holding Space",
-    iconSrc: "/file.svg",
-    desktopId: "commandCenterHoldingSpaceBtn",
-    mobileId: "footerHoldingSpaceBtn",
-    href: "/holding-space",
+    page: "session-notes",
+    label: "Session Notes",
+    ariaLabel: "Session Notes",
+    iconSrc: "/icons/icons_default/notes.webp",
+    desktopId: "commandCenterSessionNotesBtn",
+    mobileId: "footerSessionNotesBtn",
+    href: "/session-notes",
   },
   {
     page: "friends",
     label: "Friends",
     ariaLabel: "Friends",
-    iconSrc: "/icons/icons_default/friends.png",
+    iconSrc: "/icons/icons_default/friends.webp",
     desktopId: "commandCenterGroupsBtn",
     mobileId: "footerTest2Btn",
     href: "/friends",
@@ -152,7 +152,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "leaderboard",
     label: "Leaderboards",
     ariaLabel: "Leaderboards",
-    iconSrc: "/icons/icons_default/leaderboard.png",
+    iconSrc: "/icons/icons_default/leaderboards.webp",
     desktopId: "commandCenterLeaderboardBtn",
     mobileId: "footerLeaderboardBtn",
     href: "/leaderboards",
@@ -161,7 +161,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "history",
     label: "History",
     ariaLabel: "History Manager",
-    iconSrc: "/icons/icons_default/history.png",
+    iconSrc: "/icons/icons_default/history.webp",
     desktopId: "commandCenterHistoryBtn",
     mobileId: "footerHistoryBtn",
     href: "/history-manager",
@@ -181,7 +181,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "settings",
     label: "Settings",
     ariaLabel: "Settings",
-    iconSrc: "/icons/icons_default/settings.png",
+    iconSrc: "/icons/icons_default/settings.webp",
     desktopId: "commandCenterSettingsBtn",
     mobileId: "footerSettingsBtn",
     href: "/settings",
@@ -240,7 +240,7 @@ const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
   if (page === "tasks") return 1;
-  if (page === "holding-space") return 2;
+  if (page === "session-notes") return 2;
   if (page === "friends") return 3;
   if (page === "leaderboard") return 4;
   if (page === "account") return 5;
@@ -515,7 +515,7 @@ function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void)
     >
       <AppImg
         className="dashboardRailMenuIconImage"
-        src="/icons/icons_default/signout.png"
+        src="/icons/icons_default/signout.webp"
         alt=""
         aria-hidden="true"
       />
@@ -779,7 +779,7 @@ export default function DesktopAppRail({
                   >
                     <AppImg
                       className="dashboardRailMenuIconImage"
-                      src="/icons/icons_default/question.svg"
+                      src="/icons/icons_default/question.webp"
                       alt=""
                       aria-hidden="true"
                     />
@@ -841,7 +841,7 @@ export default function DesktopAppRail({
                   >
                     <AppImg
                       className="dashboardRailMenuIconImage"
-                      src="/icons/icons_default/question.svg"
+                      src="/icons/icons_default/question.webp"
                       alt=""
                       aria-hidden="true"
                     />

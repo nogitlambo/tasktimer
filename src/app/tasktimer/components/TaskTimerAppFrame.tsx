@@ -20,7 +20,7 @@ import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
 
-type MainAppPage = "tasks" | "schedule" | "dashboard" | "holding-space" | "friends" | "leaderboard" | "history";
+type MainAppPage = "tasks" | "schedule" | "dashboard" | "session-notes" | "friends" | "leaderboard" | "history";
 
 type TaskLaunchMobileMenuLinkItem = {
   kind: "link";
@@ -146,7 +146,7 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       kind: "link",
       label: "Settings",
       href: resolveTaskTimerRouteHref("/settings"),
-      iconSrc: "/icons/icons_default/settings.png",
+      iconSrc: "/icons/icons_default/settings.webp",
     },
     {
       kind: "link",
@@ -157,7 +157,7 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
     {
       kind: "signOut",
       label: "Sign Out",
-      iconSrc: "/icons/icons_default/signout.png",
+      iconSrc: "/icons/icons_default/signout.webp",
     },
   ];
 }

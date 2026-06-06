@@ -49,6 +49,7 @@ export type DashboardActivityOverviewModel = {
   totalGoalMs: number;
   dailyPaceTargetMs: number;
   weekTotalMs: number;
+  visibleTotalMs: number;
   previousWeekTotalMs: number;
   maxChartMs: number;
   hasGoal: boolean;
@@ -116,9 +117,9 @@ export function buildDashboardActivityOverviewModel(options: {
 
   const weekStartMs = startOfCurrentWeekMs(options.nowMs, options.weekStarting);
   const weekEndMs = weekStartMs + 7 * 86400000;
-  const previousWeekStartMs = weekStartMs - 7 * 86400000;
-  const days: DashboardActivityOverviewDay[] = Array.from({ length: 7 }, (_, index) => {
-    const startMs = weekStartMs + index * 86400000;
+  const chartStartMs = weekStartMs - 7 * 86400000;
+  const days: DashboardActivityOverviewDay[] = Array.from({ length: 14 }, (_, index) => {
+    const startMs = chartStartMs + index * 86400000;
     const endMs = startMs + 86400000;
     return {
       key: localDayKey(startMs),
@@ -138,7 +139,6 @@ export function buildDashboardActivityOverviewModel(options: {
     };
   });
   const dayByKey = new Map(days.map((day) => [day.key, day]));
-  const previousWeekTotals = Array.from({ length: 7 }, () => 0);
   const includedTaskIds = new Set<string>([...taskNameById.keys(), ...Object.keys(options.historyByTaskId || {})]);
 
   includedTaskIds.forEach((taskId) => {
@@ -149,7 +149,7 @@ export function buildDashboardActivityOverviewModel(options: {
       const ts = normalizeTimestamp(entry?.ts, options.normalizeHistoryTimestampMs);
       const ms = normalizeMs(entry?.ms);
       if (ts <= 0 || ms <= 0) return;
-      if (ts >= weekStartMs && ts < weekEndMs) {
+      if (ts >= chartStartMs && ts < weekEndMs) {
         const day = dayByKey.get(localDayKey(ts));
         if (!day) return;
         const taskName = taskNameById.get(taskId) || String(entry.name || "").trim() || "Task";
@@ -165,10 +165,6 @@ export function buildDashboardActivityOverviewModel(options: {
           isLive: !!entry.isLiveSession,
         });
         return;
-      }
-      if (ts >= previousWeekStartMs && ts < weekStartMs) {
-        const index = Math.max(0, Math.min(6, Math.floor((ts - previousWeekStartMs) / 86400000)));
-        previousWeekTotals[index] += ms;
       }
     });
   });
@@ -199,13 +195,11 @@ export function buildDashboardActivityOverviewModel(options: {
   const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
   const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
   let cumulativeMs = 0;
-  let previousWeekCumulativeMs = 0;
-  days.forEach((day, index) => {
+  days.forEach((day) => {
     cumulativeMs += day.totalMs;
-    previousWeekCumulativeMs += previousWeekTotals[index] || 0;
     day.cumulativeMs = cumulativeMs;
-    day.previousWeekTotalMs = previousWeekTotals[index] || 0;
-    day.previousWeekCumulativeMs = previousWeekCumulativeMs;
+    day.previousWeekTotalMs = 0;
+    day.previousWeekCumulativeMs = 0;
     const rowsByTask = new Map<string, DashboardActivityOverviewTaskRow>();
     day.sessions.forEach((session) => {
       const existing = rowsByTask.get(session.taskId);
@@ -236,9 +230,10 @@ export function buildDashboardActivityOverviewModel(options: {
     day.sessions.sort((left, right) => left.ts - right.ts);
   });
 
-  const weekTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
-  const previousWeekTotalMs = previousWeekTotals.reduce((sum, ms) => sum + ms, 0);
-  const maxDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs, day.previousWeekTotalMs), 0);
+  const weekTotalMs = days.reduce((sum, day) => day.startMs >= weekStartMs && day.startMs < weekEndMs ? sum + day.totalMs : sum, 0);
+  const visibleTotalMs = days.reduce((sum, day) => sum + day.totalMs, 0);
+  const previousWeekTotalMs = visibleTotalMs - weekTotalMs;
+  const maxDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
   const maxChartMs = Math.max(dailyPaceTargetMs, maxDailyMs, 60 * 60000);
 
   return {
@@ -247,10 +242,11 @@ export function buildDashboardActivityOverviewModel(options: {
     totalGoalMs,
     dailyPaceTargetMs,
     weekTotalMs,
+    visibleTotalMs,
     previousWeekTotalMs,
     maxChartMs,
     hasGoal: totalGoalMs > 0,
-    hasActivity: weekTotalMs > 0,
+    hasActivity: visibleTotalMs > 0,
     hasPreviousWeekActivity: previousWeekTotalMs > 0,
     days,
   };

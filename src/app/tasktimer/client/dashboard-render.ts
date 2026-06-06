@@ -1220,24 +1220,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (previousBarsEl) {
       previousBarsEl.innerHTML = "";
-      previousBarsEl.style.display = model.hasPreviousWeekActivity ? "" : "none";
-      if (model.hasPreviousWeekActivity) {
-        const slotWidth = (chart.right - chart.left) / Math.max(1, model.days.length);
-        const barWidth = Math.min(66, slotWidth * 0.62);
-        model.days.forEach((day, index) => {
-          const height = day.previousWeekTotalMs > 0 ? Math.max(2, chart.bottom - getDashboardActivityY(day.previousWeekTotalMs, model.maxChartMs)) : 0;
-          const x = chart.left + index * slotWidth + (slotWidth - barWidth) / 2;
-          const y = chart.bottom - height;
-          const rect = document.createElementNS(svgNs, "rect");
-          rect.setAttribute("class", "dashboardActivityPreviousBar");
-          rect.setAttribute("x", x.toFixed(1));
-          rect.setAttribute("y", y.toFixed(1));
-          rect.setAttribute("width", barWidth.toFixed(1));
-          rect.setAttribute("height", height.toFixed(1));
-          rect.setAttribute("rx", "4");
-          previousBarsEl.appendChild(rect);
-        });
-      }
+      previousBarsEl.style.display = "none";
     }
 
     if (barsEl) {
@@ -1253,7 +1236,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         group.setAttribute("class", "dashboardActivityBarGroup");
         group.setAttribute(
           "aria-label",
-          `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged${day.previousWeekTotalMs > 0 ? `, ${formatDashboardDurationShort(day.previousWeekTotalMs)} previous week` : ""}`
+          `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
         );
         const rect = document.createElementNS(svgNs, "rect");
         rect.setAttribute("class", "dashboardActivityBar");
@@ -1290,12 +1273,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
-    const previousSummary = model.hasPreviousWeekActivity
-      ? `${formatDashboardDurationShort(model.previousWeekTotalMs)} logged in the previous week.`
-      : "No previous-week activity available.";
     cardEl.setAttribute(
       "aria-label",
-      `Activity overview. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."} ${previousSummary}`
+      `Activity overview. Two-week activity chart with ${formatDashboardDurationWithMinutes(model.visibleTotalMs)} logged across the visible range. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
     );
   }
 

@@ -28,13 +28,13 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Default module on app startup">
               <option value="dashboard">Dashboard</option>
               <option value="tasks">Tasks</option>
-              <option value="holding-space">Holding Space</option>
+              <option value="session-notes">Session Notes</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>
             </SettingsDownwardSelect>
           </div>
           <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.png" alt="" aria-hidden="true" />
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.webp" alt="" aria-hidden="true" />
             <div className="settingsInlineSectionTitle">Productivity Optimisation</div>
           </div>
           <div className="unitRow" id="taskWeekStartingRow">

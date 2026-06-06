@@ -44,7 +44,7 @@ describe("dashboard activity overview model", () => {
     expect(model.hasGoal).toBe(true);
   });
 
-  it("buckets current-week days from the configured week start", () => {
+  it("buckets two week-aligned days from the configured week start", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [task({ id: "focus" })],
       historyByTaskId: {
@@ -62,6 +62,13 @@ describe("dashboard activity overview model", () => {
     });
 
     expect(model.days.map((day) => day.key)).toEqual([
+      "2026-05-11",
+      "2026-05-12",
+      "2026-05-13",
+      "2026-05-14",
+      "2026-05-15",
+      "2026-05-16",
+      "2026-05-17",
       "2026-05-18",
       "2026-05-19",
       "2026-05-20",
@@ -70,9 +77,12 @@ describe("dashboard activity overview model", () => {
       "2026-05-23",
       "2026-05-24",
     ]);
-    expect(model.days[0]?.totalMs).toBe(20 * 60000);
-    expect(model.days[2]?.totalMs).toBe(40 * 60000);
-    expect(model.days[2]?.cumulativeMs).toBe(60 * 60000);
+    expect(model.days).toHaveLength(14);
+    expect(model.days[7]?.totalMs).toBe(20 * 60000);
+    expect(model.days[9]?.totalMs).toBe(40 * 60000);
+    expect(model.days[9]?.cumulativeMs).toBe(60 * 60000);
+    expect(model.weekTotalMs).toBe(60 * 60000);
+    expect(model.visibleTotalMs).toBe(60 * 60000);
   });
 
   it("adds running task elapsed to today's bucket when no projected live session exists", () => {
@@ -87,17 +97,18 @@ describe("dashboard activity overview model", () => {
       normalizeHistoryTimestampMs: (value) => Number(value) || 0,
     });
 
-    expect(model.days[2]?.totalMs).toBe(25 * 60000);
-    expect(model.days[2]?.sessions[0]?.isLive).toBe(true);
+    expect(model.days[9]?.totalMs).toBe(25 * 60000);
+    expect(model.days[9]?.sessions[0]?.isLive).toBe(true);
   });
 
-  it("tracks previous-week comparison data separately", () => {
+  it("shows previous-week entries as visible chart days while keeping week total current-week only", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [task({ id: "focus" })],
       historyByTaskId: {
         focus: [
           { ts: new Date(2026, 4, 11, 9).getTime(), name: "Focus", ms: 15 * 60000 },
           { ts: new Date(2026, 4, 12, 9).getTime(), name: "Focus", ms: 30 * 60000 },
+          { ts: new Date(2026, 4, 18, 9).getTime(), name: "Focus", ms: 60 * 60000 },
         ],
       },
       deletedTaskMeta: {},
@@ -110,11 +121,16 @@ describe("dashboard activity overview model", () => {
 
     expect(model.previousWeekTotalMs).toBe(45 * 60000);
     expect(model.hasPreviousWeekActivity).toBe(true);
-    expect(model.days[0]?.previousWeekTotalMs).toBe(15 * 60000);
-    expect(model.days[1]?.previousWeekCumulativeMs).toBe(45 * 60000);
+    expect(model.days[0]?.totalMs).toBe(15 * 60000);
+    expect(model.days[1]?.totalMs).toBe(30 * 60000);
+    expect(model.days[7]?.totalMs).toBe(60 * 60000);
+    expect(model.weekTotalMs).toBe(60 * 60000);
+    expect(model.visibleTotalMs).toBe(105 * 60000);
+    expect(model.days[0]?.previousWeekTotalMs).toBe(0);
+    expect(model.days[1]?.previousWeekCumulativeMs).toBe(0);
   });
 
-  it("scales the chart by daily activity, previous-week daily activity, and daily pace", () => {
+  it("scales the chart by visible daily activity and daily pace", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
       historyByTaskId: {
@@ -154,12 +170,12 @@ describe("dashboard activity overview model", () => {
     });
 
     expect(model.dailyPaceTargetMs).toBe(120 * 60000);
-    expect(model.days[0]?.activityProgressPct).toBe(50);
-    expect(model.days[1]?.activityProgressPct).toBe(100);
-    expect(model.days[2]?.activityProgressPct).toBe(150);
-    expect(model.days[0]?.activityBarColor).toBe(fillBackgroundForPct(50));
-    expect(model.days[1]?.activityBarColor).toBe(fillBackgroundForPct(100));
-    expect(model.days[2]?.activityBarColor).toBe(fillBackgroundForPct(150));
+    expect(model.days[7]?.activityProgressPct).toBe(50);
+    expect(model.days[8]?.activityProgressPct).toBe(100);
+    expect(model.days[9]?.activityProgressPct).toBe(150);
+    expect(model.days[7]?.activityBarColor).toBe(fillBackgroundForPct(50));
+    expect(model.days[8]?.activityBarColor).toBe(fillBackgroundForPct(100));
+    expect(model.days[9]?.activityBarColor).toBe(fillBackgroundForPct(150));
   });
 
   it("falls back to the dominant task color when no weekly goal exists", () => {
@@ -181,8 +197,8 @@ describe("dashboard activity overview model", () => {
     });
 
     expect(model.dailyPaceTargetMs).toBe(0);
-    expect(model.days[0]?.activityProgressPct).toBeNull();
-    expect(model.days[0]?.activityBarColor).toBe("#00e5ff");
+    expect(model.days[7]?.activityProgressPct).toBeNull();
+    expect(model.days[7]?.activityBarColor).toBe("#00e5ff");
   });
 
   it("keeps the fallback lime color for empty no-goal days", () => {

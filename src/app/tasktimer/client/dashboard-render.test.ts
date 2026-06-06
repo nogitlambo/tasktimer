@@ -333,11 +333,12 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[0]?.children[0];
-      const secondBar = bars[1]?.children[0];
+      const firstBar = bars[7]?.children[0];
+      const secondBar = bars[8]?.children[0];
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
+      expect(bars).toHaveLength(14);
       expect(firstBar?.getAttribute("fill")).toBe("rgb(255,140,0)");
       expect(secondBar?.getAttribute("fill")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
@@ -366,7 +367,7 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[0]?.children[0];
+      const firstBar = bars[7]?.children[0];
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
 
       expect(firstBar?.getAttribute("fill")).toBe("#00e5ff");

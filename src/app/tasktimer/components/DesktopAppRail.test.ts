@@ -11,21 +11,26 @@ import {
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
-  it("keeps Holding Space under Tasks in the desktop rail and third in the mobile footer", () => {
-    expect(getDesktopRailPrimaryNavItems().map((item) => item.label)).toEqual([
+  it("keeps Session Notes under Tasks in the desktop rail and third in the mobile footer", () => {
+    const desktopItems = getDesktopRailPrimaryNavItems();
+    const mobileItems = getMobileFooterNavItems();
+
+    expect(desktopItems.map((item) => item.label)).toEqual([
       "Dashboard",
       "Tasks",
-      "Holding Space",
+      "Session Notes",
       "Friends",
       "Leaderboards",
     ]);
-    expect(getMobileFooterNavItems().map((item) => item.mobileId)).toEqual([
+    expect(mobileItems.map((item) => item.mobileId)).toEqual([
       "footerDashboardBtn",
       "footerTasksBtn",
-      "footerHoldingSpaceBtn",
+      "footerSessionNotesBtn",
       "footerTest2Btn",
       "footerLeaderboardBtn",
     ]);
+    expect(desktopItems.find((item) => item.page === "session-notes")?.iconSrc).toBe("/icons/icons_default/notes.webp");
+    expect(desktopItems.find((item) => item.page === "leaderboard")?.iconSrc).toBe("/icons/icons_default/leaderboards.webp");
   });
 
   it("shows Settings as the flat profile menu item", () => {

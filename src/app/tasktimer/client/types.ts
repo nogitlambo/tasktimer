@@ -5,7 +5,7 @@ import type { StartupModulePreference } from "../lib/startupModule";
 import type { OptimalProductivityDays } from "../lib/productivityPeriod";
 import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 
-export type AppPage = "tasks" | "schedule" | "dashboard" | "holding-space" | "friends" | "leaderboard" | "history";
+export type AppPage = "tasks" | "schedule" | "dashboard" | "session-notes" | "friends" | "leaderboard" | "history";
 export type MainMode = "mode1";
 
 export type TaskTimerClientHandle = {

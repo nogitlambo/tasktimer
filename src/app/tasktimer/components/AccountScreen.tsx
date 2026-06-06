@@ -224,7 +224,7 @@ export default function AccountScreen() {
 
                   <div className="accountProfileActions" role="list" aria-label="Account actions">
                     <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
-                      <AppImg src="/icons/icons_default/trash.png" alt="" aria-hidden="true" />
+                      <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
                       <span>
                         <strong>Delete Account</strong>
                         <small>Permanently remove this sign-in account</small>
@@ -237,7 +237,7 @@ export default function AccountScreen() {
                       </span>
                     </button>
                     <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
-                      <AppImg src="/icons/icons_default/signout.png" alt="" aria-hidden="true" />
+                      <AppImg src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
                       <span>
                         <strong>{signOutActionCopy.label}</strong>
                         <small>{signOutActionCopy.description}</small>

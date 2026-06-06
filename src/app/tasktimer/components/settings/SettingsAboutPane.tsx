@@ -26,7 +26,7 @@ export function SettingsAboutPane({ active, exiting = false }: { active: boolean
                 href={resolveTaskTimerRouteHref("/privacy")}
                 aria-label="Privacy Policy"
               >
-                <MenuIconLabel icon="/icons/icons_default/privacy-policy.svg" label="Privacy Policy" />
+                <MenuIconLabel icon="/icons/icons_default/privacy-policy.webp" label="Privacy Policy" />
               </a>
             </li>
           </ul>

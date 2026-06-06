@@ -17,7 +17,7 @@ import FocusModeScreen from "./components/FocusModeScreen";
 import FriendsOverlays from "./components/FriendsOverlays";
 import GlobalTaskAlerts from "./components/GlobalTaskAlerts";
 import DashboardPageContent from "./components/DashboardPageContent";
-import HoldingSpacePageContent from "./components/HoldingSpacePageContent";
+import SessionNotesPageContent from "./components/SessionNotesPageContent";
 import HistoryManagerScreen from "./components/HistoryManagerScreen";
 import HistoryScreen from "./components/HistoryScreen";
 import HistoryAnalysisOverlay from "./components/HistoryAnalysisOverlay";
@@ -134,6 +134,10 @@ function formatLeaderboardXp(xpRaw: number): string {
 function formatLeaderboardTrend(xpRaw: number): string {
   const xp = Math.max(0, Math.floor(xpRaw || 0));
   return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "No gain yet";
+}
+
+function formatLeaderboardTaskCount(countRaw: number): string {
+  return new Intl.NumberFormat().format(Math.max(0, Math.floor(countRaw || 0)));
 }
 
 function formatLeaderboardMemberSince(memberSinceMs: number | null | undefined): string {
@@ -835,16 +839,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const rivalTableRows = rivalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
   const hasRivalRows = rivalRows.length > 0;
-  const selectedGlobalRow = selectedLeaderboardProfile ? globalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
-  const selectedWeeklyRow = selectedLeaderboardProfile ? weeklyRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
-  const selectedRivalRow = selectedLeaderboardProfile ? rivalRows.find((row) => row.profile.uid === selectedLeaderboardProfile.uid) : null;
   const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile
     ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
     : "";
-  const selectedGlobalRankLabel = selectedGlobalRow?.rankLabel || "--";
-  const selectedWeeklyRankLabel = selectedWeeklyRow?.rankLabel || "--";
-  const selectedRivalRankLabel = selectedRivalRow?.rankLabel || "--";
   const hydratedCurrentUserProfileAvatarSrc = hydratedCurrentUserProfile
     ? getLeaderboardAvatarRenderSrc(hydratedCurrentUserProfile as LeaderboardProfile)
     : "";
@@ -895,7 +893,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           </div>
           <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="Add Task" title="Add Task" type="button">
             <span className="openAddTaskBtnContent">
-              <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+              <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.webp" alt="" aria-hidden="true" />
               <span className="taskScreenHeaderBtnText">Add Task</span>
             </span>
           </button>
@@ -994,7 +992,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   type="button"
                 >
                   <span className="openAddTaskBtnContent">
-                    <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.png" alt="" aria-hidden="true" />
+                    <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.webp" alt="" aria-hidden="true" />
                     <span className="taskScreenHeaderBtnText">Add Task</span>
                   </span>
                 </button>
@@ -1038,7 +1036,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <DashboardPageContent active={initialPage === "dashboard"} />
 
-          <HoldingSpacePageContent active={initialPage === "holding-space"} />
+          <SessionNotesPageContent active={initialPage === "session-notes"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="dashboardShell" id="groupsFriendsSection">
@@ -1050,7 +1048,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
                     <AppImg
                       className="friendRequestBtnIcon"
-                      src="/icons/icons_default/add-friend.png"
+                      src="/icons/icons_default/add-friend.webp"
                       alt=""
                       aria-hidden="true"
                     />
@@ -1477,7 +1475,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           {selectedLeaderboardProfile ? (
             <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
-              <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="Leaderboard position" onClick={(event) => event.stopPropagation()}>
+              <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
                 <div className="leaderboardPositionModalHeaderRow">
                   <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
                 </div>
@@ -1500,32 +1498,20 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <strong style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
                   </div>
                 </div>
-                <div className="leaderboardPositionStats" aria-label="Leaderboard positions">
-                  <div className="leaderboardPositionStatsTitle">Leaderboard Positions</div>
+                <div className="leaderboardPositionStats" aria-label="User stats">
+                  <div className="leaderboardPositionStatsTitle">User Stats</div>
                   <div>
-                    <strong>{selectedGlobalRankLabel}</strong>
-                    <span>Global</span>
+                    <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
+                    <span>Total XP</span>
                   </div>
                   <div>
-                    <strong>{selectedWeeklyRankLabel}</strong>
-                    <span>Weekly</span>
+                    <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
+                    <span>Time Logged</span>
                   </div>
                   <div>
-                    <strong>{selectedRivalRankLabel}</strong>
-                    <span>Rivals</span>
+                    <strong>{formatLeaderboardTaskCount(selectedLeaderboardProfile.completedTaskCount)}</strong>
+                    <span>Tasks Completed</span>
                   </div>
-                </div>
-                <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">Total XP</span>
-                  <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
-                </div>
-                <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">Time logged</span>
-                  <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
-                </div>
-                <div className="leaderboardMiniRow">
-                  <span className="leaderboardMiniLabel">Weekly XP</span>
-                  <strong>{formatLeaderboardTrend(selectedLeaderboardProfile.weeklyXpGain)}</strong>
                 </div>
                 <div className="confirmBtns">
                   <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>

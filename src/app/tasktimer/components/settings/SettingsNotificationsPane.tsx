@@ -41,7 +41,7 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               </div>
             )}
             <div className="settingsInlineSectionHead" id="taskFocusDndSectionHead" hidden>
-              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/privacy-policy.svg" alt="" aria-hidden="true" />
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/privacy-policy.webp" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">Focus Do Not Disturb</div>
             </div>
             <div className="toggleRow" id="taskFocusDndToggleRow" hidden>
@@ -102,7 +102,7 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
         <section className="settingsInlineSection">
           <div className="checkpointAlertsGroup">
             <div className="settingsInlineSectionHead">
-              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.png" alt="" aria-hidden="true" />
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/sounds.webp" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">In-app Sounds</div>
             </div>
             <div className="toggleRow" id="taskInteractionClickSoundToggleRow">

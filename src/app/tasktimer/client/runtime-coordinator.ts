@@ -1,4 +1,4 @@
-import type { Task } from "../lib/types";
+import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
 import {
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeOptimalProductivityPeriod,
@@ -18,6 +18,7 @@ import type { AppPage } from "./types";
 import type { TaskTimerElements } from "./elements";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import { getTaskTimerTileColumnCount } from "./task-tile-columns";
+import { renderSessionNotesPage } from "./session-notes-render";
 
 type CreateTaskTimerRuntimeCoordinatorOptions = {
   els: TaskTimerElements;
@@ -29,6 +30,9 @@ type CreateTaskTimerRuntimeCoordinatorOptions = {
   getOptimalProductivityEndTime: () => string;
   getOptimalProductivityDays: () => OptimalProductivityDays;
   renderTasksPage: () => void;
+  getHistoryByTaskId: () => HistoryByTaskId;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
+  getDeletedTaskMeta: () => DeletedTaskMeta;
   getCloudSyncApi: () =>
     | {
         rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
@@ -385,6 +389,13 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
   function render() {
     options.renderTasksPage();
     renderSchedulePage();
+    renderSessionNotesPage({
+      listEl: document.getElementById("sessionNotesList") as HTMLElement | null,
+      tasks: options.getTasks(),
+      historyByTaskId: options.getHistoryByTaskId(),
+      liveSessionsByTaskId: options.getLiveSessionsByTaskId(),
+      deletedTaskMeta: options.getDeletedTaskMeta(),
+    });
   }
 
   function rehydrateFromCloudAndRender(opts?: { force?: boolean }) {
