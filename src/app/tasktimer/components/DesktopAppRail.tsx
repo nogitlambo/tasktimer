@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
-  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import AppImg from "@/components/AppImg";
@@ -57,12 +56,6 @@ type DesktopAppRailProps = {
   showDesktopRail?: boolean;
   showMobileFooter?: boolean;
 };
-
-const TEMPORARY_MODAL_DROPDOWN_OPTIONS = [
-  { value: "standard", label: "Standard option" },
-  { value: "secondary", label: "Secondary option" },
-  { value: "disabled", label: "Unavailable option" },
-] as const;
 
 type DesktopRailDevEnvInput = {
   hostname?: string;
@@ -550,16 +543,12 @@ export default function DesktopAppRail({
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [helpCenterMenuOpen, setHelpCenterMenuOpen] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
-  const [temporaryDropdownOpen, setTemporaryDropdownOpen] = useState(false);
   const showDesktopRailDevEnv = useSyncExternalStore(
     subscribeToDesktopRailDevEnvSnapshot,
     getDesktopRailDevEnvSnapshot,
     getDesktopRailDevEnvServerSnapshot
   );
-  const [temporaryDropdownValue, setTemporaryDropdownValue] =
-    useState<(typeof TEMPORARY_MODAL_DROPDOWN_OPTIONS)[number]["value"]>("standard");
   const profileMenuCloseTimerRef = useRef<number | null>(null);
-  const temporaryDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -645,21 +634,6 @@ export default function DesktopAppRail({
     };
   }, []);
 
-  useEffect(() => {
-    if (!temporaryDropdownOpen) return;
-
-    const closeOnOutsidePointerDown = (event: PointerEvent) => {
-      const dropdown = temporaryDropdownRef.current;
-      if (!dropdown || !(event.target instanceof Node) || dropdown.contains(event.target)) return;
-      setTemporaryDropdownOpen(false);
-    };
-
-    document.addEventListener("pointerdown", closeOnOutsidePointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
-    };
-  }, [temporaryDropdownOpen]);
-
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
@@ -678,32 +652,9 @@ export default function DesktopAppRail({
     window.open("/pricing", "_blank", "noopener,noreferrer");
   }, []);
 
-  const openTemporaryModal = useCallback(() => {
-    setTemporaryModalOpen(true);
-  }, []);
-
   const closeTemporaryModal = useCallback(() => {
     setTemporaryModalOpen(false);
-    setTemporaryDropdownOpen(false);
   }, []);
-
-  const selectedTemporaryDropdownOption =
-    TEMPORARY_MODAL_DROPDOWN_OPTIONS.find((option) => option.value === temporaryDropdownValue) ??
-    TEMPORARY_MODAL_DROPDOWN_OPTIONS[0];
-
-  const handleTemporaryDropdownKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === "Escape") {
-        setTemporaryDropdownOpen(false);
-        return;
-      }
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        setTemporaryDropdownOpen((open) => !open);
-      }
-    },
-    []
-  );
 
   const closeProfileMenu = useCallback(() => {
     if (profileMenuCloseTimerRef.current != null) {
@@ -820,21 +771,6 @@ export default function DesktopAppRail({
               {showDesktopRailDevEnv ? (
                 <>
                   <div className="dashboardRailSectionLabel desktopRailDevEnvLabel">Dev env</div>
-                  <button
-                    className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
-                    id="openTemporaryModalBtn"
-                    type="button"
-                    aria-label="Open modal preview"
-                    onClick={openTemporaryModal}
-                  >
-                    <AppImg
-                      className="dashboardRailMenuIconImage"
-                      src="/icons/icons_default/question.svg"
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    <span className="dashboardRailMenuLabel">Modal</span>
-                  </button>
                   <button
                     className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
                     type="button"
@@ -1020,59 +956,6 @@ export default function DesktopAppRail({
             <p className="modalSubtext">
               This temporary modal uses the standard TaskLaunch modal styling baseline.
             </p>
-            <div className="field modalDropdownField modalPreviewDropdownField">
-              <label htmlFor="temporaryModalPreviewDropdown">Dropdown label</label>
-              <p className="modalDropdownHelp">Helper text describes how this dropdown affects the action.</p>
-              <div className="modalDropdown modalPreviewDropdown" ref={temporaryDropdownRef}>
-                <button
-                  className="modalDropdownButton modalPreviewDropdownButton"
-                  id="temporaryModalPreviewDropdown"
-                  type="button"
-                  aria-haspopup="listbox"
-                  aria-expanded={temporaryDropdownOpen}
-                  aria-controls="temporaryModalPreviewDropdownList"
-                  onClick={() => setTemporaryDropdownOpen((open) => !open)}
-                  onKeyDown={handleTemporaryDropdownKeyDown}
-                >
-                  <span>{selectedTemporaryDropdownOption.label}</span>
-                  <span aria-hidden="true">v</span>
-                </button>
-                {temporaryDropdownOpen ? (
-                  <div
-                    className="modalDropdownList modalPreviewDropdownList"
-                    id="temporaryModalPreviewDropdownList"
-                    role="listbox"
-                    aria-labelledby="temporaryModalPreviewDropdown"
-                  >
-                    {TEMPORARY_MODAL_DROPDOWN_OPTIONS.map((option) => {
-                      const selected = option.value === temporaryDropdownValue;
-                      return (
-                        <button
-                          className={`modalDropdownOption modalPreviewDropdownOption${selected ? " isSelected" : ""}`}
-                          key={option.value}
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          onClick={() => {
-                            setTemporaryDropdownValue(option.value);
-                            setTemporaryDropdownOpen(false);
-                          }}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <div className="chkRow modalCheckboxRow modalPreviewCheckboxRow">
-              <input id="temporaryModalPreviewCheckbox" type="checkbox" />
-              <div className="modalCheckboxText modalPreviewCheckboxText">
-                <label htmlFor="temporaryModalPreviewCheckbox">Checkbox label</label>
-                <p className="modalDropdownHelp">Description explains the checkbox setting.</p>
-              </div>
-            </div>
             <div className="confirmBtns">
               <button
                 className="btn btn-ghost modalPreviewSecondaryAction"

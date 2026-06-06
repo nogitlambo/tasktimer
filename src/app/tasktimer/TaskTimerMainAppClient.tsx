@@ -78,11 +78,8 @@ import {
   XP_AWARD_FX_DURATION_MS,
 } from "./client/xp-award-animation";
 import {
-  playXpAwardDeliveryAudio,
   playXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
-  warmXpAwardDeliveryAudio,
-  type XpAwardDeliveryAudioHandle,
 } from "./client/xp-award-feedback";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
@@ -329,7 +326,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpCountAnimationStartedRef = useRef(false);
-  const xpAwardDeliveryAudioRef = useRef<XpAwardDeliveryAudioHandle | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -455,15 +451,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const activeAward = xpAnimationState.active;
     const wasIdle = previousActiveAwardRef.current == null;
     previousActiveAwardRef.current = activeAward;
-    const stopXpAwardDeliveryAudio = () => {
-      xpAwardDeliveryAudioRef.current?.stop();
-      xpAwardDeliveryAudioRef.current = null;
-    };
     if (!activeAward) {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
-      stopXpAwardDeliveryAudio();
       xpCountAnimationStartedRef.current = false;
       return;
     }
@@ -471,7 +462,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
-    stopXpAwardDeliveryAudio();
     const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
@@ -515,17 +505,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       return;
     }
 
-    if (endXp > startXp) {
-      warmXpAwardDeliveryAudio();
-    }
-
     const startCountAnimation = () => {
       countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
-      if (endXp > startXp) {
-        xpAwardDeliveryAudioRef.current = playXpAwardDeliveryAudio();
-      }
       if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
         playXpAwardDeliveryHaptic({
           isEnabled: interactionHapticsEnabled,
@@ -542,10 +525,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         displayedXpRef.current = nextXp;
         setDisplayedXp(nextXp);
         if (progress >= 1) {
-          const deliveryAudio = xpAwardDeliveryAudioRef.current;
-          xpAwardDeliveryAudioRef.current = null;
-          deliveryAudio?.stop();
-          deliveryAudio?.playDone();
           xpCountAnimationStartedRef.current = false;
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
@@ -579,7 +558,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
-      stopXpAwardDeliveryAudio();
       xpCountAnimationStartedRef.current = getXpAwardCountStartedAfterEffectCleanup({
         wasStartedBeforeEffect: countAnimationStarted,
         startedDuringEffect: countAnimationStartedDuringEffect,

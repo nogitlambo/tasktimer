@@ -660,8 +660,8 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   filter:none !important;
   clip-path:none !important;
   padding:10px 12px;
-  color: rgba(188,214,230,.78);
-  font-size:12px;
+  color: var(--accent3);
+  font-size:13px;
   line-height:1.4;
   font-family: var(--font-readable) !important;
 }
@@ -1145,8 +1145,8 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   height:21px;
   min-width:39px;
   border-radius:0;
-  border-color: rgba(148, 148, 148, 0.6) !important;
-  background: rgba(255,255,255,.08) !important;
+  border-color: #1a1b20 !important;
+  background: #1a1b20 !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch::after{
@@ -1158,13 +1158,19 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch.on{
-  background: rgba(201, 255, 36, 0.22) !important;
+  background: rgba(201,255,36,.22) !important;
   border-color: #c9ff24 !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch.on::after{
   left:19px;
   background: #c9ff24 !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch:disabled,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch[aria-disabled="true"],
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .toggleRow.isDisabled .switch{
+  border-color: #a8a7a7 !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineFooter{

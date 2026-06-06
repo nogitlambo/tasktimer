@@ -10,7 +10,7 @@
 }
 
 .modalSubtext{
-  color: #ffffff;
+  color: #a8a7a7;
 }
 
 /* Overlays */
@@ -6818,7 +6818,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 :is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
-  color: rgba(170, 178, 190, .88) !important;
+  color: #a8a7a7 !important;
 }
 
 #rankLadderOverlay .modalSubtext{
@@ -6841,7 +6841,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 @media (min-width: 641px){
   #temporaryModalOverlay .modalSubtext{
     font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
   }
 }
 

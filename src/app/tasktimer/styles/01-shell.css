@@ -1231,7 +1231,7 @@ body[data-app-page="dashboard"] .appPages{
     top: auto;
     bottom: 0;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 6px;
     border-right: none;
     border-top: none;
@@ -1277,7 +1277,7 @@ body[data-app-page="dashboard"] .appPages{
 
 @media (max-width: 360px){
 .appFooterNav{
-    gap: 4px;
+    gap: 3px;
     padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
   }
 
@@ -1287,8 +1287,8 @@ body[data-app-page="dashboard"] .appPages{
   }
 
 .appFooterIconImage{
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
 }
 

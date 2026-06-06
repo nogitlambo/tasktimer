@@ -11,12 +11,12 @@ type PrimitiveSectionProps = {
 
 const TOKEN_SWATCHES = [
   { name: "--bg", value: "#0d0f13" },
-  { name: "--panel", value: "#12182a" },
-  { name: "--card", value: "#111a2b" },
+  { name: "--panel", value: "#1a1b20" },
+  { name: "--card", value: "#111216" },
   { name: "--text", value: "#e9eef9" },
   { name: "--accent", value: "#c9ff24" },
-  { name: "--accent2", value: "#8ab600" },
-  { name: "--accent3", value: "#efff86" },
+  { name: "--accent2", value: "#7ef3ff" },
+  { name: "--accent3", value: "#a8a7a7" },
   { name: "--warn", value: "#ff4d4d" },
 ];
 
@@ -152,7 +152,7 @@ export default function PrimitiveGallery() {
             <button className="btn btn-ghost small" type="button">
               Small
             </button>
-            <button className="btn btn-accent" type="button" disabled>
+            <button className="btn btn-accent primitiveDisabledButton" type="button" disabled>
               Disabled
             </button>
             <button className="btn btn-ghost isOn" type="button" aria-pressed="true">
@@ -181,8 +181,8 @@ export default function PrimitiveGallery() {
 
         <PrimitiveSection
           title="Modal Baseline"
-          note="Standard modals use the shared overlay/modal structure, modal helper text, dropdown, checkbox, and confirm action primitives."
-          code={`<div className="overlay standardModalOverlay" style={{ display: "flex" }}>\n  <div className="modal" role="dialog" aria-modal="true" aria-label="Modal preview">\n    <h2>Modal Preview</h2>\n    <p className="modalSubtext">Standard modal helper text.</p>\n    <div className="field modalDropdownField">...</div>\n    <div className="chkRow modalCheckboxRow">\n      <input id="exampleCheckbox" type="checkbox" />\n      <div className="modalCheckboxText">...</div>\n    </div>\n    <div className="confirmBtns">...</div>\n  </div>\n</div>`}
+          note="Standard modals use the shared overlay/modal structure, modal helper text, and confirm action primitives."
+          code={`<div className="overlay standardModalOverlay" style={{ display: "flex" }}>\n  <div className="modal" role="dialog" aria-modal="true" aria-label="Modal preview">\n    <h2>Modal Preview</h2>\n    <p className="modalSubtext">Standard modal helper text.</p>\n    <div className="confirmBtns">...</div>\n  </div>\n</div>`}
         >
           <button className="btn btn-accent" type="button" onClick={() => setModalOpen(true)}>
             Open Modal Preview
@@ -199,13 +199,13 @@ export default function PrimitiveGallery() {
 
         <PrimitiveSection
           title="Switches And Checks"
-          note="Reuse the app switch dimensions and `chkRow` structure for binary settings."
-          code={`<button className={enabled ? "switch on" : "switch"} type="button" aria-pressed={enabled} />\n<label className="chkRow"><input type="checkbox" /> Checkbox label</label>`}
+          note="Reuse the app switch dimensions and the modal baseline checkbox row for binary settings."
+          code={`<div className="chkRow modalCheckboxRow">\n  <button className={enabled ? "switch on" : "switch"} type="button" role="switch" aria-checked={enabled} />\n  <div className="modalCheckboxText">\n    <label>Toggle row label</label>\n    <p className="modalDropdownHelp">Description explains the setting.</p>\n  </div>\n</div>\n<div className="chkRow modalCheckboxRow">\n  <input id="exampleCheckbox" type="checkbox" />\n  <div className="modalCheckboxText">\n    <label htmlFor="exampleCheckbox">Checkbox row label</label>\n  </div>\n</div>`}
         >
           <div className="primitiveControlStack">
-            <div className="primitiveControlRow">
-              <span>Enabled setting</span>
+            <div className="chkRow modalCheckboxRow primitiveControlRow">
               <button
+                id="primitiveSwitchRow"
                 className={`switch${switchOn ? " on" : ""}`}
                 type="button"
                 role="switch"
@@ -213,11 +213,17 @@ export default function PrimitiveGallery() {
                 aria-label="Toggle enabled setting example"
                 onClick={() => setSwitchOn((value) => !value)}
               />
+              <div className="modalCheckboxText">
+                <label htmlFor="primitiveSwitchRow">Toggle row label</label>
+                <p className="modalDropdownHelp">Description explains the switch setting.</p>
+              </div>
             </div>
-            <label className="chkRow primitiveCheckRow">
-              <input type="checkbox" defaultChecked />
-              <span>Checkbox row label</span>
-            </label>
+            <div className="chkRow modalCheckboxRow primitiveCheckRow">
+              <input id="primitiveCheckboxRow" type="checkbox" defaultChecked />
+              <div className="modalCheckboxText">
+                <label htmlFor="primitiveCheckboxRow">Checkbox row label</label>
+              </div>
+            </div>
           </div>
         </PrimitiveSection>
 
@@ -284,14 +290,6 @@ export default function PrimitiveGallery() {
             <p className="modalSubtext">
               This modal uses the standard TaskLaunch modal styling baseline.
             </p>
-            {renderModalDropdown({ button: "primitiveModalDropdown", list: "primitiveModalDropdownList" })}
-            <div className="chkRow modalCheckboxRow">
-              <input id="primitiveModalCheckbox" type="checkbox" />
-              <div className="modalCheckboxText">
-                <label htmlFor="primitiveModalCheckbox">Checkbox label</label>
-                <p className="modalDropdownHelp">Description explains the checkbox setting.</p>
-              </div>
-            </div>
             <div className="confirmBtns">
               <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}>
                 Secondary

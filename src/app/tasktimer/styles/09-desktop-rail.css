@@ -443,8 +443,8 @@
     top: auto !important;
     bottom: 0 !important;
     width: auto !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) !important;
     border: none !important;
     box-shadow: 0 -10px 24px rgba(0,0,0,.34) !important;
@@ -489,7 +489,7 @@
 
 @media (max-width: 640px){
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{
-    gap: 6px !important;
+    gap: 4px !important;
     padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) !important;
     border: none !important;
   }
@@ -507,7 +507,7 @@
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterAlertBadge{
     top: 5px;
-    right: 10%;
+    right: 8%;
   }
 }
 
