@@ -958,14 +958,14 @@ export default function DesktopAppRail({
             </p>
             <div className="confirmBtns">
               <button
-                className="btn btn-ghost modalPreviewSecondaryAction"
+                className="btn btn-ghost"
                 type="button"
                 onClick={closeTemporaryModal}
               >
                 Secondary
               </button>
               <button
-                className="btn btn-accent modalPreviewPrimaryAction"
+                className="btn btn-accent"
                 type="button"
                 onClick={closeTemporaryModal}
               >

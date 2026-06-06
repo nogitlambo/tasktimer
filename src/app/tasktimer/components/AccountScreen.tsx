@@ -277,7 +277,7 @@ export default function AccountScreen() {
         onClose={() => account.setShowDeleteAccountConfirm(false)}
         ariaLabel="Delete Account"
         title="Delete Account"
-        overlayClassName="accountInlineConfirmOverlay deleteAccountConfirmOverlay"
+        overlayClassName="standardModalOverlay accountInlineConfirmOverlay deleteAccountConfirmOverlay"
         modalClassName="accountInlineConfirmModal deleteAccountConfirmModal"
         titleClassName="accountInlineConfirmTitle"
         portalToBody
@@ -310,7 +310,7 @@ export default function AccountScreen() {
         onClose={() => avatar.setShowAvatarPickerModal(false)}
         ariaLabel="Choose Avatar"
         title="Choose Avatar"
-        overlayClassName="accountInlineConfirmOverlay"
+        overlayClassName="standardModalOverlay accountInlineConfirmOverlay"
         modalClassName="accountInlineConfirmModal accountAvatarModal"
         titleClassName="accountInlineConfirmTitle"
       >

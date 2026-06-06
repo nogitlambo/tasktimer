@@ -12,16 +12,6 @@
   width: 100%;
   min-width: 100%;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, .38);
-  border-color: transparent !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-}
-
-#friendRequestModal #friendRequestEmailInput:focus,
-#friendRequestModal #friendRequestEmailInput:focus-visible{
-  border-color: transparent !important;
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 #friendRequestModal .confirmBtns{
@@ -628,44 +618,8 @@
   letter-spacing: .06em;
 }
 
-#shareTaskModal select,
-#shareTaskModal input[type="text"],
-#shareTaskModal input[type="number"],
-#shareTaskModal input[type="email"]{
-  border: 1px solid rgba(53,232,255,.26);
-  background: rgba(255,255,255,.03);
-  color: #e9fcff;
-  border-radius: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#shareTaskModal select{
-  min-height: 36px;
-  padding: 8px 10px;
-}
-
-#shareTaskModal select:focus,
-#shareTaskModal input[type="text"]:focus,
-#shareTaskModal input[type="number"]:focus,
-#shareTaskModal input[type="email"]:focus{
-  border-color: rgba(53,232,255,.6);
-  outline: 1px solid rgba(53,232,255,.35);
-  outline-offset: 0;
-}
-
 #shareTaskModal .footerBtns{
   margin-top: 12px;
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
-
-#shareTaskModal .footerBtns .btn{
-  margin: 0 !important;
 }
 
 #shareTaskModal .modalSubtext,
@@ -2859,73 +2813,4 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     margin-left: 0 !important;
     margin-right: 0 !important;
   }
-}
-
-/* Rectangular modal shell alignment for friends-owned overlays. */
-:is(#friendRequestModal, #shareTaskModal) .modal{
-  background: var(--modal-bg) !important;
-  border: 1px solid var(--modal-border) !important;
-  border-radius: 0 !important;
-  clip-path: none !important;
-  box-shadow: var(--modal-shadow) !important;
-  padding: var(--modal-padding) !important;
-  font-family: var(--font-readable) !important;
-}:is(#friendRequestModal, #shareTaskModal) .modal{
-  width:min(var(--modal-width-md), 100%) !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) :where(.modalSubtext, .confirmText){
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
-  font-size: 13px !important;
-}:is(#friendRequestModal, #shareTaskModal) .modalSubtext{
-  color: rgba(170, 178, 190, .88) !important;
-}:is(#friendRequestModal, #shareTaskModal) :where(.footerBtns, .confirmBtns){
-  justify-content:flex-end !important;
-  gap:10px !important;
-  flex-wrap:wrap !important;
-}:is(#friendRequestModal, #shareTaskModal) .modal :where(.btn, .iconBtn, button:not(.switch)){
-  border-radius: 0 !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal select{
-  border-color: #1a1b20 !important;
-  background-color: rgba(26, 27, 32, .58) !important;
-  color: rgba(238, 242, 246, .92) !important;
-  border-radius: 0 !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal select:focus,
-:is(#friendRequestModal, #shareTaskModal) .modal select:focus-visible{
-  border-color: var(--accent) !important;
-  outline: 1px solid var(--accent) !important;
-  outline-offset: 0 !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal select option{
-  background: #0d0f13 !important;
-  color: rgba(238, 242, 246, .92) !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal .modalDropdownHelp{
-  margin: 6px 0 0 !important;
-  color: rgba(170, 178, 190, .88) !important;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
-  box-shadow: none !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px !important;
-}
-
-:is(#friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
-:is(#friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  background: rgba(170, 178, 190, .16) !important;
 }

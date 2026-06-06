@@ -587,7 +587,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         ) : null}
 
         {activeStep === "username" ? (
-          <div className="field modalPreviewDropdownField onboardingField onboardingUsernameField">
+          <div className="field modalDropdownField onboardingField onboardingUsernameField">
             <div className="onboardingUsernameRow">
               <button
                 className="onboardingAvatarFrameBtn"
@@ -649,7 +649,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {activeStep === "days" ? (
           <div className="onboardingFieldsGrid">
-            <div className="field modalPreviewDropdownField onboardingField">
+            <div className="field modalDropdownField onboardingField">
               <div className="onboardingProductivityIntroText">
                 <p className="onboardingProductivityDaysHelp">
                   TaskLaunch helps schedule your highest-priority tasks on the days you&apos;re most likely to perform at your best.
@@ -700,7 +700,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {activeStep === "hours" ? (
           <div className="onboardingTimeGrid onboardingHoursTimeGrid">
-            <div className="field modalPreviewDropdownField onboardingField">
+            <div className="field modalDropdownField onboardingField">
               <label htmlFor="onboardingStartTimeInput">Start</label>
               <button
                 className="onboardingClockButton"
@@ -723,7 +723,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 }}
               />
             </div>
-            <div className="field modalPreviewDropdownField onboardingField">
+            <div className="field modalDropdownField onboardingField">
               <label htmlFor="onboardingEndTimeInput">End</label>
               <button
                 className="onboardingClockButton"
@@ -751,7 +751,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {activeStep === "push" ? (
           <div className="onboardingFieldsGrid">
-            <div className={`chkRow modalPreviewCheckboxRow onboardingPushRow${pushEnabled ? " isPushEnabled" : ""}`}>
+            <div className={`chkRow modalCheckboxRow onboardingPushRow${pushEnabled ? " isPushEnabled" : ""}`}>
               <input
                 id="onboardingPushToggle"
                 type="checkbox"
@@ -759,7 +759,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 disabled={busy}
                 onChange={(event) => void handlePushToggle(event.target.checked)}
               />
-              <div className="modalPreviewCheckboxText">
+              <div className="modalCheckboxText">
                 <label className={`onboardingPushLabel${pushEnabled ? " isPushEnabled" : ""}`} htmlFor="onboardingPushToggle">
                   Enable push notifications
                 </label>
@@ -770,11 +770,11 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {activeStep === "weekStart" ? (
           <div className="onboardingFieldsGrid">
-            <div className="field modalPreviewDropdownField onboardingField">
+            <div className="field modalDropdownField onboardingField">
               <label htmlFor="onboardingWeekStartSelect">Which day do you want your week to start on?</label>
-              <div className="modalPreviewDropdown" ref={weekStartDropdownRef}>
+              <div className="modalDropdown" ref={weekStartDropdownRef}>
                 <button
-                  className="modalPreviewDropdownButton"
+                  className="modalDropdownButton"
                   id="onboardingWeekStartSelect"
                   type="button"
                   aria-haspopup="listbox"
@@ -787,12 +787,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                   <span aria-hidden="true">v</span>
                 </button>
                 {weekStartDropdownOpen ? (
-                  <div className="modalPreviewDropdownList" id="onboardingWeekStartSelectList" role="listbox" aria-labelledby="onboardingWeekStartSelect">
+                  <div className="modalDropdownList" id="onboardingWeekStartSelectList" role="listbox" aria-labelledby="onboardingWeekStartSelect">
                     {WEEK_START_OPTIONS.map((option) => {
                       const selected = option.value === weekStarting;
                       return (
                         <button
-                          className={`modalPreviewDropdownOption${selected ? " isSelected" : ""}`}
+                          className={`modalDropdownOption${selected ? " isSelected" : ""}`}
                           key={option.value}
                           type="button"
                           role="option"
@@ -818,13 +818,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         <div className="confirmBtns onboardingActions">
           {stepIndex > 0 ? (
-            <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" onClick={() => setStepIndex((current) => Math.max(0, current - 1))} disabled={busy}>
+            <button className="btn btn-ghost" type="button" onClick={() => setStepIndex((current) => Math.max(0, current - 1))} disabled={busy}>
               Back
             </button>
           ) : null}
           {stepIndex < ONBOARDING_STEPS.length - 1 ? (
             <button
-              className="btn btn-accent modalPreviewPrimaryAction"
+              className="btn btn-accent"
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleNext()}
@@ -833,7 +833,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               Next
             </button>
           ) : (
-            <button className="btn btn-accent modalPreviewPrimaryAction" type="button" onClick={() => void handleFinish()} disabled={isOnboardingFinishDisabled(busy)}>
+            <button className="btn btn-accent" type="button" onClick={() => void handleFinish()} disabled={isOnboardingFinishDisabled(busy)}>
               Finish
             </button>
           )}

@@ -97,7 +97,7 @@ export default function FriendsOverlays() {
             </div>
           </div>
           <div className="confirmBtns friendProfileCloseRow">
-            <button className="btn btn-ghost modalPreviewSecondaryAction" id="friendProfileCloseBtn" type="button">
+            <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
               Close
             </button>
           </div>

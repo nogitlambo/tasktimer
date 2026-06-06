@@ -247,7 +247,7 @@ export function SettingsAccountPane({
         onClose={() => account.setShowDeleteAccountConfirm(false)}
         ariaLabel="Delete Account"
         title="Delete Account"
-        overlayClassName="settingsInlineConfirmOverlay deleteAccountConfirmOverlay"
+        overlayClassName="standardModalOverlay settingsInlineConfirmOverlay deleteAccountConfirmOverlay"
         modalClassName="settingsInlineConfirmModal deleteAccountConfirmModal"
         portalToBody
         titleIcon={

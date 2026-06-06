@@ -6781,7 +6781,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   .standardModalOverlay,
   #confirmOverlay,
   #aboutOverlay,
+  #howtoOverlay,
+  #appearanceOverlay,
+  #taskSettingsOverlay,
+  #contactOverlay,
   #elapsedPadOverlay,
+  #friendRequestModal,
+  #shareTaskModal,
   #historyManagerManualEntryOverlay,
   #onboardingOverlay,
   #signOutConfirmOverlay,
@@ -6805,19 +6811,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-family: var(--font-readable) !important;
 }:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
-}:is(#aboutOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #taskManualEntryOverlay) .modal{
+}:is(#aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #shareTaskModal, #taskManualEntryOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
 }:is(#rankLadderOverlay, #timeGoalCompleteOverlay) .modal{
   width:min(var(--modal-width-lg), 100%) !important;
 }#rankPromotionOverlay .modal{
   width:min(calc(var(--modal-width-lg) * .75), 100%) !important;
-}:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
+}:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
   color: #a8a7a7 !important;
 }
 
@@ -6845,21 +6851,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
   border-color: #1a1b20 !important;
   background-color: rgba(26, 27, 32, .58) !important;
   color: rgba(238, 242, 246, .92) !important;
   border-radius: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
   border-color: var(--accent) !important;
   outline: 1px solid var(--accent) !important;
   outline-offset: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
   background: #0d0f13 !important;
   color: rgba(238, 242, 246, .92) !important;
 }
@@ -7040,54 +7046,38 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #temporaryModalOverlay .modalDropdownField,
-#temporaryModalOverlay .modalPreviewDropdownField,
 #temporaryModalOverlay .modalDropdown,
-#temporaryModalOverlay .modalPreviewDropdown,
 #onboardingOverlay .modalDropdownField,
-#onboardingOverlay .modalPreviewDropdownField,
-#onboardingOverlay .modalDropdown,
-#onboardingOverlay .modalPreviewDropdown{
+#onboardingOverlay .modalDropdown{
   width: 100% !important;
 }
 
 #temporaryModalOverlay .modalDropdownField label,
-#temporaryModalOverlay .modalPreviewDropdownField label,
-#onboardingOverlay .modalDropdownField label,
-#onboardingOverlay .modalPreviewDropdownField label{
+#onboardingOverlay .modalDropdownField label{
   color: #fff !important;
   margin: 0 0 4px !important;
 }
 
 #temporaryModalOverlay .modalDropdown,
-#temporaryModalOverlay .modalPreviewDropdown,
-#onboardingOverlay .modalDropdown,
-#onboardingOverlay .modalPreviewDropdown{
+#onboardingOverlay .modalDropdown{
   position: relative !important;
 }
 
 #temporaryModalOverlay .modalDropdownField .modalDropdownHelp,
-#temporaryModalOverlay .modalPreviewDropdownField .modalDropdownHelp,
-#onboardingOverlay .modalDropdownField .modalDropdownHelp,
-#onboardingOverlay .modalPreviewDropdownField .modalDropdownHelp{
+#onboardingOverlay .modalDropdownField .modalDropdownHelp{
   margin: 0 0 8px !important;
 }
 
 #temporaryModalOverlay .modalDropdownButton,
-#temporaryModalOverlay .modalPreviewDropdownButton,
 #temporaryModalOverlay .modalDropdownOption,
-#temporaryModalOverlay .modalPreviewDropdownOption,
 #onboardingOverlay .modalDropdownButton,
-#onboardingOverlay .modalPreviewDropdownButton,
-#onboardingOverlay .modalDropdownOption,
-#onboardingOverlay .modalPreviewDropdownOption{
+#onboardingOverlay .modalDropdownOption{
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;
 }
 
 #temporaryModalOverlay .modalDropdownButton,
-#temporaryModalOverlay .modalPreviewDropdownButton,
-#onboardingOverlay .modalDropdownButton,
-#onboardingOverlay .modalPreviewDropdownButton{
+#onboardingOverlay .modalDropdownButton{
   display: flex !important;
   width: 100% !important;
   min-height: 34px !important;
@@ -7105,21 +7095,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #temporaryModalOverlay .modalDropdownButton:focus,
 #temporaryModalOverlay .modalDropdownButton:focus-visible,
-#temporaryModalOverlay .modalPreviewDropdownButton:focus,
-#temporaryModalOverlay .modalPreviewDropdownButton:focus-visible,
 #onboardingOverlay .modalDropdownButton:focus,
-#onboardingOverlay .modalDropdownButton:focus-visible,
-#onboardingOverlay .modalPreviewDropdownButton:focus,
-#onboardingOverlay .modalPreviewDropdownButton:focus-visible{
+#onboardingOverlay .modalDropdownButton:focus-visible{
   border-color: #1a1b20 !important;
   outline: 1px solid rgba(170, 178, 190, .28) !important;
   outline-offset: 0 !important;
 }
 
 #temporaryModalOverlay .modalDropdownList,
-#temporaryModalOverlay .modalPreviewDropdownList,
-#onboardingOverlay .modalDropdownList,
-#onboardingOverlay .modalPreviewDropdownList{
+#onboardingOverlay .modalDropdownList{
   position: absolute !important;
   z-index: 5 !important;
   top: calc(100% + 4px) !important;
@@ -7132,9 +7116,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #temporaryModalOverlay .modalDropdownOption,
-#temporaryModalOverlay .modalPreviewDropdownOption,
-#onboardingOverlay .modalDropdownOption,
-#onboardingOverlay .modalPreviewDropdownOption{
+#onboardingOverlay .modalDropdownOption{
   width: 100% !important;
   min-height: 32px !important;
   border: 0 !important;
@@ -7154,55 +7136,33 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #temporaryModalOverlay .modalDropdownOption.isSelected,
 #temporaryModalOverlay .modalDropdownOption.isSelected:focus,
 #temporaryModalOverlay .modalDropdownOption.isSelected:focus-visible,
-#temporaryModalOverlay .modalPreviewDropdownOption:hover,
-#temporaryModalOverlay .modalPreviewDropdownOption:focus,
-#temporaryModalOverlay .modalPreviewDropdownOption:focus-visible,
-#temporaryModalOverlay .modalPreviewDropdownOption.isSelected,
-#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:focus,
-#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:focus-visible,
 #onboardingOverlay .modalDropdownOption:hover,
 #onboardingOverlay .modalDropdownOption:focus,
 #onboardingOverlay .modalDropdownOption:focus-visible,
 #onboardingOverlay .modalDropdownOption.isSelected,
 #onboardingOverlay .modalDropdownOption.isSelected:focus,
-#onboardingOverlay .modalDropdownOption.isSelected:focus-visible,
-#onboardingOverlay .modalPreviewDropdownOption:hover,
-#onboardingOverlay .modalPreviewDropdownOption:focus,
-#onboardingOverlay .modalPreviewDropdownOption:focus-visible,
-#onboardingOverlay .modalPreviewDropdownOption.isSelected,
-#onboardingOverlay .modalPreviewDropdownOption.isSelected:focus,
-#onboardingOverlay .modalPreviewDropdownOption.isSelected:focus-visible{
+#onboardingOverlay .modalDropdownOption.isSelected:focus-visible{
   background: transparent !important;
   box-shadow: none !important;
 }
 
 #temporaryModalOverlay .modalDropdownOption:hover,
 #temporaryModalOverlay .modalDropdownOption.isSelected:hover,
-#temporaryModalOverlay .modalPreviewDropdownOption:hover,
-#temporaryModalOverlay .modalPreviewDropdownOption.isSelected:hover,
 #onboardingOverlay .modalDropdownOption:hover,
-#onboardingOverlay .modalDropdownOption.isSelected:hover,
-#onboardingOverlay .modalPreviewDropdownOption:hover,
-#onboardingOverlay .modalPreviewDropdownOption.isSelected:hover{
+#onboardingOverlay .modalDropdownOption.isSelected:hover{
   background: rgba(170, 178, 190, .12) !important;
   box-shadow: none !important;
 }
 
 #temporaryModalOverlay .modalDropdownOption:focus,
 #temporaryModalOverlay .modalDropdownOption:focus-visible,
-#temporaryModalOverlay .modalPreviewDropdownOption:focus,
-#temporaryModalOverlay .modalPreviewDropdownOption:focus-visible,
 #onboardingOverlay .modalDropdownOption:focus,
-#onboardingOverlay .modalDropdownOption:focus-visible,
-#onboardingOverlay .modalPreviewDropdownOption:focus,
-#onboardingOverlay .modalPreviewDropdownOption:focus-visible{
+#onboardingOverlay .modalDropdownOption:focus-visible{
   outline: none !important;
 }
 
 #temporaryModalOverlay .modalDropdownOption.isSelected,
-#temporaryModalOverlay .modalPreviewDropdownOption.isSelected,
-#onboardingOverlay .modalDropdownOption.isSelected,
-#onboardingOverlay .modalPreviewDropdownOption.isSelected{
+#onboardingOverlay .modalDropdownOption.isSelected{
   color: #fff !important;
   font-weight: 700 !important;
 }
@@ -7210,21 +7170,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #temporaryModalOverlay .modalDropdownOption:not(.isSelected):hover,
 #temporaryModalOverlay .modalDropdownOption:not(.isSelected):focus,
 #temporaryModalOverlay .modalDropdownOption:not(.isSelected):focus-visible,
-#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):hover,
-#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):focus,
-#temporaryModalOverlay .modalPreviewDropdownOption:not(.isSelected):focus-visible,
 #onboardingOverlay .modalDropdownOption:not(.isSelected):hover,
 #onboardingOverlay .modalDropdownOption:not(.isSelected):focus,
-#onboardingOverlay .modalDropdownOption:not(.isSelected):focus-visible,
-#onboardingOverlay .modalPreviewDropdownOption:not(.isSelected):hover,
-#onboardingOverlay .modalPreviewDropdownOption:not(.isSelected):focus,
-#onboardingOverlay .modalPreviewDropdownOption:not(.isSelected):focus-visible{
+#onboardingOverlay .modalDropdownOption:not(.isSelected):focus-visible{
   color: rgba(238, 242, 246, .9) !important;
   font-weight: 400 !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow,
-#temporaryModalOverlay .modalPreviewCheckboxRow{
+#temporaryModalOverlay .modalCheckboxRow{
   align-items: flex-start !important;
   background: transparent !important;
   border: 0 !important;
@@ -7236,8 +7189,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   padding: 0 !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"],
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]{
   appearance: none !important;
   -webkit-appearance: none !important;
   display: inline-grid !important;
@@ -7252,25 +7204,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 1px 0 0 !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked,
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked{
   border-color: var(--accent) !important;
   background: var(--accent) !important;
   box-shadow: none !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:hover,
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:hover{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:hover{
   background: #1a1b20 !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked:hover,
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked:hover{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked:hover{
   background: var(--accent) !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked::after,
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked::after{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:checked::after{
   content: "" !important;
   width: 8px !important;
   height: 5px !important;
@@ -7279,30 +7227,26 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   transform: translateY(-1px) rotate(-45deg) !important;
 }
 
-#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:focus-visible,
-#temporaryModalOverlay .modalPreviewCheckboxRow input[type="checkbox"]:focus-visible{
+#temporaryModalOverlay .modalCheckboxRow input[type="checkbox"]:focus-visible{
   outline: 1px solid rgba(170, 178, 190, .5) !important;
   outline-offset: 2px !important;
 }
 
-#temporaryModalOverlay .modalCheckboxText,
-#temporaryModalOverlay .modalPreviewCheckboxText{
+#temporaryModalOverlay .modalCheckboxText{
   min-width: 0 !important;
 }
 
-#temporaryModalOverlay .modalCheckboxText label,
-#temporaryModalOverlay .modalPreviewCheckboxText label{
+#temporaryModalOverlay .modalCheckboxText label{
   color: #fff !important;
   display: block !important;
   margin: 0 0 4px !important;
 }
 
-#temporaryModalOverlay .modalCheckboxText .modalDropdownHelp,
-#temporaryModalOverlay .modalPreviewCheckboxText .modalDropdownHelp{
+#temporaryModalOverlay .modalCheckboxText .modalDropdownHelp{
   margin: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal .modalDropdownHelp{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal .modalDropdownHelp{
   margin: 6px 0 0 !important;
   color: rgba(170, 178, 190, .88) !important;
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
@@ -7310,13 +7254,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   line-height: 1.35 !important;
 }
 
-#temporaryModalOverlay .modalDropdownField .modalDropdownHelp,
-#temporaryModalOverlay .modalPreviewDropdownField .modalDropdownHelp{
+#temporaryModalOverlay .modalDropdownField .modalDropdownHelp{
   margin: 0 0 8px !important;
 }
 
-#temporaryModalOverlay .modalCheckboxText .modalDropdownHelp,
-#temporaryModalOverlay .modalPreviewCheckboxText .modalDropdownHelp{
+#temporaryModalOverlay .modalCheckboxText .modalDropdownHelp{
   margin: 0 !important;
 }
 
@@ -7326,7 +7268,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   border-radius: 0 !important;
   clip-path: none !important;
   box-shadow: var(--modal-shadow) !important;
-}:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay) .modal :where(.confirmBtns, .footerBtns){
+}:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay, #friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns){
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
@@ -7339,7 +7281,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex-wrap:wrap !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
   border-color: rgba(170, 178, 190, .58) !important;
   background: rgba(170, 178, 190, .12) !important;
   color: rgba(238, 242, 246, .88) !important;
@@ -7348,8 +7290,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-size: 11px !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
   border-color: var(--accent) !important;
   color: var(--accent) !important;
   background: rgba(170, 178, 190, .16) !important;
@@ -7375,7 +7317,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   .standardModalOverlay,
   #confirmOverlay,
   #aboutOverlay,
+  #howtoOverlay,
+  #appearanceOverlay,
+  #taskSettingsOverlay,
+  #contactOverlay,
   #elapsedPadOverlay,
+  #friendRequestModal,
+  #shareTaskModal,
   #historyManagerManualEntryOverlay,
   #onboardingOverlay,
   #signOutConfirmOverlay,
@@ -7441,7 +7389,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .modal :where(.modalSubtext, .confirmText, .modalDropdownHelp),
 #onboardingOverlay .onboardingStepMeta,
 #onboardingOverlay .onboardingField label,
-#onboardingOverlay .modalPreviewCheckboxText :where(label, span){
+#onboardingOverlay .modalCheckboxText :where(label, span){
   text-align: center;
 }
 
@@ -7836,7 +7784,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   right: 10px;
 }
 
-#onboardingOverlay #onboardingWeekStartSelectList .modalPreviewDropdownOption{
+#onboardingOverlay #onboardingWeekStartSelectList .modalDropdownOption{
   text-align: center !important;
 }
 
@@ -7988,7 +7936,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: #050607;
 }
 
-#onboardingOverlay .modalPreviewCheckboxRow{
+#onboardingOverlay .modalCheckboxRow{
   align-items: flex-start;
   background: transparent;
   border: 0;
@@ -8000,7 +7948,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   padding: 0;
 }
 
-#onboardingOverlay .modalPreviewCheckboxRow input[type="checkbox"]{
+#onboardingOverlay .modalCheckboxRow input[type="checkbox"]{
   appearance: none;
   -webkit-appearance: none;
   display: inline-grid;
@@ -8015,13 +7963,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 1px 0 0;
 }
 
-#onboardingOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked{
+#onboardingOverlay .modalCheckboxRow input[type="checkbox"]:checked{
   border-color: var(--accent);
   background: var(--accent);
   box-shadow: none;
 }
 
-#onboardingOverlay .modalPreviewCheckboxRow input[type="checkbox"]:checked::after{
+#onboardingOverlay .modalCheckboxRow input[type="checkbox"]:checked::after{
   content: "";
   width: 8px;
   height: 5px;
@@ -8030,11 +7978,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   transform: translateY(-1px) rotate(-45deg);
 }
 
-#onboardingOverlay .modalPreviewCheckboxText{
+#onboardingOverlay .modalCheckboxText{
   min-width: 0;
 }
 
-#onboardingOverlay .modalPreviewCheckboxText :where(label, span){
+#onboardingOverlay .modalCheckboxText :where(label, span){
   color: #fff;
   display: block;
   margin: 0 0 4px;
@@ -8067,7 +8015,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin-top: clamp(18px, 4vh, 32px);
 }
 
-#onboardingOverlay .onboardingActions .modalPreviewPrimaryAction:only-child{
+#onboardingOverlay .onboardingActions .btn-accent:only-child{
   margin-left: auto;
 }
 

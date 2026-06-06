@@ -21,7 +21,7 @@ export function InlineConfirmModal({
   onClose,
   ariaLabel,
   title,
-  overlayClassName = "settingsInlineConfirmOverlay",
+  overlayClassName = "standardModalOverlay settingsInlineConfirmOverlay",
   modalClassName = "settingsInlineConfirmModal",
   titleClassName = "settingsInlineConfirmTitle",
   titleIcon,
