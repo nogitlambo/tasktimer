@@ -28,6 +28,8 @@ const RANK_PROMOTION_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
 const RANK_PROMOTION_INTRO_AUDIO_SRC = "/promotion_intro.mp3";
 const RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC = "/promotion_boom2.mp3";
 const RANK_PROMOTION_HIT_AUDIO_SRC = "/promotion_hit.mp3";
+const RANK_PROMOTION_DRUMS_AUDIO_SRC = "/promotion_drums.mp3";
+const RANK_PROMOTION_DRUMS_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
 const RANK_PROMOTION_CHIME_AUDIO_SRC = "/promotion_chime.mp3";
 const RANK_PROMOTION_CHIME_PLAYBACK_RATE = 0.75;
 const RANK_PROMOTION_CHIME_VOLUME = 0.375;
@@ -337,6 +339,9 @@ export default function RankPromotionOverlay({
     if (!achievementSoundsEnabled) return;
 
     playPromotionAudio(RANK_PROMOTION_IMPACT_AUDIO_SRC);
+    const drumsTimer = window.setTimeout(() => {
+      playPromotionAudio(RANK_PROMOTION_DRUMS_AUDIO_SRC);
+    }, RANK_PROMOTION_DRUMS_DELAY_MS);
     const boomTwoTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
     }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
@@ -352,6 +357,7 @@ export default function RankPromotionOverlay({
     }, RANK_PROMOTION_POST_IMPACT_DELAY_MS);
 
     return () => {
+      window.clearTimeout(drumsTimer);
       window.clearTimeout(boomTwoTimer);
       window.clearTimeout(chimeTimer);
       window.clearTimeout(postImpactTimer);
