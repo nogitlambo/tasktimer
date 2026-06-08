@@ -146,6 +146,19 @@ describe("task card view model", () => {
     expect(css).toContain("border-top: 0 !important;");
   });
 
+  it("keeps mobile task cards within the active Tasks viewport", () => {
+    const css = readFileSync("src/app/tasktimer/styles/10-responsive.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain('body[data-app-page="tasks"] .wrap');
+    expect(css).toContain('body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages');
+    expect(css).toContain('body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks');
+    expect(css).toContain("width:100% !important;");
+    expect(css).toContain("max-width:100% !important;");
+    expect(css).toContain("margin-left:0 !important;");
+    expect(css).toContain("padding-left:0 !important;");
+    expect(css).toContain("padding-right:0 !important;");
+  });
+
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,

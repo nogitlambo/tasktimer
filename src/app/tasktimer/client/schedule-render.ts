@@ -14,7 +14,6 @@ import {
   createTaskTimerScheduleRuntime,
   formatScheduleDurationMinutes,
   formatScheduleMinutes,
-  isRecurringDailyScheduleTask,
   normalizeScheduleDay,
   resolveScheduleVisibleDayCount,
   SCHEDULE_DAY_LABELS,
@@ -114,24 +113,16 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const heightPx = entry.durationMinutes * SCHEDULE_MINUTE_PX;
           const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
           const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
-          const recurringTask = isRecurringDailyScheduleTask(entry.task);
           const taskColor = normalizeTaskColor(entry.task.color);
           const taskColorPill = taskColor
             ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${ctx.escapeHtmlUI(taskColor)}"></span>`
             : "";
-          const recurringBadge = recurringTask
-            ? `<span class="scheduleTaskCardRecurringBadge" aria-label="${
-                entry.task.plannedStartOpenEnded ? "Flexible daily schedule" : "Repeats daily"
-              }"></span>`
-            : "";
-          const recurringClass = recurringTask ? " hasRecurringBadge" : "";
-          return `<div class="scheduleTaskCard${shortClass}${recurringClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
+          return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")
           )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
             <div class="scheduleTaskCardTopRow">
               <span class="scheduleTaskCardName">${ctx.escapeHtmlUI(entry.task.name || "Task")}</span>
               ${taskColorPill}
-              ${recurringBadge}
             </div>
             <span class="scheduleTaskCardMeta">${ctx.escapeHtmlUI(metaText)}</span>
           </div>`;

@@ -6,6 +6,29 @@
 }
 
 @media (max-width: 640px){
+body[data-app-page="tasks"]{
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+
+body[data-app-page="tasks"] .wrap,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"],
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .desktopAppShell,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .desktopAppMain,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+
 body[data-app-page="schedule"]{
     padding-left:0 !important;
     padding-right:0 !important;

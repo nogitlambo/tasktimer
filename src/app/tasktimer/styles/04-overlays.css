@@ -553,7 +553,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 .rankLadderItemTitle{
   display: block;
   font-family: var(--font-tight);
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: .04em;

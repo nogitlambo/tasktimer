@@ -1055,6 +1055,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
     startTimeGoalCompleteConfetti();
+    stopTimeGoalXpCountAudio();
     startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
       awardedXp,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
@@ -1094,6 +1095,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!isOverlayVisible(overlay)) return;
     const awardedXp = Math.max(0, Math.floor(Number(overlay?.dataset.awardedXp || 0) || 0));
     if (awardedXp <= 0) return;
+    stopTimeGoalXpCountAudio();
     startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
       awardedXp,
       matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,

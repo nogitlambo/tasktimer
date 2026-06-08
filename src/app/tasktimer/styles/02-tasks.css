@@ -2479,42 +2479,9 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   min-width:0;
 }
 
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.hasRecurringBadge .taskColorPill{
-  top:13px;
-  right:30px;
-}
-
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard .taskColorPill{
   top:13px;
   right:10px;
-}
-
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
-  position:absolute;
-  top:10px;
-  right:10px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  flex:0 0 auto;
-  box-sizing:border-box;
-  width:14px;
-  height:14px;
-  min-height:14px;
-  padding:0;
-  border:1px solid rgba(211,246,255,.26);
-  border-radius:0;
-  color:transparent;
-  background:rgba(255,255,255,.08);
-}
-
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge.hasTaskColor{
-  border-color: color-mix(in srgb, var(--task-color) 70%, white 18%);
-  color:transparent;
-  background:var(--task-color);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.22),
-    0 0 12px color-mix(in srgb, var(--task-color) 36%, transparent);
 }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isDragging{
@@ -2533,12 +2500,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   gap:5px;
 }
 
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort .scheduleTaskCardRecurringBadge{
-  display:inline-flex;
-  top:50%;
-  transform:translateY(-50%);
-}
-
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:hover,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:focus-visible{
   min-height:44px;
@@ -2553,11 +2514,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:hover .scheduleTaskCardTopRow,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:focus-visible .scheduleTaskCardTopRow{
   display:flex;
-}
-
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:hover .scheduleTaskCardRecurringBadge,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.isShort:focus-visible .scheduleTaskCardRecurringBadge{
-  display:inline-flex;
 }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardName{
@@ -2675,21 +2631,6 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   border-color:rgba(255,255,255,.12);
   background:#17191d;
   color:#fbffe3;
-}
-
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge{
-  border-color:rgba(222,255,218,.22);
-  color:rgba(239,255,235,.9);
-  background:rgba(255,255,255,.08);
-}
-
-body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCardRecurringBadge.hasTaskColor{
-  border-color: color-mix(in srgb, var(--task-color) 70%, white 18%);
-  color:#071013;
-  background:var(--task-color);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.22),
-    0 0 12px color-mix(in srgb, var(--task-color) 36%, transparent);
 }
 
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleProductivityHighlightBand{

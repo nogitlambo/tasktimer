@@ -158,16 +158,22 @@ function createCompletionHarness(options?: {
   const previousDocument = (globalThis as { document?: unknown }).document;
   const previousAudio = (globalThis as { Audio?: unknown }).Audio;
   const audioPlay = vi.fn();
+  const audioPause = vi.fn();
+  const audioInstances: Array<{ currentTime: number; loop: boolean; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn> }> = [];
   (globalThis as { Audio?: unknown }).Audio = vi.fn(function AudioStub() {
-    return {
+    const audio = {
       currentTime: 0,
+      loop: false,
       readyState: 4,
       preload: "",
       load: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
+      pause: audioPause,
       play: audioPlay,
     };
+    audioInstances.push(audio);
+    return audio;
   });
   const windowStub = {
     requestAnimationFrame: vi.fn(() => 1),
@@ -340,6 +346,8 @@ function createCompletionHarness(options?: {
     timeGoalCompleteOverlay,
     timeGoalCompleteText,
     audioPlay,
+    audioPause,
+    audioInstances,
     windowStub,
     restoreWindow: () => {
       (globalThis as { window?: unknown }).window = previousWindow;
@@ -526,6 +534,14 @@ describe("task timer session tick", () => {
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(true);
       expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(2);
+
+      harness.triggerTimeGoalCompleteTextClick();
+
+      expect(harness.audioPause).toHaveBeenCalledTimes(1);
+      expect(harness.audioInstances[0]?.loop).toBe(false);
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();

@@ -30,7 +30,7 @@ describe("RankPromotionOverlay", () => {
     expect(html).toContain('id="rankPromotionText"');
     expect(html).toContain('id="rankPromotionCloseBtn"');
     expect(html).toContain('class="rankPromotionTitleRibbon"');
-    expect(html).toContain('<div class="rankPromotionContent"><h2 class="rankPromotionTitleRibbon">You&#x27;ve been promoted!</h2><div class="modal rankPromotionModal');
+    expect(html).toContain('<div class="rankPromotionContent"><h2 class="rankPromotionTitleRibbon">LEVEL UP!</h2><div class="modal rankPromotionModal');
     expect(html).toContain('</div></div></div><div class="confirmBtns rankPromotionCloseSlot"><button class="btn btn-accent" id="rankPromotionCloseBtn"');
 
     const titleIndex = html.indexOf("rankPromotionTitleRibbon");

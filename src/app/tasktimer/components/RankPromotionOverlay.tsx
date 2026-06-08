@@ -430,7 +430,7 @@ export default function RankPromotionOverlay({
   return (
     <div className={`overlay is-${phase}`} id="rankPromotionOverlay" style={{ display: "flex" }}>
       <div className="rankPromotionContent">
-        <h2 className="rankPromotionTitleRibbon">You&apos;ve been promoted!</h2>
+        <h2 className="rankPromotionTitleRibbon">LEVEL UP!</h2>
         <div
           className={`modal rankPromotionModal is-${phase}${isCloseReady ? " is-close-ready" : ""}`}
           role="dialog"

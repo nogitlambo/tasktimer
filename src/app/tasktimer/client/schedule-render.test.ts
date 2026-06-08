@@ -124,7 +124,7 @@ describe("schedule render", () => {
     expect(html).toContain('style="--task-color:#ff5252"');
   });
 
-  it("does not color the recurring badge when a scheduled task has a color pill", () => {
+  it("renders a task color pill without a recurring badge on scheduled task cards", () => {
     const ctx = createScheduleRenderContext("mon");
     ctx.scheduleRuntime.buildViewModel = () => ({
       scheduled: [
@@ -158,8 +158,8 @@ describe("schedule render", () => {
     const html = buildTaskTimerScheduleGridHtml(ctx);
 
     expect(html).toContain('class="taskColorPill"');
-    expect(html).toContain('class="scheduleTaskCardRecurringBadge"');
-    expect(html).not.toContain("scheduleTaskCardRecurringBadge hasTaskColor");
+    expect(html).not.toContain("scheduleTaskCardRecurringBadge");
+    expect(html).not.toContain("hasRecurringBadge");
   });
 
   it("highlights mobile day tabs for selected optimal productivity days", () => {
