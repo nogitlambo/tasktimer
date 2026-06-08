@@ -1492,6 +1492,27 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
                       ) : null}
                     </div>
+                    <div className="leaderboardPositionAchievementSlots" aria-label="Achievement badges">
+                      {Array.from({ length: 4 }).map((_, index) => {
+                        const isEliteLauncherUnlocked = index === 0 && selectedLeaderboardProfile.completedTaskCount >= 100;
+                        return (
+                          <span
+                            className={`leaderboardPositionAchievementSlot${isEliteLauncherUnlocked ? " isUnlocked" : ""}`}
+                            key={`leaderboard-achievement-slot-${index}`}
+                            title={isEliteLauncherUnlocked ? "Elite Launcher: 100 tasks completed" : undefined}
+                            aria-hidden="true"
+                          >
+                            {isEliteLauncherUnlocked ? (
+                              <AppImg
+                                className="leaderboardPositionAchievementSlotImg"
+                                src="/icons/achievement/elite_launcher-100.webp"
+                                alt=""
+                              />
+                            ) : null}
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="leaderboardPositionRankSummary">
                     <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />

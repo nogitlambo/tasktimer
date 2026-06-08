@@ -68,9 +68,21 @@ export default function FriendsOverlays() {
               <div className="friendUserSummaryIdentityText">
                 <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
                 <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
-                <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
-                  Remove
-                </button>
+              </div>
+              <div className="friendUserSummaryAchievementSlots" aria-label="Achievement badges">
+                <span className="friendUserSummaryAchievementSlot">
+                  <AppImg
+                    id="friendProfileAchievementEliteLauncherImg"
+                    className="friendUserSummaryAchievementSlotImg"
+                    src="/icons/achievement/elite_launcher-100.webp"
+                    alt=""
+                    title="Elite Launcher: 100 tasks completed"
+                    style={{ display: "none" }}
+                  />
+                </span>
+                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
               </div>
             </div>
             <div className="friendUserSummaryRankBlock">
@@ -97,6 +109,9 @@ export default function FriendsOverlays() {
             </div>
           </div>
           <div className="confirmBtns friendProfileCloseRow">
+            <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+              Remove
+            </button>
             <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
               Close
             </button>

@@ -19,6 +19,7 @@ const RANK_PROMOTION_SMASH_PHASE_START_MS =
   RANK_PROMOTION_DRUMS_SMASH_MARK_MS - RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
 const RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 200;
 const RANK_PROMOTION_POST_IMPACT_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 100;
+const RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS = 2900;
 const RANK_PROMOTION_BLOOM_HOLD_MS = 100;
 const RANK_PROMOTION_SETTLE_MS = 3300;
 const RANK_PROMOTION_COMPLETE_SPIN_DURATION_MS = 8000;
@@ -27,6 +28,8 @@ const RANK_PROMOTION_SMASH_DURATION_MS =
   RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + RANK_PROMOTION_BLOOM_HOLD_MS + RANK_PROMOTION_SETTLE_MS;
 const RANK_PROMOTION_INTRO_AUDIO_SRC = "/rank_up.mp3";
 const RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC = "/promotion_boom2.mp3";
+const RANK_PROMOTION_LABEL_BASS_DRIVE_AUDIO_SRC = "/promotion_bass_drive.mp3";
+const RANK_PROMOTION_LABEL_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
 const RANK_PROMOTION_HIT_AUDIO_SRC = "/promotion_hit.mp3";
 const RANK_PROMOTION_DRUMS_AUDIO_SRC = "/promotion_drums.mp3";
 const RANK_PROMOTION_DRUMS_AFTER_INTRO_DELAY_MS = 1500;
@@ -391,16 +394,22 @@ export default function RankPromotionOverlay({
 
     if (!achievementSoundsEnabled) return;
 
+    playPromotionAudio(RANK_PROMOTION_LABEL_BASS_DRIVE_AUDIO_SRC);
+
     const boomTwoTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
     }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
     const postImpactTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_POST_IMPACT_AUDIO_SRC);
     }, RANK_PROMOTION_POST_IMPACT_DELAY_MS);
+    const labelImpactTimer = window.setTimeout(() => {
+      playPromotionAudio(RANK_PROMOTION_LABEL_IMPACT_AUDIO_SRC);
+    }, RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS);
 
     return () => {
       window.clearTimeout(boomTwoTimer);
       window.clearTimeout(postImpactTimer);
+      window.clearTimeout(labelImpactTimer);
     };
   }, [achievementSoundsEnabled, phase]);
 

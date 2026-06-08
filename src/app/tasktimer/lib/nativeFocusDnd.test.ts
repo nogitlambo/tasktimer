@@ -10,6 +10,10 @@ async function setupNativeFocusDndModule(options: { native?: boolean; platform?:
     interruptionFilter: "all",
   }));
   const openDndAccessSettings = vi.fn(async () => {});
+  const requestDndPolicyAccess = vi.fn(async () => ({
+    launched: true,
+    target: "detail" as const,
+  }));
   const startFocusDndSession = vi.fn(async () => {});
   const stopFocusDndSession = vi.fn(async () => {});
   vi.doMock("@capacitor/core", () => ({
@@ -20,6 +24,7 @@ async function setupNativeFocusDndModule(options: { native?: boolean; platform?:
     registerPlugin: vi.fn(() => ({
       getDndStatus,
       openDndAccessSettings,
+      requestDndPolicyAccess,
       startFocusDndSession,
       stopFocusDndSession,
     })),
@@ -34,7 +39,7 @@ async function setupNativeFocusDndModule(options: { native?: boolean; platform?:
     },
   });
   const mod = await import("./nativeFocusDnd");
-  return { mod, getDndStatus, openDndAccessSettings, startFocusDndSession, stopFocusDndSession, storage };
+  return { mod, getDndStatus, openDndAccessSettings, requestDndPolicyAccess, startFocusDndSession, stopFocusDndSession, storage };
 }
 
 describe("native focus DND bridge", () => {
@@ -52,19 +57,34 @@ describe("native focus DND bridge", () => {
   });
 
   it("no-ops outside native Android", async () => {
-    const { mod, getDndStatus, startFocusDndSession, stopFocusDndSession } = await setupNativeFocusDndModule({
+    const { mod, getDndStatus, requestDndPolicyAccess, startFocusDndSession, stopFocusDndSession } = await setupNativeFocusDndModule({
       native: false,
       platform: "web",
     });
 
     mod.setFocusDndEnabled("taskticker_tasks_v1", true);
     const status = await mod.startNativeFocusDndSession({ storageKey: "taskticker_tasks_v1" });
+    const accessRequest = await mod.requestNativeFocusDndAccess();
     await mod.stopNativeFocusDndSession();
 
     expect(status.supported).toBe(false);
+    expect(accessRequest).toEqual({ launched: false, target: "none" });
     expect(getDndStatus).not.toHaveBeenCalled();
+    expect(requestDndPolicyAccess).not.toHaveBeenCalled();
     expect(startFocusDndSession).not.toHaveBeenCalled();
     expect(stopFocusDndSession).not.toHaveBeenCalled();
+  });
+
+  it("delegates DND access requests on native Android", async () => {
+    const { mod, requestDndPolicyAccess } = await setupNativeFocusDndModule({
+      native: true,
+      platform: "android",
+    });
+
+    const result = await mod.requestNativeFocusDndAccess();
+
+    expect(requestDndPolicyAccess).toHaveBeenCalledWith();
+    expect(result).toEqual({ launched: true, target: "detail" });
   });
 
   it("starts DND only when enabled and policy access is granted", async () => {

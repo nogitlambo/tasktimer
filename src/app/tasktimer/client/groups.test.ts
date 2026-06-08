@@ -23,6 +23,7 @@ describe("loadGroupsSnapshotForUid", () => {
           rankThumbnailSrc: "",
           currentRankId: "bronze",
           totalXp: 25,
+          completedTaskCount: 7,
         },
       },
       createdAt: null,
@@ -36,6 +37,7 @@ describe("loadGroupsSnapshotForUid", () => {
       rankThumbnailSrc: "",
       currentRankId: "bronze",
       totalXp: 25,
+      completedTaskCount: 7,
     } satisfies FriendProfile;
 
     const snapshot = await loadGroupsSnapshotForUid("user-a", {

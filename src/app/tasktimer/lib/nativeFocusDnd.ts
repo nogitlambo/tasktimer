@@ -9,9 +9,15 @@ export type NativeFocusDndStatus = {
   interruptionFilter?: string;
 };
 
+export type NativeFocusDndAccessRequestResult = {
+  launched: boolean;
+  target: "detail" | "list" | "settings" | "none";
+};
+
 type TaskLaunchFocusDndPlugin = {
   getDndStatus: () => Promise<NativeFocusDndStatus>;
   openDndAccessSettings: () => Promise<void>;
+  requestDndPolicyAccess: () => Promise<NativeFocusDndAccessRequestResult>;
   startFocusDndSession: () => Promise<void>;
   stopFocusDndSession: () => Promise<void>;
 };
@@ -73,6 +79,11 @@ export async function getNativeFocusDndStatus(): Promise<NativeFocusDndStatus> {
 export async function openNativeFocusDndAccessSettings() {
   if (!isAndroidNativeRuntime()) return;
   await TaskLaunchFocusDnd.openDndAccessSettings();
+}
+
+export async function requestNativeFocusDndAccess(): Promise<NativeFocusDndAccessRequestResult> {
+  if (!isAndroidNativeRuntime()) return { launched: false, target: "none" };
+  return TaskLaunchFocusDnd.requestDndPolicyAccess();
 }
 
 export async function startNativeFocusDndSession(input: { storageKey: string }): Promise<NativeFocusDndStatus> {

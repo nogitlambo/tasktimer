@@ -93,6 +93,7 @@ const els = {
   friendProfileSharedTime: documentRef.getElementById("friendProfileSharedTime"),
   friendProfileSharedAverage: documentRef.getElementById("friendProfileSharedAverage"),
   friendProfileMemberSince: documentRef.getElementById("friendProfileMemberSince"),
+  friendProfileAchievementEliteLauncherImg: documentRef.getElementById("friendProfileAchievementEliteLauncherImg") as HTMLImageElement | null,
   friendProfileDeleteBtn: documentRef.getElementById("friendProfileDeleteBtn") as HTMLButtonElement | null,
   friendProfileCloseBtn: documentRef.getElementById("friendProfileCloseBtn") as HTMLButtonElement | null,
   shareTaskModal: documentRef.getElementById("shareTaskModal"),

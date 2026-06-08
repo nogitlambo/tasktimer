@@ -1220,6 +1220,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
   const deleteTask = createTaskTimerTaskDelete({
     getTasks: taskCollectionBindings.getTasks,
+    setTasks: taskCollectionBindings.setTasks,
     getHistoryByTaskId: () => taskCollectionBindings.getHistoryByTaskId() as Record<string, unknown[]>,
     setHistoryByTaskId: (value) => {
       taskCollectionBindings.setHistoryByTaskId(value as TaskTimerMutableState["historyByTaskId"]);

@@ -186,7 +186,7 @@ export type TaskTimerRewardsHistoryContext = {
   buildDefaultCloudPreferences: () => UserPreferencesV1;
   saveCloudPreferences: (prefs: UserPreferencesV1) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
-  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined }) => Promise<unknown>;
+  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined; completedTaskCount?: number | null | undefined }) => Promise<unknown>;
 };
 
 export type TaskTimerTaskUiPersistenceContext = {
@@ -966,7 +966,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setCloudPreferencesCache: (value: TaskTimerCachedPreferences | null | undefined) => void;
   buildDefaultCloudPreferences: () => NonNullable<TaskTimerCachedPreferences>;
   saveCloudPreferences: (prefs: NonNullable<TaskTimerCachedPreferences>) => void;
-  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined }) => Promise<unknown>;
+  syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined; completedTaskCount?: number | null | undefined }) => Promise<unknown>;
   saveDashboardWidgetState: (partialWidgets: Record<string, unknown>) => void;
   getDashboardCardSizeMapForStorage: () => Record<string, unknown>;
   getTasks: () => Task[];

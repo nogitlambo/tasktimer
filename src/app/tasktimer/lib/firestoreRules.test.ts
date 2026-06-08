@@ -49,3 +49,12 @@ describe("firestore leaderboard profile rules", () => {
     expect(block).toContain("request.resource.data.completedTaskCount is int");
   });
 });
+
+describe("firestore friendship profile rules", () => {
+  it("allows completed task count as an optional friendship profile mirror", () => {
+    const block = functionBlock(readRules(), "isFriendshipProfileValue");
+
+    expect(block).toContain('"completedTaskCount"');
+    expect(block).toContain('(!("completedTaskCount" in value) || value.completedTaskCount == null || value.completedTaskCount is int)');
+  });
+});

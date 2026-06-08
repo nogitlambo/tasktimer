@@ -6,6 +6,7 @@ import { playDeleteAlertAudio } from "./delete-alert-audio";
 
 type CreateTaskDeleteOptions = {
   getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => Record<string, unknown[]>;
   setHistoryByTaskId: (value: Record<string, unknown[]>) => void;
   getDeletedTaskMeta: () => DeletedTaskMeta;
@@ -44,7 +45,8 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
         const hasTaskHistory = !!(taskId && Array.isArray(historyByTaskId?.[taskId]) && historyByTaskId[taskId].length > 0);
         const hasDeletedTaskMeta = !!(taskId && deletedTaskMeta && deletedTaskMeta[taskId]);
 
-        tasks.splice(index, 1);
+        const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
+        options.setTasks(nextTasks);
 
         if (deleteHistory) {
           if (taskId && historyByTaskId && taskId in historyByTaskId) delete historyByTaskId[taskId];

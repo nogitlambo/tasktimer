@@ -132,14 +132,15 @@ service cloud.firestore {
 
     function isFriendshipProfileValue(value) {
       return value is map
-      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "googlePhotoUrl", "rankThumbnailSrc", "currentRankId", "totalXp"])
+      && value.keys().hasOnly(["alias", "avatarId", "avatarCustomSrc", "googlePhotoUrl", "rankThumbnailSrc", "currentRankId", "totalXp", "completedTaskCount"])
       && (!("alias" in value) || value.alias == null || value.alias is string)
       && (!("avatarId" in value) || value.avatarId == null || value.avatarId is string)
       && (!("avatarCustomSrc" in value) || value.avatarCustomSrc == null || value.avatarCustomSrc is string)
       && (!("googlePhotoUrl" in value) || value.googlePhotoUrl == null || value.googlePhotoUrl is string)
       && (!("rankThumbnailSrc" in value) || value.rankThumbnailSrc == null || value.rankThumbnailSrc is string)
       && (!("currentRankId" in value) || value.currentRankId == null || value.currentRankId is string)
-      && (!("totalXp" in value) || value.totalXp == null || value.totalXp is int);
+      && (!("totalXp" in value) || value.totalXp == null || value.totalXp is int)
+      && (!("completedTaskCount" in value) || value.completedTaskCount == null || value.completedTaskCount is int);
     }
 
     function isLeaderboardProfileDoc(userId) {

@@ -3,6 +3,7 @@ package com.tasklaunch.app;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 
@@ -14,6 +15,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "TaskLaunchFocusDnd")
 public class TaskLaunchFocusDndPlugin extends Plugin {
+    private static final String ACTION_NOTIFICATION_POLICY_ACCESS_DETAIL_SETTINGS =
+        "android.settings.NOTIFICATION_POLICY_ACCESS_DETAIL_SETTINGS";
     private static boolean focusDndSessionActive = false;
     private static int previousInterruptionFilter = NotificationManager.INTERRUPTION_FILTER_UNKNOWN;
 
@@ -30,15 +33,26 @@ public class TaskLaunchFocusDndPlugin extends Plugin {
 
     @PluginMethod
     public void openDndAccessSettings(PluginCall call) {
-        Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            getContext().startActivity(intent);
-        } catch (Exception ignored) {
-            Intent fallback = new Intent(Settings.ACTION_SETTINGS);
-            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            getContext().startActivity(fallback);
+        launchSettingsTarget(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS, null, "list");
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void requestDndPolicyAccess(PluginCall call) {
+        JSObject result = new JSObject();
+        NotificationManager notificationManager = getNotificationManager();
+        if (!isSupported() || hasPolicyAccess(notificationManager)) {
+            result.put("launched", false);
+            result.put("target", "none");
+            call.resolve(result);
+            return;
         }
+
+        String packageName = getContext().getPackageName();
+        Uri packageUri = Uri.fromParts("package", packageName, null);
+        String target = launchSettingsTarget(ACTION_NOTIFICATION_POLICY_ACCESS_DETAIL_SETTINGS, packageUri, "detail");
+        result.put("launched", !"none".equals(target));
+        result.put("target", target);
         call.resolve();
     }
 
@@ -94,6 +108,28 @@ public class TaskLaunchFocusDndPlugin extends Plugin {
 
     private NotificationManager getNotificationManager() {
         return (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+    }
+
+    private String launchSettingsTarget(String action, Uri data, String targetName) {
+        try {
+            Intent intent = new Intent(action);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (data != null) intent.setData(data);
+            getContext().startActivity(intent);
+            return targetName;
+        } catch (Exception ignored) {
+            if (!Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS.equals(action)) {
+                return launchSettingsTarget(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS, null, "list");
+            }
+            try {
+                Intent fallback = new Intent(Settings.ACTION_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(fallback);
+                return "settings";
+            } catch (Exception ignoredFallback) {
+                return "none";
+            }
+        }
     }
 
     private boolean hasPolicyAccess(NotificationManager notificationManager) {

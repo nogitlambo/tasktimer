@@ -1823,11 +1823,41 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModalIdentity{
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 0;
   min-width: 0;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionAchievementSlots{
+  position: absolute;
+  left: 66px;
+  top: 42px;
+  display: grid;
+  grid-template-columns: repeat(4, 48px);
+  justify-content: space-between;
+  gap: 0;
+  width: calc(100% - 66px);
+  max-width: calc(100% - 66px);
+  height: 48px;
+  overflow: hidden;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionAchievementSlot{
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionAchievementSlotImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModalIdentityText{
@@ -1874,6 +1904,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #leaderboardPositionOverlay .leaderboardMemberSince{
   display: block;
   min-width: 0;
+  padding-bottom: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2150,11 +2181,41 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #friendProfileModal .friendUserSummaryIdentity{
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 0;
   min-width: 0;
+}
+
+#friendProfileModal .friendUserSummaryAchievementSlots{
+  position: absolute;
+  left: 66px;
+  top: 42px;
+  display: grid;
+  grid-template-columns: repeat(4, 48px);
+  justify-content: space-between;
+  gap: 0;
+  width: calc(100% - 66px);
+  max-width: calc(100% - 66px);
+  height: 48px;
+  overflow: hidden;
+}
+
+#friendProfileModal .friendUserSummaryAchievementSlot{
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+}
+
+#friendProfileModal .friendUserSummaryAchievementSlotImg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center;
 }
 
 #friendProfileModal .friendUserSummaryIdentityText{
@@ -2198,6 +2259,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #friendProfileModal .friendUserSummaryMemberSince{
   display: block;
   min-width: 0;
+  padding-bottom: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2241,6 +2303,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #friendProfileModal .friendUserSummaryRemoveBtn:focus-visible{
   outline: 1px solid currentColor;
   outline-offset: 3px;
+}
+
+#friendProfileModal .friendProfileCloseRow .friendUserSummaryRemoveBtn{
+  margin: 0;
 }
 
 #friendProfileModal .friendUserSummaryStats{
@@ -2361,7 +2427,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #friendProfileModal .confirmBtns{
   margin-top: 16px;
   display:flex;
-  justify-content:flex-end;
+  justify-content:space-between;
+  align-items:center;
   gap:10px;
 }
 
@@ -2376,6 +2443,12 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
   #friendProfileModal .friendUserSummaryIdentity{
     gap: 10px;
+  }
+
+  #friendProfileModal .friendUserSummaryAchievementSlots{
+    left: 58px;
+    width: calc(100% - 58px);
+    max-width: calc(100% - 58px);
   }
 
   #friendProfileModal .friendUserSummaryAvatar{

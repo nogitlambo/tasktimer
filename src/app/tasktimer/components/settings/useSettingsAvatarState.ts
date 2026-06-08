@@ -122,8 +122,12 @@ export function useSettingsAvatarState({
 
   useEffect(() => {
     if (!authUserUid || authIsAnonymous) return;
-    void syncOwnFriendshipProfile(authUserUid, { currentRankId: rewardProgress.currentRankId, totalXp: rewardProgress.totalXp }).catch(() => {});
-  }, [authIsAnonymous, authUserUid, rewardProgress.currentRankId, rewardProgress.totalXp]);
+    void syncOwnFriendshipProfile(authUserUid, {
+      currentRankId: rewardProgress.currentRankId,
+      totalXp: rewardProgress.totalXp,
+      completedTaskCount: rewardProgress.completedSessions,
+    }).catch(() => {});
+  }, [authIsAnonymous, authUserUid, rewardProgress.completedSessions, rewardProgress.currentRankId, rewardProgress.totalXp]);
 
   useEffect(() => {
     let cancelled = false;
@@ -335,6 +339,7 @@ export function useSettingsAvatarState({
           rankThumbnailSrc: nextThumbnailSrc || null,
           currentRankId: nextRewards.currentRankId,
           totalXp: nextRewards.totalXp,
+          completedTaskCount: nextRewards.completedSessions,
         }).catch(() => {});
       } catch {
         // ignore rank thumbnail save failures from the settings surface

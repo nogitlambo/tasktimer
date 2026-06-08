@@ -27,7 +27,7 @@ import {
   getFocusDndEnabled,
   getNativeFocusDndStatus,
   isNativeFocusDndAvailable,
-  openNativeFocusDndAccessSettings,
+  requestNativeFocusDndAccess,
   setFocusDndEnabled,
 } from "../lib/nativeFocusDnd";
 
@@ -38,9 +38,38 @@ type PreferenceEventDeps = {
 const CHECKPOINT_ALERT_SOUND_MODE_KEY = "taskticker_tasks_v1:checkpointAlertSoundMode";
 const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToastMode";
 
+type FocusDndAccessStatus = {
+  supported?: boolean;
+  policyAccessGranted?: boolean;
+} | null;
+
+export async function reconcileFocusDndAccessRequestForSettings(options: {
+  getStatus: () => Promise<FocusDndAccessStatus>;
+  requestAccess: () => Promise<unknown>;
+  waitForReturn: () => Promise<void>;
+  setEnabled: (enabled: boolean) => void;
+  syncUi: () => Promise<void>;
+  setDeniedMessage: () => void;
+}) {
+  const initialStatus = await options.getStatus().catch(() => null);
+  if (!initialStatus?.supported || initialStatus.policyAccessGranted) {
+    await options.syncUi();
+    return;
+  }
+  const returnPromise = options.waitForReturn();
+  await options.requestAccess();
+  await returnPromise;
+  const status = await options.getStatus().catch(() => null);
+  const denied = !status?.policyAccessGranted;
+  if (denied) options.setEnabled(false);
+  await options.syncUi();
+  if (denied) options.setDeniedMessage();
+}
+
 export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
   let focusDndSyncSeq = 0;
+  let focusDndAccessRequestSeq = 0;
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
     repository: {
@@ -520,6 +549,54 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.taskFocusDndAccessBtn) els.taskFocusDndAccessBtn.disabled = false;
   }
 
+  function waitForFocusDndAccessReturn(timeoutMs = 15_000) {
+    if (typeof window === "undefined") return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      let done = false;
+      let timeoutId: number | null = null;
+      const startedAt = Date.now();
+      const minDelayMs = 750;
+      const cleanup = () => {
+        window.removeEventListener("focus", onReturn);
+        document.removeEventListener("visibilitychange", onReturn);
+        if (timeoutId != null) window.clearTimeout(timeoutId);
+      };
+      const finish = () => {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve();
+      };
+      const onReturn = () => {
+        if (Date.now() - startedAt < minDelayMs) return;
+        if (document.visibilityState && document.visibilityState !== "visible") return;
+        finish();
+      };
+      window.addEventListener("focus", onReturn, { once: false });
+      document.addEventListener("visibilitychange", onReturn, { once: false });
+      timeoutId = window.setTimeout(finish, timeoutMs);
+    });
+  }
+
+  async function requestFocusDndAccessAndReconcile() {
+    const requestSeq = ++focusDndAccessRequestSeq;
+    if (requestSeq !== focusDndAccessRequestSeq) return;
+    await reconcileFocusDndAccessRequestForSettings({
+      getStatus: () => getNativeFocusDndStatus(),
+      requestAccess: () => requestNativeFocusDndAccess(),
+      waitForReturn: () => waitForFocusDndAccessReturn(),
+      setEnabled: (enabled) => {
+        if (requestSeq === focusDndAccessRequestSeq) setFocusDndEnabled(getFocusDndStorageKey(), enabled);
+      },
+      syncUi: () => (requestSeq === focusDndAccessRequestSeq ? syncFocusDndSettingsUi() : Promise.resolve()),
+      setDeniedMessage: () => {
+        if (requestSeq === focusDndAccessRequestSeq && els.taskFocusDndStatus) {
+          els.taskFocusDndStatus.textContent = "Focus Do Not Disturb was not enabled because Android DND access was denied.";
+        }
+      },
+    });
+  }
+
   function applyInteractionHapticsIntensityPreference(next: InteractionHapticsIntensity) {
     ctx.setInteractionHapticsIntensityState(normalizeInteractionHapticsIntensity(next));
     syncTaskSettingsUi();
@@ -867,16 +944,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         if (nextEnabled) {
           void getNativeFocusDndStatus()
             .then((status) => {
-              if (status.supported && !status.policyAccessGranted) return openNativeFocusDndAccessSettings();
+              if (status.supported && !status.policyAccessGranted) return requestFocusDndAccessAndReconcile();
               return undefined;
             })
             .catch(() => {});
+        } else {
+          focusDndAccessRequestSeq += 1;
         }
       },
     });
     ctx.on(els.taskFocusDndAccessBtn, "click", () => {
-      void openNativeFocusDndAccessSettings()
-        .then(() => syncFocusDndSettingsUi())
+      void requestFocusDndAccessAndReconcile()
         .catch(() => {});
     });
     bindToggleRow({

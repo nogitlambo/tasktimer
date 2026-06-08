@@ -330,6 +330,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const alias = String(profile?.alias || "").trim() || peerUid;
         const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
         const totalXp = Math.max(0, Math.floor(Number(profile?.totalXp || 0) || 0));
+        const completedTaskCount = Math.max(0, Math.floor(Number(profile?.completedTaskCount || 0) || 0));
         const avatarSrc = ctx.getFriendAvatarSrc(profile);
         const sharedCount = ctx.getGroupsSharedSummaries().filter((entry) => entry.ownerUid === peerUid).length;
         const createdAtMs =
@@ -343,7 +344,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
               summaries.reduce((sum, entry) => sum + Math.max(0, Number(entry.avgTimeLoggedThisWeekMs || 0) || 0), 0) / summaries.length
             )
           : 0;
-        return { peerUid, alias, avatarSrc, currentRankId, totalXp, sharedCount, sharedTotalMs, sharedAverageMs, createdAtMs };
+        return { peerUid, alias, avatarSrc, currentRankId, totalXp, completedTaskCount, sharedCount, sharedTotalMs, sharedAverageMs, createdAtMs };
       })
       .filter(
         (row): row is {
@@ -352,6 +353,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           avatarSrc: string;
           currentRankId: string;
           totalXp: number;
+          completedTaskCount: number;
           sharedCount: number;
           sharedTotalMs: number;
           sharedAverageMs: number;
@@ -395,6 +397,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.friendProfileSharedTime) els.friendProfileSharedTime.textContent = formatDashboardDurationShort(row.sharedTotalMs);
     if (els.friendProfileSharedAverage) els.friendProfileSharedAverage.textContent = formatDashboardDurationShort(row.sharedAverageMs);
     if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
+    if (els.friendProfileAchievementEliteLauncherImg) {
+      els.friendProfileAchievementEliteLauncherImg.style.display = row.completedTaskCount >= 100 ? "block" : "none";
+    }
     ctx.setActiveFriendProfileUid(row.peerUid);
     ctx.setActiveFriendProfileName(row.alias);
     showOverlay(els.friendProfileModal as HTMLElement | null);

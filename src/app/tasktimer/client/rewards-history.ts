@@ -577,7 +577,11 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const authUid = ctx.currentUid();
     if (authUid && opts?.deferTimeGoalXp !== true) {
       void ctx
-        .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
+        .syncOwnFriendshipProfile(authUid, {
+          currentRankId: nextAward.next.currentRankId,
+          totalXp: nextAward.next.totalXp,
+          completedTaskCount: nextAward.next.completedSessions,
+        })
         .catch(() => {});
     }
     if (promotion && typeof window !== "undefined") dispatchRankPromotionEvent(window, promotion);
@@ -603,7 +607,11 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const authUid = ctx.currentUid();
     if (authUid) {
       void ctx
-        .syncOwnFriendshipProfile(authUid, { currentRankId: nextAward.next.currentRankId, totalXp: nextAward.next.totalXp })
+        .syncOwnFriendshipProfile(authUid, {
+          currentRankId: nextAward.next.currentRankId,
+          totalXp: nextAward.next.totalXp,
+          completedTaskCount: nextAward.next.completedSessions,
+        })
         .catch(() => {});
     }
     const promotion =

@@ -46,6 +46,7 @@ export type FriendProfile = {
   rankThumbnailSrc: string | null;
   currentRankId: string | null;
   totalXp: number | null;
+  completedTaskCount: number | null;
 };
 
 export type Friendship = {
@@ -148,15 +149,20 @@ function normalizeTotalXp(value: unknown): number | null {
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
 }
 
+function normalizeCompletedTaskCount(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
+}
+
 async function loadOwnProfile(uid: string): Promise<FriendProfile> {
   const db = dbOrNull();
   if (!db || !uid) {
-    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null };
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null, completedTaskCount: null };
   }
   try {
     const snap = await getDoc(doc(db, "users", uid));
     if (!snap.exists()) {
-      return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null };
+      return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null, completedTaskCount: null };
     }
     return {
       alias: normalizeAlias(snap.get("username")),
@@ -166,9 +172,10 @@ async function loadOwnProfile(uid: string): Promise<FriendProfile> {
       rankThumbnailSrc: normalizeRankThumbnailSrc(snap.get("rankThumbnailSrc")),
       currentRankId: normalizeAvatarId(snap.get("rewardCurrentRankId")),
       totalXp: normalizeTotalXp(snap.get("rewardTotalXp")),
+      completedTaskCount: normalizeCompletedTaskCount(snap.get("completedTaskCount")),
     };
   } catch {
-    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null };
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null, completedTaskCount: null };
   }
 }
 
@@ -176,7 +183,7 @@ export async function loadFriendProfile(uid: string): Promise<FriendProfile> {
   const db = dbOrNull();
   const targetUid = String(uid || "").trim();
   if (!db || !targetUid) {
-    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null };
+    return { alias: null, avatarId: null, avatarCustomSrc: null, googlePhotoUrl: null, rankThumbnailSrc: null, currentRankId: null, totalXp: null, completedTaskCount: null };
   }
 
   try {
@@ -190,6 +197,7 @@ export async function loadFriendProfile(uid: string): Promise<FriendProfile> {
         rankThumbnailSrc: normalizeRankThumbnailSrc(snap.get("rankThumbnailSrc")),
         currentRankId: normalizeAvatarId(snap.get("rewardCurrentRankId")),
         totalXp: normalizeTotalXp(snap.get("rewardTotalXp")),
+        completedTaskCount: normalizeCompletedTaskCount(snap.get("completedTaskCount")),
       };
     }
   } catch {
@@ -240,6 +248,7 @@ function asFriendship(id: string, row: Record<string, unknown>): Friendship {
         rankThumbnailSrc: normalizeRankThumbnailSrc(valueObj.rankThumbnailSrc),
         currentRankId: normalizeAvatarId(valueObj.currentRankId),
         totalXp: normalizeTotalXp(valueObj.totalXp),
+        completedTaskCount: normalizeCompletedTaskCount(valueObj.completedTaskCount),
       };
   });
   return {
@@ -546,6 +555,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
         rankThumbnailSrc: normalizeRankThumbnailSrc(senderProfile.rankThumbnailSrc || row.senderRankThumbnailSrc),
         currentRankId: normalizeAvatarId(senderProfile.currentRankId || (snap.data() as Record<string, unknown>)?.senderCurrentRankId),
         totalXp: normalizeTotalXp(senderProfile.totalXp ?? (snap.data() as Record<string, unknown>)?.senderTotalXp),
+        completedTaskCount: normalizeCompletedTaskCount(senderProfile.completedTaskCount ?? (snap.data() as Record<string, unknown>)?.senderCompletedTaskCount),
       },
       [row.receiverUid]: {
         alias: normalizeAlias(receiverProfile.alias || row.receiverEmail || row.receiverUid),
@@ -555,6 +565,7 @@ export async function approveFriendRequest(requestId: string, receiverUid: strin
         rankThumbnailSrc: normalizeRankThumbnailSrc(receiverProfile.rankThumbnailSrc || row.receiverRankThumbnailSrc),
         currentRankId: normalizeAvatarId(receiverProfile.currentRankId || (snap.data() as Record<string, unknown>)?.receiverCurrentRankId),
         totalXp: normalizeTotalXp(receiverProfile.totalXp ?? (snap.data() as Record<string, unknown>)?.receiverTotalXp),
+        completedTaskCount: normalizeCompletedTaskCount(receiverProfile.completedTaskCount ?? (snap.data() as Record<string, unknown>)?.receiverCompletedTaskCount),
       },
     };
     if (!pairSnap.exists()) {
@@ -628,7 +639,7 @@ export async function cancelOutgoingFriendRequest(
 export async function syncOwnFriendshipProfile(
   uid: string,
   patch: Partial<
-    Pick<FriendProfile, "alias" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "currentRankId" | "totalXp">
+    Pick<FriendProfile, "alias" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "currentRankId" | "totalXp" | "completedTaskCount">
   >
 ): Promise<void> {
   const db = dbOrNull();
@@ -655,6 +666,9 @@ export async function syncOwnFriendshipProfile(
   }
   if (Object.prototype.hasOwnProperty.call(patch, "totalXp")) {
     profilePatch[`profileByUid.${ownUid}.totalXp`] = normalizeTotalXp(patch.totalXp);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "completedTaskCount")) {
+    profilePatch[`profileByUid.${ownUid}.completedTaskCount`] = normalizeCompletedTaskCount(patch.completedTaskCount);
   }
   if (!Object.keys(profilePatch).length) return;
   const snap = await getDocs(query(collection(db, "friendships"), where("users", "array-contains", ownUid)));

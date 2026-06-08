@@ -74,6 +74,7 @@ export function getMergedFriendProfile(
     rankThumbnailSrc: cachedProfile?.rankThumbnailSrc ?? baseProfile?.rankThumbnailSrc ?? null,
     currentRankId: cachedProfile?.currentRankId ?? baseProfile?.currentRankId ?? null,
     totalXp: cachedProfile?.totalXp ?? baseProfile?.totalXp ?? null,
+    completedTaskCount: cachedProfile?.completedTaskCount ?? baseProfile?.completedTaskCount ?? null,
   };
 }
 

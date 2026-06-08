@@ -108,7 +108,7 @@ function createHarness(
     syncSharedTaskSummariesForTask: vi.fn(async (taskId: string) => {
       calls.push(`sync-shared:${taskId}`);
     }),
-    syncOwnFriendshipProfile: vi.fn(async (_uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined }) => {
+    syncOwnFriendshipProfile: vi.fn(async (_uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined; completedTaskCount?: number | null | undefined }) => {
       calls.push(`sync-profile:${partial.currentRankId || ""}:${partial.totalXp ?? ""}`);
     }),
   });

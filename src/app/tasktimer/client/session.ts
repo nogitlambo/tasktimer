@@ -28,7 +28,7 @@ import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
   getNativeFocusDndStatus,
-  openNativeFocusDndAccessSettings,
+  requestNativeFocusDndAccess,
   startNativeFocusDndSession,
   stopNativeFocusDndSession,
 } from "../lib/nativeFocusDnd";
@@ -427,7 +427,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         }
         if (!status.policyAccessGranted) {
           setFocusDndSetupVisible(true, "Focus Do Not Disturb needs Android DND access before it can silence interruptions.");
-          await openNativeFocusDndAccessSettings().catch(() => {});
           return;
         }
         await startNativeFocusDndSession({ storageKey });
@@ -2400,7 +2399,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       closeFocusMode({ animate: true });
     });
     ctx.on(els.focusDndAccessBtn, "click", () => {
-      void openNativeFocusDndAccessSettings()
+      void requestNativeFocusDndAccess()
         .then(() => syncFocusDndSetupPrompt())
         .catch(() => {});
     });
