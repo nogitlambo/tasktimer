@@ -4609,14 +4609,26 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   z-index: 2;
   display: flex;
+  box-sizing: border-box;
+  width: min(100%, 520px);
   min-height: clamp(430px, 72dvh, 540px);
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   background: transparent;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   padding: clamp(66px, 9vh, 82px) clamp(42px, 8vw, 64px) clamp(76px, 10vh, 96px);
+}
+
+#rankPromotionOverlay .rankPromotionContent{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: min(100%, 520px);
+  flex-direction: column;
+  align-items: center;
 }
 
 #rankPromotionOverlay::before{
@@ -4629,28 +4641,75 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   animation: rankPromotionCinemaDim 1s ease-in-out both;
 }
 
-#rankPromotionOverlay.is-dimming .rankPromotionModal{
+#rankPromotionOverlay.is-dimming .rankPromotionContent{
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transform: translateY(8px) scale(.98);
 }
 
-#rankPromotionOverlay.is-intro .rankPromotionModal{
+#rankPromotionOverlay.is-intro .rankPromotionContent{
   animation: rankPromotionModalReveal .28s ease-out both;
 }
 
 #rankPromotionOverlay h2{
   margin: 0 0 14px;
-  color: #c9ff24;
+  color: #000;
+  font-family: var(--font-orbitron);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: .06em;
   text-align: center;
+  text-shadow:
+    0 1px 0 rgba(255,247,184,.46),
+    0 -1px 0 rgba(75,43,0,.44),
+    1px 0 0 rgba(255,237,126,.2),
+    -1px 0 0 rgba(80,45,0,.24);
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#rankPromotionOverlay .rankPromotionTitleRibbon{
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(calc(100vw - 24px), 430px);
+  min-height: 54px;
+  place-items: center;
+  padding: 10px 40px;
+  isolation: isolate;
+}
+
+#rankPromotionOverlay .rankPromotionTitleRibbon::before,
+#rankPromotionOverlay .rankPromotionTitleRibbon::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+#rankPromotionOverlay .rankPromotionTitleRibbon::before{
+  background:
+    linear-gradient(90deg, rgba(84,50,0,.26), transparent 17%, rgba(255,251,151,.82) 52%, transparent 75%, rgba(84,50,0,.24)),
+    linear-gradient(90deg, #a35d00 0%, #d29018 29%, #fff47e 52%, #d9961c 76%, #b06708 100%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%, 10px 50%);
+  box-shadow:
+    0 11px 24px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,250,177,.66),
+    inset 0 -1px 0 rgba(91,49,0,.56);
+}
+
+#rankPromotionOverlay .rankPromotionTitleRibbon::after{
+  inset: 3px 8px 3px 7px;
+  border: 1px solid rgba(97,55,0,.38);
+  border-left-color: rgba(69,39,0,.34);
+  border-right-color: rgba(69,39,0,.3);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%, 7px 50%);
 }
 
 #rankPromotionOverlay #rankPromotionText{
+  width: 100%;
   margin: 0;
   color: rgba(245,248,244,.94);
   text-align: center;
@@ -4806,8 +4865,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   z-index: 2;
   display: grid;
+  justify-items: center;
   place-items: center;
-  min-height: 176px;
+  width: 100%;
+  min-height: 410px;
 }
 
 #rankPromotionOverlay h2,
@@ -4819,9 +4880,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay .rankPromotionRank{
   grid-area: 1 / 1;
   display: grid;
+  justify-self: center;
   justify-items: center;
+  place-items: center;
   gap: 10px;
-  width: min(100%, 240px);
+  width: min(100%, 315px);
+  margin-inline: auto;
   text-align: center;
 }
 
@@ -4836,10 +4900,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   content: "";
   position: absolute;
   left: 50%;
-  top: 136px;
+  top: 306px;
   z-index: 0;
-  width: 118px;
-  height: 22px;
+  width: 266px;
+  height: 50px;
   pointer-events: none;
   opacity: 0;
   transform: translateX(-50%) scaleX(.72);
@@ -4900,24 +4964,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsignia{
   animation: rankPromotionInsigniaFloat 4.8s ease-in-out infinite;
-  perspective: 720px;
-  transform-style: preserve-3d;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaImage,
 #rankPromotionOverlay .rankPromotionModal.is-complete .rankPromotionRankNew .rankPromotionInsigniaPlaceholder{
-  animation: rankPromotionInsigniaSpin 8s linear infinite;
-  backface-visibility: visible;
   transform-origin: 50% 50%;
-  transform-style: preserve-3d;
-  will-change: transform;
 }
 
 #rankPromotionOverlay .rankPromotionInsignia{
   display: grid;
+  justify-self: center;
   place-items: center;
-  width: 112px;
-  height: 112px;
+  width: 252px;
+  height: 252px;
+  margin-inline: auto;
   transform-origin: 50% 50%;
   will-change: transform, opacity, filter;
 }
@@ -4925,9 +4985,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay .rankPromotionOldInsigniaWrap{
   position: relative;
   display: grid;
+  justify-self: center;
   place-items: center;
-  width: 112px;
-  height: 112px;
+  width: 252px;
+  height: 252px;
+  margin-inline: auto;
 }
 
 #rankPromotionOverlay .rankPromotionOldInsigniaWrap > .rankPromotionInsignia{
@@ -4988,8 +5050,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew{
-  width: 140px;
-  height: 140px;
+  width: 315px;
+  height: 315px;
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaImage{
@@ -5003,25 +5065,27 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
   display: grid;
   place-items: center;
-  width: 92px;
-  height: 92px;
+  width: 207px;
+  height: 207px;
   border: 1px solid rgba(53,232,255,.34);
   border-radius: 50%;
   color: #c9ff24;
   background: rgba(53,232,255,.08);
-  font-size: 34px;
+  font-size: 77px;
   font-weight: 800;
 }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
-  width: 116px;
-  height: 116px;
-  font-size: 40px;
+  width: 261px;
+  height: 261px;
+  font-size: 90px;
 }
 
 #rankPromotionOverlay .rankPromotionLabel{
   position: relative;
-  margin: 0;
+  justify-self: center;
+  width: min(100%, 315px);
+  margin: 0 auto;
   padding-bottom: 12px;
   color: #c9ff24;
   font-family: var(--font-orbitron) !important;
@@ -5058,7 +5122,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   cursor: pointer;
 }
 
-#rankPromotionOverlay .rankPromotionModal.is-close-ready .confirmBtns button{
+#rankPromotionOverlay .rankPromotionCloseSlot.is-ready button{
   cursor: pointer;
 }
 
@@ -5104,8 +5168,12 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionShieldFill{
   stroke: url("#rankPromotionShieldStroke");
 }
 
-body[data-theme="lime"] #rankPromotionOverlay h2{
+body[data-theme="lime"] #rankPromotionOverlay h2:not(.rankPromotionTitleRibbon){
   color: #f3ff7a;
+}
+
+body[data-theme="lime"] #rankPromotionOverlay .rankPromotionTitleRibbon{
+  color: #000;
 }
 
 body[data-theme="lime"] #rankPromotionOverlay #rankPromotionText{
@@ -5317,33 +5385,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     transform: translateX(-50%) scaleX(.68) scaleY(.78);
     filter: blur(9px);
   }
-}@keyframes rankPromotionInsigniaSpin{0%{
-    transform: rotateY(0deg);
-  }10%{
-    transform: rotateY(70deg);
-  }13%{
-    transform: rotateY(80deg);
-  }15%{
-    transform: rotateY(94deg);
-  }17%{
-    transform: rotateY(105deg);
-  }18%{
-    transform: rotateY(110deg);
-  }50%{
-    transform: rotateY(180deg);
-  }60%{
-    transform: rotateY(250deg);
-  }63%{
-    transform: rotateY(260deg);
-  }65%{
-    transform: rotateY(274deg);
-  }67%{
-    transform: rotateY(285deg);
-  }68%{
-    transform: rotateY(290deg);
-  }100%{
-    transform: rotateY(360deg);
-  }
 }@keyframes rankPromotionLightBeamImpact{0%,31%{
     opacity: 0;
     transform: translateX(-50%) scaleY(.18) scaleX(.58);
@@ -5525,29 +5566,35 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 
 #rankPromotionOverlay .rankPromotionStage{
-    min-height: 164px;
+    min-height: 350px;
   }
 
 #rankPromotionOverlay .rankPromotionInsignia{
-    width: 96px;
-    height: 96px;
+    width: 216px;
+    height: 216px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew{
-    width: 120px;
-    height: 120px;
+    width: 270px;
+    height: 270px;
+  }
+
+#rankPromotionOverlay .rankPromotionRankNew::before{
+    top: 261px;
+    width: 225px;
+    height: 42px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaPlaceholder{
-    width: 82px;
-    height: 82px;
-    font-size: 30px;
+    width: 185px;
+    height: 185px;
+    font-size: 68px;
   }
 
 #rankPromotionOverlay .rankPromotionInsigniaNew .rankPromotionInsigniaPlaceholder{
-    width: 102px;
-    height: 102px;
-    font-size: 36px;
+    width: 230px;
+    height: 230px;
+    font-size: 81px;
   }
 
 #rankPromotionOverlay .rankPromotionCloseSlot #rankPromotionCloseBtn{
@@ -6897,7 +6944,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }:is(#rankLadderOverlay, #timeGoalCompleteOverlay) .modal{
   width:min(var(--modal-width-lg), 100%) !important;
 }#rankPromotionOverlay .modal{
-  width:min(calc(var(--modal-width-lg) * .75), 100%) !important;
+  width:min(520px, 100%) !important;
 }:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #historyManagerManualEntryOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;

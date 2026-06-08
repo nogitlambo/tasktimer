@@ -2,8 +2,6 @@ import { RANK_LADDER, type RankDefinition } from "../lib/rewards";
 import type { XpAwardAnimationState } from "./xp-award-animation";
 import { dispatchOverlayClosedEvent } from "./xp-award-events";
 
-export const RANK_PROMOTION_AUDIO_SRC = "/promotion.mp3";
-export const RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC = "/promotion_bass_drive.mp3";
 export const RANK_PROMOTION_OVERLAY_ID = "rankPromotionOverlay";
 export const TASKTIMER_RANK_PROMOTION_EVENT = "tasktimer:rank-promotion";
 
@@ -13,14 +11,6 @@ export type RankPromotion = {
   nextRankId: string;
   nextRankLabel: string;
 };
-
-type AudioLike = {
-  currentTime: number;
-  preload?: string;
-  play: () => Promise<unknown> | void;
-};
-
-type AudioFactory = (src: string) => AudioLike;
 
 function getRankIndex(rankId: string): number {
   const normalizedRankId = String(rankId || "").trim().toLowerCase();
@@ -85,27 +75,9 @@ export function hasBlockingPromotionXpAnimation(state: XpAwardAnimationState): b
   return !!state.pending || !!state.active;
 }
 
-export function playRankPromotionAudio(audioFactory?: AudioFactory) {
-  if (typeof window === "undefined" && !audioFactory) return;
-  try {
-    const factory = audioFactory || ((src: string) => new Audio(src));
-    const audioSources = [RANK_PROMOTION_AUDIO_SRC, RANK_PROMOTION_BASS_DRIVE_AUDIO_SRC];
-    audioSources.forEach((src) => {
-      const audio = factory(src);
-      audio.preload = "auto";
-      audio.currentTime = 0;
-      const playback = audio.play();
-      if (playback && typeof playback.catch === "function") playback.catch(() => {});
-    });
-  } catch {
-    // Browser autoplay failures are non-blocking for the promotion UI.
-  }
-}
-
-export function startRankPromotionCelebration(documentRef: Pick<Document, "getElementById">, audioFactory?: AudioFactory) {
+export function startRankPromotionCelebration(documentRef: Pick<Document, "getElementById">) {
   const overlay = documentRef.getElementById(RANK_PROMOTION_OVERLAY_ID) as HTMLElement | null;
   if (overlay) overlay.style.display = "flex";
-  playRankPromotionAudio(audioFactory);
 }
 
 export function stopRankPromotionCelebration(documentRef: Pick<Document, "getElementById">) {

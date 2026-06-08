@@ -13,10 +13,11 @@ type RankPromotionOverlayProps = {
 };
 
 const RANK_PROMOTION_DIM_DURATION_MS = 1000;
-const RANK_PROMOTION_INTRO_DELAY_MS = 200;
 const RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS = 1000;
+const RANK_PROMOTION_DRUMS_SMASH_MARK_MS = 3500;
+const RANK_PROMOTION_SMASH_PHASE_START_MS =
+  RANK_PROMOTION_DRUMS_SMASH_MARK_MS - RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
 const RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 200;
-const RANK_PROMOTION_CHIME_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
 const RANK_PROMOTION_POST_IMPACT_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 100;
 const RANK_PROMOTION_BLOOM_HOLD_MS = 100;
 const RANK_PROMOTION_SETTLE_MS = 3300;
@@ -24,15 +25,15 @@ const RANK_PROMOTION_COMPLETE_SPIN_DURATION_MS = 8000;
 const RANK_PROMOTION_QUARTER_ROTATION_DELAY_MS = RANK_PROMOTION_COMPLETE_SPIN_DURATION_MS / 4;
 const RANK_PROMOTION_SMASH_DURATION_MS =
   RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + RANK_PROMOTION_BLOOM_HOLD_MS + RANK_PROMOTION_SETTLE_MS;
-const RANK_PROMOTION_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
-const RANK_PROMOTION_INTRO_AUDIO_SRC = "/promotion_intro.mp3";
+const RANK_PROMOTION_INTRO_AUDIO_SRC = "/rank_up.mp3";
 const RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC = "/promotion_boom2.mp3";
 const RANK_PROMOTION_HIT_AUDIO_SRC = "/promotion_hit.mp3";
 const RANK_PROMOTION_DRUMS_AUDIO_SRC = "/promotion_drums.mp3";
-const RANK_PROMOTION_DRUMS_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
-const RANK_PROMOTION_CHIME_AUDIO_SRC = "/promotion_chime.mp3";
-const RANK_PROMOTION_CHIME_PLAYBACK_RATE = 0.75;
-const RANK_PROMOTION_CHIME_VOLUME = 0.375;
+const RANK_PROMOTION_DRUMS_AFTER_INTRO_DELAY_MS = 1500;
+const RANK_PROMOTION_DRUMS_DELAY_MS = 2925;
+const RANK_PROMOTION_DRUMS_START_VOLUME = 0.1;
+const RANK_PROMOTION_DRUMS_END_VOLUME = 0.8;
+const RANK_PROMOTION_DRUMS_FADE_IN_MS = 2000;
 const RANK_PROMOTION_POST_IMPACT_AUDIO_SRC = "/promotion_post-impact.mp3";
 const RANK_PROMOTION_FRAGMENT_COLUMNS = 26;
 const RANK_PROMOTION_FRAGMENT_ROWS = 24;
@@ -65,6 +66,29 @@ function playPromotionAudio(src: string, playbackRate = 1, volume = 1) {
     audio.currentTime = 0;
     const playback = audio.play();
     if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    return audio;
+  } catch {
+    // Browser autoplay failures are non-blocking for the promotion UI.
+    return null;
+  }
+}
+
+function playPromotionAudioFadeIn(src: string, startVolume: number, endVolume: number, durationMs: number) {
+  try {
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    audio.volume = startVolume;
+    audio.currentTime = 0;
+    const playback = audio.play();
+    if (playback && typeof playback.catch === "function") playback.catch(() => {});
+
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      audio.volume = startVolume + (endVolume - startVolume) * progress;
+      if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
   } catch {
     // Browser autoplay failures are non-blocking for the promotion UI.
   }
@@ -313,7 +337,34 @@ export default function RankPromotionOverlay({
   }, [onPresentationStart]);
 
   useEffect(() => {
-    if (achievementSoundsEnabled) playPromotionAudio(RANK_PROMOTION_INTRO_AUDIO_SRC);
+    let drumsTimer: number | null = null;
+    let introAudio: HTMLAudioElement | null = null;
+    let hasScheduledDrums = false;
+    let hasStartedDrums = false;
+
+    const startDrums = () => {
+      if (hasStartedDrums) return;
+      hasStartedDrums = true;
+      playPromotionAudioFadeIn(
+        RANK_PROMOTION_DRUMS_AUDIO_SRC,
+        RANK_PROMOTION_DRUMS_START_VOLUME,
+        RANK_PROMOTION_DRUMS_END_VOLUME,
+        RANK_PROMOTION_DRUMS_FADE_IN_MS,
+      );
+    };
+
+    const scheduleDrums = () => {
+      if (hasScheduledDrums) return;
+      hasScheduledDrums = true;
+      if (drumsTimer != null) window.clearTimeout(drumsTimer);
+      drumsTimer = window.setTimeout(startDrums, RANK_PROMOTION_DRUMS_AFTER_INTRO_DELAY_MS);
+    };
+
+    if (achievementSoundsEnabled) {
+      introAudio = playPromotionAudio(RANK_PROMOTION_INTRO_AUDIO_SRC);
+      if (introAudio) introAudio.addEventListener("ended", scheduleDrums, { once: true });
+      drumsTimer = window.setTimeout(startDrums, RANK_PROMOTION_DRUMS_DELAY_MS);
+    }
 
     const dimTimer = window.setTimeout(() => {
       setPhase("intro");
@@ -321,12 +372,14 @@ export default function RankPromotionOverlay({
     }, RANK_PROMOTION_DIM_DURATION_MS);
     const smashTimer = window.setTimeout(() => {
       setPhase("smashing");
-    }, RANK_PROMOTION_DIM_DURATION_MS + RANK_PROMOTION_INTRO_DELAY_MS);
+    }, RANK_PROMOTION_SMASH_PHASE_START_MS);
     const completeTimer = window.setTimeout(() => {
       setPhase("complete");
-    }, RANK_PROMOTION_DIM_DURATION_MS + RANK_PROMOTION_INTRO_DELAY_MS + RANK_PROMOTION_SMASH_DURATION_MS);
+    }, RANK_PROMOTION_SMASH_PHASE_START_MS + RANK_PROMOTION_SMASH_DURATION_MS);
 
     return () => {
+      if (introAudio) introAudio.removeEventListener("ended", scheduleDrums);
+      if (drumsTimer != null) window.clearTimeout(drumsTimer);
       window.clearTimeout(dimTimer);
       window.clearTimeout(smashTimer);
       window.clearTimeout(completeTimer);
@@ -338,28 +391,15 @@ export default function RankPromotionOverlay({
 
     if (!achievementSoundsEnabled) return;
 
-    playPromotionAudio(RANK_PROMOTION_IMPACT_AUDIO_SRC);
-    const drumsTimer = window.setTimeout(() => {
-      playPromotionAudio(RANK_PROMOTION_DRUMS_AUDIO_SRC);
-    }, RANK_PROMOTION_DRUMS_DELAY_MS);
     const boomTwoTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
     }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
-    const chimeTimer = window.setTimeout(() => {
-      playPromotionAudio(
-        RANK_PROMOTION_CHIME_AUDIO_SRC,
-        RANK_PROMOTION_CHIME_PLAYBACK_RATE,
-        RANK_PROMOTION_CHIME_VOLUME,
-      );
-    }, RANK_PROMOTION_CHIME_DELAY_MS);
     const postImpactTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_POST_IMPACT_AUDIO_SRC);
     }, RANK_PROMOTION_POST_IMPACT_DELAY_MS);
 
     return () => {
-      window.clearTimeout(drumsTimer);
       window.clearTimeout(boomTwoTimer);
-      window.clearTimeout(chimeTimer);
       window.clearTimeout(postImpactTimer);
     };
   }, [achievementSoundsEnabled, phase]);
@@ -389,115 +429,117 @@ export default function RankPromotionOverlay({
 
   return (
     <div className={`overlay is-${phase}`} id="rankPromotionOverlay" style={{ display: "flex" }}>
-      <div
-        className={`modal rankPromotionModal is-${phase}${isCloseReady ? " is-close-ready" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-hidden={isDimming ? "true" : undefined}
-        aria-label="Rank promotion"
-        onClick={handleClose}
-      >
-        <svg
-          className="rankPromotionShieldFrame"
-          viewBox="0 0 320 390"
-          aria-hidden="true"
-          focusable="false"
+      <div className="rankPromotionContent">
+        <h2 className="rankPromotionTitleRibbon">You&apos;ve been promoted!</h2>
+        <div
+          className={`modal rankPromotionModal is-${phase}${isCloseReady ? " is-close-ready" : ""}`}
+          role="dialog"
+          aria-modal="true"
+          aria-hidden={isDimming ? "true" : undefined}
+          aria-label="Rank promotion"
+          onClick={handleClose}
         >
-          <defs>
-            <linearGradient id="rankPromotionShieldFill" x1="62" y1="26" x2="258" y2="356" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#191d21" />
-              <stop offset=".52" stopColor="#101318" />
-              <stop offset="1" stopColor="#090b0f" />
-            </linearGradient>
-            <linearGradient id="rankPromotionShieldStroke" x1="58" y1="48" x2="262" y2="344" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#f3ff7a" stopOpacity=".9" />
-              <stop offset=".46" stopColor="#c6c8c6" stopOpacity=".76" />
-              <stop offset="1" stopColor="#35e8ff" stopOpacity=".64" />
-            </linearGradient>
-            <filter id="rankPromotionShieldGlow" x="-22%" y="-18%" width="144%" height="136%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
-              <feColorMatrix
-                in="blur"
-                type="matrix"
-                values="0 0 0 0 0.78 0 0 0 0 1 0 0 0 0 0.18 0 0 0 .55 0"
-                result="glow"
-              />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <path
-            className="rankPromotionShieldGlow"
-            d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
-          />
-          <path
-            className="rankPromotionShieldFill"
-            d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
-          />
-        </svg>
-        <div className="rankPromotionShieldClipLayer" aria-hidden="true">
-          <div className="rankPromotionLightBeam">
-            <span className="rankPromotionLightBeamPulse" />
+          <svg
+            className="rankPromotionShieldFrame"
+            viewBox="0 0 320 390"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <defs>
+              <linearGradient id="rankPromotionShieldFill" x1="62" y1="26" x2="258" y2="356" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#191d21" />
+                <stop offset=".52" stopColor="#101318" />
+                <stop offset="1" stopColor="#090b0f" />
+              </linearGradient>
+              <linearGradient id="rankPromotionShieldStroke" x1="58" y1="48" x2="262" y2="344" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#f3ff7a" stopOpacity=".9" />
+                <stop offset=".46" stopColor="#c6c8c6" stopOpacity=".76" />
+                <stop offset="1" stopColor="#35e8ff" stopOpacity=".64" />
+              </linearGradient>
+              <filter id="rankPromotionShieldGlow" x="-22%" y="-18%" width="144%" height="136%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feColorMatrix
+                  in="blur"
+                  type="matrix"
+                  values="0 0 0 0 0.78 0 0 0 0 1 0 0 0 0 0.18 0 0 0 .55 0"
+                  result="glow"
+                />
+                <feMerge>
+                  <feMergeNode in="glow" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <path
+              className="rankPromotionShieldGlow"
+              d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
+            />
+            <path
+              className="rankPromotionShieldFill"
+              d="M160 18 290 80v116c0 81-46 145-130 176C76 341 30 277 30 196V80L160 18Z"
+            />
+          </svg>
+          <div className="rankPromotionShieldClipLayer" aria-hidden="true">
+            <div className="rankPromotionLightBeam">
+              <span className="rankPromotionLightBeamPulse" />
+            </div>
           </div>
-        </div>
-        <h2>You&apos;ve been promoted!</h2>
-        <div className="rankPromotionStage" id="rankPromotionText" aria-live="polite">
-          <div className="rankPromotionRank rankPromotionRankOld" aria-hidden={isComplete ? "true" : undefined}>
-            <span className="rankPromotionOldInsigniaWrap">
+          <div className="rankPromotionStage" id="rankPromotionText" aria-live="polite">
+            <div className="rankPromotionRank rankPromotionRankOld" aria-hidden={isComplete ? "true" : undefined}>
+              <span className="rankPromotionOldInsigniaWrap">
+                <RankThumbnail
+                  rankId={previousRankId}
+                  storedThumbnailSrc=""
+                  className="rankPromotionInsignia"
+                  imageClassName="rankPromotionInsigniaImage"
+                  placeholderClassName="rankPromotionInsigniaPlaceholder"
+                  alt=""
+                  size={216}
+                  aria-hidden
+                />
+                <span className="rankPromotionShatterField" aria-hidden="true">
+                  <RankPromotionShatterCanvas rankId={previousRankId} isActive={phase === "smashing"} />
+                </span>
+              </span>
+              <p className="modalSubtext confirmText rankPromotionLabel">{previousRankLabel}</p>
+            </div>
+            <div className="rankPromotionRank rankPromotionRankNew" aria-hidden={isDimming || phase === "intro" ? "true" : undefined}>
               <RankThumbnail
-                rankId={previousRankId}
+                rankId={nextRankId}
                 storedThumbnailSrc=""
-                className="rankPromotionInsignia"
+                className="rankPromotionInsignia rankPromotionInsigniaNew"
                 imageClassName="rankPromotionInsigniaImage"
                 placeholderClassName="rankPromotionInsigniaPlaceholder"
                 alt=""
-                size={96}
+                size={315}
                 aria-hidden
               />
-              <span className="rankPromotionShatterField" aria-hidden="true">
-                <RankPromotionShatterCanvas rankId={previousRankId} isActive={phase === "smashing"} />
-              </span>
-            </span>
-            <p className="modalSubtext confirmText rankPromotionLabel">{previousRankLabel}</p>
+              <p className="modalSubtext confirmText rankPromotionLabel">{nextRankLabel}</p>
+            </div>
           </div>
-          <div className="rankPromotionRank rankPromotionRankNew" aria-hidden={isDimming || phase === "intro" ? "true" : undefined}>
-            <RankThumbnail
-              rankId={nextRankId}
-              storedThumbnailSrc=""
-              className="rankPromotionInsignia rankPromotionInsigniaNew"
-              imageClassName="rankPromotionInsigniaImage"
-              placeholderClassName="rankPromotionInsigniaPlaceholder"
-              alt=""
-              size={140}
-              aria-hidden
-            />
-            <p className="modalSubtext confirmText rankPromotionLabel">{nextRankLabel}</p>
           </div>
-        </div>
-        <div className={`confirmBtns rankPromotionCloseSlot${isCloseReady ? " is-ready" : ""}`}>
-          <button
-            className="btn btn-accent"
-            id="rankPromotionCloseBtn"
-            type="button"
-            onClick={handleCloseButtonClick}
-            disabled={!isCloseReady}
-            aria-hidden={!isCloseReady}
-            tabIndex={isCloseReady ? 0 : -1}
-          >
-            Close
-          </button>
-          <button
-            className="rankPromotionTapCloseText"
-            type="button"
-            onClick={handleCloseButtonClick}
-            disabled={!isCloseReady}
-            aria-hidden={!isCloseReady}
-            tabIndex={isCloseReady ? 0 : -1}
-          >
-            Tap to close
-          </button>
+          <div className={`confirmBtns rankPromotionCloseSlot${isCloseReady ? " is-ready" : ""}`}>
+            <button
+              className="btn btn-accent"
+              id="rankPromotionCloseBtn"
+              type="button"
+              onClick={handleCloseButtonClick}
+              disabled={!isCloseReady}
+              aria-hidden={!isCloseReady}
+              tabIndex={isCloseReady ? 0 : -1}
+            >
+              Close
+            </button>
+            <button
+              className="rankPromotionTapCloseText"
+              type="button"
+              onClick={handleCloseButtonClick}
+              disabled={!isCloseReady}
+              aria-hidden={!isCloseReady}
+              tabIndex={isCloseReady ? 0 : -1}
+            >
+              Tap to close
+            </button>
         </div>
       </div>
     </div>

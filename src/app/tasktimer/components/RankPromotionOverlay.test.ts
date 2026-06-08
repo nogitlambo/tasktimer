@@ -29,5 +29,16 @@ describe("RankPromotionOverlay", () => {
     expect(html).toContain('class="rankPromotionShieldClipLayer"');
     expect(html).toContain('id="rankPromotionText"');
     expect(html).toContain('id="rankPromotionCloseBtn"');
+    expect(html).toContain('class="rankPromotionTitleRibbon"');
+    expect(html).toContain('<div class="rankPromotionContent"><h2 class="rankPromotionTitleRibbon">You&#x27;ve been promoted!</h2><div class="modal rankPromotionModal');
+    expect(html).toContain('</div></div></div><div class="confirmBtns rankPromotionCloseSlot"><button class="btn btn-accent" id="rankPromotionCloseBtn"');
+
+    const titleIndex = html.indexOf("rankPromotionTitleRibbon");
+    const modalIndex = html.indexOf("rankPromotionModal");
+    const closeSlotIndex = html.indexOf("rankPromotionCloseSlot");
+
+    expect(titleIndex).toBeGreaterThan(-1);
+    expect(modalIndex).toBeGreaterThan(titleIndex);
+    expect(closeSlotIndex).toBeGreaterThan(modalIndex);
   });
 });
