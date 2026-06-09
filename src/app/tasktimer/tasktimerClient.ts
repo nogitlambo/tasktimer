@@ -303,6 +303,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   const scheduleRuntime = createTaskTimerScheduleRuntime({
     state: scheduleState,
     getTasks: () => taskDataState.get("tasks"),
+    getOptimalProductivityDays: () => preferencesState.get("optimalProductivityDays"),
     save: () => runtimeActions.save(),
     render: () => render(),
   });

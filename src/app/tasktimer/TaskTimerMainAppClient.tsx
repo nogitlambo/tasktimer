@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -47,6 +47,7 @@ import {
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
+  formatWeeklyLeaderboardUtcPeriodLabel,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
@@ -134,6 +135,10 @@ function formatLeaderboardXp(xpRaw: number): string {
 function formatLeaderboardTrend(xpRaw: number): string {
   const xp = Math.max(0, Math.floor(xpRaw || 0));
   return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "No gain yet";
+}
+
+function formatWeeklyLeaderboardPeriod(): string {
+  return formatWeeklyLeaderboardUtcPeriodLabel();
 }
 
 function formatLeaderboardTaskCount(countRaw: number): string {
@@ -330,6 +335,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpCountAnimationStartedRef = useRef(false);
+  const leaderboardAchievementBadgeTimerRef = useRef<number | null>(null);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -348,6 +354,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     displayedXpRef.current = displayedXp;
   }, [displayedXp]);
+
+  useEffect(() => {
+    return () => {
+      if (leaderboardAchievementBadgeTimerRef.current != null) {
+        window.clearTimeout(leaderboardAchievementBadgeTimerRef.current);
+        leaderboardAchievementBadgeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!desktopInsigniaUpgrade) return;
@@ -857,7 +872,23 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const currentUserRankLabel = hydratedCurrentUserEntry ? getLeaderboardRankLabel(hydratedCurrentUserEntry) : "your rank";
 
   const closeLeaderboardPositionModal = () => {
+    if (leaderboardAchievementBadgeTimerRef.current != null) {
+      window.clearTimeout(leaderboardAchievementBadgeTimerRef.current);
+      leaderboardAchievementBadgeTimerRef.current = null;
+    }
     setSelectedLeaderboardProfile(null);
+  };
+
+  const handleLeaderboardAchievementBadgeClick = (event: MouseEvent<HTMLElement>) => {
+    if (!window.matchMedia("(hover: none), (pointer: coarse)").matches) return;
+    const img = event.currentTarget.querySelector(".achievementBadgeImg") as HTMLElement | null;
+    if (!img) return;
+    img.classList.add("isMagnified");
+    if (leaderboardAchievementBadgeTimerRef.current != null) window.clearTimeout(leaderboardAchievementBadgeTimerRef.current);
+    leaderboardAchievementBadgeTimerRef.current = window.setTimeout(() => {
+      img.classList.remove("isMagnified");
+      leaderboardAchievementBadgeTimerRef.current = null;
+    }, 2000);
   };
 
   const openWeeklyLeaderboardProfile = (profile: LeaderboardProfile) => {
@@ -1157,6 +1188,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <div className="leaderboardWeeklyIntro">
                     <p className="dashboardCardEyebrow">Weekly ladder</p>
                     <p className="leaderboardHeroMeta">Top XP earners this week</p>
+                    <p className="leaderboardHeroMeta">{formatWeeklyLeaderboardPeriod()}</p>
                   </div>
                   {leaderboardState === "ready" && hasWeeklyRows ? (
                     <>
@@ -1501,10 +1533,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             key={`leaderboard-achievement-slot-${index}`}
                             title={isEliteLauncherUnlocked ? "Elite Launcher: 100 tasks completed" : undefined}
                             aria-hidden="true"
+                            onClick={isEliteLauncherUnlocked ? handleLeaderboardAchievementBadgeClick : undefined}
                           >
                             {isEliteLauncherUnlocked ? (
                               <AppImg
-                                className="leaderboardPositionAchievementSlotImg"
+                                className="leaderboardPositionAchievementSlotImg achievementBadgeImg"
                                 src="/icons/achievement/elite_launcher-100.webp"
                                 alt=""
                               />

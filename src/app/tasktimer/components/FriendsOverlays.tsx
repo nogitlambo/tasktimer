@@ -73,7 +73,7 @@ export default function FriendsOverlays() {
                 <span className="friendUserSummaryAchievementSlot">
                   <AppImg
                     id="friendProfileAchievementEliteLauncherImg"
-                    className="friendUserSummaryAchievementSlotImg"
+                    className="friendUserSummaryAchievementSlotImg achievementBadgeImg"
                     src="/icons/achievement/elite_launcher-100.webp"
                     alt=""
                     title="Elite Launcher: 100 tasks completed"
@@ -93,19 +93,19 @@ export default function FriendsOverlays() {
               <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
             </div>
           </div>
-          <div className="friendUserSummaryStats" aria-label="Friend summary">
-            <div className="friendUserSummaryStatsTitle">STATS</div>
+          <div className="leaderboardPositionStats" aria-label="User stats">
+            <div className="leaderboardPositionStatsTitle">User Stats</div>
             <div>
               <strong id="friendProfileXp">0</strong>
-              <span>XP</span>
+              <span>Total XP</span>
             </div>
             <div>
               <strong id="friendProfileSharedTime">0m</strong>
-              <span>Logged</span>
+              <span>Time Logged</span>
             </div>
             <div>
-              <strong id="friendProfileSharedAverage">0m</strong>
-              <span>Weekly avg</span>
+              <strong id="friendProfileCompletedTaskCount">0</strong>
+              <span>Tasks Completed</span>
             </div>
           </div>
           <div className="confirmBtns friendProfileCloseRow">

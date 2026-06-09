@@ -29,7 +29,7 @@ import {
   syncLegacyPlannedStartFields,
   type ScheduleDay,
 } from "./schedule-placement";
-import type { DashboardWeekStart } from "./historyChart";
+import { normalizeDashboardWeekStart, type DashboardWeekStart } from "./historyChart";
 
 import {
   normalizeTaskStatusState,
@@ -57,6 +57,7 @@ export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "lime";
   menuButtonStyle: "square";
+  weekStarting?: DashboardWeekStart;
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
   taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
@@ -2134,11 +2135,15 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   if (!ref) return null;
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  const data = snap.data();
+  return normalizeUserPreferencesDocument(snap.data());
+}
+
+export function normalizeUserPreferencesDocument(data: Record<string, unknown>): UserPreferencesV1 {
   return {
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
     menuButtonStyle: "square",
+    weekStarting: normalizeDashboardWeekStart(data.weekStarting),
     startupModule: normalizeStartupModule(data.startupModule),
     taskView: "tile",
     taskOrderBy: normalizeTaskOrderBy(data.taskOrderBy),

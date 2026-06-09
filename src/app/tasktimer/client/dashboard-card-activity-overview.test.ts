@@ -85,6 +85,47 @@ describe("dashboard activity overview model", () => {
     expect(model.visibleTotalMs).toBe(60 * 60000);
   });
 
+  it("aligns the fortnight and current-week total to a non-Monday week start", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 9, 9).getTime(), name: "Focus", ms: 15 * 60000 },
+          { ts: new Date(2026, 4, 10, 9).getTime(), name: "Focus", ms: 20 * 60000 },
+          { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 40 * 60000 },
+        ],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "sun",
+      nowMs: new Date(2026, 4, 13, 10).getTime(),
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.days.map((day) => day.key)).toEqual([
+      "2026-05-03",
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-09",
+      "2026-05-10",
+      "2026-05-11",
+      "2026-05-12",
+      "2026-05-13",
+      "2026-05-14",
+      "2026-05-15",
+      "2026-05-16",
+    ]);
+    expect(model.days[6]?.totalMs).toBe(15 * 60000);
+    expect(model.days[7]?.totalMs).toBe(20 * 60000);
+    expect(model.days[10]?.totalMs).toBe(40 * 60000);
+    expect(model.previousWeekTotalMs).toBe(15 * 60000);
+    expect(model.weekTotalMs).toBe(60 * 60000);
+  });
+
   it("adds running task elapsed to today's bucket when no projected live session exists", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [task({ id: "live", running: true })],

@@ -234,6 +234,97 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalled();
   });
 
+  it("does not repair an intentionally unscheduled task from a stale shadow schedule", async () => {
+    saveTasks([
+      task("task-1", "Focus", {
+        taskType: "recurring",
+        timeGoalEnabled: true,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+        plannedStartOpenEnded: false,
+      }),
+    ]);
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [
+        task("task-1", "Focus", {
+          taskType: "recurring",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "week",
+          timeGoalMinutes: 120,
+          plannedStartDay: null,
+          plannedStartTime: null,
+          plannedStartByDay: null,
+          plannedStartOpenEnded: true,
+        }),
+      ],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: { ...buildDefaultCloudPreferences(), updatedAtMs: Date.now() },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    const hydratedTask = (loadTasks() || [])[0];
+    expect(hydratedTask).toBeTruthy();
+    expect(hydratedTask?.plannedStartByDay).toBeNull();
+    expect(hydratedTask?.plannedStartTime).toBeNull();
+    expect(hydratedTask?.plannedStartOpenEnded).toBe(true);
+  });
+
+  it("does not repair a cleared task schedule from a stale shadow schedule", async () => {
+    saveTasks([
+      task("task-1", "Focus", {
+        taskType: "recurring",
+        timeGoalEnabled: true,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+        plannedStartOpenEnded: false,
+      }),
+    ]);
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [
+        task("task-1", "Focus", {
+          taskType: "recurring",
+          timeGoalEnabled: false,
+          timeGoalValue: 0,
+          timeGoalMinutes: 0,
+          milestonesEnabled: false,
+          milestones: [],
+          plannedStartDay: null,
+          plannedStartTime: null,
+          plannedStartByDay: null,
+          plannedStartOpenEnded: true,
+        }),
+      ],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: { ...buildDefaultCloudPreferences(), updatedAtMs: Date.now() },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    const hydratedTask = (loadTasks() || [])[0];
+    expect(hydratedTask).toBeTruthy();
+    expect(hydratedTask?.timeGoalEnabled).toBe(false);
+    expect(hydratedTask?.plannedStartByDay).toBeNull();
+    expect(hydratedTask?.plannedStartTime).toBeNull();
+    expect(hydratedTask?.plannedStartOpenEnded).toBe(true);
+  });
+
   it("backfills rewards from history when stored rewards are missing", async () => {
     cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
       plan: "free",

@@ -23,7 +23,7 @@ import {
   readStoredCustomAvatarSrc,
 } from "./accountProfileStorage";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./avatarCatalog";
-import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
+import type { DashboardWeekStart } from "./historyChart";
 import { getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
 
@@ -90,6 +90,7 @@ type LeaderboardIdentityFields = Pick<
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
   const id = String(avatar?.id || "").trim();
   const src = String(avatar?.src || "").trim();
@@ -209,25 +210,51 @@ function buildProjectedHistory(historyByTaskId: HistoryByTaskId, liveSessionsByT
   return projected;
 }
 
-function sumWeeklyXpGain(rewards: RewardProgressV1, weekStart: DashboardWeekStart, nowValue: number): number {
-  const weekStartMs = startOfCurrentWeekMs(nowValue, weekStart);
+export function getWeeklyLeaderboardUtcPeriod(nowMs = Date.now()): { startMs: number; endMs: number } {
+  const nowDate = new Date(normalizeInt(nowMs) || Date.now());
+  const startMs = Date.UTC(
+    nowDate.getUTCFullYear(),
+    nowDate.getUTCMonth(),
+    nowDate.getUTCDate() - nowDate.getUTCDay(),
+    0,
+    0,
+    0,
+    0
+  );
+  return {
+    startMs,
+    endMs: startMs + 7 * DAY_MS - 1,
+  };
+}
+
+export function formatWeeklyLeaderboardUtcPeriodLabel(nowMs = Date.now()): string {
+  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `Week period from ${formatter.format(new Date(period.startMs))} to ${formatter.format(new Date(period.endMs))} UTC`;
+}
+
+function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {
   return normalizeRewardProgress(rewards).awardLedger.reduce((sum, entry) => {
     const ts = normalizeInt(entry?.ts);
     const xp = normalizeInt(entry?.xp);
-    if (!ts || ts < weekStartMs || ts > nowValue || xp <= 0) return sum;
+    if (!ts || ts < period.startMs || ts > period.endMs || xp <= 0) return sum;
     return sum + xp;
   }, 0);
 }
 
-function sumWeeklyFocusMs(projectedHistory: HistoryByTaskId, weekStart: DashboardWeekStart, nowValue: number): number {
-  const weekStartMs = startOfCurrentWeekMs(nowValue, weekStart);
+function sumWeeklyFocusMs(projectedHistory: HistoryByTaskId, period: { startMs: number; endMs: number }): number {
   return Object.values(projectedHistory).reduce((sum, entries) => {
     if (!Array.isArray(entries)) return sum;
     return (
       sum +
       entries.reduce((entrySum, entry) => {
         const ts = normalizeInt(entry?.ts);
-        if (!ts || ts < weekStartMs || ts > nowValue) return entrySum;
+        if (!ts || ts < period.startMs || ts > period.endMs) return entrySum;
         return entrySum + normalizeInt(entry?.ms);
       }, 0)
     );
@@ -325,7 +352,7 @@ export function buildLeaderboardMetricsSnapshot(input: {
   weekStarting?: DashboardWeekStart;
 }): LeaderboardMetricsSnapshot {
   const nowValue = normalizeInt(input.nowMs || Date.now()) || Date.now();
-  const weekStarting = input.weekStarting || "mon";
+  const weeklyPeriod = getWeeklyLeaderboardUtcPeriod(nowValue);
   const rewards = normalizeRewardProgress(input.rewards);
   const projectedHistory = buildProjectedHistory(input.historyByTaskId || {}, input.liveSessionsByTaskId || {});
   const totalFocusMs = Object.values(projectedHistory).reduce((sum, entries) => {
@@ -336,7 +363,7 @@ export function buildLeaderboardMetricsSnapshot(input: {
         : 0)
     );
   }, 0);
-  const weeklyFocusMs = sumWeeklyFocusMs(projectedHistory, weekStarting, nowValue);
+  const weeklyFocusMs = sumWeeklyFocusMs(projectedHistory, weeklyPeriod);
 
   return {
     rewardCurrentRankId: normalizeString(rewards.currentRankId, 120),
@@ -345,7 +372,7 @@ export function buildLeaderboardMetricsSnapshot(input: {
     streakDays: getRewardStreakLength(projectedHistory),
     totalFocusMs,
     weeklyFocusMs,
-    weeklyXpGain: sumWeeklyXpGain(rewards, weekStarting, nowValue),
+    weeklyXpGain: sumWeeklyXpGain(rewards, weeklyPeriod),
   };
 }
 

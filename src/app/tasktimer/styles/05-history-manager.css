@@ -653,10 +653,9 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 .hmDelBtn{
   width:34px;
   height:34px;
-  border-radius:10px;
-  border:1px solid rgba(255,77,77,.35);
-  background: rgba(255,77,77,.12);
-  color:#ffd4d4;
+  border:none;
+  background: transparent;
+  color:inherit;
   cursor:pointer;
   display:inline-flex;
   align-items:center;
@@ -666,7 +665,18 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   touch-action:manipulation;
 }
 
-.hmDelBtn:hover{ background: rgba(255,77,77,.16); }
+.hmDelBtn:hover,
+.hmDelBtn:focus-visible{
+  background: transparent;
+  outline:none;
+}
+
+.hmDelIcon{
+  width:22px;
+  height:22px;
+  display:block;
+  object-fit:contain;
+}
 
 @media (max-width: 780px){
 .hmTable{

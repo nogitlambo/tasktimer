@@ -38,6 +38,8 @@ import {
   buildGlobalLeaderboardRows,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
+  formatWeeklyLeaderboardUtcPeriodLabel,
+  getWeeklyLeaderboardUtcPeriod,
   getLeaderboardAvatarSrc,
   getLeaderboardResolvedRank,
   loadLeaderboardScreenData,
@@ -495,11 +497,57 @@ describe("buildLeaderboardMetricsSnapshot", () => {
       liveSessionsByTaskId: {},
       rewards: null,
       nowMs,
-      weekStarting: "mon",
     });
 
     expect(snapshot.totalFocusMs).toBe(65 * 60 * 1000);
     expect(snapshot.weeklyFocusMs).toBe(25 * 60 * 1000);
+  });
+
+  it("uses Sunday 00:00 UTC through Saturday 23:59:59.999 UTC for weekly leaderboard metrics", () => {
+    const nowMs = Date.parse("2026-05-23T23:59:59.999Z");
+    const beforeWeekTs = Date.parse("2026-05-16T23:59:59.999Z");
+    const weekStartTs = Date.parse("2026-05-17T00:00:00.000Z");
+    const weekEndTs = Date.parse("2026-05-23T23:59:59.999Z");
+    const afterWeekTs = Date.parse("2026-05-24T00:00:00.000Z");
+
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {
+        a: [
+          { ts: beforeWeekTs, ms: 10 * 60 * 1000, name: "Before week" },
+          { ts: weekStartTs, ms: 20 * 60 * 1000, name: "Week start" },
+          { ts: weekEndTs, ms: 30 * 60 * 1000, name: "Week end" },
+          { ts: afterWeekTs, ms: 40 * 60 * 1000, name: "After week" },
+        ],
+      },
+      liveSessionsByTaskId: {},
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        awardLedger: [
+          { ts: beforeWeekTs, dayKey: "2026-05-16", taskId: "a", xp: 10, baseXp: 10, multiplier: 1, eligibleMs: 1, reason: "session", sourceKey: "before" },
+          { ts: weekStartTs, dayKey: "2026-05-17", taskId: "a", xp: 20, baseXp: 20, multiplier: 1, eligibleMs: 1, reason: "session", sourceKey: "start" },
+          { ts: weekEndTs, dayKey: "2026-05-23", taskId: "a", xp: 30, baseXp: 30, multiplier: 1, eligibleMs: 1, reason: "session", sourceKey: "end" },
+          { ts: afterWeekTs, dayKey: "2026-05-24", taskId: "a", xp: 40, baseXp: 40, multiplier: 1, eligibleMs: 1, reason: "session", sourceKey: "after" },
+        ],
+      },
+      nowMs,
+      weekStarting: "mon",
+    });
+
+    expect(snapshot.totalFocusMs).toBe(100 * 60 * 1000);
+    expect(snapshot.weeklyFocusMs).toBe(50 * 60 * 1000);
+    expect(snapshot.weeklyXpGain).toBe(50);
+  });
+
+  it("formats the weekly leaderboard UTC period label with compact dates", () => {
+    const period = getWeeklyLeaderboardUtcPeriod(Date.parse("2026-06-09T12:00:00.000Z"));
+
+    expect(period).toEqual({
+      startMs: Date.parse("2026-06-07T00:00:00.000Z"),
+      endMs: Date.parse("2026-06-13T23:59:59.999Z"),
+    });
+    expect(formatWeeklyLeaderboardUtcPeriodLabel(Date.parse("2026-06-09T12:00:00.000Z"))).toBe(
+      "Week period from Jun 7, 2026 to Jun 13, 2026 UTC"
+    );
   });
 
   it("derives completed task count from reward completed sessions", () => {

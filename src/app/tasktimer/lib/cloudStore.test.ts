@@ -6,6 +6,7 @@ import {
   buildCanonicalHistoryEntryDocId,
   buildIdentitySyncResponseError,
   isLargeImplicitHistoryDelete,
+  normalizeUserPreferencesDocument,
   planHistorySyncOperations,
 } from "./cloudStore";
 import type { Task } from "./types";
@@ -39,6 +40,25 @@ describe("buildIdentitySyncResponseError", () => {
 
     expect(error.message).toBe("Could not reach account identity sync endpoint. (status 404)");
     expect(error.status).toBe(404);
+  });
+});
+
+describe("normalizeUserPreferencesDocument", () => {
+  it("preserves the stored week start preference from cloud documents", () => {
+    expect(
+      normalizeUserPreferencesDocument({
+        weekStarting: "sun",
+        updatedAtMs: 123,
+      }).weekStarting
+    ).toBe("sun");
+  });
+
+  it("falls back to Monday for invalid cloud week start values", () => {
+    expect(
+      normalizeUserPreferencesDocument({
+        weekStarting: "funday",
+      }).weekStarting
+    ).toBe("mon");
   });
 });
 

@@ -424,7 +424,7 @@
 }
 
 #friendProfileModal .friendProfileCloseRow{
-  justify-content: flex-end !important;
+  justify-content: space-between !important;
 }
 
 @media (max-width: 980px){
@@ -1842,22 +1842,29 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   width: calc(100% - 66px);
   max-width: calc(100% - 66px);
   height: 48px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionAchievementSlot{
+  position: relative;
   width: 48px;
   height: 48px;
   display: grid;
   place-items: center;
+  overflow: visible;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionAchievementSlotImg{
+  position: relative;
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
   object-position: center;
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform 150ms ease;
+  z-index: 1;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModalIdentityText{
@@ -1914,7 +1921,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   color: rgba(170, 176, 184, 0.82);
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats{
+#leaderboardPositionOverlay .leaderboardPositionStats,
+#friendProfileModal .leaderboardPositionStats{
   position: relative;
   isolation: isolate;
   display: grid;
@@ -1931,25 +1939,30 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats::before,
-#leaderboardPositionOverlay .leaderboardPositionStats::after{
+#leaderboardPositionOverlay .leaderboardPositionStats::after,
+#friendProfileModal .leaderboardPositionStats::before,
+#friendProfileModal .leaderboardPositionStats::after{
   content: "";
   position: absolute;
   z-index: 0;
   pointer-events: none;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats::before{
+#leaderboardPositionOverlay .leaderboardPositionStats::before,
+#friendProfileModal .leaderboardPositionStats::before{
   inset: 7px;
   border: 1px solid rgba(170, 176, 184, .2);
   box-shadow: inset 0 0 18px rgba(0, 0, 0, .38);
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats::after{
+#leaderboardPositionOverlay .leaderboardPositionStats::after,
+#friendProfileModal .leaderboardPositionStats::after{
   content: none;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStatsTitle{
+#leaderboardPositionOverlay .leaderboardPositionStatsTitle,
+#friendProfileModal .leaderboardPositionStatsTitle{
   position: relative;
   z-index: 1;
   grid-column: 1 / -1;
@@ -1967,7 +1980,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   text-transform: uppercase;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats > div{
+#leaderboardPositionOverlay .leaderboardPositionStats > div,
+#friendProfileModal .leaderboardPositionStats > div{
   position: relative;
   z-index: 1;
   min-width: 0;
@@ -1981,11 +1995,13 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   padding: 3px clamp(3px, 2.4vw, 10px) 0;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats > div:not(.leaderboardPositionStatsTitle) + div:not(.leaderboardPositionStatsTitle){
+#leaderboardPositionOverlay .leaderboardPositionStats > div:not(.leaderboardPositionStatsTitle) + div:not(.leaderboardPositionStatsTitle),
+#friendProfileModal .leaderboardPositionStats > div:not(.leaderboardPositionStatsTitle) + div:not(.leaderboardPositionStatsTitle){
   border-left: 1px solid rgba(170, 176, 184, .34);
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats strong{
+#leaderboardPositionOverlay .leaderboardPositionStats strong,
+#friendProfileModal .leaderboardPositionStats strong{
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -2007,7 +2023,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   white-space: nowrap;
 }
 
-#leaderboardPositionOverlay .leaderboardPositionStats span{
+#leaderboardPositionOverlay .leaderboardPositionStats span,
+#friendProfileModal .leaderboardPositionStats span{
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -2200,22 +2217,52 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   width: calc(100% - 66px);
   max-width: calc(100% - 66px);
   height: 48px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #friendProfileModal .friendUserSummaryAchievementSlot{
+  position: relative;
   width: 48px;
   height: 48px;
   display: grid;
   place-items: center;
+  overflow: visible;
 }
 
 #friendProfileModal .friendUserSummaryAchievementSlotImg{
+  position: relative;
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
   object-position: center;
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform 150ms ease;
+  z-index: 1;
+}
+
+#leaderboardPositionOverlay .achievementBadgeImg.isMagnified,
+#friendProfileModal .achievementBadgeImg.isMagnified{
+  transform: scale(1.5);
+  z-index: 4;
+}
+
+@media (hover: hover) and (pointer: fine){
+  #leaderboardPositionOverlay .leaderboardPositionAchievementSlot:hover .achievementBadgeImg,
+  #leaderboardPositionOverlay .achievementBadgeImg:focus-visible,
+  #friendProfileModal .friendUserSummaryAchievementSlot:hover .achievementBadgeImg,
+  #friendProfileModal .achievementBadgeImg:focus-visible{
+    transform: scale(1.5);
+    z-index: 4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #leaderboardPositionOverlay .achievementBadgeImg,
+  #friendProfileModal .achievementBadgeImg{
+    transition: none;
+  }
 }
 
 #friendProfileModal .friendUserSummaryIdentityText{
@@ -2307,121 +2354,6 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
 #friendProfileModal .friendProfileCloseRow .friendUserSummaryRemoveBtn{
   margin: 0;
-}
-
-#friendProfileModal .friendUserSummaryStats{
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin: 0 0 10px;
-  padding: 18px 16px 20px;
-  border: 0;
-  border-radius: 0;
-  background: linear-gradient(180deg, rgba(20, 24, 26, .92), rgba(7, 10, 12, .96));
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, .32);
-  clip-path: polygon(14px 0, calc(50% - 56px) 0, calc(50% - 46px) 8px, calc(50% + 46px) 8px, calc(50% + 56px) 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, calc(50% + 56px) 100%, calc(50% + 46px) calc(100% - 8px), calc(50% - 46px) calc(100% - 8px), calc(50% - 56px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
-}
-
-#friendProfileModal .friendUserSummaryStats::before,
-#friendProfileModal .friendUserSummaryStats::after{
-  content: "";
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-}
-
-#friendProfileModal .friendUserSummaryStats::before{
-  inset: 7px;
-  border: 1px solid rgba(170, 176, 184, .2);
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, .38);
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
-}
-
-#friendProfileModal .friendUserSummaryStats::after{
-  content: none;
-}
-
-#friendProfileModal .friendUserSummaryStatsTitle{
-  position: relative;
-  z-index: 1;
-  grid-column: 1 / -1;
-  margin: 0 0 16px;
-  padding: 0 0 12px;
-  border-bottom: 1px solid rgba(170, 176, 184, 0.22);
-  text-align: center;
-  color: rgba(247, 250, 252, .96);
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: clamp(13px, 4vw, 16px);
-  font-weight: 800;
-  letter-spacing: .1em;
-  line-height: 1.1;
-  text-shadow: 0 0 10px rgba(255, 255, 255, .18);
-  text-transform: uppercase;
-}
-
-#friendProfileModal .friendUserSummaryStats > div{
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  container-type: inline-size;
-  display: grid;
-  grid-template-rows: minmax(clamp(28px, 30cqw, 34px), auto) auto;
-  justify-items: center;
-  align-items: center;
-  align-content: center;
-  gap: 7px;
-  padding: 3px clamp(3px, 2.4vw, 10px) 0;
-}
-
-#friendProfileModal .friendUserSummaryStats > div:not(.friendUserSummaryStatsTitle) + div:not(.friendUserSummaryStatsTitle){
-  border-left: 1px solid rgba(170, 176, 184, .34);
-}
-
-#friendProfileModal .friendUserSummaryStats strong{
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: clamp(28px, 30cqw, 34px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-family: var(--font-tight);
-  font-size: clamp(12px, 27cqw, 28px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: .03em;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, .38),
-    0 0 13px rgba(255, 255, 255, .15);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#friendProfileModal .friendUserSummaryStats span{
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  color: rgba(190, 198, 210, .78);
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: clamp(7px, 11cqw, 11px);
-  font-weight: 700;
-  line-height: 1.15;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-shadow: 0 0 9px rgba(255, 255, 255, .08);
-  white-space: nowrap;
-}
-
-#friendProfileModal .friendUserSummaryStats #friendProfileXp{
-  font-size: clamp(11px, 22cqw, 24px);
-  letter-spacing: .05em;
-  text-transform: uppercase;
 }
 
 #friendProfileModal .confirmBtns{

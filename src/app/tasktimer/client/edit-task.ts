@@ -18,6 +18,7 @@ import {
   formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
+  formatScheduleDayLabel,
   getTaskScheduledDays,
   getLocalScheduleDay,
   hasTaskMixedScheduleTimes,
@@ -63,6 +64,24 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
   }
 
   if (task.timeGoalEnabled && task.timeGoalPeriod === "week" && Number(task.timeGoalMinutes || 0) > 0) {
+    const shouldGenerateFromProductivityDays = !normalizedByDay || Object.keys(normalizedByDay).length === 0;
+    if (shouldGenerateFromProductivityDays) {
+      const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
+      if (nextByDay) {
+        syncLegacyPlannedStartFields(task, nextByDay);
+        return;
+      }
+    } else {
+      const scheduledDays = SCHEDULE_DAY_ORDER.filter((day) => !!normalizeScheduleStoredTime(normalizedByDay[day]));
+      const nextByDay = Object.fromEntries(
+        scheduledDays.map((day) => [day, normalizedPlannedStartTime])
+      ) as TaskPlannedStartByDay;
+      syncLegacyPlannedStartFields(task, nextByDay);
+      return;
+    }
+  }
+
+  if (sourceTask?.plannedStartOpenEnded && !normalizedByDay) {
     const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
     if (nextByDay) {
       syncLegacyPlannedStartFields(task, nextByDay);
@@ -102,7 +121,7 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
     return;
   }
 
-  const sourceByDay = normalizeTaskPlannedStartByDay(sourceTask?.plannedStartByDay);
+  const sourceByDay = sourceTask?.plannedStartOpenEnded ? null : normalizeTaskPlannedStartByDay(sourceTask?.plannedStartByDay);
   if (sourceByDay) {
     const scheduledDays = getTaskScheduledDays(sourceTask || task);
     const nextByDay = Object.fromEntries(
@@ -142,7 +161,7 @@ export function taskHasMeaningfulScheduleConfig(task: Task | null | undefined) {
   if (!task) return false;
   if (!!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0) return true;
   if (!!task.milestonesEnabled || (Array.isArray(task.milestones) && task.milestones.length > 0)) return true;
-  if (!!task.plannedStartOpenEnded) return true;
+  if (!!task.plannedStartOpenEnded) return !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
   if (!!normalizeTaskPlannedStartByDay(task.plannedStartByDay)) return true;
   if (!!normalizeScheduleStoredTime(task.plannedStartTime)) return true;
   if (task.taskType === "once-off" && (!!task.onceOffDay || !!task.onceOffTargetDate || !!task.plannedStartDay)) return true;
@@ -195,8 +214,49 @@ export function clearTaskScheduleConfig(task: Task) {
   task.plannedStartDay = null;
   task.plannedStartTime = null;
   task.plannedStartByDay = null;
-  task.plannedStartOpenEnded = false;
+  task.plannedStartOpenEnded = true;
   task.plannedStartPushRemindersEnabled = false;
+}
+
+function normalizeScheduleDayList(daysRaw: readonly unknown[] | null | undefined): ScheduleDay[] {
+  const rawDays = Array.isArray(daysRaw) ? daysRaw : [];
+  return SCHEDULE_DAY_ORDER.filter((day) => rawDays.includes(day));
+}
+
+function getNonOptimalScheduledDays(task: Task, optimalProductivityDays: readonly unknown[] | null | undefined): ScheduleDay[] {
+  if (task.plannedStartOpenEnded) return [];
+  const optimalDays = new Set(normalizeScheduleDayList(optimalProductivityDays));
+  if (optimalDays.size === 0) return getTaskScheduledDays(task);
+  return getTaskScheduledDays(task).filter((day) => !optimalDays.has(day));
+}
+
+function formatScheduleDayList(days: readonly ScheduleDay[]) {
+  const labels = days.map(formatScheduleDayLabel);
+  if (labels.length <= 1) return labels[0] || "";
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
+function removeScheduledDaysFromTask(task: Task, daysToRemove: readonly ScheduleDay[]) {
+  const removeDays = new Set(daysToRemove);
+  if (removeDays.size === 0) return;
+  const byDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+  if (!byDay) return;
+  const nextByDay = { ...byDay };
+  removeDays.forEach((day) => {
+    delete nextByDay[day];
+  });
+  const hasRemainingSchedule = Object.keys(nextByDay).length > 0;
+  syncLegacyPlannedStartFields(task, hasRemainingSchedule ? nextByDay : null);
+  if (!hasRemainingSchedule) {
+    task.plannedStartOpenEnded = true;
+  }
+  if (task.taskType === "once-off" && !normalizeTaskPlannedStartByDay(task.plannedStartByDay)) {
+    task.onceOffDay = null;
+    task.onceOffTargetDate = null;
+    task.plannedStartDay = null;
+    task.plannedStartByDay = null;
+  }
 }
 
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
@@ -341,6 +401,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       minuteSelect: els.editPlannedStartMinuteSelect,
       meridiemSelect: els.editPlannedStartMeridiemSelect,
     });
+  }
+
+  function discardStaleRestoredScheduleForOpenEndedSource(task: Task, sourceTask: Task | null | undefined) {
+    if (!sourceTask?.plannedStartOpenEnded) return;
+    const restoredTime = normalizeScheduleStoredTime(task.plannedStartTime) || getEditPlannedStartTimeForDisplay(task) || "09:00";
+    task.plannedStartDay = null;
+    task.plannedStartByDay = null;
+    task.plannedStartTime = restoredTime;
+    task.plannedStartOpenEnded = false;
   }
 
   function syncEditTaskScheduleToggleUi() {
@@ -959,7 +1028,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     syncEditSaveAvailability(t);
   }
 
-  function finalizeEditSave(sourceTask: Task, t: Task) {
+  function finalizeEditSave(sourceTask: Task, t: Task, nonOptimalScheduleResolution?: "remove" | "keep") {
     const timeGoalEnabledForSave = true;
     t.color = normalizeTaskColor(t.color);
     const checkpointingEnabledForSave = timeGoalEnabledForSave && !!t.milestonesEnabled;
@@ -1001,6 +1070,17 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.onceOffTargetDate = null;
       normalizeRecurringScheduleFieldsForSave(t, sourceTask, ctx.getOptimalProductivityDays());
     }
+    const sourceWasOpenEndedWithoutScheduledDays = !!sourceTask.plannedStartOpenEnded && !normalizeTaskPlannedStartByDay(sourceTask.plannedStartByDay);
+    const nonOptimalScheduledDays = sourceWasOpenEndedWithoutScheduledDays ? [] : getNonOptimalScheduledDays(t, ctx.getOptimalProductivityDays());
+    if (nonOptimalScheduledDays.length > 0) {
+      if (!nonOptimalScheduleResolution) {
+        openNonOptimalScheduledDaysConfirm(sourceTask, t, nonOptimalScheduledDays);
+        return false;
+      }
+      if (nonOptimalScheduleResolution === "remove") {
+        removeScheduledDaysFromTask(t, nonOptimalScheduledDays);
+      }
+    }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
     const sourceTaskId = String(sourceTask.id || "");
@@ -1016,6 +1096,38 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     void ctx.syncSharedTaskSummariesForTask(String(sourceTask.id || "")).catch(() => {});
     ctx.render();
     return true;
+  }
+
+  function persistScheduledEditSave(sourceTask: Task, t: Task, nonOptimalScheduleResolution?: "remove" | "keep") {
+    if (!finalizeEditSave(sourceTask, t, nonOptimalScheduleResolution)) return false;
+    finishEditOverlayClose();
+    ctx.showActionConfirmation("Task saved.");
+    return true;
+  }
+
+  function openNonOptimalScheduledDaysConfirm(sourceTask: Task, draftTask: Task, nonOptimalScheduledDays: ScheduleDay[]) {
+    const dayText = formatScheduleDayList(nonOptimalScheduledDays);
+    const plural = nonOptimalScheduledDays.length === 1 ? "is" : "are";
+    const message = `${dayText} ${plural} not selected as optimal productivity ${
+      nonOptimalScheduledDays.length === 1 ? "day" : "days"
+    }. Remove those scheduled days from this task or keep them?`;
+    ctx.confirm("Non-Optimal Scheduled Days", message, {
+      okLabel: "Remove Days",
+      cancelLabel: "Cancel",
+      altLabel: "Keep Days",
+      okButtonClassName: "btn btn-accent",
+      altButtonClassName: "btn btn-ghost",
+      overlayClassName: "isNonOptimalScheduleConfirm",
+      onOk: () => {
+        ctx.closeConfirm();
+        persistScheduledEditSave(sourceTask, draftTask, "remove");
+      },
+      onAlt: () => {
+        ctx.closeConfirm();
+        persistScheduledEditSave(sourceTask, draftTask, "keep");
+      },
+      onCancel: () => ctx.closeConfirm(),
+    });
   }
 
   function persistResolvedEditSave(sourceTask: Task, resolvedTask: Task) {
@@ -1123,14 +1235,14 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
 
     ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      altLabel: "Continue",
-      okLabel: "Change",
+      altLabel: "Change",
+      okLabel: "Continue",
       altButtonClassName: "btn btn-ghost",
-      okButtonClassName: "btn btn-ghost",
+      okButtonClassName: "btn btn-accent",
       textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
-      onOk: handleMove,
-      onAlt: handleContinue,
+      onOk: handleContinue,
+      onAlt: handleMove,
       onCancel: () => ctx.closeConfirm(),
     });
   }
@@ -1551,11 +1663,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
           );
         }
       }
-      if (!finalizeEditSave(sourceTask, t)) return;
+      if (!persistScheduledEditSave(sourceTask, t)) return;
       didSave = true;
     }
-    finishEditOverlayClose();
-    if (didSave) ctx.showActionConfirmation("Task saved.");
+    if (!didSave) finishEditOverlayClose();
   }
 
   function handleEditNameInput() {
@@ -1598,6 +1709,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       editTaskScheduleEnabled = !!els.editTaskScheduleToggle?.checked;
       if (editTaskScheduleEnabled && editTaskScheduleRestoreSnapshot) {
         restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
+        discardStaleRestoredScheduleForOpenEndedSource(t, sourceTask);
         if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
         if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
         ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");
@@ -1619,6 +1731,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
           editTaskScheduleEnabled = true;
           if (editTaskScheduleRestoreSnapshot) {
             restoreEditScheduleFieldsFromSnapshot(t, editTaskScheduleRestoreSnapshot);
+            discardStaleRestoredScheduleForOpenEndedSource(t, sourceTask);
             if (els.editTaskOnceOffDaySelect) els.editTaskOnceOffDaySelect.value = String(t.onceOffDay || t.plannedStartDay || "mon");
             if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.value = String(Math.max(0, Number(t.timeGoalValue) || 0) || 0);
             ctx.setEditTaskDurationUnit(t.timeGoalUnit === "minute" ? "minute" : "hour");

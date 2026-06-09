@@ -675,12 +675,12 @@ describe("createTaskTimerAddTask", () => {
       "Schedule conflict",
       "",
       expect.objectContaining({
-        altLabel: "Continue",
-        okLabel: "Change",
+        altLabel: "Change",
+        okLabel: "Continue",
         textHtml:
           "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
-        okButtonClassName: "btn btn-ghost",
+        okButtonClassName: "btn btn-accent",
       })
     );
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
@@ -768,7 +768,7 @@ describe("createTaskTimerAddTask", () => {
     harness.submit();
 
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
-    confirmOpts?.onOk?.();
+    confirmOpts?.onAlt?.();
 
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       existingTask,
@@ -816,7 +816,7 @@ describe("createTaskTimerAddTask", () => {
     harness.submit();
 
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
-    confirmOpts?.onAlt?.();
+    confirmOpts?.onOk?.();
 
     expect(harness.ctx.setTasks).toHaveBeenCalledWith([
       expect.objectContaining({

@@ -741,14 +741,14 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
     ctx.confirm("Schedule conflict", "", {
       cancelLabel: "Cancel",
-      altLabel: "Continue",
-      okLabel: "Change",
+      altLabel: "Change",
+      okLabel: "Continue",
       altButtonClassName: "btn btn-ghost",
-      okButtonClassName: "btn btn-ghost",
+      okButtonClassName: "btn btn-accent",
       textHtml: messageHtml,
       overlayClassName: "isScheduleConflictConfirm",
-      onOk: handleMove,
-      onAlt: handleContinue,
+      onOk: handleContinue,
+      onAlt: handleMove,
       onCancel: () => ctx.closeConfirm(),
     });
   }

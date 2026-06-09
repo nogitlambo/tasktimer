@@ -58,6 +58,7 @@ export const SCHEDULE_COMPACT_TIME_RAIL_WIDTH_PX = 72;
 type CreateTaskTimerScheduleRuntimeOptions = {
   state: TaskTimerMutableStore<TaskTimerScheduleState>;
   getTasks: () => Task[];
+  getOptimalProductivityDays?: () => readonly unknown[];
   save: () => void;
   render: () => void;
 };
@@ -131,6 +132,22 @@ export function isScheduleRenderableTask(task: Task) {
 }
 
 export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleRuntimeOptions) {
+  function getNormalizedOptimalProductivityScheduleDays(): ScheduleDay[] {
+    const rawDays = options.getOptimalProductivityDays?.() || [];
+    const requestedDays = rawDays
+      .map(normalizeScheduleDay)
+      .filter((day): day is ScheduleDay => !!day);
+    const uniqueDays = SCHEDULE_DAY_ORDER.filter((day) => requestedDays.includes(day));
+    return uniqueDays.length > 0 ? uniqueDays : [...SCHEDULE_DAY_ORDER];
+  }
+
+  function getSchedulePlacementDaysForTask(task: Task, dropDay: ScheduleDay, sourceDay?: ScheduleDay | null): ScheduleDay[] {
+    if (sourceDay || task.plannedStartOpenEnded || hasTaskScheduledSlots(task)) {
+      return getSchedulePlacementDays(task, dropDay, sourceDay);
+    }
+    return getNormalizedOptimalProductivityScheduleDays();
+  }
+
   function getVisibleDays(visibleDayCountRaw: number = SCHEDULE_DAY_ORDER.length): ScheduleDay[] {
     const selectedDay = normalizeScheduleDay(options.state.get("selectedDay")) || "mon";
     const selectedDayIndex = Math.max(0, SCHEDULE_DAY_ORDER.indexOf(selectedDay));
@@ -164,7 +181,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
           if (!(durationMinutes > 0) || startMinutes == null || startMinutes + durationMinutes > 24 * 60) return;
           scheduled.push({ task, day: entry.day, startMinutes, durationMinutes });
         });
-      } else {
+      } else if (isScheduleRenderableTask(task)) {
         unscheduled.push({ task, canDrop: getScheduleTaskDurationMinutes(task) > 0 });
       }
     }
@@ -218,7 +235,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const durationMinutes = getScheduleTaskDurationMinutesForDay(task, day) || getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return;
     const startMinutes = snapScheduleMinutes(rawMinutes);
-    const placementDays = getSchedulePlacementDays(task, day, sourceDay);
+    const placementDays = getSchedulePlacementDaysForTask(task, day, sourceDay);
     const getPlacementDurationMinutes = (placementDay: ScheduleDay) =>
       getScheduleTaskDurationMinutesForDay(task, placementDay) || getScheduleTaskDurationMinutes(task);
     if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, getPlacementDurationMinutes)) return;
@@ -334,7 +351,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const durationMinutes =
       getScheduleTaskDurationMinutesForDay(task, dragPreviewDay) || getScheduleTaskDurationMinutes(task);
     if (!(durationMinutes > 0)) return null;
-    const placementDays = getSchedulePlacementDays(task, dragPreviewDay, dragSourceDay);
+    const placementDays = getSchedulePlacementDaysForTask(task, dragPreviewDay, dragSourceDay);
     const getPlacementDurationMinutes = (placementDay: ScheduleDay) =>
       getScheduleTaskDurationMinutesForDay(task, placementDay) || getScheduleTaskDurationMinutes(task);
     return {

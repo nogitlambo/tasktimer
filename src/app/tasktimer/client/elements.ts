@@ -91,7 +91,7 @@ const els = {
   friendProfileXp: documentRef.getElementById("friendProfileXp"),
   friendProfileSharedTaskCount: documentRef.getElementById("friendProfileSharedTaskCount"),
   friendProfileSharedTime: documentRef.getElementById("friendProfileSharedTime"),
-  friendProfileSharedAverage: documentRef.getElementById("friendProfileSharedAverage"),
+  friendProfileCompletedTaskCount: documentRef.getElementById("friendProfileCompletedTaskCount"),
   friendProfileMemberSince: documentRef.getElementById("friendProfileMemberSince"),
   friendProfileAchievementEliteLauncherImg: documentRef.getElementById("friendProfileAchievementEliteLauncherImg") as HTMLImageElement | null,
   friendProfileDeleteBtn: documentRef.getElementById("friendProfileDeleteBtn") as HTMLButtonElement | null,

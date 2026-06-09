@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildMomentumSummaryMessage, createTaskTimerDashboardRender, getPrimaryMomentumDriverKey } from "./dashboard-render";
 import { startOfCurrentWeekMs } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
@@ -173,6 +173,30 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityYAxis");
   register("dashboardActivityXAxis");
   register("dashboardActivityEmpty");
+  register("dashboardActivityTodayTrendIndicator");
+  register("dashboardActivityTodayHoursValue");
+  register("dashboardActivityTodayHoursMeta");
+  register("dashboardActivityTodayHoursProgressBar");
+  register("dashboardActivityTodayHoursProjectionMarker");
+  register("dashboardActivityTodayHoursProjectionFill");
+  register("dashboardActivityTodayHoursProgressFill");
+  register("dashboardActivityTodayHoursDelta");
+  register("dashboardActivityWeeklyTrendIndicator");
+  register("dashboardActivityWeeklyGoalsValue");
+  register("dashboardActivityWeeklyGoalsMeta");
+  register("dashboardActivityWeeklyGoalsProgressBar");
+  register("dashboardActivityWeeklyGoalsProjectionMarker");
+  register("dashboardActivityWeeklyGoalsProjectionFill");
+  register("dashboardActivityWeeklyGoalsProgressFill");
+  register("dashboardActivityWeeklyGoalsProgressText");
+  register("dashboardTodayTrendIndicator");
+  register("dashboardTodayHoursValue");
+  register("dashboardTodayHoursMeta");
+  register("dashboardTodayHoursProgressBar");
+  register("dashboardTodayHoursProjectionMarker");
+  register("dashboardTodayHoursProjectionFill");
+  register("dashboardTodayHoursProgressFill");
+  register("dashboardTodayHoursDelta");
 
   const headerXpCard = options?.includeHeaderXpCard ? new ElementStub() : null;
   const topbarXp = options?.includeHeaderXpCard ? new ElementStub() : null;
@@ -229,6 +253,7 @@ function createRenderHarness(
     hasEntitlement?: boolean;
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
+    weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
@@ -249,6 +274,22 @@ function createRenderHarness(
       dashboardActivityYAxis: byId.get("dashboardActivityYAxis"),
       dashboardActivityXAxis: byId.get("dashboardActivityXAxis"),
       dashboardActivityEmpty: byId.get("dashboardActivityEmpty"),
+      dashboardActivityTodayTrendIndicator: byId.get("dashboardActivityTodayTrendIndicator"),
+      dashboardActivityTodayHoursValue: byId.get("dashboardActivityTodayHoursValue"),
+      dashboardActivityTodayHoursMeta: byId.get("dashboardActivityTodayHoursMeta"),
+      dashboardActivityTodayHoursProgressBar: byId.get("dashboardActivityTodayHoursProgressBar"),
+      dashboardActivityTodayHoursProjectionMarker: byId.get("dashboardActivityTodayHoursProjectionMarker"),
+      dashboardActivityTodayHoursProjectionFill: byId.get("dashboardActivityTodayHoursProjectionFill"),
+      dashboardActivityTodayHoursProgressFill: byId.get("dashboardActivityTodayHoursProgressFill"),
+      dashboardActivityTodayHoursDelta: byId.get("dashboardActivityTodayHoursDelta"),
+      dashboardActivityWeeklyTrendIndicator: byId.get("dashboardActivityWeeklyTrendIndicator"),
+      dashboardActivityWeeklyGoalsValue: byId.get("dashboardActivityWeeklyGoalsValue"),
+      dashboardActivityWeeklyGoalsMeta: byId.get("dashboardActivityWeeklyGoalsMeta"),
+      dashboardActivityWeeklyGoalsProgressBar: byId.get("dashboardActivityWeeklyGoalsProgressBar"),
+      dashboardActivityWeeklyGoalsProjectionMarker: byId.get("dashboardActivityWeeklyGoalsProjectionMarker"),
+      dashboardActivityWeeklyGoalsProjectionFill: byId.get("dashboardActivityWeeklyGoalsProjectionFill"),
+      dashboardActivityWeeklyGoalsProgressFill: byId.get("dashboardActivityWeeklyGoalsProgressFill"),
+      dashboardActivityWeeklyGoalsProgressText: byId.get("dashboardActivityWeeklyGoalsProgressText"),
       dashboardWeeklyGoalsValue: byId.get("dashboardWeeklyGoalsValue"),
       dashboardWeeklyGoalsMeta: byId.get("dashboardWeeklyGoalsMeta"),
       dashboardWeeklyGoalsProgressBar: byId.get("dashboardWeeklyGoalsProgressBar"),
@@ -265,7 +306,7 @@ function createRenderHarness(
     getTasks: () => tasks,
     getHistoryByTaskId: () => options?.historyByTaskId || {},
     getDeletedTaskMeta: () => ({}),
-    getWeekStarting: () => "mon",
+    getWeekStarting: () => options?.weekStarting || "mon",
     getOptimalProductivityDays: () => ["mon", "wed", "fri"],
     getDashboardTimelineDensity: () => "medium",
     setDashboardTimelineDensity: () => {},
@@ -314,6 +355,10 @@ function createRenderHarness(
     },
   };
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("dashboard activity overview card", () => {
   it("renders one x-axis label for each fortnight day", () => {
@@ -386,6 +431,97 @@ describe("dashboard activity overview card", () => {
 
       expect(firstBar?.getAttribute("fill")).toBe("#00e5ff");
       expect(goalLine?.style.display).toBe("none");
+    } finally {
+      harness.restore();
+    }
+  });
+});
+
+describe("dashboard week-start alignment", () => {
+  const fixedNow = new Date(2026, 4, 13, 10).getTime();
+
+  function useFixedNow() {
+    vi.useFakeTimers();
+    vi.setSystemTime(fixedNow);
+  }
+
+  it("renders the heatmap range and weekday labels from a Sunday week start", () => {
+    useFixedNow();
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        weekStarting: "sun",
+        historyByTaskId: {
+          focus: [{ ts: new Date(2026, 4, 10, 9).getTime(), name: "Focus", ms: 30 * 60000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderHeat();
+      const weekdayHtml = harness.byId.get("dashboardHeatWeekdays")?.innerHTML || "";
+      const gridHtml = harness.byId.get("dashboardHeatCalendarGrid")?.innerHTML || "";
+
+      expect(weekdayHtml).toBe("<span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>");
+      expect(gridHtml.indexOf('dashboardHeatDayNum">19</span>')).toBeGreaterThan(-1);
+      expect(gridHtml.indexOf('dashboardHeatDayNum">19</span>')).toBeLessThan(gridHtml.indexOf('dashboardHeatDayNum">20</span>'));
+      expect(gridHtml).toContain('data-heat-date="2026-05-10"');
+      expect(gridHtml).toContain("10 May 2026");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("uses the configured week start for both weekly summary panels", () => {
+    useFixedNow();
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 240 })],
+      {
+        weekStarting: "sun",
+        historyByTaskId: {
+          focus: [
+            { ts: new Date(2026, 4, 9, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+            { ts: new Date(2026, 4, 10, 9).getTime(), name: "Focus", ms: 120 * 60000 },
+            { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 30 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderAll();
+
+      expect(harness.byId.get("dashboardWeeklyGoalsValue")?.textContent).toBe("2h 30m");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("2h 30m");
+      expect(harness.byId.get("dashboardWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal logged");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal logged");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("keeps Today summaries scoped to the local calendar day", () => {
+    useFixedNow();
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "day", timeGoalMinutes: 60 })],
+      {
+        weekStarting: "sun",
+        historyByTaskId: {
+          focus: [
+            { ts: new Date(2026, 4, 12, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+            { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 30 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderAll();
+
+      expect(harness.byId.get("dashboardTodayHoursValue")?.textContent).toBe("30m");
+      expect(harness.byId.get("dashboardActivityTodayHoursValue")?.textContent).toBe("30m");
+      expect(harness.byId.get("dashboardTodayHoursDelta")?.textContent).toBe("-30m vs this time yesterday");
+      expect(harness.byId.get("dashboardActivityTodayHoursDelta")?.textContent).toBe("-30m vs this time yesterday");
     } finally {
       harness.restore();
     }

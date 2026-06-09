@@ -360,7 +360,7 @@ function hasRenderableScheduleFields(task: Task | null | undefined): boolean {
 }
 
 function mergeMissingScheduleFromShadow(task: Task, shadowTask: Task | null | undefined): Task {
-  if (!shadowTask || hasRenderableScheduleFields(task) || !hasRenderableScheduleFields(shadowTask)) return task;
+  if (task.plannedStartOpenEnded || !shadowTask || hasRenderableScheduleFields(task) || !hasRenderableScheduleFields(shadowTask)) return task;
   const mergedTask = normalizeTaskShape({
     ...task,
     plannedStartDay: shadowTask.plannedStartDay ?? null,
@@ -374,6 +374,7 @@ function mergeMissingScheduleFromShadow(task: Task, shadowTask: Task | null | un
 
 function taskNeedsScheduleRepair(task: Task | null | undefined, shadowTask: Task | null | undefined): boolean {
   if (!task || !shadowTask) return false;
+  if (task.plannedStartOpenEnded) return false;
   return !hasRenderableScheduleFields(task) && hasRenderableScheduleFields(shadowTask);
 }
 

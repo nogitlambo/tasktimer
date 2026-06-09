@@ -197,7 +197,7 @@ export function renderHistoryManagerHtml(args: RenderArgs): HistoryManagerRender
               const dateTimeCell = isLiveSession ? `${formatDateTime(entry.ts)} (Live)` : formatDateTime(entry.ts);
               const deleteCell = isLiveSession
                 ? '<span class="hmNoteEmpty">-</span>'
-                : `<button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" aria-label="Delete log" title="Delete log">&#128465;</button>`;
+                : `<button class="hmDelBtn" type="button" data-task="${taskId}" data-key="${escapeHtmlHM(rowKey)}" aria-label="Delete log" title="Delete log"><img class="hmDelIcon" src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" /></button>`;
               const flashAttr = flashedRowId === rowId ? ' class="hmRowFlash" data-hm-row-flash="true"' : "";
               return `
                 <tr data-hm-row-id="${escapeHtmlHM(rowId)}"${flashAttr}>

@@ -114,9 +114,11 @@ function createEditHarness(overrides: {
   const editTaskScheduleSummaryText = {
     textContent: "",
   } as HTMLElement;
+  const editTaskScheduleToggle = { checked: false } as HTMLInputElement;
   const ctx = {
     els: {
       editName: { value: "Focus" } as HTMLInputElement,
+      editTaskScheduleToggle,
       editTaskDurationValueInput: {
         value: overrides.durationValue || "1",
         classList: { remove: vi.fn(), toggle: vi.fn() },
@@ -170,7 +172,7 @@ function createEditHarness(overrides: {
     showEditValidationError: vi.fn(),
     on: vi.fn(),
     escapeHtmlUI: (value: unknown) => String(value ?? ""),
-    getOptimalProductivityDays: () => overrides.productivityDays || ["mon"],
+    getOptimalProductivityDays: () => overrides.productivityDays || [...SCHEDULE_DAY_ORDER],
     syncEditTaskTimeGoalUi: vi.fn(),
     syncEditCheckpointAlertUi: vi.fn(),
     syncEditMilestoneSectionUi: vi.fn(),
@@ -292,13 +294,28 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     expect(editDraft.plannedStartTime).toBe("10:15");
   });
 
-  it("rewrites weekly recurring schedules from optimal productivity days on edit save", () => {
+  it("preserves existing weekly recurring schedule days on edit save", () => {
     const editDraft = task({
       taskType: "recurring",
       timeGoalPeriod: "week",
       timeGoalMinutes: 100,
       plannedStartTime: "09:00",
       plannedStartByDay: { tue: "09:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"]);
+
+    expect(editDraft.plannedStartByDay).toEqual({ tue: "09:00" });
+    expect(editDraft.plannedStartDay).toBe("tue");
+  });
+
+  it("generates weekly recurring schedules from optimal productivity days without existing scheduled day entries", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: null,
     });
 
     normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"]);
@@ -349,6 +366,36 @@ describe("edit task schedule toggle helpers", () => {
     ).toBe(false);
   });
 
+  it("treats an intentionally cleared schedule as unscheduled on edit open", () => {
+    expect(
+      taskHasMeaningfulScheduleConfig(
+        task({
+          timeGoalEnabled: false,
+          timeGoalValue: 0,
+          timeGoalMinutes: 0,
+          plannedStartTime: null,
+          plannedStartByDay: null,
+          plannedStartOpenEnded: true,
+        })
+      )
+    ).toBe(false);
+  });
+
+  it("ignores stale day maps on intentionally cleared tasks when deciding edit-open schedule state", () => {
+    expect(
+      taskHasMeaningfulScheduleConfig(
+        task({
+          timeGoalEnabled: false,
+          timeGoalValue: 0,
+          timeGoalMinutes: 0,
+          plannedStartTime: null,
+          plannedStartByDay: { sat: "09:00" },
+          plannedStartOpenEnded: true,
+        })
+      )
+    ).toBe(false);
+  });
+
   it("opens checked for time goals, planned starts, and checkpoints", () => {
     expect(taskHasMeaningfulScheduleConfig(task({ timeGoalEnabled: true, timeGoalMinutes: 30 }))).toBe(true);
     expect(taskHasMeaningfulScheduleConfig(task({ timeGoalEnabled: false, timeGoalMinutes: 0, plannedStartByDay: { mon: "09:00" } }))).toBe(true);
@@ -386,7 +433,7 @@ describe("edit task schedule toggle helpers", () => {
         plannedStartDay: null,
         plannedStartTime: null,
         plannedStartByDay: null,
-        plannedStartOpenEnded: false,
+        plannedStartOpenEnded: true,
         plannedStartPushRemindersEnabled: false,
       })
     );
@@ -549,12 +596,12 @@ describe("edit task schedule conflict confirmation", () => {
       "Schedule conflict",
       "",
       expect.objectContaining({
-        altLabel: "Continue",
-        okLabel: "Change",
+        altLabel: "Change",
+        okLabel: "Continue",
         textHtml:
           "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
-        okButtonClassName: "btn btn-ghost",
+        okButtonClassName: "btn btn-accent",
       })
     );
     const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
@@ -566,8 +613,8 @@ describe("edit task schedule conflict confirmation", () => {
     const harness = createEditHarness();
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
+    options?.onAlt?.();
 
     expect(harness.sourceTask.plannedStartTime).toBe("10:00");
     expect(harness.sourceTask.plannedStartByDay).toEqual(
@@ -580,8 +627,8 @@ describe("edit task schedule conflict confirmation", () => {
     const harness = createEditHarness();
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
-    options?.onAlt?.();
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
 
     expect(harness.sourceTask.plannedStartTime).toBe("09:00");
     expect(harness.sourceTask.plannedStartByDay).toEqual(Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])));
@@ -596,8 +643,8 @@ describe("edit task schedule conflict confirmation", () => {
     });
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
+    options?.onAlt?.();
 
     expect(harness.ctx.els.editPlannedStartHourSelect?.value).toBe("10");
     expect(harness.ctx.els.editPlannedStartMinuteSelect?.value).toBe("00");
@@ -689,5 +736,312 @@ describe("edit task schedule conflict confirmation", () => {
     expect(options).not.toHaveProperty("altLabel");
     expect(options).not.toHaveProperty("onAlt");
     expect(harness.ctx.save).not.toHaveBeenCalled();
+  });
+});
+
+describe("edit task non-optimal schedule confirmation", () => {
+  const nonConflictingBusyTask = task({
+    id: "busy",
+    name: "Deep Work",
+    taskType: "once-off",
+    onceOffDay: "tue",
+    plannedStartDay: "tue",
+    plannedStartTime: "15:00",
+    plannedStartByDay: { tue: "15:00" },
+  });
+
+  it("does not prompt after re-enabling an intentionally cleared task with stale non-optimal schedule data", () => {
+    vi.stubGlobal("document", {
+      getElementById: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    });
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalEnabled: false,
+        timeGoalValue: 0,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 0,
+        plannedStartDay: null,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+        plannedStartOpenEnded: true,
+      }),
+    });
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    const toggle = harness.ctx.els.editTaskScheduleToggle as HTMLInputElement;
+    toggle.checked = true;
+    const toggleChangeHandler = vi.mocked(harness.ctx.on).mock.calls.find(
+      ([element, eventName]) => element === toggle && eventName === "change"
+    )?.[2] as (() => void) | undefined;
+
+    toggleChangeHandler?.();
+    expect(harness.api.getCurrentEditTask()?.plannedStartByDay).toBeNull();
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sat");
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("removes non-optimal scheduled days when Remove Days is chosen", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Non-Optimal Scheduled Days",
+      "Sat is not selected as optimal productivity day. Remove those scheduled days from this task or keep them?",
+      expect.objectContaining({
+        okLabel: "Remove Days",
+        altLabel: "Keep Days",
+        okButtonClassName: "btn btn-accent",
+        altButtonClassName: "btn btn-ghost",
+      })
+    );
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBe("mon");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.ctx.save).toHaveBeenCalled();
+    expect(harness.getEditIndex()).toBeNull();
+  });
+
+  it("removes non-optimal days from daily recurring all-day schedules", () => {
+    const harness = createEditHarness({
+      durationPeriod: "day",
+      productivityDays: ["mon", "tue", "wed", "thu", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: null,
+        plannedStartTime: "09:00",
+        plannedStartByDay: Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])),
+      }),
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.plannedStartByDay).toEqual({
+      mon: "09:00",
+      tue: "09:00",
+      wed: "09:00",
+      thu: "09:00",
+      fri: "09:00",
+    });
+    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sat");
+    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sun");
+  });
+
+  it("removes non-optimal days from legacy daily recurring schedules", () => {
+    const harness = createEditHarness({
+      durationPeriod: "day",
+      productivityDays: ["mon", "tue", "wed", "thu", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: null,
+        plannedStartTime: "09:00",
+        plannedStartByDay: null,
+      }),
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.plannedStartByDay).toEqual({
+      mon: "09:00",
+      tue: "09:00",
+      wed: "09:00",
+      thu: "09:00",
+      fri: "09:00",
+    });
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
+  });
+
+  it("marks a recurring task as intentionally unscheduled when all scheduled days are removed", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.plannedStartByDay).toBeNull();
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.sourceTask.plannedStartOpenEnded).toBe(true);
+  });
+
+  it("keeps non-optimal scheduled days when Keep Days is chosen", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
+    options?.onAlt?.();
+
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+    expect(harness.getEditIndex()).toBeNull();
+  });
+
+  it("cancels the non-optimal schedule prompt without saving or closing edit", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onCancel?: () => void } | undefined;
+    options?.onCancel?.();
+
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expect(harness.ctx.save).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
+    expect(harness.getEditIndex()).toBe(0);
+  });
+
+  it("clears once-off schedule fields when removing a non-optimal once-off day", () => {
+    const harness = createEditHarness({
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "once-off",
+        onceOffDay: "sat",
+        onceOffTargetDate: "2026-05-16",
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+      }),
+    });
+    harness.ctx.els.editTaskOnceOffDaySelect = selectStub("sat");
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
+    options?.onOk?.();
+
+    expect(harness.sourceTask.taskType).toBe("once-off");
+    expect(harness.sourceTask.onceOffDay).toBeNull();
+    expect(harness.sourceTask.onceOffTargetDate).toBeNull();
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.sourceTask.plannedStartByDay).toBeNull();
+    expect(harness.sourceTask.plannedStartOpenEnded).toBe(true);
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("saves without prompting when all scheduled days are optimal", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", wed: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("saves open-ended tasks without prompting", () => {
+    const harness = createEditHarness({
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        plannedStartOpenEnded: true,
+        plannedStartTime: null,
+        plannedStartByDay: null,
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.save).toHaveBeenCalled();
   });
 });
