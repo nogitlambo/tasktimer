@@ -28,6 +28,7 @@ import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-
 import { buildDashboardTodayHoursModel, classifyDashboardTodayTrendIcon, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
+  type DashboardActivityOverviewDay,
   type DashboardActivityOverviewModel,
 } from "./dashboard-card-activity-overview";
 
@@ -1167,6 +1168,33 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
   }
 
+  function isDashboardActivityMobileChart() {
+    return typeof window !== "undefined" && window.matchMedia?.("(max-width: 640px)").matches === true;
+  }
+
+  function getDashboardActivityChartView(model: DashboardActivityOverviewModel) {
+    const mobile = isDashboardActivityMobileChart();
+    if (!mobile) {
+      return {
+        mobile,
+        days: model.days,
+        previousDays: [] as DashboardActivityOverviewDay[],
+        maxChartMs: model.maxChartMs,
+        visibleTotalMs: model.visibleTotalMs,
+      };
+    }
+    const previousDays = model.days.slice(0, 7);
+    const days = model.days.slice(7, 14);
+    const maxVisibleDailyMs = [...days, ...previousDays].reduce((max, day) => Math.max(max, day.totalMs), 0);
+    return {
+      mobile,
+      days,
+      previousDays,
+      maxChartMs: Math.max(model.dailyPaceTargetMs, maxVisibleDailyMs, 60 * 60000),
+      visibleTotalMs: days.reduce((sum, day) => sum + day.totalMs, 0),
+    };
+  }
+
   const dashboardActivityChartBounds = { left: 68, right: 692, top: 34, bottom: 258 };
 
   function getDashboardActivityY(valueMs: number, maxChartMs: number) {
@@ -1178,9 +1206,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
     const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
     const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
+    const view = getDashboardActivityChartView(model);
     if (axisEl) {
       const currentDayKey = localDayKey(nowMs());
-      axisEl.innerHTML = model.days
+      axisEl.innerHTML = view.days
         .map(
           (day) => {
             const currentDayClass = day.key === currentDayKey ? " isCurrentDay" : "";
@@ -1190,8 +1219,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         .join("");
     }
     if (yAxisEl) {
-      const half = Math.round(model.maxChartMs / 2);
-      yAxisEl.innerHTML = [model.maxChartMs, half, 0]
+      const half = Math.round(view.maxChartMs / 2);
+      yAxisEl.innerHTML = [view.maxChartMs, half, 0]
         .map((ms) => `<span>${ctx.escapeHtmlUI(formatDashboardDurationShort(ms))}</span>`)
         .join("");
     }
@@ -1204,6 +1233,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const goalLineEl = (els as any).dashboardActivityGoalLine as SVGLineElement | null;
     const chart = dashboardActivityChartBounds;
     const svgNs = "http://www.w3.org/2000/svg";
+    const view = getDashboardActivityChartView(model);
 
     if (chartGridEl) {
       chartGridEl.innerHTML = "";
@@ -1220,15 +1250,37 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (previousBarsEl) {
       previousBarsEl.innerHTML = "";
-      previousBarsEl.style.display = "none";
+      previousBarsEl.style.display = view.mobile && view.previousDays.some((day) => day.totalMs > 0) ? "" : "none";
+      if (view.mobile) {
+        const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
+        const barWidth = Math.min(52, slotWidth * 0.48);
+        view.previousDays.forEach((day, index) => {
+          const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
+          const slotX = chart.left + index * slotWidth;
+          const x = slotX + (slotWidth - barWidth) / 2;
+          const y = chart.bottom - height;
+          const rect = document.createElementNS(svgNs, "rect");
+          rect.setAttribute("class", "dashboardActivityPreviousBar");
+          rect.setAttribute("x", x.toFixed(1));
+          rect.setAttribute("y", y.toFixed(1));
+          rect.setAttribute("width", barWidth.toFixed(1));
+          rect.setAttribute("height", height.toFixed(1));
+          rect.setAttribute("rx", "5");
+          rect.setAttribute(
+            "aria-label",
+            `Previous week ${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
+          );
+          previousBarsEl.appendChild(rect);
+        });
+      }
     }
 
     if (barsEl) {
       barsEl.innerHTML = "";
-      const slotWidth = (chart.right - chart.left) / Math.max(1, model.days.length);
+      const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
       const barWidth = Math.min(52, slotWidth * 0.48);
-      model.days.forEach((day, index) => {
-        const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, model.maxChartMs)) : 0;
+      view.days.forEach((day, index) => {
+        const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
         const slotX = chart.left + index * slotWidth;
         const x = slotX + (slotWidth - barWidth) / 2;
         const y = chart.bottom - height;
@@ -1253,7 +1305,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (goalLineEl) {
       const showGoal = model.totalGoalMs > 0;
-      const y = getDashboardActivityY(model.dailyPaceTargetMs, model.maxChartMs);
+      const y = getDashboardActivityY(model.dailyPaceTargetMs, view.maxChartMs);
       goalLineEl.setAttribute("x1", String(chart.left));
       goalLineEl.setAttribute("x2", String(chart.right));
       goalLineEl.setAttribute("y1", y.toFixed(1));
@@ -1266,6 +1318,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = (els as any).dashboardActivityOverviewCard as HTMLElement | null;
     if (!cardEl) return;
     const model = getDashboardActivityOverviewModel();
+    const view = getDashboardActivityChartView(model);
+    const chartEl = (els as any).dashboardActivityChart as SVGSVGElement | null;
     const emptyEl = (els as any).dashboardActivityEmpty as HTMLElement | null;
     if (emptyEl) {
       const showEmpty = !model.hasActivity;
@@ -1273,9 +1327,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
+    chartEl?.setAttribute("aria-label", view.mobile ? "Seven day activity chart with previous week comparison" : "Two week activity chart");
     cardEl.setAttribute(
       "aria-label",
-      `Activity overview. Two-week activity chart with ${formatDashboardDurationWithMinutes(model.visibleTotalMs)} logged across the visible range. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
+      view.mobile
+        ? `Activity overview. Seven-day activity chart with previous-week comparison and ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged this week. ${formatDashboardDurationWithMinutes(model.previousWeekTotalMs)} logged previous week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
+        : `Activity overview. Two-week activity chart with ${formatDashboardDurationWithMinutes(model.visibleTotalMs)} logged across the visible range. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
     );
   }
 

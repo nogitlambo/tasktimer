@@ -7233,6 +7233,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTitle{
     font-size:24px;
   }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityXAxis{
+    grid-template-columns:repeat(7, minmax(0, 1fr));
+  }
 }
 
 /* Dashboard integrated panel ownership. */

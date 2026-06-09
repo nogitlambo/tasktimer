@@ -209,7 +209,10 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   function registerDashboardEvents() {
     const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
-    ctx.on(window as any, "resize", applyDashboardCardSizes);
+    ctx.on(window as any, "resize", () => {
+      applyDashboardCardSizes();
+      ctx.renderDashboardWidgets();
+    });
     ctx.on(els.dashboardHeatSummaryCloseBtn, "click", () => {
       ctx.closeDashboardHeatSummaryCard({ restoreFocus: true });
     });

@@ -166,6 +166,7 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardHeatWeekdays");
   register("dashboardHeatCalendarGrid");
   register("dashboardHeatSummaryBody");
+  register("dashboardActivityChart");
   register("dashboardActivityChartGrid");
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
@@ -253,20 +254,33 @@ function createRenderHarness(
     hasEntitlement?: boolean;
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
+    mobileViewport?: boolean;
     weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
   const openSummaryCalls: Array<{ taskId: string; entries: Array<{ ts: number; name: string; ms: number; note?: string }> }> = [];
   const originalDocument = globalThis.document;
+  const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
   Object.defineProperty(globalThis, "document", {
     configurable: true,
     value: documentRef,
   });
+  if (options?.mobileViewport != null) {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: (query: string) => ({
+          matches: query === "(max-width: 640px)" ? !!options.mobileViewport : false,
+        }),
+      },
+    });
+  }
 
   const dashboardRender = createTaskTimerDashboardRender({
     els: {
       dashboardActivityOverviewCard: new ElementStub(),
+      dashboardActivityChart: byId.get("dashboardActivityChart"),
       dashboardActivityChartGrid: byId.get("dashboardActivityChartGrid"),
       dashboardActivityPreviousBars: byId.get("dashboardActivityPreviousBars"),
       dashboardActivityBars: byId.get("dashboardActivityBars"),
@@ -352,6 +366,11 @@ function createRenderHarness(
         configurable: true,
         value: originalDocument,
       });
+      if (originalWindowDescriptor) {
+        Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
     },
   };
 }
@@ -368,8 +387,49 @@ describe("dashboard activity overview card", () => {
       harness.renderActivityOverview();
       const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
+      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
 
       expect(axisDayCount).toBe(14);
+      expect(bars).toHaveLength(14);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders current week with previous-week ghost bars on mobile", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        mobileViewport: true,
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
+      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const yAxisHtml = harness.byId.get("dashboardActivityYAxis")?.innerHTML || "";
+      const currentBar = bars[0]?.children[0];
+      const ghostBar = previousBars?.children[0];
+
+      expect(axisDayCount).toBe(7);
+      expect(bars).toHaveLength(7);
+      expect(previousBars?.style.display).toBe("");
+      expect(previousBars?.children).toHaveLength(7);
+      expect(yAxisHtml).toContain("3h");
+      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(74.7, 1);
+      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(224, 1);
     } finally {
       harness.restore();
     }
