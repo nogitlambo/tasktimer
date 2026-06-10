@@ -573,7 +573,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             key={`onboarding-subtext-${activeStep}`}
           >
             {activeStep === "username" ? (
-              "Choose an avatar and set a username for your account:"
+              "Please choose an avatar and set a usename for your account:"
             ) : activeStep === "intro" ? (
               <>
                 Most productivity tools organize your time. TaskLaunch goes a step further by using{" "}
@@ -830,7 +830,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               onClick={() => void handleNext()}
               disabled={busy}
             >
-              Next
+              Continue
             </button>
           ) : (
             <button className="btn btn-accent" type="button" onClick={() => void handleFinish()} disabled={isOnboardingFinishDisabled(busy)}>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -295,7 +295,6 @@ function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => workspaceRepository.loadCachedPreferences());
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
@@ -375,32 +374,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     leaderboardStateRef.current = leaderboardState;
   }, [leaderboardState]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const media =
-      typeof window.matchMedia === "function"
-        ? window.matchMedia("(max-width: 980px), (pointer: coarse) and (max-device-width: 1024px)")
-        : null;
-    const sync = () => setIsMobileViewport(isMobileTaskToolbarViewport());
-    sync();
-    window.addEventListener("resize", sync);
-    window.screen.orientation?.addEventListener?.("change", sync);
-    if (media && typeof media.addEventListener === "function") {
-      media.addEventListener("change", sync);
-      return () => {
-        window.removeEventListener("resize", sync);
-        window.screen.orientation?.removeEventListener?.("change", sync);
-        media.removeEventListener("change", sync);
-      };
-    }
-    media?.addListener(sync);
-    return () => {
-      window.removeEventListener("resize", sync);
-      window.screen.orientation?.removeEventListener?.("change", sync);
-      media?.removeListener(sync);
-    };
-  }, []);
 
   useEffect(() => {
     void bootstrapFirebaseWebAppCheck();
@@ -899,64 +872,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
-  const mobileToolbar: ReactNode = useMemo(() => {
-    if (!isMobileViewport) return null;
-    return (
-      <div className="taskLaunchMobileToolbarInner taskLaunchMobileToolbarTasks" aria-label="Tasks controls">
-        <div className="taskPageHeaderActions">
-          <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
-            <button className="iconBtn taskScreenPill taskScreenHeaderBtn isOn" id="closeScheduleBtn" data-screen-pill="tasks" aria-current="page" aria-label="Tasks" title="Tasks" role="tab" type="button">
-              <AppImg className="taskScreenIconBtnImage" src="/Task_List.svg" alt="" aria-hidden="true" />
-              <span className="taskScreenTabLabel">Tasks</span>
-            </button>
-            <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openScheduleBtn" data-screen-pill="schedule" aria-label="Schedule" title="Schedule" role="tab" type="button">
-              <svg className="taskScreenIconBtnSvg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
-                <path d="M3.5 9.5h17" />
-                <path d="M8 3.75v3.5" />
-                <path d="M16 3.75v3.5" />
-                <path d="M8 13h3" />
-                <path d="M13 13h3" />
-                <path d="M8 17h3" />
-              </svg>
-              <span className="taskScreenTabLabel">Schedule</span>
-            </button>
-          </div>
-          <button className="iconBtn taskScreenPill taskScreenHeaderBtn" id="openAddTaskBtn" aria-label="Add Task" title="Add Task" type="button">
-            <span className="openAddTaskBtnContent">
-              <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.webp" alt="" aria-hidden="true" />
-              <span className="taskScreenHeaderBtnText">Add Task</span>
-            </span>
-          </button>
-          <div className="tasksModeControlGroup" aria-label="Task ordering controls">
-            <details className="tasksModeMenu" id="taskOrderByMenu">
-              <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">
-                <span id="taskOrderByValue" className="sr-only">Custom</span>
-                <svg className="tasksModeMenuBtnIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M4 6.5h16" />
-                  <path d="M7.5 12h9" />
-                  <path d="M10.5 17.5h3" />
-                </svg>
-              </summary>
-              <div className="tasksModeMenuList" role="menu" aria-label="Order tasks by">
-                <div className="tasksModeMenuLabel" role="presentation">Sort by</div>
-                <button className="tasksModeMenuItem" type="button" data-task-order-by="alpha" role="menuitem">A-Z</button>
-                <button className="tasksModeMenuItem" type="button" data-task-order-by="schedule" role="menuitem">Schedule/Time</button>
-                <button className="tasksModeMenuItem" type="button" data-task-order-by="dateAdded" role="menuitem">Date Added</button>
-                <button className="tasksModeMenuItem isOn" type="button" data-task-order-by="custom" role="menuitem">Custom</button>
-              </div>
-            </details>
-          </div>
-        </div>
-      </div>
-    );
-  }, [isMobileViewport]);
-
   return (
     <>
       <TaskTimerAppFrame
         activePage={initialPage}
-        mobileToolbar={mobileToolbar}
         currentRankId={displayedRewardProgress.currentRankId}
         desktopPromotionHoldRankId={activeRankPromotion?.previousRankId || null}
         desktopInsigniaUpgrade={desktopInsigniaUpgrade}
@@ -977,8 +896,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       >
         <div className="appPages">
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
-            {!isMobileViewport ? (
-            <div className="dashboardTopRow">
+            <div className="tasksTopRow">
               <div className="taskPageHeaderActions">
                 <div className="taskScreenPillGroup" role="tablist" aria-label="Tasks and schedule view switch">
                   <button
@@ -1056,7 +974,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </div>
               </div>
             </div>
-            ) : null}
             <section className="modeView modeViewOn" id="mode1View" aria-label="Tasks view">
               <div className="list" id="taskList" />
               <HistoryScreen />
@@ -1074,8 +991,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               {!isAuthenticated ? (
                 <SignedOutPrompt message="You will need to create an account or sign in to use Friends" />
               ) : null}
-              <div className="dashboardTopRow">
-                <div className="dashboardEditActions">
+              <div className="friendTopRow">
+                <div className="friendPageHeaderActions">
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
                     <AppImg
                       className="friendRequestBtnIcon"

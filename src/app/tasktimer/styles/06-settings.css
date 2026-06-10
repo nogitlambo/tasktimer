@@ -937,7 +937,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :is(.settingsInli
   font-weight:800 !important;
   letter-spacing:.08em !important;
   text-transform:uppercase !important;
-  color:rgba(228,248,255,.96) !important;
+  color:var(--warn) !important;
   animation:deleteAccountConfirmTitlePulse 1.05s ease-in-out infinite !important;
 }
 
@@ -946,7 +946,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .inlineConfirmTit
   width:17px !important;
   height:17px !important;
   flex:0 0 17px !important;
-  color:#fff !important;
+  color:var(--warn) !important;
 }
 
 body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .inlineConfirmTitleIcon svg{
@@ -983,6 +983,15 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   border-color:#fff !important;
 }
 
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn.btn-warn{
+  border-color:var(--warn) !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn.btn-warn:hover:not(:disabled),
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn.btn-warn:focus-visible{
+  border-color:var(--warn) !important;
+}
+
 body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn:disabled{
   opacity:.42 !important;
   cursor:not-allowed !important;
@@ -996,11 +1005,11 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   0%,
   100%{
     opacity:.2;
-    text-shadow:0 0 0 rgba(255,255,255,0);
+    text-shadow:0 0 0 rgba(255,77,77,0);
   }
   50%{
     opacity:1;
-    text-shadow:0 0 14px rgba(255,255,255,.52);
+    text-shadow:0 0 14px rgba(255,77,77,.52);
   }
 }
 
@@ -1291,22 +1300,24 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .optimalProductivityPeriodInputs{
-  display:flex;
-  justify-content:flex-end;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(108px, 132px));
+  justify-content:end;
   align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
+  gap:10px;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .optimalProductivityPeriodInputs label{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  color: var(--muted);
-  font-size:11px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.08em;
+  position: relative;
+  display:grid;
+  align-items:start;
+  gap:4px;
+  color: #fff;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size:13px;
+  font-weight:400;
+  text-transform:none;
+  letter-spacing:0;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection input[type="time"]{
@@ -1322,7 +1333,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityStartTimeInput,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityEndTimeInput{
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection textarea{
@@ -4063,11 +4074,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid !important;
+  grid-template-columns: repeat(4, 54px);
+  grid-auto-rows: 34px;
+  align-items: stretch;
+  justify-content: end;
+  gap: 8px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -4075,40 +4087,58 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu[hidden]{
-  display: inline-flex !important;
+  display: grid !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn{
+  appearance: none;
+  box-sizing: border-box;
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 39px;
-  min-height: 28px;
-  padding: 6px 9px;
-  border: 1px solid transparent;
+  width: 54px;
+  height: 34px;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(170, 178, 190, .44);
   border-radius: 0;
-  color: rgba(226,247,255,.78);
+  background: rgba(170, 178, 190, .10);
+  color: rgba(238, 242, 246, .82);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 11px;
-  font-weight: 800;
-  line-height: 1.35;
+  font-weight: 700;
+  line-height: 1;
   text-transform: none;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   cursor: pointer;
   user-select: none;
+  text-align: center;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:hover,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:focus-within{
-  background: transparent;
-  color: rgba(244,252,255,.98);
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:focus-within,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn:focus-visible{
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:has(input:checked){
-  border-color: #c9ff24;
-  background: transparent;
-  color: rgba(244,252,255,.98);
-  box-shadow: inset 0 0 0 1px rgba(201,255,36,.14);
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:has(input:checked),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn.isSelected{
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000 !important;
+  box-shadow: none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow:has(input:checked) span,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn.isSelected{
+  color: #000 !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow input[type="checkbox"]{
@@ -4116,6 +4146,73 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   inset: 0;
   opacity: 0;
   cursor: pointer;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockButton{
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)),
+    rgba(26, 27, 32, .58);
+  border: 1px solid #1a1b20;
+  border-radius: 0;
+  color: rgba(238, 242, 246, .94);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 14px;
+  width: 100%;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockButton:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockButton:focus-visible{
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockValue{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockNativeInput:not(.isFallbackVisible){
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockNativeInput.isFallbackVisible{
+  width: 100%;
+  min-height: 34px;
+  margin-top: 8px;
+  border: 1px solid #1a1b20;
+  background: rgba(26, 27, 32, .58);
+  color: rgba(238, 242, 246, .92);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  padding: 7px 10px;
+  text-align: center;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockNativeInput.isFallbackVisible:focus,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockNativeInput.isFallbackVisible:focus-visible{
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
 }
 
 @media (max-width: 640px){
@@ -4140,19 +4237,36 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu{
     display: grid !important;
-    grid-template-columns: repeat(7, 22px);
+    grid-template-columns: repeat(4, 38px);
+    grid-auto-rows: 30px;
     width: auto;
     justify-content: stretch;
-    flex-wrap: nowrap;
-    gap: 2px;
+    gap: 4px;
   }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysMenu .chkRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityDaysAllBtn{
     flex: 0 1 auto;
-    min-width: 22px;
-    min-height: 28px;
-    padding: 5px 2px;
+    width: 38px;
+    height: 30px;
+    padding: 5px 3px;
     font-size: 10px;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .optimalProductivityPeriodInputs{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    justify-content: stretch;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockButton{
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .optimalProductivityClockValue{
+    font-size: 18px;
   }
 }
 
@@ -4582,6 +4696,20 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityClockValue,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityDaysMenu .chkRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityDaysAllBtn{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label span,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityClockNativeInput.isFallbackVisible{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDetailNote{

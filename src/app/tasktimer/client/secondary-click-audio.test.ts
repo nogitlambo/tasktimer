@@ -260,16 +260,23 @@ describe("secondary click audio", () => {
     expect(getCheckboxClickTarget(dropdownOption)).toBe(dropdownOption);
   });
 
-  it("matches task flip controls for dedicated flip audio", () => {
-    const flipSelector = "[data-task-flip]";
+  it("matches task and heatmap flip controls for dedicated flip audio", () => {
+    const flipSelector = "[data-task-flip],[data-heatmap-flip]";
     const flipButton = makeElement({
-      selectorMatches: { [flipSelector]: true, "button,a": true },
+      selectorMatches: { [flipSelector]: true, "[data-task-flip]": true, "button,a": true },
       attributes: { "data-task-flip": "open" },
       textContent: "More actions",
+    });
+    const heatmapFlipButton = makeElement({
+      selectorMatches: { [flipSelector]: true, "[data-heatmap-flip]": true, "button,a": true },
+      attributes: { "data-heatmap-flip": "open" },
+      textContent: "10",
     });
 
     expect(getTaskFlipClickTarget(flipButton)).toBe(flipButton);
     expect(getSecondaryClickTarget(flipButton)).toBeNull();
+    expect(getTaskFlipClickTarget(heatmapFlipButton)).toBe(heatmapFlipButton);
+    expect(getSecondaryClickTarget(heatmapFlipButton)).toBeNull();
   });
 
   it("matches friend identity controls for dedicated modal open audio", () => {
@@ -482,7 +489,34 @@ describe("secondary click audio", () => {
 
     const handler = on.mock.calls[0]?.[2] as EventListener;
 
-    handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { "[data-task-flip]": true } }) } as unknown as Event);
+    handler({
+      defaultPrevented: false,
+      target: makeElement({ selectorMatches: { "[data-task-flip],[data-heatmap-flip]": true, "[data-task-flip]": true } }),
+    } as unknown as Event);
+
+    expect(playTaskFlipAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes heatmap flip controls to the dedicated flip audio callback", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playTaskFlipAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playTaskFlipAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      target: makeElement({ selectorMatches: { "[data-task-flip],[data-heatmap-flip]": true, "[data-heatmap-flip]": true } }),
+    } as unknown as Event);
 
     expect(playTaskFlipAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();

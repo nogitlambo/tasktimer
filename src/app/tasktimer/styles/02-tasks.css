@@ -1683,8 +1683,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .his
   margin-top:12px;
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow{
   display:flex;
   flex-wrap:wrap;
   justify-content:space-between;
@@ -1694,12 +1694,12 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   top:0;
   z-index:16;
   isolation:isolate;
-  padding:8px 0 10px;
+  padding:8px 8px 10px;
   background:transparent;
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after,
-body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow::after{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow::after,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow::after{
   content:none;
 }
 
@@ -2824,17 +2824,17 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   margin-left:0;
   width:auto;
   min-width:0;
-  height:40px;
-  min-height:40px;
-  padding:0 10px;
-  border:0 !important;
+  height:36px;
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid #c9ff24 !important;
   border-radius:0;
   background:transparent !important;
   box-shadow:none !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
-  color:rgba(230, 245, 255, .88) !important;
+  color:#c9ff24 !important;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
@@ -2850,8 +2850,8 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   width:max-content;
   place-items:unset !important;
   white-space:nowrap;
-  border-color:transparent !important;
-  color:#fff !important;
+  border:1px solid #c9ff24 !important;
+  color:#c9ff24 !important;
   background:transparent !important;
   box-shadow:none !important;
   transition:background-color .16s ease;
@@ -2859,7 +2859,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
 
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .openAddTaskBtnContent,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .openAddTaskBtnContent{
-  color:#fff !important;
+  color:#c9ff24 !important;
   display:inline-flex;
   align-items:center;
   justify-content:flex-start;
@@ -2878,11 +2878,12 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   margin:0;
   object-fit:contain;
   flex:0 0 auto;
-  filter:brightness(0) invert(1);
+  filter:brightness(0) saturate(100%) invert(88%) sepia(79%) saturate(1471%) hue-rotate(19deg) brightness(105%) contrast(103%);
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenHeaderBtnText{
-  color:#fff !important;
+#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenHeaderBtnText,
+#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .taskScreenHeaderBtnText{
+  color:#c9ff24 !important;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:11px !important;
   font-weight:700 !important;
@@ -3094,15 +3095,15 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   margin-right:auto;
   flex:0 0 auto;
   min-width:0;
-  height:40px;
-  min-height:40px;
-  padding:0 10px;
-  border:0 !important;
+  height:36px;
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid #c9ff24 !important;
   border-radius:0;
   background:transparent !important;
   box-shadow:none !important;
   opacity:1 !important;
-  color:#fff !important;
+  color:#c9ff24 !important;
   justify-content:flex-start !important;
 }
 
@@ -3581,8 +3582,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
     width:100%;
   }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow,
-  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .dashboardTopRow{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksTopRow{
     align-items:flex-start;
     flex-wrap:wrap;
     row-gap:12px;

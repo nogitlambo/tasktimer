@@ -125,6 +125,28 @@ describe("createTaskTimerPreferencesService", () => {
     ]);
   });
 
+  it("uses the saved local week start when cached preferences do not contain that field", () => {
+    window.localStorage.setItem(storageKeys.WEEK_STARTING_KEY, "sun");
+
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), weekStarting: undefined },
+      }).loadWeekStarting()
+    ).toBe("sun");
+  });
+
+  it("uses an explicit cached week start over shared local storage for signed-in users", () => {
+    window.localStorage.setItem(storageKeys.WEEK_STARTING_KEY, "sun");
+
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), weekStarting: "tue" },
+      }).loadWeekStarting()
+    ).toBe("tue");
+  });
+
   it("uses cached cloud preferences instead of shared local storage for signed-in users", () => {
     window.localStorage.setItem(storageKeys.STARTUP_MODULE_KEY, "tasks");
     window.localStorage.setItem(storageKeys.TASK_ORDER_BY_KEY, "schedule");

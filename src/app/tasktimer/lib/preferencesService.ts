@@ -114,6 +114,19 @@ function normalizeTaskOrderBy(raw: unknown): TaskOrderByPreference {
   return "custom";
 }
 
+function isDashboardWeekStart(value: unknown): value is PreferencesStateSnapshot["weekStarting"] {
+  const normalized = String(value || "").trim().toLowerCase();
+  return (
+    normalized === "sun" ||
+    normalized === "mon" ||
+    normalized === "tue" ||
+    normalized === "wed" ||
+    normalized === "thu" ||
+    normalized === "fri" ||
+    normalized === "sat"
+  );
+}
+
 export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
   const { storageKeys, repository } = options;
 
@@ -242,11 +255,11 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
-    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY) : "";
-    const cached = String(getStoredPreferencesWithoutDefaults()?.weekStarting || localValue)
-      .trim()
-      .toLowerCase();
-    return normalizeDashboardWeekStart(cached);
+    const cachedValue = getStoredPreferencesWithoutDefaults()?.weekStarting;
+    if (isDashboardWeekStart(cachedValue)) return normalizeDashboardWeekStart(cachedValue);
+    const localValue = safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY);
+    if (isDashboardWeekStart(localValue)) return normalizeDashboardWeekStart(localValue);
+    return "mon";
   }
 
   function loadStartupModule(): StartupModulePreference {

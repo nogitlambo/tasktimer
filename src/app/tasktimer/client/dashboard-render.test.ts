@@ -428,8 +428,8 @@ describe("dashboard activity overview card", () => {
       expect(previousBars?.style.display).toBe("");
       expect(previousBars?.children).toHaveLength(7);
       expect(yAxisHtml).toContain("3h");
-      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(74.7, 1);
-      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(224, 1);
+      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
+      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
     } finally {
       harness.restore();
     }
@@ -526,6 +526,7 @@ describe("dashboard week-start alignment", () => {
       expect(gridHtml.indexOf('dashboardHeatDayNum">19</span>')).toBeGreaterThan(-1);
       expect(gridHtml.indexOf('dashboardHeatDayNum">19</span>')).toBeLessThan(gridHtml.indexOf('dashboardHeatDayNum">20</span>'));
       expect(gridHtml).toContain('data-heat-date="2026-05-10"');
+      expect(gridHtml).toContain('data-heatmap-flip="open"');
       expect(gridHtml).toContain("10 May 2026");
     } finally {
       harness.restore();

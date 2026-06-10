@@ -2740,7 +2740,7 @@ body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
   }
 }
 
-body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .dashboardTopRow,
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > .tasksTopRow,
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View > :not(#focusModeScreen){
   display:none !important;
 }

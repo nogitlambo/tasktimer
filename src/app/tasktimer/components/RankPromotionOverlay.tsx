@@ -18,7 +18,6 @@ const RANK_PROMOTION_DRUMS_SMASH_MARK_MS = 3500;
 const RANK_PROMOTION_SMASH_PHASE_START_MS =
   RANK_PROMOTION_DRUMS_SMASH_MARK_MS - RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
 const RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 200;
-const RANK_PROMOTION_POST_IMPACT_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 100;
 const RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS = 2900;
 const RANK_PROMOTION_BLOOM_HOLD_MS = 100;
 const RANK_PROMOTION_SETTLE_MS = 3300;
@@ -37,7 +36,6 @@ const RANK_PROMOTION_DRUMS_DELAY_MS = 2925;
 const RANK_PROMOTION_DRUMS_START_VOLUME = 0.1;
 const RANK_PROMOTION_DRUMS_END_VOLUME = 0.8;
 const RANK_PROMOTION_DRUMS_FADE_IN_MS = 2000;
-const RANK_PROMOTION_POST_IMPACT_AUDIO_SRC = "/promotion_post-impact.mp3";
 const RANK_PROMOTION_FRAGMENT_COLUMNS = 26;
 const RANK_PROMOTION_FRAGMENT_ROWS = 24;
 const RANK_PROMOTION_FRAGMENT_CANVAS_SIZE = 640;
@@ -399,16 +397,12 @@ export default function RankPromotionOverlay({
     const boomTwoTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
     }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
-    const postImpactTimer = window.setTimeout(() => {
-      playPromotionAudio(RANK_PROMOTION_POST_IMPACT_AUDIO_SRC);
-    }, RANK_PROMOTION_POST_IMPACT_DELAY_MS);
     const labelImpactTimer = window.setTimeout(() => {
       playPromotionAudio(RANK_PROMOTION_LABEL_IMPACT_AUDIO_SRC);
     }, RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS);
 
     return () => {
       window.clearTimeout(boomTwoTimer);
-      window.clearTimeout(postImpactTimer);
       window.clearTimeout(labelImpactTimer);
     };
   }, [achievementSoundsEnabled, phase]);

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { signOut } from "firebase/auth";
+import { deleteUser, signOut } from "firebase/auth";
 
 const mocks = vi.hoisted(() => ({
   authState: {
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
-  deleteUser: vi.fn(),
+  deleteUser: vi.fn(() => Promise.resolve()),
   getRedirectResult: vi.fn(),
   reauthenticateWithPopup: vi.fn(),
   reauthenticateWithRedirect: vi.fn(),
@@ -45,14 +45,16 @@ vi.mock("@/app/tasktimer/lib/routeHref", () => ({
   resolveTaskTimerRouteHref: (path: string) => path,
 }));
 
-import { handleSignOutFlow } from "./settingsAccountService";
+import { handleDeleteAccountFlow, handleSignOutFlow } from "./settingsAccountService";
 
 describe("handleSignOutFlow", () => {
   beforeEach(() => {
     mocks.authState.currentUser = null;
     mocks.workspaceRepository.waitForPendingTaskSync.mockClear();
     mocks.workspaceRepository.clearScopedState.mockClear();
+    vi.mocked(deleteUser).mockClear();
     vi.mocked(signOut).mockClear();
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true })));
     vi.stubGlobal("window", {
       location: { assign: vi.fn() },
     });
@@ -77,5 +79,22 @@ describe("handleSignOutFlow", () => {
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
     expect(window.location.assign).toHaveBeenCalledWith("/login");
+  });
+
+  it("deletes the auth user, signs out, clears local workspace state, and returns to landing", async () => {
+    const user = {
+      uid: "user-123",
+      getIdToken: vi.fn(() => Promise.resolve("token-123")),
+      providerData: [],
+    };
+
+    await handleDeleteAccountFlow(user as never);
+
+    expect(fetch).toHaveBeenCalledWith("/api/account/retain-subscription-before-delete", expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith("/api/account/delete-user-data", expect.any(Object));
+    expect(deleteUser).toHaveBeenCalledWith(user);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
+    expect(window.location.assign).toHaveBeenCalledWith("/");
   });
 });

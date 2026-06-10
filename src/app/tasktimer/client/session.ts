@@ -338,7 +338,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const getActiveToast = () => ctx.getActiveCheckpointToast() as CheckpointToast | null;
   const setActiveToast = (value: CheckpointToast | null) => ctx.setActiveCheckpointToast(value as unknown);
   let timeGoalCompleteAudio: HTMLAudioElement | null = null;
-  let timeGoalCompleteClickAudio: HTMLAudioElement | null = null;
   let timeGoalXpCountAudio: HTMLAudioElement | null = null;
   let activeFocusTransitionClone: HTMLElement | null = null;
   let activeFocusTransitionTimer: number | null = null;
@@ -1907,33 +1906,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
   }
 
-  function ensureTimeGoalCompleteClickAudio() {
-    if (timeGoalCompleteClickAudio) return timeGoalCompleteClickAudio;
-    try {
-      const audio = new Audio("/click-secondary.mp3");
-      audio.preload = "auto";
-      timeGoalCompleteClickAudio = audio;
-      return audio;
-    } catch {
-      timeGoalCompleteClickAudio = null;
-      return null;
-    }
-  }
-
   function playTimeGoalCompleteAudio() {
     const audio = ensureTimeGoalCompleteAudio();
-    if (!audio) return;
-    try {
-      audio.currentTime = 0;
-      const p = audio.play();
-      if (p && typeof (p as any).catch === "function") (p as any).catch(() => {});
-    } catch {
-      // ignore playback restrictions
-    }
-  }
-
-  function playTimeGoalCompleteClickAudio() {
-    const audio = ensureTimeGoalCompleteClickAudio();
     if (!audio) return;
     try {
       audio.currentTime = 0;
@@ -2453,7 +2427,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }, 0);
     });
     ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
-      playTimeGoalCompleteClickAudio();
       const task = getActiveTimeGoalModalTask();
       const shouldExitFocusMode =
         !!task && String(task.id || "").trim() === String(ctx.getFocusModeTaskId() || "").trim();

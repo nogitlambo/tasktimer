@@ -29,6 +29,17 @@ function redirectToLogin() {
   window.location.assign(resolveTaskTimerRouteHref("/login"));
 }
 
+function redirectToLanding() {
+  if (typeof window === "undefined") return;
+  window.location.assign(resolveTaskTimerRouteHref("/"));
+}
+
+async function finalizeDeletedAccountSession(auth: ReturnType<typeof getFirebaseAuthClient>) {
+  if (auth) await signOut(auth).catch(() => {});
+  workspaceRepository.clearScopedState();
+  redirectToLanding();
+}
+
 function accountStateDocRef(uid: string) {
   const db = getFirebaseFirestoreClient();
   if (!db) return null;
@@ -121,8 +132,7 @@ export async function resumePendingDeleteFlow(uid: string) {
   }).catch(() => {});
   await callDeleteUserDataRoute(idToken, auth.currentUser.uid);
   await deleteUser(auth.currentUser);
-  workspaceRepository.clearScopedState();
-  redirectToLogin();
+  await finalizeDeletedAccountSession(auth);
   return { resumed: true };
 }
 
@@ -167,8 +177,7 @@ export async function handleDeleteAccountFlow(user: User) {
     await deleteUser(targetUser);
     const accountRef = accountStateDocRef(deleteUid);
     if (accountRef) await deleteDoc(accountRef).catch(() => {});
-    workspaceRepository.clearScopedState();
-    redirectToLogin();
+    await finalizeDeletedAccountSession(auth);
   };
 
   try {

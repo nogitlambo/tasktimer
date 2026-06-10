@@ -60,33 +60,42 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <div className="optimalProductivityDaysField">
               <div className="optimalProductivityDaysMenu" id="optimalProductivityDaysMenu" role="group" aria-label="Optimal productivity days">
                 <label className="chkRow" htmlFor="optimalProductivityDayMon">
-                  <span>M</span>
+                  <span>MON</span>
                   <input id="optimalProductivityDayMon" type="checkbox" value="mon" data-optimal-productivity-day="mon" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayTue">
-                  <span>T</span>
+                  <span>TUE</span>
                   <input id="optimalProductivityDayTue" type="checkbox" value="tue" data-optimal-productivity-day="tue" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayWed">
-                  <span>W</span>
+                  <span>WED</span>
                   <input id="optimalProductivityDayWed" type="checkbox" value="wed" data-optimal-productivity-day="wed" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayThu">
-                  <span>T</span>
+                  <span>THU</span>
                   <input id="optimalProductivityDayThu" type="checkbox" value="thu" data-optimal-productivity-day="thu" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayFri">
-                  <span>F</span>
+                  <span>FRI</span>
                   <input id="optimalProductivityDayFri" type="checkbox" value="fri" data-optimal-productivity-day="fri" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDaySat">
-                  <span>Sa</span>
+                  <span>SAT</span>
                   <input id="optimalProductivityDaySat" type="checkbox" value="sat" data-optimal-productivity-day="sat" />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDaySun">
-                  <span>Su</span>
+                  <span>SUN</span>
                   <input id="optimalProductivityDaySun" type="checkbox" value="sun" data-optimal-productivity-day="sun" />
                 </label>
+                <button
+                  className="optimalProductivityDaysAllBtn"
+                  id="optimalProductivityDaysAllBtn"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Select all optimal productivity days"
+                >
+                  ALL
+                </button>
               </div>
             </div>
           </div>
@@ -98,11 +107,39 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             <div className="optimalProductivityPeriodInputs" aria-label="Optimal productivity period">
               <label>
                 <span>Start</span>
-                <input id="optimalProductivityStartTimeInput" type="time" defaultValue="00:00" aria-label="Optimal productivity start time" />
+                <button
+                  className="optimalProductivityClockButton"
+                  id="optimalProductivityStartTimeButton"
+                  type="button"
+                  aria-label="Choose optimal productivity start time"
+                >
+                  <span className="optimalProductivityClockValue" id="optimalProductivityStartTimeValue">12:00 AM</span>
+                </button>
+                <input
+                  id="optimalProductivityStartTimeInput"
+                  className="optimalProductivityClockNativeInput"
+                  type="time"
+                  defaultValue="00:00"
+                  aria-label="Optimal productivity start time"
+                />
               </label>
               <label>
                 <span>End</span>
-                <input id="optimalProductivityEndTimeInput" type="time" defaultValue="23:59" aria-label="Optimal productivity end time" />
+                <button
+                  className="optimalProductivityClockButton"
+                  id="optimalProductivityEndTimeButton"
+                  type="button"
+                  aria-label="Choose optimal productivity end time"
+                >
+                  <span className="optimalProductivityClockValue" id="optimalProductivityEndTimeValue">11:59 PM</span>
+                </button>
+                <input
+                  id="optimalProductivityEndTimeInput"
+                  className="optimalProductivityClockNativeInput"
+                  type="time"
+                  defaultValue="23:59"
+                  aria-label="Optimal productivity end time"
+                />
               </label>
             </div>
           </div>

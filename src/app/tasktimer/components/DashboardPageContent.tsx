@@ -267,7 +267,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             <div className="dashboardCardTitle">Focus Heatmap</div>
                             <p className="modalSubtext" id="dashboardHeatSummaryDate">Select a day to review logged time.</p>
                           </div>
-                          <button className="iconBtn dashboardHeatFlipBackBtn" id="dashboardHeatSummaryCloseBtn" type="button" title="Back to heatmap" aria-label="Back to heatmap" aria-expanded="false">
+                          <button className="iconBtn dashboardHeatFlipBackBtn" id="dashboardHeatSummaryCloseBtn" type="button" title="Back to heatmap" aria-label="Back to heatmap" aria-expanded="false" data-heatmap-flip="close">
                             &#8594;
                           </button>
                         </div>

@@ -6,6 +6,7 @@ import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/his
 import {
   buildOptimalProductivityDaysShortList,
   buildOptimalProductivityDaysSummary,
+  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
   DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
   DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
   normalizeOptimalProductivityDays,
@@ -37,6 +38,7 @@ type PreferenceEventDeps = {
 
 const CHECKPOINT_ALERT_SOUND_MODE_KEY = "taskticker_tasks_v1:checkpointAlertSoundMode";
 const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToastMode";
+type TimePickerInput = HTMLInputElement & { showPicker?: () => void };
 
 type FocusDndAccessStatus = {
   supported?: boolean;
@@ -398,6 +400,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     if (els.optimalProductivityEndTimeInput) {
       els.optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
     }
+    syncOptimalProductivityPeriodUi();
     syncOptimalProductivityDaysUi();
     syncTaskOrderByMenuUi();
     const lockAdvancedTaskConfig = !canUseAdvancedTaskConfig();
@@ -718,6 +721,51 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setOptimalProductivityEndTimeState(endTime);
     if (els.optimalProductivityStartTimeInput) els.optimalProductivityStartTimeInput.value = startTime;
     if (els.optimalProductivityEndTimeInput) els.optimalProductivityEndTimeInput.value = endTime;
+    syncOptimalProductivityPeriodUi();
+  }
+
+  function formatOptimalProductivityClockTimeLabel(value: unknown, fallback: string) {
+    const normalized = normalizeTimeOfDay(value, fallback);
+    const [hourRaw, minuteRaw] = normalized.split(":");
+    const hour24 = Math.max(0, Math.min(23, Number(hourRaw || 0)));
+    const hour12 = hour24 % 12 || 12;
+    const meridiem = hour24 >= 12 ? "PM" : "AM";
+    return `${hour12}:${String(Number(minuteRaw || 0)).padStart(2, "0")} ${meridiem}`;
+  }
+
+  function syncOptimalProductivityPeriodUi() {
+    const startLabel = formatOptimalProductivityClockTimeLabel(
+      ctx.getOptimalProductivityStartTime(),
+      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
+    );
+    const endLabel = formatOptimalProductivityClockTimeLabel(
+      ctx.getOptimalProductivityEndTime(),
+      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
+    );
+    if (els.optimalProductivityStartTimeValue) els.optimalProductivityStartTimeValue.textContent = startLabel;
+    if (els.optimalProductivityEndTimeValue) els.optimalProductivityEndTimeValue.textContent = endLabel;
+    if (els.optimalProductivityStartTimeButton) {
+      els.optimalProductivityStartTimeButton.setAttribute("aria-label", `Choose optimal productivity start time, current ${startLabel}`);
+    }
+    if (els.optimalProductivityEndTimeButton) {
+      els.optimalProductivityEndTimeButton.setAttribute("aria-label", `Choose optimal productivity end time, current ${endLabel}`);
+    }
+  }
+
+  function openOptimalProductivityTimePicker(input: HTMLInputElement | null) {
+    if (!input) return;
+    input.focus();
+    const pickerInput = input as TimePickerInput;
+    if (typeof pickerInput.showPicker === "function") {
+      try {
+        pickerInput.showPicker();
+        return;
+      } catch {
+        // Fall back to a visible native field when browser picker access is blocked.
+      }
+    }
+    input.classList.add("isFallbackVisible");
+    window.setTimeout(() => input.focus(), 0);
   }
 
   function getOptimalProductivityDayInputs() {
@@ -749,6 +797,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       const row = inputsByDay.get(day)?.closest(".chkRow");
       if (row) els.optimalProductivityDaysMenu?.appendChild(row);
     });
+    if (els.optimalProductivityDaysAllBtn) {
+      els.optimalProductivityDaysMenu.appendChild(els.optimalProductivityDaysAllBtn);
+    }
   }
 
   function syncTaskScheduleDaysHelper(helperEl: HTMLElement | null, days: ReturnType<typeof normalizeOptimalProductivityDays>) {
@@ -773,6 +824,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     }
     if (els.optimalProductivityDaysSummary) {
       els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
+    }
+    if (els.optimalProductivityDaysAllBtn) {
+      const allSelected = days.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length;
+      els.optimalProductivityDaysAllBtn.classList.toggle("isSelected", allSelected);
+      els.optimalProductivityDaysAllBtn.setAttribute("aria-pressed", allSelected ? "true" : "false");
     }
     syncTaskScheduleDaysHelper(els.addTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     syncTaskScheduleDaysHelper(els.editTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
@@ -1070,6 +1126,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       });
     });
     ctx.on(els.optimalProductivityStartTimeInput, "change", () => {
+      els.optimalProductivityStartTimeInput?.classList.remove("isFallbackVisible");
       applyOptimalProductivityPeriodPreference(
         els.optimalProductivityStartTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
         ctx.getOptimalProductivityEndTime()
@@ -1078,12 +1135,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.render();
     });
     ctx.on(els.optimalProductivityEndTimeInput, "change", () => {
+      els.optimalProductivityEndTimeInput?.classList.remove("isFallbackVisible");
       applyOptimalProductivityPeriodPreference(
         ctx.getOptimalProductivityStartTime(),
         els.optimalProductivityEndTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
       );
       saveOptimalProductivityPeriodPreference();
       ctx.render();
+    });
+    ctx.on(els.optimalProductivityStartTimeButton, "click", () => {
+      openOptimalProductivityTimePicker(els.optimalProductivityStartTimeInput);
+    });
+    ctx.on(els.optimalProductivityEndTimeButton, "click", () => {
+      openOptimalProductivityTimePicker(els.optimalProductivityEndTimeInput);
     });
     ctx.on(window, "resize", () => {
       syncTaskSettingsUi();
@@ -1111,6 +1175,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         saveOptimalProductivityDaysPreference();
         ctx.render();
       });
+    });
+    ctx.on(els.optimalProductivityDaysAllBtn, "click", () => {
+      applyOptimalProductivityDaysPreference(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
+      saveOptimalProductivityDaysPreference();
+      ctx.render();
     });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();

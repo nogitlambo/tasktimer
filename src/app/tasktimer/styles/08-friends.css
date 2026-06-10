@@ -756,20 +756,34 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection,
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .dashboardTopRow{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .friendTopRow{
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
   border-color: transparent !important;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .dashboardTopRow{
-  justify-content: flex-start;
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection{
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .dashboardEditActions{
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .friendTopRow{
+  justify-content: flex-start;
+  padding-top: 8px;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection .friendPageHeaderActions{
   margin-left: 0;
   margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 1 1 100%;
+  width: 100%;
+  gap: 12px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn{
@@ -777,8 +791,11 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  border-color: transparent !important;
-  color: #ffffff !important;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #c9ff24 !important;
+  color: #c9ff24 !important;
   background: transparent !important;
   box-shadow: none !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
@@ -794,6 +811,7 @@
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn:active{
   background: rgba(225,230,236,.16) !important;
+  transform: none !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn::after{
@@ -806,7 +824,7 @@
   display: block;
   object-fit: contain;
   flex: 0 0 auto;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) saturate(100%) invert(88%) sepia(79%) saturate(1471%) hue-rotate(19deg) brightness(105%) contrast(103%);
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard{
@@ -2435,7 +2453,6 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] .appPages,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages,
   body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard,
-  body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardShell,
   body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardGrid,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardGrid{
@@ -2448,15 +2465,33 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] .appPages,
     box-sizing: border-box;
   }
 
+body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsSection{
+    width: 100% !important;
+    max-width: none !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box;
+  }
+
 body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardShell,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardShell{
     width: 100% !important;
     max-width: none !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    box-sizing: border-box;
+  }
+
+body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardShell{
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardShell{
     padding-left: 0 !important;
     padding-right: 0 !important;
-    box-sizing: border-box;
   }
 
 body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard,

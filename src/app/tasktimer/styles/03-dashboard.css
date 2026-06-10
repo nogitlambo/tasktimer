@@ -159,16 +159,32 @@
 .dashboardActivityYAxis{
   position:absolute;
   left:12px;
-  top:24px;
-  bottom:58px;
+  top:0;
+  bottom:42px;
   width:52px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
   color:rgba(220,238,246,.58);
   font-size:11px;
+  line-height:1;
   text-align:right;
   pointer-events:none;
+}
+
+.dashboardActivityYAxis span{
+  position:absolute;
+  right:0;
+  transform:translateY(-50%);
+}
+
+.dashboardActivityYAxis span:nth-child(1){
+  top:10.625%;
+}
+
+.dashboardActivityYAxis span:nth-child(2){
+  top:50.46875%;
+}
+
+.dashboardActivityYAxis span:nth-child(3){
+  top:90.3125%;
 }
 
 .dashboardActivityXAxis{
@@ -327,7 +343,9 @@ body[data-theme="lime"] .dashboardActivityGoalLine{
   }
 }
 
-.dashboardTopRow{
+.dashboardTopRow,
+.tasksTopRow,
+.friendTopRow{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
@@ -6069,7 +6087,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   stroke-linecap: butt;
   transform: rotate(-90deg);
   transform-origin: 190px 190px;
-  opacity: .34;
+  opacity: .25;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment{

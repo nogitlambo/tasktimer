@@ -739,7 +739,7 @@ describe("edit task schedule conflict confirmation", () => {
   });
 });
 
-describe("edit task non-optimal schedule confirmation", () => {
+describe("edit task scheduled days outside productivity preferences", () => {
   const nonConflictingBusyTask = task({
     id: "busy",
     name: "Deep Work",
@@ -791,7 +791,7 @@ describe("edit task non-optimal schedule confirmation", () => {
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 
-  it("removes non-optimal scheduled days when Remove Days is chosen", () => {
+  it("saves scheduled days outside productivity preferences without prompting", () => {
     const harness = createEditHarness({
       durationPeriod: "week",
       productivityDays: ["mon", "wed", "fri"],
@@ -809,27 +809,15 @@ describe("edit task non-optimal schedule confirmation", () => {
 
     harness.api.closeEdit(true);
 
-    expect(harness.ctx.confirm).toHaveBeenCalledWith(
-      "Non-Optimal Scheduled Days",
-      "Sat is not selected as optimal productivity day. Remove those scheduled days from this task or keep them?",
-      expect.objectContaining({
-        okLabel: "Remove Days",
-        altLabel: "Keep Days",
-        okButtonClassName: "btn btn-accent",
-        altButtonClassName: "btn btn-ghost",
-      })
-    );
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
-
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
-    expect(harness.sourceTask.plannedStartDay).toBe("mon");
-    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
     expect(harness.ctx.save).toHaveBeenCalled();
     expect(harness.getEditIndex()).toBeNull();
   });
 
-  it("removes non-optimal days from daily recurring all-day schedules", () => {
+  it("saves daily recurring all-day schedules without removing non-productivity days", () => {
     const harness = createEditHarness({
       durationPeriod: "day",
       productivityDays: ["mon", "tue", "wed", "thu", "fri"],
@@ -847,132 +835,13 @@ describe("edit task non-optimal schedule confirmation", () => {
     });
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
 
-    expect(harness.sourceTask.plannedStartByDay).toEqual({
-      mon: "09:00",
-      tue: "09:00",
-      wed: "09:00",
-      thu: "09:00",
-      fri: "09:00",
-    });
-    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sat");
-    expect(harness.sourceTask.plannedStartByDay).not.toHaveProperty("sun");
-  });
-
-  it("removes non-optimal days from legacy daily recurring schedules", () => {
-    const harness = createEditHarness({
-      durationPeriod: "day",
-      productivityDays: ["mon", "tue", "wed", "thu", "fri"],
-      busyTask: nonConflictingBusyTask,
-      sourceTask: task({
-        id: "source",
-        name: "Focus",
-        taskType: "recurring",
-        timeGoalPeriod: "day",
-        timeGoalMinutes: 60,
-        plannedStartDay: null,
-        plannedStartTime: "09:00",
-        plannedStartByDay: null,
-      }),
-    });
-
-    harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
-
-    expect(harness.sourceTask.plannedStartByDay).toEqual({
-      mon: "09:00",
-      tue: "09:00",
-      wed: "09:00",
-      thu: "09:00",
-      fri: "09:00",
-    });
-    expect(harness.sourceTask.plannedStartTime).toBeNull();
-  });
-
-  it("marks a recurring task as intentionally unscheduled when all scheduled days are removed", () => {
-    const harness = createEditHarness({
-      durationPeriod: "week",
-      productivityDays: ["mon", "wed", "fri"],
-      busyTask: nonConflictingBusyTask,
-      sourceTask: task({
-        id: "source",
-        name: "Focus",
-        taskType: "recurring",
-        timeGoalPeriod: "week",
-        timeGoalMinutes: 120,
-        plannedStartDay: "sat",
-        plannedStartTime: "09:00",
-        plannedStartByDay: { sat: "09:00" },
-      }),
-    });
-
-    harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
-
-    expect(harness.sourceTask.plannedStartByDay).toBeNull();
-    expect(harness.sourceTask.plannedStartDay).toBeNull();
-    expect(harness.sourceTask.plannedStartTime).toBeNull();
-    expect(harness.sourceTask.plannedStartOpenEnded).toBe(true);
-  });
-
-  it("keeps non-optimal scheduled days when Keep Days is chosen", () => {
-    const harness = createEditHarness({
-      durationPeriod: "week",
-      productivityDays: ["mon", "wed", "fri"],
-      busyTask: nonConflictingBusyTask,
-      sourceTask: task({
-        id: "source",
-        name: "Focus",
-        taskType: "recurring",
-        timeGoalPeriod: "week",
-        timeGoalMinutes: 120,
-        plannedStartTime: "09:00",
-        plannedStartByDay: { mon: "09:00", sat: "09:00" },
-      }),
-    });
-
-    harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
-    options?.onAlt?.();
-
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
-    expect(harness.sourceTask.plannedStartDay).toBeNull();
-    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual(Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])));
     expect(harness.ctx.save).toHaveBeenCalled();
-    expect(harness.getEditIndex()).toBeNull();
   });
 
-  it("cancels the non-optimal schedule prompt without saving or closing edit", () => {
-    const harness = createEditHarness({
-      durationPeriod: "week",
-      productivityDays: ["mon", "wed", "fri"],
-      busyTask: nonConflictingBusyTask,
-      sourceTask: task({
-        id: "source",
-        name: "Focus",
-        taskType: "recurring",
-        timeGoalPeriod: "week",
-        timeGoalMinutes: 120,
-        plannedStartTime: "09:00",
-        plannedStartByDay: { mon: "09:00", sat: "09:00" },
-      }),
-    });
-
-    harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onCancel?: () => void } | undefined;
-    options?.onCancel?.();
-
-    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
-    expect(harness.ctx.save).not.toHaveBeenCalled();
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
-    expect(harness.getEditIndex()).toBe(0);
-  });
-
-  it("clears once-off schedule fields when removing a non-optimal once-off day", () => {
+  it("saves a once-off day outside productivity preferences without prompting", () => {
     const harness = createEditHarness({
       productivityDays: ["mon", "wed", "fri"],
       busyTask: nonConflictingBusyTask,
@@ -990,16 +859,15 @@ describe("edit task non-optimal schedule confirmation", () => {
     harness.ctx.els.editTaskOnceOffDaySelect = selectStub("sat");
 
     harness.api.closeEdit(true);
-    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onOk?: () => void } | undefined;
-    options?.onOk?.();
 
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
     expect(harness.sourceTask.taskType).toBe("once-off");
-    expect(harness.sourceTask.onceOffDay).toBeNull();
-    expect(harness.sourceTask.onceOffTargetDate).toBeNull();
-    expect(harness.sourceTask.plannedStartDay).toBeNull();
-    expect(harness.sourceTask.plannedStartTime).toBeNull();
-    expect(harness.sourceTask.plannedStartByDay).toBeNull();
-    expect(harness.sourceTask.plannedStartOpenEnded).toBe(true);
+    expect(harness.sourceTask.onceOffDay).toBe("sat");
+    expect(harness.sourceTask.onceOffTargetDate).toBeTruthy();
+    expect(harness.sourceTask.plannedStartDay).toBe("sat");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ sat: "09:00" });
+    expect(harness.sourceTask.plannedStartOpenEnded).toBe(false);
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 

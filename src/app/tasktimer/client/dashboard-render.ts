@@ -1195,7 +1195,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     };
   }
 
-  const dashboardActivityChartBounds = { left: 68, right: 692, top: 34, bottom: 258 };
+  const dashboardActivityChartBounds = { left: 68, right: 692, top: 34, bottom: 289 };
 
   function getDashboardActivityY(valueMs: number, maxChartMs: number) {
     const chart = dashboardActivityChartBounds;
@@ -2484,7 +2484,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const hasHistoryEntries = (historyByDayMs.get(key) || 0) > 0;
       html.push(
         hasHistoryEntries
-          ? `<button class="dashboardHeatDayCell isActive isInteractive" type="button" data-activity-level="${activityLevel}" data-heat-date="${ctx.escapeHtmlUI(
+          ? `<button class="dashboardHeatDayCell isActive isInteractive" type="button" data-activity-level="${activityLevel}" data-heatmap-flip="open" data-heat-date="${ctx.escapeHtmlUI(
               key
             )}" data-heat-date-label="${ctx.escapeHtmlUI(dateText)}" role="gridcell" aria-label="${ctx.escapeHtmlUI(aria)}" title="${ctx.escapeHtmlUI(
               aria
