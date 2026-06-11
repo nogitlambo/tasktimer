@@ -93,6 +93,7 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
     sourceTask.taskType === "recurring" &&
     !sourceTask.plannedStartOpenEnded &&
     sourceTask.plannedStartDay == null &&
+    !normalizeTaskPlannedStartByDay(sourceTask.plannedStartByDay) &&
     !!normalizeScheduleStoredTime(sourceTask.plannedStartTime);
   const sourceIsRecurringDaily =
     !!sourceTask &&

@@ -380,7 +380,7 @@ afterEach(() => {
 });
 
 describe("dashboard activity overview card", () => {
-  it("renders one x-axis label for each fortnight day", () => {
+  it("renders one x-axis label for each current-week day on desktop", () => {
     const harness = createRenderHarness([]);
 
     try {
@@ -388,9 +388,50 @@ describe("dashboard activity overview card", () => {
       const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
       const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const firstBar = bars[0]?.children[0];
+      const lastBar = bars[6]?.children[0];
 
-      expect(axisDayCount).toBe(14);
-      expect(bars).toHaveLength(14);
+      expect(axisDayCount).toBe(7);
+      expect(bars).toHaveLength(7);
+      expect(Number.parseFloat(String(firstBar?.getAttribute("width") || "0"))).toBeGreaterThan(60);
+      expect(Number.parseFloat(String(firstBar?.getAttribute("x") || "0"))).toBeLessThan(90);
+      expect(Number.parseFloat(String(lastBar?.getAttribute("x") || "0"))).toBeGreaterThan(600);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders current week with previous-week ghost bars on desktop", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
+      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const currentBar = bars[0]?.children[0];
+      const ghostBar = previousBars?.children[0];
+
+      expect(axisDayCount).toBe(7);
+      expect(bars).toHaveLength(7);
+      expect(previousBars?.style.display).toBe("");
+      expect(previousBars?.children).toHaveLength(7);
+      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
+      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
     } finally {
       harness.restore();
     }
@@ -452,17 +493,18 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[7]?.children[0];
-      const secondBar = bars[8]?.children[0];
+      const firstBar = bars[0]?.children[0];
+      const secondBar = bars[1]?.children[0];
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
-      expect(bars).toHaveLength(14);
+      expect(bars).toHaveLength(7);
       expect(firstBar?.getAttribute("fill")).toBe("rgb(255,140,0)");
       expect(secondBar?.getAttribute("fill")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
       expect(goalLine?.style.display).toBe("");
-      expect(previousBars?.children).toHaveLength(0);
+      expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(7);
     } finally {
       harness.restore();
     }
@@ -486,7 +528,7 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[7]?.children[0];
+      const firstBar = bars[0]?.children[0];
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
 
       expect(firstBar?.getAttribute("fill")).toBe("#00e5ff");
@@ -885,8 +927,8 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children[0]?.innerHTML).toContain("Goal Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("New Task");
       expect(connectorEls).toHaveLength(2);
-      expect(centerEl?.innerHTML).toContain("Task Focus");
-      expect(centerEl?.innerHTML).toContain("0% completed today");
+      expect(centerEl?.innerHTML).toContain("0%");
+      expect(centerEl?.innerHTML).toContain("completed today");
     } finally {
       harness.restore();
     }
@@ -972,8 +1014,53 @@ describe("dashboard completed card", () => {
       harness.render();
       const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
 
-      expect(centerEl?.innerHTML).toContain("Task Focus");
-      expect(centerEl?.innerHTML).toContain("50% completed today");
+      expect(centerEl?.innerHTML).toContain("50%");
+      expect(centerEl?.innerHTML).toContain("completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows partial task progress in the donut center percentage", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({ id: "partial-task", name: "Partial Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "partial-task": [{ ts: nowValue, name: "Partial Task", ms: 30 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(centerEl?.innerHTML).toContain("50%");
+      expect(centerEl?.innerHTML).toContain("completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("weights the donut center percentage by task duration", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({ id: "daily-task", name: "Daily Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 20, plannedStartByDay: todaySchedule() }),
+      task({ id: "weekly-task", name: "Weekly Task", timeGoalEnabled: true, timeGoalPeriod: "week", timeGoalMinutes: 360, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "daily-task": [{ ts: nowValue, name: "Daily Task", ms: 20 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(centerEl?.innerHTML).toContain("5%");
+      expect(centerEl?.innerHTML).toContain("completed today");
     } finally {
       harness.restore();
     }
@@ -1025,7 +1112,7 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children).toHaveLength(0);
       expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(true);
       expect(connectorEls).toHaveLength(0);
-      expect(centerEl?.innerHTML).toContain("Task Focus");
+      expect(centerEl?.innerHTML).toContain("0%");
     } finally {
       harness.restore();
     }

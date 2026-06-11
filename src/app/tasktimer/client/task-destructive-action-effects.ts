@@ -159,19 +159,10 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
         okLabel: "Delete",
         checkboxLabel: "Also Delete All Tasks",
         checkboxChecked: false,
-        dangerInputLabel: "",
-        dangerInputMatch: "DELETE",
-        dangerInputPlaceholder: "Enter 'delete' to proceed.",
         onOk: () => {
           const alsoDelete = options.getConfirmDeleteAllChecked();
           const affectedTaskIds = tasks.map((row) => String(row.id || "")).filter(Boolean);
           const uid = String(options.currentUid() || "");
-          const historyByTaskId = options.getHistoryByTaskId();
-          const deletedHistoryEntryCount = Object.values(historyByTaskId || {}).reduce(
-            (sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0),
-            0
-          );
-          const deletedTaskCount = alsoDelete ? tasks.length : 0;
           const nextHistory = {} as Record<string, unknown[]>;
           const nextDeletedTaskMeta = {} as DeletedTaskMeta;
           options.setHistoryByTaskId(nextHistory);

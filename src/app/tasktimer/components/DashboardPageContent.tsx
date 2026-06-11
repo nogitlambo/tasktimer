@@ -87,7 +87,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                     <div className="dashboardActivityOverviewBody">
                       <div className="dashboardActivityChartPanel">
                         <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
-                          <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" preserveAspectRatio="none" role="img" aria-label="Two week activity chart" focusable="false">
+                          <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" preserveAspectRatio="none" role="img" aria-label="Seven day activity chart with previous week comparison" focusable="false">
                             <g id="dashboardActivityChartGrid" />
                             <g id="dashboardActivityPreviousBars" />
                             <g id="dashboardActivityBars" />

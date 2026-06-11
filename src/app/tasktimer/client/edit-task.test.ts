@@ -324,6 +324,30 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     expect(editDraft.plannedStartDay).toBeNull();
   });
 
+  it("preserves productivity-day daily schedules that still have a shared legacy planned start", () => {
+    const sourceTask = task({
+      taskType: "recurring",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+    const editDraft = task({
+      ...sourceTask,
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, sourceTask, ["mon", "wed", "fri"]);
+
+    expect(editDraft.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(editDraft.plannedStartByDay).not.toHaveProperty("tue");
+    expect(editDraft.plannedStartByDay).not.toHaveProperty("thu");
+    expect(editDraft.plannedStartByDay).not.toHaveProperty("sat");
+    expect(editDraft.plannedStartByDay).not.toHaveProperty("sun");
+    expect(editDraft.plannedStartTime).toBeNull();
+  });
+
   it("does not rewrite existing weekly schedules without an edit-save productivity day context", () => {
     const editDraft = task({
       taskType: "recurring",
@@ -617,9 +641,7 @@ describe("edit task schedule conflict confirmation", () => {
     options?.onAlt?.();
 
     expect(harness.sourceTask.plannedStartTime).toBe("10:00");
-    expect(harness.sourceTask.plannedStartByDay).toEqual(
-      Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "10:00"]))
-    );
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "10:00" });
     expectEditConflictSavedAndClosed(harness);
   });
 
@@ -631,7 +653,7 @@ describe("edit task schedule conflict confirmation", () => {
     options?.onOk?.();
 
     expect(harness.sourceTask.plannedStartTime).toBe("09:00");
-    expect(harness.sourceTask.plannedStartByDay).toEqual(Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])));
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
     expect(harness.busyTask.plannedStartTime).toBe("10:00");
     expect(harness.busyTask.plannedStartByDay).toEqual({ mon: "10:00" });
     expectEditConflictSavedAndClosed(harness);

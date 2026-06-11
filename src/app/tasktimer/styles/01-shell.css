@@ -206,7 +206,11 @@ body[data-app-page="dashboard"] .appPages{
   padding-left: 0 !important;
 }
 
-body[data-app-page="friends"] .appPages,
+body[data-app-page="friends"] .appPages{
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
 body[data-app-page="leaderboard"] .appPages{
   padding-left: 104px !important;
   padding-right: 18px !important;

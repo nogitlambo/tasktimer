@@ -28,7 +28,6 @@ import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-
 import { buildDashboardTodayHoursModel, classifyDashboardTodayTrendIcon, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
-  type DashboardActivityOverviewDay,
   type DashboardActivityOverviewModel,
 } from "./dashboard-card-activity-overview";
 
@@ -1174,15 +1173,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function getDashboardActivityChartView(model: DashboardActivityOverviewModel) {
     const mobile = isDashboardActivityMobileChart();
-    if (!mobile) {
-      return {
-        mobile,
-        days: model.days,
-        previousDays: [] as DashboardActivityOverviewDay[],
-        maxChartMs: model.maxChartMs,
-        visibleTotalMs: model.visibleTotalMs,
-      };
-    }
     const previousDays = model.days.slice(0, 7);
     const days = model.days.slice(7, 14);
     const maxVisibleDailyMs = [...days, ...previousDays].reduce((max, day) => Math.max(max, day.totalMs), 0);
@@ -1250,10 +1240,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (previousBarsEl) {
       previousBarsEl.innerHTML = "";
-      previousBarsEl.style.display = view.mobile && view.previousDays.some((day) => day.totalMs > 0) ? "" : "none";
-      if (view.mobile) {
+      previousBarsEl.style.display = view.previousDays.some((day) => day.totalMs > 0) ? "" : "none";
+      if (view.previousDays.length > 0) {
         const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
-        const barWidth = Math.min(52, slotWidth * 0.48);
+        const barWidth = Math.min(76, slotWidth * 0.74);
         view.previousDays.forEach((day, index) => {
           const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
           const slotX = chart.left + index * slotWidth;
@@ -1278,7 +1268,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (barsEl) {
       barsEl.innerHTML = "";
       const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
-      const barWidth = Math.min(52, slotWidth * 0.48);
+      const barWidth = Math.min(76, slotWidth * 0.74);
       view.days.forEach((day, index) => {
         const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
         const slotX = chart.left + index * slotWidth;
@@ -1327,12 +1317,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
-    chartEl?.setAttribute("aria-label", view.mobile ? "Seven day activity chart with previous week comparison" : "Two week activity chart");
+    chartEl?.setAttribute("aria-label", "Seven day activity chart with previous week comparison");
     cardEl.setAttribute(
       "aria-label",
-      view.mobile
-        ? `Activity overview. Seven-day activity chart with previous-week comparison and ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged this week. ${formatDashboardDurationWithMinutes(model.previousWeekTotalMs)} logged previous week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
-        : `Activity overview. Two-week activity chart with ${formatDashboardDurationWithMinutes(model.visibleTotalMs)} logged across the visible range. ${formatDashboardDurationWithMinutes(model.weekTotalMs)} logged this week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
+      `Activity overview. Seven-day activity chart with previous-week comparison and ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged this week. ${formatDashboardDurationWithMinutes(model.previousWeekTotalMs)} logged previous week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
     );
   }
 
@@ -1356,7 +1344,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     };
 
     const renderCompletionRatio = (
-      completed: number,
       total: number,
       progressValues?: DashboardCompletedSegment[]
     ) => {
@@ -1374,10 +1361,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           color: normalizeTaskColor(item.color) || DASHBOARD_COMPLETED_FALLBACK_COLOR,
         };
       });
-      const totalProgress = safeItems.reduce((sum, item) => sum + item.progress, 0);
       const totalSliceWeightUnits = safeItems.reduce((sum, item) => sum + (item.goalMinutes > 0 ? item.goalMinutes : 1), 0);
+      const weightedProgressUnits = safeItems.reduce((sum, item) => {
+        const sliceWeightUnits = item.goalMinutes > 0 ? item.goalMinutes : 1;
+        return sum + sliceWeightUnits * item.progress;
+      }, 0);
+      const centerProgressPct = totalSliceWeightUnits > 0
+        ? Math.max(0, Math.min(100, Math.round((weightedProgressUnits / totalSliceWeightUnits) * 100)))
+        : 0;
       ticksEl.classList.toggle("isEmpty", totalCount <= 0);
-      ticksEl.classList.toggle("hasProgress", totalProgress > 0);
+      ticksEl.classList.toggle("hasProgress", weightedProgressUnits > 0);
       svgEl.setAttribute("viewBox", `0 0 ${DASHBOARD_COMPLETED_CHART_SIZE} ${DASHBOARD_COMPLETED_CHART_SIZE}`);
       svgEl.innerHTML = `<circle class="dashboardTasksCompletedTrack" cx="${DASHBOARD_COMPLETED_CHART_CENTER}" cy="${DASHBOARD_COMPLETED_CHART_CENTER}" r="${DASHBOARD_COMPLETED_RING_RADIUS}" pathLength="100"></circle><line class="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="${DASHBOARD_COMPLETED_CHART_CENTER}" y1="${DASHBOARD_COMPLETED_CHART_CENTER - 54}" x2="${DASHBOARD_COMPLETED_CHART_CENTER}" y2="${DASHBOARD_COMPLETED_CHART_CENTER - 78}"></line>`;
       labelsEl.innerHTML = "";
@@ -1390,11 +1383,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }
 
       const runningItem = safeItems.find((item) => item.running);
-      const completedPct = totalCount > 0 ? Math.round((Math.max(0, Math.round(completed)) / totalCount) * 100) : 0;
-      centerEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(Math.max(0, Math.min(100, totalProgress * 100))));
+      centerEl.style.setProperty("--dashboard-task-progress-color", fillBackgroundForPct(centerProgressPct));
       centerEl.innerHTML = runningItem
         ? `<span class="dashboardTasksCompletedCenterLabel">${ctx.escapeHtmlUI(runningItem.name)}</span><span class="dashboardTasksCompletedCenterSubtext">In Progress</span>`
-        : `<span class="dashboardTasksCompletedCenterLabel">Task Focus</span><span class="dashboardTasksCompletedCenterSubtext">${completedPct}% completed today</span>`;
+        : `<span class="dashboardTasksCompletedCenterLabel">${centerProgressPct}%</span><span class="dashboardTasksCompletedCenterSubtext">completed today</span>`;
 
       const labelWeightTotal = safeItems.length || 1;
       const weightedSlices = safeItems.map((item) => {
@@ -1480,7 +1472,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         trackSegmentEl.setAttribute("stroke-dashoffset", String(-sliceStartPct));
         svgEl.appendChild(trackSegmentEl);
 
-        if (totalProgress > 0 && item.progress > 0) {
+        if (weightedProgressUnits > 0 && item.progress > 0) {
           const segmentEl = document.createElementNS(svgNs, "circle");
           segmentEl.setAttribute("class", `dashboardTasksCompletedSegment${item.complete ? " isComplete" : ""}${item.running ? " isRunning" : ""}`);
           segmentEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
@@ -1588,7 +1580,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       ctx.getDashboardWidgetHasRenderedData().tasksCompleted = false;
     }
 
-    renderCompletionRatio(completedModel.totalCompleted, completedModel.totalPossible, completedModel.items);
+    renderCompletionRatio(completedModel.totalPossible, completedModel.items);
     if (metaEl) {
       metaEl.textContent = "";
       metaEl.style.display = "none";

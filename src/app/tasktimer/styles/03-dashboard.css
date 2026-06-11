@@ -162,7 +162,7 @@
   top:0;
   bottom:42px;
   width:52px;
-  color:rgba(220,238,246,.58);
+  color:#fff;
   font-size:11px;
   line-height:1;
   text-align:right;
@@ -194,7 +194,7 @@
   bottom:8px;
   height:34px;
   display:grid;
-  grid-template-columns:repeat(14, minmax(0, 1fr));
+  grid-template-columns:repeat(7, minmax(0, 1fr));
   gap:4px;
 }
 
@@ -202,7 +202,7 @@
   min-width:0;
   border:0;
   background:transparent;
-  color:rgba(220,238,246,.68);
+  color:#fff;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -219,7 +219,7 @@
 
 .dashboardActivityAxisDay small{
   font-size:10px;
-  color:rgba(220,238,246,.46);
+  color:#fff;
 }
 
 .dashboardActivityAxisDay.isCurrentDay small{
@@ -6092,7 +6092,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment{
   fill: none;
-  stroke-width: 30;
+  stroke-width: 36;
   stroke-linecap: butt;
   transform: rotate(-90deg);
   transform-origin: 190px 190px;
@@ -6111,13 +6111,13 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     filter:
       drop-shadow(0 0 3px rgba(0,0,0,.32))
       drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-    stroke-width: 30;
+    stroke-width: 36;
   }50%{
     opacity: 1;
     filter:
       drop-shadow(0 0 3px rgba(0,0,0,.32))
       drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-    stroke-width: 30;
+    stroke-width: 36;
   }
 }
 
@@ -6154,8 +6154,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenterLabel{
   color: rgba(245,248,244,.95);
-  font-family: var(--font-tight);
-  font-size: 14px;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: .03em;
@@ -6164,7 +6164,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenterSubtext{
   color: var(--dashboard-task-progress-color);
   font-family: var(--font-readable);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.15;
   font-weight: 800;
 }

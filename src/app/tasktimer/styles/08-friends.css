@@ -2485,8 +2485,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   }
 
 body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardShell{
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .dashboardShell{

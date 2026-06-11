@@ -6750,6 +6750,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   line-height: 1.5;
 }
 
+#confirmOverlay.isResetAllDeleteConfirm #confirmTitle{
+  color: var(--warn) !important;
+  text-transform: uppercase;
+  animation: deleteAccountConfirmTitlePulse 1.05s ease-in-out infinite;
+}
+
 #confirmOverlay.isResetAllDeleteConfirm #confirmDeleteAll{
   appearance: none;
   -webkit-appearance: none;

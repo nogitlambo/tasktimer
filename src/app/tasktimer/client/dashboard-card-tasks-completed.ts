@@ -1,4 +1,5 @@
 import { localDayKey } from "../lib/history";
+import { getLocalScheduleDay, getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
 import { isTaskTimeGoalCompletedToday } from "../lib/timeGoalCompletion";
@@ -32,6 +33,7 @@ export function buildDashboardTasksCompletedModel(options: {
   normalizeHistoryTimestampMs: (value: unknown) => number;
 }): DashboardTasksCompletedModel {
   const todayKey = options.todayKey || localDayKey(options.nowMs);
+  const todayScheduleDay = getLocalScheduleDay(new Date(options.nowMs));
   const dailyTaskGoalMinutes = new Map<string, number>();
   const dailyLoggedMsByTask = new Map<string, number>();
   const dailyLiveMsByTask = new Map<string, number>();
@@ -51,7 +53,7 @@ export function buildDashboardTasksCompletedModel(options: {
   options.dueTasks.forEach((task) => {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
-    const goalMinutes = task.timeGoalEnabled && task.timeGoalPeriod === "day" ? Math.max(0, Number(task.timeGoalMinutes || 0)) : 0;
+    const goalMinutes = task.timeGoalEnabled ? getScheduleTaskDurationMinutesForDay(task, todayScheduleDay) : 0;
     dailyTaskGoalMinutes.set(taskId, goalMinutes);
 
     const entries = Array.isArray(options.historyByTaskId?.[taskId]) ? options.historyByTaskId[taskId] : [];

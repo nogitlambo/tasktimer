@@ -1,5 +1,13 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
+import {
+  hasLocalDatePassed,
+  normalizeLocalDateValue,
+  normalizeScheduleStoredTime,
+  normalizeTaskPlannedStartByDay,
+  syncLegacyPlannedStartFields,
+  type ScheduleDay,
+} from "../lib/schedule-placement";
 import type { TaskTimerImportExportContext } from "./context";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -30,6 +38,24 @@ function safeJsonParse(input: string) {
   }
 }
 
+function normalizeScheduleDay(raw: unknown): ScheduleDay | null {
+  const value = String(raw || "").trim().toLowerCase();
+  return value === "mon" ||
+    value === "tue" ||
+    value === "wed" ||
+    value === "thu" ||
+    value === "fri" ||
+    value === "sat" ||
+    value === "sun"
+    ? value
+    : null;
+}
+
+function normalizeNonNegativeNumber(raw: unknown) {
+  const value = Number(raw);
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   const { els } = ctx;
 
@@ -38,14 +64,31 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   }
 
   function buildExportTaskSnapshot(task: Task) {
-    const taskSnapshot = {
-      ...(task as Task & {
-        xpDisqualifiedUntilReset?: unknown;
-      }),
-    };
-    delete taskSnapshot.xpDisqualifiedUntilReset;
+    const taskType = task.taskType === "once-off" ? "once-off" : "recurring";
+    const plannedStartByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+    const plannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
     return {
-      ...taskSnapshot,
+      id: String(task.id || ctx.createId()),
+      name: String(task.name || "Task"),
+      color: task.color ? String(task.color) : null,
+      order: Number.isFinite(Number(task.order)) ? Number(task.order) : 1,
+      createdAtMs:
+        Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0
+          ? Math.floor(Number(task.createdAtMs))
+          : Math.max(0, Math.floor(Number(task.order) || 0)),
+      accumulatedMs: normalizeNonNegativeNumber(task.accumulatedMs),
+      running: false,
+      startMs: null,
+      collapsed: !!task.collapsed,
+      hasStarted: !!task.hasStarted,
+      taskType,
+      onceOffDay: taskType === "once-off" ? normalizeScheduleDay(task.onceOffDay) : null,
+      onceOffTargetDate: taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
+      plannedStartDay: normalizeScheduleDay(task.plannedStartDay),
+      plannedStartTime,
+      plannedStartByDay,
+      plannedStartOpenEnded: !!task.plannedStartOpenEnded,
+      plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
       milestonesEnabled: !!task.milestonesEnabled,
       milestoneTimeUnit: task.milestoneTimeUnit === "minute" ? "minute" : "hour",
       milestones: ctx.sortMilestones(Array.isArray(task.milestones) ? task.milestones.slice() : []).map((milestone) => ({
@@ -68,6 +111,22 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
         ? String(task.presetIntervalLastMilestoneId)
         : null,
       presetIntervalNextSeq: ctx.getPresetIntervalNextSeqNum(task),
+      timeGoalEnabled: !!task.timeGoalEnabled,
+      timeGoalValue: normalizeNonNegativeNumber(task.timeGoalValue),
+      timeGoalUnit: task.timeGoalUnit === "minute" ? "minute" : "hour",
+      timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
+      timeGoalMinutes: normalizeNonNegativeNumber(task.timeGoalMinutes),
+      timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+      timeGoalCompletedAtMs:
+        task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
+          ? null
+          : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs))),
+      timeGoalCompletedReason:
+        task.timeGoalCompletedReason === "reset" || task.timeGoalCompletedReason === "goal" ? task.timeGoalCompletedReason : null,
+      timeGoalCompletedElapsedMs:
+        task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
+          ? null
+          : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs))),
     };
   }
 
@@ -147,9 +206,15 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.hasStarted = !!rawTask.hasStarted;
     nextTask.checkpointSoundEnabled = !!rawTask.checkpointSoundEnabled;
     nextTask.checkpointSoundMode = rawTask.checkpointSoundMode === "repeat" ? "repeat" : "once";
-    nextTask.checkpointToastEnabled = !!rawTask.checkpointToastEnabled;
+    nextTask.checkpointToastEnabled =
+      rawTask.checkpointToastEnabled == null ? nextTask.checkpointToastEnabled !== false : !!rawTask.checkpointToastEnabled;
     nextTask.checkpointToastMode = rawTask.checkpointToastMode === "manual" ? "manual" : "auto5s";
     nextTask.timeGoalAction = "confirmModal";
+    nextTask.timeGoalEnabled = !!rawTask.timeGoalEnabled;
+    nextTask.timeGoalValue = normalizeNonNegativeNumber(rawTask.timeGoalValue);
+    nextTask.timeGoalUnit = rawTask.timeGoalUnit === "minute" ? "minute" : "hour";
+    nextTask.timeGoalPeriod = rawTask.timeGoalPeriod === "day" ? "day" : "week";
+    nextTask.timeGoalMinutes = normalizeNonNegativeNumber(rawTask.timeGoalMinutes);
     nextTask.timeGoalCompletedDayKey = rawTask.timeGoalCompletedDayKey == null ? null : String(rawTask.timeGoalCompletedDayKey).trim() || null;
     nextTask.timeGoalCompletedAtMs =
       rawTask.timeGoalCompletedAtMs == null || !Number.isFinite(Number(rawTask.timeGoalCompletedAtMs))
@@ -167,7 +232,34 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       ? String(rawTask.presetIntervalLastMilestoneId)
       : null;
     nextTask.presetIntervalNextSeq = ctx.getPresetIntervalNextSeqNum(rawTask as Task);
+    nextTask.taskType = rawTask.taskType === "once-off" ? "once-off" : "recurring";
+    nextTask.onceOffDay = nextTask.taskType === "once-off" ? normalizeScheduleDay(rawTask.onceOffDay) : null;
+    nextTask.onceOffTargetDate =
+      nextTask.taskType === "once-off" ? normalizeLocalDateValue(rawTask.onceOffTargetDate) : null;
+    nextTask.plannedStartDay = normalizeScheduleDay(rawTask.plannedStartDay);
+    nextTask.plannedStartTime = normalizeScheduleStoredTime(rawTask.plannedStartTime);
+    nextTask.plannedStartByDay = normalizeTaskPlannedStartByDay(rawTask.plannedStartByDay);
+    nextTask.plannedStartOpenEnded = !!rawTask.plannedStartOpenEnded;
+    nextTask.plannedStartPushRemindersEnabled = rawTask.plannedStartPushRemindersEnabled !== false;
+    if (nextTask.taskType === "once-off" && nextTask.onceOffTargetDate && hasLocalDatePassed(nextTask.onceOffTargetDate)) {
+      nextTask.plannedStartDay = null;
+      nextTask.plannedStartTime = null;
+      nextTask.plannedStartByDay = null;
+      nextTask.plannedStartOpenEnded = false;
+    }
+    syncLegacyPlannedStartFields(nextTask);
+    nextTask.color = rawTask.color ? String(rawTask.color) : null;
+    nextTask.accumulatedMs = normalizeNonNegativeNumber(rawTask.accumulatedMs);
+    nextTask.hasStarted = !!rawTask.hasStarted;
+    nextTask.createdAtMs =
+      Number.isFinite(Number(rawTask.createdAtMs)) && Number(rawTask.createdAtMs) > 0
+        ? Math.floor(Number(rawTask.createdAtMs))
+        : Math.max(0, Math.floor(Number(nextTask.order) || 0));
+    nextTask.running = false;
+    nextTask.startMs = null;
     ctx.ensureMilestoneIdentity(nextTask);
+    nextTask.presetIntervalValue = ctx.getPresetIntervalValueNum(nextTask);
+    nextTask.presetIntervalNextSeq = ctx.getPresetIntervalNextSeqNum(nextTask);
     return nextTask;
   }
 

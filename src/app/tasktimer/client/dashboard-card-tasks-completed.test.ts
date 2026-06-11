@@ -123,4 +123,39 @@ describe("dashboard tasks completed card module", () => {
     expect(model.totalCompleted).toBe(1);
     expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
   });
+
+  it("weights scheduled weekly tasks by their split daily schedule duration", () => {
+    const nowMs = new Date("2026-05-04T12:00:00Z").getTime();
+    const model = buildDashboardTasksCompletedModel({
+      dueTasks: [
+        task({
+          id: "daily",
+          name: "Daily",
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 20,
+          plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+        }),
+        task({
+          id: "weekly",
+          name: "Weekly",
+          timeGoalPeriod: "week",
+          timeGoalMinutes: 360,
+          plannedStartByDay: { mon: "10:00", wed: "10:00", fri: "10:00" },
+        }),
+      ],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-04",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.items.map((item) => ({ name: item.name, goalMinutes: item.goalMinutes }))).toEqual([
+      { name: "Daily", goalMinutes: 20 },
+      { name: "Weekly", goalMinutes: 120 },
+    ]);
+  });
 });

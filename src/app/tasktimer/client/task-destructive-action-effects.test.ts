@@ -278,6 +278,8 @@ describe("task destructive action effects", () => {
     harness.confirmCalls[0].opts.onOk();
 
     expect(playDeleteAlertAudio).toHaveBeenCalledTimes(1);
+    expect(harness.confirmCalls[0].opts.dangerInputMatch).toBeUndefined();
+    expect(harness.confirmCalls[0].opts.dangerInputPlaceholder).toBeUndefined();
     expect(harness.history).toEqual({});
     expect(harness.deletedMeta).toEqual({});
     expect(harness.tasks).toHaveLength(2);

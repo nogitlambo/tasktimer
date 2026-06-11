@@ -19,7 +19,7 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/message.webp" alt="" aria-hidden="true" />
             <div className="settingsInlineSectionTitle">Push Notifications</div>
           </div>
           <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
@@ -62,7 +62,7 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               </div>
             </div>
             <div className="settingsInlineSectionHead">
-              <AppImg className="settingsInlineSectionIcon" src="/Settings.svg" alt="" aria-hidden="true" />
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/toast.webp" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">Checkpoint Toasts</div>
             </div>
             <div className="toggleRow" id="taskCheckpointToastToggleRow">
