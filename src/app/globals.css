@@ -854,12 +854,15 @@ canvas {
   overflow-wrap: anywhere;
 }
 
-.landingV2 .landingV2HeaderBrandIcon {
+.landingV2 .landingHeaderLogo {
   display: block;
-  width: clamp(30px, 7vw, 44px);
+  width: clamp(150px, 17vw, 214px);
   height: clamp(30px, 7vw, 44px);
-  flex: 0 0 clamp(30px, 7vw, 44px);
+  margin-right: clamp(75px, 8.5vw, 107px);
+  flex: 0 0 clamp(150px, 17vw, 214px);
   object-fit: contain;
+  transform: scale(1.5);
+  transform-origin: left center;
 }
 
 .landingV2 .landingV2Brand {
@@ -1741,12 +1744,15 @@ canvas {
   text-decoration: none;
 }
 
-.landingV2 .landingV2FooterBrandIcon {
+.landingV2 .landingFooterLogo {
   display: block;
-  width: 26px;
+  width: 126px;
   height: 26px;
-  flex: 0 0 26px;
+  margin-right: 63px;
+  flex: 0 0 126px;
   object-fit: contain;
+  transform: scale(1.5);
+  transform-origin: left center;
 }
 
 .landingV2 .landingV2FooterLinks {
@@ -2803,15 +2809,25 @@ canvas {
     font-size: clamp(0.92rem, 4.2vw, 1.12rem);
   }
 
-  .landingV2 .landingV2HeaderBrandIcon {
-    width: clamp(28px, 7.2vw, 34px);
+  .landingV2 .landingHeaderLogo {
+    width: clamp(128px, 42vw, 166px);
     height: clamp(28px, 7.2vw, 34px);
-    flex-basis: clamp(28px, 7.2vw, 34px);
+    margin-right: clamp(64px, 21vw, 83px);
+    flex-basis: clamp(128px, 42vw, 166px);
   }
 
   .landingV2 .landingV2HeaderActions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .landingV2 .landingV2HeaderBack,
+  .landingV2 .landingV2HeaderLink,
+  .landingV2 .landingV2LoginLink {
+    padding-right: 0;
+    padding-left: 0;
+    font-size: 10px;
+    letter-spacing: 0.12em;
   }
 
   .landingV2 .landingV2Actions {

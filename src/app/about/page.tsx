@@ -77,8 +77,7 @@ export default function AboutPage() {
       <div className="landingV2Shell">
         <header className="landingV2Header isVisible">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
-            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
-            <span>TaskLaunch</span>
+            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingHeaderLogo" />
           </Link>
 
           <div className="landingV2HeaderActions">

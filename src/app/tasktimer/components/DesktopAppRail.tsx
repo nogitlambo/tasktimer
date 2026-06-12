@@ -752,7 +752,7 @@ export default function DesktopAppRail({
             <div className="desktopRailLogo" aria-hidden="true">
               <AppImg
                 className="desktopRailBrandLogo"
-                src="/logo/tasklaunch-logo.png"
+                src="/logo/tasklaunch-logo.webp"
                 alt=""
               />
             </div>

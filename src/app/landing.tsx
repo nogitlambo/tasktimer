@@ -241,9 +241,8 @@ export default function Landing(props: LandingProps) {
         <header
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
         >
-          <Link href="/" className="landingV2FooterBrand displayFont">
-            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2HeaderBrandIcon" />
-            <span>TaskLaunch</span>
+          <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
+            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingHeaderLogo" />
           </Link>
 
           <div className="landingV2FooterLinks">
@@ -436,9 +435,8 @@ export default function Landing(props: LandingProps) {
         </section>
 
         <footer className="landingV2Footer">
-          <Link href="/" className="landingV2FooterBrand displayFont">
-            <AppImg src="/logo/launch-icon-original-transparent.png" alt="" className="landingV2FooterBrandIcon" />
-            <span>TaskLaunch</span>
+          <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
+            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingFooterLogo" />
           </Link>
           <div className="landingV2FooterLinks">
             <Link href="/landingsoon">Landing Soon</Link>

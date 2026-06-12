@@ -48,7 +48,6 @@ import {
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   formatWeeklyLeaderboardUtcPeriodLabel,
-  getWeeklyLeaderboardUtcPeriod,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
@@ -140,29 +139,6 @@ function formatLeaderboardTrend(xpRaw: number): string {
 
 function formatWeeklyLeaderboardPeriod(): string {
   return formatWeeklyLeaderboardUtcPeriodLabel();
-}
-
-function formatWeeklyLeaderboardFooterDateRange(nowMs: number): string {
-  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  return `${formatter.format(new Date(period.startMs))} - ${formatter.format(new Date(period.endMs))} UTC`;
-}
-
-function formatWeeklyLeaderboardEndsIn(nowMs: number): string {
-  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
-  const remainingMs = Math.max(0, period.endMs - nowMs);
-  const totalMinutes = Math.ceil(remainingMs / 60_000);
-  const days = Math.floor(totalMinutes / 1440);
-  const hours = Math.floor((totalMinutes % 1440) / 60);
-  const minutes = totalMinutes % 60;
-  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
 }
 
 function formatLeaderboardTaskCount(countRaw: number): string {
@@ -347,7 +323,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
-  const [weeklyNowMs, setWeeklyNowMs] = useState(() => Date.now());
   const [hydratedCurrentUserProfile, setHydratedCurrentUserProfile] = useState<Pick<
     LeaderboardProfile,
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
@@ -399,20 +374,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     leaderboardStateRef.current = leaderboardState;
   }, [leaderboardState]);
-
-  useEffect(() => {
-    if (leaderboardView !== "weekly") return;
-    const initialTimer = window.setTimeout(() => {
-      setWeeklyNowMs(Date.now());
-    }, 0);
-    const timer = window.setInterval(() => {
-      setWeeklyNowMs(Date.now());
-    }, 60_000);
-    return () => {
-      window.clearTimeout(initialTimer);
-      window.clearInterval(timer);
-    };
-  }, [leaderboardView]);
 
   useEffect(() => {
     void bootstrapFirebaseWebAppCheck();
@@ -844,8 +805,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const weeklyTableRows = weeklyRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
   const hasWeeklyRows = weeklyRows.length > 0;
-  const weeklyFooterDateRange = useMemo(() => formatWeeklyLeaderboardFooterDateRange(weeklyNowMs), [weeklyNowMs]);
-  const weeklyFooterEndsIn = useMemo(() => formatWeeklyLeaderboardEndsIn(weeklyNowMs), [weeklyNowMs]);
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
       topEntries: hydratedTopEntries,
@@ -1135,14 +1094,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     </div>
                   </div>
 
-              {leaderboardView === "weekly" ? (
-                <section
-                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard"
-                  id="leaderboardWeeklyPanel"
-                  role="tabpanel"
-                  aria-labelledby="leaderboardWeeklyTab"
-                  aria-label="Weekly leaderboard rankings"
-                >
+                  <div className="leaderboardScrollBody">
+                    {leaderboardView === "weekly" ? (
+                      <section
+                        className="dashboardCard leaderboardCard leaderboardWeeklyBoard"
+                        id="leaderboardWeeklyPanel"
+                        role="tabpanel"
+                        aria-labelledby="leaderboardWeeklyTab"
+                        aria-label="Weekly leaderboard rankings"
+                      >
                   {leaderboardState === "ready" && hasWeeklyRows ? (
                     <>
                       <div className="leaderboardWeeklyStage" aria-label={`Weekly ladder. ${formatWeeklyLeaderboardPeriod()}`}>
@@ -1158,8 +1118,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
                             }}
                           >
-                            <span className="leaderboardWeeklyBackdropMask leaderboardWeeklyStageAvatarMask" aria-hidden="true" />
-                            <span className="leaderboardWeeklyBackdropMask leaderboardWeeklyStageTextMask" aria-hidden="true" />
                             <span className="leaderboardWeeklyStageAvatarSlot">
                               {row.isPlaceholder ? null : (
                                 <>
@@ -1176,18 +1134,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                           </button>
                         ))}
-                        <span className="leaderboardWeeklyBackdropMask leaderboardWeeklyFooterWeekMask" aria-hidden="true" />
-                        <span className="leaderboardWeeklyBackdropMask leaderboardWeeklyFooterEndsMask" aria-hidden="true" />
-                        <div className="leaderboardWeeklyStageFooter" aria-label={`${weeklyFooterDateRange}. Ends in ${weeklyFooterEndsIn}.`}>
-                          <div className="leaderboardWeeklyStageFooterPeriod">
-                            <span className="leaderboardWeeklyStageFooterLabel">Current Week</span>
-                            <span className="leaderboardWeeklyStageFooterValue">{weeklyFooterDateRange}</span>
-                          </div>
-                          <div className="leaderboardWeeklyStageFooterCountdown">
-                            <span className="leaderboardWeeklyStageFooterLabel">Ends In</span>
-                            <span className="leaderboardWeeklyStageFooterValue">{weeklyFooterEndsIn}</span>
-                          </div>
-                        </div>
                       </div>
 
                       <div className="leaderboardWeeklyTableWrap leaderboardWeeklyLiveTableWrap">
@@ -1485,8 +1431,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       </div>
                     )
                   )}
-                </section>
-              )}
+                      </section>
+                    )}
+                  </div>
                 </>
               )}
             </div>
