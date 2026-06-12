@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { Task } from "./types";
 import {
   getTimeGoalCompletionDayKey,
+  getTimeGoalCompletionWeekKey,
   hasTaskReachedDailyTimeGoal,
   hasTaskGoalHistoryEntryToday,
+  isTaskTimeGoalStartLockedByHistoryForPeriod,
   isTaskTimeGoalStartLockedByHistoryToday,
   isTaskTimeGoalCompletedToday,
   isTaskTimeGoalStartLockedToday,
@@ -173,6 +175,34 @@ describe("time goal completion lock", () => {
           timeGoalMinutes: 60,
         }),
         60 * 60 * 1000
+      )
+    ).toBe(false);
+  });
+
+  it("history-locks a weekly goal until the configured week rolls over", () => {
+    const nowValue = new Date(2026, 4, 29, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 60,
+      timeGoalCompletedWeekKey: getTimeGoalCompletionWeekKey(nowValue, "mon"),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(
+      isTaskTimeGoalStartLockedByHistoryForPeriod(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 60 * 60 * 1000 }] },
+        nowValue,
+        "mon"
+      )
+    ).toBe(true);
+    expect(
+      isTaskTimeGoalStartLockedByHistoryForPeriod(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 60 * 60 * 1000 }] },
+        nowValue + 7 * 24 * 60 * 60 * 1000,
+        "mon"
       )
     ).toBe(false);
   });

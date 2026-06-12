@@ -145,6 +145,20 @@ describe("findFirstAvailableScheduleSlotFromProductivityWindow", () => {
     expect(getScheduleTaskDurationMinutesForDay(weekly, "fri")).toBe(120);
   });
 
+  it("uses the full weekly duration when a weekly recurring task has one scheduled day", () => {
+    const weekly = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 120,
+      splitAcrossProductivityDays: false,
+      plannedStartDay: "wed",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { wed: "09:00" },
+    });
+
+    expect(getScheduleTaskDurationMinutesForDay(weekly, "wed")).toBe(120);
+  });
+
   it("checks conflicts using weekly per-day split durations", () => {
     const weekly = task({
       id: "weekly",

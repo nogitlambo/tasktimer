@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = {
   devices: [],
   tasks: {},
+  activeSessions: {},
+  historyEntries: [],
+  writes: [],
+  deletes: [],
+  batchWrites: [],
   prefExists: true,
   prefs: {
     mobilePushAlertsEnabled: true,
@@ -16,10 +21,11 @@ function createDocSnapshot(id, data) {
     id,
     get: (field) => data[field],
     data: () => data,
+    exists: true,
   };
 }
 
-function createCollectionRef(path) {
+function createCollectionRef(path, filters = []) {
   const set = vi.fn(async () => {});
   const deleteRef = vi.fn(async () => {});
   return {
@@ -45,6 +51,26 @@ function createCollectionRef(path) {
           docs: state.devices.map((row) => createDocSnapshot(row.id, row)),
         };
       }
+      if (path.endsWith("/historyEntries")) {
+        const rows = state.historyEntries.filter((row) =>
+          filters.every((filter) => filter.field !== "taskId" || row.taskId === filter.value)
+        );
+        return {
+          docs: rows.map((row, index) => createDocSnapshot(row.id || `history-${index}`, row)),
+        };
+      }
+      if (path.endsWith("/activeSession/current")) {
+        const activeSession = state.activeSessions[path];
+        if (activeSession) {
+          return {
+            exists: true,
+            id: "current",
+            get: (field) => activeSession[field],
+            data: () => activeSession,
+          };
+        }
+        return { exists: false, id: "current", get: () => undefined, data: () => undefined };
+      }
       const task = state.tasks[path];
       if (task) {
         return {
@@ -56,11 +82,19 @@ function createCollectionRef(path) {
       }
       return { docs: [] };
     },
-    set,
-    delete: deleteRef,
-    where() {
-      return this;
+    async set(data, options) {
+      state.writes.push({ path, data, options });
+      return set(data, options);
     },
+    async delete() {
+      state.deletes.push(path);
+      return deleteRef();
+    },
+    where(field, op, value) {
+      return createCollectionRef(path, [...filters, { field, op, value }]);
+    },
+    orderBy() { return this; },
+    limit() { return this; },
   };
 }
 
@@ -77,7 +111,16 @@ vi.mock("firebase-admin/firestore", () => ({
   },
   getFirestore: vi.fn(() => ({
     collection: (name) => createCollectionRef(name),
-    batch: vi.fn(),
+    batch: vi.fn(() => {
+      const writes = [];
+      return {
+        set: vi.fn((ref, data, options) => writes.push({ type: "set", path: ref.path, data, options })),
+        delete: vi.fn((ref) => writes.push({ type: "delete", path: ref.path })),
+        commit: vi.fn(async () => {
+          state.batchWrites.push(...writes);
+        }),
+      };
+    }),
     runTransaction: vi.fn(),
   })),
 }));
@@ -111,6 +154,11 @@ describe("sendScheduledTaskNotification", () => {
   beforeEach(() => {
     state.devices = [];
     state.tasks = {};
+    state.activeSessions = {};
+    state.historyEntries = [];
+    state.writes = [];
+    state.deletes = [];
+    state.batchWrites = [];
     state.prefExists = true;
     state.prefs = {
       mobilePushAlertsEnabled: true,
@@ -327,5 +375,162 @@ describe("sendScheduledTaskNotification", () => {
       }),
       { merge: true }
     );
+  });
+});
+
+describe("processDueTimeGoalCompleteTask", () => {
+  beforeEach(() => {
+    state.devices = [];
+    state.tasks = {};
+    state.activeSessions = {};
+    state.historyEntries = [];
+    state.writes = [];
+    state.deletes = [];
+    state.batchWrites = [];
+    state.prefExists = true;
+    state.prefs = {
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: true,
+      weekStarting: "mon",
+    };
+    state.sendEachForMulticast = vi.fn(async () => ({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    }));
+  });
+
+  function dueDoc(data) {
+    return {
+      id: data.taskId || "task-1",
+      ref: {
+        path: `scheduled_time_goal_pushes/user-1__${data.taskId || "task-1"}`,
+        set: vi.fn(async (payload, options) => {
+          state.writes.push({ path: `scheduled_time_goal_pushes/user-1__${data.taskId || "task-1"}`, data: payload, options });
+        }),
+        delete: vi.fn(async () => {
+          state.deletes.push(`scheduled_time_goal_pushes/user-1__${data.taskId || "task-1"}`);
+        }),
+      },
+      data: () => data,
+    };
+  }
+
+  it("reschedules to the corrected goal moment when the task has not reached the goal", async () => {
+    const startMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    const nowMs = startMs + 20 * 60_000;
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Focus",
+      running: true,
+      startMs,
+      accumulatedMs: 0,
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+    };
+
+    const docSnap = dueDoc({
+      ownerUid: "user-1",
+      taskId: "task-1",
+      taskName: "Focus",
+      dueAtMs: nowMs,
+      eventType: "timeGoalComplete",
+      baseEventType: "timeGoalComplete",
+      route: "/tasklaunch",
+    });
+
+    const result = await __testing.processDueTimeGoalCompleteTask(docSnap, nowMs);
+
+    expect(result.status).toBe("skipped");
+    expect(docSnap.ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: startMs + 60 * 60_000,
+        timeGoalPeriod: "day",
+        timeGoalGoalMs: 60 * 60_000,
+      }),
+      { merge: true }
+    );
+    expect(state.batchWrites).toEqual([]);
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it("finalizes an overdue weekly goal at the exact goal timestamp", async () => {
+    const weekStartMs = new Date(2026, 4, 25, 0, 0, 0).getTime();
+    const startMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    const completedAtMs = startMs + 30 * 60_000;
+    const nowMs = startMs + 12 * 60 * 60_000;
+    state.historyEntries = [
+      {
+        taskId: "task-1",
+        ts: weekStartMs + 60_000,
+        name: "Focus",
+        ms: 30 * 60_000,
+      },
+    ];
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Focus",
+      color: "#c9ff24",
+      running: true,
+      startMs,
+      accumulatedMs: 0,
+      timeGoalEnabled: true,
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 60,
+    };
+    state.activeSessions["users/user-1/tasks/task-1/activeSession/current"] = {
+      sessionId: "session-1",
+      taskId: "task-1",
+      note: "cloud note",
+    };
+    state.devices = [
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: nowMs,
+      },
+    ];
+
+    const result = await __testing.processDueTimeGoalCompleteTask(dueDoc({
+      ownerUid: "user-1",
+      taskId: "task-1",
+      taskName: "Focus",
+      dueAtMs: startMs,
+      eventType: "timeGoalComplete",
+      baseEventType: "timeGoalComplete",
+      route: "/tasklaunch",
+      timeGoalPeriod: "week",
+      weekStarting: "mon",
+    }), nowMs);
+
+    expect(result.status).toBe("sent");
+    const historyWrite = state.batchWrites.find((write) => write.type === "set" && write.path.includes("/historyEntries/"));
+    expect(historyWrite?.data).toEqual(expect.objectContaining({
+      taskId: "task-1",
+      ts: completedAtMs,
+      ms: 30 * 60_000,
+      sessionId: "session-1",
+      note: "cloud note",
+    }));
+    const taskWrite = state.batchWrites.find((write) => write.type === "set" && write.path === "users/user-1/tasks/task-1");
+    expect(taskWrite?.data).toEqual(expect.objectContaining({
+      running: false,
+      startMs: null,
+      accumulatedMs: 0,
+      timeGoalCompletedWeekKey: "2026-05-25",
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedElapsedMs: 60 * 60_000,
+    }));
+    expect(state.batchWrites).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "delete", path: "users/user-1/tasks/task-1/activeSession/current" }),
+      expect.objectContaining({ type: "delete", path: "scheduled_time_goal_pushes/user-1__task-1" }),
+    ]));
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
   });
 });

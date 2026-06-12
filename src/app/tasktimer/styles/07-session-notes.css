@@ -28,7 +28,7 @@
   font-size: 22px;
   line-height: 1.2;
   letter-spacing: 0;
-  color: #f4f7ef;
+  color: #fff;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDescription,
@@ -37,7 +37,7 @@
   font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
   font-size: 13px;
   line-height: 1.45;
-  color: #9da69d;
+  color: #fff;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDescription{
@@ -59,7 +59,7 @@
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskTitle{
   margin: 0;
-  color: #f4f7ef;
+  color: #fff;
   font-family: var(--font-orbitron), var(--font-geist-mono), monospace;
   font-size: 15px;
   letter-spacing: 0;
@@ -85,7 +85,7 @@
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDateTitle{
   margin: 0;
-  color: #cbd4ca;
+  color: #fff;
   font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
   font-size: 13px;
   letter-spacing: 0;
@@ -114,7 +114,7 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteBody{
-  color: #edf2e8;
+  color: #fff;
   font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
   font-size: 14px;
   font-weight: 300;

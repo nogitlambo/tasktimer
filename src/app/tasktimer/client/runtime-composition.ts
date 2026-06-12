@@ -244,6 +244,7 @@ export function createTaskTimerRuntimeComposition(
     storageKeys,
     derivedKeys: {
       TIME_GOAL_PENDING_FLOW_KEY: `${storageKey}:timeGoalPendingFlow`,
+      TIME_GOAL_COMPLETION_ACK_KEY: `${storageKey}:timeGoalCompletionAck`,
       PENDING_PUSH_TASK_ID_KEY: `${storageKey}:pendingPushTaskId`,
       PENDING_PUSH_ACTION_KEY: `${storageKey}:pendingPushAction`,
       REWARD_SESSION_TRACKERS_KEY: `${storageKey}:rewardSessionTrackers`,

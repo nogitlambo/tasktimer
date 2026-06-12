@@ -722,6 +722,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
           historyByTaskId: nextHistory,
           manualEntryTs: Number(parsed.entry.ts || 0),
           nowMs: Date.now(),
+          weekStarting: ctx.getWeekStarting(),
         })
       : { completed: false };
     if (task && completed.completed) {
@@ -732,6 +733,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
           historyByTaskId: ctx.getHistoryByTaskId(),
           manualEntryTs: Number(parsed.entry.ts || 0),
           nowMs: Date.now(),
+          weekStarting: ctx.getWeekStarting(),
         });
       }
       ctx.save();

@@ -173,6 +173,7 @@ type CreateHistoryManagerOptionsArgs = {
   els: Parameters<typeof createTaskTimerHistoryManager>[0]["els"];
   on: Parameters<typeof createTaskTimerHistoryManager>[0]["on"];
   runtime: Parameters<typeof createTaskTimerHistoryManager>[0]["runtime"];
+  preferencesState: MutableStore;
   rewardState: MutableStore;
   taskCollectionBindings: {
     getTasks: () => Task[];
@@ -694,6 +695,7 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  toggleDashboardActivityPreviousWeek: () => boolean;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -719,6 +721,7 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
     | "renderDashboardTimelineCard"
+    | "toggleDashboardActivityPreviousWeek"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -1075,6 +1078,7 @@ export function createTaskTimerHistoryManagerContext(
     runtime: args.runtime,
     ...args.taskCollectionBindings,
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
+    getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getHmExpandedTaskGroups: () => asType<Set<string>>(args.historyUiState.get("hmExpandedTaskGroups")),
     setHmExpandedTaskGroups: (value) => {
       args.historyUiState.set("hmExpandedTaskGroups", value);
@@ -1588,6 +1592,7 @@ export function createTaskTimerDashboardContext(
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
+    toggleDashboardActivityPreviousWeek: args.toggleDashboardActivityPreviousWeek,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver: args.hasSelectedDashboardMomentumDriver,
@@ -1609,6 +1614,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     renderDashboardLiveWidgets,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
     selectDashboardTimelineSuggestion,
+    toggleDashboardActivityPreviousWeek,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver,
@@ -1643,6 +1649,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
+      toggleDashboardActivityPreviousWeek: () => toggleDashboardActivityPreviousWeek(),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),
       hasSelectedDashboardMomentumDriver: () => hasSelectedDashboardMomentumDriver(),

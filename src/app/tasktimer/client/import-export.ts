@@ -117,6 +117,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
       timeGoalMinutes: normalizeNonNegativeNumber(task.timeGoalMinutes),
       timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+      timeGoalCompletedWeekKey: task.timeGoalCompletedWeekKey == null ? null : String(task.timeGoalCompletedWeekKey).trim() || null,
       timeGoalCompletedAtMs:
         task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
           ? null
@@ -216,6 +217,8 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.timeGoalPeriod = rawTask.timeGoalPeriod === "day" ? "day" : "week";
     nextTask.timeGoalMinutes = normalizeNonNegativeNumber(rawTask.timeGoalMinutes);
     nextTask.timeGoalCompletedDayKey = rawTask.timeGoalCompletedDayKey == null ? null : String(rawTask.timeGoalCompletedDayKey).trim() || null;
+    nextTask.timeGoalCompletedWeekKey =
+      rawTask.timeGoalCompletedWeekKey == null ? null : String(rawTask.timeGoalCompletedWeekKey).trim() || null;
     nextTask.timeGoalCompletedAtMs =
       rawTask.timeGoalCompletedAtMs == null || !Number.isFinite(Number(rawTask.timeGoalCompletedAtMs))
         ? null

@@ -1,10 +1,12 @@
 import { localDayKey } from "../lib/history";
+import { normalizeDashboardWeekStart, startOfCurrentWeekMs, type DashboardWeekStart } from "../lib/historyChart";
 import { markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
 
 export type ManualEntryDailyGoalResult = {
   completed: boolean;
   totalTodayMs: number;
+  totalPeriodMs?: number;
 };
 
 export function getTaskHistoryMsForLocalDay(
@@ -26,26 +28,50 @@ export function completeManualEntryDailyGoalIfReached(args: {
   historyByTaskId: HistoryByTaskId;
   manualEntryTs: number;
   nowMs: number;
+  weekStarting?: DashboardWeekStart;
 }): ManualEntryDailyGoalResult {
   const task = args.task;
   const taskId = String(task?.id || "").trim();
   const nowDayKey = localDayKey(args.nowMs);
-  if (!taskId || localDayKey(args.manualEntryTs) !== nowDayKey) {
+  const period = task?.timeGoalPeriod === "day" ? "day" : "week";
+  const weekStarting = normalizeDashboardWeekStart(args.weekStarting);
+  const nowWeekStartMs = startOfCurrentWeekMs(args.nowMs, weekStarting);
+  const manualEntryInPeriod =
+    period === "day"
+      ? localDayKey(args.manualEntryTs) === nowDayKey
+      : args.manualEntryTs >= nowWeekStartMs && args.manualEntryTs < nowWeekStartMs + 7 * 24 * 60 * 60 * 1000;
+  if (!taskId || !manualEntryInPeriod) {
     return { completed: false, totalTodayMs: 0 };
   }
 
   const goalMinutes = Number(task?.timeGoalMinutes || 0);
-  if (!(task?.timeGoalEnabled && task.timeGoalPeriod === "day" && goalMinutes > 0)) {
+  if (!(task?.timeGoalEnabled && goalMinutes > 0)) {
     return { completed: false, totalTodayMs: 0 };
   }
 
   const totalTodayMs = getTaskHistoryMsForLocalDay(taskId, args.historyByTaskId, nowDayKey);
+  const totalPeriodMs =
+    period === "day"
+      ? totalTodayMs
+      : (args.historyByTaskId[String(taskId || "").trim()] || []).reduce((total, entry) => {
+          const ts = Number(entry?.ts || 0);
+          if (!(ts >= nowWeekStartMs && ts < nowWeekStartMs + 7 * 24 * 60 * 60 * 1000)) return total;
+          const ms = Number(entry?.ms || 0);
+          return total + (Number.isFinite(ms) && ms > 0 ? Math.floor(ms) : 0);
+        }, 0);
   const goalMs = Math.max(1, Math.floor(goalMinutes * 60_000));
-  if (totalTodayMs < goalMs) return { completed: false, totalTodayMs };
+  if (totalPeriodMs < goalMs) {
+    return period === "day"
+      ? { completed: false, totalTodayMs }
+      : { completed: false, totalTodayMs, totalPeriodMs };
+  }
 
   markTaskTimeGoalCompleted(task, args.nowMs, {
     reason: "goal",
-    elapsedMs: totalTodayMs,
+    elapsedMs: goalMs,
+    weekStarting,
   });
-  return { completed: true, totalTodayMs };
+  return period === "day"
+    ? { completed: true, totalTodayMs }
+    : { completed: true, totalTodayMs, totalPeriodMs };
 }

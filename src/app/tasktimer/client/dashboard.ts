@@ -176,6 +176,12 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
+    const previousWeekToggle = e.target?.closest?.("#dashboardActivityPreviousWeekToggle") as HTMLElement | null;
+    if (previousWeekToggle) {
+      ctx.toggleDashboardActivityPreviousWeek();
+      e.preventDefault();
+      return;
+    }
     const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
     if (heatDayBtn) {
       const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();

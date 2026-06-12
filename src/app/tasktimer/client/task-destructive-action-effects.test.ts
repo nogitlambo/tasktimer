@@ -19,6 +19,7 @@ type ConfirmCall = {
     checkboxLabel?: string;
     checkboxChecked?: boolean;
     dangerInputMatch?: string;
+    dangerInputPlaceholder?: string;
     onOk: () => void | Promise<void>;
     onCancel?: () => void;
   };

@@ -188,8 +188,8 @@ describe("time goal completion flow guard", () => {
     expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalMinutes: 1 }), { elapsedMs: 59_999 })).toBe(false);
   });
 
-  it("does not auto-stop weekly time goals", () => {
-    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalPeriod: "week", timeGoalMinutes: 1 }), { elapsedMs: 60_000 })).toBe(false);
+  it("auto-stops weekly time goals once elapsed reaches the goal", () => {
+    expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalPeriod: "week", timeGoalMinutes: 1 }), { elapsedMs: 60_000 })).toBe(true);
   });
 
   it("does not auto-stop an already completed daily time-goal task with qualifying history", () => {

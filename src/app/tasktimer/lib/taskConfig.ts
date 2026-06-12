@@ -30,6 +30,8 @@ type TaskScheduleSummaryOptions = {
   plannedStartTime: string;
   productivityDays: readonly unknown[];
   onceOffDay?: ScheduleDay | string | null;
+  splitAcrossProductivityDays?: boolean;
+  weeklyBlockDay?: ScheduleDay | string | null;
 };
 
 type AggregateTimeGoalTotals = {
@@ -221,6 +223,8 @@ export function formatTaskScheduleSummary({
   plannedStartTime,
   productivityDays,
   onceOffDay,
+  splitAcrossProductivityDays = true,
+  weeklyBlockDay,
 }: TaskScheduleSummaryOptions): string {
   const goalMinutes = getTaskScheduleSummaryGoalMinutes(durationValue, durationUnit);
   const startMinutes = parseScheduleTimeMinutes(plannedStartTime);
@@ -237,6 +241,11 @@ export function formatTaskScheduleSummary({
   const dayCount = days.length;
   const dayLabel = dayCount === 1 ? "productivity day" : "productivity days";
   if (durationPeriod === "week") {
+    if (!splitAcrossProductivityDays) {
+      return `Task will be added as a ${formatScheduleSummaryDuration(goalMinutes)} weekly scheduled block at ${startText} on ${formatScheduleSummaryDay(
+        weeklyBlockDay
+      )}.`;
+    }
     const baseMinutes = Math.floor(goalMinutes / dayCount);
     const remainder = goalMinutes % dayCount;
     const minMinutes = baseMinutes;

@@ -77,6 +77,18 @@ function createHarness(
   const addTaskScheduleSummaryText = {
     textContent: "",
   } as HTMLElement;
+  const addTaskSplitAcrossProductivityDaysRow = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLElement;
+  const addTaskSplitAcrossProductivityDays = {
+    checked: true,
+  } as HTMLInputElement;
+  const addTaskWeeklyBlockDayField = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLElement;
+  const addTaskWeeklyBlockDaySelect = {
+    value: "mon",
+  } as HTMLSelectElement;
 
   const on = vi.fn((target: object | null | undefined, type: string, handler: (event?: Event) => void) => {
     if (!target) return;
@@ -125,6 +137,10 @@ function createHarness(
       addTaskDurationReadout: null,
       addTaskScheduleSummary,
       addTaskScheduleSummaryText,
+      addTaskSplitAcrossProductivityDaysRow,
+      addTaskSplitAcrossProductivityDays,
+      addTaskWeeklyBlockDayField,
+      addTaskWeeklyBlockDaySelect,
       addTaskDurationRow: null,
       addTaskDurationPerLabel: null,
       addTaskDurationPeriodPills: null,
@@ -236,6 +252,8 @@ function createHarness(
     addTaskPlannedStartTimeInput,
     addTaskScheduleSummary,
     addTaskScheduleSummaryText,
+    addTaskSplitAcrossProductivityDaysRow,
+    addTaskWeeklyBlockDayField,
     ctx,
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
     toggleSchedule: (checked = true) => {
@@ -252,6 +270,14 @@ function createHarness(
     clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
     clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
     clickOnceOffType: () => handlers.get(addTaskTypeOnceOffBtn)?.get("click")?.(),
+    setSplitAcrossProductivityDays: (checked: boolean) => {
+      addTaskSplitAcrossProductivityDays.checked = checked;
+      handlers.get(addTaskSplitAcrossProductivityDays)?.get("change")?.();
+    },
+    setWeeklyBlockDay: (day: string) => {
+      addTaskWeeklyBlockDaySelect.value = day;
+      handlers.get(addTaskWeeklyBlockDaySelect)?.get("change")?.();
+    },
     setOnceOffDay: (day: string) => {
       addTaskOnceOffDaySelect.value = day;
       handlers.get(addTaskOnceOffDaySelect)?.get("change")?.();
@@ -561,10 +587,53 @@ describe("createTaskTimerAddTask", () => {
       expect.objectContaining({
         timeGoalPeriod: "week",
         timeGoalMinutes: 120,
+        splitAcrossProductivityDays: true,
         plannedStartTime: "09:00",
         plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
       }),
     ]);
+  });
+
+  it("shows the split checkbox only for weekly recurring tasks with 2 or more productivity days", () => {
+    const harness = createHarness("1", { productivityDays: ["mon", "wed"] });
+
+    harness.toggleSchedule(true);
+    expect(harness.addTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", true);
+
+    harness.clickWeeklyPeriod();
+    expect(harness.addTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
+
+    harness.clickOnceOffType();
+    expect(harness.addTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", true);
+
+    const singleDayHarness = createHarness("1", { productivityDays: ["mon"] });
+    singleDayHarness.toggleSchedule(true);
+    singleDayHarness.clickWeeklyPeriod();
+    expect(singleDayHarness.addTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", true);
+  });
+
+  it("schedules unchecked weekly recurring tasks as one full block on the selected day", () => {
+    const harness = createHarness("2", { productivityDays: ["mon", "wed", "fri"] });
+    harness.addTaskMsToggle.checked = false;
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+    harness.ctx.getAddTaskDurationPeriod = () => "week";
+
+    harness.toggleSchedule(true);
+    harness.setSplitAcrossProductivityDays(false);
+    harness.setWeeklyBlockDay("wed");
+    harness.submit();
+
+    const savedTask = setTasksMock.mock.calls[0]?.[0]?.[0] as Task | undefined;
+    expect(savedTask).toEqual(
+      expect.objectContaining({
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        splitAcrossProductivityDays: false,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { wed: "09:00" },
+      })
+    );
+    expect(savedTask ? getScheduleTaskDurationMinutesForDay(savedTask, "wed") : 0).toBe(120);
   });
 
   it("stores weekly time goals as weekly totals before splitting across productivity days", () => {

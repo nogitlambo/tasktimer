@@ -97,8 +97,10 @@
   min-width:0;
   min-height:0;
   display:grid;
-  grid-template-rows:minmax(360px, 1fr) auto;
-  gap:12px;
+  grid-template-rows:auto minmax(360px, 1fr) auto;
+  gap:8px;
+  padding-left:8px;
+  padding-right:8px;
 }
 
 .dashboardActivitySummaryMini{
@@ -126,6 +128,118 @@
   width:100%;
   height:calc(100% - 42px);
   display:block;
+}
+
+.dashboardActivityPreviousWeekToggleRow{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  min-height:22px;
+}
+
+.dashboardActivityPreviousWeekToggleWrap{
+  min-height:18px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#fff;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.02em;
+  box-shadow:none;
+  cursor:pointer;
+}
+
+.dashboardActivityPreviousWeekToggleWrap:hover,
+.dashboardActivityPreviousWeekToggleWrap:focus-within{
+  color:#fff;
+  outline:none;
+}
+
+.dashboardActivityPreviousWeekToggleWrap:not(.isChecked){
+  background:transparent;
+}
+
+.dashboardActivityPreviousWeekToggleWrap[hidden]{
+  display:none;
+}
+
+.dashboardActivityPreviousWeekToggle{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  display:inline-grid;
+  place-content:center;
+  flex:0 0 auto;
+  width:13px;
+  height:13px;
+  margin:0;
+  border:1px solid rgba(201,255,36,.82);
+  border-radius:3px;
+  background:#c9ff24;
+  cursor:inherit;
+}
+
+.dashboardActivityPreviousWeekToggle::after{
+  content:"";
+  width:7px;
+  height:4px;
+  border:solid #050607;
+  border-width:0 0 2px 2px;
+  transform:translateY(-1px) rotate(-45deg);
+  opacity:0;
+}
+
+.dashboardActivityPreviousWeekToggle:checked::after{
+  opacity:1;
+}
+
+.dashboardActivityPreviousWeekToggle:not(:checked){
+  border-color:rgba(174,184,198,.58);
+  background:rgba(0,0,0,.24);
+}
+
+.dashboardActivityPreviousWeekToggle:not(:checked)::after{
+  border-color:rgba(174,184,198,.78);
+}
+
+.dashboardActivityPreviousWeekToggle:focus-visible{
+  outline:2px solid rgba(201,255,36,.7);
+  outline-offset:2px;
+}
+
+.dashboardActivityPreviousWeekToggle:disabled{
+  cursor:not-allowed;
+  opacity:.58;
+}
+
+.dashboardActivityPreviousWeekToggleWrap.isDisabled{
+  color:rgba(174,184,198,.78);
+  cursor:not-allowed;
+  opacity:.72;
+}
+
+.dashboardActivityPreviousWeekToggleWrap.isDisabled:hover,
+.dashboardActivityPreviousWeekToggleWrap.isDisabled:focus-within{
+  color:rgba(174,184,198,.78);
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap:hover,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap:focus-within{
+  color:#fff !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap.isDisabled,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap.isDisabled:hover,
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousWeekToggleWrap.isDisabled:focus-within{
+  color:rgba(174,184,198,.78) !important;
 }
 
 .dashboardActivityGridLine{
@@ -257,7 +371,7 @@
 
 .dashboardActivitySummaryMini{
   border-radius:8px;
-  padding:10px 12px;
+  padding:10px 8px;
   display:grid;
   grid-template-rows:auto auto auto auto auto;
   align-content:center;
@@ -310,7 +424,7 @@ body[data-theme="lime"] .dashboardActivityGoalLine{
   }
 
 .dashboardActivityChartPanel{
-    grid-template-rows:minmax(330px, auto) auto;
+    grid-template-rows:auto minmax(330px, auto) auto;
   }
 
 .dashboardActivitySummaryStack{
@@ -4421,7 +4535,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverText{
   min-width: 0 !important;
-  font-family: var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverTextList .dashboardMomentumDriver{
@@ -4779,7 +4893,7 @@ body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch A
 }
 
 body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTag{
-  color: rgba(249,255,216,.92);
+  color: #fff;
   border-color: rgba(219,255,79,.18);
 }
 
@@ -6183,6 +6297,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel{
   --dashboard-task-label-color: #35e8ff;
   --dashboard-task-progress-color: #ff3b30;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   position: absolute;
   width: max-content;
   max-width: 96px;
@@ -6212,7 +6327,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelName{
   color: rgba(174, 184, 198, .82);
-  font-family: var(--font-tight);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px;
   font-weight: 800;
   line-height: 1.05;
@@ -6233,7 +6348,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelStatus{
   color: rgba(188,214,230,.7);
-  font-family: var(--font-readable);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 10px;
   line-height: 1.08;
 }
@@ -6367,7 +6482,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini{
     min-width: 0 !important;
     min-height: 118px !important;
-    padding: 12px !important;
+    padding: 12px 8px !important;
     background: #1a1b20 !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -7241,7 +7356,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverText,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDriverText{
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
     font-size: 12px !important;
   }
 }
@@ -7327,7 +7442,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini{
   min-width:0 !important;
   min-height:136px !important;
-  padding:12px !important;
+  padding:12px 8px !important;
   border:1px solid rgba(255,255,255,.08) !important;
   border-radius:8px !important;
   background:rgba(255,255,255,.025) !important;
@@ -7343,7 +7458,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
   display:grid !important;
-  grid-template-rows:minmax(390px, 1fr) auto !important;
+  grid-template-rows:auto minmax(390px, 1fr) auto !important;
   gap:12px !important;
   min-width:0 !important;
   min-height:0 !important;
@@ -7503,7 +7618,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
-    grid-template-rows:minmax(320px, auto) auto !important;
+    grid-template-rows:auto minmax(320px, auto) auto !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartWrap{
@@ -7657,7 +7772,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   min-width:0 !important;
   width:100% !important;
   min-height:132px !important;
-  padding:12px !important;
+  padding:12px 8px !important;
   border:0 !important;
   border-radius:0 !important;
   background:transparent !important;
@@ -7667,7 +7782,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
   display:grid !important;
   grid-column:1 / span 2 !important;
-  grid-template-rows:minmax(214px, auto) auto !important;
+  grid-template-rows:auto minmax(214px, auto) auto !important;
   gap:12px !important;
   min-width:0 !important;
   min-height:0 !important;
@@ -8052,7 +8167,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
-    grid-template-rows:minmax(320px, auto) auto !important;
+    grid-template-rows:auto minmax(320px, auto) auto !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartWrap{

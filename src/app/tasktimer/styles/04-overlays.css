@@ -2359,6 +2359,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-width: 0;
 }
 
+#editOverlay .taskWeeklyBlockDayField,
+#addTaskOverlay .taskWeeklyBlockDayField{
+  width: 100%;
+}
+
 #editOverlay .checkpointAlertsGroup{
   margin:8px 0 2px;
 }
@@ -2974,6 +2979,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   width:18px;
   height:18px;
   accent-color: #c9ff24;
+}
+
+#addTaskOverlay .taskWeeklySplitRow.isHidden,
+#editOverlay .taskWeeklySplitRow.isHidden{
+  display:none;
 }
 
 #addTaskOverlay .addTaskPlannedStartHelp{

@@ -45,6 +45,7 @@ export type Task = {
   timeGoalPeriod?: "day" | "week";
   timeGoalMinutes?: number;
   timeGoalCompletedDayKey?: string | null;
+  timeGoalCompletedWeekKey?: string | null;
   timeGoalCompletedAtMs?: number | null;
   timeGoalCompletedReason?: "goal" | "reset" | null;
   timeGoalCompletedElapsedMs?: number | null;
@@ -53,6 +54,7 @@ export type Task = {
   plannedStartByDay?: TaskPlannedStartByDay | null;
   plannedStartOpenEnded?: boolean;
   plannedStartPushRemindersEnabled?: boolean;
+  splitAcrossProductivityDays?: boolean;
 };
 
 export type TaskStatusState = "archived" | "deleted";

@@ -699,6 +699,7 @@ export type TaskTimerSessionContext = {
   storageKeys: {
     FOCUS_SESSION_NOTES_KEY: string;
     TIME_GOAL_PENDING_FLOW_KEY: string;
+    TIME_GOAL_COMPLETION_ACK_KEY: string;
     FOCUS_DND_STORAGE_KEY: string;
   };
   getTasks: () => Task[];
@@ -850,6 +851,7 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  toggleDashboardActivityPreviousWeek: () => boolean;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -997,6 +999,7 @@ export type TaskTimerHistoryManagerContext = {
   runtime: TaskTimerRuntime;
   getTasks: () => Task[];
   getRewardProgress: () => RewardProgressV1;
+  getWeekStarting: () => DashboardWeekStart;
   setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;

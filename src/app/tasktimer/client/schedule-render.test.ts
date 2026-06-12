@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildTaskTimerScheduleGridHtml, getScheduleDaysForWeekStart, renderTaskTimerSchedulePage } from "./schedule-render";
 import { createTaskTimerMutableStore } from "./mutable-store";
 import type { TaskTimerScheduleState } from "./schedule-runtime";
+import type { Task } from "../lib/types";
 
 function createScheduleRenderContext(weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat") {
   const state = createTaskTimerMutableStore<TaskTimerScheduleState>({
@@ -146,7 +147,7 @@ describe("schedule render", () => {
               sat: "08:00",
               sun: "08:00",
             },
-          },
+          } as Task,
           day: "mon",
           startMinutes: 8 * 60,
           durationMinutes: 60,

@@ -749,13 +749,12 @@ export default function DesktopAppRail({
           data-profile-menu-open={profileMenuOpen && !profileMenuClosing ? "true" : undefined}
         >
           <div className="desktopRailTopSection">
-            <div className="desktopRailBrandLockup landingV2FooterBrand appBrandLandingReplica displayFont" aria-hidden="true">
+            <div className="desktopRailLogo" aria-hidden="true">
               <AppImg
-                className="desktopRailBrandIcon landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
-                src="/logo/launch-icon-original-transparent.png"
+                className="desktopRailBrandLogo"
+                src="/logo/tasklaunch-logo.png"
                 alt=""
               />
-              <span className="appBrandLandingReplicaText">TaskLaunch</span>
             </div>
             <div className="desktopRailHeaderDivider" aria-hidden="true" />
             <div className="dashboardRailSectionLabel">Modules</div>

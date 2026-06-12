@@ -580,6 +580,128 @@ function isTaskCompletedForScheduleDay(taskData, scheduleMs) {
   return completedDayKey === localDayKeyFromMs(scheduleMs);
 }
 
+function normalizeWeekStarting(raw) {
+  const value = asString(raw).toLowerCase();
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].includes(value) ? value : "mon";
+}
+
+function startOfLocalWeekMs(ts, weekStarting) {
+  const date = new Date(startOfLocalDayMs(ts));
+  const dayMap = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  const weekStartsOn = dayMap[normalizeWeekStarting(weekStarting)] ?? 1;
+  const diffDays = (date.getDay() - weekStartsOn + 7) % 7;
+  date.setDate(date.getDate() - diffDays);
+  return date.getTime();
+}
+
+function weekKeyFromMs(ts, weekStarting) {
+  return localDayKeyFromMs(startOfLocalWeekMs(ts, weekStarting));
+}
+
+function isTaskCompletedForSchedulePeriod(taskData, scheduleMs, weekStarting) {
+  const period = asString(taskData && taskData.timeGoalPeriod) === "day" ? "day" : "week";
+  if (period === "day") return isTaskCompletedForScheduleDay(taskData, scheduleMs);
+  const completedWeekKey = asString(taskData && taskData.timeGoalCompletedWeekKey);
+  if (!completedWeekKey) return false;
+  return completedWeekKey === weekKeyFromMs(scheduleMs, weekStarting);
+}
+
+function normalizeSessionNoteAttachments(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const id = asString(item.id);
+      const type = asString(item.type).toLowerCase();
+      const name = asString(item.name).slice(0, 160);
+      const url = asString(item.url);
+      if (!id || !name || !url) return null;
+      if (!["image", "file"].includes(type)) return null;
+      const normalized = {id, type, name, url};
+      const size = asInt(item.size, null);
+      const mimeType = asString(item.mimeType);
+      if (size != null && size >= 0) normalized.size = size;
+      if (mimeType) normalized.mimeType = mimeType.slice(0, 120);
+      return normalized;
+    })
+    .filter(Boolean)
+    .slice(0, 20);
+}
+
+function normalizeHistoryEntry(row) {
+  if (!row || typeof row !== "object") return null;
+  const entry = {
+    ts: Math.max(0, asInt(row.ts, 0) || 0),
+    name: asString(row.name, "Task") || "Task",
+    ms: Math.max(0, asInt(row.ms, 0) || 0),
+  };
+  const color = asString(row.color);
+  const note = asString(row.note);
+  const sessionId = asString(row.sessionId);
+  const completionDifficulty = asString(row.completionDifficulty);
+  const attachments = normalizeSessionNoteAttachments(row.attachments);
+  if (color) entry.color = color;
+  if (note) entry.note = note;
+  if (sessionId) entry.sessionId = sessionId;
+  if (["tiny", "small", "medium", "big"].includes(completionDifficulty)) entry.completionDifficulty = completionDifficulty;
+  if (attachments.length) entry.attachments = attachments;
+  return entry;
+}
+
+function historyEntryIdentityFingerprint(taskId, entry) {
+  const normalizedTaskId = asString(taskId);
+  const sessionId = asString(entry && entry.sessionId);
+  if (sessionId) return `${normalizedTaskId}|session|${sessionId}`;
+  const ts = Math.max(0, asInt(entry && entry.ts, 0) || 0);
+  const ms = Math.max(0, asInt(entry && entry.ms, 0) || 0);
+  const name = asString(entry && entry.name);
+  const note = asString(entry && entry.note);
+  const color = asString(entry && entry.color);
+  const completionDifficulty = asString(entry && entry.completionDifficulty);
+  return [normalizedTaskId, ts, ms, name, color, note, completionDifficulty].join("|");
+}
+
+function fnv1a32(input) {
+  let hash = 0x811c9dc5;
+  const text = String(input || "");
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function buildCanonicalHistoryEntryDocId(taskId, entry) {
+  const normalizedTaskId = asString(taskId);
+  const ts = Math.max(0, asInt(entry && entry.ts, 0) || 0);
+  const ms = Math.max(0, asInt(entry && entry.ms, 0) || 0);
+  const sessionId = asString(entry && entry.sessionId);
+  if (sessionId) return `${normalizedTaskId}-session-${fnv1a32(historyEntryIdentityFingerprint(taskId, entry))}`;
+  return `${normalizedTaskId}-${ts}-${ms}-${fnv1a32(historyEntryIdentityFingerprint(taskId, entry))}`;
+}
+
+function buildHistoryDocPayload(taskId, entry) {
+  return {
+    taskId,
+    ts: Math.max(0, asInt(entry && entry.ts, 0) || 0),
+    name: asString(entry && entry.name, "Task") || "Task",
+    ms: Math.max(0, asInt(entry && entry.ms, 0) || 0),
+    ...(asString(entry && entry.color) ? {color: asString(entry && entry.color)} : {}),
+    ...(asString(entry && entry.note) ? {note: asString(entry && entry.note)} : {}),
+    ...(asString(entry && entry.sessionId) ? {sessionId: asString(entry && entry.sessionId)} : {}),
+    ...(Array.isArray(entry && entry.attachments) && entry.attachments.length ? {attachments: entry.attachments} : {}),
+    ...(asString(entry && entry.completionDifficulty) ? {completionDifficulty: asString(entry && entry.completionDifficulty)} : {}),
+  };
+}
+
 function startOfLocalDayMs(ts) {
   const date = new Date(ts);
   date.setHours(0, 0, 0, 0);
@@ -730,6 +852,61 @@ async function hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs) {
     .where("ts", "<", dayEndMs)
     .get();
   return historySnap.docs.some((docSnap) => asInt(docSnap.get("ms"), 0) > 0);
+}
+
+async function loadUserTimeGoalPreferences(uid) {
+  const prefSnap = await db.collection("users").doc(uid).collection("preferences").doc("v1").get();
+  return {
+    weekStarting: prefSnap.exists ? normalizeWeekStarting(prefSnap.get("weekStarting")) : "mon",
+  };
+}
+
+async function loadCanonicalTaskHistory(uid, taskId) {
+  const historySnap = await db.collection("users").doc(uid).collection("historyEntries")
+    .where("taskId", "==", taskId)
+    .get();
+  return historySnap.docs
+    .map((docSnap) => normalizeHistoryEntry(docSnap.data() || {}))
+    .filter(Boolean);
+}
+
+function sumHistoryMsForPeriod(entries, period, nowMs, weekStarting) {
+  const startMs = period === "day" ? startOfLocalDayMs(nowMs) : startOfLocalWeekMs(nowMs, weekStarting);
+  const endMs = period === "day" ? nextLocalDayStartMs(nowMs) : startMs + 7 * 24 * 60 * MINUTE_MS;
+  return (Array.isArray(entries) ? entries : []).reduce((sum, entry) => {
+    const ts = asInt(entry && entry.ts, 0);
+    if (ts < startMs || ts >= endMs) return sum;
+    return sum + Math.max(0, asInt(entry && entry.ms, 0) || 0);
+  }, 0);
+}
+
+function resolveTimeGoalCompletionState({taskId, taskData, activeSessionData, historyEntries, nowMs, weekStarting}) {
+  const period = asString(taskData && taskData.timeGoalPeriod) === "day" ? "day" : "week";
+  const goalMinutes = taskData.timeGoalEnabled === true ? Math.max(0, asNumber(taskData.timeGoalMinutes, 0) || 0) : 0;
+  const goalMs = Math.max(0, Math.floor(goalMinutes * MINUTE_MS));
+  const startMs = asInt(taskData && taskData.startMs, null);
+  const accumulatedMs = Math.max(0, asInt(taskData && taskData.accumulatedMs, 0) || 0);
+  if (taskData.running !== true || startMs == null || !(goalMs > 0)) {
+    return {status: "inactive", period, goalMs};
+  }
+  const periodHistoryMs = sumHistoryMsForPeriod(historyEntries, period, nowMs, weekStarting);
+  const runningNowMs = Math.max(0, nowMs - startMs);
+  const currentContributionNowMs = accumulatedMs + runningNowMs;
+  const remainingBeforeCurrentSessionMs = Math.max(0, goalMs - periodHistoryMs);
+  const remainingAtStartMs = Math.max(0, remainingBeforeCurrentSessionMs - accumulatedMs);
+  const completedAtMs = startMs + remainingAtStartMs;
+  const reached = periodHistoryMs + currentContributionNowMs >= goalMs;
+  const sessionId = asString(activeSessionData && activeSessionData.sessionId) || `${asString(taskId)}:${startMs}`;
+  return {
+    status: reached ? "reached" : "pending",
+    period,
+    goalMs,
+    completedAtMs,
+    correctedDueAtMs: completedAtMs,
+    historyEntryMs: Math.max(0, Math.min(currentContributionNowMs, remainingBeforeCurrentSessionMs)),
+    sessionId,
+    periodHistoryMs,
+  };
 }
 
 async function sendScheduledTaskNotification({
@@ -1356,7 +1533,15 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
     return {status: "duplicate"};
   }
 
-  const taskSnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId).get();
+  const userRef = db.collection("users").doc(uid);
+  const taskRef = userRef.collection("tasks").doc(taskId);
+  const activeSessionRef = taskRef.collection("activeSession").doc("current");
+  const [taskSnap, activeSessionSnap, prefs, historyEntries] = await Promise.all([
+    taskRef.get(),
+    activeSessionRef.get(),
+    loadUserTimeGoalPreferences(uid),
+    loadCanonicalTaskHistory(uid, taskId),
+  ]);
   if (!taskSnap.exists) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
@@ -1364,26 +1549,76 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
 
   const taskData = taskSnap.data() || {};
   const taskName = asString(taskData.name || data.taskName, "Task");
-  const startMs = asInt(taskData.startMs, null);
-  const accumulatedMs = Math.max(0, asInt(taskData.accumulatedMs, 0) || 0);
-  const goalMinutes = taskData.timeGoalEnabled === true ? Math.max(0, asNumber(taskData.timeGoalMinutes, 0) || 0) : 0;
-  const goalMs = goalMinutes * MINUTE_MS;
+  const weekStarting = normalizeWeekStarting(data.weekStarting || prefs.weekStarting);
+  if (isTaskCompletedForSchedulePeriod(taskData, dueAtMs, weekStarting)) {
+    await docSnap.ref.delete().catch(() => {});
+    return {status: "skipped"};
+  }
 
-  if (isTaskCompletedForScheduleDay(taskData, dueAtMs)) {
+  const completion = resolveTimeGoalCompletionState({
+    taskId,
+    taskData,
+    activeSessionData: activeSessionSnap.exists ? activeSessionSnap.data() || {} : null,
+    historyEntries,
+    nowMs,
+    weekStarting,
+  });
+  if (completion.status === "inactive") {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
-  if (taskData.running !== true || startMs == null || !(goalMs > 0)) {
-    await docSnap.ref.delete().catch(() => {});
-    return {status: "skipped"};
-  }
-  if (accumulatedMs + Math.max(0, nowMs - startMs) < goalMs) {
+  if (completion.status === "pending") {
     await docSnap.ref.set({
-      dueAtMs: startMs + Math.max(0, goalMs - accumulatedMs),
+      dueAtMs: completion.correctedDueAtMs,
+      timeGoalPeriod: completion.period,
+      timeGoalGoalMs: completion.goalMs,
+      timeGoalCompletionDayKey: localDayKeyFromMs(completion.correctedDueAtMs),
+      timeGoalCompletionWeekKey: weekKeyFromMs(completion.correctedDueAtMs, weekStarting),
+      weekStarting,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
     return {status: "skipped"};
   }
+
+  const entry = normalizeHistoryEntry({
+    ts: completion.completedAtMs,
+    name: taskName,
+    ms: completion.historyEntryMs,
+    color: taskData.color || (activeSessionSnap.exists ? activeSessionSnap.get("color") : null),
+    note: activeSessionSnap.exists ? activeSessionSnap.get("note") : null,
+    attachments: activeSessionSnap.exists ? activeSessionSnap.get("attachments") : null,
+    sessionId: completion.sessionId,
+  });
+  const batch = db.batch();
+  if (entry && entry.ms > 0) {
+    const historyDocId = buildCanonicalHistoryEntryDocId(taskId, entry);
+    const historyRef = userRef.collection("historyEntries").doc(historyDocId);
+    batch.set(historyRef, {
+      ...buildHistoryDocPayload(taskId, entry),
+      createdAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+  batch.set(taskRef, {
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    hasStarted: false,
+    resumePendingSinceDayKey: null,
+    timeGoalCompletedDayKey: localDayKeyFromMs(completion.completedAtMs),
+    timeGoalCompletedWeekKey: weekKeyFromMs(completion.completedAtMs, weekStarting),
+    timeGoalCompletedAtMs: completion.completedAtMs,
+    timeGoalCompletedReason: "goal",
+    timeGoalCompletedElapsedMs: completion.goalMs,
+    bgTimeGoalPushEligible: false,
+    bgTimeGoalPushDueAtMs: null,
+    bgTimeGoalPushSentAtMs: null,
+    bgTimeGoalPushSentDueAtMs: null,
+    updatedAt: FieldValue.serverTimestamp(),
+    schemaVersion: 1,
+  }, {merge: true});
+  batch.delete(activeSessionRef);
+  batch.delete(docSnap.ref);
+  await batch.commit();
 
   const payloadData = {
     eventType: TIME_GOAL_COMPLETE_EVENT,
@@ -1393,7 +1628,11 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
     taskId,
     taskName,
     notificationKind: TIME_GOAL_COMPLETE_NOTIFICATION_KIND,
-    dueAtMs: String(dueAtMs),
+    dueAtMs: String(completion.completedAtMs),
+    timeGoalPeriod: completion.period,
+    timeGoalGoalMs: String(completion.goalMs),
+    timeGoalCompletionDayKey: localDayKeyFromMs(completion.completedAtMs),
+    timeGoalCompletionWeekKey: weekKeyFromMs(completion.completedAtMs, weekStarting),
   };
   const response = await sendScheduledTaskNotification({
     uid,
@@ -1407,15 +1646,6 @@ async function processDueTimeGoalCompleteTask(docSnap, nowMs) {
     allowWeb: true,
     skipIfForeground: false,
   });
-
-  if (response.status === "sent" || response.status === "foreground") {
-    await docSnap.ref.set({
-      sentAtMs: nowMs,
-      sentDueAtMs: dueAtMs,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, {merge: true});
-  }
-
   return response;
 }
 

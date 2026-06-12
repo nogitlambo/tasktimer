@@ -19,7 +19,12 @@ import { claimUsernameClient } from "./usernameClaim";
 import { normalizeTaskTimerPlan, type TaskTimerPlan } from "./entitlements";
 import { normalizeCompletionDifficulty } from "./completionDifficulty";
 import { patchLeaderboardProfileFromUserRoot } from "./leaderboard";
-import { isTaskTimeGoalCompletedToday } from "./timeGoalCompletion";
+import {
+  getTimeGoalCompletionDayKey,
+  getTimeGoalCompletionWeekKey,
+  isTaskTimeGoalCompletedForPeriod,
+  isTaskTimeGoalCompletedToday,
+} from "./timeGoalCompletion";
 import {
   getTaskPlannedStartByDay,
   normalizeLocalDateValue,
@@ -29,7 +34,7 @@ import {
   syncLegacyPlannedStartFields,
   type ScheduleDay,
 } from "./schedule-placement";
-import { normalizeDashboardWeekStart, type DashboardWeekStart } from "./historyChart";
+import { normalizeDashboardWeekStart, startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
 
 import {
   normalizeTaskStatusState,
@@ -894,29 +899,60 @@ function computePlannedStartPushDueAtMs(task: Task): number | null {
   return nextDueAtMs;
 }
 
-function computeTimeGoalCompletePushDueAtMs(task: Task): number | null {
+type ScheduledTimeGoalPushContext = {
+  historyByTaskId?: HistoryByTaskId | null;
+  weekStarting?: DashboardWeekStart | null;
+};
+
+function computeCurrentWeekHistoryMs(task: Task, historyByTaskId: HistoryByTaskId | null | undefined, nowMs: number, weekStarting: DashboardWeekStart): number {
+  const taskId = String(task.id || "").trim();
+  if (!taskId) return 0;
+  const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+  const weekStartMs = startOfCurrentWeekMs(nowMs, weekStarting);
+  const weekEndMs = weekStartMs + 7 * 24 * 60 * 60 * 1000;
+  return entries.reduce((sum, entry) => {
+    const ts = Number(entry?.ts || 0);
+    if (!Number.isFinite(ts) || ts < weekStartMs || ts >= weekEndMs) return sum;
+    return sum + Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
+  }, 0);
+}
+
+function computeTimeGoalCompletePushDueAtMs(task: Task, nowMs = Date.now(), context?: ScheduledTimeGoalPushContext): number | null {
   if (!task.running || !task.timeGoalEnabled) return null;
-  if (isTaskTimeGoalCompletedToday(task)) return null;
+  const weekStarting = normalizeDashboardWeekStart(context?.weekStarting);
+  if (isTaskTimeGoalCompletedForPeriod(task, nowMs, weekStarting)) return null;
   const timeGoalMinutes = normalizeTimeGoalValue(task.timeGoalMinutes);
   if (!(timeGoalMinutes > 0)) return null;
   const startMs = normalizeNullableInt(task.startMs);
   if (startMs == null) return null;
   const accumulatedMs = Number.isFinite(Number(task.accumulatedMs)) ? Math.max(0, Math.floor(Number(task.accumulatedMs))) : 0;
-  const remainingMs = Math.max(0, Math.floor(timeGoalMinutes * 60_000) - accumulatedMs);
+  const periodHistoryMs =
+    task.timeGoalPeriod === "week" ? computeCurrentWeekHistoryMs(task, context?.historyByTaskId, nowMs, weekStarting) : 0;
+  const remainingMs = Math.max(0, Math.floor(timeGoalMinutes * 60_000) - periodHistoryMs - accumulatedMs);
   return startMs + remainingMs;
 }
 
-export function buildScheduledTimeGoalPushPlan(task: Task, nowMs = Date.now()): {
+export function buildScheduledTimeGoalPushPlan(task: Task, nowMs = Date.now(), context?: ScheduledTimeGoalPushContext): {
   dueAtMs: number | null;
   notificationKind: "timeGoalComplete" | "plannedStart" | "unscheduledGap" | null;
   eventType: "timeGoalComplete" | "plannedStartReminder" | "unscheduledGapReminder" | null;
   plannedStartDueAtMs: number | null;
   timeGoalCompleteDueAtMs: number | null;
   unscheduledGapCandidate: boolean;
+  timeGoalPeriod: "day" | "week";
+  timeGoalGoalMs: number | null;
+  timeGoalCompletionDayKey: string | null;
+  timeGoalCompletionWeekKey: string | null;
+  weekStarting: DashboardWeekStart;
 } {
   const plannedStartDueAtMs = computePlannedStartPushDueAtMs(task);
   const unscheduledGapCandidate = isUnscheduledGapPushCandidate(task);
-  const timeGoalCompleteDueAtMs = computeTimeGoalCompletePushDueAtMs(task);
+  const weekStarting = normalizeDashboardWeekStart(context?.weekStarting);
+  const timeGoalCompleteDueAtMs = computeTimeGoalCompletePushDueAtMs(task, nowMs, { ...context, weekStarting });
+  const timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
+  const timeGoalGoalMs = task.timeGoalEnabled && normalizeTimeGoalValue(task.timeGoalMinutes) > 0
+    ? Math.floor(normalizeTimeGoalValue(task.timeGoalMinutes) * 60_000)
+    : null;
   const dueAtMs = plannedStartDueAtMs ?? timeGoalCompleteDueAtMs ?? (unscheduledGapCandidate ? nowMs : null);
   const notificationKind =
     plannedStartDueAtMs != null
@@ -941,6 +977,11 @@ export function buildScheduledTimeGoalPushPlan(task: Task, nowMs = Date.now()): 
     plannedStartDueAtMs,
     timeGoalCompleteDueAtMs,
     unscheduledGapCandidate,
+    timeGoalPeriod,
+    timeGoalGoalMs,
+    timeGoalCompletionDayKey: getTimeGoalCompletionDayKey(timeGoalCompleteDueAtMs || nowMs),
+    timeGoalCompletionWeekKey: getTimeGoalCompletionWeekKey(timeGoalCompleteDueAtMs || nowMs, weekStarting),
+    weekStarting,
   };
 }
 
@@ -953,12 +994,12 @@ function isUnscheduledGapPushCandidate(task: Task): boolean {
   );
 }
 
-async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void> {
+async function syncScheduledTimeGoalPush(uid: string, task: Task, context?: ScheduledTimeGoalPushContext): Promise<void> {
   const taskId = String(task.id || "").trim();
   const ref = scheduledTimeGoalPushDoc(uid, taskId);
   if (!ref || !taskId) return;
 
-  const pushPlan = buildScheduledTimeGoalPushPlan(task);
+  const pushPlan = buildScheduledTimeGoalPushPlan(task, Date.now(), context);
   const { plannedStartDueAtMs } = pushPlan;
   let effectiveDueAtMs = pushPlan.dueAtMs;
   if (effectiveDueAtMs == null) {
@@ -1021,6 +1062,11 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task): Promise<void>
     effectiveEventType,
     dueAtMs: effectiveDueAtMs,
     timeGoalMinutes: notificationKind === "timeGoalComplete" ? Math.floor(normalizeTimeGoalValue(task.timeGoalMinutes)) : timeGoalMinutes,
+    timeGoalPeriod: notificationKind === "timeGoalComplete" ? pushPlan.timeGoalPeriod : null,
+    timeGoalGoalMs: notificationKind === "timeGoalComplete" ? pushPlan.timeGoalGoalMs : null,
+    timeGoalCompletionDayKey: notificationKind === "timeGoalComplete" ? pushPlan.timeGoalCompletionDayKey : null,
+    timeGoalCompletionWeekKey: notificationKind === "timeGoalComplete" ? pushPlan.timeGoalCompletionWeekKey : null,
+    weekStarting: notificationKind === "timeGoalComplete" ? pushPlan.weekStarting : null,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
     plannedStartTime: String(task.plannedStartTime || "").trim() || null,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
@@ -1142,6 +1188,7 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.timeGoalPeriod = normalizeTimeGoalPeriod(row.timeGoalPeriod);
   row.timeGoalMinutes = normalizeTimeGoalValue(row.timeGoalMinutes);
   row.timeGoalCompletedDayKey = row.timeGoalCompletedDayKey == null ? null : String(row.timeGoalCompletedDayKey).trim() || null;
+  row.timeGoalCompletedWeekKey = row.timeGoalCompletedWeekKey == null ? null : String(row.timeGoalCompletedWeekKey).trim() || null;
   row.timeGoalCompletedAtMs =
     row.timeGoalCompletedAtMs == null || !Number.isFinite(Number(row.timeGoalCompletedAtMs))
       ? null
@@ -1216,6 +1263,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
     timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+    timeGoalCompletedWeekKey: task.timeGoalCompletedWeekKey == null ? null : String(task.timeGoalCompletedWeekKey).trim() || null,
     timeGoalCompletedAtMs:
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
@@ -1587,7 +1635,7 @@ export async function loadUserTimerState(uid: string): Promise<TimerStateSnapsho
   };
 }
 
-export async function saveTask(uid: string, task: Task): Promise<void> {
+export async function saveTask(uid: string, task: Task, context?: ScheduledTimeGoalPushContext): Promise<void> {
   const ref = taskDoc(uid, String(task.id || ""));
   if (!ref) {
     if (process.env.NODE_ENV !== "production") {
@@ -1712,7 +1760,7 @@ export async function saveTask(uid: string, task: Task): Promise<void> {
     throw error;
   }
   try {
-    await syncScheduledTimeGoalPush(uid, task);
+    await syncScheduledTimeGoalPush(uid, task, context);
   } catch (scheduleError) {
     if (process.env.NODE_ENV !== "production") {
       const describedScheduleError = describeError(scheduleError);

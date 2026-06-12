@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
+import { getTimeGoalCompletionDayKey, getTimeGoalCompletionWeekKey } from "../lib/timeGoalCompletion";
 import type { Task } from "../lib/types";
 import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
 
@@ -80,18 +80,22 @@ describe("completeManualEntryDailyGoalIfReached", () => {
     expect(entry.timeGoalCompletedReason).toBeUndefined();
   });
 
-  it("ignores weekly time goals", () => {
+  it("marks a weekly-goal task complete when cumulative current-week history reaches the goal", () => {
     const entry = task({ timeGoalPeriod: "week" });
 
-    completeManualEntryDailyGoalIfReached({
+    const result = completeManualEntryDailyGoalIfReached({
       task: entry,
       manualEntryTs: todayMorning,
       nowMs: nowValue,
       historyByTaskId: {
         "task-1": [{ ts: todayMorning, name: "Focus", ms: 60 * 60_000 }],
       },
+      weekStarting: "mon",
     });
 
-    expect(entry.timeGoalCompletedReason).toBeUndefined();
+    expect(result).toEqual({ completed: true, totalTodayMs: 60 * 60_000, totalPeriodMs: 60 * 60_000 });
+    expect(entry.timeGoalCompletedReason).toBe("goal");
+    expect(entry.timeGoalCompletedWeekKey).toBe(getTimeGoalCompletionWeekKey(nowValue, "mon"));
+    expect(entry.timeGoalCompletedElapsedMs).toBe(60 * 60_000);
   });
 });

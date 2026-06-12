@@ -33,6 +33,7 @@ import {
 } from "../lib/schedule-placement";
 import { getTaskColorFamilyForColor, normalizeTaskColor, TASK_COLOR_FAMILIES } from "../lib/taskColors";
 import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
+import { normalizeOptimalProductivityDays } from "../lib/productivityPeriod";
 import {
   clampCheckpointValueToTimeGoal,
   formatCheckpointSliderLabel,
@@ -46,11 +47,17 @@ import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from ".
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?: Task | null, optimalProductivityDays?: readonly unknown[]) {
+export function normalizeRecurringScheduleFieldsForSave(
+  task: Task,
+  sourceTask?: Task | null,
+  optimalProductivityDays?: readonly unknown[],
+  options?: { splitAcrossProductivityDays?: boolean; weeklyBlockDay?: ScheduleDay | null }
+) {
   if (task.taskType !== "recurring") return;
 
   const normalizedByDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
   const normalizedPlannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
+  const isWeeklyTimeGoal = !!task.timeGoalEnabled && task.timeGoalPeriod === "week" && Number(task.timeGoalMinutes || 0) > 0;
 
   if (task.plannedStartOpenEnded) {
     if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
@@ -62,7 +69,21 @@ export function normalizeRecurringScheduleFieldsForSave(task: Task, sourceTask?:
     return;
   }
 
-  if (task.timeGoalEnabled && task.timeGoalPeriod === "week" && Number(task.timeGoalMinutes || 0) > 0) {
+  if (isWeeklyTimeGoal && options?.splitAcrossProductivityDays === false) {
+    const weeklyBlockDay = options.weeklyBlockDay || "mon";
+    syncLegacyPlannedStartFields(task, { [weeklyBlockDay]: normalizedPlannedStartTime });
+    return;
+  }
+
+  if (isWeeklyTimeGoal && options?.splitAcrossProductivityDays === true) {
+    const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
+    if (nextByDay) {
+      syncLegacyPlannedStartFields(task, nextByDay);
+      return;
+    }
+  }
+
+  if (isWeeklyTimeGoal) {
     const shouldGenerateFromProductivityDays = !normalizedByDay || Object.keys(normalizedByDay).length === 0;
     if (shouldGenerateFromProductivityDays) {
       const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
@@ -189,6 +210,7 @@ export function restoreEditScheduleFieldsFromSnapshot(task: Task, snapshot: Task
   task.plannedStartByDay = snapshot.plannedStartByDay ? { ...snapshot.plannedStartByDay } : null;
   task.plannedStartOpenEnded = !!snapshot.plannedStartOpenEnded;
   task.plannedStartPushRemindersEnabled = snapshot.plannedStartPushRemindersEnabled !== false;
+  task.splitAcrossProductivityDays = snapshot.splitAcrossProductivityDays;
 }
 
 export function clearTaskScheduleConfig(task: Task) {
@@ -216,6 +238,7 @@ export function clearTaskScheduleConfig(task: Task) {
   task.plannedStartByDay = null;
   task.plannedStartOpenEnded = true;
   task.plannedStartPushRemindersEnabled = false;
+  task.splitAcrossProductivityDays = undefined;
 }
 
 export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
@@ -227,6 +250,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   let editOverlayOriginRect: { left: number; top: number; width: number; height: number } | null = null;
   let editTaskScheduleEnabled = true;
   let editTaskScheduleRestoreSnapshot: Task | null = null;
+  let editSplitAcrossProductivityDaysTouched = false;
+  let editWeeklyBlockDayTouched = false;
 
   function clearEditOverlayHideTimer() {
     if (editOverlayHideTimer == null) return;
@@ -376,7 +401,56 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editTaskScheduleToggle.checked = editTaskScheduleEnabled;
     }
     els.editTaskScheduleFields?.classList.toggle("isHidden", !editTaskScheduleEnabled);
+    syncEditSplitAcrossProductivityDaysUi(getCurrentEditTask());
     syncEditTaskScheduleSummary();
+  }
+
+  function getEditProductivityDays() {
+    return normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
+  }
+
+  function getEditDefaultWeeklyBlockDay(task?: Task | null): ScheduleDay {
+    const scheduledDays = task ? getTaskScheduledDays(task) : [];
+    return scheduledDays[0] || getEditProductivityDays()[0] || "mon";
+  }
+
+  function getEditWeeklyBlockDay(task?: Task | null, opts?: { preferSelected?: boolean }): ScheduleDay {
+    const rawValue = String(els.editTaskWeeklyBlockDaySelect?.value || "").trim().toLowerCase();
+    const selectedDay = SCHEDULE_DAY_ORDER.includes(rawValue as ScheduleDay) ? (rawValue as ScheduleDay) : null;
+    if (opts?.preferSelected && selectedDay) return selectedDay;
+    return editWeeklyBlockDayTouched && selectedDay ? selectedDay : getEditDefaultWeeklyBlockDay(task);
+  }
+
+  function isEditWeeklySplitOptionVisible(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    return (
+      editTaskScheduleEnabled &&
+      !!currentTask &&
+      currentTask.taskType !== "once-off" &&
+      ctx.getEditTaskDurationPeriod() === "week" &&
+      getEditTaskTimeGoalMinutes() > 0 &&
+      getEditProductivityDays().length >= 2
+    );
+  }
+
+  function inferSplitAcrossProductivityDays(task?: Task | null) {
+    if (typeof task?.splitAcrossProductivityDays === "boolean") return task.splitAcrossProductivityDays;
+    if (!task) return true;
+    return getTaskScheduledDays(task).length > 1;
+  }
+
+  function syncEditSplitAcrossProductivityDaysUi(task?: Task | null) {
+    const currentTask = task || getCurrentEditTask();
+    const visible = isEditWeeklySplitOptionVisible(currentTask);
+    const splitAcrossProductivityDays = visible ? inferSplitAcrossProductivityDays(currentTask) : true;
+    if (els.editTaskSplitAcrossProductivityDays) {
+      els.editTaskSplitAcrossProductivityDays.checked = splitAcrossProductivityDays;
+    }
+    if (els.editTaskWeeklyBlockDaySelect) {
+      els.editTaskWeeklyBlockDaySelect.value = getEditWeeklyBlockDay(currentTask);
+    }
+    els.editTaskSplitAcrossProductivityDaysRow?.classList.toggle("isHidden", !visible);
+    els.editTaskWeeklyBlockDayField?.classList.toggle("isHidden", !visible || splitAcrossProductivityDays);
   }
 
   function syncEditTaskScheduleSummary(task?: Task | null) {
@@ -392,6 +466,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
             plannedStartTime: readEditPlannedStartValueFromSelectors() || getEditPlannedStartTimeForDisplay(currentTask),
             productivityDays: ctx.getOptimalProductivityDays(),
             onceOffDay: currentTask.onceOffDay || currentTask.plannedStartDay || "mon",
+            splitAcrossProductivityDays: isEditWeeklySplitOptionVisible(currentTask) ? inferSplitAcrossProductivityDays(currentTask) : true,
+            weeklyBlockDay: getEditWeeklyBlockDay(currentTask),
           })
         : "";
     if (els.editTaskScheduleSummaryText) {
@@ -596,6 +672,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     syncPill(els.editTaskDurationPeriodDay, ctx.getEditTaskDurationPeriod() === "day", !canUseDay || onceOff);
     syncPill(els.editTaskDurationPeriodWeek, ctx.getEditTaskDurationPeriod() === "week", onceOff);
     els.editTaskDurationValueInput?.classList.remove("isInvalid");
+    syncEditSplitAcrossProductivityDaysUi(currentTask);
     syncEditTaskDurationReadout(currentTask);
     const checkpointControlsDisabled = !hasActiveTimeGoal;
     els.msArea?.classList.toggle("isHidden", checkpointControlsDisabled);
@@ -1010,6 +1087,15 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     );
     t.timeGoalPeriod = timeGoalSaveFields.timeGoalPeriod;
     t.timeGoalMinutes = timeGoalSaveFields.timeGoalMinutes;
+    const splitAcrossProductivityDaysForSave =
+      t.taskType === "recurring" && t.timeGoalPeriod === "week"
+        ? isEditWeeklySplitOptionVisible(t)
+          ? editSplitAcrossProductivityDaysTouched || typeof t.splitAcrossProductivityDays === "boolean"
+            ? !!els.editTaskSplitAcrossProductivityDays?.checked
+            : undefined
+          : true
+        : undefined;
+    t.splitAcrossProductivityDays = splitAcrossProductivityDaysForSave;
     t.milestones = (Array.isArray(t.milestones) ? t.milestones : []).map((milestone) => ({
       ...milestone,
       description: "",
@@ -1027,7 +1113,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     } else {
       t.onceOffDay = null;
       t.onceOffTargetDate = null;
-      normalizeRecurringScheduleFieldsForSave(t, sourceTask, ctx.getOptimalProductivityDays());
+      normalizeRecurringScheduleFieldsForSave(t, sourceTask, ctx.getOptimalProductivityDays(), {
+        splitAcrossProductivityDays: t.timeGoalPeriod === "week" ? splitAcrossProductivityDaysForSave : undefined,
+        weeklyBlockDay: getEditWeeklyBlockDay(t, { preferSelected: true }),
+      });
     }
     sharedTasks.ensureMilestoneIdentity(t);
     t.milestones = ctx.sortMilestones(t.milestones);
@@ -1260,6 +1349,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       plannedStartTime: String(task.plannedStartTime || "").trim() || null,
       color: normalizeTaskColor(task.color),
       plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+      splitAcrossProductivityDays: isEditWeeklySplitOptionVisible(task) ? inferSplitAcrossProductivityDays(task) : undefined,
+      weeklyBlockDay: isEditWeeklySplitOptionVisible(task) && !inferSplitAcrossProductivityDays(task)
+        ? getEditWeeklyBlockDay(task)
+        : null,
       timeGoalEnabled: true,
       timeGoalValue: Math.max(0, Number(els.editTaskDurationValueInput?.value || 0) || 0),
       timeGoalUnit: ctx.getEditTaskDurationUnit(),
@@ -1444,6 +1537,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const t = ctx.cloneTaskForEdit(sourceTask);
     editTaskScheduleRestoreSnapshot = ctx.cloneTaskForEdit(sourceTask);
     editTaskScheduleEnabled = taskHasMeaningfulScheduleConfig(sourceTask);
+    editSplitAcrossProductivityDaysTouched = false;
+    editWeeklyBlockDayTouched = false;
     t.plannedStartPushRemindersEnabled = t.plannedStartPushRemindersEnabled !== false;
     t.milestoneTimeUnit = t.milestoneTimeUnit === "minute" ? "minute" : "hour";
     ctx.setEditIndex(i);
@@ -1729,6 +1824,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditTaskTypeUi(t);
       syncEditPlannedStartSelectors(t);
       ctx.syncEditTaskTimeGoalUi(t);
+      syncEditSplitAcrossProductivityDaysUi(t);
       refreshEditCheckpointEditorForTimeGoalChange(t);
     });
     ctx.on(els.editTaskTypeOnceOffBtn, "click", () => {
@@ -1739,6 +1835,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditTaskTypeUi(t);
       syncEditPlannedStartSelectors(t);
       ctx.syncEditTaskTimeGoalUi(t);
+      syncEditSplitAcrossProductivityDaysUi(t);
       refreshEditCheckpointEditorForTimeGoalChange(t);
     });
     ctx.on(els.editTaskOnceOffDaySelect, "change", () => {
@@ -1748,12 +1845,31 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       syncEditTaskScheduleSummary(t);
       ctx.syncEditSaveAvailability(t);
     });
+    ctx.on(els.editTaskSplitAcrossProductivityDays, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      editSplitAcrossProductivityDaysTouched = true;
+      t.splitAcrossProductivityDays = !!els.editTaskSplitAcrossProductivityDays?.checked;
+      syncEditSplitAcrossProductivityDaysUi(t);
+      syncEditTaskScheduleSummary(t);
+      ctx.syncEditSaveAvailability(t);
+    });
+    ctx.on(els.editTaskWeeklyBlockDaySelect, "change", () => {
+      const t = getCurrentEditTask();
+      if (!t) return;
+      editWeeklyBlockDayTouched = true;
+      t.splitAcrossProductivityDays = false;
+      syncEditSplitAcrossProductivityDaysUi(t);
+      syncEditTaskScheduleSummary(t);
+      ctx.syncEditSaveAvailability(t);
+    });
     ctx.on(els.editPlannedStartHourSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMinuteSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartMeridiemSelect, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartTimeInput, "change", syncEditPlannedStartValueFromSelectors);
     ctx.on(els.editPlannedStartTimeInput, "input", syncEditPlannedStartValueFromSelectors);
     ctx.on(typeof window !== "undefined" ? window : null, "tasktimer:optimal-productivity-days-changed", () => {
+      syncEditSplitAcrossProductivityDaysUi(getCurrentEditTask());
       syncEditTaskScheduleSummary(getCurrentEditTask());
     });
     ctx.on(els.editPlannedStartPushReminders, "change", async () => {

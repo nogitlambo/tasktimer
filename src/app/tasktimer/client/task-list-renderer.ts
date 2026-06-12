@@ -1,6 +1,7 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
-import { isTaskTimeGoalStartLockedByHistoryToday } from "../lib/timeGoalCompletion";
+import type { DashboardWeekStart } from "../lib/historyChart";
+import { isTaskTimeGoalStartLockedByHistoryForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 
 type TaskListRendererDocument = Pick<Document, "createElement">;
@@ -10,6 +11,7 @@ type TaskListRendererOptions = {
   documentRef: TaskListRendererDocument;
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  getWeekStarting?: () => DashboardWeekStart;
   getTaskView: () => "list" | "tile";
   getTaskOrderBy: () => "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
   getTileColumnCount: () => number;
@@ -203,7 +205,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
-        isTimeGoalCompleted: isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId()),
+        isTimeGoalCompleted: isTaskTimeGoalStartLockedByHistoryForPeriod(task, options.getHistoryByTaskId(), Date.now(), options.getWeekStarting?.() || "mon"),
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         modeColor: options.getModeColor("mode1"),
         fillBackgroundForPct: options.fillBackgroundForPct,

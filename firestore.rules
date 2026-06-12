@@ -483,6 +483,7 @@ service cloud.firestore {
         "timeGoalPeriod",
         "timeGoalMinutes",
         "timeGoalCompletedDayKey",
+        "timeGoalCompletedWeekKey",
         "timeGoalCompletedAtMs",
         "timeGoalCompletedReason",
         "timeGoalCompletedElapsedMs",
@@ -536,6 +537,7 @@ service cloud.firestore {
       && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod in ["day", "week"])
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes is int || request.resource.data.timeGoalMinutes is float)
       && (!("timeGoalCompletedDayKey" in request.resource.data) || request.resource.data.timeGoalCompletedDayKey == null || request.resource.data.timeGoalCompletedDayKey is string)
+      && (!("timeGoalCompletedWeekKey" in request.resource.data) || request.resource.data.timeGoalCompletedWeekKey == null || request.resource.data.timeGoalCompletedWeekKey is string)
       && (!("timeGoalCompletedAtMs" in request.resource.data) || request.resource.data.timeGoalCompletedAtMs == null || request.resource.data.timeGoalCompletedAtMs is int)
       && (!("timeGoalCompletedReason" in request.resource.data) || request.resource.data.timeGoalCompletedReason == null || request.resource.data.timeGoalCompletedReason in ["goal", "reset"])
       && (!("timeGoalCompletedElapsedMs" in request.resource.data) || request.resource.data.timeGoalCompletedElapsedMs == null || request.resource.data.timeGoalCompletedElapsedMs is int)
@@ -936,6 +938,11 @@ service cloud.firestore {
         "effectiveEventType",
         "dueAtMs",
         "timeGoalMinutes",
+        "timeGoalPeriod",
+        "timeGoalGoalMs",
+        "timeGoalCompletionDayKey",
+        "timeGoalCompletionWeekKey",
+        "weekStarting",
         "plannedStartDay",
         "plannedStartTime",
         "plannedStartByDay",
@@ -977,6 +984,11 @@ service cloud.firestore {
       && request.resource.data.dueAtMs is int
       && request.resource.data.dueAtMs > 0
       && (!("timeGoalMinutes" in request.resource.data) || request.resource.data.timeGoalMinutes == null || request.resource.data.timeGoalMinutes is int)
+      && (!("timeGoalPeriod" in request.resource.data) || request.resource.data.timeGoalPeriod == null || request.resource.data.timeGoalPeriod in ["day", "week"])
+      && (!("timeGoalGoalMs" in request.resource.data) || request.resource.data.timeGoalGoalMs == null || request.resource.data.timeGoalGoalMs is int)
+      && optionalNullableStringMax("timeGoalCompletionDayKey", 40)
+      && optionalNullableStringMax("timeGoalCompletionWeekKey", 40)
+      && (!("weekStarting" in request.resource.data) || request.resource.data.weekStarting == null || request.resource.data.weekStarting in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"])
       && (!("plannedStartDay" in request.resource.data) || request.resource.data.plannedStartDay == null || request.resource.data.plannedStartDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
       && (!("plannedStartTime" in request.resource.data) || request.resource.data.plannedStartTime == null || (
         request.resource.data.plannedStartTime is string

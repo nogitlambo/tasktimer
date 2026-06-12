@@ -257,7 +257,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
 .btn-resume{
   background: linear-gradient(180deg, rgba(255,214,64,.24), rgba(179,132,24,.16));
   border-color: rgba(255,214,64,.42);
-  color:#fff3bf;
+  color:#fff;
   box-shadow: 0 0 14px rgba(255,214,64,.18);
 }
 
@@ -3112,7 +3112,7 @@ body[data-theme="lime"]{
   --panel:#1a1b20;
   --card:#111216;
   --card-2:#20280f;
-  --text:#fbffeb;
+  --text:#fff;
   --muted:rgba(233,244,191,.78);
   --accent:#c9ff24;
   --accent2:#7ef3ff;
@@ -3134,7 +3134,7 @@ body[data-theme="lime"] .btn{
 body[data-theme="lime"] .iconBtn,
 body[data-theme="lime"] .menuItem{
   background: rgba(18,20,24,.96);
-  color:#fbffeb;
+  color:#fff;
 }
 
 body[data-theme="lime"] .iconBtn{
@@ -3164,7 +3164,7 @@ body[data-theme="lime"] .modeBtn.isOn,
 body[data-theme="lime"] .timerTypePill.isOn{
   background: rgba(18,20,24,.96) !important;
   border-color: rgba(241,255,151,.72) !important;
-  color:#fbffeb !important;
+  color:#fff !important;
   box-shadow: none !important;
 }
 
@@ -3182,7 +3182,7 @@ body[data-theme="lime"] .btn-warn{
 
 body[data-theme="lime"] .iconBtn{
   background: rgba(18,20,24,.96);
-  color:#fbffeb;
+  color:#fff;
 }
 
 body[data-theme="lime"] .iconBtn:hover,
@@ -3289,14 +3289,14 @@ body[data-theme="lime"] .settingsInlineSectionTitle,
 body[data-theme="lime"] .settingsSectionLabel,
 body[data-theme="lime"] .checkpointAlertsTitle,
 body[data-theme="lime"] .focusInsightsTitle{
-  color: rgba(249,255,216,.96) !important;
+  color: #fff !important;
 }
 
 body[data-theme="lime"] label,
 body[data-theme="lime"] .historyMeta,
 body[data-theme="lime"] .modeSwitchesLabel,
 body[data-theme="lime"] .focusSessionNotesCollapseLabel{
-  color: rgba(228,240,171,.82) !important;
+  color: #fff !important;
 }
 
 body[data-theme="lime"] .modalSubtext{
@@ -3304,7 +3304,7 @@ body[data-theme="lime"] .modalSubtext{
 }
 
 body[data-theme="lime"] .focusSessionNotesCollapseLabel::after{
-  color: rgba(241,255,151,.88) !important;
+  color: #fff !important;
 }
 
 body[data-theme="lime"] .iconBtn,

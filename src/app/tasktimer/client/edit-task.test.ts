@@ -115,6 +115,18 @@ function createEditHarness(overrides: {
     textContent: "",
   } as HTMLElement;
   const editTaskScheduleToggle = { checked: false } as HTMLInputElement;
+  const editTaskSplitAcrossProductivityDaysRow = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLElement;
+  const editTaskSplitAcrossProductivityDays = {
+    checked: true,
+  } as HTMLInputElement;
+  const editTaskWeeklyBlockDayField = {
+    classList: { toggle: vi.fn() },
+  } as unknown as HTMLElement;
+  const editTaskWeeklyBlockDaySelect = {
+    value: "mon",
+  } as HTMLSelectElement;
   const ctx = {
     els: {
       editName: { value: "Focus" } as HTMLInputElement,
@@ -132,6 +144,10 @@ function createEditHarness(overrides: {
       editPlannedStartPushReminders: null,
       editTaskScheduleSummary,
       editTaskScheduleSummaryText,
+      editTaskSplitAcrossProductivityDaysRow,
+      editTaskSplitAcrossProductivityDays,
+      editTaskWeeklyBlockDayField,
+      editTaskWeeklyBlockDaySelect,
       editOverlay,
       confirmOverlay: null,
     },
@@ -207,7 +223,18 @@ function createEditHarness(overrides: {
   } as unknown as Parameters<typeof createTaskTimerEditTask>[0];
 
   const api = createTaskTimerEditTask(ctx);
-  return { api, ctx, sourceTask, busyTask, editOverlay, editTaskScheduleSummary, editTaskScheduleSummaryText, getEditIndex: () => editIndex };
+  return {
+    api,
+    ctx,
+    sourceTask,
+    busyTask,
+    editOverlay,
+    editTaskScheduleSummary,
+    editTaskScheduleSummaryText,
+    editTaskSplitAcrossProductivityDaysRow,
+    editTaskWeeklyBlockDayField,
+    getEditIndex: () => editIndex,
+  };
 }
 
 function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditHarness>) {
@@ -247,6 +274,35 @@ describe("edit task schedule summary", () => {
       "Task will be split into 12 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
     );
     expect(harness.editTaskScheduleSummary.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
+    expect(harness.ctx.els.editTaskSplitAcrossProductivityDays?.checked).toBe(true);
+    expect(harness.editTaskSplitAcrossProductivityDaysRow.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
+  });
+
+  it("summarizes unchecked recurring weekly tasks as one weekly block", () => {
+    const harness = createEditHarness({
+      durationValue: "2",
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      sourceTask: task({
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "08:00",
+        plannedStartByDay: { wed: "08:00" },
+        splitAcrossProductivityDays: false,
+      }),
+    });
+    if (harness.ctx.els.editTaskWeeklyBlockDaySelect) harness.ctx.els.editTaskWeeklyBlockDaySelect.value = "wed";
+
+    harness.api.syncEditTaskTimeGoalUi(harness.api.getCurrentEditTask());
+
+    expect(harness.editTaskScheduleSummaryText.textContent).toBe(
+      "Task will be added as a 2 hours weekly scheduled block at 8:00 AM on Wednesday."
+    );
+    expect(harness.ctx.els.editTaskSplitAcrossProductivityDays?.checked).toBe(false);
+    expect(harness.editTaskWeeklyBlockDayField.classList.toggle).toHaveBeenLastCalledWith("isHidden", false);
   });
 
   it("updates the summary for a once-off edited task", () => {
@@ -322,6 +378,42 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
 
     expect(editDraft.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
     expect(editDraft.plannedStartDay).toBeNull();
+  });
+
+  it("generates weekly recurring schedules from productivity days when split is explicitly enabled", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { tue: "09:00" },
+      splitAcrossProductivityDays: true,
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"], { splitAcrossProductivityDays: true });
+
+    expect(editDraft.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(editDraft.plannedStartDay).toBeNull();
+  });
+
+  it("stores unchecked weekly recurring schedules as one full weekly block", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+      splitAcrossProductivityDays: false,
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"], {
+      splitAcrossProductivityDays: false,
+      weeklyBlockDay: "wed",
+    });
+
+    expect(editDraft.plannedStartByDay).toEqual({ wed: "09:00" });
+    expect(editDraft.plannedStartDay).toBe("wed");
+    expect(editDraft.plannedStartTime).toBe("09:00");
   });
 
   it("preserves productivity-day daily schedules that still have a shared legacy planned start", () => {
@@ -583,6 +675,82 @@ describe("edit task planned start initialization", () => {
 });
 
 describe("edit task schedule conflict confirmation", () => {
+  it("saves unchecked recurring weekly tasks as one weekly block on the selected day", () => {
+    const harness = createEditHarness({
+      durationValue: "2",
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "tue",
+        plannedStartDay: "tue",
+        plannedStartTime: "15:00",
+        plannedStartByDay: { tue: "15:00" },
+      }),
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+        splitAcrossProductivityDays: true,
+      }),
+    });
+    if (harness.ctx.els.editTaskSplitAcrossProductivityDays) harness.ctx.els.editTaskSplitAcrossProductivityDays.checked = false;
+    if (harness.ctx.els.editTaskWeeklyBlockDaySelect) harness.ctx.els.editTaskWeeklyBlockDaySelect.value = "wed";
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.splitAcrossProductivityDays).toBe(false);
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ wed: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBe("wed");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("rechecking recurring weekly tasks regenerates productivity-day blocks", () => {
+    const harness = createEditHarness({
+      durationValue: "2",
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "tue",
+        plannedStartDay: "tue",
+        plannedStartTime: "15:00",
+        plannedStartByDay: { tue: "15:00" },
+      }),
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { wed: "09:00" },
+        splitAcrossProductivityDays: false,
+      }),
+    });
+    if (harness.ctx.els.editTaskSplitAcrossProductivityDays) harness.ctx.els.editTaskSplitAcrossProductivityDays.checked = true;
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.splitAcrossProductivityDays).toBe(true);
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
   it("blocks saving an edited task with duplicate checkpoint times", () => {
     const harness = createEditHarness({
       sourceTask: task({

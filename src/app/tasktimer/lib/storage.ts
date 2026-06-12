@@ -324,6 +324,7 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0,
     timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+    timeGoalCompletedWeekKey: task.timeGoalCompletedWeekKey == null ? null : String(task.timeGoalCompletedWeekKey).trim() || null,
     timeGoalCompletedAtMs:
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
@@ -781,6 +782,7 @@ function taskSignature(task: Task | null | undefined): string {
     timeGoalPeriod: task.timeGoalPeriod === "day" ? "day" : "week",
     timeGoalMinutes: Number(task.timeGoalMinutes || 0),
     timeGoalCompletedDayKey: task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null,
+    timeGoalCompletedWeekKey: task.timeGoalCompletedWeekKey == null ? null : String(task.timeGoalCompletedWeekKey).trim() || null,
     timeGoalCompletedAtMs:
       task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
         ? null
@@ -1738,7 +1740,10 @@ function flushQueuedTaskSync(uid: string): void {
       const [taskId, taskRow] = nextEntry;
       queuedTaskUpsertsById.delete(taskId);
       try {
-        await saveTask(uid, taskRow);
+        await saveTask(uid, taskRow, {
+          historyByTaskId: cachedHistory || {},
+          weekStarting: cachedPreferences?.weekStarting,
+        });
         clearPendingTaskSync(taskId);
       } catch {
         queuedTaskUpsertsById.set(taskId, taskRow);

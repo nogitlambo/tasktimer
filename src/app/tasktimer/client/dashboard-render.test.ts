@@ -171,6 +171,8 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
   register("dashboardActivityGoalLine");
+  register("dashboardActivityPreviousWeekToggleWrap");
+  register("dashboardActivityPreviousWeekToggle");
   register("dashboardActivityYAxis");
   register("dashboardActivityXAxis");
   register("dashboardActivityEmpty");
@@ -285,6 +287,8 @@ function createRenderHarness(
       dashboardActivityPreviousBars: byId.get("dashboardActivityPreviousBars"),
       dashboardActivityBars: byId.get("dashboardActivityBars"),
       dashboardActivityGoalLine: byId.get("dashboardActivityGoalLine"),
+      dashboardActivityPreviousWeekToggleWrap: byId.get("dashboardActivityPreviousWeekToggleWrap"),
+      dashboardActivityPreviousWeekToggle: byId.get("dashboardActivityPreviousWeekToggle"),
       dashboardActivityYAxis: byId.get("dashboardActivityYAxis"),
       dashboardActivityXAxis: byId.get("dashboardActivityXAxis"),
       dashboardActivityEmpty: byId.get("dashboardActivityEmpty"),
@@ -353,6 +357,7 @@ function createRenderHarness(
     topbarXp,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
     renderActivityOverview: () => dashboardRender.renderDashboardActivityOverviewCard(),
+    toggleActivityPreviousWeek: () => dashboardRender.toggleDashboardActivityPreviousWeek(),
     renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
@@ -432,6 +437,82 @@ describe("dashboard activity overview card", () => {
       expect(previousBars?.children).toHaveLength(7);
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
       expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
+      expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
+        Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
+      );
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("toggles previous-week ghost bars from the chart pill", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const toggleWrap = harness.byId.get("dashboardActivityPreviousWeekToggleWrap") as ElementStub & { hidden?: boolean };
+      const toggle = harness.byId.get("dashboardActivityPreviousWeekToggle") as ElementStub & { checked?: boolean };
+
+      expect(previousBars?.style.display).toBe("");
+      expect(toggleWrap?.style.display).toBe("");
+      expect(toggleWrap?.hidden).toBe(false);
+      expect(toggleWrap?.classList.contains("isDisabled")).toBe(false);
+      expect(toggle?.checked).toBe(true);
+
+      expect(harness.toggleActivityPreviousWeek()).toBe(false);
+      expect(previousBars?.style.display).toBe("none");
+      expect(toggle?.checked).toBe(false);
+
+      expect(harness.toggleActivityPreviousWeek()).toBe(true);
+      expect(previousBars?.style.display).toBe("");
+      expect(toggle?.checked).toBe(true);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows the previous-week checkbox disabled when no previous-week data exists", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      {
+        historyByTaskId: {
+          focus: [
+            { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const toggleWrap = harness.byId.get("dashboardActivityPreviousWeekToggleWrap") as ElementStub & { hidden?: boolean };
+      const toggle = harness.byId.get("dashboardActivityPreviousWeekToggle") as ElementStub & { hidden?: boolean; disabled?: boolean };
+
+      expect(previousBars?.style.display).toBe("none");
+      expect(toggleWrap?.style.display).toBe("");
+      expect(toggleWrap?.hidden).toBe(false);
+      expect(toggleWrap?.classList.contains("isDisabled")).toBe(true);
+      expect(toggle?.hidden).toBe(false);
+      expect(toggle?.disabled).toBe(true);
+      expect(toggle?.getAttribute("disabled")).toBe("true");
     } finally {
       harness.restore();
     }
@@ -471,6 +552,9 @@ describe("dashboard activity overview card", () => {
       expect(yAxisHtml).toContain("3h");
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
       expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
+      expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
+        Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
+      );
     } finally {
       harness.restore();
     }

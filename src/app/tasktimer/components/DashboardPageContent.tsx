@@ -86,6 +86,19 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                     </div>
                     <div className="dashboardActivityOverviewBody">
                       <div className="dashboardActivityChartPanel">
+                        <div className="dashboardActivityPreviousWeekToggleRow">
+                          <label className="dashboardActivityPreviousWeekToggleWrap" id="dashboardActivityPreviousWeekToggleWrap" style={{ display: "none" }}>
+                            <input
+                              className="dashboardActivityPreviousWeekToggle"
+                              id="dashboardActivityPreviousWeekToggle"
+                              type="checkbox"
+                              defaultChecked
+                              aria-label="Hide previous week ghost bars"
+                              title="Hide previous week ghost bars"
+                            />
+                            Prev Week
+                          </label>
+                        </div>
                         <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
                           <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" preserveAspectRatio="none" role="img" aria-label="Seven day activity chart with previous week comparison" focusable="false">
                             <g id="dashboardActivityChartGrid" />

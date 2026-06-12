@@ -1032,15 +1032,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     padding-right: 14px;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBrandLockup,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailBrandLockup,
-  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandLockup,
-  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandLockup{
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailLogo,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailLogo,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailLogo,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailLogo{
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 0 0 32px;
-    padding-top: 12px;
+    min-height: 24px;
+    margin: 0;
+    padding: 12px 0;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailHeaderDivider,
@@ -1054,42 +1054,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     flex: 0 0 auto;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBrandIcon,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailBrandIcon,
-  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandIcon,
-  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandIcon{
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-    object-fit: contain;
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBrandWordmark,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailBrandWordmark,
-  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandWordmark,
-  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandWordmark{
-    color: var(--landing-text, rgba(245,248,244,.96));
-    font-family: var(--font-display-ui);
-    font-size: .82rem;
-    font-weight: 400;
-    letter-spacing: .16em;
-    line-height: normal;
-    text-transform: uppercase;
-  }
-
-  #app .desktopAppRail .appBrandLandingReplica,
-  #app .desktopAppRail .appBrandLandingReplicaText{
-    color: var(--landing-text, rgba(245,248,244,.96)) !important;
-    font-size: .82rem !important;
-    letter-spacing: .16em !important;
-    line-height: normal !important;
-    text-transform: uppercase !important;
-  }
-
-  #app .desktopAppRail .appBrandLandingReplicaIcon{
-    width: 22px !important;
-    height: 22px !important;
-    flex: 0 0 22px !important;
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailBrandLogo,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailBrandLogo,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBrandLogo,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBrandLogo{
+    width: 116px;
+    height: auto;
+    aspect-ratio: 3 / 1;
+    flex: 0 0 auto;
     object-fit: contain !important;
   }
 
@@ -1642,7 +1614,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPromoBadge,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPromoBadge{
     background: rgba(18,20,24,.96);
-    color: #fbffeb;
+    color: #fff;
     box-shadow: none;
   }
 
@@ -1661,8 +1633,8 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
     box-shadow: none;
   }
 
-body[data-theme="lime"][data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
-    color: rgba(251,255,219,.98);
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailMenuBtn.isOn .dashboardRailMenuLabel{
+    color: #fff;
     text-shadow: 0 0 8px rgba(219,255,79,.42);
   }
 

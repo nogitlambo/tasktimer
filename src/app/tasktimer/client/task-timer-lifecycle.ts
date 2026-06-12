@@ -1,10 +1,11 @@
 import type { CompletionDifficulty } from "../lib/completionDifficulty";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { localDayKey } from "../lib/history";
+import type { DashboardWeekStart } from "../lib/historyChart";
 import {
-  hasTaskReachedDailyTimeGoal,
-  isTaskTimeGoalCompletedToday,
-  isTaskTimeGoalStartLockedByHistoryToday,
+  hasTaskReachedTimeGoal,
+  isTaskTimeGoalCompletedForPeriod,
+  isTaskTimeGoalStartLockedByHistoryForPeriod,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
@@ -52,6 +53,7 @@ type TaskTimerLifecycleCommandAdapters = {
   syncFocusSessionNotesInput: (taskId: string) => void;
   syncFocusSessionNotesAccordion: (taskId: string) => void;
   getCurrentAppPage: () => string;
+  getWeekStarting?: () => DashboardWeekStart;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   openFocusMode: (index: number) => void;
   save: (opts?: { forceCloudFlush?: boolean }) => void;
@@ -63,6 +65,7 @@ type TaskTimerLifecycleCommandAdapters = {
 type TaskTimerLifecycleOptions = {
   getTasks: () => Task[];
   getHistoryByTaskId: () => HistoryByTaskId;
+  getWeekStarting?: () => DashboardWeekStart;
   getTaskDisplayName: (task: Task | null | undefined) => string;
   confirm: (title: string, text: string, opts: ConfirmOptions) => void;
   closeConfirm: () => void;
@@ -116,16 +119,19 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.flushPendingFocusSessionNoteSave(taskId);
     options.closeRewardSessionSegment(task, stopMs);
     task.accumulatedMs = options.getElapsedMs(task);
-    const shouldCompleteGoalOnStop = !isTaskTimeGoalCompletedToday(task, stopMs) && hasTaskReachedDailyTimeGoal(task, task.accumulatedMs);
+    const weekStarting = options.getWeekStarting?.() || "mon";
+    const shouldCompleteGoalOnStop =
+      !isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting) &&
+      hasTaskReachedTimeGoal(task, task.accumulatedMs);
     if (shouldCompleteGoalOnStop) {
       const goalElapsedMs = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) * 60_000));
-      markTaskTimeGoalCompleted(task, stopMs, { reason: "goal", elapsedMs: goalElapsedMs });
+      markTaskTimeGoalCompleted(task, stopMs, { reason: "goal", elapsedMs: goalElapsedMs, weekStarting });
     }
     const shouldDeferTimeGoalXp =
       !!task.timeGoalEnabled &&
       Number(task.timeGoalMinutes || 0) > 0 &&
       !shouldCompleteGoalOnStop &&
-      !isTaskTimeGoalCompletedToday(task, stopMs);
+      !isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting);
     options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs, deferTimeGoalXp: shouldDeferTimeGoalXp });
     task.running = false;
     task.startMs = null;
@@ -133,7 +139,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     void clearNativeRunningTimerNotification(taskId).catch(() => {});
     options.clearCheckpointBaseline(task.id);
     persistTaskTimerCommand(taskId);
-    const completedToday = isTaskTimeGoalCompletedToday(task, stopMs);
+    const completedToday = isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting);
     const telemetryParams = {
       source_page: options.getCurrentAppPage(),
       has_time_goal: !!task.timeGoalEnabled && (Number(task.timeGoalMinutes) || 0) > 0,
@@ -210,7 +216,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId(), options.nowMs())) return;
+    if (isTaskTimeGoalStartLockedByHistoryForPeriod(task, options.getHistoryByTaskId(), options.nowMs(), options.getWeekStarting?.() || "mon")) return;
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

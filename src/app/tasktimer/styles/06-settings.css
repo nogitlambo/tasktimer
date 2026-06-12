@@ -195,7 +195,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   font-size:22px;
   letter-spacing:.08em;
   text-transform:uppercase;
-  color:rgba(249,255,216,.96);
+  color:#fff;
   text-shadow:none;
 }
 
@@ -261,7 +261,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   font-weight:800;
   letter-spacing:.08em;
   text-transform:uppercase;
-  color: rgba(249,255,216,.96);
+  color: #fff;
   text-shadow:none;
 }
 
@@ -500,7 +500,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailHead{
-  border-bottom:1px solid rgba(249,255,216,.14);
+  border-bottom:1px solid rgba(255,255,255,.14);
   padding-bottom:10px;
 }
 
@@ -519,7 +519,7 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   font-weight:800;
   letter-spacing:.06em;
   text-transform:uppercase;
-  color: rgba(249,255,216,.96);
+  color: #fff;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailText{
@@ -4380,7 +4380,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 body[data-theme="lime"] .settingsDetailTitle,
 body[data-theme="lime"] .settingsInlineSectionTitle,
 body[data-theme="lime"] .settingsSectionLabel{
-  color: rgba(249,255,216,.96);
+  color: #fff;
 }
 
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSectionIcon{
@@ -4397,7 +4397,7 @@ body[data-theme="lime"] .settingsInlineSectionTitle,
 body[data-theme="lime"] .settingsSectionLabel,
 body[data-theme="lime"] .checkpointAlertsTitle,
 body[data-theme="lime"] .focusInsightsTitle{
-  color: rgba(249,255,216,.96);
+  color: #fff;
 }
 
 body[data-theme="lime"] label,
@@ -4487,7 +4487,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardRankValue,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardMetaItem .settingsAccountUidValue,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardDecorSignatureText{
-  color: rgba(249,255,216,.96);
+  color: #fff;
 }
 
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardMetaItem{

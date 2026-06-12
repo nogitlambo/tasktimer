@@ -68,6 +68,26 @@ export default function EditTaskOverlay() {
                 </div>
                 <div className="checkpointAlertsGroup" id="editTimerSettingsGroup" style={{ width: "100%", maxWidth: "none" }}>
                 </div>
+                <label
+                  className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow taskWeeklySplitRow isHidden"
+                  id="editTaskSplitAcrossProductivityDaysRow"
+                  htmlFor="editTaskSplitAcrossProductivityDays"
+                >
+                  <input id="editTaskSplitAcrossProductivityDays" type="checkbox" defaultChecked />
+                  <span>Split across productivity days</span>
+                </label>
+                <div className="field editTaskOnceOffDayField taskWeeklyBlockDayField isHidden" id="editTaskWeeklyBlockDayField">
+                  <label htmlFor="editTaskWeeklyBlockDaySelect">Weekly Block Day</label>
+                  <select id="editTaskWeeklyBlockDaySelect" defaultValue="mon" aria-label="Edit weekly block day">
+                    <option value="mon">Monday</option>
+                    <option value="tue">Tuesday</option>
+                    <option value="wed">Wednesday</option>
+                    <option value="thu">Thursday</option>
+                    <option value="fri">Friday</option>
+                    <option value="sat">Saturday</option>
+                    <option value="sun">Sunday</option>
+                  </select>
+                </div>
               </div>
 
               <div className="field editPlannedStartField">

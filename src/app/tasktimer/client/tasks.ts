@@ -48,6 +48,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
         historyByTaskId,
         manualEntryTs: Number(entry.ts || 0),
         nowMs: nowMs(),
+        weekStarting: ctx.getWeekStarting(),
       });
       if (!completed.completed) return;
       if (task.running) {
@@ -57,6 +58,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
           historyByTaskId: ctx.getHistoryByTaskId(),
           manualEntryTs: Number(entry.ts || 0),
           nowMs: nowMs(),
+          weekStarting: ctx.getWeekStarting(),
         });
       }
       ctx.save();
@@ -83,6 +85,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     documentRef: document,
     getTasks: ctx.getTasks,
     getHistoryByTaskId: ctx.getHistoryByTaskId,
+    getWeekStarting: ctx.getWeekStarting,
     getTaskView: ctx.getTaskView,
     getTaskOrderBy: ctx.getTaskOrderBy,
     getTileColumnCount: () => getTaskTimerTileColumnCount(typeof window === "undefined" ? null : window),
@@ -139,6 +142,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     syncFocusSessionNotesInput: ctx.syncFocusSessionNotesInput,
     syncFocusSessionNotesAccordion: ctx.syncFocusSessionNotesAccordion,
     getCurrentAppPage: ctx.getCurrentAppPage,
+    getWeekStarting: ctx.getWeekStarting,
     getAutoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled,
     openFocusMode: ctx.openFocusMode,
     save: ctx.save,
@@ -150,6 +154,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const taskTimerLifecycle = createTaskTimerLifecycle({
     getTasks: ctx.getTasks,
     getHistoryByTaskId: ctx.getHistoryByTaskId,
+    getWeekStarting: ctx.getWeekStarting,
     getTaskDisplayName,
     confirm: ctx.confirm,
     closeConfirm: ctx.closeConfirm,

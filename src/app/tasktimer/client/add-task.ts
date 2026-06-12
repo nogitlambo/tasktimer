@@ -29,6 +29,7 @@ import {
   type ScheduleDay,
 } from "../lib/schedule-placement";
 import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
+import { normalizeOptimalProductivityDays } from "../lib/productivityPeriod";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
 import { eventTargetClosest } from "./control-helpers";
@@ -52,6 +53,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   let selectedColorTouched = false;
   let addTaskPlannedStartTouched = false;
   let addTaskScheduleEnabled = false;
+  let addTaskSplitAcrossProductivityDays = true;
+  let addTaskWeeklyBlockDay: ScheduleDay = "mon";
   let addTaskOverlayHideTimer: number | null = null;
 
   function clearAddTaskOverlayHideTimer() {
@@ -71,6 +74,40 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
 
   function hasSelectedTaskType() {
     return ctx.getAddTaskType() === "recurring" || ctx.getAddTaskType() === "once-off";
+  }
+
+  function getAddTaskProductivityDays() {
+    return normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
+  }
+
+  function getAddTaskDefaultWeeklyBlockDay() {
+    return getAddTaskProductivityDays()[0] || "mon";
+  }
+
+  function shouldShowAddTaskSplitAcrossProductivityDays() {
+    return (
+      addTaskScheduleEnabled &&
+      !isOnceOffTaskType() &&
+      ctx.getAddTaskDurationPeriod() === "week" &&
+      getAddTaskTimeGoalMinutes() > 0 &&
+      getAddTaskProductivityDays().length >= 2
+    );
+  }
+
+  function syncAddTaskSplitAcrossProductivityDaysUi() {
+    const visible = shouldShowAddTaskSplitAcrossProductivityDays();
+    if (!visible) {
+      addTaskSplitAcrossProductivityDays = true;
+      addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
+    }
+    if (els.addTaskSplitAcrossProductivityDays) {
+      els.addTaskSplitAcrossProductivityDays.checked = addTaskSplitAcrossProductivityDays;
+    }
+    if (els.addTaskWeeklyBlockDaySelect) {
+      els.addTaskWeeklyBlockDaySelect.value = addTaskWeeklyBlockDay;
+    }
+    els.addTaskSplitAcrossProductivityDaysRow?.classList.toggle("isHidden", !visible);
+    els.addTaskWeeklyBlockDayField?.classList.toggle("isHidden", !visible || addTaskSplitAcrossProductivityDays);
   }
 
   function syncAddTaskScheduleToggleUi() {
@@ -211,6 +248,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
             plannedStartTime: ctx.getAddTaskPlannedStartTime() || "09:00",
             productivityDays: ctx.getOptimalProductivityDays(),
             onceOffDay: ctx.getAddTaskOnceOffDay(),
+            splitAcrossProductivityDays: shouldShowAddTaskSplitAcrossProductivityDays() ? addTaskSplitAcrossProductivityDays : true,
+            weeklyBlockDay: addTaskWeeklyBlockDay,
           })
         : "";
     if (els.addTaskScheduleSummaryText) {
@@ -249,7 +288,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       plannedStartByDay:
         taskType === "once-off"
           ? { [onceOffDay]: plannedStartTime }
-          : buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime),
+          : shouldShowAddTaskSplitAcrossProductivityDays() && !addTaskSplitAcrossProductivityDays
+            ? { [addTaskWeeklyBlockDay]: plannedStartTime }
+            : buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime),
+      splitAcrossProductivityDays: taskType === "recurring" && timeGoalPeriod === "week" ? addTaskSplitAcrossProductivityDays : undefined,
     } satisfies Task;
     return draftTask;
   }
@@ -385,6 +427,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncPill(els.addTaskDurationPeriodDay, ctx.getAddTaskDurationPeriod() === "day", !canUseDay || onceOff);
     syncPill(els.addTaskDurationPeriodWeek, ctx.getAddTaskDurationPeriod() === "week", onceOff);
     syncAddTaskDurationReadout();
+    syncAddTaskSplitAcrossProductivityDaysUi();
     syncAddTaskScheduleSummary();
   }
 
@@ -820,6 +863,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskCheckpointSoundModeState("once");
     ctx.setAddTaskCheckpointToastEnabledState(false);
     ctx.setAddTaskCheckpointToastModeState("auto5s");
+    addTaskSplitAcrossProductivityDays = true;
+    addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
     selectedColor = getNextAutoTaskColor(ctx.getTasks());
     selectedColorTouched = false;
     addTaskPlannedStartTouched = false;
@@ -833,6 +878,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskCheckpointSoundModeSelect) els.addTaskCheckpointSoundModeSelect.value = "once";
     if (els.addTaskCheckpointToastModeSelect) els.addTaskCheckpointToastModeSelect.value = "auto5s";
     if (els.addTaskMsToggle) els.addTaskMsToggle.checked = false;
+    if (els.addTaskSplitAcrossProductivityDays) els.addTaskSplitAcrossProductivityDays.checked = true;
+    if (els.addTaskWeeklyBlockDaySelect) els.addTaskWeeklyBlockDaySelect.value = addTaskWeeklyBlockDay;
     if (els.addTaskMsList) els.addTaskMsList.innerHTML = "";
     if (els.addTaskAdvancedMenu) els.addTaskAdvancedMenu.open = false;
     if (els.addTaskScheduleSummary) els.addTaskScheduleSummary.open = false;
@@ -965,7 +1012,13 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       newTask.plannedStartOpenEnded = false;
       const plannedTime = String(ctx.getAddTaskPlannedStartTime() || "").trim() || null;
       newTask.plannedStartTime = plannedTime;
-      newTask.plannedStartByDay = plannedTime ? buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedTime) : null;
+      newTask.splitAcrossProductivityDays =
+        newTask.timeGoalPeriod === "week" ? (shouldShowAddTaskSplitAcrossProductivityDays() ? addTaskSplitAcrossProductivityDays : true) : undefined;
+      newTask.plannedStartByDay = plannedTime
+        ? newTask.timeGoalPeriod === "week" && !newTask.splitAcrossProductivityDays
+          ? { [addTaskWeeklyBlockDay]: plannedTime }
+          : buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedTime)
+        : null;
     }
 
     if (findScheduleOverlap(tasks, newTask)) {
@@ -990,6 +1043,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       if (addTaskScheduleEnabled) {
         syncAddTaskTypeUi();
         syncAddTaskDurationUi();
+        syncAddTaskSplitAcrossProductivityDaysUi();
         syncAddTaskPlannedStartUi();
         syncAddTaskCheckpointAlertUi();
         maybeAutoFillAddTaskPlannedStart();
@@ -1001,6 +1055,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskTypeUi();
       syncAddTaskDurationUi();
+      syncAddTaskSplitAcrossProductivityDaysUi();
       maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskTypeOnceOffBtn, "click", () => {
@@ -1009,6 +1064,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskTypeUi();
       syncAddTaskDurationUi();
+      syncAddTaskSplitAcrossProductivityDaysUi();
       maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskOnceOffDaySelect, "change", () => {
@@ -1051,6 +1107,22 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       clearAddTaskValidationState();
       syncAddTaskDurationUi();
       syncAddTaskCheckpointAlertUi();
+      maybeAutoFillAddTaskPlannedStart();
+    });
+    ctx.on(els.addTaskSplitAcrossProductivityDays, "change", () => {
+      addTaskSplitAcrossProductivityDays = !!els.addTaskSplitAcrossProductivityDays?.checked;
+      if (!addTaskSplitAcrossProductivityDays && !addTaskWeeklyBlockDay) {
+        addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
+      }
+      syncAddTaskSplitAcrossProductivityDaysUi();
+      syncAddTaskScheduleSummary();
+      maybeAutoFillAddTaskPlannedStart();
+    });
+    ctx.on(els.addTaskWeeklyBlockDaySelect, "change", () => {
+      const selectedDay = String(els.addTaskWeeklyBlockDaySelect?.value || getAddTaskDefaultWeeklyBlockDay()).trim().toLowerCase() as ScheduleDay;
+      addTaskWeeklyBlockDay = selectedDay;
+      syncAddTaskSplitAcrossProductivityDaysUi();
+      syncAddTaskScheduleSummary();
       maybeAutoFillAddTaskPlannedStart();
     });
     ctx.on(els.addTaskDurationValueInput, "focus", () => {
@@ -1111,7 +1183,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.on(els.addTaskPlannedStartMeridiemSelect, "input", syncTouchedPlannedStart);
     ctx.on(els.addTaskPlannedStartTimeInput, "change", syncTouchedPlannedStart);
     ctx.on(els.addTaskPlannedStartTimeInput, "input", syncTouchedPlannedStart);
-    ctx.on(typeof window !== "undefined" ? window : null, "tasktimer:optimal-productivity-days-changed", syncAddTaskScheduleSummary);
+    ctx.on(typeof window !== "undefined" ? window : null, "tasktimer:optimal-productivity-days-changed", () => {
+      if (addTaskSplitAcrossProductivityDays) addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
+      syncAddTaskSplitAcrossProductivityDaysUi();
+      syncAddTaskScheduleSummary();
+    });
     ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
       if (!els.addTaskPlannedStartPushReminders?.checked) return;
       void enablePushAlertsForCurrentRuntime();

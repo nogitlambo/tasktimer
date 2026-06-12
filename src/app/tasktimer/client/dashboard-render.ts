@@ -44,6 +44,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   let momentumAnimationStartTimerId: number | null = null;
   let selectedMomentumDriverKey: DashboardMomentumDriverKey | null = null;
   let selectedMomentumDriverResetTimerId: number | null = null;
+  let dashboardActivityPreviousWeekVisible = true;
   const MOMENTUM_GAUGE_START_DEG = -180;
   const MOMENTUM_GAUGE_END_DEG = 0;
   const MOMENTUM_ANIMATION_DURATION_MS = 1050;
@@ -1224,6 +1225,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const chart = dashboardActivityChartBounds;
     const svgNs = "http://www.w3.org/2000/svg";
     const view = getDashboardActivityChartView(model);
+    const hasPreviousWeekData = view.previousDays.some((day) => day.totalMs > 0);
 
     if (chartGridEl) {
       chartGridEl.innerHTML = "";
@@ -1240,10 +1242,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (previousBarsEl) {
       previousBarsEl.innerHTML = "";
-      previousBarsEl.style.display = view.previousDays.some((day) => day.totalMs > 0) ? "" : "none";
+      previousBarsEl.style.display = hasPreviousWeekData && dashboardActivityPreviousWeekVisible ? "" : "none";
       if (view.previousDays.length > 0) {
         const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
-        const barWidth = Math.min(76, slotWidth * 0.74);
+        const barWidth = Math.min(84, slotWidth * 0.82);
         view.previousDays.forEach((day, index) => {
           const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
           const slotX = chart.left + index * slotWidth;
@@ -1304,6 +1306,32 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     }
   }
 
+  function syncDashboardActivityPreviousWeekToggle(model: DashboardActivityOverviewModel) {
+    const toggleWrapEl = (els as any).dashboardActivityPreviousWeekToggleWrap as HTMLElement | null;
+    const toggleEl = (els as any).dashboardActivityPreviousWeekToggle as HTMLInputElement | null;
+    if (!toggleEl) return;
+    const view = getDashboardActivityChartView(model);
+    const hasPreviousWeekData = view.previousDays.some((day) => day.totalMs > 0);
+    if (toggleWrapEl) {
+      toggleWrapEl.style.display = "";
+      toggleWrapEl.hidden = false;
+      toggleWrapEl.classList.toggle("isChecked", dashboardActivityPreviousWeekVisible);
+      toggleWrapEl.classList.toggle("isDisabled", !hasPreviousWeekData);
+    }
+    toggleEl.style.display = "";
+    toggleEl.hidden = false;
+    toggleEl.disabled = !hasPreviousWeekData;
+    toggleEl.checked = dashboardActivityPreviousWeekVisible;
+    if (!hasPreviousWeekData) {
+      toggleEl.setAttribute("disabled", "true");
+    } else {
+      toggleEl.removeAttribute("disabled");
+    }
+    const actionLabel = dashboardActivityPreviousWeekVisible ? "Hide previous week ghost bars" : "Show previous week ghost bars";
+    toggleEl.setAttribute("aria-label", actionLabel);
+    toggleEl.setAttribute("title", actionLabel);
+  }
+
   function renderDashboardActivityOverviewCard() {
     const cardEl = (els as any).dashboardActivityOverviewCard as HTMLElement | null;
     if (!cardEl) return;
@@ -1315,6 +1343,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const showEmpty = !model.hasActivity;
       emptyEl.hidden = !showEmpty;
     }
+    syncDashboardActivityPreviousWeekToggle(model);
     renderDashboardActivityAxes(model);
     renderDashboardActivitySvg(model);
     chartEl?.setAttribute("aria-label", "Seven day activity chart with previous week comparison");
@@ -1322,6 +1351,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       "aria-label",
       `Activity overview. Seven-day activity chart with previous-week comparison and ${formatDashboardDurationWithMinutes(view.visibleTotalMs)} logged this week. ${formatDashboardDurationWithMinutes(model.previousWeekTotalMs)} logged previous week. ${model.hasGoal ? `${formatDashboardDurationWithMinutes(model.totalGoalMs)} weekly goal.` : "No weekly goal."}`
     );
+  }
+
+  function toggleDashboardActivityPreviousWeek() {
+    dashboardActivityPreviousWeekVisible = !dashboardActivityPreviousWeekVisible;
+    renderDashboardActivityOverviewCard();
+    return dashboardActivityPreviousWeekVisible;
   }
 
   function renderDashboardTasksCompletedCard() {
@@ -2533,6 +2568,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardHeatCalendar,
     renderDashboardLiveWidgets,
     renderDashboardWidgets,
+    toggleDashboardActivityPreviousWeek,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,

@@ -1,7 +1,7 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import {
-  hasTaskReachedDailyTimeGoal,
-  isTaskTimeGoalStartLockedByHistoryToday,
+  hasTaskReachedTimeGoal,
+  isTaskTimeGoalStartLockedByHistoryForPeriod,
   markTaskTimeGoalCompleted,
   markTaskTimeGoalResetCompleted,
 } from "../lib/timeGoalCompletion";
@@ -84,7 +84,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
   function resetTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedByHistoryToday(task, options.getHistoryByTaskId() as HistoryByTaskId)) return;
+    if (isTaskTimeGoalStartLockedByHistoryForPeriod(task, options.getHistoryByTaskId() as HistoryByTaskId, Date.now(), options.getWeekStarting())) return;
     if (Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0)) <= 0) return;
     const taskId = String(task.id || "");
     const rewardPreview = getResetAwardPreview(task);
@@ -115,10 +115,10 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
             });
           }
           const resetElapsedMs = Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0));
-          if (hasTaskReachedDailyTimeGoal(task, resetElapsedMs)) {
-            markTaskTimeGoalCompleted(task, Date.now(), { reason: "goal", elapsedMs: resetElapsedMs });
+          if (hasTaskReachedTimeGoal(task, resetElapsedMs)) {
+            markTaskTimeGoalCompleted(task, Date.now(), { reason: "goal", elapsedMs: resetElapsedMs, weekStarting: options.getWeekStarting() });
           } else {
-            markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs);
+            markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs, options.getWeekStarting());
           }
           options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
           options.save();

@@ -38,12 +38,12 @@
 
 #appPageFriends #groupsIncomingRequestsList.isEmptyStatus,
 #appPageFriends #groupsOutgoingRequestsList.isEmptyStatus{
-  color: rgba(170, 178, 190, 0.82);
+  color: #fff;
   font-style: italic;
 }
 
 .groupsFriendsEmptyState{
-  color: rgba(170, 178, 190, 0.82);
+  color: #fff;
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 12px;
 }
@@ -145,7 +145,8 @@
 .friendIdentityAlias{
   min-width: 0;
   display: block;
-  font: inherit;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: inherit;
   font-weight: 700;
   line-height: 1.2;
   overflow: hidden;
@@ -186,6 +187,7 @@
 
 .friendRequestAlias{
   min-width: 0;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -283,6 +285,10 @@
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsSharedByYouTitle{
   padding: 8px 12px;
   line-height: 1.25;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .settingsDetailNote{
+  color: #fff;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends :where(#groupsSharedByYouTitle, #groupsIncomingRequestsTitle, #groupsOutgoingRequestsTitle){
@@ -455,6 +461,7 @@
 
 #friendProfileName{
   min-width: 0;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
@@ -924,7 +931,7 @@
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAlias{
   display: block;
-  font: inherit;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
@@ -1082,7 +1089,7 @@ body[data-theme="lime"] .friendIdentityUid,
 body[data-theme="lime"] .friendRequestUid,
 body[data-theme="lime"] .friendSharedTasksCountText,
 body[data-theme="lime"] .friendIdentityMeta{
-  color: rgba(228,240,171,.82);
+  color: #fff;
 }
 
 body[data-theme="lime"] .friendSharedTaskCard{
@@ -1275,7 +1282,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardName,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideText strong{
   display:block;
-  font-family: inherit;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;
@@ -1556,6 +1563,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:13px;
   line-height:1.2;
   color:rgba(233,252,255,.94);
@@ -1710,6 +1718,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPlayerText strong{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPlayerText span{

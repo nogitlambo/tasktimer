@@ -176,4 +176,32 @@ describe("buildScheduledTimeGoalPushPlan", () => {
       vi.useRealTimers();
     }
   });
+
+  it("schedules weekly completion from current-week history plus the running session", () => {
+    const startMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    const nowMs = startMs;
+    const plan = buildScheduledTimeGoalPushPlan(
+      task({
+        running: true,
+        startMs,
+        accumulatedMs: 10 * 60_000,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 60,
+      }),
+      nowMs,
+      {
+        weekStarting: "mon",
+        historyByTaskId: {
+          "task-1": [{ ts: new Date(2026, 4, 26, 9, 0, 0).getTime(), name: "Task 1", ms: 20 * 60_000 }],
+        },
+      }
+    );
+
+    expect(plan.timeGoalCompleteDueAtMs).toBe(startMs + 30 * 60_000);
+    expect(plan.notificationKind).toBe("timeGoalComplete");
+    expect(plan.timeGoalPeriod).toBe("week");
+    expect(plan.timeGoalGoalMs).toBe(60 * 60_000);
+    expect(plan.timeGoalCompletionWeekKey).toBe("2026-05-25");
+  });
 });

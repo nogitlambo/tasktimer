@@ -80,6 +80,26 @@ export default function AddTaskOverlay() {
                   </div>
                 </div>
                 <div className="addTaskDurationReadout" id="addTaskDurationReadout" />
+                <label
+                  className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow taskWeeklySplitRow isHidden"
+                  id="addTaskSplitAcrossProductivityDaysRow"
+                  htmlFor="addTaskSplitAcrossProductivityDays"
+                >
+                  <input id="addTaskSplitAcrossProductivityDays" type="checkbox" defaultChecked />
+                  <span>Split across productivity days</span>
+                </label>
+                <div className="field editTaskOnceOffDayField taskWeeklyBlockDayField isHidden" id="addTaskWeeklyBlockDayField">
+                  <label htmlFor="addTaskWeeklyBlockDaySelect">Weekly Block Day</label>
+                  <select id="addTaskWeeklyBlockDaySelect" defaultValue="mon" aria-label="Weekly block day">
+                    <option value="mon">Monday</option>
+                    <option value="tue">Tuesday</option>
+                    <option value="wed">Wednesday</option>
+                    <option value="thu">Thursday</option>
+                    <option value="fri">Friday</option>
+                    <option value="sat">Saturday</option>
+                    <option value="sun">Sunday</option>
+                  </select>
+                </div>
               </div>
 
               <div className="field editPlannedStartField">

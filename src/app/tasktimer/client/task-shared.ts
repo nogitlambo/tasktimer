@@ -97,6 +97,7 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       timeGoalPeriod: "week",
       timeGoalMinutes: 0,
       timeGoalCompletedDayKey: null,
+      timeGoalCompletedWeekKey: null,
       timeGoalCompletedAtMs: null,
       timeGoalCompletedReason: null,
       timeGoalCompletedElapsedMs: null,
@@ -130,6 +131,18 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     task.timeGoalUnit = task.timeGoalUnit === "minute" ? "minute" : "hour";
     task.timeGoalPeriod = task.timeGoalPeriod === "day" ? "day" : "week";
     task.timeGoalMinutes = Number.isFinite(Number(task.timeGoalMinutes)) ? Math.max(0, Number(task.timeGoalMinutes)) : 0;
+    task.timeGoalCompletedDayKey = task.timeGoalCompletedDayKey == null ? null : String(task.timeGoalCompletedDayKey).trim() || null;
+    task.timeGoalCompletedWeekKey = task.timeGoalCompletedWeekKey == null ? null : String(task.timeGoalCompletedWeekKey).trim() || null;
+    task.timeGoalCompletedAtMs =
+      task.timeGoalCompletedAtMs == null || !Number.isFinite(Number(task.timeGoalCompletedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs)));
+    task.timeGoalCompletedReason =
+      task.timeGoalCompletedReason === "reset" || task.timeGoalCompletedReason === "goal" ? task.timeGoalCompletedReason : null;
+    task.timeGoalCompletedElapsedMs =
+      task.timeGoalCompletedElapsedMs == null || !Number.isFinite(Number(task.timeGoalCompletedElapsedMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs)));
     task.taskType = task.taskType === "once-off" ? "once-off" : "recurring";
     task.createdAtMs =
       Number.isFinite(Number(task.createdAtMs)) && Number(task.createdAtMs) > 0
