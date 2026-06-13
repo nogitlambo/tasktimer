@@ -6195,6 +6195,25 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   filter: drop-shadow(0 0 4px rgba(255,255,255,.18));
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedNeedle.isRunning{
+  stroke: rgba(245,248,244,.98);
+  stroke-width: 2.2;
+  animation: dashboardTasksCompletedNeedlePulse 1.35s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 4px rgba(255,255,255,.28))
+    drop-shadow(0 0 10px rgba(169,214,95,.34));
+  will-change: opacity;
+}
+
+@keyframes dashboardTasksCompletedNeedlePulse{
+  0%, 100%{
+    opacity: .2;
+  }
+  50%{
+    opacity: 1;
+  }
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTrackSegment{
   fill: none;
   stroke-width: 24;
@@ -6339,11 +6358,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRunning .dashboardTasksCompletedLabelName{
   color: rgba(245,248,244,.96);
-  animation: dashboardTasksCompletedLabelPulse 1.6s ease-in-out infinite;
+  animation: dashboardTasksCompletedLabelPulse 1.35s ease-in-out infinite;
   text-shadow:
     0 0 6px color-mix(in srgb, var(--dashboard-task-label-color) 32%, transparent),
     0 0 12px color-mix(in srgb, var(--dashboard-task-label-color) 16%, transparent);
-  will-change: opacity, text-shadow;
+  will-change: opacity;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelStatus{
@@ -6364,19 +6383,22 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @keyframes dashboardTasksCompletedLabelPulse{0%, 100%{
-    opacity: .9;
-    text-shadow:
-      0 0 5px color-mix(in srgb, var(--dashboard-task-label-color) 24%, transparent),
-      0 0 10px color-mix(in srgb, var(--dashboard-task-label-color) 10%, transparent);
+    opacity: .2;
   }50%{
     opacity: 1;
-    text-shadow:
-      0 0 7px color-mix(in srgb, var(--dashboard-task-label-color) 38%, transparent),
-      0 0 14px color-mix(in srgb, var(--dashboard-task-label-color) 18%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce){
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedNeedle.isRunning{
+    animation: none;
+    opacity: 1;
+    stroke-width: 2.2;
+    filter:
+      drop-shadow(0 0 4px rgba(255,255,255,.28))
+      drop-shadow(0 0 10px rgba(169,214,95,.34));
+  }
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRunning .dashboardTasksCompletedLabelName{
     animation: none;
     opacity: 1;

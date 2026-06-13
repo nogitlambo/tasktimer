@@ -27,6 +27,14 @@ export type DashboardTasksCompletedLabelLayout = {
   connectorPath: string | null;
 };
 
+type MutableDashboardTasksCompletedLabelLayout = DashboardTasksCompletedLabelLayout & {
+  labelPct: number;
+  orderIndex: number;
+  preferredPct: number;
+  labelWidth?: number;
+  labelHeight?: number;
+};
+
 type LayoutConfig = {
   chartSize: number;
   center: number;
@@ -69,36 +77,11 @@ function normalizePct(pct: number) {
   return ((pct % 100) + 100) % 100;
 }
 
-function circularPctDistance(a: number, b: number) {
-  const diff = Math.abs(normalizePct(a) - normalizePct(b));
-  return Math.min(diff, 100 - diff);
-}
-
-function chooseLabelSlotRotationPct(inputs: DashboardTasksCompletedLabelLayoutInput[], slotStep: number) {
-  if (inputs.length === 0) return 0;
-  const candidateRotations = inputs.map((input, index) => normalizePct(input.sliceStartPct + input.slicePct / 2 - index * slotStep));
-  const meanRotationRadians = Math.atan2(
-    candidateRotations.reduce((total, rotation) => total + Math.sin((rotation / 100) * Math.PI * 2), 0),
-    candidateRotations.reduce((total, rotation) => total + Math.cos((rotation / 100) * Math.PI * 2), 0)
-  );
-  candidateRotations.push(normalizePct((meanRotationRadians / (Math.PI * 2)) * 100));
-  let bestRotation = candidateRotations[0] ?? 0;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  candidateRotations.forEach((rotation) => {
-    const score = inputs.reduce((total, input, index) => {
-      const midPct = input.sliceStartPct + input.slicePct / 2;
-      const labelPct = rotation + index * slotStep;
-      const distance = circularPctDistance(midPct, labelPct);
-      return total + distance * distance;
-    }, 0);
-    if (score < bestScore) {
-      bestScore = score;
-      bestRotation = rotation;
-    }
-  });
-
-  return bestRotation;
+function signedCircularPctDelta(fromPct: number, toPct: number) {
+  let delta = normalizePct(toPct) - normalizePct(fromPct);
+  if (delta > 50) delta -= 100;
+  if (delta < -50) delta += 100;
+  return delta;
 }
 
 function pointOnCircle(angleRad: number, radius: number, center: number): DashboardTasksCompletedPoint {
@@ -121,6 +104,109 @@ function rectForLabel(
     width: labelWidth,
     height: labelHeight,
   };
+}
+
+function meanCircularPct(pcts: number[]) {
+  if (pcts.length === 0) return 0;
+  const angle = Math.atan2(
+    pcts.reduce((sum, pct) => sum + Math.sin((normalizePct(pct) / 100) * Math.PI * 2), 0),
+    pcts.reduce((sum, pct) => sum + Math.cos((normalizePct(pct) / 100) * Math.PI * 2), 0)
+  );
+  return normalizePct((angle / (Math.PI * 2)) * 100);
+}
+
+function updateLabelOrbitPosition(
+  layout: MutableDashboardTasksCompletedLabelLayout,
+  labelPct: number,
+  config: LayoutConfig
+) {
+  const normalizedPct = normalizePct(labelPct);
+  const labelAngleRad = pctToAngleRad(normalizedPct);
+  const labelPoint = pointOnCircle(labelAngleRad, config.labelOrbitRadius, config.center);
+  layout.labelPct = normalizedPct;
+  layout.labelX = labelPoint.x;
+  layout.labelY = labelPoint.y;
+  layout.isRightSide = Math.cos(labelAngleRad) >= 0;
+  layout.rect = rectForLabel(labelPoint.x, labelPoint.y, config, layout.labelWidth, layout.labelHeight);
+}
+
+function getLabelCollisionPairs(labels: MutableDashboardTasksCompletedLabelLayout[]) {
+  const pairs: Array<[number, number]> = [];
+  labels.forEach((label, index) => {
+    labels.slice(index + 1).forEach((other, offset) => {
+      if (dashboardTasksCompletedRectsIntersect(label.rect, other.rect, 1)) {
+        pairs.push([index, index + 1 + offset]);
+      }
+    });
+  });
+  return pairs;
+}
+
+function getCollisionComponents(labels: MutableDashboardTasksCompletedLabelLayout[], pairs: Array<[number, number]>) {
+  const parent = labels.map((_, index) => index);
+  const find = (index: number): number => {
+    const parentIndex = parent[index] ?? index;
+    if (parentIndex === index) return index;
+    const root = find(parentIndex);
+    parent[index] = root;
+    return root;
+  };
+  const union = (a: number, b: number) => {
+    const aRoot = find(a);
+    const bRoot = find(b);
+    if (aRoot !== bRoot) parent[bRoot] = aRoot;
+  };
+  pairs.forEach(([a, b]) => union(a, b));
+  const byRoot = new Map<number, number[]>();
+  labels.forEach((_, index) => {
+    const root = find(index);
+    byRoot.set(root, [...(byRoot.get(root) || []), index]);
+  });
+  return [...byRoot.values()].filter((component) => component.length > 1);
+}
+
+function fallbackCollisionComponentsToLocalSlots(
+  labels: MutableDashboardTasksCompletedLabelLayout[],
+  components: number[][],
+  config: LayoutConfig
+) {
+  const labelOrbitCircumference = Math.PI * 2 * config.labelOrbitRadius;
+  const fallbackStepPct = Math.max(6, ((config.labelWidth + config.labelGap) / labelOrbitCircumference) * 100);
+  components.forEach((component) => {
+    const ordered = [...component].sort((a, b) => labels[a].orderIndex - labels[b].orderIndex);
+    const centerPct = meanCircularPct(ordered.map((index) => labels[index].preferredPct));
+    const middle = (ordered.length - 1) / 2;
+    ordered.forEach((index, position) => {
+      updateLabelOrbitPosition(labels[index], centerPct + (position - middle) * fallbackStepPct, config);
+    });
+  });
+}
+
+function resolveLabelCollisions(labels: MutableDashboardTasksCompletedLabelLayout[], config: LayoutConfig) {
+  const nudgeStepPct = 0.8;
+  const maxPasses = 80;
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    const collisionPairs = getLabelCollisionPairs(labels);
+    if (collisionPairs.length === 0) return;
+    const deltas = labels.map(() => 0);
+    collisionPairs.forEach(([a, b]) => {
+      const delta = signedCircularPctDelta(labels[a].labelPct, labels[b].labelPct);
+      if (delta >= 0) {
+        deltas[a] -= nudgeStepPct;
+        deltas[b] += nudgeStepPct;
+      } else {
+        deltas[a] += nudgeStepPct;
+        deltas[b] -= nudgeStepPct;
+      }
+    });
+    deltas.forEach((delta, index) => {
+      if (delta !== 0) updateLabelOrbitPosition(labels[index], labels[index].labelPct + delta, config);
+    });
+  }
+
+  const remainingPairs = getLabelCollisionPairs(labels);
+  if (remainingPairs.length === 0) return;
+  fallbackCollisionComponentsToLocalSlots(labels, getCollisionComponents(labels, remainingPairs), config);
 }
 
 export function dashboardTasksCompletedRectsIntersect(
@@ -318,20 +404,23 @@ export function buildDashboardTasksCompletedLabelLayout(
 ) {
   const config = { ...DEFAULT_LAYOUT_CONFIG, ...configOverrides };
   const sortedInputs = [...inputs].sort((a, b) => (a.sliceStartPct + a.slicePct / 2) - (b.sliceStartPct + b.slicePct / 2));
-  const labelSlotCount = Math.max(1, sortedInputs.length);
-  const labelSlotStep = 100 / labelSlotCount;
-  const labelSlotRotation = chooseLabelSlotRotationPct(sortedInputs, labelSlotStep);
   const layoutByKey = new Map<string, DashboardTasksCompletedLabelLayout>();
+  const mutableLabels: MutableDashboardTasksCompletedLabelLayout[] = [];
 
   sortedInputs.forEach((input, index) => {
     const midPct = input.sliceStartPct + input.slicePct / 2;
     const sliceAngleRad = pctToAngleRad(midPct);
-    const labelAngleRad = pctToAngleRad(labelSlotRotation + index * labelSlotStep);
+    const labelAngleRad = pctToAngleRad(midPct);
     const slicePoint = pointOnCircle(sliceAngleRad, config.ringOuterRadius, config.center);
     const labelPoint = pointOnCircle(labelAngleRad, config.labelOrbitRadius, config.center);
     const isRightSide = Math.cos(labelAngleRad) >= 0;
-    const layout = {
+    const layout: MutableDashboardTasksCompletedLabelLayout = {
       key: input.key,
+      orderIndex: index,
+      preferredPct: normalizePct(midPct),
+      labelPct: normalizePct(midPct),
+      labelWidth: input.labelWidth,
+      labelHeight: input.labelHeight,
       isRightSide,
       isExternal: true,
       labelX: labelPoint.x,
@@ -341,7 +430,10 @@ export function buildDashboardTasksCompletedLabelLayout(
       connectorPath: null,
     };
     layoutByKey.set(input.key, layout);
+    mutableLabels.push(layout);
   });
+
+  resolveLabelCollisions(mutableLabels, config);
   const labels = inputs.map((input) => layoutByKey.get(input.key)).filter((layout): layout is DashboardTasksCompletedLabelLayout => !!layout);
 
   const allRects = labels.map((label) => label.rect);

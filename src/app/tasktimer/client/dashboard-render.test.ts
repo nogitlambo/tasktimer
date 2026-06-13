@@ -139,6 +139,12 @@ function todaySchedule() {
   return { [today]: "09:00" } as Task["plannedStartByDay"];
 }
 
+function nonTodaySchedule() {
+  const todayIndex = new Date().getDay();
+  const day = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][(todayIndex + 1) % 7];
+  return { [day]: "09:00" } as Task["plannedStartByDay"];
+}
+
 function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   const byId = new Map<string, ElementStub>();
   const register = (id: string) => {
@@ -1018,7 +1024,164 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("shows once-off tasks that have a current scheduled slot even when their target date is stale", () => {
+  it("shows completed and incomplete tasks scheduled today from legacy schedule fields", () => {
+    const nowValue = Date.now();
+    const today = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()] as NonNullable<Task["plannedStartDay"]>;
+    const tasks = [
+      task({
+        id: "done-task",
+        name: "Done Task",
+        order: 1,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: today,
+        plannedStartTime: "09:00",
+        plannedStartByDay: null,
+      }),
+      task({
+        id: "open-task",
+        name: "Open Task",
+        order: 2,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: today,
+        plannedStartTime: "10:00",
+        plannedStartByDay: null,
+      }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "done-task": [{ ts: nowValue, name: "Done Task", ms: 60 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Done Task");
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Completed");
+      expect(labelsEl?.children[1]?.innerHTML).toContain("Open Task");
+      expect(labelsEl?.children[1]?.innerHTML).toContain("Not complete");
+      expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows tasks completed by time-goal state alongside incomplete scheduled tasks", () => {
+    const today = todaySchedule();
+    const todayKey = localDayKey(Date.now());
+    const tasks = [
+      task({
+        id: "done-task",
+        name: "Done Task",
+        order: 1,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        timeGoalCompletedDayKey: todayKey,
+        timeGoalCompletedAtMs: Date.now(),
+        timeGoalCompletedReason: "goal",
+        plannedStartByDay: today,
+      }),
+      task({
+        id: "open-task",
+        name: "Open Task",
+        order: 2,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: today,
+      }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Done Task");
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Completed");
+      expect(labelsEl?.children[1]?.innerHTML).toContain("Open Task");
+      expect(labelsEl?.children[1]?.innerHTML).toContain("Not complete");
+      expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("keeps completed-today tasks in the donut even when schedule fields are not renderable", () => {
+    const today = todaySchedule();
+    const todayKey = localDayKey(Date.now());
+    const tasks = [
+      task({
+        id: "done-task",
+        name: "Done Task",
+        order: 1,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        timeGoalCompletedDayKey: todayKey,
+        timeGoalCompletedAtMs: Date.now(),
+        timeGoalCompletedReason: "goal",
+        plannedStartDay: null,
+        plannedStartTime: null,
+        plannedStartByDay: null,
+      }),
+      task({
+        id: "open-task",
+        name: "Open Task",
+        order: 2,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: today,
+      }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const doneLabel = labelsEl?.children.find((child) => child.innerHTML.includes("Done Task"));
+      const openLabel = labelsEl?.children.find((child) => child.innerHTML.includes("Open Task"));
+
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(doneLabel?.innerHTML).toContain("Completed");
+      expect(openLabel?.innerHTML).toContain("Open Task");
+      expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("excludes scheduled tasks when their scheduled day is not today", () => {
+    const tasks = [
+      task({ id: "scheduled-task", name: "Scheduled Task", plannedStartByDay: nonTodaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(labelsEl?.children).toHaveLength(0);
+      expect(centerEl?.innerHTML).toContain("No scheduled tasks");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("shows once-off tasks with a current scheduled slot even when their target date is stale", () => {
     const staleTargetDate = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const tasks = [
       task({
@@ -1074,9 +1237,56 @@ describe("dashboard completed card", () => {
     try {
       harness.render();
       const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const needleEl = harness.byId.get("dashboardTasksCompletedNeedle");
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const runningLabel = labelsEl?.children.find((child) => child.innerHTML.includes("Deep Work"));
 
       expect(centerEl?.innerHTML).toContain("Deep Work");
       expect(centerEl?.innerHTML).toContain("In Progress");
+      expect(needleEl?.classList.contains("isRunning")).toBe(true);
+      expect(runningLabel?.className).toContain("isRunning");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("marks the needle as running at the running task slice start before live progress is logged", () => {
+    const tasks = [
+      task({ id: "queued-task", name: "Queued Task", order: 1, plannedStartByDay: todaySchedule() }),
+      task({ id: "running-task", name: "Deep Work", order: 2, running: true, startMs: Date.now() - 1000, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const needleEl = harness.byId.get("dashboardTasksCompletedNeedle");
+
+      expect(needleEl?.classList.contains("isRunning")).toBe(true);
+      expect(needleEl?.getAttribute("x1")).not.toBe("190.00");
+      expect(needleEl?.getAttribute("y1")).not.toBe("136.00");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("does not mark the needle as running for stopped partial progress", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({ id: "partial-task", name: "Partial Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "partial-task": [{ ts: nowValue, name: "Partial Task", ms: 30 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const needleEl = harness.byId.get("dashboardTasksCompletedNeedle");
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+
+      expect(needleEl?.classList.contains("isRunning")).toBe(false);
+      expect(labelsEl?.children[0]?.className).not.toContain("isRunning");
     } finally {
       harness.restore();
     }
@@ -1127,7 +1337,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("weights the donut center percentage by task duration", () => {
+  it("weights the donut center percentage by today's task duration", () => {
     const nowValue = Date.now();
     const tasks = [
       task({ id: "daily-task", name: "Daily Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 20, plannedStartByDay: todaySchedule() }),
@@ -1145,6 +1355,67 @@ describe("dashboard completed card", () => {
 
       expect(centerEl?.innerHTML).toContain("5%");
       expect(centerEl?.innerHTML).toContain("completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("uses today's split target for a scheduled weekly task", () => {
+    const nowValue = Date.now();
+    const dayOrder = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+    const todayIndex = new Date().getDay();
+    const today = dayOrder[todayIndex];
+    const secondDay = dayOrder[(todayIndex + 2) % 7];
+    const thirdDay = dayOrder[(todayIndex + 4) % 7];
+    const tasks = [
+      task({
+        id: "weekly-task",
+        name: "Weekly Task",
+        timeGoalEnabled: true,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 360,
+        plannedStartByDay: { [today]: "09:00", [secondDay]: "09:00", [thirdDay]: "09:00" },
+      }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "weekly-task": [{ ts: nowValue, name: "Weekly Task", ms: 60 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+
+      expect(labelsEl?.children).toHaveLength(1);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("50% complete");
+      expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("excludes weekly tasks that are not scheduled today", () => {
+    const tasks = [
+      task({
+        id: "weekly-task",
+        name: "Weekly Task",
+        timeGoalEnabled: true,
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 360,
+        plannedStartByDay: nonTodaySchedule(),
+      }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(labelsEl?.children).toHaveLength(0);
+      expect(centerEl?.innerHTML).toContain("No scheduled tasks");
     } finally {
       harness.restore();
     }

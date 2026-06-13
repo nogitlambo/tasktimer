@@ -32,6 +32,14 @@ function labelPct(layout: ReturnType<typeof buildDashboardTasksCompletedLabelLay
   return ((angleDeg + 90) / 3.6 + 100) % 100;
 }
 
+function pointOnDefaultRing(pct: number, radius: number) {
+  const angleRad = ((-90 + pct * 3.6) * Math.PI) / 180;
+  return {
+    x: 190 + Math.cos(angleRad) * radius,
+    y: 190 + Math.sin(angleRad) * radius,
+  };
+}
+
 function distanceFromCenter(point: DashboardTasksCompletedPoint) {
   return Math.hypot(point.x - 190, point.y - 190);
 }
@@ -51,25 +59,20 @@ describe("dashboard task overview label layout", () => {
     expectNoRectOverlaps(layouts);
   });
 
-  it("distributes labels evenly around the chart curve even when they would not collide", () => {
+  it("places non-overlapping labels at their slice midpoints", () => {
     const layouts = buildDashboardTasksCompletedLabelLayout([
       { key: "top", sliceStartPct: 0, slicePct: 10 },
-      { key: "upper-right", sliceStartPct: 8, slicePct: 10 },
-      { key: "right", sliceStartPct: 20, slicePct: 10 },
-      { key: "lower-right", sliceStartPct: 35, slicePct: 10 },
+      { key: "right", sliceStartPct: 25, slicePct: 10 },
+      { key: "bottom", sliceStartPct: 50, slicePct: 10 },
+      { key: "left", sliceStartPct: 75, slicePct: 10 },
     ]);
-    const center = { x: 190, y: 190 };
-    const angles = layouts
-      .map((layout) => {
-        const angleDeg = (Math.atan2(layout.labelY - center.y, layout.labelX - center.x) * 180) / Math.PI;
-        return angleDeg < -90 ? angleDeg + 360 : angleDeg;
-      })
-      .sort((a, b) => a - b);
-    const gaps = angles.slice(1).map((angle, index) => Math.round(angle - angles[index]));
 
     expect(layouts.every((layout) => layout.isExternal)).toBe(true);
     expect(layouts.every((layout) => !!layout.connectorPath)).toBe(true);
-    expect(new Set(gaps)).toHaveLength(1);
+    expect(labelPct(layouts.find((layout) => layout.key === "top") as (typeof layouts)[number])).toBeCloseTo(5, 5);
+    expect(labelPct(layouts.find((layout) => layout.key === "right") as (typeof layouts)[number])).toBeCloseTo(30, 5);
+    expect(labelPct(layouts.find((layout) => layout.key === "bottom") as (typeof layouts)[number])).toBeCloseTo(55, 5);
+    expect(labelPct(layouts.find((layout) => layout.key === "left") as (typeof layouts)[number])).toBeCloseTo(80, 5);
     expectNoRectOverlaps(layouts);
   });
 
@@ -88,18 +91,47 @@ describe("dashboard task overview label layout", () => {
     expectNoRectOverlaps(layouts);
   });
 
-  it("uses a global rotation compromise when that keeps connectors shorter overall", () => {
+  it("nudges overlapping neighboring labels while preserving non-colliding midpoint labels", () => {
     const layouts = buildDashboardTasksCompletedLabelLayout([
-      { key: "a", sliceStartPct: 19, slicePct: 6 },
-      { key: "b", sliceStartPct: 45, slicePct: 6 },
-      { key: "c", sliceStartPct: 69, slicePct: 6 },
-      { key: "d", sliceStartPct: 95, slicePct: 6 },
+      { key: "a", sliceStartPct: 0, slicePct: 2 },
+      { key: "b", sliceStartPct: 1.2, slicePct: 2 },
+      { key: "c", sliceStartPct: 48, slicePct: 8 },
+    ]);
+    const a = layouts.find((layout) => layout.key === "a") as (typeof layouts)[number];
+    const b = layouts.find((layout) => layout.key === "b") as (typeof layouts)[number];
+    const c = layouts.find((layout) => layout.key === "c") as (typeof layouts)[number];
+
+    expect(labelPct(a)).not.toBeCloseTo(1, 1);
+    expect(labelPct(b)).not.toBeCloseTo(2.2, 1);
+    expect(labelPct(c)).toBeCloseTo(52, 5);
+    expectNoRectOverlaps(layouts);
+  });
+
+  it("leaves non-overlapping neighboring labels at their own progress midpoints", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "top", sliceStartPct: 0, slicePct: 6 },
+      { key: "upper-right", sliceStartPct: 12, slicePct: 6 },
+      { key: "right", sliceStartPct: 25, slicePct: 6 },
     ]);
 
-    expect(labelPct(layouts.find((layout) => layout.key === "a") as (typeof layouts)[number])).toBeCloseTo(22.5, 1);
-    expect(labelPct(layouts.find((layout) => layout.key === "b") as (typeof layouts)[number])).toBeCloseTo(47.5, 1);
-    expect(labelPct(layouts.find((layout) => layout.key === "c") as (typeof layouts)[number])).toBeCloseTo(72.5, 1);
-    expect(labelPct(layouts.find((layout) => layout.key === "d") as (typeof layouts)[number])).toBeCloseTo(97.5, 1);
+    expect(labelPct(layouts.find((layout) => layout.key === "top") as (typeof layouts)[number])).toBeCloseTo(3, 5);
+    expect(labelPct(layouts.find((layout) => layout.key === "upper-right") as (typeof layouts)[number])).toBeCloseTo(15, 5);
+    expect(labelPct(layouts.find((layout) => layout.key === "right") as (typeof layouts)[number])).toBeCloseTo(28, 5);
+    expectNoRectOverlaps(layouts);
+  });
+
+  it("keeps connector starts anchored to the slice midpoint after labels are nudged", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "a", sliceStartPct: 0, slicePct: 2 },
+      { key: "b", sliceStartPct: 1.2, slicePct: 2 },
+    ]);
+    const a = layouts.find((layout) => layout.key === "a") as (typeof layouts)[number];
+    const path = parseConnectorPath(a.connectorPath as string);
+    const expectedStart = pointOnDefaultRing(1, 104);
+
+    expect(path.start.x).toBeCloseTo(expectedStart.x, 2);
+    expect(path.start.y).toBeCloseTo(expectedStart.y, 2);
+    expect(path.points.length).toBeGreaterThanOrEqual(1);
     expectNoRectOverlaps(layouts);
   });
 

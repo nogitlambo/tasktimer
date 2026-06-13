@@ -9,8 +9,8 @@ export const seoConfig = {
     "TaskLaunch is a neurodivergent-friendly productivity app for ADHD, executive dysfunction, flexible task management, timers, and sustainable momentum.",
   shortDescription:
     "Flexible task management for neurodivergent minds, ADHD workflows, executive dysfunction, and sustainable momentum.",
-  logoPath: "/logo/launch-icon-original-transparent.png",
-  appIconPath: "/logo/mobile-app-icon-dark-grey-1024.png",
+  logoPath: "/logo/lime-icon.webp",
+  appIconPath: "/logo/lime-icon-512.webp",
   ogImagePath: "/opengraph-image.png",
   twitterImagePath: "/twitter-image.png",
   supportEmail: "support@tasklaunch.app",

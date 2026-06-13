@@ -1087,11 +1087,18 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     );
     t.timeGoalPeriod = timeGoalSaveFields.timeGoalPeriod;
     t.timeGoalMinutes = timeGoalSaveFields.timeGoalMinutes;
+    const isDailyToWeeklyRecurringConversion =
+      sourceTask.taskType === "recurring" &&
+      sourceTask.timeGoalPeriod === "day" &&
+      t.taskType === "recurring" &&
+      t.timeGoalPeriod === "week";
     const splitAcrossProductivityDaysForSave =
       t.taskType === "recurring" && t.timeGoalPeriod === "week"
         ? isEditWeeklySplitOptionVisible(t)
           ? editSplitAcrossProductivityDaysTouched || typeof t.splitAcrossProductivityDays === "boolean"
             ? !!els.editTaskSplitAcrossProductivityDays?.checked
+            : isDailyToWeeklyRecurringConversion
+              ? true
             : undefined
           : true
         : undefined;

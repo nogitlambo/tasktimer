@@ -18,13 +18,25 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: seoConfig.appIconPath,
-        sizes: "1024x1024",
-        type: "image/png",
+        sizes: "512x512",
+        type: "image/webp",
+        purpose: "any",
+      },
+      {
+        src: "/logo/lime-icon-192.webp",
+        sizes: "192x192",
+        type: "image/webp",
         purpose: "any",
       },
       {
         src: "/favicon.png",
         sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/logo/lime-icon-192.png",
+        sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },

@@ -11,7 +11,8 @@ import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import {
   getLocalScheduleDay,
   getTaskScheduledDayEntries,
-  getTaskScheduledDays,
+  getScheduleTaskDurationMinutes,
+  getWeeklyScheduleTaskDurationMinutes,
   normalizeLocalDateValue,
   parseScheduleTimeMinutes,
   type ScheduleDay,
@@ -335,18 +336,38 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return `${year}-${month}-${day}`;
   }
 
-  function isTaskDueToday(task: Task, todayMs: number) {
-    if (!task) return false;
+  function isOnceOffTaskScheduledForTaskOverviewToday(task: Task, todayMs: number, todayScheduleDay: ScheduleDay) {
+    if (task.taskType !== "once-off") return false;
+    if (getTaskScheduledDayEntries(task).some((entry) => entry.day === todayScheduleDay)) return true;
+    const targetDate = normalizeLocalDateValue(task.onceOffTargetDate);
+    if (targetDate) return targetDate === formatLocalDateForToday(todayMs);
+    const onceOffDay = String(task.onceOffDay || task.plannedStartDay || "").trim().toLowerCase();
+    return !!onceOffDay && onceOffDay === todayScheduleDay;
+  }
+
+  function getTaskOverviewOpportunity(task: Task, todayMs: number) {
+    if (!task) return null;
     const todayScheduleDay = getScheduleDayForDate(todayMs);
-    const scheduledDays = getTaskScheduledDays(task);
-    if (scheduledDays.includes(todayScheduleDay)) return true;
+    const todayKey = localDayKey(todayMs);
     if (task.taskType === "once-off") {
-      const targetDate = normalizeLocalDateValue(task.onceOffTargetDate);
-      if (targetDate) return targetDate === formatLocalDateForToday(todayMs);
-      const onceOffDay = String(task.onceOffDay || "").trim().toLowerCase();
-      return !!onceOffDay && onceOffDay === todayScheduleDay;
+      if (!isOnceOffTaskScheduledForTaskOverviewToday(task, todayMs, todayScheduleDay)) return null;
+      return { task, goalMinutes: getScheduleTaskDurationMinutes(task), historyScope: "day" as const };
     }
-    return false;
+    const todayEntries = getTaskScheduledDayEntries(task).filter((entry) => entry.day === todayScheduleDay);
+    const isCompletedDailyTaskToday =
+      task.timeGoalEnabled &&
+      task.timeGoalPeriod === "day" &&
+      Number(task.timeGoalMinutes || 0) > 0 &&
+      task.timeGoalCompletedReason === "goal" &&
+      String(task.timeGoalCompletedDayKey || "").trim() === todayKey;
+    if (!todayEntries.length && isCompletedDailyTaskToday) {
+      return { task, goalMinutes: getScheduleTaskDurationMinutes(task), historyScope: "day" as const };
+    }
+    if (!todayEntries.length) return null;
+    if (task.timeGoalEnabled && task.timeGoalPeriod === "week" && Number(task.timeGoalMinutes || 0) > 0) {
+      return { task, goalMinutes: getWeeklyScheduleTaskDurationMinutes(task, todayScheduleDay), historyScope: "week" as const };
+    }
+    return { task, goalMinutes: getScheduleTaskDurationMinutes(task), historyScope: "day" as const };
   }
 
   function isDashboardTaskActivelyRunning(task: any) {
@@ -1412,7 +1433,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       labelsEl.classList.remove("isHiddenForLayout");
 
       if (totalCount <= 0) {
-        centerEl.innerHTML = '<span class="dashboardTasksCompletedCenterLabel">No daily tasks due</span>';
+        centerEl.innerHTML = '<span class="dashboardTasksCompletedCenterLabel">No scheduled tasks</span>';
         centerEl.style.removeProperty("--dashboard-task-progress-color");
         return;
       }
@@ -1475,6 +1496,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       let runningOffset = sliceCount > 1 ? DASHBOARD_COMPLETED_SEGMENT_GAP_PCT / 2 : 0;
       let runningNeedlePct: number | null = null;
       let stoppedPartialNeedlePct: number | null = null;
+      let hasRunningItem = false;
       const positionedSliceEntries = sliceEntries.map((entry, index) => {
         const sliceStartPct = runningOffset;
         runningOffset += entry.slicePct + DASHBOARD_COMPLETED_SEGMENT_GAP_PCT;
@@ -1491,7 +1513,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       positionedSliceEntries.forEach(({ item, slicePct, sliceStartPct }) => {
         const fillPctWithinSlice = Math.max(0, Math.min(1, item.progress)) * slicePct;
         const dash = item.progress > 0 ? `${fillPctWithinSlice} ${Math.max(0, 100 - fillPctWithinSlice)}` : "0 100";
-        if (item.running && fillPctWithinSlice > 0) {
+        if (item.running) {
+          hasRunningItem = true;
           runningNeedlePct = sliceStartPct + fillPctWithinSlice;
         } else if (!item.running && item.progress > 0 && item.progress < 1 && fillPctWithinSlice > 0) {
           stoppedPartialNeedlePct = sliceStartPct + fillPctWithinSlice;
@@ -1553,6 +1576,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       }
       const needle = (document.getElementById("dashboardTasksCompletedNeedle") as SVGLineElement | null) || needleEl;
       if (needle) {
+        needle.classList.toggle("isRunning", hasRunningItem);
         const needlePct = runningNeedlePct != null ? runningNeedlePct : stoppedPartialNeedlePct ?? 0;
         const needleAngleDeg = -90 + Math.max(0, Math.min(100, needlePct)) * 3.6;
         const needleAngleRad = (needleAngleDeg * Math.PI) / 180;
@@ -1581,24 +1605,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         .filter((minutes): minutes is number => minutes != null);
       return todayEntries.length ? Math.min(...todayEntries) : Number.POSITIVE_INFINITY;
     };
-    const dueTasks = getDashboardFilteredTasks()
-      .filter((task) => {
-        if (!task) return false;
-        if (!isTaskDueToday(task, nowValue)) return false;
-        return true;
-      })
+    const opportunities = getDashboardFilteredTasks()
+      .map((task) => getTaskOverviewOpportunity(task, nowValue))
+      .filter((opportunity): opportunity is NonNullable<typeof opportunity> => !!opportunity)
       .sort((a, b) => {
-        const aStart = getTodayScheduledStartMinutes(a);
-        const bStart = getTodayScheduledStartMinutes(b);
+        const aStart = getTodayScheduledStartMinutes(a.task);
+        const bStart = getTodayScheduledStartMinutes(b.task);
         if (aStart !== bStart) return aStart - bStart;
-        const aOrder = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.POSITIVE_INFINITY;
-        const bOrder = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.POSITIVE_INFINITY;
+        const aOrder = Number.isFinite(Number(a.task.order)) ? Number(a.task.order) : Number.POSITIVE_INFINITY;
+        const bOrder = Number.isFinite(Number(b.task.order)) ? Number(b.task.order) : Number.POSITIVE_INFINITY;
         if (aOrder !== bOrder) return aOrder - bOrder;
-        return String(a.name || "").localeCompare(String(b.name || ""));
+        return String(a.task.name || "").localeCompare(String(b.task.name || ""));
       });
 
     const completedModel = buildDashboardTasksCompletedModel({
-      dueTasks,
+      opportunities,
       historyByTaskId,
       nowMs: nowValue,
       weekStartMs,

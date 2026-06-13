@@ -45,7 +45,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: seoConfig.logoPath, type: "image/png" },
+      { url: seoConfig.logoPath, sizes: "1254x1254", type: "image/webp" },
+      { url: "/logo/lime-icon-512.webp", sizes: "512x512", type: "image/webp" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },

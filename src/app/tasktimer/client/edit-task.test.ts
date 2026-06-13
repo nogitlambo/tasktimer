@@ -751,6 +751,44 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 
+  it("converts daily recurring schedules to weekly productivity-day blocks by default", () => {
+    const harness = createEditHarness({
+      durationValue: "6",
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "tue",
+        plannedStartDay: "tue",
+        plannedStartTime: "15:00",
+        plannedStartByDay: { tue: "15:00" },
+      }),
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalValue: 1,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: null,
+        plannedStartTime: "09:00",
+        plannedStartByDay: Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])),
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.timeGoalPeriod).toBe("week");
+    expect(harness.sourceTask.timeGoalMinutes).toBe(360);
+    expect(harness.sourceTask.splitAcrossProductivityDays).toBe(true);
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
   it("blocks saving an edited task with duplicate checkpoint times", () => {
     const harness = createEditHarness({
       sourceTask: task({
