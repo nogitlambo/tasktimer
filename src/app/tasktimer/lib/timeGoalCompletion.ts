@@ -54,6 +54,43 @@ function getTaskGoalMs(task: Task | null | undefined): number {
   return Math.max(0, Math.round(goalMinutes * 60_000));
 }
 
+export type TimeGoalCompletionResolution = {
+  elapsedMs: number;
+  completedAtMs: number;
+};
+
+export function getTimeGoalCompletionElapsedMs(task: Task | null | undefined, elapsedMsRaw: unknown): number {
+  const elapsedMs = Math.max(0, Math.floor(Number(elapsedMsRaw || 0) || 0));
+  const goalMs = getTaskGoalMs(task);
+  return goalMs > 0 ? Math.min(elapsedMs, goalMs) : elapsedMs;
+}
+
+export function getTaskTimeGoalCompletionResolution(
+  task: Task | null | undefined,
+  observedAtMsRaw: unknown,
+  elapsedMsRaw: unknown
+): TimeGoalCompletionResolution | null {
+  if (task?.timeGoalPeriod !== "day" && task?.timeGoalPeriod !== "week") return null;
+  const goalMs = getTaskGoalMs(task);
+  if (!(goalMs > 0)) return null;
+  const elapsedMs = Math.max(0, Math.floor(Number(elapsedMsRaw || 0) || 0));
+  if (elapsedMs < goalMs) return null;
+
+  const observedAtMs = Math.max(0, Math.floor(Number(observedAtMsRaw || 0) || 0));
+  const startMs =
+    task.running && typeof task.startMs === "number" && Number.isFinite(task.startMs)
+      ? Math.max(0, Math.floor(task.startMs))
+      : null;
+  const accumulatedBeforeRun = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+  const remainingMs = Math.max(0, goalMs - accumulatedBeforeRun);
+  const estimatedCompletedAtMs = startMs == null ? observedAtMs : startMs + remainingMs;
+
+  return {
+    elapsedMs: goalMs,
+    completedAtMs: Math.min(observedAtMs, Math.max(0, estimatedCompletedAtMs)),
+  };
+}
+
 export function hasTaskGoalHistoryEntryToday(
   task: Task | null | undefined,
   historyByTaskId: HistoryByTaskId | null | undefined,

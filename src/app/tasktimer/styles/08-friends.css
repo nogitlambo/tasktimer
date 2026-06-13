@@ -1812,8 +1812,22 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   aspect-ratio:1448 / 1086;
   margin:0 auto;
   overflow:hidden;
-  background:url("/leaderboard/weekly.webp") center / 100% 100% no-repeat;
+  background:
+    url("/leaderboard/weekly_podium.png") center / 100% 100% no-repeat,
+    url("/leaderboard/deep-space-bg.webp") center / cover no-repeat;
   isolation:isolate;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStage .leaderboardWeeklyIntro{
+  position:absolute;
+  z-index:3;
+  top:clamp(12px, 2.8vw, 30px);
+  left:50%;
+  width:min(90%, 560px);
+  margin:0;
+  transform:translateX(-50%);
+  pointer-events:none;
+  text-shadow:0 2px 14px rgba(0,0,0,.72);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageHotspot{

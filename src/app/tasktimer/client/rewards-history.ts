@@ -624,7 +624,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
 
   function finalizeLiveSession(
     task: Task,
-    opts?: { elapsedMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
@@ -633,8 +633,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       0,
       Math.floor(Number(opts?.elapsedMs ?? liveSession?.elapsedMs ?? ctx.getTaskElapsedMs(task)) || 0)
     );
+    const completedAtMs = Math.max(0, Math.floor(Number(opts?.completedAtMs ?? nowMs()) || 0));
     if (elapsedMs > 0) {
-      appendCompletedSessionHistory(task, nowMs(), elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty, {
+      appendCompletedSessionHistory(task, completedAtMs, elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty, {
         deferTimeGoalXp: opts?.deferTimeGoalXp === true,
         attachments: opts?.attachments ?? liveSession?.attachments,
       });

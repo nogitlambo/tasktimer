@@ -5,6 +5,8 @@ import { applyPendingTimeGoalXpAward, awardCompletedSessionXp, hasPendingTimeGoa
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
+  getTaskTimeGoalCompletionResolution,
+  getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
   isTaskTimeGoalStartLockedByHistoryForPeriod,
   markTaskTimeGoalCompleted,
@@ -311,11 +313,7 @@ export function getCheckpointAlertCompletionPriority(
 }
 
 export function getTimeGoalCompletionElapsedMs(task: Task | null | undefined, elapsedMsRaw: unknown): number {
-  const elapsedMs = Math.max(0, Math.floor(Number(elapsedMsRaw || 0) || 0));
-  const timeGoalMinutes = Number(task?.timeGoalMinutes || 0);
-  if (!(task?.timeGoalEnabled && timeGoalMinutes > 0)) return elapsedMs;
-  const timeGoalMs = Math.max(0, Math.round(timeGoalMinutes * 60_000));
-  return timeGoalMs > 0 ? Math.min(elapsedMs, timeGoalMs) : elapsedMs;
+  return getSharedTimeGoalCompletionElapsedMs(task, elapsedMsRaw);
 }
 
 export function resetFocusModeScrollPosition(focusModeScreen: HTMLElement | null | undefined): void {
@@ -1383,21 +1381,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         weekStarting: ctx.getWeekStarting(),
       })
     ) return false;
-    const safeElapsedMs = getTimeGoalCompletionElapsedMs(task, elapsedMs);
+    const observedAtMs = nowMs();
+    const completionResolution = getTaskTimeGoalCompletionResolution(task, observedAtMs, elapsedMs);
+    const safeElapsedMs = completionResolution?.elapsedMs ?? getTimeGoalCompletionElapsedMs(task, elapsedMs);
+    const completedAtMs = completionResolution?.completedAtMs ?? observedAtMs;
     const awardPreview = getTimeGoalCompletionAwardPreview(task, safeElapsedMs);
     if (taskId && els.timeGoalCompleteNoteInput) {
       setFocusSessionDraft(taskId, getRichNoteEditorValue(els.timeGoalCompleteNoteInput as HTMLElement | null));
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
-    markTaskTimeGoalCompletedForResolution(task, nowMs(), safeElapsedMs, {
+    markTaskTimeGoalCompletedForResolution(task, completedAtMs, safeElapsedMs, {
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
     });
     task.accumulatedMs = safeElapsedMs;
     task.running = false;
     task.startMs = null;
-    ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
+    ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote, completedAtMs });
     ctx.save();
     ctx.render();
     suppressCheckpointToastsForTask(taskId);

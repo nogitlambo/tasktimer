@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LiveTaskSession, Task } from "../lib/types";
-import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
+import { getTaskTimeGoalCompletionResolution, getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
@@ -173,6 +173,41 @@ describe("time goal completion flow guard", () => {
 
   it("clamps completed elapsed to the configured time goal", () => {
     expect(getTimeGoalCompletionElapsedMs(timeGoalTask({ timeGoalMinutes: 1 }), 61_250)).toBe(60_000);
+  });
+
+  it("estimates completion at the moment a running task crosses its time goal", () => {
+    const startMs = new Date(2026, 5, 12, 22, 0, 0).getTime();
+    const observedAtMs = startMs + 9 * 60 * 60 * 1000;
+    const goalMs = 2 * 60 * 60 * 1000;
+
+    expect(
+      getTaskTimeGoalCompletionResolution(
+        timeGoalTask({ startMs, timeGoalMinutes: 120 }),
+        observedAtMs,
+        observedAtMs - startMs
+      )
+    ).toEqual({
+      elapsedMs: goalMs,
+      completedAtMs: startMs + goalMs,
+    });
+  });
+
+  it("estimates resumed task completion from remaining goal time", () => {
+    const accumulatedMs = 30 * 60 * 1000;
+    const startMs = new Date(2026, 5, 13, 8, 0, 0).getTime();
+    const observedAtMs = startMs + 4 * 60 * 60 * 1000;
+    const goalMs = 2 * 60 * 60 * 1000;
+
+    expect(
+      getTaskTimeGoalCompletionResolution(
+        timeGoalTask({ accumulatedMs, startMs, timeGoalMinutes: 120 }),
+        observedAtMs,
+        accumulatedMs + (observedAtMs - startMs)
+      )
+    ).toEqual({
+      elapsedMs: goalMs,
+      completedAtMs: startMs + (goalMs - accumulatedMs),
+    });
   });
 
   it("does not clamp completed elapsed for tasks without a time goal", () => {

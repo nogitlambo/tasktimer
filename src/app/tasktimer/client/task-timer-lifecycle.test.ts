@@ -39,6 +39,8 @@ function createHarness(
     appPage: string;
     focusTaskId: string | null;
     autoFocus: boolean;
+    elapsedMs: number;
+    nowMs: number;
     historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
   }> = {}
 ) {
@@ -54,12 +56,12 @@ function createHarness(
     clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
     upsertLiveSession: (entry, opts) =>
       calls.push(`upsert-live:${entry.id}:${opts.elapsedMs}:${opts.resumedFromMs || 0}:${opts.forceCloudFlush === true ? "force" : "queued"}`),
-    finalizeLiveSession: (entry, opts) =>
-      calls.push(
-        `finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}:${opts.deferTimeGoalXp ? "defer" : "award"}`
-      ),
+    finalizeLiveSession: (entry, opts) => {
+      const base = `finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}:${opts.deferTimeGoalXp ? "defer" : "award"}`;
+      calls.push(opts.completedAtMs != null ? `${base}:${opts.completedAtMs}` : base);
+    },
     applyPendingTimeGoalXpForTask: (taskId) => calls.push(`apply-pending:${taskId || ""}`),
-    getElapsedMs: () => 345,
+    getElapsedMs: () => overrides.elapsedMs ?? 345,
     getTaskElapsedMs: () => 678,
     clearCheckpointBaseline: (taskId) => calls.push(`clear-checkpoint:${taskId}`),
     resetCheckpointAlertTracking: (taskId) => calls.push(`reset-checkpoint:${taskId}`),
@@ -90,7 +92,7 @@ function createHarness(
     addTaskAlreadyRunningConfirmClass: () => calls.push("add-running-confirm-class"),
     removeTaskAlreadyRunningConfirmClass: () => calls.push("remove-running-confirm-class"),
     commands,
-    nowMs: () => 123,
+    nowMs: () => overrides.nowMs ?? 123,
   });
   return { lifecycle, tasks, calls, confirmOptions };
 }
@@ -262,13 +264,80 @@ describe("task timer lifecycle", () => {
 
     expect(harness.tasks[0]).toMatchObject({
       running: false,
-      accumulatedMs: 345,
+      accumulatedMs: 300,
       startMs: null,
       timeGoalCompletedDayKey: "1970-01-01",
       timeGoalCompletedAtMs: 123,
       timeGoalCompletedReason: "goal",
       timeGoalCompletedElapsedMs: 300,
     });
+  });
+
+  it("caps a daily time-goal task left running overnight when stopped after its goal", () => {
+    const startMs = new Date(2026, 5, 12, 22, 0, 0).getTime();
+    const stopMs = startMs + 9 * 60 * 60 * 1000 + 45 * 60 * 1000;
+    const goalMs = 2 * 60 * 60 * 1000;
+    const completedAtMs = startMs + goalMs;
+    const harness = createHarness({
+      nowMs: stopMs,
+      elapsedMs: stopMs - startMs,
+      tasks: [
+        task({
+          running: true,
+          startMs,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 120,
+        }),
+      ],
+    });
+
+    harness.lifecycle.stopTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: goalMs,
+      startMs: null,
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: goalMs,
+    });
+    expect(harness.calls).toContain(`close-reward:task-1:${completedAtMs}`);
+    expect(harness.calls).toContain(`finalize-live:task-1:${goalMs}:::award:${completedAtMs}`);
+  });
+
+  it("uses remaining goal time when a resumed task reaches its daily goal", () => {
+    const accumulatedMs = 30 * 60 * 1000;
+    const goalMs = 2 * 60 * 60 * 1000;
+    const startMs = new Date(2026, 5, 13, 8, 0, 0).getTime();
+    const stopMs = startMs + 5 * 60 * 60 * 1000;
+    const completedAtMs = startMs + (goalMs - accumulatedMs);
+    const harness = createHarness({
+      nowMs: stopMs,
+      elapsedMs: accumulatedMs + (stopMs - startMs),
+      tasks: [
+        task({
+          accumulatedMs,
+          running: true,
+          startMs,
+          hasStarted: true,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 120,
+        }),
+      ],
+    });
+
+    harness.lifecycle.stopTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: false,
+      accumulatedMs: goalMs,
+      startMs: null,
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedElapsedMs: goalMs,
+    });
+    expect(harness.calls).toContain(`finalize-live:task-1:${goalMs}:::award:${completedAtMs}`);
   });
 
   it("defers XP when a daily time-goal task is stopped before reaching the goal", () => {

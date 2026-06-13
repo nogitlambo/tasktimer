@@ -464,7 +464,7 @@ export type TaskTimerTasksContext = {
   upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts?: { elapsedMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) => number;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
@@ -810,7 +810,7 @@ export type TaskTimerSessionContext = {
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   resetTask: (index: number) => void;
-  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty }) => void;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number }) => void;
 };
 
 export type TaskTimerDashboardContext = {
@@ -1033,7 +1033,7 @@ export type TaskTimerHistoryManagerContext = {
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
-  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty }) => void;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number }) => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveHistoryAndWait: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => Promise<void>;

@@ -3,9 +3,9 @@ import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import { localDayKey } from "../lib/history";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import {
-  hasTaskReachedTimeGoal,
   isTaskTimeGoalCompletedForPeriod,
   isTaskTimeGoalStartLockedByHistoryForPeriod,
+  getTaskTimeGoalCompletionResolution,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
@@ -23,6 +23,7 @@ type ResetTaskStateOptions = {
   logHistory?: boolean;
   sessionNote?: string;
   completionDifficulty?: unknown;
+  completedAtMs?: number;
 };
 
 type TaskTimerLifecycleCommands = {
@@ -40,7 +41,7 @@ type TaskTimerLifecycleCommandAdapters = {
   upsertLiveSession: (task: Task, opts: { elapsedMs: number; resumedFromMs?: number; forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts: { elapsedMs: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts: { elapsedMs: number; completedAtMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
   ) => void;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   getElapsedMs: (task: Task) => number;
@@ -117,22 +118,32 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     const taskId = String(task.id || "");
     options.clearTaskTimeGoalFlow(taskId);
     options.flushPendingFocusSessionNoteSave(taskId);
-    options.closeRewardSessionSegment(task, stopMs);
-    task.accumulatedMs = options.getElapsedMs(task);
+    const observedElapsedMs = options.getElapsedMs(task);
     const weekStarting = options.getWeekStarting?.() || "mon";
+    const completionResolution = !isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting)
+      ? getTaskTimeGoalCompletionResolution(task, stopMs, observedElapsedMs)
+      : null;
+    options.closeRewardSessionSegment(task, completionResolution?.completedAtMs ?? stopMs);
+    task.accumulatedMs = completionResolution?.elapsedMs ?? observedElapsedMs;
     const shouldCompleteGoalOnStop =
-      !isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting) &&
-      hasTaskReachedTimeGoal(task, task.accumulatedMs);
+      completionResolution != null;
     if (shouldCompleteGoalOnStop) {
-      const goalElapsedMs = Math.max(0, Math.round(Number(task.timeGoalMinutes || 0) * 60_000));
-      markTaskTimeGoalCompleted(task, stopMs, { reason: "goal", elapsedMs: goalElapsedMs, weekStarting });
+      markTaskTimeGoalCompleted(task, completionResolution.completedAtMs, {
+        reason: "goal",
+        elapsedMs: completionResolution.elapsedMs,
+        weekStarting,
+      });
     }
     const shouldDeferTimeGoalXp =
       !!task.timeGoalEnabled &&
       Number(task.timeGoalMinutes || 0) > 0 &&
       !shouldCompleteGoalOnStop &&
       !isTaskTimeGoalCompletedForPeriod(task, stopMs, weekStarting);
-    options.finalizeLiveSession(task, { elapsedMs: task.accumulatedMs, deferTimeGoalXp: shouldDeferTimeGoalXp });
+    options.finalizeLiveSession(task, {
+      elapsedMs: task.accumulatedMs,
+      completedAtMs: completionResolution?.completedAtMs,
+      deferTimeGoalXp: shouldDeferTimeGoalXp,
+    });
     task.running = false;
     task.startMs = null;
     task.resumePendingSinceDayKey = task.accumulatedMs > 0 ? localDayKey(stopMs) : null;
@@ -165,6 +176,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       try {
         options.finalizeLiveSession(task, {
           elapsedMs,
+          completedAtMs: opts?.completedAtMs,
           note: opts?.sessionNote,
           completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
         });
