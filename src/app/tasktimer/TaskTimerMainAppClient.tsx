@@ -803,7 +803,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank]
   );
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const weeklyTableRows = weeklyRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
+  const weeklyTableRows = weeklyRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasWeeklyRows = weeklyRows.length > 0;
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
@@ -813,7 +813,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     });
   }, [hydratedCurrentUserEntry, hydratedTopEntries, leaderboardData.currentUserRank]);
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const globalTableRows = globalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
+  const globalTableRows = globalRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasGlobalRows = globalRows.length > 0;
   const rivalRows = useMemo(
     () =>
@@ -825,7 +825,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     [hydratedCurrentUserEntry, hydratedRivalEntries, leaderboardData.currentUserRivalRank]
   );
   const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const rivalTableRows = rivalRows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
+  const rivalTableRows = rivalRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasRivalRows = rivalRows.length > 0;
   const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile

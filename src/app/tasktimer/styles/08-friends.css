@@ -1392,8 +1392,10 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
   flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
   min-height:0;
-  overflow-y:auto;
+  overflow-y:hidden;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
 }
@@ -1529,6 +1531,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   display:block;
   width:74px;
   height:74px;
+  margin-top:-18px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace1 .leaderboardWeeklyPodiumAvatar{
@@ -1877,8 +1880,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageAvatarSlot{
   position:absolute;
   left:50%;
-  top:9%;
-  z-index:1;
+  bottom:72%;
+  z-index:3;
   display:block;
   width:43%;
   aspect-ratio:1;
@@ -1886,16 +1889,16 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageHotspot1 .leaderboardWeeklyStageAvatarSlot{
-  top:17%;
+  bottom:63%;
   width:48%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageHotspot2 .leaderboardWeeklyStageAvatarSlot{
-  top:5%;
+  bottom:72%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageHotspot3 .leaderboardWeeklyStageAvatarSlot{
-  top:7%;
+  bottom:74%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageAvatarSlot .leaderboardAvatar{
@@ -1996,6 +1999,60 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap .leaderboardWeeklyTable{
   width:100%;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardWeeklyBoard,
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardGlobalBoard{
+  flex:1 1 auto;
+  height:100%;
+  max-height:100%;
+  min-height:0;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard,
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel.leaderboardWeeklyBoard{
+  display:flex;
+  flex-direction:column;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStage{
+  flex:0 1 auto;
+  height:clamp(390px, calc(100dvh - 360px), 610px);
+  min-height:0;
+  aspect-ratio:auto;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap,
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyTableWrap{
+  flex:0 0 auto;
+  overflow:hidden;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableWrap{
+  margin-top:10px;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow{
+  min-height:38px;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableHead{
+  min-height:28px;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow > span{
+  padding:7px 12px;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyIntro{
+  flex:0 0 auto;
+  margin-bottom:4px;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyPodium{
+  flex:0 1 auto;
+  min-height:clamp(180px, 30dvh, 250px);
+  margin-top:6px;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionModal{
@@ -2829,6 +2886,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumPlace1 .leaderboardWeeklyPodiumAvatar{
     width:42px;
     height:42px;
+    margin-top:0;
     margin-bottom:0;
   }
 
@@ -3131,6 +3189,13 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   isolation:isolate;
 }
 
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+  height:100%;
+  max-height:100%;
+  min-height:0;
+  aspect-ratio:auto;
+}
+
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalBackdropMask{
   position:absolute;
   z-index:0;
@@ -3217,8 +3282,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot{
   position:absolute;
   left:50%;
-  top:0;
-  z-index:1;
+  top:-4%;
+  z-index:3;
   display:block;
   width:42%;
   aspect-ratio:1;
@@ -3226,7 +3291,12 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
+  top:-8%;
   width:48%;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot{
+  top:-5%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
@@ -3323,13 +3393,12 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   position:absolute;
   left:1.6%;
   right:1.6%;
-  top:81%;
+  top:71%;
+  bottom:2.2%;
   z-index:3;
   display:grid;
-  max-height:15.6%;
-  overflow:auto;
-  scrollbar-width:thin;
-  scrollbar-color:rgba(103,255,159,.42) transparent;
+  max-height:none;
+  overflow:hidden;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageTableHead,
@@ -3350,7 +3419,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   grid-template-columns:12.5% minmax(0, 34%) 17% 18% minmax(0, 18.5%);
   align-items:center;
   min-width:0;
-  min-height:70px;
+  min-height:clamp(34px, 4.4dvh, 46px);
   padding:0 2.4%;
   border:0;
   border-top:1px solid rgba(103,255,159,.2);
@@ -3469,6 +3538,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
     left:auto;
     width:100%;
+    height:clamp(300px, calc(100dvh - 390px), 430px);
     max-width:none;
     margin-left:auto;
     transform:none;
@@ -3504,7 +3574,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRow{
     grid-template-columns:42px minmax(0, 1fr) 38px minmax(58px, max-content) minmax(70px, max-content);
-    min-height:52px;
+    min-height:42px;
     padding:4px 2px;
   }
 
@@ -3557,6 +3627,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStage{
     left:auto;
     width:100%;
+    height:clamp(300px, calc(100dvh - 390px), 430px);
     max-width:none;
     margin-left:auto;
     transform:none;
@@ -3583,6 +3654,16 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     padding:8px 6px;
     border:0;
     background:transparent;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyTableRow,
+  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyTableRow{
+    min-height:42px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyTableRow > span,
+  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyTableRow > span{
+    padding:3px 2px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStageRank{
