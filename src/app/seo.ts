@@ -10,7 +10,7 @@ export const seoConfig = {
   shortDescription:
     "Flexible task management for neurodivergent minds, ADHD workflows, executive dysfunction, and sustainable momentum.",
   logoPath: "/logo/lime-icon.webp",
-  appIconPath: "/logo/lime-icon-512.webp",
+  appIconPath: "/logo/tasklaunch-icon-512.webp",
   ogImagePath: "/opengraph-image.png",
   twitterImagePath: "/twitter-image.png",
   supportEmail: "support@tasklaunch.app",
