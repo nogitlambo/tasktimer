@@ -218,7 +218,8 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
   });
 
-  it("renders stale goal completion metadata without history as runnable", () => {
+  it("renders current-period goal completion metadata without history as done", () => {
+    const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
         task({
@@ -227,8 +228,8 @@ describe("task list renderer", () => {
           timeGoalEnabled: true,
           timeGoalPeriod: "day",
           timeGoalMinutes: 60,
-          timeGoalCompletedDayKey: "1970-01-01",
-          timeGoalCompletedAtMs: 123,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+          timeGoalCompletedAtMs: nowValue,
           timeGoalCompletedReason: "goal",
         }),
       ],
@@ -237,9 +238,8 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
 
     const renderedTask = harness.taskListEl.children[0];
-    expect(renderedTask?.className).not.toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain('title="Launch"');
-    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+    expect(renderedTask?.className).toContain("taskCompleted");
+    expect(renderedTask?.innerHTML).toContain("Done until tomorrow");
   });
 
   it("renders goal completion metadata with qualifying history as done", () => {

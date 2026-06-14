@@ -4,7 +4,7 @@ import { localDayKey } from "../lib/history";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import {
   isTaskTimeGoalCompletedForPeriod,
-  isTaskTimeGoalStartLockedByHistoryForPeriod,
+  isTaskTimeGoalStartLockedForPeriod,
   getTaskTimeGoalCompletionResolution,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
@@ -228,7 +228,7 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedByHistoryForPeriod(task, options.getHistoryByTaskId(), options.nowMs(), options.getWeekStarting?.() || "mon")) return;
+    if (isTaskTimeGoalStartLockedForPeriod(task, options.nowMs(), options.getWeekStarting?.() || "mon")) return;
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

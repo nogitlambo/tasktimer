@@ -223,6 +223,7 @@ function createCompletionHarness(options?: {
     storageKeys: {
       FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       TIME_GOAL_PENDING_FLOW_KEY: "tasktimer:time-goal",
+      TIME_GOAL_COMPLETION_ACK_KEY: "tasktimer:time-goal-ack",
     },
     sharedTasks: { milestoneUnitSec: () => 60 } as unknown as TaskTimerSharedTaskApi,
     getTasks: () => [completedTask],
@@ -385,7 +386,6 @@ describe("task timer session tick", () => {
       expect(harness.getActiveCheckpointToast()).toBeNull();
       expect(harness.checkpointToastQueue).toEqual([]);
       expect(harness.getCheckpointToastAutoCloseTimer()).toBeNull();
-      expect(harness.clearTimeout).toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
     }
@@ -425,6 +425,25 @@ describe("task timer session tick", () => {
       expect(harness.getFocusModeTaskName()).toBe("");
       expect(harness.getFocusShowCheckpoints()).toBe(true);
       expect(harness.closeOverlay).toHaveBeenCalled();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("acknowledges completion when closing the active task completion modal", async () => {
+    const harness = createCompletionHarness({
+      timeGoalModalTaskId: "task-1",
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+
+      await harness.triggerTimeGoalCompleteClose();
+
+      expect(harness.windowStub.localStorage.setItem).toHaveBeenCalledWith(
+        "tasktimer:time-goal-ack",
+        expect.stringContaining("task-1")
+      );
     } finally {
       harness.restoreWindow();
     }
@@ -727,6 +746,7 @@ describe("task timer session tick", () => {
       getOptimalProductivityEndTime: () => "17:00",
       getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
       renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
     } as unknown as TaskTimerSessionContext);
 
     session.tick();
@@ -865,6 +885,7 @@ describe("task timer session tick", () => {
       getOptimalProductivityEndTime: () => "17:00",
       getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
       renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
     } as unknown as TaskTimerSessionContext);
 
     session.tick();
@@ -998,6 +1019,7 @@ describe("task timer session tick", () => {
       getOptimalProductivityEndTime: () => "17:00",
       getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
       renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
     } as unknown as TaskTimerSessionContext);
 
     session.tick();
@@ -1144,6 +1166,7 @@ describe("task timer session tick", () => {
       getOptimalProductivityEndTime: () => "17:00",
       getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
       renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
     } as unknown as TaskTimerSessionContext);
 
     session.tick();

@@ -8,7 +8,7 @@ import {
   getTaskTimeGoalCompletionResolution,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
-  isTaskTimeGoalStartLockedByHistoryForPeriod,
+  isTaskTimeGoalStartLockedForPeriod,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import { localDayKey, normalizeHistoryTimestampMs } from "../lib/history";
@@ -173,9 +173,8 @@ export function shouldSuppressTimeGoalCompletionForTask(
   task: Task | null | undefined,
   opts: { historyByTaskId?: HistoryByTaskId | null; nowMs?: number; weekStarting?: DashboardWeekStart } = {}
 ): boolean {
-  if (!isTaskTimeGoalCompletedForPeriod(task, opts.nowMs, opts.weekStarting)) return false;
-  if (!opts.historyByTaskId) return true;
-  return isTaskTimeGoalStartLockedByHistoryForPeriod(task, opts.historyByTaskId, opts.nowMs, opts.weekStarting);
+  void opts.historyByTaskId;
+  return isTaskTimeGoalStartLockedForPeriod(task, opts.nowMs, opts.weekStarting);
 }
 
 function getTimeGoalPeriodHistoryMs(
@@ -381,7 +380,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
       if (!taskId || taskId === activeTaskId) return false;
       if (task.running) return false;
       if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
-      return !isTaskTimeGoalStartLockedByHistoryForPeriod(task, opts.historyByTaskId || {}, opts.nowMs, opts.weekStarting);
+      return !isTaskTimeGoalStartLockedForPeriod(task, opts.nowMs, opts.weekStarting);
     })
     .map((task, index) => ({
       id: String(task.id || "").trim(),
@@ -1081,7 +1080,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function isTaskTimeGoalLockedForCurrentPeriod(task: Task | null | undefined, atMs = nowMs()) {
-    return isTaskTimeGoalStartLockedByHistoryForPeriod(task, ctx.getHistoryByTaskId(), atMs, ctx.getWeekStarting());
+    return isTaskTimeGoalStartLockedForPeriod(task, atMs, ctx.getWeekStarting());
   }
 
   function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
@@ -1338,6 +1337,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
     });
+    acknowledgeTimeGoalCompletion(task);
     ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote });
     clearTaskTimeGoalFlow(taskId);
     stopTimeGoalCompleteConfetti();

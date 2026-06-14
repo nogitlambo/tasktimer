@@ -1,7 +1,7 @@
-import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
+import type { DeletedTaskMeta, Task } from "../lib/types";
 import {
   hasTaskReachedTimeGoal,
-  isTaskTimeGoalStartLockedByHistoryForPeriod,
+  isTaskTimeGoalStartLockedForPeriod,
   markTaskTimeGoalCompleted,
   markTaskTimeGoalResetCompleted,
 } from "../lib/timeGoalCompletion";
@@ -84,7 +84,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
   function resetTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedByHistoryForPeriod(task, options.getHistoryByTaskId() as HistoryByTaskId, Date.now(), options.getWeekStarting())) return;
+    if (isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting())) return;
     if (Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0)) <= 0) return;
     const taskId = String(task.id || "");
     const rewardPreview = getResetAwardPreview(task);

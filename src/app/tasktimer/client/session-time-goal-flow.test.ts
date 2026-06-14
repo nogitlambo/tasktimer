@@ -280,7 +280,7 @@ describe("time goal completion flow guard", () => {
     ).toBe(false);
   });
 
-  it("does not suppress completion when today's goal history was deleted", () => {
+  it("suppresses completion from current-period goal metadata without waiting for history", () => {
     const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
     const completedToday = getTimeGoalCompletionDayKey(nowValue);
 
@@ -297,7 +297,7 @@ describe("time goal completion flow guard", () => {
           nowMs: nowValue,
         }
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("suppresses completion when today's qualifying goal history still exists", () => {
@@ -320,7 +320,27 @@ describe("time goal completion flow guard", () => {
     ).toBe(true);
   });
 
-  it("updates completion metadata when a stale completion marker is completed again", () => {
+  it("does not suppress reset-completed metadata", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+
+    expect(
+      shouldSuppressTimeGoalCompletionForTask(
+        timeGoalTask({
+          timeGoalCompletedDayKey: completedToday,
+          timeGoalCompletedAtMs: nowValue - 60_000,
+          timeGoalCompletedReason: "reset",
+          timeGoalCompletedElapsedMs: 60_000,
+        }),
+        {
+          historyByTaskId: { "task-1": [{ ts: nowValue, name: "Focus", ms: 60_000 }] },
+          nowMs: nowValue,
+        }
+      )
+    ).toBe(false);
+  });
+
+  it("does not update current-period goal completion metadata again", () => {
     const previousCompletionMs = new Date(2026, 4, 7, 9, 0, 0).getTime();
     const nextCompletionMs = new Date(2026, 4, 7, 10, 0, 0).getTime();
     const entry = timeGoalTask({
@@ -332,7 +352,7 @@ describe("time goal completion flow guard", () => {
 
     markTaskTimeGoalCompletedForResolution(entry, nextCompletionMs, 60_000, { historyByTaskId: {} });
 
-    expect(entry.timeGoalCompletedAtMs).toBe(nextCompletionMs);
+    expect(entry.timeGoalCompletedAtMs).toBe(previousCompletionMs);
     expect(entry.timeGoalCompletedElapsedMs).toBe(60_000);
   });
 
@@ -403,7 +423,7 @@ describe("time goal complete next task launcher", () => {
       ],
       {
         activeTaskId: "active",
-        historyByTaskId: { completed: [{ ts: nowValue, name: "Completed", ms: 60_000 }] },
+        historyByTaskId: {},
         nowMs: nowValue,
       }
     );
