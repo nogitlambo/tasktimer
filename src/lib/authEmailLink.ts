@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
 const EMAIL_SUBJECT = "Sign in to TaskLaunch";
-const LOGO_URL = "https://tasklaunch.app/logo/launch-icon-original-transparent.png";
+const LOGO_URL = "https://tasklaunch.app/logo/tasklaunch-logo.webp";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -47,7 +47,7 @@ function buildEmailBody(input: { signInLink: string }) {
 <html>
   <body style="margin:0;padding:24px;background:#0d0f13;color:#f7fafc;font-family:Arial,sans-serif;">
     <div style="max-width:560px;margin:0 auto;border:1px solid rgba(255,255,255,0.16);border-radius:12px;padding:24px;background:#151923;">
-      <img src="${escapedLogoUrl}" alt="TaskLaunch" width="56" height="56" style="display:block;width:56px;height:56px;margin:0 0 16px;" />
+      <img src="${escapedLogoUrl}" alt="TaskLaunch" width="220" style="display:block;width:220px;max-width:100%;height:auto;margin:0 0 16px;" />
       <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;">Sign in to TaskLaunch</h1>
       <p style="margin:0 0 16px;line-height:1.55;">Use this secure link to sign in.</p>
       <p style="margin:0 0 20px;line-height:1.55;"><a href="${escapedLink}" style="display:inline-block;background:#c6f238;color:#0d0f13;text-decoration:none;font-weight:700;padding:12px 16px;border-radius:0;">Sign in</a></p>

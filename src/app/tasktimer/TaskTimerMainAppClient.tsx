@@ -1102,10 +1102,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         aria-label="Weekly leaderboard rankings"
                       >
                   <div className="leaderboardWeeklyStage" aria-label={`Weekly ladder. ${formatWeeklyLeaderboardPeriod()}`}>
-                    <div className="leaderboardWeeklyIntro">
-                      <p className="dashboardCardEyebrow">Weekly Leaderboard</p>
-                      <p className="leaderboardHeroMeta">Top XP earners this week.</p>
-                    </div>
                     {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
                       <button
                         className={`leaderboardWeeklyStageHotspot leaderboardWeeklyStageHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}

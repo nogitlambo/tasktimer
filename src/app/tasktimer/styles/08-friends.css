@@ -1066,9 +1066,12 @@
   }
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
-body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends,
-body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
+body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends{
   background: transparent !important;
+}
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
+  background: url("/leaderboard/deep-space-bg.webp") center / cover no-repeat #000 !important;
 }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
@@ -1435,8 +1438,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   padding: 0;
   background:
     linear-gradient(180deg, rgba(4,7,12,.5), rgba(4,7,12,.74) 46%, rgba(4,7,12,.9)),
-    linear-gradient(90deg, rgba(4,7,12,.82), rgba(4,7,12,.16) 48%, rgba(4,7,12,.82)),
-    url("/leaderboard/deep-space-bg.webp") center / cover no-repeat;
+    linear-gradient(90deg, rgba(4,7,12,.82), rgba(4,7,12,.16) 48%, rgba(4,7,12,.82));
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyBoard::before{
@@ -1816,9 +1818,7 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   aspect-ratio:1448 / 1086;
   margin:0 auto;
   overflow:hidden;
-  background:
-    url("/leaderboard/weekly_podium.png") center / 100% 100% no-repeat,
-    url("/leaderboard/deep-space-bg.webp") center / cover no-repeat;
+  background: url("/leaderboard/weekly_podium.png") center / 100% 100% no-repeat;
   isolation:isolate;
 }
 

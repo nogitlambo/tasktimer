@@ -23,6 +23,12 @@ function getDailyTimeGoalMs(task: Task | null | undefined): number {
   return goalMinutes > 0 ? Math.max(0, Math.round(goalMinutes * 60_000)) : 0;
 }
 
+function hasStoppedSessionState(task: Task | null | undefined): boolean {
+  if (!task || task.running) return false;
+  const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+  return accumulatedMs > 0 || task.resumePendingSinceDayKey != null;
+}
+
 export function getClosedAppDailyTimeGoalCompletion(
   task: Task | null | undefined,
   liveSession: LiveSessionsByTaskId[string] | null | undefined,
@@ -30,6 +36,7 @@ export function getClosedAppDailyTimeGoalCompletion(
 ): ClosedAppDailyTimeGoalCompletion | null {
   const taskId = String(task?.id || "").trim();
   if (!task || !taskId || !liveSession || String(liveSession.taskId || "").trim() !== taskId) return null;
+  if (hasStoppedSessionState(task)) return null;
   if (liveSession.status && liveSession.status !== "running") return null;
   const goalMs = getDailyTimeGoalMs(task);
   if (!(goalMs > 0)) return null;
@@ -66,6 +73,7 @@ export function applyLiveSessionsToTasksWithCompletions(
     const taskId = String(task?.id || "").trim();
     const liveSession = taskId ? liveSessions[taskId] : null;
     if (!task || !liveSession || String(liveSession.taskId || "").trim() !== taskId) return task;
+    if (hasStoppedSessionState(task)) return task;
     if (liveSession.status && liveSession.status !== "running") return task;
 
     const completion = getClosedAppDailyTimeGoalCompletion(task, liveSession, nowValue);

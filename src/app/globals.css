@@ -83,17 +83,9 @@ body.landingRoute {
 }
 
 .webSignInWordBrand {
-  gap: 14px;
-}
-
-.webSignInWordBrand .launchWordBrandIcon {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
-}
-
-.webSignInWordBrand .launchWordBrandText {
-  font-size: 1.14rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .webSignInPage {
@@ -230,13 +222,16 @@ body.webSignInNativeRoute .webSignInPage {
 }
 
 .webSignInLogo {
-  width: 340px;
+  display: block;
+  width: min(78vw, 340px);
+  max-width: 100%;
   height: auto;
+  object-fit: contain;
 }
 
-.webSignInLaunchIcon {
+.webSignInLaunchLogo {
   display: block;
-  width: min(38vw, 168px);
+  width: min(72vw, 360px);
   height: auto;
   object-fit: contain;
 }

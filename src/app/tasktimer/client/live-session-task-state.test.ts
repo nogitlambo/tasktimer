@@ -40,6 +40,40 @@ describe("applyLiveSessionsToTasks", () => {
     });
   });
 
+  it("ignores stale running live sessions for a task that was stopped before completion", () => {
+    const source = task({
+      accumulatedMs: 30 * 60_000,
+      running: false,
+      startMs: null,
+      hasStarted: true,
+      resumePendingSinceDayKey: "2026-05-02",
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+    });
+    const liveSessionsByTaskId: LiveSessionsByTaskId = {
+      "task-1": {
+        sessionId: "task-1:started",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: new Date(2026, 4, 2, 9, 0, 0).getTime(),
+        updatedAtMs: new Date(2026, 4, 2, 9, 30, 0).getTime(),
+        elapsedMs: 30 * 60_000,
+        status: "running",
+      },
+    };
+
+    const result = applyLiveSessionsToTasks([source], liveSessionsByTaskId, () => new Date(2026, 4, 2, 11, 0, 0).getTime())[0];
+
+    expect(result).toBe(source);
+    expect(result).toMatchObject({
+      accumulatedMs: 30 * 60_000,
+      running: false,
+      startMs: null,
+    });
+    expect(result?.timeGoalCompletedReason).toBeUndefined();
+  });
+
   it("ignores live sessions whose row task id does not match the target task", () => {
     const source = task({ id: "task-1" });
     const liveSessionsByTaskId: LiveSessionsByTaskId = {
