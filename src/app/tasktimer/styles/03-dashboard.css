@@ -6164,6 +6164,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedChart{
+  --dashboard-tasks-completed-pulse-duration: 2.4s;
   position: relative;
   width: min(100%, 380px);
   aspect-ratio: 1;
@@ -6198,7 +6199,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedNeedle.isRunning{
   stroke: rgba(245,248,244,.98);
   stroke-width: 2.2;
-  animation: dashboardTasksCompletedNeedlePulse 1.35s ease-in-out infinite;
+  animation: dashboardTasksCompletedNeedlePulse var(--dashboard-tasks-completed-pulse-duration, 2.4s) ease-in-out infinite;
   filter:
     drop-shadow(0 0 4px rgba(255,255,255,.28))
     drop-shadow(0 0 10px rgba(169,214,95,.34));
@@ -6207,7 +6208,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 @keyframes dashboardTasksCompletedNeedlePulse{
   0%, 100%{
-    opacity: .2;
+    opacity: .72;
+  }
+  25%, 75%{
+    opacity: .88;
   }
   50%{
     opacity: 1;
@@ -6234,13 +6238,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment.isRunning{
-  animation: dashboardTasksCompletedSegmentPulse 1.35s ease-in-out infinite;
+  animation: dashboardTasksCompletedSegmentPulse var(--dashboard-tasks-completed-pulse-duration, 2.4s) ease-in-out infinite;
   filter:
     drop-shadow(0 0 3px rgba(0,0,0,.32))
     drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
   will-change: opacity, filter;
 }@keyframes dashboardTasksCompletedSegmentPulse{0%, 100%{
-    opacity: .78;
+    opacity: .72;
+    filter:
+      drop-shadow(0 0 3px rgba(0,0,0,.32))
+      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
+    stroke-width: 36;
+  }25%, 75%{
+    opacity: .88;
     filter:
       drop-shadow(0 0 3px rgba(0,0,0,.32))
       drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
@@ -6358,7 +6368,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRunning .dashboardTasksCompletedLabelName{
   color: rgba(245,248,244,.96);
-  animation: dashboardTasksCompletedLabelPulse 1.35s ease-in-out infinite;
+  animation: dashboardTasksCompletedLabelPulse var(--dashboard-tasks-completed-pulse-duration, 2.4s) ease-in-out infinite;
   text-shadow:
     0 0 6px color-mix(in srgb, var(--dashboard-task-label-color) 32%, transparent),
     0 0 12px color-mix(in srgb, var(--dashboard-task-label-color) 16%, transparent);
@@ -6383,7 +6393,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 @keyframes dashboardTasksCompletedLabelPulse{0%, 100%{
-    opacity: .2;
+    opacity: .72;
+  }25%, 75%{
+    opacity: .88;
   }50%{
     opacity: 1;
   }
@@ -6405,6 +6417,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     text-shadow:
       0 0 5px color-mix(in srgb, var(--dashboard-task-label-color) 24%, transparent),
       0 0 10px color-mix(in srgb, var(--dashboard-task-label-color) 10%, transparent);
+  }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment.isRunning{
+    animation: none;
+    opacity: 1;
   }
 }
 

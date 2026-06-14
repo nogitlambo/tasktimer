@@ -1081,8 +1081,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     if (!ctx.getGroupsFriendships().length) {
       openIds.clear();
-      els.groupsFriendsList.className = "settingsDetailNote groupsFriendsEmptyState";
-      els.groupsFriendsList.textContent = "You haven't added any friends yet";
+      els.groupsFriendsList.textContent = "";
       return;
     }
     const sharedSummaries = ctx.getGroupsSharedSummaries();

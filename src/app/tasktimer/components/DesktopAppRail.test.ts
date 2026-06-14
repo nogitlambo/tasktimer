@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import {
@@ -45,6 +47,19 @@ describe("DesktopAppRail profile menu", () => {
 
     expect(items.map((item) => item.label)).toEqual(["User Guide", "Feedback"]);
     expect(items.map((item) => item.href)).toEqual(["/user-guide", "/feedback"]);
+  });
+
+  it("opens the Help Center submenu on hover and closes it when hover leaves", () => {
+    const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
+
+    expect(source).toContain("onPointerEnter={() => setHelpCenterMenuOpen(true)}");
+    expect(source).toContain("onPointerLeave={() => setHelpCenterMenuOpen(false)}");
+  });
+
+  it("keeps the Help Center arrow direction unchanged when the submenu is open", () => {
+    const css = readFileSync(resolve(__dirname, "../styles/09-desktop-rail.css"), "utf8");
+
+    expect(css).not.toContain("desktopRailProfileSubmenu[open] .desktopRailProfileSubmenuTrigger::after");
   });
 
   it("keeps normal account sign-out labels", () => {

@@ -2756,6 +2756,14 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   overflow:hidden;
 }
 
+@media (max-width: 980px){
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
+    --app-pages-bottom-padding:0px;
+    padding-bottom:0 !important;
+    scroll-padding-bottom:0;
+  }
+}
+
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPill{
   white-space:nowrap;
 }
@@ -3383,7 +3391,10 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
   }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller{
-    max-height:58vh;
+    max-height:none;
+    height:100%;
+    min-height:0;
+    overflow:auto;
   }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePlanner{
@@ -3654,8 +3665,17 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .modeSwitchWrap{
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .schedulePageShell,
   #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .schedulePageShell{
+    height:100%;
+    min-height:0;
+    grid-template-rows:auto minmax(0, 1fr);
     padding-left:0;
     padding-right:0;
+  }
+
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule,
+  #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule{
+    height:100%;
+    min-height:0;
   }
 
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleBoard,
@@ -3670,11 +3690,20 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedul
     min-width:0;
   }
 
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleBoard,
+  #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleBoard{
+    height:100%;
+    min-height:0;
+  }
+
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleGridScroller,
   #app[aria-label="TaskLaunch App"] #appPageTasks #appPageSchedule .scheduleGridScroller{
     box-sizing:border-box;
     width:100%;
     max-width:100%;
+    height:100%;
+    min-height:0;
+    overflow:auto;
     overflow-x:hidden;
   }
 

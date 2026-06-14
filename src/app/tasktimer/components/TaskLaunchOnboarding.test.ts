@@ -24,7 +24,7 @@ describe("TaskLaunchOnboarding finish action", () => {
 
 describe("TaskLaunchOnboarding steps", () => {
   it("places the chronotype intro after username before the productivity setup steps", () => {
-    expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual(["username", "intro", "days", "hours", "push", "weekStart"]);
+    expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual(["username", "intro", "days", "hours", "weekStart", "push"]);
   });
 
   it("uses the username greeting for the standalone intro step", () => {
@@ -38,8 +38,8 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingTitle("days", "Avery")).toBe("Productivity Days");
   });
 
-  it("uses the week-start title for the final onboarding step", () => {
-    expect(onboardingTitle("weekStart", "Avery")).toBe("Week Start");
+  it("uses the notifications title for the final onboarding step", () => {
+    expect(onboardingTitle("push", "Avery")).toBe("Notifications");
   });
 
   it("does not create a preference payload for the standalone intro step", () => {

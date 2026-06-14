@@ -86,7 +86,7 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
       <div className="desktopAppShell">
         <DesktopAppRail activePage="settings" useClientNavButtons={false} showMobileFooter={false} />
         <div className="desktopAppMain">
-          <div className="list settingsPageList" style={{ paddingTop: 18 }}>
+          <div className="list settingsPageList">
             <div className="settingsSceneBackdrop" aria-hidden="true">
               <div className="settingsSceneGlow settingsSceneGlowA" />
               <div className="settingsSceneGlow settingsSceneGlowB" />

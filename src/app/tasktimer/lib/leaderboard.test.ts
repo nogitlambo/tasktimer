@@ -94,7 +94,8 @@ function tableRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow[] {
 function expectPinnedCurrentRank(
   rows: WeeklyLeaderboardRow[],
   expectedRank: number,
-  uid = "me"
+  uid = "me",
+  expectedPlayerLabel = "me"
 ) {
   const currentRow = rows.find((row) => row.isCurrentUser && row.profile.uid === uid);
   expect(currentRow).toBeTruthy();
@@ -104,7 +105,7 @@ function expectPinnedCurrentRank(
     isPinnedCurrentUser: true,
     rank: expectedRank,
     rankLabel: `#${expectedRank}`,
-    playerLabel: "You",
+    playerLabel: expectedPlayerLabel,
     isPlaceholder: false,
   });
   expect(rows.at(-1)).toBe(currentRow);
@@ -259,7 +260,7 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows[1]).toMatchObject({
       isCurrentUser: true,
       rankLabel: "#2",
-      playerLabel: "You",
+      playerLabel: "me",
       isPlaceholder: false,
     });
     expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
@@ -331,6 +332,26 @@ describe("buildGlobalLeaderboardRows", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("displays the current user's username when they are already ranked in the global top entries", () => {
+    const currentUser = createProfile({ uid: "me", username: "me", rewardTotalXp: 700 });
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [
+        createProfile({ uid: "top-1", username: "top_1", rewardTotalXp: 900 }),
+        currentUser,
+      ],
+      currentUserEntry: currentUser,
+      currentUserRank: 2,
+    });
+
+    expect(rows[1]).toMatchObject({
+      isCurrentUser: true,
+      rankLabel: "#2",
+      playerLabel: "me",
+      isPlaceholder: false,
+    });
+    expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
+  });
+
   it("keeps an out-of-top-ten current user available for the global table", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [],
@@ -358,7 +379,7 @@ describe("buildRivalLeaderboardRows", () => {
       isCurrentUser: true,
       rank: 1,
       rankLabel: "#1",
-      playerLabel: "You",
+      playerLabel: "me",
       isPlaceholder: false,
       isDummy: false,
     });
@@ -392,7 +413,7 @@ describe("buildRivalLeaderboardRows", () => {
 
     const realNonCurrentRows = rows.filter((row) => !row.isCurrentUser && !row.isPlaceholder && !row.isDummy);
     expect(realNonCurrentRows.map((row) => row.profile.uid)).toEqual(["same-1"]);
-    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({ rank: 2, rankLabel: "#2" });
+    expect(rows.find((row) => row.isCurrentUser)).toMatchObject({ rank: 2, rankLabel: "#2", playerLabel: "me" });
     expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
   });
 });

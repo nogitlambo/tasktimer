@@ -25,8 +25,8 @@ body[data-app-page="tasks"] .wrap,
   }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
-    padding-left:0 !important;
-    padding-right:0 !important;
+    padding-left:8px !important;
+    padding-right:8px !important;
   }
 
 body[data-app-page="schedule"]{

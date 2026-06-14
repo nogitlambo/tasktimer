@@ -827,7 +827,12 @@ export default function DesktopAppRail({
                 </span>
               </summary>
               <div className="desktopRailProfileMenuDropdown" role="menu" aria-label="Profile menu">
-                <details className="desktopRailProfileSubmenu" open={helpCenterMenuOpen}>
+                <details
+                  className="desktopRailProfileSubmenu"
+                  open={helpCenterMenuOpen}
+                  onPointerEnter={() => setHelpCenterMenuOpen(true)}
+                  onPointerLeave={() => setHelpCenterMenuOpen(false)}
+                >
                   <summary
                     className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSubmenuTrigger"
                     aria-label="Help Center"

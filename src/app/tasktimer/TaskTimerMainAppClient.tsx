@@ -987,7 +987,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           <SessionNotesPageContent active={initialPage === "session-notes"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
-            <div className="dashboardShell" id="groupsFriendsSection">
+            <div className="friendsShell" id="groupsFriendsSection">
               {!isAuthenticated ? (
                 <SignedOutPrompt message="You will need to create an account or sign in to use Friends" />
               ) : null}
@@ -1009,9 +1009,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
 
                 <section className="dashboardCard" aria-label="Friends list">
-                  <div id="groupsFriendsList" className="settingsDetailNote groupsFriendsEmptyState">
-                    You have not added any friends yet
-                  </div>
+                  <div id="groupsFriendsList" className="settingsDetailNote" />
                 </section>
 
                 <section className="dashboardCard" aria-label="Tasks shared by you">
@@ -1143,7 +1141,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Weekly XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1165,10 +1162,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
                                 <span className="leaderboardWeeklyPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  {row.isPlaceholder ? null : <span className="leaderboardWeeklyUserMetric">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
                                 </span>
                               </span>
-                              <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
                               <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 {row.isPlaceholder ? null : (
@@ -1249,7 +1244,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Total XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1271,10 +1265,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
                                 <span className="leaderboardWeeklyPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  {row.isPlaceholder ? null : <span className="leaderboardWeeklyUserMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                                 </span>
                               </span>
-                              <span className="leaderboardWeeklyMetricCell" role="cell" aria-label="Spare column" />
                               <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
                                 {row.isPlaceholder ? null : (
@@ -1343,7 +1335,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <div className="leaderboardGlobalStageTableHead" role="row">
                             <span role="columnheader">Position</span>
                             <span role="columnheader">User</span>
-                            <span role="columnheader">Badges</span>
                             <span role="columnheader">Total XP</span>
                             <span role="columnheader">Rank</span>
                           </div>
@@ -1366,15 +1357,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
                                 <span className="leaderboardGlobalPlayerText">
                                   <strong>{row.playerLabel}</strong>
-                                  {row.isPlaceholder ? null : <span>{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                                 </span>
-                              </span>
-                              <span className="leaderboardGlobalBadgeCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-                                {row.isPlaceholder ? null : (
-                                  <>
-                                    <LeaderboardRankInsignia profile={row.profile} />
-                                  </>
-                                )}
                               </span>
                               <span className="leaderboardGlobalXpCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                               <span className="leaderboardGlobalInsigniaCell" role="cell">
@@ -1389,7 +1372,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         <div className="leaderboardGlobalMobileTableHead" role="row">
                           <span role="columnheader">Position</span>
                           <span role="columnheader">User</span>
-                          <span role="columnheader">Badges</span>
                           <span role="columnheader">Total XP</span>
                           <span role="columnheader">Rank</span>
                         </div>
@@ -1411,11 +1393,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
                               <span className="leaderboardGlobalPlayerText">
                                 <strong>{row.playerLabel}</strong>
-                                {row.isPlaceholder ? null : <span>{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                               </span>
-                            </span>
-                            <span className="leaderboardGlobalBadgeCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-                              {row.isPlaceholder ? null : <LeaderboardRankInsignia profile={row.profile} />}
                             </span>
                             <span className="leaderboardGlobalXpCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
                             <span className="leaderboardGlobalInsigniaCell" role="cell">

@@ -122,6 +122,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 .settingsPageList{
   position:relative;
   overflow:hidden;
+  padding-top:18px;
 }
 
 .settingsSceneBackdrop{
@@ -5021,6 +5022,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     --settings-data-tile-icon-size: 26px;
     --settings-data-tile-text-size: 8px;
     --settings-data-tile-text-letter-spacing: .03em;
+  }
+
+#app[aria-label="TaskLaunch Settings"] .settingsPageList{
+    padding-top:32px;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout{

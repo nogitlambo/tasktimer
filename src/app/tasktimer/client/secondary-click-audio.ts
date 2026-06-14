@@ -27,7 +27,6 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   '[data-action="openAddTask"]',
   '[data-action="reset"]',
   '[data-action="edit"]',
-  '[data-onboarding-next-action="true"]',
   "#openFriendRequestModalBtn",
 ].join(",");
 
@@ -48,6 +47,7 @@ const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
   "launch",
 ]);
 const CANCEL_CLICK_SELECTOR = ".modalPreviewSecondaryAction";
+const ONBOARDING_BACK_CLICK_SELECTOR = '[data-onboarding-back-action="true"]';
 const CANCEL_CLICK_LABELS = new Set(["cancel"]);
 const CLOSE_CLICK_LABELS = new Set(["close"]);
 
@@ -89,6 +89,7 @@ function isCloseClickControl(element: HTMLElement): boolean {
 }
 
 export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement | null {
+  if (getCloseClickTarget(target)) return null;
   if (getCheckboxClickTarget(target)) return null;
   if (getDropdownClickTarget(target)) return null;
   if (getClosestElement(target, TASK_FLIP_CLICK_SELECTOR)) return null;
@@ -147,6 +148,9 @@ export function getCancelClickTarget(target: EventTarget | null): HTMLElement | 
 }
 
 export function getCloseClickTarget(target: EventTarget | null): HTMLElement | null {
+  const directTarget = getClosestElement(target, ONBOARDING_BACK_CLICK_SELECTOR);
+  if (directTarget) return isDisabledControl(directTarget) ? null : directTarget;
+
   const textTarget = getClosestElement(target, SECONDARY_CLICK_TEXT_SELECTOR);
   if (!textTarget || !isCloseClickControl(textTarget)) return null;
   return isDisabledControl(textTarget) ? null : textTarget;

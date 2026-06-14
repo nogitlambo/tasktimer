@@ -55,11 +55,6 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
               <div className="taskFocusDndStatus" id="taskFocusDndStatus" aria-live="polite">
                 Checking Do Not Disturb access...
               </div>
-              <div className="taskFocusDndActions">
-                <button className="btn btn-ghost small" id="taskFocusDndAccessBtn" type="button">
-                  DND Access
-                </button>
-              </div>
             </div>
             <div className="settingsInlineSectionHead">
               <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/toast.webp" alt="" aria-hidden="true" />

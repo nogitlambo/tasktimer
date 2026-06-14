@@ -35,8 +35,8 @@ function makeElement(opts: {
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
-const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
 const ONBOARDING_NEXT_CLICK_SELECTOR = '[data-onboarding-next-action="true"]';
+const PRIMARY_CLICK_SELECTOR = `#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction, ${ONBOARDING_NEXT_CLICK_SELECTOR}`;
 
 describe("primary click audio", () => {
   beforeEach(() => {
@@ -67,7 +67,7 @@ describe("primary click audio", () => {
     expect(getPrimaryClickTarget(element)).toBe(element);
   });
 
-  it("does not match onboarding Next as a primary action", () => {
+  it("matches onboarding Continue as a primary action", () => {
     const element = makeElement({
       selectorMatches: {
         [ONBOARDING_NEXT_CLICK_SELECTOR]: true,
@@ -76,7 +76,18 @@ describe("primary click audio", () => {
       },
     });
 
-    expect(getPrimaryClickTarget(element)).toBeNull();
+    expect(getPrimaryClickTarget(element)).toBe(element);
+  });
+
+  it("matches onboarding Finish as a primary action", () => {
+    const element = makeElement({
+      selectorMatches: {
+        [ONBOARDING_NEXT_CLICK_SELECTOR]: true,
+        [PRIMARY_CLICK_SELECTOR]: true,
+      },
+    });
+
+    expect(getPrimaryClickTarget(element)).toBe(element);
   });
 
   it("matches enabled task launch controls", () => {

@@ -526,6 +526,10 @@ function filterProfilesByRankScope(profiles: LeaderboardProfile[], rankScope: { 
   return profiles.filter((profile) => getRankForXp(profile.rewardTotalXp).id === rankScope.id);
 }
 
+function getLeaderboardPlayerLabel(profile: LeaderboardProfile): string {
+  return String(profile.username || profile.displayLabel || "User").trim() || "User";
+}
+
 function createCurrentUserLeaderboardRow(
   profile: LeaderboardProfile,
   options: {
@@ -547,7 +551,7 @@ function createCurrentUserLeaderboardRow(
     profile,
     rank,
     rankLabel: formatWeeklyRankLabel(rank),
-    playerLabel: "You",
+    playerLabel: getLeaderboardPlayerLabel(profile),
     isCurrentUser: true,
     isPinnedCurrentUser: true,
     isPlaceholder: false,
@@ -568,7 +572,7 @@ export function buildGlobalLeaderboardRows(input: {
       profile,
       rank,
       rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      playerLabel: getLeaderboardPlayerLabel(profile),
       isCurrentUser,
       isPlaceholder: false,
       isDummy: false,
@@ -605,7 +609,7 @@ export function buildRivalLeaderboardRows(input: {
       profile,
       rank,
       rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      playerLabel: getLeaderboardPlayerLabel(profile),
       isCurrentUser,
       isPlaceholder: false,
       isDummy: false,
@@ -620,7 +624,7 @@ export function buildRivalLeaderboardRows(input: {
       profile: input.currentUserEntry,
       rank: currentUserRivalRank,
       rankLabel: formatWeeklyRankLabel(currentUserRivalRank),
-      playerLabel: "You",
+      playerLabel: getLeaderboardPlayerLabel(input.currentUserEntry),
       isCurrentUser: true,
       isPlaceholder: false,
       isDummy: false,
@@ -661,7 +665,7 @@ export function buildWeeklyLeaderboardRows(input: {
       profile,
       rank,
       rankLabel: formatWeeklyRankLabel(rank),
-      playerLabel: isCurrentUser ? "You" : String(profile.username || profile.displayLabel || "User").trim() || "User",
+      playerLabel: getLeaderboardPlayerLabel(profile),
       isCurrentUser,
       isPlaceholder: false,
       isDummy: false,

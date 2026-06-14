@@ -53,8 +53,8 @@ export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = 
   { key: "intro", title: "Chronotype Alignment" },
   { key: "days", title: "Productivity Days" },
   { key: "hours", title: "Productivity Hours" },
-  { key: "push", title: "Notifications" },
   { key: "weekStart", title: "Week Start" },
+  { key: "push", title: "Notifications" },
 ];
 
 const WEEK_START_OPTIONS: ReadonlyArray<{ value: DashboardWeekStart; label: string }> = [
@@ -573,7 +573,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             key={`onboarding-subtext-${activeStep}`}
           >
             {activeStep === "username" ? (
-              "Please choose an avatar and set a usename for your account:"
+              "Please choose an avatar and set a username for your profile:"
             ) : activeStep === "intro" ? (
               <>
                 Most productivity tools organize your time. TaskLaunch goes a step further by using{" "}
@@ -818,7 +818,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         <div className="confirmBtns onboardingActions">
           {stepIndex > 0 ? (
-            <button className="btn btn-ghost" type="button" onClick={() => setStepIndex((current) => Math.max(0, current - 1))} disabled={busy}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              data-onboarding-back-action="true"
+              onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
+              disabled={busy}
+            >
               Back
             </button>
           ) : null}
@@ -833,7 +839,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               Continue
             </button>
           ) : (
-            <button className="btn btn-accent" type="button" onClick={() => void handleFinish()} disabled={isOnboardingFinishDisabled(busy)}>
+            <button
+              className="btn btn-accent"
+              type="button"
+              data-onboarding-next-action="true"
+              onClick={() => void handleFinish()}
+              disabled={isOnboardingFinishDisabled(busy)}
+            >
               Finish
             </button>
           )}
