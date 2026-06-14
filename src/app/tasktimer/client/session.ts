@@ -1083,6 +1083,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return isTaskTimeGoalStartLockedForPeriod(task, atMs, ctx.getWeekStarting());
   }
 
+  function isFinalizedGoalCompletionAwaitingAcknowledgement(task: Task | null | undefined) {
+    if (!task || task.running) return false;
+    if (task.timeGoalCompletedReason !== "goal") return false;
+    if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0)) > 0)) return false;
+    if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs || 0) || 0)) > 0)) return false;
+    return !hasAcknowledgedTimeGoalCompletion(task);
+  }
+
   function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
     if (!task) return false;
     const taskId = String(task.id || "").trim();
@@ -1264,10 +1272,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
     if (!overdueTask) {
       const acknowledgedTask = tasks.find((row) => {
-        if (!row || row.running) return false;
-        if (!isTaskTimeGoalCompletedForCurrentPeriod(row)) return false;
-        if (!isTaskTimeGoalLockedForCurrentPeriod(row)) return false;
-        return !hasAcknowledgedTimeGoalCompletion(row);
+        if (!isFinalizedGoalCompletionAwaitingAcknowledgement(row)) return false;
+        return isTaskTimeGoalCompletedForCurrentPeriod(row) && isTaskTimeGoalLockedForCurrentPeriod(row);
+      }) || tasks.find((row) => {
+        return isFinalizedGoalCompletionAwaitingAcknowledgement(row);
       });
       if (!acknowledgedTask) return;
       openTimeGoalCompleteModal(acknowledgedTask, Math.max(0, Math.floor(Number(acknowledgedTask.timeGoalCompletedElapsedMs || 0) || 0)), {
@@ -1289,7 +1297,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const task = ctx.getTasks().find((row) => String(row.id || "") === activeTaskId) || null;
     if (
       task &&
-      isTaskTimeGoalCompletedForCurrentPeriod(task) &&
+      (isTaskTimeGoalCompletedForCurrentPeriod(task) || isFinalizedGoalCompletionAwaitingAcknowledgement(task)) &&
       isVisibleTimeGoalCompleteModalForTask(activeTaskId)
     ) {
       syncTimeGoalCompleteLaunchNextButton();
@@ -1311,6 +1319,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   async function resolveTimeGoalCompletion(task: Task, opts: { logHistory: boolean }) {
     const taskId = String(task.id || "");
     if (
+      isFinalizedGoalCompletionAwaitingAcknowledgement(task) ||
       shouldSuppressTimeGoalCompletionForTask(task, {
         historyByTaskId: ctx.getHistoryByTaskId(),
         nowMs: nowMs(),

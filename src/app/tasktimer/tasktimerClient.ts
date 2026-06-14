@@ -1584,6 +1584,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
       jumpToTaskById: (taskId) => runtimeActions.jumpToTaskById(taskId),
       maybeRestorePendingTimeGoalFlow: () => maybeRestorePendingTimeGoalFlowApi(),
+      finalizeLiveSession: (task, opts) => rewardSessionBridge.finalizeLiveSession(task, opts),
       normalizeLoadedTask,
       syncSharedTaskSummariesForTasks,
     })

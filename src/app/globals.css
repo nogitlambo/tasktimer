@@ -847,6 +847,8 @@ canvas {
 .landingV2 .landingV2Header > .landingV2FooterBrand {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
+  justify-content: flex-start;
   min-width: 0;
   gap: clamp(7px, 1.1vw, 10px);
   font-size: clamp(1.08rem, 3.2vw, 1.64rem);
@@ -858,9 +860,9 @@ canvas {
   display: block;
   width: clamp(150px, 17vw, 214px);
   height: clamp(30px, 7vw, 44px);
-  margin-right: clamp(75px, 8.5vw, 107px);
   flex: 0 0 clamp(150px, 17vw, 214px);
   object-fit: contain;
+  object-position: left center;
   transform: scale(1.5);
   transform-origin: left center;
 }
@@ -2812,7 +2814,6 @@ canvas {
   .landingV2 .landingHeaderLogo {
     width: clamp(128px, 42vw, 166px);
     height: clamp(28px, 7.2vw, 34px);
-    margin-right: clamp(64px, 21vw, 83px);
     flex-basis: clamp(128px, 42vw, 166px);
   }
 

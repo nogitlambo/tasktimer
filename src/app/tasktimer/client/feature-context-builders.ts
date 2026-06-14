@@ -162,6 +162,7 @@ type CreatePersistenceOptionsArgs = {
   applyDashboardCardVisibility: () => void;
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: () => void;
+  finalizeLiveSession: Parameters<typeof createTaskTimerPersistence>[0]["finalizeLiveSession"];
   maybeRepairHistoryNotesInCloudAfterHydrate: () => void;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
@@ -1060,6 +1061,7 @@ export function createTaskTimerPersistenceContext(
     applyDashboardCardVisibility: args.applyDashboardCardVisibility,
     applyDashboardEditMode: args.applyDashboardEditMode,
     renderDashboardWidgets: args.renderDashboardWidgets,
+    finalizeLiveSession: args.finalizeLiveSession,
     syncSharedTaskSummariesForTasks: args.syncSharedTaskSummariesForTasks,
     maybeRepairHistoryNotesInCloudAfterHydrate: args.maybeRepairHistoryNotesInCloudAfterHydrate,
     jumpToTaskById: args.jumpToTaskById,

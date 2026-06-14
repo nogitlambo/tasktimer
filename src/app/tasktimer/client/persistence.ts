@@ -2,9 +2,10 @@ import type { HistoryByTaskId, LiveSessionsByTaskId, Task, DeletedTaskMeta } fro
 import type { TaskTimerHistorySnapshot, TaskTimerWorkspaceHistoryPersistence, TaskTimerWorkspaceRepository, TaskTimerWorkspaceSnapshot } from "../lib/workspaceRepository";
 import type { AppPage, DashboardRenderOptions, MainMode } from "./types";
 import type { TaskTimerAppPageOptions } from "./context";
-import { applyLiveSessionsToTasks } from "./live-session-task-state";
+import { applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { clearNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
 
 type PersistOptions = { deletedTaskIds?: string[]; forceCloudFlush?: boolean };
 
@@ -78,6 +79,7 @@ type CreateTaskTimerPersistenceOptions = {
   applyDashboardEditMode: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<unknown>;
+  finalizeLiveSession?: (task: Task, opts?: { elapsedMs?: number; completedAtMs?: number }) => void;
   maybeRepairHistoryNotesInCloudAfterHydrate?: () => void;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
@@ -111,12 +113,31 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
       if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
       return true;
     });
-    const tasksWithLiveSessions = applyLiveSessionsToTasks(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now);
+    const liveSessionResult = applyLiveSessionsToTasksWithCompletions(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now);
+    const tasksWithLiveSessions = liveSessionResult.tasks;
     const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, (options.nowMs || Date.now)());
     options.setTasks(tasksWithLiveSessions);
-    if (resetResult.changedTaskIds.length) {
+    liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
+      const completedTask = tasksWithLiveSessions.find((row) => String(row.id || "").trim() === completion.taskId);
+      if (!completedTask) return;
+      options.finalizeLiveSession?.(completedTask, {
+        elapsedMs: completion.elapsedMs,
+        completedAtMs: completion.completedAtMs,
+      });
+      void clearNativeRunningTimerNotification(completion.taskId).catch(() => {});
+    });
+    const changedTaskIds = Array.from(
+      new Set([
+        ...resetResult.changedTaskIds,
+        ...liveSessionResult.closedAppDailyTimeGoalCompletions.map((completion) => completion.taskId),
+      ])
+    );
+    if (changedTaskIds.length) {
       options.workspaceRepository.saveTasks(tasksWithLiveSessions);
-      void options.syncSharedTaskSummariesForTasks(resetResult.changedTaskIds).catch(() => {});
+      void options.syncSharedTaskSummariesForTasks(changedTaskIds).catch(() => {});
+    }
+    if (liveSessionResult.closedAppDailyTimeGoalCompletions.length) {
+      options.maybeRestorePendingTimeGoalFlow();
     }
   }
 
