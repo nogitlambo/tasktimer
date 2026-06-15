@@ -286,6 +286,32 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   justify-self:start;
 }
 
+.hmManualEntryGoalRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:40px;
+  border:1px solid rgba(165, 172, 182, .28);
+  background: rgba(7,14,18,.5);
+  padding:8px 10px;
+}
+
+.hmManualEntryGoalText{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.hmManualEntryGoalRow .switch{
+  flex:0 0 auto;
+}
+
+.hmManualEntryGoalRow .switch:disabled,
+.hmManualEntryGoalRow .switch[aria-disabled="true"]{
+  cursor:not-allowed;
+}
+
 .hmManualEntryField{
   display:grid;
   gap:6px;

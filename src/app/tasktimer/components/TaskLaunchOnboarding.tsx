@@ -202,6 +202,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [error, setError] = useState("");
   const [usernameInlineError, setUsernameInlineError] = useState("");
   const openRef = useRef(false);
+  const avatarSavePromiseRef = useRef<Promise<void> | null>(null);
+  const profileSyncPromiseRef = useRef<Promise<void> | null>(null);
   const weekStartDropdownRef = useRef<HTMLDivElement | null>(null);
   const startTimeInputRef = useRef<HTMLInputElement | null>(null);
   const endTimeInputRef = useRef<HTMLInputElement | null>(null);
@@ -260,6 +262,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setStatus("");
       setError("");
       setUsernameInlineError("");
+      avatarSavePromiseRef.current = null;
+      profileSyncPromiseRef.current = null;
     },
     [isNativeRuntime, preferences]
   );
@@ -358,6 +362,23 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     notifyAccountAvatarUpdated();
   }, [selectedAvatarId, uid]);
 
+  const queueSelectedOnboardingAvatarSave = useCallback(() => {
+    const promise = saveSelectedOnboardingAvatar();
+    avatarSavePromiseRef.current = promise;
+    void promise.catch((err: unknown) => {
+      if (avatarSavePromiseRef.current !== promise) return;
+      setError(getErrorMessage(err, "Unable to save avatar right now."));
+    });
+  }, [saveSelectedOnboardingAvatar]);
+
+  const queueOnboardingProfileSync = useCallback((promise: Promise<void>) => {
+    profileSyncPromiseRef.current = promise;
+    void promise.catch((err: unknown) => {
+      if (profileSyncPromiseRef.current !== promise) return;
+      setError(getErrorMessage(err, "Unable to sync profile right now."));
+    });
+  }, []);
+
   const confirmUsername = useCallback(async () => {
     const nextUsername = usernameDraft.trim();
     const validation = validateUsername(nextUsername);
@@ -386,9 +407,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       if (normalizeUsername(nextUsername) !== normalizeUsername(username)) {
         const result = await updateAliasFlow(uid, username, nextUsername);
         if (result.changed) {
-          await syncOwnFriendshipProfile(uid, { alias: result.username });
           setUsername(result.username);
           setUsernameDraft(result.username);
+          queueOnboardingProfileSync(syncOwnFriendshipProfile(uid, { alias: result.username }));
           notifyAccountProfileUpdated();
         }
       } else {
@@ -400,6 +421,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setUsernameConfirmedAtMs(confirmedAtMs);
       setUsernameInlineError("");
       setStatus("Username confirmed.");
+      queueSelectedOnboardingAvatarSave();
       return true;
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Unable to update username right now.");
@@ -416,7 +438,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     } finally {
       setBusy(false);
     }
-  }, [saveSelectedOnboardingAvatar, uid, username, usernameDraft]);
+  }, [queueOnboardingProfileSync, queueSelectedOnboardingAvatarSave, saveSelectedOnboardingAvatar, uid, username, usernameDraft]);
 
   const handlePushToggle = useCallback(
     async (nextEnabled: boolean) => {

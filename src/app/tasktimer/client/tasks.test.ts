@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
+import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import { createTaskTimerTasks } from "./tasks";
 
 type TestEvent = {
@@ -46,19 +47,21 @@ function elementStub(tagName = "div") {
   return node;
 }
 
-function createHarness() {
+function createHarness(overrides: { tasks?: Task[] } = {}) {
   const calls: string[] = [];
   const handlers = new Map<object, Map<string, (event: TestEvent) => void>>();
-  let tasks = [task()];
+  let tasks = overrides.tasks || [task()];
   let confirmOk: (() => void) | null = null;
   const taskList = elementStub("section");
 
   vi.stubGlobal("document", {
     createElement: (tagName: string) => elementStub(tagName),
+    getElementById: () => null,
   });
   vi.stubGlobal("window", {
     matchMedia: () => ({ matches: false }),
     clearTimeout: vi.fn(),
+    dispatchEvent: vi.fn(),
     requestAnimationFrame: (handler: () => void) => {
       handler();
       return 1;
@@ -116,8 +119,8 @@ function createHarness() {
     renderDashboardWidgets: vi.fn(),
     syncTimeGoalModalWithTaskState: vi.fn(),
     maybeRestorePendingTimeGoalFlow: vi.fn(),
-    getElapsedMs: () => 0,
-    getTaskElapsedMs: () => 0,
+    getElapsedMs: (task: Task) => Number(task.accumulatedMs || 0),
+    getTaskElapsedMs: (task: Task) => Number(task.accumulatedMs || 0),
     sortMilestones: (value: Task["milestones"]) => value,
     checkpointRepeatActiveTaskId: () => null,
     activeCheckpointToastTaskId: () => null,
@@ -162,6 +165,7 @@ function createHarness() {
     closeRewardSessionSegment: vi.fn(),
     clearRewardSessionTracker: vi.fn(),
     upsertLiveSession: vi.fn(),
+    clearLiveSession: vi.fn(),
     finalizeLiveSession: vi.fn(),
     applyPendingTimeGoalXpForTask: vi.fn(),
     clearCheckpointBaseline: vi.fn(),
@@ -222,6 +226,19 @@ function createHarness() {
           },
         },
       }),
+    clickReset: () =>
+      handlers.get(taskList)?.get("click")?.({
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return { dataset: { index: "0", taskId: "task-1" } as Record<string, string> };
+            if (selector === "[data-task-flip]") return null;
+            if (selector === "[data-action]") return { getAttribute: () => "reset", dataset: { action: "reset" } as Record<string, string> };
+            return null;
+          },
+        },
+      }),
     ctx,
     getTasks: () => tasks,
   };
@@ -252,5 +269,63 @@ describe("createTaskTimerTasks", () => {
     const taskEl = harness.clickTaskTopRow();
 
     expect(harness.ctx.openFocusMode).toHaveBeenCalledWith(0, { sourceElement: taskEl });
+  });
+
+  it("resets a stopped task from the delegated task-card reset action", async () => {
+    const harness = createHarness({ tasks: [task({ accumulatedMs: 60_000, hasStarted: true })] });
+
+    harness.clickReset();
+    await harness.confirm();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      hasStarted: false,
+      resumePendingSinceDayKey: null,
+    });
+    expect(harness.calls).toContain("confirm");
+    expect(harness.calls).toContain("save");
+    expect(harness.calls).toContain("render");
+    expect(harness.calls).toContain("closeConfirm");
+  });
+
+  it("resets a stopped completed task from the delegated task-card reset action", async () => {
+    const completedAtMs = Date.now();
+    const harness = createHarness({
+      tasks: [
+        task({
+          accumulatedMs: 60 * 60 * 1000,
+          hasStarted: true,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+        }),
+      ],
+    });
+
+    harness.clickReset();
+    await harness.confirm();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      hasStarted: false,
+      resumePendingSinceDayKey: null,
+      timeGoalCompletedDayKey: null,
+      timeGoalCompletedWeekKey: null,
+      timeGoalCompletedAtMs: null,
+      timeGoalCompletedReason: null,
+      timeGoalCompletedElapsedMs: null,
+    });
+    expect(harness.calls).toContain("confirm");
+    expect(harness.calls).toContain("save");
+    expect(harness.calls).toContain("render");
+    expect(harness.calls).toContain("closeConfirm");
   });
 });

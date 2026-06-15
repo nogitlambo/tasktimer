@@ -7,6 +7,7 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
 import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
 import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
+import { consumeAccountDeletionLandingRedirectIntent } from "@/app/tasktimer/lib/accountDeletionRedirectIntent";
 
 type GuardStatus = "checking" | "ready";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -15,6 +16,10 @@ export function resolveTaskLaunchAuthGuardAuthState(requireAuth: boolean, hasUse
   if (!requireAuth) return "ready";
   if (hasUser && !isAnonymous) return "ready";
   return "redirect";
+}
+
+export function resolveTaskLaunchSignedOutRedirectTarget() {
+  return consumeAccountDeletionLandingRedirectIntent() ? "/" : "/login";
 }
 
 export default function TaskLaunchAuthGuard({
@@ -82,7 +87,7 @@ export default function TaskLaunchAuthGuard({
         return;
       }
       workspaceRepository.clearScopedState();
-      router.replace("/login");
+      router.replace(resolveTaskLaunchSignedOutRedirectTarget());
     });
     return () => unsub();
   }, [requireAuth, router]);

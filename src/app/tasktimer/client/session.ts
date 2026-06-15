@@ -8,7 +8,7 @@ import {
   getTaskTimeGoalCompletionResolution,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
-  isTaskTimeGoalStartLockedForPeriod,
+  isTaskTimeGoalStartLockedByHistoryForPeriod,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
 import { localDayKey, normalizeHistoryTimestampMs } from "../lib/history";
@@ -173,8 +173,7 @@ export function shouldSuppressTimeGoalCompletionForTask(
   task: Task | null | undefined,
   opts: { historyByTaskId?: HistoryByTaskId | null; nowMs?: number; weekStarting?: DashboardWeekStart } = {}
 ): boolean {
-  void opts.historyByTaskId;
-  return isTaskTimeGoalStartLockedForPeriod(task, opts.nowMs, opts.weekStarting);
+  return isTaskTimeGoalStartLockedByHistoryForPeriod(task, opts.historyByTaskId, opts.nowMs, opts.weekStarting);
 }
 
 function getTimeGoalPeriodHistoryMs(
@@ -380,7 +379,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
       if (!taskId || taskId === activeTaskId) return false;
       if (task.running) return false;
       if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
-      return !isTaskTimeGoalStartLockedForPeriod(task, opts.nowMs, opts.weekStarting);
+      return !isTaskTimeGoalStartLockedByHistoryForPeriod(task, opts.historyByTaskId, opts.nowMs, opts.weekStarting);
     })
     .map((task, index) => ({
       id: String(task.id || "").trim(),
@@ -1080,7 +1079,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function isTaskTimeGoalLockedForCurrentPeriod(task: Task | null | undefined, atMs = nowMs()) {
-    return isTaskTimeGoalStartLockedForPeriod(task, atMs, ctx.getWeekStarting());
+    return isTaskTimeGoalStartLockedByHistoryForPeriod(task, ctx.getHistoryByTaskId(), atMs, ctx.getWeekStarting());
   }
 
   function isFinalizedGoalCompletionAwaitingAcknowledgement(task: Task | null | undefined) {
@@ -1437,9 +1436,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function syncFocusRunButtons(task?: Task | null) {
     const running = !!task?.running;
     const completed = isTaskTimeGoalLockedForCurrentPeriod(task);
+    const hasResettableTime = !!task && getTaskElapsedMs(task) > 0;
     const hintText = completed ? "Done" : running ? "Tap to Stop" : task ? "Tap to Resume" : "Tap to Launch";
     if (els.focusDialHint) els.focusDialHint.textContent = hintText;
-    if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running || completed;
+    if (els.focusResetBtn) els.focusResetBtn.disabled = !!task?.running || !hasResettableTime;
     if (els.focusDial) {
       els.focusDial.classList.toggle("isRunning", running);
       els.focusDial.classList.toggle("isStopped", !!task && !running && !completed);
@@ -2440,12 +2440,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         }
         const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
-          const completed = isTaskTimeGoalLockedForCurrentPeriod(task);
           const hasResettableTime = elapsedMs > 0;
-          const resetLabel = completed
-            ? task.timeGoalPeriod === "week" ? "Done until next week" : "Done until tomorrow"
-            : task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
-          resetBtn.disabled = !!task.running || completed || !hasResettableTime;
+          const resetLabel = task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
+          resetBtn.disabled = !!task.running || !hasResettableTime;
           resetBtn.title = resetLabel;
           resetBtn.setAttribute("aria-label", resetLabel);
         }

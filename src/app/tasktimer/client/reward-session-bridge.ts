@@ -56,6 +56,9 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     upsertLiveSession(task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) {
       options.getRewardsHistoryApi()?.upsertLiveSession(task, opts);
     },
+    clearLiveSessionForTask(taskIdRaw: string | null | undefined, opts?: { forceCloudFlush?: boolean; reason?: string }) {
+      options.getRewardsHistoryApi()?.clearLiveSessionForTask(taskIdRaw, opts);
+    },
     syncLiveSessionForTask(task: Task | null | undefined, nowValue?: number) {
       options.getRewardsHistoryApi()?.syncLiveSessionForTask(task, nowValue);
     },

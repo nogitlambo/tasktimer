@@ -23,6 +23,7 @@ function elementStub(id = "") {
     style: { display: "" },
     textContent: "",
     hidden: false,
+    disabled: false,
     classList: classListStub(),
     setAttribute: vi.fn((name: string, value: string) => {
       attributes.set(name, value);
@@ -55,6 +56,8 @@ function createHarness(overrides?: {
   const meta = elementStub("taskManualEntryMeta");
   const dateTimeInput = inputStub();
   const dateTimeButton = elementStub("taskManualDateTimeBtn");
+  const logTimeGoalToggle = elementStub("taskManualLogTimeGoalToggle");
+  const elapsedField = elementStub("taskManualElapsedField");
   const hoursInput = inputStub();
   const minutesInput = inputStub();
   const noteInput = inputStub();
@@ -85,6 +88,8 @@ function createHarness(overrides?: {
       meta: meta as unknown as HTMLElement,
       dateTimeInput: dateTimeInput as unknown as HTMLInputElement,
       dateTimeButton: dateTimeButton as unknown as HTMLButtonElement,
+      logTimeGoalToggle: logTimeGoalToggle as unknown as HTMLButtonElement,
+      elapsedField: elapsedField as unknown as HTMLElement,
       hoursInput: hoursInput as unknown as HTMLInputElement,
       minutesInput: minutesInput as unknown as HTMLInputElement,
       noteInput: noteInput as unknown as HTMLInputElement,
@@ -112,6 +117,8 @@ function createHarness(overrides?: {
     meta,
     dateTimeInput,
     dateTimeButton,
+    logTimeGoalToggle,
+    elapsedField,
     hoursInput,
     minutesInput,
     noteInput,
@@ -178,6 +185,56 @@ describe("createTaskManualEntryInteraction", () => {
     expect(harness.error.style.display).toBe("block");
   });
 
+  it("opens a time-goal task with Log Time Goal checked and elapsed inputs hidden", () => {
+    const harness = createHarness({
+      task: {
+        id: "task-1",
+        name: "Focus",
+        timeGoalEnabled: true,
+        timeGoalMinutes: 90,
+      } as Task,
+    });
+
+    expect(harness.interaction.open("task-1")).toBe(true);
+
+    expect(harness.interaction.getDraft()?.logTimeGoal).toBe(true);
+    expect(harness.interaction.getDraft()?.logTimeGoalAvailable).toBe(true);
+    expect(harness.logTimeGoalToggle.disabled).toBe(false);
+    expect(harness.logTimeGoalToggle.getAttribute("aria-disabled")).toBe(
+      "false",
+    );
+    expect(harness.logTimeGoalToggle.getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(harness.logTimeGoalToggle.classList.contains("on")).toBe(true);
+    expect(harness.elapsedField.hidden).toBe(true);
+  });
+
+  it("opens a no-goal task with Log Time Goal disabled and elapsed inputs visible", () => {
+    const harness = createHarness({
+      task: {
+        id: "task-1",
+        name: "Focus",
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      } as Task,
+    });
+
+    expect(harness.interaction.open("task-1")).toBe(true);
+
+    expect(harness.interaction.getDraft()?.logTimeGoal).toBe(false);
+    expect(harness.interaction.getDraft()?.logTimeGoalAvailable).toBe(false);
+    expect(harness.logTimeGoalToggle.disabled).toBe(true);
+    expect(harness.logTimeGoalToggle.getAttribute("aria-disabled")).toBe(
+      "true",
+    );
+    expect(harness.logTimeGoalToggle.getAttribute("aria-checked")).toBe(
+      "false",
+    );
+    expect(harness.logTimeGoalToggle.classList.contains("on")).toBe(false);
+    expect(harness.elapsedField.hidden).toBe(false);
+  });
+
   it("clears validation errors when editable fields change", () => {
     const harness = createHarness();
     harness.interaction.open("task-1");
@@ -188,6 +245,74 @@ describe("createTaskManualEntryInteraction", () => {
     expect(harness.interaction.getDraft()?.errorMessage).toBe("");
     expect(harness.dateTimeInput.value).toBe("2026-05-03T06:30");
     expect(harness.error.style.display).toBe("none");
+  });
+
+  it("saves checked Log Time Goal entries using the full task time goal", () => {
+    const task = {
+      id: "task-1",
+      name: "Focus",
+      color: "#21c7ff",
+      timeGoalEnabled: true,
+      timeGoalMinutes: 90,
+    } as Task;
+    const harness = createHarness({ task });
+    harness.interaction.open("task-1");
+    harness.interaction.setDateTimeValue("2026-05-03T06:30");
+    harness.interaction.setNoteValue("Goal note");
+
+    expect(harness.interaction.save()).toBe(true);
+
+    const nextHistory = harness.getHistoryByTaskId();
+    expect(nextHistory["task-1"]).toEqual([
+      {
+        ts: new Date("2026-05-03T06:30").getTime(),
+        ms: 90 * 60 * 1000,
+        name: "Focus",
+        note: "Goal note",
+        color: "#ff8a3d",
+      },
+    ]);
+    expect(harness.onManualEntrySaved).toHaveBeenCalledWith({
+      task,
+      entry: {
+        ts: new Date("2026-05-03T06:30").getTime(),
+        ms: 90 * 60 * 1000,
+        name: "Focus",
+        note: "Goal note",
+        color: "#ff8a3d",
+      },
+      historyByTaskId: nextHistory,
+    });
+  });
+
+  it("reveals elapsed inputs and saves manual elapsed when Log Time Goal is turned off", () => {
+    const harness = createHarness({
+      task: {
+        id: "task-1",
+        name: "Focus",
+        timeGoalEnabled: true,
+        timeGoalMinutes: 90,
+      } as Task,
+    });
+    harness.interaction.open("task-1");
+
+    harness.interaction.setLogTimeGoalEnabled(false);
+    harness.interaction.setHoursValue("0");
+    harness.interaction.setMinutesValue("25");
+
+    expect(harness.logTimeGoalToggle.getAttribute("aria-checked")).toBe(
+      "false",
+    );
+    expect(harness.elapsedField.hidden).toBe(false);
+    expect(harness.interaction.save()).toBe(true);
+    expect(harness.getHistoryByTaskId()["task-1"]).toEqual([
+      {
+        ts: new Date("2026-05-03T04:05").getTime(),
+        ms: 25 * 60 * 1000,
+        name: "Focus",
+        color: "#ff8a3d",
+      },
+    ]);
   });
 
   it("saves a valid draft by appending history, persisting, syncing shared summaries, closing, and rendering", () => {

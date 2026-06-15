@@ -1,10 +1,4 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
-import {
-  hasTaskReachedTimeGoal,
-  isTaskTimeGoalStartLockedForPeriod,
-  markTaskTimeGoalCompleted,
-  markTaskTimeGoalResetCompleted,
-} from "../lib/timeGoalCompletion";
 import { awardCompletedSessionXp } from "../lib/rewards";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
@@ -42,7 +36,7 @@ type TaskDestructiveActionEffectsOptions = {
   captureResetActionSessionNote: (taskId: string) => string;
   setFocusSessionDraft: (taskId: string, note: string) => void;
   resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string }) => void;
-  save: (opts?: { deletedTaskIds?: string[] }) => void;
+  save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: Record<string, unknown[]>, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveDeletedMeta: (meta: DeletedTaskMeta) => void;
   render: () => void;
@@ -81,10 +75,17 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     options.removeConfirmOverlayClass(RESET_TASK_CONFIRM_CLASS);
   }
 
+  function clearTaskTimeGoalCompletionState(task: Task) {
+    task.timeGoalCompletedDayKey = null;
+    task.timeGoalCompletedWeekKey = null;
+    task.timeGoalCompletedAtMs = null;
+    task.timeGoalCompletedReason = null;
+    task.timeGoalCompletedElapsedMs = null;
+  }
+
   function resetTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting())) return;
     if (Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0)) <= 0) return;
     const taskId = String(task.id || "");
     const rewardPreview = getResetAwardPreview(task);
@@ -114,14 +115,9 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
               sourceRect: captureXpAwardRectSnapshot(document.getElementById("confirmResetTaskAwardText")),
             });
           }
-          const resetElapsedMs = Math.max(0, Math.floor(Number(options.getTaskElapsedMs(task)) || 0));
-          if (hasTaskReachedTimeGoal(task, resetElapsedMs)) {
-            markTaskTimeGoalCompleted(task, Date.now(), { reason: "goal", elapsedMs: resetElapsedMs, weekStarting: options.getWeekStarting() });
-          } else {
-            markTaskTimeGoalResetCompleted(task, Date.now(), resetElapsedMs, options.getWeekStarting());
-          }
+          clearTaskTimeGoalCompletionState(task);
           options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
-          options.save();
+          options.save({ forceCloudFlush: true });
           options.closeConfirm();
           if (shouldExitFocusModeAfterReset) options.closeFocusMode();
           else options.render();

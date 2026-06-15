@@ -46,9 +46,11 @@ vi.mock("@/app/tasktimer/lib/routeHref", () => ({
 }));
 
 import { handleDeleteAccountFlow, handleSignOutFlow } from "./settingsAccountService";
+import { ACCOUNT_DELETION_REDIRECT_INTENT_KEY } from "../../lib/accountDeletionRedirectIntent";
 
 describe("handleSignOutFlow", () => {
   beforeEach(() => {
+    const sessionValues = new Map<string, string>();
     mocks.authState.currentUser = null;
     mocks.workspaceRepository.waitForPendingTaskSync.mockClear();
     mocks.workspaceRepository.clearScopedState.mockClear();
@@ -57,6 +59,15 @@ describe("handleSignOutFlow", () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true })));
     vi.stubGlobal("window", {
       location: { assign: vi.fn() },
+      sessionStorage: {
+        getItem: vi.fn((key: string) => sessionValues.get(key) || null),
+        removeItem: vi.fn((key: string) => {
+          sessionValues.delete(key);
+        }),
+        setItem: vi.fn((key: string, value: string) => {
+          sessionValues.set(key, value);
+        }),
+      },
     });
   });
 
@@ -93,6 +104,7 @@ describe("handleSignOutFlow", () => {
     expect(fetch).toHaveBeenCalledWith("/api/account/retain-subscription-before-delete", expect.any(Object));
     expect(fetch).toHaveBeenCalledWith("/api/account/delete-user-data", expect.any(Object));
     expect(deleteUser).toHaveBeenCalledWith(user);
+    expect(window.sessionStorage.setItem).toHaveBeenCalledWith(ACCOUNT_DELETION_REDIRECT_INTENT_KEY, "1");
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
     expect(window.location.assign).toHaveBeenCalledWith("/");

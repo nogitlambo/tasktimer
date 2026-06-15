@@ -135,6 +135,32 @@ describe("dashboard tasks completed card module", () => {
     expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
   });
 
+  it("does not complete a goal task from metadata alone", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const goalFocus = task({
+      id: "task-1",
+      name: "Goal Focus",
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(goalFocus)],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(0);
+    expect(model.items[0]).toMatchObject({ progress: 0, complete: false });
+  });
+
   it("weights scheduled weekly tasks by today's split duration", () => {
     const nowMs = new Date("2026-05-04T12:00:00Z").getTime();
     const daily = task({

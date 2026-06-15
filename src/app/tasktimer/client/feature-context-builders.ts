@@ -208,6 +208,7 @@ type CreateHistoryManagerOptionsArgs = {
   loadDeletedMeta: () => DeletedTaskMeta;
   load: () => void;
   render: () => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   navigateToAppRoute: (path: string) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
@@ -226,6 +227,7 @@ type CreateHistoryInlineOptionsArgs = {
   on: Parameters<typeof createTaskTimerHistoryInline>[0]["on"];
   sharedTasks: Parameters<typeof createTaskTimerHistoryInline>[0]["sharedTasks"];
   rewardState: MutableStore;
+  getWeekStarting: () => DashboardWeekStart;
   taskCollectionBindings: {
     getTasks: () => Task[];
     getHistoryByTaskId: () => HistoryByTaskId;
@@ -237,6 +239,7 @@ type CreateHistoryInlineOptionsArgs = {
   getCurrentAppPage: () => AppPage;
   savePinnedHistoryTaskIds: () => void;
   persistTaskUiToCloud: () => void;
+  save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   confirm: Parameters<typeof createTaskTimerHistoryInline>[0]["confirm"];
   closeConfirm: () => void;
@@ -333,6 +336,7 @@ type CreateTasksOptionsArgs = {
   closeRewardSessionSegment: Parameters<typeof createTaskTimerTasks>[0]["closeRewardSessionSegment"];
   clearRewardSessionTracker: Parameters<typeof createTaskTimerTasks>[0]["clearRewardSessionTracker"];
   upsertLiveSession: Parameters<typeof createTaskTimerTasks>[0]["upsertLiveSession"];
+  clearLiveSession: Parameters<typeof createTaskTimerTasks>[0]["clearLiveSession"];
   finalizeLiveSession: Parameters<typeof createTaskTimerTasks>[0]["finalizeLiveSession"];
   applyPendingTimeGoalXpForTask: Parameters<typeof createTaskTimerTasks>[0]["applyPendingTimeGoalXpForTask"];
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
@@ -1135,6 +1139,7 @@ export function createTaskTimerHistoryManagerContext(
     loadDeletedMeta: args.loadDeletedMeta,
     load: args.load,
     render: args.render,
+    renderDashboardWidgets: args.renderDashboardWidgets,
     navigateToAppRoute: args.navigateToAppRoute,
     openOverlay: args.openOverlay,
     closeOverlay: args.closeOverlay,
@@ -1158,6 +1163,7 @@ export function createTaskTimerHistoryInlineContext(
     sharedTasks: args.sharedTasks,
     getTasks: args.taskCollectionBindings.getTasks,
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
+    getWeekStarting: args.getWeekStarting,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     setHistoryByTaskId: args.taskCollectionBindings.setHistoryByTaskId,
     getHistoryRangeDaysByTaskId: () => asType<Record<string, 7 | 14>>(args.historyUiState.get("historyRangeDaysByTaskId")),
@@ -1175,6 +1181,7 @@ export function createTaskTimerHistoryInlineContext(
       args.historyUiState.set("historyEntryNoteAnchorTaskId", value);
     },
     persistTaskUiToCloud: args.persistTaskUiToCloud,
+    save: args.save,
     saveHistory: args.saveHistory,
     confirm: args.confirm,
     closeConfirm: args.closeConfirm,
@@ -1256,6 +1263,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     closeRewardSessionSegment: args.closeRewardSessionSegment,
     clearRewardSessionTracker: args.clearRewardSessionTracker,
     upsertLiveSession: args.upsertLiveSession,
+    clearLiveSession: args.clearLiveSession,
     finalizeLiveSession: args.finalizeLiveSession,
     applyPendingTimeGoalXpForTask: args.applyPendingTimeGoalXpForTask,
     openFocusMode: args.openFocusMode,

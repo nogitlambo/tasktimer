@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./types";
 import {
+  clearStaleTaskTimeGoalCompletionForPeriod,
   getTimeGoalCompletionDayKey,
   getTimeGoalCompletionWeekKey,
   hasTaskReachedDailyTimeGoal,
@@ -205,6 +206,65 @@ describe("time goal completion lock", () => {
         "mon"
       )
     ).toBe(false);
+  });
+
+  it("clears current-period goal completion when qualifying history is missing", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedWeekKey: getTimeGoalCompletionWeekKey(nowValue, "mon"),
+      timeGoalCompletedAtMs: nowValue,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
+
+    expect(clearStaleTaskTimeGoalCompletionForPeriod(entry, {}, nowValue, "mon")).toBe(true);
+    expect(entry).toMatchObject({
+      timeGoalCompletedDayKey: null,
+      timeGoalCompletedWeekKey: null,
+      timeGoalCompletedAtMs: null,
+      timeGoalCompletedReason: null,
+      timeGoalCompletedElapsedMs: null,
+    });
+  });
+
+  it("keeps current-period goal completion when qualifying history remains", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "goal",
+    });
+
+    expect(
+      clearStaleTaskTimeGoalCompletionForPeriod(
+        entry,
+        { "task-1": [{ ts: nowValue, name: "Focus", ms: 60 * 60 * 1000 }] },
+        nowValue,
+        "mon"
+      )
+    ).toBe(false);
+    expect(entry.timeGoalCompletedReason).toBe("goal");
+  });
+
+  it("does not clear reset completion metadata", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const entry = task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+    });
+
+    expect(clearStaleTaskTimeGoalCompletionForPeriod(entry, {}, nowValue, "mon")).toBe(false);
+    expect(entry.timeGoalCompletedReason).toBe("reset");
   });
 
   it("marks completion with the local day key and timestamp", () => {

@@ -462,6 +462,7 @@ export type TaskTimerTasksContext = {
   closeRewardSessionSegment: (task: Task | null | undefined, endMs?: number | null) => void;
   clearRewardSessionTracker: (taskId: string | null | undefined) => void;
   upsertLiveSession: (task: Task, opts?: { elapsedMs?: number; resumedFromMs?: number; note?: string; attachments?: SessionNoteAttachment[]; forceCloudFlush?: boolean; reason?: string }) => void;
+  clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
     opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
@@ -1043,6 +1044,7 @@ export type TaskTimerHistoryManagerContext = {
   loadDeletedMeta: () => DeletedTaskMeta;
   load: () => void;
   render: () => void;
+  renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   navigateToAppRoute: (path: string) => void;
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
@@ -1062,6 +1064,7 @@ export type TaskTimerHistoryInlineContext = {
   sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
   getRewardProgress: () => RewardProgressV1;
+  getWeekStarting: () => DashboardWeekStart;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
   getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;
@@ -1075,6 +1078,7 @@ export type TaskTimerHistoryInlineContext = {
   getHistoryEntryNoteAnchorTaskId: () => string;
   setHistoryEntryNoteAnchorTaskId: (value: string) => void;
   persistTaskUiToCloud: () => void;
+  save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   confirm: (title: string, text: string, opts: TaskTimerConfirmOptions) => void;
   closeConfirm: () => void;

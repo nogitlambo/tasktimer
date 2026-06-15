@@ -36,7 +36,21 @@ export default function TaskManualEntryOverlay() {
               </div>
             </div>
 
-            <div className="hmManualEntryField hmManualEntryElapsedField">
+            <div className="hmManualEntryGoalRow">
+              <div className="hmManualEntryGoalText">
+                <span className="hmManualEntryLabel">Log Time Goal</span>
+              </div>
+              <button
+                aria-checked="false"
+                aria-label="Log time goal"
+                className="switch"
+                id="taskManualLogTimeGoalToggle"
+                role="switch"
+                type="button"
+              />
+            </div>
+
+            <div className="hmManualEntryField hmManualEntryElapsedField" id="taskManualElapsedField">
               <label className="hmManualEntryLabel">Elapsed</label>
               <div className="hmManualEntryElapsedInputs">
                 <input

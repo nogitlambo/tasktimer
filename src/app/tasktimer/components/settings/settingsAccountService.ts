@@ -9,6 +9,7 @@ import { normalizeUsername, validateUsername } from "@/lib/username";
 import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
 import { claimUsernameClient } from "@/app/tasktimer/lib/usernameClaim";
 import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
+import { markAccountDeletionLandingRedirectIntent } from "@/app/tasktimer/lib/accountDeletionRedirectIntent";
 
 const workspaceRepository = createTaskTimerWorkspaceRepository();
 
@@ -35,6 +36,7 @@ function redirectToLanding() {
 }
 
 async function finalizeDeletedAccountSession(auth: ReturnType<typeof getFirebaseAuthClient>) {
+  markAccountDeletionLandingRedirectIntent();
   if (auth) await signOut(auth).catch(() => {});
   workspaceRepository.clearScopedState();
   redirectToLanding();

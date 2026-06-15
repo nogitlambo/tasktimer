@@ -11,10 +11,17 @@ type TaskManualEntryElements = {
   meta: HTMLElement | null;
   dateTimeInput: HTMLInputElement | null;
   dateTimeButton: HTMLButtonElement | null;
+  logTimeGoalToggle: HTMLButtonElement | null;
+  elapsedField: HTMLElement | null;
   hoursInput: HTMLInputElement | null;
   minutesInput: HTMLInputElement | null;
   noteInput: HTMLInputElement | HTMLTextAreaElement | null;
   error: HTMLElement | null;
+};
+
+type TaskManualEntryDraft = HistoryManagerManualDraft & {
+  logTimeGoal: boolean;
+  logTimeGoalAvailable: boolean;
 };
 
 type TaskManualEntryInteractionOptions = {
@@ -46,11 +53,28 @@ export function createTaskManualEntryInteraction(
   const setTimeoutRef =
     options.setTimeoutRef ??
     ((handler, timeout) => window.setTimeout(handler, timeout));
-  let draft: HistoryManagerManualDraft | null = null;
+  let draft: TaskManualEntryDraft | null = null;
   let activeTaskId: string | null = null;
 
+  function getTaskGoalElapsedMs(task: Task | null | undefined) {
+    const goalMinutes = Number(task?.timeGoalMinutes || 0);
+    if (!(task?.timeGoalEnabled && goalMinutes > 0)) return 0;
+    return Math.round(goalMinutes * 60_000);
+  }
+
+  function createDefaultTaskManualDraft(task: Task | null | undefined): TaskManualEntryDraft {
+    const logTimeGoalAvailable = getTaskGoalElapsedMs(task) > 0;
+    return {
+      ...createDefaultHistoryManagerManualDraft(nowMs()),
+      logTimeGoal: logTimeGoalAvailable,
+      logTimeGoalAvailable,
+    };
+  }
+
   function getDraftOrDefault() {
-    return draft || createDefaultHistoryManagerManualDraft(nowMs());
+    if (draft) return draft;
+    const task = options.getTaskById(String(activeTaskId || "").trim()) || null;
+    return createDefaultTaskManualDraft(task);
   }
 
   function sync() {
@@ -67,6 +91,16 @@ export function createTaskManualEntryInteraction(
       elements.minutesInput.value = currentDraft.minutesValue || "";
     if (elements.noteInput)
       elements.noteInput.value = currentDraft.noteValue || "";
+    const logTimeGoalOn = currentDraft.logTimeGoalAvailable && currentDraft.logTimeGoal;
+    if (elements.logTimeGoalToggle) {
+      elements.logTimeGoalToggle.disabled = !currentDraft.logTimeGoalAvailable;
+      elements.logTimeGoalToggle.setAttribute("aria-disabled", currentDraft.logTimeGoalAvailable ? "false" : "true");
+      elements.logTimeGoalToggle.setAttribute("aria-checked", logTimeGoalOn ? "true" : "false");
+      elements.logTimeGoalToggle.classList.toggle("on", logTimeGoalOn);
+    }
+    if (elements.elapsedField) {
+      elements.elapsedField.hidden = logTimeGoalOn;
+    }
     if (elements.error) {
       elements.error.textContent = currentDraft.errorMessage || "";
       elements.error.style.display = currentDraft.errorMessage
@@ -95,7 +129,7 @@ export function createTaskManualEntryInteraction(
     const task = options.getTaskById(normalizedTaskId) || null;
     if (!task) return false;
     activeTaskId = normalizedTaskId;
-    draft = createDefaultHistoryManagerManualDraft(nowMs());
+    draft = createDefaultTaskManualDraft(task);
     if (elements.title) {
       elements.title.textContent = `Add Manual Entry for ${options.getTaskDisplayName(task)}`;
     }
@@ -112,8 +146,8 @@ export function createTaskManualEntryInteraction(
 
   function updateDraft(
     updater: (
-      currentDraft: HistoryManagerManualDraft,
-    ) => HistoryManagerManualDraft,
+      currentDraft: TaskManualEntryDraft,
+    ) => TaskManualEntryDraft,
   ) {
     draft = updater(getDraftOrDefault());
   }
@@ -145,6 +179,18 @@ export function createTaskManualEntryInteraction(
     sync();
   }
 
+  function setLogTimeGoalEnabled(enabled: boolean) {
+    updateDraft((currentDraft) => {
+      const logTimeGoal = currentDraft.logTimeGoalAvailable && enabled;
+      return {
+        ...currentDraft,
+        logTimeGoal,
+        errorMessage: "",
+      };
+    });
+    sync();
+  }
+
   function setNoteValue(value: string) {
     updateDraft((currentDraft) => ({
       ...currentDraft,
@@ -166,11 +212,16 @@ export function createTaskManualEntryInteraction(
     if (!taskId) return false;
     const task = options.getTaskById(taskId) || null;
     if (!task || !draft) return false;
-    const elapsedMs = ((Number(draft.hoursValue || 0) * 60) + Number(draft.minutesValue || 0)) * 60 * 1000;
+    const goalElapsedMs = draft.logTimeGoal && draft.logTimeGoalAvailable ? getTaskGoalElapsedMs(task) : null;
+    const elapsedMs =
+      goalElapsedMs == null
+        ? ((Number(draft.hoursValue || 0) * 60) + Number(draft.minutesValue || 0)) * 60 * 1000
+        : goalElapsedMs;
     const parsed = parseHistoryManagerManualDraft({
       draft,
       taskName: options.getTaskDisplayName(task),
       historyEntryColor: options.historyEntryColorForTaskMs(task, elapsedMs),
+      elapsedMsOverride: goalElapsedMs,
     });
     if ("error" in parsed) {
       setError(parsed.error || "Could not save entry.");
@@ -224,6 +275,7 @@ export function createTaskManualEntryInteraction(
     setDateTimeValue,
     setHoursValue,
     setMinutesValue,
+    setLogTimeGoalEnabled,
     setNoteValue,
     setError,
     save,

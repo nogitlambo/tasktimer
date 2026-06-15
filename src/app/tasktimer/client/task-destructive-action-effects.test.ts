@@ -56,7 +56,7 @@ function createHarness(overrides: {
   const calls: string[] = [];
   const deletedSharedTaskIds: string[] = [];
   const syncedTaskIds: string[][] = [];
-  const savedTaskOpts: Array<{ deletedTaskIds?: string[] } | undefined> = [];
+  const savedTaskOpts: Array<{ deletedTaskIds?: string[]; forceCloudFlush?: boolean } | undefined> = [];
   const navigatedRoutes: string[] = [];
 
   const adapter = createTaskDestructiveActionEffects({
@@ -178,15 +178,51 @@ describe("task destructive action effects", () => {
     expect(harness.confirmCalls[0]?.opts.textHtml).toContain("+1</span> XP for your logged time.");
   });
 
-  it("ignores reset for a task completed today", () => {
+  it("allows reset for a task completed today with qualifying history", () => {
+    const completedAtMs = Date.now();
     const harness = createHarness({
-      tasks: [createTask({ timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(), timeGoalCompletedAtMs: Date.now() })],
+      tasks: [
+        createTask({
+          accumulatedMs: 60 * 60 * 1000,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+        }),
+      ],
+      history: { "task-1": [{ ts: completedAtMs, name: "Task 1", ms: 60 * 60 * 1000 }] },
     });
 
     harness.adapter.resetTask(0);
 
-    expect(harness.calls).toEqual([]);
-    expect(harness.confirmCalls).toEqual([]);
+    expect(harness.confirmCalls[0]?.title).toBe("Reset Task");
+    expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
+  });
+
+  it("allows reset for stale completion metadata without qualifying history", () => {
+    const completedAtMs = Date.now();
+    const harness = createHarness({
+      tasks: [
+        createTask({
+          accumulatedMs: 60 * 60 * 1000,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+        }),
+      ],
+    });
+
+    harness.adapter.resetTask(0);
+
+    expect(harness.confirmCalls[0]?.title).toBe("Reset Task");
+    expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
   });
 
   it("ignores reset for missing or running tasks", () => {
@@ -207,16 +243,18 @@ describe("task destructive action effects", () => {
     expect(harness.calls).toContain("busy:true:false");
     expect(harness.calls).toContain("draft:done");
     expect(harness.calls).toContain("resetImmediate:task-1:done");
-    expect(harness.calls).toContain("save:{}");
+    expect(harness.calls).toContain('save:{"forceCloudFlush":true}');
+    expect(harness.savedTaskOpts).toContainEqual({ forceCloudFlush: true });
     expect(harness.calls).toContain("closeFocus");
     expect(harness.tasks[0]).toMatchObject({
-      timeGoalCompletedReason: "reset",
-      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+      accumulatedMs: 0,
+      timeGoalCompletedReason: null,
+      timeGoalCompletedElapsedMs: null,
     });
     expect(harness.classes.has("isResetTaskConfirm")).toBe(false);
   });
 
-  it("marks a daily time-goal task complete when reset elapsed has reached the goal", async () => {
+  it("resets a daily time-goal task to neutral even when elapsed has reached the goal", async () => {
     const harness = createHarness({
       tasks: [
         createTask({
@@ -233,12 +271,15 @@ describe("task destructive action effects", () => {
 
     expect(harness.tasks[0]).toMatchObject({
       accumulatedMs: 0,
-      timeGoalCompletedReason: "goal",
-      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+      timeGoalCompletedDayKey: null,
+      timeGoalCompletedWeekKey: null,
+      timeGoalCompletedAtMs: null,
+      timeGoalCompletedReason: null,
+      timeGoalCompletedElapsedMs: null,
     });
   });
 
-  it("ignores a second reset after the first reset locks the task as done", async () => {
+  it("ignores a second reset after the first reset clears elapsed time", async () => {
     const harness = createHarness({ tasks: [createTask({ accumulatedMs: 30 * 60 * 1000 })] });
 
     harness.adapter.resetTask(0);
@@ -247,6 +288,8 @@ describe("task destructive action effects", () => {
 
     expect(harness.confirmCalls).toHaveLength(1);
     expect(harness.calls.filter((call) => call.startsWith("resetImmediate:"))).toHaveLength(1);
+    expect(harness.tasks[0]?.accumulatedMs).toBe(0);
+    expect(harness.tasks[0]?.timeGoalCompletedReason).toBeNull();
   });
 
   it("clears reset confirm state on cancel", () => {

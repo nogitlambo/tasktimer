@@ -218,7 +218,7 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
   });
 
-  it("renders current-period goal completion metadata without history as done", () => {
+  it("renders current-period goal completion metadata without history as launchable", () => {
     const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
@@ -238,8 +238,9 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
 
     const renderedTask = harness.taskListEl.children[0];
-    expect(renderedTask?.className).toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain("Done until tomorrow");
+    expect(renderedTask?.className).not.toContain("taskCompleted");
+    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+    expect(renderedTask?.innerHTML).toContain('data-action="start"');
   });
 
   it("renders goal completion metadata with qualifying history as done", () => {

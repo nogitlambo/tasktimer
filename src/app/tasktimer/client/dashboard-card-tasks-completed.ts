@@ -57,21 +57,6 @@ export function buildDashboardTasksCompletedModel(options: {
     return Math.max(0, Math.min(1, elapsedMs / (goalMinutes * 60000)));
   }
 
-  function isCompletionStateInScope(opportunity: DashboardTasksCompletedOpportunity) {
-    const { task, historyScope } = opportunity;
-    if (task.timeGoalCompletedReason !== "goal") return false;
-    if (historyScope === "week") {
-      const completedWeekKey = String(task.timeGoalCompletedWeekKey || "").trim();
-      if (completedWeekKey && completedWeekKey === localDayKeyForTimestamp(options.weekStartMs)) return true;
-      const completedAtMs = Number(task.timeGoalCompletedAtMs);
-      return Number.isFinite(completedAtMs) && completedAtMs >= options.weekStartMs && completedAtMs <= options.nowMs;
-    }
-    const completedDayKey = String(task.timeGoalCompletedDayKey || "").trim();
-    if (completedDayKey && completedDayKey === options.todayKey) return true;
-    const completedAtMs = Number(task.timeGoalCompletedAtMs);
-    return Number.isFinite(completedAtMs) && completedAtMs <= options.nowMs && localDayKeyForTimestamp(completedAtMs) === options.todayKey;
-  }
-
   function localDayKeyForTimestamp(value: number) {
     const date = new Date(value);
     const year = date.getFullYear();
@@ -109,10 +94,9 @@ export function buildDashboardTasksCompletedModel(options: {
     const loggedMs = loggedMsByOpportunity.get(index) || 0;
     const liveMs = liveMsByOpportunity.get(index) || 0;
     const resetProgress = getResetCompletionProgress(opportunity, goalMinutes);
-    const completedProgress = isCompletionStateInScope(opportunity) ? 1 : null;
     const progress = resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, loggedMs / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
-    progressByOpportunity.set(index, completedProgress ?? progress);
-    const complete = (completedProgress ?? progress) >= 1;
+    progressByOpportunity.set(index, progress);
+    const complete = progress >= 1;
     completeByOpportunity.set(index, complete);
     if (complete) totalCompleted += 1;
   });
@@ -122,8 +106,7 @@ export function buildDashboardTasksCompletedModel(options: {
     const loggedMs = loggedMsByOpportunity.get(index) || 0;
     const liveMs = liveMsByOpportunity.get(index) || 0;
     const resetProgress = getResetCompletionProgress(opportunity, goalMinutes);
-    const completedProgress = isCompletionStateInScope(opportunity) ? 1 : null;
-    const liveProgress = completedProgress ?? resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
+    const liveProgress = resetProgress ?? (goalMinutes > 0 ? Math.max(0, Math.min(1, (loggedMs + liveMs) / (goalMinutes * 60000))) : loggedMs > 0 || liveMs > 0 ? 1 : 0);
     liveProgressByOpportunity.set(index, liveProgress);
   });
 

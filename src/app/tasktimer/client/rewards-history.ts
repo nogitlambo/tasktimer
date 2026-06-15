@@ -641,11 +641,17 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       });
     }
     clearRewardSessionTracker(taskId);
+    clearLiveSessionForTask(taskId, { forceCloudFlush: true, reason: "finalize" });
+    return elapsedMs;
+  }
+
+  function clearLiveSessionForTask(taskIdRaw: string | null | undefined, opts?: { forceCloudFlush?: boolean; reason?: string }) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
     const next = { ...(ctx.getLiveSessionsByTaskId() || {}) };
     delete next[taskId];
     ctx.setLiveSessionsByTaskId(next);
-    ctx.clearLiveSession(taskId, { forceCloudFlush: true, reason: "finalize" });
-    return elapsedMs;
+    ctx.clearLiveSession(taskId, opts);
   }
 
   return {
@@ -673,6 +679,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     getCurrentSessionNoteForTask,
     appendCompletedSessionHistory,
     finalizeLiveSession,
+    clearLiveSessionForTask,
     applyPendingTimeGoalXpForTask,
   };
 }

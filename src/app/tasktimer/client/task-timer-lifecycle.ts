@@ -4,7 +4,7 @@ import { localDayKey } from "../lib/history";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import {
   isTaskTimeGoalCompletedForPeriod,
-  isTaskTimeGoalStartLockedForPeriod,
+  isTaskTimeGoalStartLockedByHistoryForPeriod,
   getTaskTimeGoalCompletionResolution,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
@@ -39,6 +39,7 @@ type TaskTimerLifecycleCommandAdapters = {
   closeRewardSessionSegment: (task: Task, endMs: number) => void;
   clearRewardSessionTracker: (taskId: string) => void;
   upsertLiveSession: (task: Task, opts: { elapsedMs: number; resumedFromMs?: number; forceCloudFlush?: boolean; reason?: string }) => void;
+  clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
     opts: { elapsedMs: number; completedAtMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
@@ -196,6 +197,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       task.hasStarted = false;
       task.resumePendingSinceDayKey = null;
     }
+    options.clearLiveSession(taskId, { forceCloudFlush: true, reason: "reset" });
     void clearNativeRunningTimerNotification(taskId).catch(() => {});
     options.clearTaskTimeGoalFlow(taskId);
     options.clearRewardSessionTracker(taskId);
@@ -228,7 +230,16 @@ export function createTaskTimerLifecycle(options: TaskTimerLifecycleOptions) {
   function startTask(index: number) {
     const task = options.getTasks()[index];
     if (!task || task.running) return;
-    if (isTaskTimeGoalStartLockedForPeriod(task, options.nowMs(), options.getWeekStarting?.() || "mon")) return;
+    if (
+      isTaskTimeGoalStartLockedByHistoryForPeriod(
+        task,
+        options.getHistoryByTaskId(),
+        options.nowMs(),
+        options.getWeekStarting?.() || "mon"
+      )
+    ) {
+      return;
+    }
     const otherRunningIndex = findOtherRunningTaskIndex(index);
     if (otherRunningIndex >= 0) {
       const runningTask = options.getTasks()[otherRunningIndex];

@@ -174,6 +174,24 @@ export function isTaskTimeGoalStartLockedByHistoryForPeriod(
   );
 }
 
+export function clearStaleTaskTimeGoalCompletionForPeriod(
+  task: Task | null | undefined,
+  historyByTaskId: HistoryByTaskId | null | undefined,
+  nowValue = Date.now(),
+  weekStarting: DashboardWeekStart = "mon"
+): boolean {
+  if (!task || task.timeGoalCompletedReason !== "goal") return false;
+  if (!isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting)) return false;
+  if (hasTaskGoalHistoryEntryForPeriod(task, historyByTaskId, nowValue, weekStarting)) return false;
+
+  task.timeGoalCompletedDayKey = null;
+  task.timeGoalCompletedWeekKey = null;
+  task.timeGoalCompletedAtMs = null;
+  task.timeGoalCompletedReason = null;
+  task.timeGoalCompletedElapsedMs = null;
+  return true;
+}
+
 function normalizeCompletedElapsedMs(value: unknown): number | null {
   if (value == null || !Number.isFinite(Number(value))) return null;
   return Math.max(0, Math.floor(Number(value)));

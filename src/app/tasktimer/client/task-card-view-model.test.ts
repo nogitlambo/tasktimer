@@ -77,6 +77,27 @@ describe("task card view model", () => {
     expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');
   });
 
+  it("renders a reset-neutral task with Launch as the primary action", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        accumulatedMs: 0,
+        timeGoalCompletedDayKey: null,
+        timeGoalCompletedWeekKey: null,
+        timeGoalCompletedAtMs: null,
+        timeGoalCompletedReason: null,
+        timeGoalCompletedElapsedMs: null,
+      }),
+      elapsedMs: 0,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.className).toBe("task");
+    expect(rendered.html).toContain('data-action="start" title="Launch"');
+    expect(rendered.html).not.toContain('title="Resume"');
+    expect(rendered.html).not.toContain("Done until tomorrow");
+    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" disabled');
+  });
+
   it("renders running, alert, history, and shared-owner states", () => {
     const rendered = renderCard({
       task: baseTask({ running: true, collapsed: true }),
@@ -162,6 +183,7 @@ describe("task card view model", () => {
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,
+      elapsedMs: 60_000,
     });
 
     expect(rendered.className).toBe("task taskCompleted");
@@ -170,6 +192,8 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("taskDoneIcon");
     expect(rendered.html).toContain('aria-label="Done until tomorrow" disabled');
     expect(rendered.html).toContain('data-action="reset"');
+    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
+    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');
     expect(rendered.html).toContain('data-action="edit"');
   });
 

@@ -6368,7 +6368,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRunning .dashboardTasksCompletedLabelName{
   color: rgba(245,248,244,.96);
-  animation: dashboardTasksCompletedLabelPulse var(--dashboard-tasks-completed-pulse-duration, 2.4s) ease-in-out infinite;
+  animation: dashboardTasksCompletedLabelBlink 1s ease-in-out infinite;
   text-shadow:
     0 0 6px color-mix(in srgb, var(--dashboard-task-label-color) 32%, transparent),
     0 0 12px color-mix(in srgb, var(--dashboard-task-label-color) 16%, transparent);
@@ -6392,12 +6392,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-weight: 800;
 }
 
-@keyframes dashboardTasksCompletedLabelPulse{0%, 100%{
-    opacity: .72;
-  }25%, 75%{
-    opacity: .88;
-  }50%{
+@keyframes dashboardTasksCompletedLabelBlink{0%, 100%{
     opacity: 1;
+  }50%{
+    opacity: .38;
   }
 }
 

@@ -56,6 +56,8 @@ function createHarness(
     clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
     upsertLiveSession: (entry, opts) =>
       calls.push(`upsert-live:${entry.id}:${opts.elapsedMs}:${opts.resumedFromMs || 0}:${opts.forceCloudFlush === true ? "force" : "queued"}`),
+    clearLiveSession: (taskId, opts) =>
+      calls.push(`clear-live:${taskId}:${opts?.forceCloudFlush === true ? "force" : "queued"}:${opts?.reason || ""}`),
     finalizeLiveSession: (entry, opts) => {
       const base = `finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}:${opts.deferTimeGoalXp ? "defer" : "award"}`;
       calls.push(opts.completedAtMs != null ? `${base}:${opts.completedAtMs}` : base);
@@ -118,7 +120,7 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
-  it("does not start a goal-completed task when today's goal history is missing", () => {
+  it("starts a goal-completed task again when today's goal history is missing", () => {
     const harness = createHarness({
       tasks: [
         task({
@@ -134,8 +136,8 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.startTask(0);
 
-    expect(harness.tasks[0]).toMatchObject({ running: false, startMs: null });
-    expect(harness.calls).toEqual([]);
+    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true });
+    expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
   });
 
   it("does not start a goal-completed task with qualifying history today", () => {
@@ -394,6 +396,7 @@ describe("task timer lifecycle", () => {
       "flush-note:task-1",
       "apply-pending:task-1",
       "finalize-live:task-1:678:done:4:award",
+      "clear-live:task-1:force:reset",
       "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",
@@ -427,6 +430,7 @@ describe("task timer lifecycle", () => {
       resumePendingSinceDayKey: null,
     });
     expect(harness.calls).not.toContain("finalize-live:task-1:678:done:");
+    expect(harness.calls).toContain("clear-live:task-1:force:reset");
     expect(harness.calls).toContain("apply-pending:task-1");
   });
 
@@ -442,6 +446,8 @@ describe("task timer lifecycle", () => {
       closeRewardSessionSegment: () => {},
       clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
       upsertLiveSession: () => {},
+      clearLiveSession: (taskId, opts) =>
+        calls.push(`clear-live:${taskId}:${opts?.forceCloudFlush === true ? "force" : "queued"}:${opts?.reason || ""}`),
       finalizeLiveSession: () => {
         throw new Error("finalize failed");
       },
@@ -480,6 +486,7 @@ describe("task timer lifecycle", () => {
     expect(calls).toEqual([
       "flush-note:task-1",
       "apply-pending:task-1",
+      "clear-live:task-1:force:reset",
       "clear-native:task-1",
       "clear-goal:task-1",
       "clear-reward:task-1",

@@ -244,6 +244,8 @@ const els = {
   taskManualEntryMeta: documentRef.getElementById("taskManualEntryMeta"),
   taskManualDateTimeInput: documentRef.getElementById("taskManualDateTimeInput") as HTMLInputElement | null,
   taskManualDateTimeBtn: documentRef.getElementById("taskManualDateTimeBtn") as HTMLButtonElement | null,
+  taskManualLogTimeGoalToggle: documentRef.getElementById("taskManualLogTimeGoalToggle") as HTMLButtonElement | null,
+  taskManualElapsedField: documentRef.getElementById("taskManualElapsedField") as HTMLElement | null,
   taskManualHoursInput: documentRef.getElementById("taskManualHoursInput") as HTMLInputElement | null,
   taskManualMinutesInput: documentRef.getElementById("taskManualMinutesInput") as HTMLInputElement | null,
   taskManualNoteInput: documentRef.getElementById("taskManualNoteInput") as HTMLInputElement | null,

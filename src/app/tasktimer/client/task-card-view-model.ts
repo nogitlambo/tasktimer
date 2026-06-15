@@ -296,13 +296,11 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
       ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
       : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>';
   const hasResettableTime = elapsedMs > 0;
-  const resetLabel = isTimeGoalCompleted
-    ? "Done until tomorrow"
-    : task.running
-      ? "Stop task to reset"
-      : hasResettableTime
-        ? "Reset"
-        : "No time to reset";
+  const resetLabel = task.running
+    ? "Stop task to reset"
+    : hasResettableTime
+      ? "Reset"
+      : "No time to reset";
   const shareAction = isSharedByOwner ? "unshareTask" : "shareTask";
   const shareLabel = canUseSocialFeatures ? (isSharedByOwner ? "Unshare" : "Share") : "Share (Pro)";
   const shareDisabled = canUseSocialFeatures && !isSharedByOwner && !hasFriends;
@@ -332,7 +330,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!task.running)}</div>
               <div class="actions">
                 ${startStopHtml}
-                <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || isTimeGoalCompleted || !hasResettableTime ? "disabled" : ""}>&#10227;</button>
+                <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || !hasResettableTime ? "disabled" : ""}>&#10227;</button>
                 <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>

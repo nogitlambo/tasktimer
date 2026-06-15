@@ -16,6 +16,7 @@ import {
   type OpenHistoryManagerManualEntryDetail,
 } from "./history-manager-events";
 import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
+import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
@@ -159,6 +160,24 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       next[taskId] = rows.filter((entry: any) => !entry?.isLiveSession);
     });
     return next;
+  }
+
+  function clearStaleCompletionForHistoryTasks(taskIds: Iterable<string>, historyByTaskId: HistoryByTaskId) {
+    const tasksById = new Map(ctx.getTasks().map((task) => [String(task?.id || "").trim(), task] as const));
+    const nowValue = Date.now();
+    let changed = false;
+    for (const taskIdRaw of taskIds) {
+      const taskId = String(taskIdRaw || "").trim();
+      if (!taskId) continue;
+      const task = tasksById.get(taskId) || null;
+      if (clearStaleTaskTimeGoalCompletionForPeriod(task, historyByTaskId, nowValue, ctx.getWeekStarting())) {
+        changed = true;
+      }
+    }
+    if (changed) {
+      ctx.save({ forceCloudFlush: true });
+    }
+    return changed;
   }
 
   function canUseAdvancedHistory() {
@@ -836,16 +855,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               }
             });
             ctx.setHistoryByTaskId(historyByTaskId);
+            const completionChanged = clearStaleCompletionForHistoryTasks(Object.keys(byTask), historyByTaskId);
             ctx.saveHistory(historyByTaskId, { allowDestructiveReplace: true });
             void ctx.syncSharedTaskSummariesForTasks(Object.keys(byTask));
             ctx.setHmBulkSelectedRows(new Set<string>());
             renderHistoryManager();
+            if (completionChanged) ctx.render();
+            ctx.renderDashboardWidgets();
             ctx.closeConfirm();
             void ctx
               .refreshHistoryFromCloud()
               .then((nextHistory) => {
                 ctx.setHistoryByTaskId(nextHistory || {});
+                const refreshedCompletionChanged = clearStaleCompletionForHistoryTasks(Object.keys(byTask), nextHistory || {});
                 renderHistoryManager();
+                if (refreshedCompletionChanged) ctx.render();
+                ctx.renderDashboardWidgets();
               })
               .catch(() => {
                 // Keep local post-delete state when cloud refresh is unavailable.
@@ -953,6 +978,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
             orig.splice(pos, 1);
             historyByTaskId[taskId] = orig;
             ctx.setHistoryByTaskId(historyByTaskId);
+            const completionChanged = clearStaleCompletionForHistoryTasks([taskId], historyByTaskId);
             await ctx.saveHistoryAndWait(historyByTaskId, { allowDestructiveReplace: true });
             void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
 
@@ -962,6 +988,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               ctx.setDeletedTaskMeta(deletedTaskMeta);
               ctx.saveDeletedMeta(deletedTaskMeta);
             }
+            if (completionChanged) ctx.render();
+            ctx.renderDashboardWidgets();
           }
 
           renderHistoryManager();

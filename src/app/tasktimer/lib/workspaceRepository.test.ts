@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { LiveTaskSession } from "./types";
 
 const storageMocks = vi.hoisted(() => ({
   appendHistoryEntry: vi.fn(),
@@ -141,6 +142,28 @@ describe("TaskTimer workspace repository snapshots", () => {
     storageMocks.hasPendingTaskOrLiveSessionSync.mockReturnValue(true);
 
     expect(repository.hasPendingTaskOrLiveSessionSync()).toBe(true);
+  });
+
+  it("passes force flush options through timer-state writes", () => {
+    const repository = createTaskTimerWorkspaceRepository();
+    const tasks = [task("task-1", "Focus")];
+    const liveSession: LiveTaskSession = {
+      sessionId: "session-1",
+      taskId: "task-1",
+      name: "Focus",
+      startedAtMs: 10,
+      elapsedMs: 200,
+      status: "running",
+      updatedAtMs: 20,
+    };
+
+    repository.saveTasks(tasks, { forceCloudFlush: true });
+    repository.saveLiveSession(liveSession, { forceCloudFlush: true, reason: "reset" });
+    repository.clearLiveSession("task-1", { forceCloudFlush: true, reason: "reset" });
+
+    expect(storageMocks.saveTasks).toHaveBeenCalledWith(tasks, { forceCloudFlush: true });
+    expect(storageMocks.saveLiveSession).toHaveBeenCalledWith(liveSession, { forceCloudFlush: true, reason: "reset" });
+    expect(storageMocks.clearLiveSession).toHaveBeenCalledWith("task-1", { forceCloudFlush: true, reason: "reset" });
   });
 
   it("loads history cleanup state through a focused history snapshot", () => {

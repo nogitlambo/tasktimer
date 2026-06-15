@@ -1073,7 +1073,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("shows tasks completed by time-goal state alongside incomplete scheduled tasks", () => {
+  it("does not complete scheduled tasks from time-goal state without qualifying history", () => {
     const today = todaySchedule();
     const todayKey = localDayKey(Date.now());
     const tasks = [
@@ -1108,10 +1108,10 @@ describe("dashboard completed card", () => {
 
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Done Task");
-      expect(labelsEl?.children[0]?.innerHTML).toContain("Completed");
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Not complete");
       expect(labelsEl?.children[1]?.innerHTML).toContain("Open Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("Not complete");
-      expect(centerEl?.innerHTML).toContain("50%");
+      expect(centerEl?.innerHTML).toContain("0%");
     } finally {
       harness.restore();
     }
@@ -1145,7 +1145,11 @@ describe("dashboard completed card", () => {
         plannedStartByDay: today,
       }),
     ];
-    const harness = createRenderHarness(tasks);
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "done-task": [{ ts: Date.now(), name: "Done Task", ms: 60 * 60 * 1000 }],
+      },
+    });
 
     try {
       harness.render();

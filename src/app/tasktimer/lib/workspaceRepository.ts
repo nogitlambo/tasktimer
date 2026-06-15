@@ -132,7 +132,7 @@ export function createTaskTimerWorkspaceRepository() {
     loadTimerStateSnapshot: () => buildTimerStateSnapshot(),
     loadHistorySnapshot: () => buildHistorySnapshot(),
     loadTasks: () => loadTasks(),
-    saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[] }) => saveTasks(tasks, opts),
+    saveTasks: (tasks: Task[], opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => saveTasks(tasks, opts),
     loadHistory: () => loadHistory(),
     loadLiveSessions: () => loadLiveSessions(),
     hydrateFromCloud: async (opts?: { force?: boolean }) => {
@@ -164,8 +164,8 @@ export function createTaskTimerWorkspaceRepository() {
       opts?: { showIndicator?: boolean; minVisibleMs?: number; allowDestructiveReplace?: boolean }
     ) =>
       saveHistoryAndWait(historyByTaskId, opts),
-    saveLiveSession: (session: LiveTaskSession) => saveLiveSession(session),
-    clearLiveSession: (taskId: string) => clearLiveSession(taskId),
+    saveLiveSession: (session: LiveTaskSession, opts?: { forceCloudFlush?: boolean; reason?: string }) => saveLiveSession(session, opts),
+    clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => clearLiveSession(taskId, opts),
     refreshHistoryFromCloud: () => refreshHistoryFromCloud(),
     cleanupHistory: (historyByTaskId: HistoryByTaskId) => cleanupHistory(historyByTaskId),
     loadDeletedMeta: (): DeletedTaskMeta => loadDeletedMeta(),

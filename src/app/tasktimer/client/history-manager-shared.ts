@@ -21,6 +21,7 @@ type HistoryManagerManualDraftParseInput = {
   draft: HistoryManagerManualDraft;
   taskName: string;
   historyEntryColor?: string | null;
+  elapsedMsOverride?: number | null;
 };
 
 function padHistoryManagerDatePart(value: number) {
@@ -55,17 +56,22 @@ export function parseHistoryManagerManualDraft(input: HistoryManagerManualDraftP
   if (!Number.isFinite(parsedTs) || parsedTs <= 0) {
     return { error: "Enter a valid date and time." } as const;
   }
-  const hoursValue = String(input.draft.hoursValue || "").trim();
-  const minutesValue = String(input.draft.minutesValue || "").trim();
-  const hours = hoursValue ? Number(hoursValue) : 0;
-  const minutes = minutesValue ? Number(minutesValue) : 0;
-  if (!Number.isFinite(hours) || hours < 0 || Math.floor(hours) !== hours) {
-    return { error: "Elapsed hours must be a whole number of 0 or greater." } as const;
+  let elapsedMs = 0;
+  if (input.elapsedMsOverride == null) {
+    const hoursValue = String(input.draft.hoursValue || "").trim();
+    const minutesValue = String(input.draft.minutesValue || "").trim();
+    const hours = hoursValue ? Number(hoursValue) : 0;
+    const minutes = minutesValue ? Number(minutesValue) : 0;
+    if (!Number.isFinite(hours) || hours < 0 || Math.floor(hours) !== hours) {
+      return { error: "Elapsed hours must be a whole number of 0 or greater." } as const;
+    }
+    if (!Number.isFinite(minutes) || minutes < 0 || Math.floor(minutes) !== minutes || minutes > 59) {
+      return { error: "Elapsed minutes must be between 0 and 59." } as const;
+    }
+    elapsedMs = ((hours * 60) + minutes) * 60 * 1000;
+  } else {
+    elapsedMs = Math.floor(Number(input.elapsedMsOverride || 0));
   }
-  if (!Number.isFinite(minutes) || minutes < 0 || Math.floor(minutes) !== minutes || minutes > 59) {
-    return { error: "Elapsed minutes must be between 0 and 59." } as const;
-  }
-  const elapsedMs = ((hours * 60) + minutes) * 60 * 1000;
   if (!(elapsedMs > 0)) {
     return { error: "Elapsed time must be greater than 0." } as const;
   }

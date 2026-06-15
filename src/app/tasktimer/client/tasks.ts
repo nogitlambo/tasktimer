@@ -25,6 +25,8 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       meta: els.taskManualEntryMeta as HTMLElement | null,
       dateTimeInput: els.taskManualDateTimeInput,
       dateTimeButton: els.taskManualDateTimeBtn,
+      logTimeGoalToggle: els.taskManualLogTimeGoalToggle,
+      elapsedField: els.taskManualElapsedField,
       hoursInput: els.taskManualHoursInput,
       minutesInput: els.taskManualMinutesInput,
       noteInput: els.taskManualNoteInput,
@@ -130,6 +132,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     closeRewardSessionSegment: ctx.closeRewardSessionSegment,
     clearRewardSessionTracker: ctx.clearRewardSessionTracker,
     upsertLiveSession: ctx.upsertLiveSession,
+    clearLiveSession: ctx.clearLiveSession,
     finalizeLiveSession: ctx.finalizeLiveSession,
     applyPendingTimeGoalXpForTask: ctx.applyPendingTimeGoalXpForTask,
     getElapsedMs: ctx.getElapsedMs,
@@ -333,6 +336,10 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     ctx.on(els.taskManualDateTimeInput, "change", () => {
       const value = String(els.taskManualDateTimeInput?.value || "");
       taskManualEntry.setDateTimeValue(value);
+    });
+    ctx.on(els.taskManualLogTimeGoalToggle, "click", () => {
+      const enabled = els.taskManualLogTimeGoalToggle?.getAttribute("aria-checked") !== "true";
+      taskManualEntry.setLogTimeGoalEnabled(enabled);
     });
     ctx.on(els.taskManualHoursInput, "input", () => {
       const value = String(els.taskManualHoursInput?.value || "");
