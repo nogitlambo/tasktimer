@@ -4,9 +4,11 @@ import { getTaskTimeGoalCompletionResolution, getTimeGoalCompletionDayKey } from
 import {
   buildTimeGoalCompleteNextTaskOptions,
   didElapsedReachTimeGoalFromBaseline,
+  findTimeGoalCompleteNextScheduledTask,
   getCheckpointAlertCompletionPriority,
   getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
+  isFinalizedTimeGoalCompletionAwaitingAcknowledgement,
   markTaskTimeGoalCompletedForResolution,
   resetFocusModeScrollPosition,
   shouldAutoStopDailyTimeGoalTask,
@@ -447,6 +449,65 @@ describe("time goal complete next task launcher", () => {
     ).toEqual([{ id: "daily", name: "Daily Task", color: "#00bcd4", scheduleText: "Unscheduled" }]);
   });
 
+  it("excludes tasks with current-day completion metadata even before history is available", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const today = getTimeGoalCompletionDayKey(nowValue);
+    const options = buildTimeGoalCompleteNextTaskOptions(
+      [
+        timeGoalTask({ id: "completed", name: "Completed", running: false, timeGoalCompletedDayKey: today, timeGoalCompletedReason: "goal" }),
+        timeGoalTask({ id: "next", name: "Next", running: false }),
+      ],
+      { historyByTaskId: {}, nowMs: nowValue }
+    );
+
+    expect(options.map((option) => option.id)).toEqual(["next"]);
+  });
+
+  it("excludes tasks with qualifying current-day goal history even when metadata is missing", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const options = buildTimeGoalCompleteNextTaskOptions(
+      [
+        timeGoalTask({ id: "history-completed", name: "Completed", running: false }),
+        timeGoalTask({ id: "next", name: "Next", running: false }),
+      ],
+      {
+        historyByTaskId: { "history-completed": [{ ts: nowValue, name: "Completed", ms: 60_000 }] },
+        nowMs: nowValue,
+      }
+    );
+
+    expect(options.map((option) => option.id)).toEqual(["next"]);
+  });
+
+  it("uses the same incomplete-only filter for the scheduled launch-next candidate", () => {
+    const nowDate = new Date(2026, 4, 7, 10, 0, 0);
+    const nowValue = nowDate.getTime();
+    const today = getTimeGoalCompletionDayKey(nowValue);
+    const next = findTimeGoalCompleteNextScheduledTask(
+      [
+        timeGoalTask({ id: "active", name: "Active", running: false, plannedStartTime: "10:15" }),
+        timeGoalTask({
+          id: "metadata-completed",
+          name: "Metadata Completed",
+          running: false,
+          plannedStartTime: "10:30",
+          timeGoalCompletedDayKey: today,
+          timeGoalCompletedReason: "goal",
+        }),
+        timeGoalTask({ id: "history-completed", name: "History Completed", running: false, plannedStartTime: "10:45" }),
+        timeGoalTask({ id: "next", name: "Next", running: false, plannedStartTime: "11:00" }),
+      ],
+      {
+        activeTaskId: "active",
+        historyByTaskId: { "history-completed": [{ ts: nowValue, name: "History Completed", ms: 60_000 }] },
+        nowMs: nowValue,
+        nowDate,
+      }
+    );
+
+    expect(next?.task.id).toBe("next");
+  });
+
   it("orders scheduled task tiles from earliest to latest and keeps unscheduled tasks last", () => {
     const options = buildTimeGoalCompleteNextTaskOptions([
       timeGoalTask({ id: "late", name: "Late", running: false, plannedStartTime: "17:00" }),
@@ -467,5 +528,35 @@ describe("time goal complete next task launcher", () => {
     expect(shouldOpenFocusModeForTimeGoalNextTask("task-1", "task-1")).toBe(true);
     expect(shouldOpenFocusModeForTimeGoalNextTask("task-2", "task-1")).toBe(false);
     expect(shouldOpenFocusModeForTimeGoalNextTask(null, "task-1")).toBe(false);
+  });
+
+  it("shows a finalized completion once and suppresses it after acknowledgement", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completed = timeGoalTask({
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(nowValue),
+      timeGoalCompletedAtMs: nowValue,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: false, nowMs: nowValue })).toBe(true);
+    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: true, nowMs: nowValue })).toBe(false);
+  });
+
+  it("does not reopen a finalized completion from a previous day", () => {
+    const today = new Date(2026, 4, 8, 10, 0, 0).getTime();
+    const yesterday = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const completed = timeGoalTask({
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(yesterday),
+      timeGoalCompletedAtMs: yesterday,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: false, nowMs: today })).toBe(false);
   });
 });

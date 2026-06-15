@@ -5,6 +5,7 @@ import { applyPendingTimeGoalXpAward, awardCompletedSessionXp, hasPendingTimeGoa
 import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
+  hasTaskGoalHistoryEntryForPeriod,
   getTaskTimeGoalCompletionResolution,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
@@ -101,6 +102,66 @@ export type TimeGoalCompleteNextTaskOption = {
   color: string;
   scheduleText: string;
 };
+
+export function hasCurrentPeriodGoalCompletionMetadata(
+  task: Task | null | undefined,
+  nowValue = nowMs(),
+  weekStarting?: DashboardWeekStart
+): boolean {
+  return task?.timeGoalCompletedReason === "goal" && isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting);
+}
+
+export function isTimeGoalCompleteNextTaskCandidate(
+  task: Task | null | undefined,
+  opts: {
+    activeTaskId?: string | null;
+    historyByTaskId?: HistoryByTaskId | null;
+    nowMs?: number;
+    weekStarting?: DashboardWeekStart;
+  } = {}
+): boolean {
+  const taskId = String(task?.id || "").trim();
+  const activeTaskId = String(opts.activeTaskId || "").trim();
+  const nowValue = opts.nowMs ?? nowMs();
+  if (!task || !taskId || taskId === activeTaskId) return false;
+  if (task.running) return false;
+  if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
+  if (hasCurrentPeriodGoalCompletionMetadata(task, nowValue, opts.weekStarting)) return false;
+  return !hasTaskGoalHistoryEntryForPeriod(task, opts.historyByTaskId, nowValue, opts.weekStarting);
+}
+
+export function findTimeGoalCompleteNextScheduledTask(
+  tasks: Task[],
+  opts: {
+    activeTaskId?: string | null;
+    historyByTaskId?: HistoryByTaskId | null;
+    nowMs?: number;
+    nowDate?: Date;
+    weekStarting?: DashboardWeekStart;
+  } = {}
+) {
+  const nowValue = opts.nowMs ?? nowMs();
+  const candidates = (Array.isArray(tasks) ? tasks : []).filter((task) =>
+    isTimeGoalCompleteNextTaskCandidate(task, {
+      activeTaskId: opts.activeTaskId,
+      historyByTaskId: opts.historyByTaskId,
+      nowMs: nowValue,
+      weekStarting: opts.weekStarting,
+    })
+  );
+  return findNextScheduledTaskAfterLocalTime(candidates, { nowDate: opts.nowDate });
+}
+
+export function isFinalizedTimeGoalCompletionAwaitingAcknowledgement(
+  task: Task | null | undefined,
+  opts: { hasAcknowledged?: boolean; nowMs?: number; weekStarting?: DashboardWeekStart } = {}
+): boolean {
+  if (!task || task.running) return false;
+  if (!hasCurrentPeriodGoalCompletionMetadata(task, opts.nowMs ?? nowMs(), opts.weekStarting)) return false;
+  if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0)) > 0)) return false;
+  if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs || 0) || 0)) > 0)) return false;
+  return !opts.hasAcknowledged;
+}
 
 export function getTimeGoalCompleteMetaMessage(
   nextTaskOptions: TimeGoalCompleteNextTaskOption[]
@@ -366,7 +427,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
   opts: {
     activeTaskId?: string | null;
     fallbackColor?: string;
-    historyByTaskId?: Record<string, any[]>;
+    historyByTaskId?: HistoryByTaskId | null;
     nowMs?: number;
     weekStarting?: DashboardWeekStart;
   } = {}
@@ -374,13 +435,12 @@ export function buildTimeGoalCompleteNextTaskOptions(
   const activeTaskId = String(opts.activeTaskId || "").trim();
   const fallbackColor = normalizeTaskColor(opts.fallbackColor) || "#35e8ff";
   return (Array.isArray(tasks) ? tasks : [])
-    .filter((task) => {
-      const taskId = String(task?.id || "").trim();
-      if (!taskId || taskId === activeTaskId) return false;
-      if (task.running) return false;
-      if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && Number(task.timeGoalMinutes || 0) > 0)) return false;
-      return !isTaskTimeGoalStartLockedByHistoryForPeriod(task, opts.historyByTaskId, opts.nowMs, opts.weekStarting);
-    })
+    .filter((task) => isTimeGoalCompleteNextTaskCandidate(task, {
+      activeTaskId,
+      historyByTaskId: opts.historyByTaskId,
+      nowMs: opts.nowMs,
+      weekStarting: opts.weekStarting,
+    }))
     .map((task, index) => ({
       id: String(task.id || "").trim(),
       name: String(task.name || "Task").trim() || "Task",
@@ -876,7 +936,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function getNextScheduledTaskAfterNow(excludeTaskIdRaw?: string | null, nowDate = new Date()) {
-    return findNextScheduledTaskAfterLocalTime(ctx.getTasks(), { excludeTaskId: excludeTaskIdRaw, nowDate });
+    return findTimeGoalCompleteNextScheduledTask(ctx.getTasks(), {
+      activeTaskId: excludeTaskIdRaw,
+      historyByTaskId: ctx.getHistoryByTaskId(),
+      nowMs: nowMs(),
+      nowDate,
+      weekStarting: ctx.getWeekStarting(),
+    });
   }
 
   function syncTimeGoalCompleteLaunchNextButton() {
@@ -1083,11 +1149,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function isFinalizedGoalCompletionAwaitingAcknowledgement(task: Task | null | undefined) {
-    if (!task || task.running) return false;
-    if (task.timeGoalCompletedReason !== "goal") return false;
-    if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0)) > 0)) return false;
-    if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs || 0) || 0)) > 0)) return false;
-    return !hasAcknowledgedTimeGoalCompletion(task);
+    return isFinalizedTimeGoalCompletionAwaitingAcknowledgement(task, {
+      hasAcknowledged: hasAcknowledgedTimeGoalCompletion(task),
+      nowMs: nowMs(),
+      weekStarting: ctx.getWeekStarting(),
+    });
   }
 
   function shouldKeepTimeGoalCompletionFlow(task: Task | null | undefined, elapsedMsOverride?: number | null) {
