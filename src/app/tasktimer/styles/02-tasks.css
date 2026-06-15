@@ -17,6 +17,39 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
   pointer-events:auto !important;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages{
+  overflow-y:hidden !important;
+  overflow-x:hidden !important;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
+  display:flex !important;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks > .tasksTopRow{
+  flex:0 0 auto;
+  position:relative;
+  z-index:20;
+  background:#0d0f13;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-bottom:var(--app-pages-bottom-padding, 12px);
+  scroll-padding-bottom:var(--app-pages-bottom-padding, 12px);
+  box-sizing:border-box;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
 .modeView{
   display:none;
 }
