@@ -70,16 +70,7 @@ export default function FriendsOverlays() {
                 <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
               </div>
               <div className="friendUserSummaryAchievementSlots" aria-label="Achievement badges">
-                <span className="friendUserSummaryAchievementSlot">
-                  <AppImg
-                    id="friendProfileAchievementEliteLauncherImg"
-                    className="friendUserSummaryAchievementSlotImg achievementBadgeImg"
-                    src="/icons/achievement/elite_launcher-100.webp"
-                    alt=""
-                    title="Elite Launcher: 100 tasks completed"
-                    style={{ display: "none" }}
-                  />
-                </span>
+                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
                 <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
                 <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
                 <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />

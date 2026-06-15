@@ -7585,6 +7585,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-size: 12px;
 }
 
+#onboardingOverlay .onboardingChronotypePreview{
+  aspect-ratio: 1597 / 985;
+  display: block;
+  height: auto;
+  margin: 0 auto 14px;
+  max-height: min(34dvh, 320px);
+  object-fit: contain;
+  width: min(100%, 520px);
+}
+
 #onboardingOverlay .onboardingHoursSubtext{
   color: #fff !important;
 }
@@ -7605,6 +7615,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingUsernameSubtext,
 #onboardingOverlay .onboardingIntroSubtext,
+#onboardingOverlay .onboardingChronotypePreview,
 #onboardingOverlay .onboardingHoursSubtext,
 #onboardingOverlay .onboardingHoursTimeGrid,
 #onboardingOverlay .onboardingProductivityIntroText,
@@ -7694,6 +7705,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingUsernameSubtext,
   #onboardingOverlay .onboardingUsernameField,
   #onboardingOverlay .onboardingIntroSubtext,
+  #onboardingOverlay .onboardingChronotypePreview,
   #onboardingOverlay .onboardingHoursSubtext,
   #onboardingOverlay .onboardingHoursTimeGrid,
   #onboardingOverlay .onboardingProductivityIntroText,

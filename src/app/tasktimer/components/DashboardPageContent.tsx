@@ -80,7 +80,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             </div>
                           </div>
                           <div className="dashboardDelta dashboardSummaryStatus" id="dashboardActivityWeeklyGoalsMeta" style={{ display: "none" }}>No weekly time goals enabled</div>
-                          <div className="dashboardDelta dashboardSummaryFoot" id="dashboardActivityWeeklyGoalsProgressText">0% logged this week</div>
+                          <div className="dashboardDelta dashboardSummaryFoot" id="dashboardActivityWeeklyGoalsProgressText">0% of weekly goal</div>
                         </section>
                       </aside>
                     </div>

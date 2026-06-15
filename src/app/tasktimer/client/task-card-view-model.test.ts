@@ -180,6 +180,14 @@ describe("task card view model", () => {
     expect(css).toContain("padding-right:0 !important;");
   });
 
+  it("keeps task cards hidden behind the active Schedule view", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toMatch(
+      /body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks #taskList\{\n\s*display:none !important;\n\}/
+    );
+  });
+
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,

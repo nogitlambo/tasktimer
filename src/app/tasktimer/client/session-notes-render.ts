@@ -1,6 +1,7 @@
 import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
 import type { SessionNoteAttachment } from "../lib/types";
 import { normalizeHistoryTimestampMs } from "../lib/history";
+import { normalizeTaskColor } from "../lib/taskColors";
 import { prepareRichNoteForDisplay, richNoteHasMeaningfulText, richNotePlainText } from "./rich-session-notes";
 import { normalizeSessionNoteAttachments } from "../lib/sessionNoteAttachments";
 
@@ -16,6 +17,7 @@ type SessionNoteRow = {
   taskId: string;
   taskName: string;
   taskState: "active" | "archived";
+  taskColorRgb: string | null;
   ts: number;
   elapsedMs: number;
   noteHtml: string;
@@ -73,6 +75,17 @@ function formatFileSize(sizeRaw: unknown) {
   return `${size} B`;
 }
 
+function taskColorToRgb(value: unknown) {
+  const color = normalizeTaskColor(value);
+  if (!color) return null;
+  const rgb = [color.slice(1, 3), color.slice(3, 5), color.slice(5, 7)].map((channel) => parseInt(channel, 16));
+  return rgb.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255) ? rgb.join(" ") : null;
+}
+
+function renderTaskHeaderStyle(taskColorRgb: string | null | undefined) {
+  return taskColorRgb ? ` style="--session-notes-task-color-rgb:${taskColorRgb};"` : "";
+}
+
 function renderAttachmentList(attachments: SessionNoteAttachment[]) {
   if (!attachments.length) return "";
   return `<div class="sessionNoteAttachments" aria-label="Session note attachments">${attachments
@@ -96,6 +109,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
     const taskState = task ? "active" : deletedMeta?.state === "archived" ? "archived" : null;
     if (!taskState) return;
     const taskName = String(task?.name || deletedMeta?.name || "Task").trim() || "Task";
+    const taskColorRgb = taskColorToRgb(task?.color ?? deletedMeta?.color);
     (entries || []).forEach((entry) => {
       const noteHtml = prepareRichNoteForDisplay(entry?.note);
       const attachments = normalizeSessionNoteAttachments(entry?.attachments);
@@ -106,6 +120,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
         taskId,
         taskName,
         taskState,
+        taskColorRgb,
         ts,
         elapsedMs: Math.max(0, Math.floor(Number(entry?.ms) || 0)),
         noteHtml,
@@ -128,6 +143,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
       taskId,
       taskName: String(task.name || session?.name || "Task").trim() || "Task",
       taskState: "active",
+      taskColorRgb: taskColorToRgb(task.color),
       ts,
       elapsedMs: Math.max(0, Math.floor(Number(session?.elapsedMs) || 0)),
       noteHtml,
@@ -191,7 +207,7 @@ export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listE
         .join("");
       return `
         <section class="sessionNotesTaskGroup">
-          <header class="sessionNotesTaskHeader">
+          <header class="sessionNotesTaskHeader"${renderTaskHeaderStyle(firstRow?.taskColorRgb)}>
             <h2 class="sessionNotesTaskTitle">${escapeHtml(firstRow?.taskName || "Task")}</h2>
             ${firstRow?.taskState === "archived" ? '<span class="sessionNotesTaskState">Archived</span>' : ""}
           </header>

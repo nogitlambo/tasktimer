@@ -800,7 +800,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       projectedLabel: "projected if running tasks are logged",
     });
     if (progressTextEl) {
-      progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
+      progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal` : "No weekly time goals enabled";
     }
     const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
     if (cardEl) {
@@ -901,7 +901,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       projectedLabel: "projected if running tasks are logged",
     });
     if (progressTextEl) {
-      progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal logged` : "No weekly time goals enabled";
+      progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal` : "No weekly time goals enabled";
     }
   }
 

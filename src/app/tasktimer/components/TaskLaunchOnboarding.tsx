@@ -574,6 +574,15 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             Skip
           </button>
         ) : null}
+        {activeStep === "intro" ? (
+          <AppImg
+            className="onboardingChronotypePreview"
+            src="/onboarding/01_onboarding-chronotypes.webp"
+            alt="Chronotype alignment preview"
+            width={1597}
+            height={985}
+          />
+        ) : null}
         {activeStep !== "username" ? (
           <div className="onboardingStepMeta" aria-label="Onboarding progress">
             Step {stepIndex + 1} of {ONBOARDING_STEPS.length}

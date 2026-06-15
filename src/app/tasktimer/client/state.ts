@@ -76,7 +76,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     menuButtonStyle: "square",
     addTaskCustomNames: [],
     weekStarting: "mon",
-    startupModule: "dashboard",
+    startupModule: "tasks",
     taskView: "tile",
     taskOrderBy: "custom",
     dynamicColorsEnabled: true,

@@ -2746,6 +2746,10 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"]{
   overflow:hidden;
 }
 
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #taskList{
+  display:none !important;
+}
+
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #mode1View,

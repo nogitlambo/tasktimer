@@ -186,7 +186,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function persistSnapshot(snapshot: StoredPreferences): void {
     safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
-    safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "dashboard"));
+    safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "tasks"));
     safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, "tile");
     safeWriteLocalStorage(storageKeys.TASK_ORDER_BY_KEY, String(snapshot.taskOrderBy || "custom"));
     safeWriteLocalStorage(
@@ -267,7 +267,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     if (typeof cachedValue === "string" && cachedValue.trim()) return normalizeStartupModule(cachedValue);
     const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.STARTUP_MODULE_KEY) : "";
     if (localValue) return normalizeStartupModule(localValue);
-    return "dashboard";
+    return "tasks";
   }
 
   function loadTaskView(): "list" | "tile" {

@@ -8200,7 +8200,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
-    grid-template-columns:minmax(0, 1fr) !important;
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartPanel{
@@ -8302,6 +8302,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
     min-height:0 !important;
     align-self:center !important;
     justify-self:center !important;
+  }
+}
+
+@media (max-width: 359px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
+    grid-template-columns:minmax(0, 1fr) !important;
   }
 }
 

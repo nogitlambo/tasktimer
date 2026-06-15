@@ -178,7 +178,7 @@ describe("createTaskTimerPreferencesService", () => {
 
     const service = createService({ currentUid: "uid-2" });
 
-    expect(service.loadStartupModule()).toBe("dashboard");
+    expect(service.loadStartupModule()).toBe("tasks");
     expect(service.loadTaskOrderBy()).toBe("custom");
     expect(service.loadMobilePushAlertsEnabled()).toBe(false);
     expect(service.loadOptimalProductivityDays()).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);

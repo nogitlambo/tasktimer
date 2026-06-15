@@ -6,7 +6,8 @@ export type StartupModulePreference = "dashboard" | "tasks" | "session-notes" | 
 export function normalizeStartupModule(raw: unknown): StartupModulePreference {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "tasks" || value === "session-notes" || value === "friends" || value === "leaderboard") return value;
-  return "dashboard";
+  if (value === "dashboard") return value;
+  return "tasks";
 }
 
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {
@@ -26,7 +27,7 @@ export function startupModuleToRoute(startupModule: StartupModulePreference): st
 }
 
 export function readStartupModulePreference(storageKey = `${STORAGE_KEY}:startupModule`): StartupModulePreference {
-  if (typeof window === "undefined") return "dashboard";
+  if (typeof window === "undefined") return "tasks";
   try {
     const localValue = window.localStorage.getItem(storageKey);
     if (localValue) return normalizeStartupModule(localValue);
@@ -37,7 +38,7 @@ export function readStartupModulePreference(storageKey = `${STORAGE_KEY}:startup
   if (cachedPreferences && typeof cachedPreferences === "object" && "startupModule" in cachedPreferences) {
     return normalizeStartupModule((cachedPreferences as { startupModule?: unknown }).startupModule);
   }
-  return "dashboard";
+  return "tasks";
 }
 
 export function readStartupAppPagePreference(storageKey?: string): AppPage {

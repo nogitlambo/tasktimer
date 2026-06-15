@@ -461,6 +461,23 @@
     padding: 4px 2px !important;
     border-color: transparent !important;
     border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn::after{
+    content: "";
+    position: absolute;
+    left: 50%;
+    right: 50%;
+    bottom: 0;
+    height: 2px;
+    background: #c9ff24;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      left .46s ease,
+      right .46s ease,
+      opacity .42s ease;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn:is(.isOn, :hover, :focus-visible, :active){
@@ -470,7 +487,14 @@
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn{
-    border-bottom-color: #c9ff24 !important;
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn::after{
+    left: 0;
+    right: 0;
+    opacity: 1;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterLabel{

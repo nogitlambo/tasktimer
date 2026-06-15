@@ -227,30 +227,6 @@ export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnaps
 
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
-  const friendAchievementBadgeTimers = new Map<HTMLElement, number>();
-
-  function shouldUseTapAchievementMagnify() {
-    return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(hover: none), (pointer: coarse)").matches;
-  }
-
-  function clearFriendAchievementBadgeMagnification() {
-    friendAchievementBadgeTimers.forEach((timer, img) => {
-      window.clearTimeout(timer);
-      img.classList.remove("isMagnified");
-    });
-    friendAchievementBadgeTimers.clear();
-  }
-
-  function magnifyFriendAchievementBadge(img: HTMLElement) {
-    img.classList.add("isMagnified");
-    const currentTimer = friendAchievementBadgeTimers.get(img);
-    if (currentTimer != null) window.clearTimeout(currentTimer);
-    const nextTimer = window.setTimeout(() => {
-      img.classList.remove("isMagnified");
-      friendAchievementBadgeTimers.delete(img);
-    }, 2000);
-    friendAchievementBadgeTimers.set(img, nextTimer);
-  }
 
   function canUseSocialFeatures() {
     return ctx.hasEntitlement("socialFeatures");
@@ -334,7 +310,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function closeFriendProfileModal() {
-    clearFriendAchievementBadgeMagnification();
     hideOverlay(els.friendProfileModal as HTMLElement | null);
     ctx.setActiveFriendProfileUid(null);
     ctx.setActiveFriendProfileName("");
@@ -422,9 +397,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.friendProfileSharedTime) els.friendProfileSharedTime.textContent = formatDashboardDurationShort(row.sharedTotalMs);
     if (els.friendProfileCompletedTaskCount) els.friendProfileCompletedTaskCount.textContent = new Intl.NumberFormat().format(row.completedTaskCount);
     if (els.friendProfileMemberSince) els.friendProfileMemberSince.textContent = `Member since ${memberSinceText}`;
-    if (els.friendProfileAchievementEliteLauncherImg) {
-      els.friendProfileAchievementEliteLauncherImg.style.display = row.completedTaskCount >= 100 ? "block" : "none";
-    }
     ctx.setActiveFriendProfileUid(row.peerUid);
     ctx.setActiveFriendProfileName(row.alias);
     showOverlay(els.friendProfileModal as HTMLElement | null);
@@ -1408,12 +1380,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
     ctx.on(els.friendProfileModal, "click", (e: any) => {
       if (e?.target === els.friendProfileModal) closeFriendProfileModal();
-    });
-    ctx.on(els.friendProfileModal, "click", (e: any) => {
-      if (!shouldUseTapAchievementMagnify()) return;
-      const img = (e?.target as HTMLElement | null)?.closest?.(".achievementBadgeImg") as HTMLElement | null;
-      if (!img || !(els.friendProfileModal as HTMLElement | null)?.contains(img)) return;
-      magnifyFriendAchievementBadge(img);
     });
     ctx.on(els.friendProfileDeleteBtn, "click", (e: any) => {
       e?.preventDefault?.();

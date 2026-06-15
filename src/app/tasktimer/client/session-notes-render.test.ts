@@ -86,4 +86,51 @@ describe("renderSessionNotesHtml", () => {
     expect(html).toContain("-report-.pdf");
     expect(html).toContain("Attachment-only note");
   });
+
+  it("adds a task color custom property to active task headers", () => {
+    const html = renderSessionNotesHtml({
+      tasks: [{ id: "task-1", name: "Deep Work", color: "#ff5252" } as never],
+      deletedTaskMeta: {},
+      liveSessionsByTaskId: {},
+      historyByTaskId: {
+        "task-1": [{ ts: 1000, name: "Deep Work", ms: 60000, note: "Saved note" }],
+      },
+    });
+
+    expect(html).toContain('<header class="sessionNotesTaskHeader" style="--session-notes-task-color-rgb:255 82 82;">');
+  });
+
+  it("uses archived task metadata color for archived task headers", () => {
+    const html = renderSessionNotesHtml({
+      tasks: [],
+      deletedTaskMeta: {
+        "archived-task": { name: "Archived Task", color: "#00bfa5", deletedAt: 1, state: "archived" },
+      },
+      liveSessionsByTaskId: {},
+      historyByTaskId: {
+        "archived-task": [{ ts: 1000, name: "Archived Task", ms: 60000, note: "Archived note" }],
+      },
+    });
+
+    expect(html).toContain('<header class="sessionNotesTaskHeader" style="--session-notes-task-color-rgb:0 191 165;">');
+    expect(html).toContain("Archived");
+  });
+
+  it("omits the task color custom property when the task color is invalid or missing", () => {
+    const html = renderSessionNotesHtml({
+      tasks: [
+        { id: "invalid-task", name: "Invalid Color", color: "not-a-color" },
+        { id: "missing-task", name: "Missing Color" },
+      ] as never,
+      deletedTaskMeta: {},
+      liveSessionsByTaskId: {},
+      historyByTaskId: {
+        "invalid-task": [{ ts: 2000, name: "Invalid Color", ms: 60000, note: "Invalid color note" }],
+        "missing-task": [{ ts: 1000, name: "Missing Color", ms: 60000, note: "Missing color note" }],
+      },
+    });
+
+    expect(html).toContain('<header class="sessionNotesTaskHeader">');
+    expect(html).not.toContain("--session-notes-task-color-rgb");
+  });
 });

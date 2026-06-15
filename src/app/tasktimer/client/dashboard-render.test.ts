@@ -686,8 +686,8 @@ describe("dashboard week-start alignment", () => {
 
       expect(harness.byId.get("dashboardWeeklyGoalsValue")?.textContent).toBe("2h 30m");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("2h 30m");
-      expect(harness.byId.get("dashboardWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal logged");
-      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal logged");
+      expect(harness.byId.get("dashboardWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal");
     } finally {
       harness.restore();
     }

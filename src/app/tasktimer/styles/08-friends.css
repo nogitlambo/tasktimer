@@ -3393,6 +3393,11 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   gap:7px;
 }
 
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumText{
+  left:12%;
+  right:16%;
+}
+
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumRank,
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumName,
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumUserRank,
