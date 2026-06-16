@@ -122,15 +122,6 @@ const NAV_ITEMS: NavItem[] = [
     href: "/dashboard",
   },
   {
-    page: "tasks",
-    label: "Tasks",
-    ariaLabel: "Tasks",
-    iconSrc: "/icons/icons_default/task.webp",
-    desktopId: "commandCenterTasksBtn",
-    mobileId: "footerTasksBtn",
-    href: "/tasklaunch",
-  },
-  {
     page: "session-notes",
     label: "Session Notes",
     ariaLabel: "Session Notes",
@@ -138,6 +129,15 @@ const NAV_ITEMS: NavItem[] = [
     desktopId: "commandCenterSessionNotesBtn",
     mobileId: "footerSessionNotesBtn",
     href: "/session-notes",
+  },
+  {
+    page: "tasks",
+    label: "Tasks",
+    ariaLabel: "Tasks",
+    iconSrc: "/icons/icons_default/task.webp",
+    desktopId: "commandCenterTasksBtn",
+    mobileId: "footerTasksBtn",
+    href: "/tasklaunch",
   },
   {
     page: "friends",
@@ -239,8 +239,8 @@ export function getMobileFooterNavItems() {
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
-  if (page === "tasks") return 1;
-  if (page === "session-notes") return 2;
+  if (page === "session-notes") return 1;
+  if (page === "tasks") return 2;
   if (page === "friends") return 3;
   if (page === "leaderboard") return 4;
   if (page === "account") return 5;

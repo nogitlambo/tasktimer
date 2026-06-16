@@ -3,7 +3,14 @@ import type { Task } from "../lib/types";
 import type { TaskTimerSessionContext } from "./context";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
-import { createTaskTimerSession } from "./session";
+import {
+  clearSessionNoteAttachmentUploadStatus,
+  createTaskTimerSession,
+  isHistoryEntryNoteOverlayEditor,
+  resolveRichNoteFileInputHost,
+  showSessionNoteAttachmentUploadError,
+  showSessionNoteAttachmentUploadStatus,
+} from "./session";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -74,6 +81,55 @@ function createElementStub() {
   };
   target.getAttribute = (name: string) => attrs.get(name) ?? null;
   return target;
+}
+
+function createAttachmentContainerStub() {
+  const attrs = new Map<string, string>();
+  const prependedNodes: Array<Record<string, unknown> & { remove: () => void }> = [];
+  const container = {
+    innerHTML: "",
+    ownerDocument: {
+      createElement: vi.fn(() => {
+        const node: Record<string, unknown> & { remove: () => void } = {
+          className: "",
+          textContent: "",
+          setAttribute: vi.fn((name: string, value: string) => {
+            node[name] = value;
+          }),
+          remove: vi.fn(() => {
+            const index = prependedNodes.indexOf(node);
+            if (index >= 0) prependedNodes.splice(index, 1);
+          }),
+        };
+        return node;
+      }),
+    },
+    setAttribute: vi.fn((name: string, value: string) => {
+      attrs.set(name, value);
+    }),
+    removeAttribute: vi.fn((name: string) => {
+      attrs.delete(name);
+    }),
+    getAttribute: vi.fn((name: string) => attrs.get(name) ?? null),
+    prepend: vi.fn((node: Record<string, unknown> & { remove: () => void }) => {
+      prependedNodes.unshift(node);
+    }),
+    querySelector: vi.fn((selector: string) => {
+      if (selector === ".sessionNoteAttachmentStatus") {
+        return prependedNodes.find((node) => node.className === "sessionNoteAttachmentStatus") || null;
+      }
+      return null;
+    }),
+    querySelectorAll: vi.fn((selector: string) => {
+      if (selector === ".sessionNoteAttachmentStatus") {
+        return prependedNodes.filter((node) => node.className === "sessionNoteAttachmentStatus");
+      }
+      return [];
+    }),
+    getStatusNode: () => prependedNodes.find((node) => node.className === "sessionNoteAttachmentStatus") || null,
+    getErrorNode: () => prependedNodes.find((node) => node.className === "sessionNoteAttachmentError") || null,
+  };
+  return container;
 }
 
 function createHarness(overrides?: {
@@ -268,6 +324,7 @@ function createHarness(overrides?: {
     normalizeHistoryTimestampMs: () => 0,
     getHistoryEntryNote: () => "",
     getHistoryByTaskId: () => ({}),
+    getWeekStarting: () => "mon",
     syncSharedTaskSummariesForTask: async () => {},
     startTask: () => {},
     stopTask: () => {},
@@ -332,6 +389,68 @@ describe("task timer session focus notes", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("marks the session note attachment block as uploading with a real status row", () => {
+    const container = createAttachmentContainerStub();
+
+    expect(showSessionNoteAttachmentUploadStatus(container as unknown as HTMLElement)).toBe(true);
+
+    expect(container.getAttribute("data-uploading")).toBe("true");
+    expect(container.getAttribute("data-empty")).toBe("false");
+    expect(container.prepend).toHaveBeenCalledTimes(1);
+    expect(container.getStatusNode()?.className).toBe("sessionNoteAttachmentStatus");
+    expect(container.getStatusNode()?.role).toBe("status");
+    expect(container.getStatusNode()?.textContent).toBe("Uploading...");
+  });
+
+  it("clears the upload status row without reopening an overlay", () => {
+    const container = createAttachmentContainerStub();
+    const openOverlay = vi.fn();
+
+    showSessionNoteAttachmentUploadStatus(container as unknown as HTMLElement);
+    expect(clearSessionNoteAttachmentUploadStatus(container as unknown as HTMLElement)).toBe(true);
+
+    expect(container.getAttribute("data-uploading")).toBeNull();
+    expect(container.getStatusNode()).toBeNull();
+    expect(openOverlay).not.toHaveBeenCalled();
+  });
+
+  it("replaces the upload status with an attachment error row after a failed upload", () => {
+    const container = createAttachmentContainerStub();
+
+    showSessionNoteAttachmentUploadStatus(container as unknown as HTMLElement);
+    expect(showSessionNoteAttachmentUploadError(container as unknown as HTMLElement, "Upload failed")).toBe(true);
+
+    expect(container.getAttribute("data-uploading")).toBeNull();
+    expect(container.getAttribute("data-empty")).toBe("false");
+    expect(container.getStatusNode()).toBeNull();
+    expect(container.getErrorNode()?.className).toBe("sessionNoteAttachmentError");
+    expect(container.getErrorNode()?.textContent).toBe("Upload failed");
+  });
+
+  it("detects session summary attachment editors without treating unrelated editors as modal editors", () => {
+    const overlay = { id: "historyEntryNoteOverlay" } as HTMLElement;
+    const historyEditor = {
+      closest: vi.fn((selector: string) => (selector === "#historyEntryNoteOverlay" ? overlay : null)),
+    } as unknown as HTMLElement;
+    const unrelatedEditor = {
+      closest: vi.fn(() => null),
+    } as unknown as HTMLElement;
+
+    expect(isHistoryEntryNoteOverlayEditor(historyEditor)).toBe(true);
+    expect(isHistoryEntryNoteOverlayEditor(unrelatedEditor)).toBe(false);
+  });
+
+  it("places temporary file inputs inside the active overlay when attaching from a modal editor", () => {
+    const overlay = { id: "historyEntryNoteOverlay" } as HTMLElement;
+    const body = { id: "body" } as unknown as HTMLElement;
+    const editor = {
+      closest: vi.fn((selector: string) => (selector === ".overlay" ? overlay : null)),
+    } as unknown as HTMLElement;
+
+    expect(resolveRichNoteFileInputHost(editor, { body })).toBe(overlay);
+    expect(resolveRichNoteFileInputHost(null, { body })).toBe(body);
   });
 
   it("autosaves running focus notes locally and to the live session", () => {

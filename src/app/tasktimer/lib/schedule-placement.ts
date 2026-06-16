@@ -347,6 +347,70 @@ export function findClosestAvailableScheduleSlot(
   return bestStartMinutes == null ? null : { day: options.day, startMinutes: bestStartMinutes };
 }
 
+function findClosestFittingStartMinutes(
+  busyByDay: Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>,
+  days: ScheduleDay[],
+  durationMinutes: number | ((day: ScheduleDay, index: number) => number),
+  targetStartMinutes: number
+) {
+  const maxDurationMinutes =
+    typeof durationMinutes === "function" ? Math.max(...days.map((day, index) => durationMinutes(day, index))) : durationMinutes;
+  if (!(maxDurationMinutes > 0)) return null;
+  let bestStartMinutes: number | null = null;
+  for (
+    let startMinutes = 0;
+    startMinutes + maxDurationMinutes <= 24 * 60;
+    startMinutes += SCHEDULE_SUGGESTION_STEP_MINUTES
+  ) {
+    if (!scheduleSlotFits(busyByDay, days, startMinutes, durationMinutes)) continue;
+    if (bestStartMinutes == null) {
+      bestStartMinutes = startMinutes;
+      continue;
+    }
+    const bestDistance = Math.abs(bestStartMinutes - targetStartMinutes);
+    const nextDistance = Math.abs(startMinutes - targetStartMinutes);
+    if (nextDistance < bestDistance || (nextDistance === bestDistance && startMinutes > bestStartMinutes)) {
+      bestStartMinutes = startMinutes;
+    }
+  }
+  return bestStartMinutes;
+}
+
+export function findClosestAvailableSchedulePlacementSlot(
+  tasks: Task[],
+  candidate: Task,
+  options?: { excludeTaskId?: string | null }
+): NextAvailableScheduleSlotResult | null {
+  const candidateDurationMinutes = getScheduleTaskDurationMinutes(candidate);
+  const scheduledEntries = getTaskScheduledDayEntries(candidate)
+    .map((entry) => ({ ...entry, startMinutes: parseScheduleTimeMinutes(entry.time) }))
+    .filter((entry): entry is { day: ScheduleDay; time: string; startMinutes: number } => entry.startMinutes != null);
+  if (scheduledEntries.length === 0) return null;
+
+  const uniqueTimes = Array.from(new Set(scheduledEntries.map((entry) => entry.time)));
+  const conflictingDay = getFirstConflictingScheduleDay(tasks, candidate, options);
+  const suggestionEntries =
+    scheduledEntries.length > 1 && uniqueTimes.length === 1
+      ? scheduledEntries
+      : scheduledEntries.filter((entry) => entry.day === conflictingDay);
+  const effectiveEntries = suggestionEntries.length > 0 ? suggestionEntries : [scheduledEntries[0]!];
+  const days = effectiveEntries.map((entry) => entry.day);
+  const getCandidateDurationMinutes = (day: ScheduleDay) =>
+    getScheduleTaskDurationMinutesForDay(candidate, day) || candidateDurationMinutes;
+  const targetStartMinutes = snapScheduleSuggestionStartMinutes(Math.min(...effectiveEntries.map((entry) => entry.startMinutes)));
+  const excludeTaskId = String(options?.excludeTaskId || "").trim();
+  const busyByDay = new Map<ScheduleDay, Array<{ startMinutes: number; endMinutes: number }>>();
+  days.forEach((day) => busyByDay.set(day, getBusyScheduleIntervalsForDay(tasks, day, excludeTaskId)));
+
+  const startMinutes = findClosestFittingStartMinutes(
+    busyByDay,
+    days,
+    (day) => getCandidateDurationMinutes(day),
+    targetStartMinutes
+  );
+  return startMinutes == null ? null : { day: days[0]!, days, startMinutes };
+}
+
 function getProductivitySearchIntervals(startMinutes: number, endMinutes: number) {
   const start = Math.max(0, Math.min(1439, Math.floor(startMinutes)));
   const endExclusive = Math.max(1, Math.min(24 * 60, Math.floor(endMinutes) + 1));

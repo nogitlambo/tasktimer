@@ -86,6 +86,12 @@ function formatSummaryXpText(xpEarned: number | null, xpPending: boolean) {
   return formatXpText(xpEarned);
 }
 
+function formatAttachmentSize(sizeRaw: unknown) {
+  const size = Math.max(0, Math.floor(Number(sizeRaw || 0) || 0));
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
 function formatOrdinalDay(day: number) {
   const absDay = Math.abs(Math.floor(day));
   const mod100 = absDay % 100;
@@ -391,7 +397,7 @@ export function renderHistoryEntrySummaryHtml(
             <div class="sessionNoteEditorGrid">
               <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">${session.hasNote ? session.noteText : ""}</div>
               <div class="sessionNoteAttachments" data-session-note-attachment-editor="historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}" aria-live="polite">${session.attachments
-                .map((attachment) => `<div class="sessionNoteAttachmentRow" data-session-note-attachment-id="${escapeHtml(attachment.id)}"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(attachment.name || "Attachment")}</a><span class="sessionNoteAttachmentMeta">${escapeHtml(Math.max(0, Math.floor(Number(attachment.size || 0) || 0)))} B</span><button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeHtml(attachment.id)}">x</button></div>`)
+                .map((attachment) => `<div class="sessionNoteAttachmentRow" data-session-note-attachment-id="${escapeHtml(attachment.id)}"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(attachment.name || "Attachment")}</a><span class="sessionNoteAttachmentMeta">${escapeHtml(formatAttachmentSize(attachment.size))}</span><button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeHtml(attachment.id)}">x</button></div>`)
                 .join("")}</div>
             </div>
           </div>

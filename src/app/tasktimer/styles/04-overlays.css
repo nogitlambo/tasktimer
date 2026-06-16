@@ -6324,6 +6324,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   height: 18px;
   margin: 0;
   flex: 0 0 auto;
+  accent-color: #c9ff24;
 }
 
 #editOverlay .taskScheduleFields,

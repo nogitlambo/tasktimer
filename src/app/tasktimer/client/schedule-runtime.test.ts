@@ -81,6 +81,38 @@ describe("schedule runtime", () => {
     expect(weekly.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
   });
 
+  it("returns conflict details when a schedule drop overlaps another task", () => {
+    const moving = task({
+      id: "moving",
+      name: "Moving",
+      plannedStartByDay: { mon: "08:00" },
+      timeGoalValue: 30,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 30,
+    });
+    const busy = task({
+      id: "busy",
+      name: "Busy",
+      plannedStartByDay: { mon: "09:15" },
+      timeGoalValue: 30,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 30,
+    });
+    const { runtime, save } = createRuntime([moving, busy]);
+
+    expect(runtime.moveTaskOnSchedule("moving", "mon", 9 * 60)).toEqual({
+      status: "conflict",
+      day: "mon",
+      taskName: "Busy",
+      candidateStartText: "9:00 AM",
+      conflictingRangeText: "9:15 AM - 9:45 AM",
+    });
+    expect(save).not.toHaveBeenCalled();
+    expect(moving.plannedStartByDay).toEqual({ mon: "08:00" });
+  });
+
   it("normalizes mixed weekly task times using each target day's split duration for conflicts", () => {
     const weekly = task({
       id: "weekly",

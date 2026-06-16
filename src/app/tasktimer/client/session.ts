@@ -57,6 +57,49 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+const SESSION_NOTE_ATTACHMENT_UPLOAD_TEXT = "Uploading...";
+
+export function isHistoryEntryNoteOverlayEditor(editor: HTMLElement | null | undefined) {
+  return !!editor?.closest?.("#historyEntryNoteOverlay");
+}
+
+export function showSessionNoteAttachmentUploadStatus(container: HTMLElement | null | undefined) {
+  if (!container) return false;
+  container.setAttribute("data-uploading", "true");
+  container.setAttribute("data-empty", "false");
+  let status = container.querySelector<HTMLElement>(".sessionNoteAttachmentStatus");
+  if (!status) {
+    status = container.ownerDocument.createElement("div");
+    status.className = "sessionNoteAttachmentStatus";
+    status.setAttribute("role", "status");
+    container.prepend(status);
+  }
+  status.textContent = SESSION_NOTE_ATTACHMENT_UPLOAD_TEXT;
+  return true;
+}
+
+export function clearSessionNoteAttachmentUploadStatus(container: HTMLElement | null | undefined) {
+  if (!container) return false;
+  container.removeAttribute("data-uploading");
+  container.querySelectorAll(".sessionNoteAttachmentStatus").forEach((node) => node.remove());
+  return true;
+}
+
+export function showSessionNoteAttachmentUploadError(container: HTMLElement | null | undefined, message: string) {
+  if (!container) return false;
+  clearSessionNoteAttachmentUploadStatus(container);
+  container.setAttribute("data-empty", "false");
+  const error = container.ownerDocument.createElement("div");
+  error.className = "sessionNoteAttachmentError";
+  error.textContent = message || "Could not upload file.";
+  container.prepend(error);
+  return true;
+}
+
+export function resolveRichNoteFileInputHost(editor: HTMLElement | null | undefined, documentRef: Pick<Document, "body">) {
+  return (editor?.closest?.(".overlay") as HTMLElement | null) || documentRef.body;
+}
+
 type CheckpointToast = {
   id: string;
   title: string;
@@ -835,7 +878,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   async function attachFilesToEditor(editor: HTMLElement | null, files: FileList | File[]) {
     if (!editor || !files.length) return;
     const container = resolveAttachmentContainerForEditor(editor);
-    if (container) container.setAttribute("data-uploading", "true");
+    showSessionNoteAttachmentUploadStatus(container);
     try {
       let next = readAttachmentsForEditor(editor);
       for (const file of Array.from(files)) {
@@ -845,10 +888,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       writeAttachmentsForEditor(editor, next);
     } catch (error) {
       if (container) {
-        container.innerHTML = `<div class="sessionNoteAttachmentError">${escapeAttr(error instanceof Error ? error.message : "Could not upload file.")}</div>${container.innerHTML}`;
+        showSessionNoteAttachmentUploadError(container, error instanceof Error ? error.message : "Could not upload file.");
       }
     } finally {
-      if (container) container.removeAttribute("data-uploading");
+      clearSessionNoteAttachmentUploadStatus(container);
     }
   }
 
@@ -2570,6 +2613,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const input = document.createElement("input");
       input.type = "file";
       input.multiple = true;
+      input.dataset.richNoteFileInput = "true";
       input.style.position = "fixed";
       input.style.left = "-9999px";
       input.style.width = "1px";
@@ -2579,7 +2623,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         if (files?.length) void attachFilesToEditor(editor, files);
         input.remove();
       });
-      document.body.appendChild(input);
+      resolveRichNoteFileInputHost(editor, document).appendChild(input);
       input.click();
     });
     ctx.on(document, "focusin", (event: Event) => {

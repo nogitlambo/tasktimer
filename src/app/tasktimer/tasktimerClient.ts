@@ -1664,6 +1664,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       },
       currentAppPage: () => appRuntimeState.get("currentAppPage"),
       moveTaskOnSchedule: (taskId, day, startMinutes, sourceDay) => scheduleRuntime.moveTaskOnSchedule(taskId, day, startMinutes, sourceDay),
+      confirm: overlayBindings.confirm,
       toggleTaskScheduleFlexible: (taskId) => scheduleRuntime.toggleTaskScheduleFlexible(taskId),
       openOverlay,
       getTaskView: () => "tile",

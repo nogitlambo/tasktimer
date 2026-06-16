@@ -13,8 +13,8 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   function appPageOrder(page: AppPage) {
     const normalized = page === "schedule" ? "tasks" : page;
     if (normalized === "dashboard") return 0;
-    if (normalized === "tasks") return 1;
-    if (normalized === "session-notes") return 2;
+    if (normalized === "session-notes") return 1;
+    if (normalized === "tasks") return 2;
     if (normalized === "friends") return 3;
     if (normalized === "leaderboard") return 4;
     if (normalized === "history") return 5;

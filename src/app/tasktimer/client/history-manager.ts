@@ -15,6 +15,7 @@ import {
   OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT,
   type OpenHistoryManagerManualEntryDetail,
 } from "./history-manager-events";
+import { isRichNoteFileInputTarget } from "./rich-session-notes";
 import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
 import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
 
@@ -1125,6 +1126,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!overlay || overlay.dataset.historyEntryOwner !== "manager" || overlay.dataset.historyEntryEditing !== "true") return;
       const target = event.target as HTMLElement | null;
       if (!target?.closest?.("#historyEntryNoteOverlay")) return;
+      if (isRichNoteFileInputTarget(target)) return;
       if (target.closest("#historyEntryNoteOverlay .historyEntrySummaryNoteInput")) return;
       if (target.closest('[data-history-summary-action="edit-note"]')) return;
       historyEntrySummaryInteraction.collapseActiveInlineNoteInput();

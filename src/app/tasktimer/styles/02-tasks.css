@@ -18,8 +18,11 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks #
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] .appPages{
+  --app-pages-bottom-padding:0px;
   overflow-y:hidden !important;
   overflow-x:hidden !important;
+  padding-bottom:0 !important;
+  scroll-padding-bottom:0;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
@@ -29,6 +32,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks{
   min-height:0;
   overflow:hidden;
   box-sizing:border-box;
+  padding-bottom:0 !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks > .tasksTopRow{
@@ -43,8 +47,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks > #m
   min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
-  padding-bottom:var(--app-pages-bottom-padding, 12px);
-  scroll-padding-bottom:var(--app-pages-bottom-padding, 12px);
+  padding-bottom:0;
+  scroll-padding-bottom:0;
   box-sizing:border-box;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   plainTextToRichNoteHtml,
+  isRichNoteFileInputTarget,
   richNoteHasMeaningfulText,
   richNoteToolbarHtml,
   richNotePlainText,
@@ -53,6 +54,19 @@ describe("rich session notes", () => {
     expect(html.match(/aria-pressed="false"/g)).toHaveLength(7);
     expect(html).toContain('data-rich-note-command="attachFiles"');
     expect(html).toContain("Attach File(s)");
+  });
+
+  it("detects temporary rich-note file input click targets", () => {
+    const fileInput = {
+      closest: (selector: string) => selector === '[data-rich-note-file-input="true"]' ? fileInput : null,
+    };
+    const regularButton = {
+      closest: () => null,
+    };
+
+    expect(isRichNoteFileInputTarget(fileInput as unknown as HTMLElement)).toBe(true);
+    expect(isRichNoteFileInputTarget(regularButton as unknown as HTMLElement)).toBe(false);
+    expect(isRichNoteFileInputTarget(null)).toBe(false);
   });
 
   it("syncs pressed state from rich text command state", () => {

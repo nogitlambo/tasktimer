@@ -1,6 +1,8 @@
 import type { Task } from "../lib/types";
 import {
   findScheduleOverlap,
+  formatScheduleSlotTime,
+  formatScheduleTimeRange,
   getScheduleTaskDurationMinutesForDay,
   getSchedulePlacementDays,
   getScheduleTaskDurationMinutes,
@@ -74,6 +76,16 @@ type NormalizeConflict = {
 };
 
 type SchedulePlacementDuration = number | ((day: ScheduleDay) => number);
+
+export type MoveTaskScheduleResult =
+  | { status: "missing" | "noop" | "updated" }
+  | {
+      status: "conflict";
+      day: ScheduleDay;
+      taskName: string;
+      candidateStartText: string | null;
+      conflictingRangeText: string | null;
+    };
 
 export function isScheduleMobileLayout() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
@@ -206,6 +218,16 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     return !!findScheduleOverlap(options.getTasks(), candidate, { excludeTaskId: taskId });
   }
 
+  function getSchedulePlacementOverlap(task: Task, days: ScheduleDay[], startMinutes: number) {
+    const nextTime = formatScheduleStoredTime(startMinutes);
+    const candidate = {
+      ...task,
+      plannedStartByDay: Object.fromEntries(days.map((day) => [day, nextTime])) as TaskPlannedStartByDay,
+      plannedStartOpenEnded: false,
+    } as Task;
+    return findScheduleOverlap(options.getTasks(), candidate, { excludeTaskId: String(task.id || "") });
+  }
+
   function placementHasOverlapOnAnyDay(
     taskId: string,
     days: ScheduleDay[],
@@ -228,17 +250,29 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     const taskId = String(taskIdRaw || "").trim();
     const day = normalizeScheduleDay(dayRaw);
     const sourceDay = normalizeScheduleDay(sourceDayRaw);
-    if (!taskId || !day) return;
+    if (!taskId || !day) return { status: "missing" } as MoveTaskScheduleResult;
     const taskIndex = options.getTasks().findIndex((entry) => String(entry.id || "") === taskId);
-    if (taskIndex < 0) return;
+    if (taskIndex < 0) return { status: "missing" } as MoveTaskScheduleResult;
     const task = options.getTasks()[taskIndex]!;
     const durationMinutes = getScheduleTaskDurationMinutesForDay(task, day) || getScheduleTaskDurationMinutes(task);
-    if (!(durationMinutes > 0)) return;
+    if (!(durationMinutes > 0)) return { status: "noop" } as MoveTaskScheduleResult;
     const startMinutes = snapScheduleMinutes(rawMinutes);
     const placementDays = getSchedulePlacementDaysForTask(task, day, sourceDay);
     const getPlacementDurationMinutes = (placementDay: ScheduleDay) =>
       getScheduleTaskDurationMinutesForDay(task, placementDay) || getScheduleTaskDurationMinutes(task);
-    if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, getPlacementDurationMinutes)) return;
+    if (placementHasOverlapOnAnyDay(taskId, placementDays, startMinutes, getPlacementDurationMinutes)) {
+      const overlap = getSchedulePlacementOverlap(task, placementDays, startMinutes);
+      return {
+        status: "conflict",
+        day: overlap?.day || day,
+        taskName: String(overlap?.task?.name || "another task"),
+        candidateStartText: overlap?.candidateStartMinutes == null ? null : formatScheduleSlotTime(overlap.candidateStartMinutes),
+        conflictingRangeText:
+          overlap?.conflictingStartMinutes == null || overlap?.conflictingEndMinutes == null
+            ? null
+            : formatScheduleTimeRange(overlap.conflictingStartMinutes, overlap.conflictingEndMinutes),
+      } as MoveTaskScheduleResult;
+    }
     const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
     const scheduledDays = getScheduleDaysForTask(task);
     const nextTime = formatScheduleStoredTime(startMinutes);
@@ -259,6 +293,7 @@ export function createTaskTimerScheduleRuntime(options: CreateTaskTimerScheduleR
     options.state.set("selectedDay", day);
     options.save();
     options.render();
+    return { status: "updated" } as MoveTaskScheduleResult;
   }
 
   function getNormalizeConflicts(taskIdRaw: string, sourceDayRaw: unknown): NormalizeConflict[] {

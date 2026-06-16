@@ -6238,30 +6238,20 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegment.isRunning{
-  animation: dashboardTasksCompletedSegmentPulse var(--dashboard-tasks-completed-pulse-duration, 2.4s) ease-in-out infinite;
   filter:
     drop-shadow(0 0 3px rgba(0,0,0,.32))
     drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-  will-change: opacity, filter;
-}@keyframes dashboardTasksCompletedSegmentPulse{0%, 100%{
-    opacity: .72;
-    filter:
-      drop-shadow(0 0 3px rgba(0,0,0,.32))
-      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-    stroke-width: 36;
-  }25%, 75%{
-    opacity: .88;
-    filter:
-      drop-shadow(0 0 3px rgba(0,0,0,.32))
-      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-    stroke-width: 36;
-  }50%{
-    opacity: 1;
-    filter:
-      drop-shadow(0 0 3px rgba(0,0,0,.32))
-      drop-shadow(0 0 10px color-mix(in srgb, currentColor 48%, transparent));
-    stroke-width: 36;
-  }
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegmentSeparator{
+  fill: none;
+  stroke: var(--bg, #0d0f13);
+  stroke-width: 40;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 190px 190px;
+  pointer-events: none;
+  shape-rendering: geometricPrecision;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedConnector{

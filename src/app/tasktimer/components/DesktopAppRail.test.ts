@@ -13,21 +13,21 @@ import {
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
-  it("keeps Session Notes under Tasks in the desktop rail and third in the mobile footer", () => {
+  it("keeps Session Notes before Tasks in the desktop rail and mobile footer", () => {
     const desktopItems = getDesktopRailPrimaryNavItems();
     const mobileItems = getMobileFooterNavItems();
 
     expect(desktopItems.map((item) => item.label)).toEqual([
       "Dashboard",
-      "Tasks",
       "Session Notes",
+      "Tasks",
       "Friends",
       "Leaderboards",
     ]);
     expect(mobileItems.map((item) => item.mobileId)).toEqual([
       "footerDashboardBtn",
-      "footerTasksBtn",
       "footerSessionNotesBtn",
+      "footerTasksBtn",
       "footerTest2Btn",
       "footerLeaderboardBtn",
     ]);

@@ -147,4 +147,51 @@ describe("history entry summary", () => {
     expect(html).not.toContain('data-history-summary-xp-source="true">1</div>');
     expect(html).not.toContain('historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">Pending</div>');
   });
+
+  it("formats session summary attachment sizes in KB and MB", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
+      rewardProgress: null,
+      entries: [
+        {
+          taskId: "task-1",
+          ts: 1_717_200_000_000,
+          ms: 180_000,
+          name: "Focus",
+          attachments: [
+            {
+              id: "file-1",
+              name: "small.pdf",
+              contentType: "application/pdf",
+              size: 2048,
+              storagePath: "users/uid/session-notes/file-1/small.pdf",
+              downloadUrl: "https://example.test/small.pdf",
+              createdAtMs: 1,
+            },
+            {
+              id: "file-2",
+              name: "large.pdf",
+              contentType: "application/pdf",
+              size: 2_621_440,
+              storagePath: "users/uid/session-notes/file-2/large.pdf",
+              downloadUrl: "https://example.test/large.pdf",
+              createdAtMs: 2,
+            },
+          ],
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html).toContain("2 KB");
+    expect(html).toContain("2.5 MB");
+    expect(html).not.toContain("2048 B");
+    expect(html).not.toContain("2621440 B");
+  });
 });

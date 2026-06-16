@@ -1544,6 +1544,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         }
       });
 
+      if (positionedSliceEntries.length > 1) {
+        positionedSliceEntries.forEach(({ slicePct, sliceStartPct }) => {
+          const separatorEl = document.createElementNS(svgNs, "circle");
+          separatorEl.setAttribute("class", "dashboardTasksCompletedSegmentSeparator");
+          separatorEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+          separatorEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+          separatorEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
+          separatorEl.setAttribute("pathLength", "100");
+          separatorEl.setAttribute("stroke-dasharray", `${DASHBOARD_COMPLETED_SEGMENT_GAP_PCT} ${100 - DASHBOARD_COMPLETED_SEGMENT_GAP_PCT}`);
+          separatorEl.setAttribute("stroke-dashoffset", String(-(sliceStartPct + slicePct)));
+          separatorEl.setAttribute("aria-hidden", "true");
+          svgEl.appendChild(separatorEl);
+        });
+      }
+
       positionedSliceEntries.forEach(({ item, statusLabel, key }) => {
         const layout = labelLayoutByKey.get(key);
         if (!layout) return;

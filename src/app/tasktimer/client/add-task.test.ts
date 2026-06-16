@@ -747,7 +747,7 @@ describe("createTaskTimerAddTask", () => {
         altLabel: "Change",
         okLabel: "Continue",
         textHtml:
-          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> New Task to the closest available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-accent",
       })
@@ -802,7 +802,7 @@ describe("createTaskTimerAddTask", () => {
     ]);
   });
 
-  it("schedules the new task to the displayed next available slot when conflict modal Change is chosen", () => {
+  it("schedules the new task to the later closest slot on a tie when conflict modal Change is chosen", () => {
     const existingTask = {
       id: "busy-1",
       name: "Deep Work",
@@ -847,6 +847,63 @@ describe("createTaskTimerAddTask", () => {
       }),
     ]);
     expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenCalledWith("10:00");
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+  });
+
+  it("schedules the new task to an earlier closest slot when conflict modal Change is chosen", () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const laterTask = {
+      ...existingTask,
+      id: "busy-2",
+      name: "Later Work",
+      order: 2,
+      plannedStartTime: "10:00",
+      plannedStartByDay: { mon: "10:00" },
+    };
+    const tasks = [existingTask, laterTask];
+    const harness = createHarness("1", { tasks, taskType: "once-off" });
+    harness.addTaskMsToggle.checked = false;
+
+    harness.toggleSchedule(true);
+    harness.setManualPlannedStart("09:00");
+    harness.submit();
+
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onAlt?.();
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      existingTask,
+      laterTask,
+      expect.objectContaining({
+        plannedStartTime: "08:00",
+        plannedStartByDay: expect.objectContaining({ mon: "08:00" }),
+      }),
+    ]);
+    expect(harness.ctx.setAddTaskPlannedStartTimeState).toHaveBeenCalledWith("08:00");
     expect(harness.ctx.closeConfirm).toHaveBeenCalled();
   });
 
@@ -901,7 +958,7 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.ctx.closeConfirm).toHaveBeenCalled();
   });
 
-  it("opens a switch-only conflict modal when no next free add-task slot exists", () => {
+  it("opens an error-only conflict modal when no add-task slot can resolve the conflict", () => {
     const existingTask = {
       id: "busy-1",
       name: "Deep Work",
@@ -937,15 +994,15 @@ describe("createTaskTimerAddTask", () => {
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
       "Schedule conflict",
-      "No next free timeslot was found.\n\nSwitch Deep Work with New Task?",
+      "No available timeslot was found to resolve the conflict between Deep Work and New Task.",
       expect.objectContaining({
-        okLabel: "Switch",
-        okButtonClassName: "btn btn-ghost",
+        okLabel: "OK",
       })
     );
     const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
     expect(confirmOpts).not.toHaveProperty("altLabel");
     expect(confirmOpts).not.toHaveProperty("onAlt");
+    expect(confirmOpts).not.toHaveProperty("onOk");
     expect(harness.ctx.setTasks).not.toHaveBeenCalled();
   });
 });

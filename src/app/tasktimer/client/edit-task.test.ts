@@ -62,6 +62,7 @@ function overlayStub() {
 function createEditHarness(overrides: {
   sourceTask?: Task;
   busyTask?: Task;
+  extraTasks?: Task[];
   durationValue?: string;
   durationUnit?: "minute" | "hour";
   durationPeriod?: "day" | "week";
@@ -101,7 +102,7 @@ function createEditHarness(overrides: {
       plannedStartByDay: { mon: "09:00" },
     });
   const draft = { ...sourceTask, plannedStartByDay: sourceTask.plannedStartByDay ? { ...sourceTask.plannedStartByDay } : null };
-  const tasks = [sourceTask, busyTask];
+  const tasks = [sourceTask, busyTask, ...(overrides.extraTasks || [])];
   const plannedStartSelectors = overrides.plannedStartSelectors;
   const editPlannedStartHourSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.hour) : selectStub("");
   const editPlannedStartMinuteSelect = plannedStartSelectors ? selectStub(plannedStartSelectors.minute) : selectStub("");
@@ -829,7 +830,7 @@ describe("edit task schedule conflict confirmation", () => {
         altLabel: "Change",
         okLabel: "Continue",
         textHtml:
-          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the next available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
+          "Deep Work - 9:00 AM - 10:00 AM.\n\nDo you want to <strong>change</strong> Focus to the closest available timeslot or <strong>continue</strong> with 9:00 AM and move Deep Work to the closest available timeslot?",
         altButtonClassName: "btn btn-ghost",
         okButtonClassName: "btn btn-accent",
       })
@@ -839,7 +840,7 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.ctx.save).not.toHaveBeenCalled();
   });
 
-  it("updates the edited task planned start time when conflict modal Change is chosen", () => {
+  it("updates the edited task planned start time to the later closest slot on a tie when conflict modal Change is chosen", () => {
     const harness = createEditHarness();
 
     harness.api.closeEdit(true);
@@ -848,6 +849,30 @@ describe("edit task schedule conflict confirmation", () => {
 
     expect(harness.sourceTask.plannedStartTime).toBe("10:00");
     expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "10:00" });
+    expectEditConflictSavedAndClosed(harness);
+  });
+
+  it("updates the edited task planned start time to an earlier closest slot when conflict modal Change is chosen", () => {
+    const harness = createEditHarness({
+      extraTasks: [
+        task({
+          id: "later",
+          name: "Later Work",
+          taskType: "once-off",
+          onceOffDay: "mon",
+          plannedStartDay: "mon",
+          plannedStartTime: "10:00",
+          plannedStartByDay: { mon: "10:00" },
+        }),
+      ],
+    });
+
+    harness.api.closeEdit(true);
+    const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as { onAlt?: () => void } | undefined;
+    options?.onAlt?.();
+
+    expect(harness.sourceTask.plannedStartTime).toBe("08:00");
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "08:00" });
     expectEditConflictSavedAndClosed(harness);
   });
 
@@ -920,7 +945,7 @@ describe("edit task schedule conflict confirmation", () => {
     expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "07:00" });
   });
 
-  it("opens a switch-only conflict modal when no next free edit slot exists", () => {
+  it("opens an error-only conflict modal when no edit slot can resolve the conflict", () => {
     const harness = createEditHarness({
       durationValue: "1430",
       durationUnit: "minute",
@@ -954,15 +979,15 @@ describe("edit task schedule conflict confirmation", () => {
 
     expect(harness.ctx.confirm).toHaveBeenCalledWith(
       "Schedule conflict",
-      "No next free timeslot was found.\n\nSwitch Deep Work with Focus?",
+      "No available timeslot was found to resolve the conflict between Deep Work and Focus.",
       expect.objectContaining({
-        okLabel: "Switch",
-        okButtonClassName: "btn btn-ghost",
+        okLabel: "OK",
       })
     );
     const options = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2] as Record<string, unknown> | undefined;
     expect(options).not.toHaveProperty("altLabel");
     expect(options).not.toHaveProperty("onAlt");
+    expect(options).not.toHaveProperty("onOk");
     expect(harness.ctx.save).not.toHaveBeenCalled();
   });
 });

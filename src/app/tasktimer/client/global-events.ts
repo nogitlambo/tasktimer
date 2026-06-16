@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Task } from "../lib/types";
+import type { TaskTimerConfirmOptions } from "./context";
+import type { MoveTaskScheduleResult } from "./schedule-runtime";
 
 type ScheduleDay = Task["plannedStartDay"];
 type NonNullScheduleDay = NonNullable<ScheduleDay>;
@@ -29,7 +31,8 @@ type RegisterScheduleEventsOptions = {
   getScheduleDragPreviewStartMinutes: () => number | null;
   setScheduleDragPreview: (day: NonNullScheduleDay, startMinutes: number) => void;
   currentAppPage: () => string;
-  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => void;
+  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => MoveTaskScheduleResult;
+  confirm: (title: string, text: string, opts?: TaskTimerConfirmOptions) => void;
   getScheduleDragSourceDay: () => NonNullScheduleDay | null;
   toggleTaskScheduleFlexible: (taskId: string) => { status: "missing" | "noop" | "updated"; flexible?: boolean };
 };
@@ -154,7 +157,21 @@ export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsO
     if (!taskId || !day) return;
     event?.preventDefault?.();
     const startMinutes = options.resolveScheduleDropStartMinutes(dropZone, event?.clientY);
-    options.moveTaskOnSchedule(taskId, day, startMinutes, options.getScheduleDragSourceDay());
+    const result = options.moveTaskOnSchedule(taskId, day, startMinutes, options.getScheduleDragSourceDay());
+    if (result.status === "conflict") {
+      const dayLabel = options.formatScheduleDayLabel(result.day);
+      const placementText = result.candidateStartText ? ` at ${result.candidateStartText}` : "";
+      const conflictText = result.conflictingRangeText ? ` (${result.conflictingRangeText})` : "";
+      options.confirm(
+        "Schedule conflict",
+        `This schedule placement overlaps ${result.taskName}${conflictText} on ${dayLabel}${placementText}. Choose another available time.`,
+        {
+          okLabel: "OK",
+          cancelLabel: "Close",
+          overlayClassName: "isScheduleConflictConfirm",
+        }
+      );
+    }
     options.documentRef.querySelectorAll(".scheduleDayColumn.isDropActive").forEach((node) => node.classList.remove("isDropActive"));
     options.setScheduleDragTaskId(null);
     options.setScheduleDragSourceDay(null);

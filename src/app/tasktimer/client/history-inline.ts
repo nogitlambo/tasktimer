@@ -4,6 +4,7 @@ import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
 import { createHistoryInlineSelectionInteraction } from "./history-inline-selection-interaction";
+import { isRichNoteFileInputTarget } from "./rich-session-notes";
 import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -1415,6 +1416,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (!isHistoryEntryNoteOverlayOpen()) return;
         const target = e.target as HTMLElement | null;
         if (!target) return;
+        if (isRichNoteFileInputTarget(target)) return;
         if (target.closest?.("#historyEntryNoteOverlay")) return;
         if (isHistoryChartInteractionTarget(target)) return;
         closeHistoryEntryNoteOverlay();
@@ -1521,6 +1523,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
       if (!overlay || overlay.dataset.historyEntryOwner !== "inline" || overlay.dataset.historyEntryEditing !== "true") return;
       if (!(e.target as HTMLElement | null)?.closest?.("#historyEntryNoteOverlay")) return;
+      if (isRichNoteFileInputTarget(e.target)) return;
       if ((e.target as HTMLElement | null)?.closest?.("#historyEntryNoteOverlay .historyEntrySummaryNoteInput")) return;
       if ((e.target as HTMLElement | null)?.closest?.('[data-history-summary-action="edit-note"]')) return;
       historyEntrySummaryInteraction.collapseActiveInlineNoteInput();

@@ -1012,13 +1012,34 @@ describe("dashboard completed card", () => {
       const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
       const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
       const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
+      const separatorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedSegmentSeparator") || [];
 
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Goal Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("New Task");
       expect(connectorEls).toHaveLength(2);
+      expect(separatorEls).toHaveLength(2);
+      expect(separatorEls[0]?.getAttribute("stroke-dasharray")).toBe("1.2 98.8");
+      expect(separatorEls[0]?.getAttribute("aria-hidden")).toBe("true");
       expect(centerEl?.innerHTML).toContain("0%");
       expect(centerEl?.innerHTML).toContain("completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("does not add segment edge separators for a single scheduled slice", () => {
+    const tasks = [
+      task({ id: "solo-task", name: "Solo Task", plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const separatorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedSegmentSeparator") || [];
+
+      expect(separatorEls).toHaveLength(0);
     } finally {
       harness.restore();
     }

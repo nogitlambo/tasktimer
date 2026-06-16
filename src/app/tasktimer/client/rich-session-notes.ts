@@ -1,6 +1,11 @@
 const ALLOWED_TAGS = new Set(["b", "strong", "i", "em", "u", "ul", "ol", "li", "br", "p", "div", "a"]);
 const BLOCK_TAGS = new Set(["p", "div", "ul", "ol", "li"]);
 const SAFE_URL_RE = /^(https?:|mailto:|tel:|\/(?!\/)|#)/i;
+export const RICH_NOTE_FILE_INPUT_SELECTOR = '[data-rich-note-file-input="true"]';
+
+export function isRichNoteFileInputTarget(target: EventTarget | null | undefined) {
+  return !!(target as HTMLElement | null)?.closest?.(RICH_NOTE_FILE_INPUT_SELECTOR);
+}
 
 type ValueBackedElement = HTMLElement & { value?: string };
 const STATEFUL_TOOLBAR_COMMANDS = new Set(["bold", "italic", "underline", "insertUnorderedList", "insertOrderedList"]);

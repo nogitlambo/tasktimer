@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   findClosestAvailableScheduleSlot,
+  findClosestAvailableSchedulePlacementSlot,
   findNextAvailableScheduleSlot,
   findScheduleOverlap,
   findFirstAvailableScheduleSlotFromProductivityWindow,
@@ -356,5 +357,51 @@ describe("findClosestAvailableScheduleSlot", () => {
     );
 
     expect(result).toBeNull();
+  });
+});
+
+describe("findClosestAvailableSchedulePlacementSlot", () => {
+  it("requires multi-day same-time placements to fit every scheduled day", () => {
+    const weekly = task({
+      id: "weekly",
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 180,
+      plannedStartDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+    });
+    const result = findClosestAvailableSchedulePlacementSlot(
+      [
+        task({ id: "mon-busy", plannedStartDay: "mon", onceOffDay: "mon", plannedStartTime: "09:00", plannedStartByDay: { mon: "09:00" } }),
+        task({ id: "wed-busy", plannedStartDay: "wed", onceOffDay: "wed", plannedStartTime: "08:00", plannedStartByDay: { wed: "08:00" } }),
+        task({ id: "fri-busy", plannedStartDay: "fri", onceOffDay: "fri", plannedStartTime: "11:00", plannedStartByDay: { fri: "11:00" } }),
+      ],
+      weekly
+    );
+
+    expect(result).toEqual({ day: "mon", days: ["mon", "wed", "fri"], startMinutes: 600 });
+  });
+
+  it("uses only the conflicting day for mixed-time placements", () => {
+    const weekly = task({
+      id: "weekly",
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 180,
+      plannedStartDay: null,
+      plannedStartTime: null,
+      plannedStartByDay: { mon: "09:00", wed: "11:00", fri: "11:00" },
+    });
+    const result = findClosestAvailableSchedulePlacementSlot(
+      [
+        task({ id: "wed-busy", plannedStartDay: "wed", onceOffDay: "wed", plannedStartTime: "11:00", plannedStartByDay: { wed: "11:00" } }),
+        task({ id: "mon-busy", plannedStartDay: "mon", onceOffDay: "mon", plannedStartTime: "12:00", plannedStartByDay: { mon: "12:00" } }),
+        task({ id: "fri-busy", plannedStartDay: "fri", onceOffDay: "fri", plannedStartTime: "12:00", plannedStartByDay: { fri: "12:00" } }),
+      ],
+      weekly
+    );
+
+    expect(result).toEqual({ day: "wed", days: ["wed"], startMinutes: 720 });
   });
 });

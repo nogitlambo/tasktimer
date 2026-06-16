@@ -2331,8 +2331,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   display:none;
 }
 
-.sessionNoteAttachments[data-uploading="true"]::before{
-  content:"Uploading...";
+.sessionNoteAttachmentStatus{
   color:#b1ff59;
 }
 

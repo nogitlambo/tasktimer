@@ -1,5 +1,7 @@
 import type { Task } from "../lib/types";
+import type { TaskTimerConfirmOptions } from "./context";
 import type { TaskTimerElements } from "./elements";
+import type { MoveTaskScheduleResult } from "./schedule-runtime";
 import {
   registerTaskTimerDashboardShellEvents,
   registerTaskTimerScheduleEvents,
@@ -49,7 +51,8 @@ type RegisterRootEventsOptions = {
   getScheduleDragPreviewStartMinutes: () => number | null;
   setScheduleDragPreview: (day: NonNullScheduleDay, startMinutes: number) => void;
   currentAppPage: () => AppPage;
-  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => void;
+  moveTaskOnSchedule: (taskId: string, day: NonNullScheduleDay, startMinutes: number, sourceDay?: NonNullScheduleDay | null) => MoveTaskScheduleResult;
+  confirm: (title: string, text: string, opts?: TaskTimerConfirmOptions) => void;
   toggleTaskScheduleFlexible: (taskId: string) => { status: "missing" | "noop" | "updated"; flexible?: boolean };
   openOverlay: (overlay: HTMLElement | null) => void;
   getTaskView: () => "list" | "tile";
@@ -166,6 +169,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     setScheduleDragPreview: options.setScheduleDragPreview,
     currentAppPage: options.currentAppPage,
     moveTaskOnSchedule: options.moveTaskOnSchedule,
+    confirm: options.confirm,
     toggleTaskScheduleFlexible: options.toggleTaskScheduleFlexible,
   });
 
