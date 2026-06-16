@@ -392,6 +392,22 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("acknowledges completion when the completion modal opens", () => {
+    const harness = createCompletionHarness({ withCheckpoint: true });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.openOverlay).toHaveBeenCalled();
+      expect(harness.windowStub.localStorage.setItem).toHaveBeenCalledWith(
+        "tasktimer:time-goal-ack",
+        expect.stringContaining("task-1")
+      );
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("does not clear checkpoint toasts for unrelated tasks when completion opens", () => {
     const harness = createCompletionHarness({
       activeToastTaskId: "task-2",

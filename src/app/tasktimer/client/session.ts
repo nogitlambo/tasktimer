@@ -206,6 +206,15 @@ export function isFinalizedTimeGoalCompletionAwaitingAcknowledgement(
   return !opts.hasAcknowledged;
 }
 
+export function getTimeGoalCompletionAcknowledgementId(task: Task | null | undefined): string {
+  const taskId = String(task?.id || "").trim();
+  const periodKey =
+    task?.timeGoalPeriod === "week"
+      ? String(task?.timeGoalCompletedWeekKey || "").trim()
+      : String(task?.timeGoalCompletedDayKey || "").trim();
+  return taskId && periodKey ? `${taskId}:${periodKey}` : "";
+}
+
 export function getTimeGoalCompleteMetaMessage(
   nextTaskOptions: TimeGoalCompleteNextTaskOption[]
 ): string {
@@ -1084,6 +1093,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function getTimeGoalCompletionAckId(task: Task | null | undefined): string {
+    return getTimeGoalCompletionAcknowledgementId(task);
+  }
+
+  function getLegacyTimeGoalCompletionAckId(task: Task | null | undefined): string {
     const taskId = String(task?.id || "").trim();
     const completedAtMs = Math.max(0, Math.floor(Number(task?.timeGoalCompletedAtMs || 0) || 0));
     const periodKey =
@@ -1105,7 +1118,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function hasAcknowledgedTimeGoalCompletion(task: Task | null | undefined): boolean {
     const ackId = getTimeGoalCompletionAckId(task);
-    return !!ackId && loadTimeGoalCompletionAckMap()[ackId] === true;
+    const legacyAckId = getLegacyTimeGoalCompletionAckId(task);
+    const ackMap = loadTimeGoalCompletionAckMap();
+    return (!!ackId && ackMap[ackId] === true) || (!!legacyAckId && ackMap[legacyAckId] === true);
   }
 
   function acknowledgeTimeGoalCompletion(task: Task | null | undefined) {
@@ -1265,6 +1280,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
     suppressCheckpointToastsForTask(taskId);
+    acknowledgeTimeGoalCompletion(task);
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
     if (els.timeGoalCompleteOverlay) {

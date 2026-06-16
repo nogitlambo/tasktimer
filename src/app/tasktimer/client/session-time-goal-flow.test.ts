@@ -6,6 +6,7 @@ import {
   didElapsedReachTimeGoalFromBaseline,
   findTimeGoalCompleteNextScheduledTask,
   getCheckpointAlertCompletionPriority,
+  getTimeGoalCompletionAcknowledgementId,
   getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
   isFinalizedTimeGoalCompletionAwaitingAcknowledgement,
@@ -543,6 +544,31 @@ describe("time goal complete next task launcher", () => {
 
     expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: false, nowMs: nowValue })).toBe(true);
     expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: true, nowMs: nowValue })).toBe(false);
+  });
+
+  it("uses one acknowledgement id for the same task and local day", () => {
+    const morning = new Date(2026, 4, 7, 9, 0, 0).getTime();
+    const afternoon = new Date(2026, 4, 7, 15, 0, 0).getTime();
+    const completedMorning = timeGoalTask({
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(morning),
+      timeGoalCompletedAtMs: morning,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+    const completedAfternoon = timeGoalTask({
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(afternoon),
+      timeGoalCompletedAtMs: afternoon,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(getTimeGoalCompletionAcknowledgementId(completedAfternoon)).toBe(
+      getTimeGoalCompletionAcknowledgementId(completedMorning)
+    );
   });
 
   it("does not reopen a finalized completion from a previous day", () => {
