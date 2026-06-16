@@ -754,28 +754,31 @@ function scheduleDayMatches(day, ts) {
 function isUnscheduledGapCandidateTask(taskData) {
   return (
     normalizeDayGoalMinutes(taskData) != null &&
-    !asString(taskData.plannedStartTime) &&
-    !normalizeScheduleDay(taskData.plannedStartDay) &&
+    !getPlannedStartEntries(taskData.plannedStartDay, taskData.plannedStartTime, taskData.plannedStartByDay).length &&
     taskData.plannedStartOpenEnded !== true
   );
 }
 
 function buildScheduledBlocksForDay(taskRows, ts) {
   return taskRows
-    .map((taskData) => {
+    .flatMap((taskData) => {
       const durationMinutes = normalizeDayGoalMinutes(taskData);
-      const startMinutes = parseScheduleTimeMinutes(taskData.plannedStartTime);
-      if (durationMinutes == null || startMinutes == null) return null;
-      if (taskData.plannedStartOpenEnded === true) return null;
-      if (!scheduleDayMatches(taskData.plannedStartDay, ts)) return null;
-      const endMinutes = startMinutes + durationMinutes;
-      if (endMinutes > 24 * 60) return null;
-      return {
-        startMinutes,
-        endMinutes,
-      };
+      if (durationMinutes == null) return [];
+      if (taskData.plannedStartOpenEnded === true) return [];
+      return getPlannedStartEntries(taskData.plannedStartDay, taskData.plannedStartTime, taskData.plannedStartByDay)
+        .filter((entry) => scheduleDayMatches(entry.day, ts))
+        .map((entry) => {
+          const startMinutes = parseScheduleTimeMinutes(entry.time);
+          if (startMinutes == null) return null;
+          const endMinutes = startMinutes + durationMinutes;
+          if (endMinutes > 24 * 60) return null;
+          return {
+            startMinutes,
+            endMinutes,
+          };
+        })
+        .filter(Boolean);
     })
-    .filter(Boolean)
     .sort((a, b) => a.startMinutes - b.startMinutes);
 }
 
@@ -1935,7 +1938,9 @@ export const sendDueTimeGoalPushes = onSchedule(
 export const __testing = {
   buildScheduledPushData,
   buildWebPushPayload,
+  buildScheduledBlocksForDay,
   extractAndroidDeviceRows,
+  isUnscheduledGapCandidateTask,
   sendScheduledTaskNotification,
   processDuePlannedStartTask,
   processDueTimeGoalCompleteTask,

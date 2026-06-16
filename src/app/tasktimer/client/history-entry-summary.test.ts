@@ -148,7 +148,7 @@ describe("history entry summary", () => {
     expect(html).not.toContain('historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">Pending</div>');
   });
 
-  it("formats session summary attachment sizes in KB and MB", () => {
+  it("renders session summary attachments as a comma-separated editable filename and size list", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",
       task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
@@ -189,8 +189,16 @@ describe("history entry summary", () => {
 
     const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
 
-    expect(html).toContain("2 KB");
-    expect(html).toContain("2.5 MB");
+    expect(html).toContain("sessionNoteAttachmentItem");
+    expect(html).toContain("large.pdf</a> <span class=\"sessionNoteAttachmentMeta\">(2.5MB)</span>");
+    expect(html).toContain("small.pdf</a> <span class=\"sessionNoteAttachmentMeta\">(2KB)</span>");
+    expect(html).toContain("</button></span>, <span class=\"sessionNoteAttachmentItem\"");
+    expect(html).toContain('data-session-note-attachment-id="file-1"');
+    expect(html).toContain('data-session-note-attachment-id="file-2"');
+    expect(html).toContain('data-session-note-attachment-remove="file-1"');
+    expect(html).toContain('data-session-note-attachment-remove="file-2"');
+    expect(html).not.toContain("2 KB");
+    expect(html).not.toContain("2.5 MB");
     expect(html).not.toContain("2048 B");
     expect(html).not.toContain("2621440 B");
   });

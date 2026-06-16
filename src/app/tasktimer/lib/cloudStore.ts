@@ -843,6 +843,21 @@ function normalizeNullableInt(raw: unknown): number | null {
   return Number.isFinite(Number(raw)) ? Math.floor(Number(raw)) : null;
 }
 
+function getPersistedPlannedStartTime(task: Task): string | null {
+  const plannedStartTime = normalizeScheduleStoredTime(task.plannedStartTime);
+  if (plannedStartTime) return plannedStartTime;
+
+  const byDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+  if (!byDay) return null;
+
+  const times = SCHEDULE_DAY_ORDER.flatMap((day) => {
+    const time = normalizeScheduleStoredTime(byDay[day]);
+    return time ? [time] : [];
+  });
+  const uniqueTimes = Array.from(new Set(times));
+  return uniqueTimes.length === 1 ? uniqueTimes[0] || null : null;
+}
+
 function normalizePlannedStartDay(raw: unknown): Task["plannedStartDay"] {
   const value = String(raw || "").trim().toLowerCase();
   return value === "mon" ||
@@ -1052,6 +1067,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task, context?: Sche
   const baseEventType = preservePendingMissedCheck ? "plannedStartReminder" : eventType;
   const effectiveEventType = preservePendingMissedCheck ? "missedScheduledTask" : eventType;
   const timeGoalMinutes = normalizeDayTimeGoalMinutes(task);
+  const persistedPlannedStartTime = getPersistedPlannedStartTime(task);
   const payload = {
     ownerUid: uid,
     taskId,
@@ -1068,7 +1084,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task, context?: Sche
     timeGoalCompletionWeekKey: notificationKind === "timeGoalComplete" ? pushPlan.timeGoalCompletionWeekKey : null,
     weekStarting: notificationKind === "timeGoalComplete" ? pushPlan.weekStarting : null,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
-    plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+    plannedStartTime: persistedPlannedStartTime,
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
     route: "/tasklaunch",
@@ -1111,7 +1127,7 @@ async function syncScheduledTimeGoalPush(uid: string, task: Task, context?: Sche
         taskName: String(task.name || "").trim() || "Task",
         eventType,
         dueAtMs: effectiveDueAtMs,
-        plannedStartTime: String(task.plannedStartTime || "").trim() || null,
+        plannedStartTime: persistedPlannedStartTime,
         plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
         plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
         route: "/tasklaunch",
@@ -1281,8 +1297,7 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     onceOffDay: task.taskType === "once-off" ? normalizePlannedStartDay(task.onceOffDay) : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,
     plannedStartDay: normalizePlannedStartDay(task.plannedStartDay),
-    plannedStartTime:
-      task.plannedStartTime == null ? null : String(task.plannedStartTime).trim() || null,
+    plannedStartTime: getPersistedPlannedStartTime(task),
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,

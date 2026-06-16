@@ -28,7 +28,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_REVEAL_OPEN_MS = 720;
   const HISTORY_REVEAL_CLOSE_MS = 480;
   const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
-  const HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS = [0, 32, 96, 180] as const;
   const HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS = [0, 120, 280, HISTORY_REVEAL_OPEN_MS + 32] as const;
   const HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX = 12;
   const HISTORY_INLINE_CHART_LABEL_COLOR = "#fff";
@@ -82,6 +81,26 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     historyCanvasResizeObservers.set(taskId, { observer, element: wrap });
   }
 
+  function syncHistoryRevealPhaseDom(taskId: string, revealPhase: HistoryViewState["revealPhase"]) {
+    if (!els.taskList) return;
+    const taskEl = els.taskList.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
+    if (!taskEl) return;
+    const isOpening = revealPhase === "opening";
+    const isClosing = revealPhase === "closing";
+    const isOpen = revealPhase === "open";
+    taskEl.classList.toggle("taskHistoryOpening", isOpening);
+    taskEl.classList.toggle("taskHistoryClosing", isClosing);
+    taskEl.classList.toggle("taskHistoryOpen", isOpen);
+    const historyInline = taskEl.querySelector(".historyInlineMotion") as HTMLElement | null;
+    historyInline?.classList.toggle("isOpening", isOpening);
+    historyInline?.classList.toggle("isClosing", isClosing);
+    historyInline?.classList.toggle("isOpen", isOpen);
+    const revealBtn = taskEl.querySelector(".taskHistoryReveal") as HTMLElement | null;
+    revealBtn?.classList.toggle("isOpening", isOpening);
+    revealBtn?.classList.toggle("isClosing", isClosing);
+    revealBtn?.classList.toggle("isOpen", isOpen);
+  }
+
   function queueHistoryLayoutRetry(taskId: string, state: HistoryViewState, attemptsRemaining = HISTORY_LAYOUT_RETRY_MAX_FRAMES) {
     if (state.layoutRetryRaf != null) return;
     state.layoutRetryRaf = window.requestAnimationFrame(() => {
@@ -94,16 +113,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         queueHistoryLayoutRetry(taskId, nextState, attemptsRemaining - 1);
       }
     });
-  }
-
-  function scheduleHistoryOpenSettledRenders(taskId: string) {
-    for (const delayMs of HISTORY_OPEN_SETTLE_REPAINT_DELAYS_MS) {
-      window.setTimeout(() => {
-        if (ctx.getCurrentAppPage() !== "tasks") return;
-        if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
-        renderHistory(taskId);
-      }, delayMs);
-    }
   }
 
   function getHistoryVisibleViewportBounds() {
@@ -162,20 +171,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }
   }
 
-  function renderAllOpenHistoryChartsAfterLayout(delayMs = 0) {
-    const run = () => {
+  function renderHistoryChartAfterLayout(taskId: string) {
+    window.requestAnimationFrame(() => {
       if (ctx.getCurrentAppPage() !== "tasks") return;
-      window.requestAnimationFrame(() => {
-        for (const openTaskId of ctx.getOpenHistoryTaskIds()) {
-          renderHistory(openTaskId);
-        }
-      });
-    };
-    if (delayMs > 0) {
-      window.setTimeout(run, delayMs);
-      return;
-    }
-    run();
+      if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+      renderHistory(taskId);
+    });
   }
 
   function queueHistoryRevealTimer(state: HistoryViewState, delayMs: number, callback: () => void) {
@@ -1335,9 +1336,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     state.revealPhase = reducedMotion ? "open" : "opening";
     state.barRevealProgress = 1;
     ctx.render();
-    renderAllOpenHistoryChartsAfterLayout();
-    renderAllOpenHistoryChartsAfterLayout(32);
-    scheduleHistoryOpenSettledRenders(taskId);
+    renderHistoryChartAfterLayout(taskId);
     scheduleHistoryOpenScrollIntoView(taskId);
     if (reducedMotion) return;
     queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
@@ -1345,10 +1344,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const nextState = ctx.getHistoryViewByTaskId()[taskId];
       if (!nextState) return;
       nextState.revealPhase = "open";
-      ctx.render();
-      renderAllOpenHistoryChartsAfterLayout();
-      renderAllOpenHistoryChartsAfterLayout(32);
-      scheduleHistoryOpenSettledRenders(taskId);
+      syncHistoryRevealPhaseDom(taskId, "open");
     });
   }
 

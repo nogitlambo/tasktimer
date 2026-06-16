@@ -53,7 +53,7 @@ describe("renderSessionNotesHtml", () => {
     expect(html).not.toContain("<script");
   });
 
-  it("renders note attachments beside note content", () => {
+  it("renders note attachments below note cards as a comma-separated filename and size list", () => {
     const html = renderSessionNotesHtml({
       tasks: [{ id: "task-1", name: "Deep Work" } as never],
       deletedTaskMeta: {},
@@ -75,6 +75,15 @@ describe("renderSessionNotesHtml", () => {
                 downloadUrl: "https://example.test/report.pdf",
                 createdAtMs: 1,
               },
+              {
+                id: "file-2",
+                name: "image.jpeg",
+                contentType: "image/jpeg",
+                size: 1153434,
+                storagePath: "users/uid/session-notes/file-2/image.jpeg",
+                downloadUrl: "https://example.test/image.jpeg",
+                createdAtMs: 2,
+              },
             ],
           },
         ],
@@ -82,9 +91,16 @@ describe("renderSessionNotesHtml", () => {
     });
 
     expect(html).toContain("sessionNoteContentGrid");
+    expect(html).toContain("sessionNoteEntry");
     expect(html).toContain("sessionNoteAttachments");
     expect(html).toContain("-report-.pdf");
+    expect(html).toContain("-report-.pdf</a> <span class=\"sessionNoteAttachmentMeta\">(2KB)</span>");
+    expect(html).toContain("(2KB)");
+    expect(html).toContain("</span>, <span class=\"sessionNoteAttachmentItem\"><a class=\"sessionNoteAttachmentLink\"");
+    expect(html).toContain("image.jpeg</a> <span class=\"sessionNoteAttachmentMeta\">(1.1MB)</span>");
     expect(html).toContain("Attachment-only note");
+    expect(html.indexOf("</article>")).toBeLessThan(html.indexOf('<div class="sessionNoteAttachments"'));
+    expect(html.indexOf("sessionNoteContentGrid")).toBeLessThan(html.indexOf("</article>"));
   });
 
   it("adds a task color custom property to active task headers", () => {

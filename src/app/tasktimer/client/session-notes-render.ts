@@ -75,6 +75,10 @@ function formatFileSize(sizeRaw: unknown) {
   return `${size} B`;
 }
 
+function formatInlineFileSize(sizeRaw: unknown) {
+  return formatFileSize(sizeRaw).replace(" ", "");
+}
+
 function taskColorToRgb(value: unknown) {
   const color = normalizeTaskColor(value);
   if (!color) return null;
@@ -91,12 +95,9 @@ function renderAttachmentList(attachments: SessionNoteAttachment[]) {
   return `<div class="sessionNoteAttachments" aria-label="Session note attachments">${attachments
     .map((attachment) => {
       const name = attachment.name || "Attachment";
-      return `<div class="sessionNoteAttachmentRow">
-        <a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>
-        <span class="sessionNoteAttachmentMeta">${escapeHtml(formatFileSize(attachment.size))}</span>
-      </div>`;
+      return `<span class="sessionNoteAttachmentItem"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a> <span class="sessionNoteAttachmentMeta">(${escapeHtml(formatInlineFileSize(attachment.size))})</span></span>`;
     })
-    .join("")}</div>`;
+    .join(", ")}</div>`;
 }
 
 function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): SessionNoteRow[] {
@@ -183,17 +184,19 @@ export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listE
             .sort((left, right) => right.ts - left.ts)
             .map(
               (row) => `
-                <article class="sessionNoteCard">
-                  <div class="sessionNoteMeta">
-                    <span>${escapeHtml(formatTimeLabel(row.ts))}</span>
-                    <span>${escapeHtml(formatElapsed(row.elapsedMs))}</span>
-                    ${row.isLive ? '<span class="sessionNoteLive">Live</span>' : ""}
-                  </div>
-                  <div class="sessionNoteContentGrid">
-                    <div class="sessionNoteBody" title="${escapeHtml(row.noteText)}">${row.noteHtml || '<span class="sessionNoteAttachmentOnly">Attachment-only note</span>'}</div>
-                    ${renderAttachmentList(row.attachments)}
-                  </div>
-                </article>
+                <div class="sessionNoteEntry">
+                  <article class="sessionNoteCard">
+                    <div class="sessionNoteMeta">
+                      <span>${escapeHtml(formatTimeLabel(row.ts))}</span>
+                      <span>${escapeHtml(formatElapsed(row.elapsedMs))}</span>
+                      ${row.isLive ? '<span class="sessionNoteLive">Live</span>' : ""}
+                    </div>
+                    <div class="sessionNoteContentGrid">
+                      <div class="sessionNoteBody" title="${escapeHtml(row.noteText)}">${row.noteHtml || '<span class="sessionNoteAttachmentOnly">Attachment-only note</span>'}</div>
+                    </div>
+                  </article>
+                  ${renderAttachmentList(row.attachments)}
+                </div>
               `
             )
             .join("");

@@ -107,6 +107,13 @@
   gap: 8px;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteEntry{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteCard{
   border: 1px solid #20242b;
   background: #0d0f13;
@@ -145,7 +152,18 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteContentGrid{
-  grid-template-columns:minmax(0, 1fr) minmax(190px, 260px);
+  grid-template-columns:minmax(0, 1fr);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteAttachments{
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteAttachmentItem{
+  display: inline;
 }
 
 @media (max-width: 720px){

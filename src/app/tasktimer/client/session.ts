@@ -734,6 +734,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return `${size} B`;
   }
 
+  function formatInlineAttachmentSize(sizeRaw: unknown) {
+    return formatAttachmentSize(sizeRaw).replace(" ", "");
+  }
+
   function escapeAttr(value: unknown) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -753,6 +757,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return;
     }
     container.setAttribute("data-empty", "false");
+    if (container.closest?.("#historyEntryNoteOverlay") && String(opts?.editorId || "").startsWith("historyEntrySummaryNoteInput-")) {
+      container.innerHTML = attachments
+        .map(
+          (attachment) =>
+            `<span class="sessionNoteAttachmentItem" data-session-note-attachment-id="${escapeAttr(attachment.id)}"><a class="sessionNoteAttachmentLink" href="${escapeAttr(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeAttr(attachment.name || "Attachment")}</a> <span class="sessionNoteAttachmentMeta">(${escapeAttr(formatInlineAttachmentSize(attachment.size))})</span>${opts?.editable !== false ? `<button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeAttr(attachment.id)}">x</button>` : ""}</span>`
+        )
+        .join(", ");
+      return;
+    }
     container.innerHTML = attachments
       .map(
         (attachment) => `<div class="sessionNoteAttachmentRow" data-session-note-attachment-id="${escapeAttr(attachment.id)}">

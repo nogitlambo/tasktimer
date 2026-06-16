@@ -534,3 +534,36 @@ describe("processDueTimeGoalCompleteTask", () => {
     expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("scheduled task schedule helpers", () => {
+  it("does not classify by-day planned starts as unscheduled gaps when plannedStartTime is null", () => {
+    expect(
+      __testing.isUnscheduledGapCandidateTask({
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartTime: null,
+        plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
+        plannedStartOpenEnded: false,
+      })
+    ).toBe(false);
+  });
+
+  it("builds scheduled blocks from by-day planned starts when plannedStartTime is null", () => {
+    const blocks = __testing.buildScheduledBlocksForDay(
+      [
+        {
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          plannedStartTime: null,
+          plannedStartByDay: { mon: "09:00", wed: "10:00" },
+          plannedStartOpenEnded: false,
+        },
+      ],
+      new Date(2026, 5, 1, 9, 30, 0).getTime()
+    );
+
+    expect(blocks).toEqual([{ startMinutes: 9 * 60, endMinutes: 10 * 60 }]);
+  });
+});

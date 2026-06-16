@@ -568,10 +568,23 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   z-index: 1;
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:has(.historyInline){
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpening,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryClosing,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpen{
   --task-inline-history-chart-height: 293px;
   --task-history-drawer-space: calc(var(--task-inline-history-chart-height) + 172px);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpen{
   padding-bottom: var(--task-history-drawer-space) !important;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpening{
+  animation: taskHistoryDrawerSpaceOpen .72s cubic-bezier(.18,.84,.22,1) both;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryClosing{
+  animation: taskHistoryDrawerSpaceClose .48s cubic-bezier(.4,0,.2,1) both;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyRangeRow{
@@ -579,12 +592,16 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 }
 
 @media (max-width: 640px){
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:has(.historyInline){
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpening,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryClosing,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpen{
     --task-inline-history-chart-height: 244px;
   }
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:has(.historyInline) .taskFaceShellFront{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpening .taskFaceShellFront,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryClosing .taskFaceShellFront,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpen .taskFaceShellFront{
   overflow: visible;
 }
 
@@ -630,11 +647,12 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 .historyInline.historyInlineMotion{
   overflow:hidden;
   transform-origin: top center;
-  will-change: max-height, transform, clip-path;
+  will-change: transform, opacity, clip-path;
 }
 
 .historyInline.historyInlineMotion.isOpen{
   transform: translateY(0);
+  opacity: 1;
   clip-path: inset(0 0 0 0);
 }
 
@@ -646,22 +664,40 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   pointer-events:none;
   animation: historyInlineSlideClose .48s cubic-bezier(.4,0,.2,1) both;
 }@keyframes historyInlineSlideOpen{0%{
-    transform: translateY(0);
+    transform: translateY(-18px);
+    opacity: 0;
     clip-path: inset(0 0 100% 0);
-    max-height:0;
   }100%{
     transform: translateY(0);
+    opacity: 1;
     clip-path: inset(0 0 0 0);
-    max-height:520px;
   }
 }@keyframes historyInlineSlideClose{0%{
     transform: translateY(0);
+    opacity: 1;
     clip-path: inset(0 0 0 0);
-    max-height:520px;
   }100%{
-    transform: translateY(0);
+    transform: translateY(-12px);
+    opacity: 0;
     clip-path: inset(0 0 100% 0);
-    max-height:0;
+  }
+}
+
+@keyframes taskHistoryDrawerSpaceOpen{
+  0%{
+    padding-bottom: 0;
+  }
+  100%{
+    padding-bottom: var(--task-history-drawer-space);
+  }
+}
+
+@keyframes taskHistoryDrawerSpaceClose{
+  0%{
+    padding-bottom: var(--task-history-drawer-space);
+  }
+  100%{
+    padding-bottom: 0;
   }
 }
 
@@ -669,6 +705,14 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 .historyInline.historyInlineMotion.isOpening,
   .historyInline.historyInlineMotion.isClosing{
     animation:none;
+    transform: translateY(0);
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryOpening,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskHistoryClosing{
+    animation:none;
+    padding-bottom: var(--task-history-drawer-space);
   }
 }
 

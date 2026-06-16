@@ -4370,6 +4370,26 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: transparent;
 }
 
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .sessionNoteEditorGrid{
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .sessionNoteAttachments{
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .sessionNoteAttachmentItem{
+  display: inline;
+}
+
+#historyEntryNoteOverlay .historyEntrySummaryNoteBlock .sessionNoteAttachmentRemoveBtn{
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 #historyEntryNoteOverlay .historyEntrySummaryNoteActions{
   display: flex;
   align-items: center;

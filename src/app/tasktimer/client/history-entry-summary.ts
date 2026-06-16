@@ -92,6 +92,10 @@ function formatAttachmentSize(sizeRaw: unknown) {
   return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
+function formatInlineAttachmentSize(sizeRaw: unknown) {
+  return formatAttachmentSize(sizeRaw).replace(" ", "");
+}
+
 function formatOrdinalDay(day: number) {
   const absDay = Math.abs(Math.floor(day));
   const mod100 = absDay % 100;
@@ -341,6 +345,13 @@ export function renderHistoryEntrySummaryHtml(
   escapeHtml: (value: unknown) => string
 ) {
   const showSessionHeading = payload.sessions.length > 1;
+  const renderAttachmentList = (session: HistoryEntrySummaryItem, editorId: string) =>
+    `<div class="sessionNoteAttachments" data-session-note-attachment-editor="${editorId}" aria-live="polite">${session.attachments
+      .map(
+        (attachment) =>
+          `<span class="sessionNoteAttachmentItem" data-session-note-attachment-id="${escapeHtml(attachment.id)}"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(attachment.name || "Attachment")}</a> <span class="sessionNoteAttachmentMeta">(${escapeHtml(formatInlineAttachmentSize(attachment.size))})</span><button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeHtml(attachment.id)}">x</button></span>`
+      )
+      .join(", ")}</div>`;
   const renderField = (label: string, value: string) => `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
@@ -372,6 +383,7 @@ export function renderHistoryEntrySummaryHtml(
 
   const sessionsHtml = payload.sessions
     .map((session, index) => {
+      const editorId = `historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}`;
       const deleteButtonHtml =
         session.taskId && session.ts > 0 && session.name
           ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" /></button>`
@@ -393,12 +405,10 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryNoteRow">
           <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">
             <div class="historyEntrySummaryLabel">Session note</div>
-            ${richNoteToolbarHtml(`historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}`)}
+            ${richNoteToolbarHtml(editorId)}
             <div class="sessionNoteEditorGrid">
-              <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">${session.hasNote ? session.noteText : ""}</div>
-              <div class="sessionNoteAttachments" data-session-note-attachment-editor="historyEntrySummaryNoteInput-${escapeHtml(session.taskId)}-${escapeHtml(session.ts)}-${escapeHtml(index)}" aria-live="polite">${session.attachments
-                .map((attachment) => `<div class="sessionNoteAttachmentRow" data-session-note-attachment-id="${escapeHtml(attachment.id)}"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(attachment.name || "Attachment")}</a><span class="sessionNoteAttachmentMeta">${escapeHtml(formatAttachmentSize(attachment.size))}</span><button class="iconBtn sessionNoteAttachmentRemoveBtn" type="button" aria-label="Remove attachment" title="Remove attachment" data-session-note-attachment-remove="${escapeHtml(attachment.id)}">x</button></div>`)
-                .join("")}</div>
+              <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="${editorId}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">${session.hasNote ? session.noteText : ""}</div>
+              ${renderAttachmentList(session, editorId)}
             </div>
           </div>
         </div>

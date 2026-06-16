@@ -225,11 +225,14 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     });
 
     for (const taskId of openHistoryTaskIds) options.renderHistory(taskId);
-    if (openHistoryTaskIds.size) {
+    const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => historyViewByTaskId[taskId]?.revealPhase !== "opening");
+    if (stableOpenHistoryTaskIds.length) {
       options.requestAnimationFrameRef(() => {
         options.requestAnimationFrameRef(() => {
           if (options.getCurrentAppPage() !== "tasks") return;
-          for (const taskId of options.getOpenHistoryTaskIds()) options.renderHistory(taskId);
+          for (const taskId of stableOpenHistoryTaskIds) {
+            if (options.getOpenHistoryTaskIds().has(taskId)) options.renderHistory(taskId);
+          }
         });
       });
     }

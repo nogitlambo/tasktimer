@@ -109,7 +109,7 @@ describe("task card view model", () => {
       isSharedByOwner: true,
     });
 
-    expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse");
+    expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse taskHistoryOpening");
     expect(rendered.html).toContain('data-action="stop"');
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
     expect(rendered.html).toContain("historyInlineMotion isOpening");
@@ -165,6 +165,8 @@ describe("task card view model", () => {
     expect(css).toContain("center bottom / var(--task-card-tab-border-gap) 22px no-repeat");
     expect(css).toContain("border: 1px solid var(--task-card-bottom-border-color, rgba(255,255,255,.12)) !important;");
     expect(css).toContain("border-top: 0 !important;");
+    expect(css).toContain(".task.taskHistoryOpening");
+    expect(css).toContain("@keyframes taskHistoryDrawerSpaceOpen");
   });
 
   it("keeps mobile task cards within the active Tasks viewport", () => {

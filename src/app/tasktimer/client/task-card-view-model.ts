@@ -264,7 +264,10 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     (task.running ? " taskRunning" : "") +
     (isTimeGoalCompleted ? " taskCompleted" : "") +
     (task.collapsed ? " collapsed" : "") +
-    (hasCheckpointRepeatForTask || hasActiveToastForTask ? " taskAlertPulse" : "");
+    (hasCheckpointRepeatForTask || hasActiveToastForTask ? " taskAlertPulse" : "") +
+    (historyRevealPhase === "opening" ? " taskHistoryOpening" : "") +
+    (historyRevealPhase === "closing" ? " taskHistoryClosing" : "") +
+    (historyRevealPhase === "open" ? " taskHistoryOpen" : "");
   const taskColor = normalizeTaskColor(task.color);
   const taskColorPillHtml = taskColor
     ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${escapeHtml(taskColor)}"></span>`
