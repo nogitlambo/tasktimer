@@ -6189,6 +6189,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   opacity: .95;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedTicks:not(.isEmpty) .dashboardTasksCompletedTrack{
+  stroke: #0d0f13;
+  opacity: 1;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedNeedle{
   stroke: rgba(226, 236, 244, .92);
   stroke-width: 1.9;
@@ -6245,11 +6250,19 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedSegmentSeparator{
   fill: none;
-  stroke: var(--bg, #0d0f13);
+  stroke: #0d0f13;
   stroke-width: 40;
   stroke-linecap: butt;
   transform: rotate(-90deg);
   transform-origin: 190px 190px;
+  pointer-events: none;
+  shape-rendering: geometricPrecision;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedRingEdge{
+  fill: none;
+  stroke: #0d0f13;
+  stroke-width: 5;
   pointer-events: none;
   shape-rendering: geometricPrecision;
 }
@@ -6288,7 +6301,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedCenterLabel{
   color: rgba(245,248,244,.95);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: .03em;

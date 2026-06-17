@@ -224,8 +224,8 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       (tileColumnEl || taskListEl).appendChild(taskEl);
     });
 
-    for (const taskId of openHistoryTaskIds) options.renderHistory(taskId);
     const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => historyViewByTaskId[taskId]?.revealPhase !== "opening");
+    for (const taskId of stableOpenHistoryTaskIds) options.renderHistory(taskId);
     if (stableOpenHistoryTaskIds.length) {
       options.requestAnimationFrameRef(() => {
         options.requestAnimationFrameRef(() => {

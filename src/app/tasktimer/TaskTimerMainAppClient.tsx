@@ -1300,42 +1300,42 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </span>
                           </button>
                         ))}
+                      </div>
 
-                        <div className="leaderboardGlobalStageRows" role="table" aria-label="Global leaderboard table">
-                          <div className="leaderboardGlobalStageTableHead" role="row">
-                            <span role="columnheader">Position</span>
-                            <span role="columnheader">User</span>
-                            <span role="columnheader">Total XP</span>
-                            <span role="columnheader">Rank</span>
-                          </div>
-                          {globalTableRows.map((row) => (
-                            <button
-                              className={`leaderboardGlobalStageRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                              role="row"
-                              type="button"
-                              key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-                              disabled={row.isPlaceholder || row.isDummy}
-                              aria-disabled={row.isPlaceholder || row.isDummy}
-                              data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                              onClick={() => {
-                                if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
-                              }}
-                            >
-                              <span className="leaderboardGlobalBackdropMask leaderboardGlobalRowMask" aria-hidden="true" />
-                              <span className="leaderboardGlobalRankCell" role="cell">{row.rankLabel}</span>
-                              <span className="leaderboardGlobalPlayerCell" role="cell">
-                                {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
-                                <span className="leaderboardGlobalPlayerText">
-                                  <strong>{row.playerLabel}</strong>
-                                </span>
-                              </span>
-                              <span className="leaderboardGlobalXpCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
-                              <span className="leaderboardGlobalInsigniaCell" role="cell">
-                                {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalInsigniaLabel" />}
-                              </span>
-                            </button>
-                          ))}
+                      <div className="leaderboardGlobalStageRows" role="table" aria-label="Global leaderboard table">
+                        <div className="leaderboardGlobalStageTableHead" role="row">
+                          <span role="columnheader">Position</span>
+                          <span role="columnheader">User</span>
+                          <span role="columnheader">Total XP</span>
+                          <span role="columnheader">Rank</span>
                         </div>
+                        {globalTableRows.map((row) => (
+                          <button
+                            className={`leaderboardGlobalStageRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+                            role="row"
+                            type="button"
+                            key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
+                            disabled={row.isPlaceholder || row.isDummy}
+                            aria-disabled={row.isPlaceholder || row.isDummy}
+                            data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+                            onClick={() => {
+                              if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
+                            }}
+                          >
+                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalRowMask" aria-hidden="true" />
+                            <span className="leaderboardGlobalRankCell" role="cell">{row.rankLabel}</span>
+                            <span className="leaderboardGlobalPlayerCell" role="cell">
+                              {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
+                              <span className="leaderboardGlobalPlayerText">
+                                <strong>{row.playerLabel}</strong>
+                              </span>
+                            </span>
+                            <span className="leaderboardGlobalXpCell" role="cell">{row.isPlaceholder ? "" : formatLeaderboardXp(row.profile.rewardTotalXp)}</span>
+                            <span className="leaderboardGlobalInsigniaCell" role="cell">
+                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalInsigniaLabel" />}
+                            </span>
+                          </button>
+                        ))}
                       </div>
 
                       <div className="leaderboardGlobalMobileRows" role="table" aria-label="Global leaderboard table">

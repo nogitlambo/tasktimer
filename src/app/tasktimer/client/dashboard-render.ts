@@ -59,12 +59,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const MOMENTUM_DRIVER_AUTO_RESET_MS = 10000;
   const DASHBOARD_TREND_MIN_BASELINE_MS = 15 * 60 * 1000;
   const DASHBOARD_COMPLETED_FALLBACK_COLOR = "#6f7785";
+  const DASHBOARD_COMPLETED_PANEL_BACKGROUND_COLOR = "#0d0f13";
   const DASHBOARD_COMPLETED_SEGMENT_GAP_PCT = 1.2;
   const DASHBOARD_COMPLETED_MIN_VISIBLE_SLICE_PCT = 1.4;
   const DASHBOARD_COMPLETED_CHART_SIZE = 380;
   const DASHBOARD_COMPLETED_CHART_CENTER = 190;
   const DASHBOARD_COMPLETED_RING_RADIUS = 88;
+  const DASHBOARD_COMPLETED_TRACK_STROKE_WIDTH = 24;
+  const DASHBOARD_COMPLETED_SEGMENT_STROKE_WIDTH = 36;
+  const DASHBOARD_COMPLETED_RING_EDGE_STROKE_WIDTH = 5;
   const DASHBOARD_COMPLETED_LABEL_MAX_WIDTH = 96;
+
+  function formatDashboardCompletedDashPct(value: number) {
+    const rounded = Number(value.toFixed(3));
+    return Object.is(rounded, -0) ? "0" : String(rounded);
+  }
 
   function estimateDashboardCompletedLabelWidth(name: string, statusLabel: string) {
     const nameWidth = name.length * 6.5;
@@ -1509,6 +1518,48 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         labelWidth: estimateDashboardCompletedLabelWidth(entry.item.name, entry.statusLabel),
       })));
       const labelLayoutByKey = new Map(labelLayouts.map((layout) => [layout.key, layout]));
+      const appendSegmentSeparator = (separatorStartPct: number) => {
+        const separatorEl = document.createElementNS(svgNs, "circle");
+        separatorEl.setAttribute("class", "dashboardTasksCompletedSegmentSeparator");
+        separatorEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        separatorEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        separatorEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
+        separatorEl.setAttribute("pathLength", "100");
+        separatorEl.setAttribute("stroke", DASHBOARD_COMPLETED_PANEL_BACKGROUND_COLOR);
+        separatorEl.setAttribute("stroke-dasharray", `${DASHBOARD_COMPLETED_SEGMENT_GAP_PCT} ${100 - DASHBOARD_COMPLETED_SEGMENT_GAP_PCT}`);
+        separatorEl.setAttribute("stroke-dashoffset", String(-separatorStartPct));
+        separatorEl.setAttribute("aria-hidden", "true");
+        svgEl.appendChild(separatorEl);
+      };
+      const appendProgressSegmentOverlay = (sliceStartPct: number, progressPct: number, color: string, className: string) => {
+        const overlayEl = document.createElementNS(svgNs, "circle");
+        overlayEl.setAttribute("class", className);
+        overlayEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        overlayEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        overlayEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
+        overlayEl.setAttribute("pathLength", "100");
+        overlayEl.setAttribute("stroke", color);
+        overlayEl.setAttribute(
+          "stroke-dasharray",
+          `${formatDashboardCompletedDashPct(progressPct)} ${formatDashboardCompletedDashPct(Math.max(0, 100 - progressPct))}`
+        );
+        overlayEl.setAttribute("stroke-dashoffset", formatDashboardCompletedDashPct(-sliceStartPct));
+        overlayEl.setAttribute("aria-hidden", "true");
+        svgEl.appendChild(overlayEl);
+      };
+      const appendRingEdge = (radius: number) => {
+        const ringEdgeEl = document.createElementNS(svgNs, "circle");
+        ringEdgeEl.setAttribute("class", "dashboardTasksCompletedRingEdge");
+        ringEdgeEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        ringEdgeEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
+        ringEdgeEl.setAttribute("r", String(radius));
+        ringEdgeEl.setAttribute("stroke", DASHBOARD_COMPLETED_PANEL_BACKGROUND_COLOR);
+        ringEdgeEl.setAttribute("stroke-width", String(DASHBOARD_COMPLETED_RING_EDGE_STROKE_WIDTH));
+        ringEdgeEl.setAttribute("aria-hidden", "true");
+        svgEl.appendChild(ringEdgeEl);
+      };
+
+      const progressOverlayEntries: Array<{ sliceStartPct: number; progressPct: number; color: string; className: string }> = [];
 
       positionedSliceEntries.forEach(({ item, slicePct, sliceStartPct }) => {
         const fillPctWithinSlice = Math.max(0, Math.min(1, item.progress)) * slicePct;
@@ -1541,23 +1592,31 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           segmentEl.setAttribute("stroke-dasharray", dash);
           segmentEl.setAttribute("stroke-dashoffset", String(-sliceStartPct));
           svgEl.appendChild(segmentEl);
+
+          progressOverlayEntries.push({
+            sliceStartPct,
+            progressPct: fillPctWithinSlice,
+            color: item.color,
+            className: `dashboardTasksCompletedSegment dashboardTasksCompletedSegmentProgressOverlay${item.complete ? " isComplete" : ""}${item.running ? " isRunning" : ""}`,
+          });
         }
       });
 
       if (positionedSliceEntries.length > 1) {
         positionedSliceEntries.forEach(({ slicePct, sliceStartPct }) => {
-          const separatorEl = document.createElementNS(svgNs, "circle");
-          separatorEl.setAttribute("class", "dashboardTasksCompletedSegmentSeparator");
-          separatorEl.setAttribute("cx", String(DASHBOARD_COMPLETED_CHART_CENTER));
-          separatorEl.setAttribute("cy", String(DASHBOARD_COMPLETED_CHART_CENTER));
-          separatorEl.setAttribute("r", String(DASHBOARD_COMPLETED_RING_RADIUS));
-          separatorEl.setAttribute("pathLength", "100");
-          separatorEl.setAttribute("stroke-dasharray", `${DASHBOARD_COMPLETED_SEGMENT_GAP_PCT} ${100 - DASHBOARD_COMPLETED_SEGMENT_GAP_PCT}`);
-          separatorEl.setAttribute("stroke-dashoffset", String(-(sliceStartPct + slicePct)));
-          separatorEl.setAttribute("aria-hidden", "true");
-          svgEl.appendChild(separatorEl);
+          appendSegmentSeparator(sliceStartPct + slicePct);
         });
       }
+      const ringEdgeRadii = [
+        DASHBOARD_COMPLETED_RING_RADIUS - DASHBOARD_COMPLETED_SEGMENT_STROKE_WIDTH / 2,
+        DASHBOARD_COMPLETED_RING_RADIUS - DASHBOARD_COMPLETED_TRACK_STROKE_WIDTH / 2,
+        DASHBOARD_COMPLETED_RING_RADIUS + DASHBOARD_COMPLETED_TRACK_STROKE_WIDTH / 2,
+        DASHBOARD_COMPLETED_RING_RADIUS + DASHBOARD_COMPLETED_SEGMENT_STROKE_WIDTH / 2,
+      ];
+      ringEdgeRadii.forEach(appendRingEdge);
+      progressOverlayEntries.forEach(({ sliceStartPct, progressPct, color, className }) => {
+        appendProgressSegmentOverlay(sliceStartPct, progressPct, color, className);
+      });
 
       positionedSliceEntries.forEach(({ item, statusLabel, key }) => {
         const layout = labelLayoutByKey.get(key);

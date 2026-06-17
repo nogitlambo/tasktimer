@@ -218,7 +218,7 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
   });
 
-  it("skips delayed history rerenders for charts that are still opening", () => {
+  it("reserves opening history drawer markup before chart rendering", () => {
     const harness = createHarness();
     harness.openHistoryTaskIds.add("a");
     harness.openHistoryTaskIds.add("b");
@@ -228,7 +228,12 @@ describe("task list renderer", () => {
     harness.renderer.renderTasksPage();
     while (harness.rafQueue.length) harness.rafQueue.shift()?.();
 
-    expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(1);
+    const openingTask = harness.taskListEl.children[0];
+    expect(openingTask?.dataset.taskId).toBe("a");
+    expect(openingTask?.className).toContain("taskHistoryOpening");
+    expect(openingTask?.innerHTML).toContain("historyInline historyInlineMotion isOpening");
+    expect(openingTask?.innerHTML).toContain("historyCanvasWrap");
+    expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(0);
     expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
   });
 

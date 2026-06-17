@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { buildMomentumSummaryMessage, createTaskTimerDashboardRender, getPrimaryMomentumDriverKey } from "./dashboard-render";
 import { startOfCurrentWeekMs } from "../lib/historyChart";
 import { localDayKey } from "../lib/history";
@@ -998,6 +999,14 @@ describe("weekly goals dashboard card", () => {
 });
 
 describe("dashboard completed card", () => {
+  it("uses panel-background strokes for rendered donut cut lines and non-empty base ring", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain(".dashboardTasksCompletedTicks:not(.isEmpty) .dashboardTasksCompletedTrack{\n  stroke: #0d0f13;\n  opacity: 1;\n}");
+    expect(css).toContain(".dashboardTasksCompletedSegmentSeparator{\n  fill: none;\n  stroke: #0d0f13;");
+    expect(css).toContain(".dashboardTasksCompletedRingEdge{\n  fill: none;\n  stroke: #0d0f13;\n  stroke-width: 5;");
+  });
+
   it("shows scheduled due tasks without daily goals in the donut", () => {
     const today = todaySchedule();
     const tasks = [
@@ -1013,12 +1022,18 @@ describe("dashboard completed card", () => {
       const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
       const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
       const separatorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedSegmentSeparator") || [];
+      const ringEdgeEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedRingEdge") || [];
 
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Goal Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("New Task");
       expect(connectorEls).toHaveLength(2);
       expect(separatorEls).toHaveLength(2);
+      expect(ringEdgeEls).toHaveLength(4);
+      expect(ringEdgeEls.map((edge) => edge.getAttribute("r"))).toEqual(["70", "76", "100", "106"]);
+      expect(ringEdgeEls.every((edge) => edge.getAttribute("stroke") === "#0d0f13")).toBe(true);
+      expect(ringEdgeEls.every((edge) => edge.getAttribute("stroke-width") === "5")).toBe(true);
+      expect(separatorEls[0]?.getAttribute("stroke")).toBe("#0d0f13");
       expect(separatorEls[0]?.getAttribute("stroke-dasharray")).toBe("1.2 98.8");
       expect(separatorEls[0]?.getAttribute("aria-hidden")).toBe("true");
       expect(centerEl?.innerHTML).toContain("0%");
@@ -1033,6 +1048,28 @@ describe("dashboard completed card", () => {
       task({ id: "solo-task", name: "Solo Task", plannedStartByDay: todaySchedule() }),
     ];
     const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const separatorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedSegmentSeparator") || [];
+
+      expect(separatorEls).toHaveLength(0);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("does not add an internal separator at a partial progress stop", () => {
+    const nowValue = Date.now();
+    const tasks = [
+      task({ id: "partial-task", name: "Partial Task", timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "partial-task": [{ ts: nowValue, name: "Partial Task", ms: 30 * 60 * 1000 }],
+      },
+    });
 
     try {
       harness.render();
@@ -1089,6 +1126,69 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children[1]?.innerHTML).toContain("Open Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("Not complete");
       expect(centerEl?.innerHTML).toContain("50%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("fills progress slice visuals across the radial ring band while preserving slice gaps", () => {
+    const nowValue = Date.now();
+    const today = todaySchedule();
+    const tasks = [
+      task({
+        id: "done-task",
+        name: "Done Task",
+        order: 1,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: today,
+      }),
+      task({
+        id: "partial-task",
+        name: "Partial Task",
+        order: 2,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: today,
+      }),
+      task({
+        id: "open-task",
+        name: "Open Task",
+        order: 3,
+        timeGoalEnabled: true,
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartByDay: today,
+      }),
+    ];
+    const harness = createRenderHarness(tasks, {
+      historyByTaskId: {
+        "done-task": [{ ts: nowValue, name: "Done Task", ms: 60 * 60 * 1000 }],
+        "partial-task": [{ ts: nowValue, name: "Partial Task", ms: 30 * 60 * 1000 }],
+      },
+    });
+
+    try {
+      harness.render();
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+      const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
+      const overlayEls = svgEl?.children.filter((child) => String(child.getAttribute("class") || "").includes("dashboardTasksCompletedSegmentProgressOverlay")) || [];
+      const separatorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedSegmentSeparator") || [];
+      const completedOverlay = overlayEls.find((child) => String(child.getAttribute("class") || "").includes("isComplete"));
+      const partialOverlay = overlayEls.find((child) => !String(child.getAttribute("class") || "").includes("isComplete"));
+
+      expect(centerEl?.innerHTML).toContain("50%");
+      expect(separatorEls).toHaveLength(3);
+      expect(separatorEls[0]?.getAttribute("stroke-dasharray")).toBe("1.2 98.8");
+      expect(overlayEls).toHaveLength(2);
+      expect(completedOverlay?.getAttribute("stroke-dasharray")).toBe("32.133 67.867");
+      expect(completedOverlay?.getAttribute("stroke-dashoffset")).toBe("-0.6");
+      expect(completedOverlay?.getAttribute("aria-hidden")).toBe("true");
+      expect(partialOverlay?.getAttribute("stroke-dasharray")).toBe("16.067 83.933");
+      expect(partialOverlay?.getAttribute("stroke-dashoffset")).toBe("-33.933");
+      expect(partialOverlay?.getAttribute("aria-hidden")).toBe("true");
     } finally {
       harness.restore();
     }

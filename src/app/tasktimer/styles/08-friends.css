@@ -3177,6 +3177,11 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard{
   position:relative;
   grid-column: span 12;
+  --leaderboard-global-table-height:clamp(180px, 25dvh, 240px);
+  --leaderboard-global-stage-height:calc(100% - var(--leaderboard-global-table-height));
+  --leaderboard-global-stage-width:clamp(720px, calc(181dvh - 570px), 1040px);
+  display:flex;
+  flex-direction:column;
   overflow:hidden;
   padding:0;
   min-height:0;
@@ -3192,19 +3197,24 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
   position:relative;
-  width:100%;
-  aspect-ratio:1448 / 1086;
-  margin:0 auto;
+  flex:0 0 auto;
+  align-self:center;
+  width:min(100%, var(--leaderboard-global-stage-width));
+  height:auto;
+  min-height:0;
+  aspect-ratio:1448 / 798;
+  margin:auto auto;
   overflow:hidden;
-  background:url("/leaderboard/leaderboard_podium.webp") center / 100% 100% no-repeat;
+  background:url("/leaderboard/leaderboard_podium.webp") center top / 100% 100% no-repeat;
   isolation:isolate;
 }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
-  height:100%;
+  flex:0 1 auto;
+  height:auto;
   max-height:100%;
   min-height:0;
-  aspect-ratio:auto;
+  aspect-ratio:1448 / 798;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalBackdropMask{
@@ -3231,23 +3241,23 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1{
   left:35.9%;
-  top:19.6%;
+  top:36.4%;
   width:28.2%;
-  height:48.2%;
+  height:50.2%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2{
   left:11.9%;
-  top:28.6%;
+  top:43.8%;
   width:24.2%;
-  height:39.4%;
+  height:42.8%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3{
   left:63.9%;
-  top:30.4%;
+  top:43.8%;
   width:24.2%;
-  height:37.6%;
+  height:42.8%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot:focus-visible{
@@ -3293,7 +3303,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot{
   position:absolute;
   left:50%;
-  top:-4%;
+  top:-10%;
   z-index:3;
   display:flex;
   align-items:center;
@@ -3304,12 +3314,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
-  top:-8%;
+  top:-22%;
   width:48%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot{
-  top:-5%;
+  top:-11%;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
+  top:-11%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
@@ -3361,25 +3375,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     bottom:auto;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot{
-    top:-18px;
-  }
-
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
-    top:-24px;
-  }
-
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot,
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
-    top:-18px;
-  }
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumText{
   position:absolute;
   left:14%;
   right:14%;
-  top:49.5%;
+  top:43%;
   z-index:1;
   display:grid;
   justify-items:center;
@@ -3389,13 +3391,20 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumText{
-  top:50%;
+  top:44%;
   gap:7px;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumText{
   left:12%;
   right:16%;
+  top:43%;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumText{
+  left:16%;
+  right:12%;
+  top:43%;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumRank,
@@ -3447,24 +3456,72 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageRows{
-  position:absolute;
-  left:1.6%;
-  right:1.6%;
-  top:71%;
-  bottom:2.2%;
+  position:relative;
+  flex:0 0 var(--leaderboard-global-table-height);
   z-index:3;
   display:grid;
+  grid-template-rows:clamp(34px, 5dvh, 48px) repeat(5, minmax(0, 1fr));
+  width:100%;
+  height:var(--leaderboard-global-table-height);
+  min-height:0;
+  margin:0 auto;
   max-height:none;
   overflow:hidden;
+  padding:0 1% 1%;
+  background:linear-gradient(180deg, rgba(3,9,15,.9), rgba(1,5,9,.96));
+  clip-path:polygon(1.1% 0, 98.9% 0, 100% 7%, 100% 100%, 0 100%, 0 7%);
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageRows::before,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageRows::after,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::before,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageRows::before,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::before{
+  inset:0;
+  z-index:0;
+  border:1px solid rgba(124,255,143,.44);
+  box-shadow:inset 0 0 22px rgba(37,255,171,.08), 0 0 18px rgba(37,255,171,.08);
+  clip-path:polygon(1.1% 0, 98.9% 0, 100% 7%, 100% 100%, 0 100%, 0 7%);
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageRows::after,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::after{
+  left:1%;
+  right:1%;
+  top:25.5%;
+  bottom:5.5%;
+  z-index:0;
+  border:1px solid rgba(124,255,143,.36);
+  background:rgba(0,5,9,.54);
+  box-shadow:inset 0 0 28px rgba(0,0,0,.72);
+  clip-path:polygon(.9% 0, 99.1% 0, 100% 8%, 100% 92%, 99.1% 100%, .9% 100%, 0 92%, 0 8%);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStageTableHead,
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileTableHead{
-  position:absolute;
-  width:1px;
-  height:1px;
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:12.5% minmax(0, 47.5%) 20% minmax(0, 20%);
+  align-items:center;
+  min-width:0;
+  padding:0 2.4%;
   overflow:hidden;
-  clip:rect(0 0 0 0);
+  color:#f8fbff;
+  font-family:var(--font-geist-mono), "Ligconsolata", "Inconsolata", monospace;
+  font-size:clamp(13px, 1.35vw, 19px);
+  font-weight:900;
+  letter-spacing:0;
+  line-height:1;
+  text-align:center;
+  text-transform:uppercase;
+  text-shadow:0 0 10px rgba(103,235,255,.34);
   white-space:nowrap;
 }
 
@@ -3476,11 +3533,11 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   grid-template-columns:12.5% minmax(0, 47.5%) 20% minmax(0, 20%);
   align-items:center;
   min-width:0;
-  min-height:clamp(34px, 4.4dvh, 46px);
+  min-height:0;
   padding:0 2.4%;
   border:0;
   border-top:1px solid rgba(103,255,159,.2);
-  background:transparent;
+  background:rgba(0,7,12,.01);
   color:inherit;
   font:inherit;
   text-align:center;
@@ -3524,7 +3581,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalRankCell{
   color:#50ff8d;
   font-family:var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:26px;
+  font-size:clamp(18px, 2vw, 24px);
   font-weight:900;
   letter-spacing:0;
 }
@@ -3547,7 +3604,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPlayerText strong{
   color:#f8fbff;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:16px;
+  font-size:clamp(12px, 1.25vw, 15px);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalInsigniaCell{
@@ -3560,7 +3617,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalXpCell{
   color:#f8fbff;
   font-family:var(--font-geist-mono), "Ligconsolata", "Inconsolata", monospace;
-  font-size:16px;
+  font-size:clamp(12px, 1.25vw, 15px);
   font-weight:900;
   letter-spacing:0;
 }
@@ -3576,6 +3633,9 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 @media (max-width: 720px){
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard{
+    display:block;
+    overflow:visible;
+    --leaderboard-global-stage-width:100%;
     padding:0 0 12px;
     background:transparent;
   }
@@ -3583,10 +3643,18 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
     left:auto;
     width:100%;
-    height:clamp(300px, calc(100dvh - 390px), 430px);
+    height:auto;
+    aspect-ratio:1448 / 798;
     max-width:none;
-    margin-left:auto;
+    margin:0 auto;
     transform:none;
+    background-size:100% 100%;
+  }
+
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+    height:auto;
+    max-height:none;
+    aspect-ratio:1448 / 798;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
@@ -3616,11 +3684,31 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     position:relative;
     z-index:2;
     display:grid;
+    grid-template-rows:42px repeat(5, minmax(42px, auto));
     width:calc(100% - 16px);
-    margin:clamp(-136px, calc(-22vw - 6px), -88px) auto 0;
-    padding:8px 6px;
+    margin:0 auto;
+    padding:0 6px 8px;
     border:0;
-    background:transparent;
+    background:linear-gradient(180deg, rgba(3,9,15,.9), rgba(1,5,9,.96));
+    clip-path:polygon(2% 0, 98% 0, 100% 8%, 100% 100%, 0 100%, 0 8%);
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::before{
+    clip-path:polygon(2% 0, 98% 0, 100% 8%, 100% 100%, 0 100%, 0 8%);
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRows::after{
+    left:8px;
+    right:8px;
+    top:42px;
+    bottom:8px;
+    clip-path:polygon(2% 0, 98% 0, 100% 8%, 100% 92%, 98% 100%, 2% 100%, 0 92%, 0 8%);
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileTableHead{
+    grid-template-columns:42px minmax(0, 1fr) minmax(58px, max-content) minmax(70px, max-content);
+    padding:0 2px;
+    font-size:10px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalMobileRow{
