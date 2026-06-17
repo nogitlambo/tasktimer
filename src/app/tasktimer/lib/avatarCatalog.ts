@@ -56,6 +56,5 @@ export const AVATAR_CATALOG: AvatarOption[] = [
   { id: "toons/toon-07-green-shirt", src: "/avatars/toons/toon-07-green-shirt.webp", label: "Green Shirt" },
   { id: "toons/toon-08-pink-cap", src: "/avatars/toons/toon-08-pink-cap.webp", label: "Pink Cap" },
   { id: "toons/toon-09-hoop-earrings", src: "/avatars/toons/toon-09-hoop-earrings.webp", label: "Hoop Earrings" },
-  { id: "toons/toonHead-male", src: "/avatars/toons/toonHead-male.webp", label: "ToonHead Male" },
 ];
 

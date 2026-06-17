@@ -160,10 +160,10 @@ describe("getLeaderboardAvatarSrc", () => {
     expect(
       getLeaderboardAvatarSrc(
         createProfile({
-          avatarId: "/avatars/toons/toonHead-male.svg",
+          avatarId: "/avatars/toons/toon-01-cap-glasses.svg",
         })
       )
-    ).toBe("/avatars/toons/toonHead-male.webp");
+    ).toBe("/avatars/toons/toon-01-cap-glasses.webp");
     expect(
       getLeaderboardAvatarSrc(
         createProfile({

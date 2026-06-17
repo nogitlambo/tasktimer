@@ -286,7 +286,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     rewardState.set("rewardProgress", normalizeRewardProgress((prefs || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS));
   });
   const avatarSrcById = buildFriendAvatarSrcMap(AVATAR_CATALOG);
-  const defaultFriendAvatarSrc = "/avatars/toons/toonHead-male.webp";
+  const defaultFriendAvatarSrc = "/avatars/toons/toon-01-cap-glasses.webp";
   const friendAvatarOptions = {
     avatarSrcById,
     defaultFriendAvatarSrc,

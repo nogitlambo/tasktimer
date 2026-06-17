@@ -63,7 +63,7 @@ export default function FriendsOverlays() {
           <div className="friendUserSummaryHeader">
             <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
               <span className="friendUserSummaryAvatar" aria-hidden="true">
-                <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toonHead-male.webp" alt="" />
+                <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toon-01-cap-glasses.webp" alt="" />
               </span>
               <div className="friendUserSummaryIdentityText">
                 <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
