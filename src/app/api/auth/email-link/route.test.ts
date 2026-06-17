@@ -159,6 +159,32 @@ describe("POST /api/auth/email-link", () => {
     );
   });
 
+  it("does not generate Android WebView localhost continue URLs", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "tasktimer-prod.firebaseapp.com");
+
+    const response = await POST(
+      new Request("https://tasklaunch.app/api/auth/email-link", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://localhost",
+          referer: "https://localhost/login",
+        },
+        body: JSON.stringify({ email: "User@Example.com" }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.generateSignInWithEmailLink).toHaveBeenCalledWith(
+      "User@Example.com",
+      expect.objectContaining({
+        handleCodeInApp: true,
+        url: "https://tasktimer-prod.firebaseapp.com/login/",
+      })
+    );
+  });
+
   it("logs scheduled SMTP failures without failing the already-returned response", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.sendAuthSignInEmail.mockRejectedValue(new Error("SMTP rejected the message"));

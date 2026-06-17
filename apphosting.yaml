@@ -26,6 +26,11 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: NEXT_PUBLIC_APP_URL
+    value: "https://tasklaunch.app"
+    availability:
+      - BUILD
+      - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: "tasktimer-prod"
     availability:

@@ -1071,7 +1071,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends{
 }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard{
-  background: url("/leaderboard/deep-space-bg.webp") center / cover no-repeat #000 !important;
+  background: #000 !important;
 }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{

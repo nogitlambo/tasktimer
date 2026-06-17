@@ -56,6 +56,34 @@ describe("resolveEmailLinkContinueUrl", () => {
     ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
   });
 
+  it("does not use the Android WebView https localhost origin as the email callback", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: {
+          origin: "https://localhost",
+          protocol: "https:",
+          hostname: "localhost",
+        },
+        appUrl: "",
+        authDomain: "tasktimer-prod.firebaseapp.com",
+      })
+    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
+  });
+
+  it("falls back to the canonical app URL for Android WebView localhost without configured domains", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: {
+          origin: "https://localhost",
+          protocol: "https:",
+          hostname: "localhost",
+        },
+        appUrl: "",
+        authDomain: "",
+      })
+    ).toBe("https://tasklaunch.app/login/");
+  });
+
   it("falls back to the Firebase auth domain instead of a hardcoded project", () => {
     expect(
       resolveEmailLinkContinueUrl({

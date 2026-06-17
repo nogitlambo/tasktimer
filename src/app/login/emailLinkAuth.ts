@@ -42,16 +42,32 @@ export function resolveEmailLinkContinueUrl(input?: {
   const currentProtocol = String(input?.location?.protocol || "").toLowerCase();
   const currentHost = String(input?.location?.hostname || originHostname(currentOrigin));
   const currentOriginIsHttp = currentProtocol === "http:" || currentProtocol === "https:" || Boolean(currentOrigin);
+  const currentOriginIsLocalhost = isLocalhostHost(currentHost);
   const configuredAppHost = originHostname(configuredAppOrigin);
   const firebaseAuthOrigin = authDomainOrigin(input?.authDomain || process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "");
+  const firebaseAuthHost = originHostname(firebaseAuthOrigin);
 
   if (
     configuredAppOrigin &&
     (!currentOriginIsHttp ||
       !currentOrigin ||
-      (isLocalhostHost(currentHost) && configuredAppHost && !isLocalhostHost(configuredAppHost)))
+      (currentOriginIsLocalhost && configuredAppHost && !isLocalhostHost(configuredAppHost)))
   ) {
     return `${configuredAppOrigin}${LOGIN_PATH}`;
+  }
+
+  if (
+    !configuredAppOrigin &&
+    currentOriginIsLocalhost &&
+    firebaseAuthOrigin &&
+    firebaseAuthHost &&
+    !isLocalhostHost(firebaseAuthHost)
+  ) {
+    return `${firebaseAuthOrigin}${LOGIN_PATH}`;
+  }
+
+  if (!configuredAppOrigin && currentOriginIsLocalhost && currentProtocol === "https:") {
+    return `https://tasklaunch.app${LOGIN_PATH}`;
   }
 
   if (currentOrigin) return `${currentOrigin}${LOGIN_PATH}`;
