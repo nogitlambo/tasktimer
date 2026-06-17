@@ -32,8 +32,8 @@ function authDomainOrigin(authDomain: string) {
   return normalized ? `https://${normalized}` : "";
 }
 
-function emailLinkFallbackOrigin(firebaseAuthOrigin: string) {
-  return firebaseAuthOrigin || "https://tasklaunch.app";
+function emailLinkFallbackOrigin() {
+  return "https://tasklaunch.app";
 }
 
 export function resolveEmailLinkContinueUrl(input?: {
@@ -62,7 +62,7 @@ export function resolveEmailLinkContinueUrl(input?: {
   }
 
   if (currentOriginIsLocalhost && currentProtocol === "https:" && configuredAppOriginIsLocalhost) {
-    return `${emailLinkFallbackOrigin(firebaseAuthOrigin)}${LOGIN_PATH}`;
+    return `${emailLinkFallbackOrigin()}${LOGIN_PATH}`;
   }
 
   if (
@@ -72,17 +72,15 @@ export function resolveEmailLinkContinueUrl(input?: {
     firebaseAuthHost &&
     !isLocalhostHost(firebaseAuthHost)
   ) {
-    return `${firebaseAuthOrigin}${LOGIN_PATH}`;
+    return `${emailLinkFallbackOrigin()}${LOGIN_PATH}`;
   }
 
   if (!configuredAppOrigin && currentOriginIsLocalhost && currentProtocol === "https:") {
-    return `${emailLinkFallbackOrigin(firebaseAuthOrigin)}${LOGIN_PATH}`;
+    return `${emailLinkFallbackOrigin()}${LOGIN_PATH}`;
   }
 
   if (currentOrigin) return `${currentOrigin}${LOGIN_PATH}`;
   if (configuredAppOrigin) return `${configuredAppOrigin}${LOGIN_PATH}`;
-  if (firebaseAuthOrigin) return `${firebaseAuthOrigin}${LOGIN_PATH}`;
-
   return `https://tasklaunch.app${LOGIN_PATH}`;
 }
 

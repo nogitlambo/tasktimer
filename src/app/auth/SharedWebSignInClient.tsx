@@ -35,6 +35,7 @@ import { runAuthSuccessRedirect } from "./authRedirect";
 import { handOffEmailLink, listenForEmailLinkHandoff } from "./emailLinkHandoff";
 import { sendSignInLinkEmail } from "./emailLinkClient";
 import { getEmailLinkSignInErrorMessage } from "./emailLinkSignInError";
+import { extractWrappedEmailSignInLink } from "./emailLinkUrl";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -83,7 +84,8 @@ function shouldUseRedirectAuth() {
 function buildNativeEmailLinkRedirect(auth: Auth, rawUrl: string) {
   if (typeof window === "undefined") return "";
   const sourceUrl = rawUrl.trim();
-  if (!sourceUrl || !isSignInWithEmailLink(auth, sourceUrl)) return "";
+  const emailLinkUrl = resolveEmailSignInLink(auth, sourceUrl);
+  if (!emailLinkUrl) return "";
   try {
     const openedUrl = new URL(sourceUrl);
     const targetUrl = new URL("/login/", window.location.href);
@@ -93,6 +95,15 @@ function buildNativeEmailLinkRedirect(auth: Auth, rawUrl: string) {
   } catch {
     return "";
   }
+}
+
+function resolveEmailSignInLink(auth: Auth, href: string) {
+  const sourceUrl = href.trim();
+  if (!sourceUrl) return "";
+  if (isSignInWithEmailLink(auth, sourceUrl)) return sourceUrl;
+  const wrappedLink = extractWrappedEmailSignInLink(sourceUrl);
+  if (wrappedLink && isSignInWithEmailLink(auth, wrappedLink)) return wrappedLink;
+  return "";
 }
 
 async function resolveAuthUser(auth: Auth): Promise<User | null> {
@@ -254,7 +265,8 @@ export default function SharedWebSignInClient({
     async (href: string, options: { source: "local" | "handoff"; emailOverride?: string } = { source: "local" }) => {
       const auth = getFirebaseAuthClient();
       if (!auth || typeof window === "undefined") return false;
-      if (!isSignInWithEmailLink(auth, href) || emailLinkCompletionPendingRef.current) return false;
+      const emailSignInLink = resolveEmailSignInLink(auth, href);
+      if (!emailSignInLink || emailLinkCompletionPendingRef.current) return false;
 
       let email = String(options.emailOverride || "").trim();
       if (!email) {
@@ -276,7 +288,7 @@ export default function SharedWebSignInClient({
       setAuthStatus("Completing sign-in...");
       try {
         writePendingEmailLinkOnboardingHint();
-        const result = await signInWithEmailLink(auth, email, href);
+        const result = await signInWithEmailLink(auth, email, emailSignInLink);
         const uid = String(result.user?.uid || "").trim();
         if (uid) {
           writeLocalTaskTimerOnboardingNewUserHint(uid);
@@ -320,7 +332,7 @@ export default function SharedWebSignInClient({
   useEffect(() => {
     if (typeof window === "undefined" || isNativeOrFileRuntime()) return;
     const auth = getFirebaseAuthClient();
-    if (!auth || isSignInWithEmailLink(auth, window.location.href)) return;
+    if (!auth || resolveEmailSignInLink(auth, window.location.href)) return;
     return listenForEmailLinkHandoff((href) => {
       void completeEmailLinkSignIn(href, { source: "handoff" });
     });
@@ -417,7 +429,7 @@ export default function SharedWebSignInClient({
         return;
       }
       const href = window.location.href;
-      const emailLink = isSignInWithEmailLink(auth, href);
+      const emailLink = Boolean(resolveEmailSignInLink(auth, href));
       if (!cancelled) setIsEmailLinkFlow(emailLink);
       if (!emailLink) return;
 
@@ -527,7 +539,7 @@ export default function SharedWebSignInClient({
       return;
     }
     const href = window.location.href;
-    if (!isSignInWithEmailLink(auth, href)) {
+    if (!resolveEmailSignInLink(auth, href)) {
       setAuthError("No email sign-in link detected in this page URL.");
       setAuthStatus("");
       return;

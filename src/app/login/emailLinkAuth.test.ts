@@ -56,7 +56,7 @@ describe("resolveEmailLinkContinueUrl", () => {
     ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
   });
 
-  it("does not use the Android WebView https localhost origin as the email callback", () => {
+  it("uses the canonical app URL for Android WebView https localhost callbacks", () => {
     expect(
       resolveEmailLinkContinueUrl({
         location: {
@@ -67,7 +67,7 @@ describe("resolveEmailLinkContinueUrl", () => {
         appUrl: "",
         authDomain: "tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
+    ).toBe("https://tasklaunch.app/login/");
   });
 
   it("falls back to the canonical app URL for Android WebView localhost without configured domains", () => {
@@ -95,17 +95,17 @@ describe("resolveEmailLinkContinueUrl", () => {
         appUrl: "https://localhost/tasklaunch/index.html",
         authDomain: "tasktimer-prod.firebaseapp.com",
       })
-    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
+    ).toBe("https://tasklaunch.app/login/");
   });
 
-  it("falls back to the Firebase auth domain instead of a hardcoded project", () => {
+  it("falls back to the canonical app URL instead of the Firebase auth domain", () => {
     expect(
       resolveEmailLinkContinueUrl({
         location: null,
         appUrl: "",
         authDomain: "example-prod.firebaseapp.com",
       })
-    ).toBe("https://example-prod.firebaseapp.com/login/");
+    ).toBe("https://tasklaunch.app/login/");
   });
 
   it("does not fall back to the Firebase auth domain when the current origin can handle the callback", () => {
