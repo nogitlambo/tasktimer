@@ -11,11 +11,13 @@ const stagedApiDir = path.join(stagingRoot, "api");
 const stagedPrimitivesDir = path.join(stagingRoot, "primitives");
 
 function parseCliArgs(argv) {
-  const args = { envFile: "" };
+  const args = { envFile: "", debug: false };
   for (const arg of argv) {
     if (typeof arg !== "string") continue;
     if (arg.startsWith("--env-file=")) {
       args.envFile = arg.slice("--env-file=".length).trim();
+    } else if (arg === "--debug") {
+      args.debug = true;
     }
   }
   return args;
@@ -121,7 +123,24 @@ try {
     throw result.error;
   }
 
-  process.exitCode = result.status ?? 1;
+  const buildStatus = result.status ?? 1;
+  let optimizerStatus = 0;
+
+  if (buildStatus === 0 && cliArgs.debug) {
+    const optimizerScript = path.join(root, "scripts", "optimize-android-debug-export.mjs");
+    const optimizerResult = spawnSync(process.execPath, [optimizerScript], {
+      cwd: root,
+      stdio: "inherit",
+      shell: false,
+    });
+
+    if (optimizerResult.error) {
+      throw optimizerResult.error;
+    }
+    optimizerStatus = optimizerResult.status ?? 1;
+  }
+
+  process.exitCode = buildStatus === 0 ? optimizerStatus : buildStatus;
 } finally {
   if (primitivesDirMoved) {
     await restorePrimitivesDir();

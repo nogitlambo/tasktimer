@@ -139,6 +139,32 @@ describe("runAuthSuccessRedirect", () => {
     expect(fallbackReplace).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("uses the provided route resolver before replacing or falling back", () => {
+    startupModuleMocks.readStartupModulePreference.mockReturnValue("tasks");
+    const markRedirected = vi.fn();
+    const replace = vi.fn();
+    const fallbackReplace = vi.fn();
+    const scheduledCallbacks: Array<() => void> = [];
+
+    runAuthSuccessRedirect({
+      hasRedirected: false,
+      shouldStartProCheckout: false,
+      bypassAutoRedirect: false,
+      markRedirected,
+      replace,
+      fallbackReplace,
+      getCurrentPathname: () => "/login",
+      scheduleFallback: (callback) => {
+        scheduledCallbacks.push(callback);
+      },
+      resolveRoute: (route) => `${route}/index.html`,
+    });
+
+    expect(replace).toHaveBeenCalledWith("/tasklaunch/index.html");
+    scheduledCallbacks[0]?.();
+    expect(fallbackReplace).toHaveBeenCalledWith("/tasklaunch/index.html");
+  });
+
   it("does not run the browser fallback after client navigation leaves login", () => {
     const fallbackReplace = vi.fn();
     const scheduledCallbacks: Array<() => void> = [];

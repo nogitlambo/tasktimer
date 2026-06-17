@@ -84,6 +84,20 @@ describe("resolveEmailLinkContinueUrl", () => {
     ).toBe("https://tasklaunch.app/login/");
   });
 
+  it("does not trust a configured https localhost app URL for Android WebView email callbacks", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: {
+          origin: "https://localhost",
+          protocol: "https:",
+          hostname: "localhost",
+        },
+        appUrl: "https://localhost/tasklaunch/index.html",
+        authDomain: "tasktimer-prod.firebaseapp.com",
+      })
+    ).toBe("https://tasktimer-prod.firebaseapp.com/login/");
+  });
+
   it("falls back to the Firebase auth domain instead of a hardcoded project", () => {
     expect(
       resolveEmailLinkContinueUrl({

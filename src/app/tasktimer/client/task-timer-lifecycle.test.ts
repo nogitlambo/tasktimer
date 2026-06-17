@@ -120,7 +120,7 @@ describe("task timer lifecycle", () => {
     ]);
   });
 
-  it("starts a goal-completed task again when today's goal history is missing", () => {
+  it("does not start a current-period goal-completed task when today's goal history is missing", () => {
     const harness = createHarness({
       tasks: [
         task({
@@ -136,8 +136,8 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.startTask(0);
 
-    expect(harness.tasks[0]).toMatchObject({ running: true, startMs: 123, hasStarted: true });
-    expect(harness.calls).toContain("upsert-live:task-1:0:0:force");
+    expect(harness.tasks[0]).toMatchObject({ running: false, startMs: null, hasStarted: false });
+    expect(harness.calls).toEqual([]);
   });
 
   it("does not start a goal-completed task with qualifying history today", () => {

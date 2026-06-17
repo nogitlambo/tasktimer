@@ -1,5 +1,15 @@
 "use client";
 
+import { Capacitor } from "@capacitor/core";
+
+function isNativePlatform() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
 export function resolveTaskTimerRouteHref(path: string) {
   const input = String(path || "").trim();
   if (!input) return "/tasklaunch";
@@ -8,7 +18,7 @@ export function resolveTaskTimerRouteHref(path: string) {
 
   const currentPath = String(window.location.pathname || "");
   const usesExportedHtmlPaths =
-    window.location.protocol === "file:" || /\.html$/i.test(currentPath);
+    window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativePlatform();
   if (!usesExportedHtmlPaths) return input;
 
   const hashIndex = input.indexOf("#");

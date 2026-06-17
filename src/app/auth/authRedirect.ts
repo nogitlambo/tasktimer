@@ -26,9 +26,11 @@ export function runAuthSuccessRedirect(input: {
   getCurrentPathname?: () => string;
   scheduleFallback?: (callback: () => void, delayMs: number) => void;
   fallbackDelayMs?: number;
+  resolveRoute?: (route: string) => string;
 }): boolean {
   if (input.hasRedirected || input.shouldStartProCheckout || input.bypassAutoRedirect) return false;
-  const route = resolveAuthSuccessRoute(input.redirectOnSuccess);
+  const unresolvedRoute = resolveAuthSuccessRoute(input.redirectOnSuccess);
+  const route = input.resolveRoute ? input.resolveRoute(unresolvedRoute) : unresolvedRoute;
   input.markRedirected();
   input.replace(route);
   if (input.fallbackReplace && input.getCurrentPathname && input.scheduleFallback) {

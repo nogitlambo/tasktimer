@@ -134,14 +134,14 @@ describe("getLeaderboardResolvedRank", () => {
     expect(resolvedRank.id).toBe("director");
     expect(getRankThumbnailDescriptor(resolvedRank.id)).toMatchObject({
       kind: "image",
-      src: "/insignias/008_director.png",
+      src: "/insignias/008_director.webp",
     });
   });
 
   it("resolves the unranked insignia asset", () => {
     expect(getRankThumbnailDescriptor("unranked")).toMatchObject({
       kind: "image",
-      src: "/insignias/000_unranked.png",
+      src: "/insignias/000_unranked.webp",
       rankId: "unranked",
     });
   });

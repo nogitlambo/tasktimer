@@ -12,7 +12,7 @@
     "build": "npm run guard:no-dev && npm run clean:next && next build --webpack",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
     "build:android": "npm run build:android:release",
-    "build:android:debug": "npm run guard:no-dev && npm run clean:next && node scripts/build-android-export.mjs --env-file=.env.android.debug.local",
+    "build:android:debug": "npm run guard:no-dev && npm run clean:next && node scripts/build-android-export.mjs --env-file=.env.android.debug.local --debug",
     "build:android:release": "npm run guard:no-dev && npm run clean:next && node scripts/build-android-export.mjs --env-file=.env.android.release.local",
     "start": "next start",
     "typecheck": "tsc --noEmit",

@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { ensureUserProfileIndex } from "../tasktimer/lib/cloudStore";
+import { resolveTaskTimerRouteHref } from "../tasktimer/lib/routeHref";
 import {
   clearPendingEmailLinkOnboardingHint,
   writeLocalTaskTimerOnboardingNewUserHint,
@@ -161,6 +162,7 @@ export default function SharedWebSignInClient({
       scheduleFallback: (callback, delayMs) => {
         window.setTimeout(callback, delayMs);
       },
+      resolveRoute: resolveTaskTimerRouteHref,
     });
   }, [redirectOnSuccess, router, shouldStartProCheckout]);
 
@@ -177,23 +179,30 @@ export default function SharedWebSignInClient({
   }, [isNativeLaunchRuntime]);
 
   useEffect(() => {
+    let cancelled = false;
     try {
       const saved = localStorage.getItem(EMAIL_LINK_STORAGE_KEY) || "";
-      if (saved) setAuthEmail(saved);
+      if (saved) {
+        window.setTimeout(() => {
+          if (!cancelled) setAuthEmail(saved);
+        }, 0);
+      }
     } catch {
       // ignore
     }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!isNativeLaunchRuntime) {
-      setIsResolvingNativeLaunchAuth(false);
       return;
     }
     const auth = getFirebaseAuthClient();
     if (!auth) {
-      setIsResolvingNativeLaunchAuth(false);
-      return;
+      const timeoutId = window.setTimeout(() => setIsResolvingNativeLaunchAuth(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
     let cancelled = false;
     const resolveLaunchAuth = async () => {
@@ -400,31 +409,39 @@ export default function SharedWebSignInClient({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const auth = getFirebaseAuthClient();
-    if (!auth) {
-      setAuthError("Email sign-in is not configured for this environment.");
-      return;
-    }
-    const href = window.location.href;
-    const emailLink = isSignInWithEmailLink(auth, href);
-    setIsEmailLinkFlow(emailLink);
-    if (!emailLink) return;
-
-    const complete = async () => {
-      if (!isNativeOrFileRuntime()) {
-        const handedOff = await handOffEmailLink(href);
-        if (handedOff) {
-          setIsEmailLinkFlow(false);
-          setAuthBusy(false);
-          setAuthError("");
-          setAuthStatus("Sign-in continued in your original tab.");
-          window.setTimeout(() => window.close(), 100);
-          return;
-        }
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      const auth = getFirebaseAuthClient();
+      if (!auth) {
+        if (!cancelled) setAuthError("Email sign-in is not configured for this environment.");
+        return;
       }
-      await completeEmailLinkSignIn(href, { source: "local" });
+      const href = window.location.href;
+      const emailLink = isSignInWithEmailLink(auth, href);
+      if (!cancelled) setIsEmailLinkFlow(emailLink);
+      if (!emailLink) return;
+
+      const complete = async () => {
+        if (!isNativeOrFileRuntime()) {
+          const handedOff = await handOffEmailLink(href);
+          if (cancelled) return;
+          if (handedOff) {
+            setIsEmailLinkFlow(false);
+            setAuthBusy(false);
+            setAuthError("");
+            setAuthStatus("Sign-in continued in your original tab.");
+            window.setTimeout(() => window.close(), 100);
+            return;
+          }
+        }
+        await completeEmailLinkSignIn(href, { source: "local" });
+      };
+      void complete();
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
     };
-    void complete();
   }, [completeEmailLinkSignIn]);
 
   useEffect(() => {
