@@ -3,7 +3,6 @@ import { after, NextResponse } from "next/server";
 
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 import { sendAuthSignInEmail } from "@/lib/authEmailLink";
-import { wrapEmailSignInLinkForApp } from "@/app/auth/emailLinkUrl";
 import { resolveEmailLinkContinueUrl } from "@/app/login/emailLinkAuth";
 import {
   ApiRateLimitError,
@@ -96,10 +95,9 @@ export async function POST(req: Request) {
 
     const actionCodeSettings = getActionCodeSettings(req);
     const signInLink = await getFirebaseAdminAuth().generateSignInWithEmailLink(email, actionCodeSettings);
-    const appSignInLink = wrapEmailSignInLinkForApp(signInLink, actionCodeSettings.url);
     after(async () => {
       try {
-        await sendAuthSignInEmail({ email, signInLink: appSignInLink });
+        await sendAuthSignInEmail({ email, signInLink });
       } catch (error) {
         console.error("Could not send auth sign-in email.", error);
       }

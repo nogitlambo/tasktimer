@@ -61,10 +61,6 @@ describe("POST /api/auth/email-link", () => {
     });
   });
 
-  function wrappedEmailLink(continueUrl = "https://tasklaunch.app/login/") {
-    return `${continueUrl}?emailLink=${encodeURIComponent("https://tasktimer-prod.firebaseapp.com/auth/link")}`;
-  }
-
   it("allows native preflight requests", () => {
     const response = OPTIONS(
       new Request("https://tasklaunch.app/api/auth/email-link", {
@@ -100,7 +96,7 @@ describe("POST /api/auth/email-link", () => {
     expect(mocks.after).toHaveBeenCalledTimes(1);
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: wrappedEmailLink(),
+      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
     });
   });
 
@@ -143,7 +139,7 @@ describe("POST /api/auth/email-link", () => {
 
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: wrappedEmailLink(),
+      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
     });
   });
 
@@ -163,7 +159,7 @@ describe("POST /api/auth/email-link", () => {
     );
   });
 
-  it("does not email Android WebView localhost or Firebase-hosted login URLs", async () => {
+  it("does not generate Android WebView localhost continue URLs", async () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
     vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "tasktimer-prod.firebaseapp.com");
 
@@ -189,7 +185,7 @@ describe("POST /api/auth/email-link", () => {
     );
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: wrappedEmailLink(),
+      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
     });
   });
 
