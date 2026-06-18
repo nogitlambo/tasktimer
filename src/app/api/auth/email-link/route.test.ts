@@ -96,7 +96,8 @@ describe("POST /api/auth/email-link", () => {
     expect(mocks.after).toHaveBeenCalledTimes(1);
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
+      signInLink:
+        "https://tasklaunch.app/login/?emailLink=https%3A%2F%2Ftasktimer-prod.firebaseapp.com%2Fauth%2Flink",
     });
   });
 
@@ -122,6 +123,22 @@ describe("POST /api/auth/email-link", () => {
     expect(mocks.generateSignInWithEmailLink).toHaveBeenCalledTimes(1);
   });
 
+  it("uses a 1-minute per-email repeat cooldown", async () => {
+    const response = await POST(emailLinkRequest());
+
+    expect(response.status).toBe(200);
+    expect(mocks.enforcePublicRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        namespace: "auth-email-link-email-repeat",
+        actorKey: "email::user@example.com",
+        windowMs: 60 * 1000,
+        maxEvents: 1,
+        code: "auth-email-link/repeat-rate-limited",
+        message: "This email was sent a sign-in link recently. Please wait 1 minute before trying again.",
+      })
+    );
+  });
+
   it("returns once the Firebase link is generated without waiting for SMTP delivery", async () => {
     let sendScheduled: (() => unknown) | undefined;
     mocks.after.mockImplementation((callback: () => unknown) => {
@@ -139,7 +156,8 @@ describe("POST /api/auth/email-link", () => {
 
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
+      signInLink:
+        "https://tasklaunch.app/login/?emailLink=https%3A%2F%2Ftasktimer-prod.firebaseapp.com%2Fauth%2Flink",
     });
   });
 
@@ -185,7 +203,8 @@ describe("POST /api/auth/email-link", () => {
     );
     expect(mocks.sendAuthSignInEmail).toHaveBeenCalledWith({
       email: "User@Example.com",
-      signInLink: "https://tasktimer-prod.firebaseapp.com/auth/link",
+      signInLink:
+        "https://tasklaunch.app/login/?emailLink=https%3A%2F%2Ftasktimer-prod.firebaseapp.com%2Fauth%2Flink",
     });
   });
 

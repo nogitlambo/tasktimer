@@ -3,6 +3,7 @@ import { after, NextResponse } from "next/server";
 
 import { getFirebaseAdminAuth } from "@/lib/firebaseAdmin";
 import { sendAuthSignInEmail } from "@/lib/authEmailLink";
+import { wrapEmailSignInLinkForApp } from "@/app/auth/emailLinkUrl";
 import { resolveEmailLinkContinueUrl } from "@/app/login/emailLinkAuth";
 import {
   ApiRateLimitError,
@@ -13,6 +14,10 @@ import {
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
 export const dynamic = "force-dynamic";
+
+const EMAIL_LINK_BURST_WINDOW_MS = 10 * 60 * 1000;
+const EMAIL_LINK_BURST_MAX_EVENTS = 5;
+const EMAIL_LINK_REPEAT_COOLDOWN_MS = 60 * 1000;
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -78,26 +83,27 @@ export async function POST(req: Request) {
       enforcePublicRateLimit({
         namespace: "auth-email-link-burst",
         actorKey: buildPublicRateLimitActorKey({ ip: clientIp, secondaryKey: emailNormalized }),
-        windowMs: 10 * 60 * 1000,
-        maxEvents: 5,
+        windowMs: EMAIL_LINK_BURST_WINDOW_MS,
+        maxEvents: EMAIL_LINK_BURST_MAX_EVENTS,
         code: "auth-email-link/rate-limited",
         message: "Too many sign-in email attempts. Please wait before trying again.",
       }),
       enforcePublicRateLimit({
         namespace: "auth-email-link-email-repeat",
         actorKey: buildPublicRateLimitActorKey({ ip: "email", secondaryKey: emailNormalized }),
-        windowMs: 60 * 60 * 1000,
-        maxEvents: 3,
+        windowMs: EMAIL_LINK_REPEAT_COOLDOWN_MS,
+        maxEvents: 1,
         code: "auth-email-link/repeat-rate-limited",
-        message: "This email was sent too many sign-in links recently. Please try again later.",
+        message: "This email was sent a sign-in link recently. Please wait 1 minute before trying again.",
       }),
     ]);
 
     const actionCodeSettings = getActionCodeSettings(req);
     const signInLink = await getFirebaseAdminAuth().generateSignInWithEmailLink(email, actionCodeSettings);
+    const appSignInLink = wrapEmailSignInLinkForApp(signInLink, String(actionCodeSettings.url || ""));
     after(async () => {
       try {
-        await sendAuthSignInEmail({ email, signInLink });
+        await sendAuthSignInEmail({ email, signInLink: appSignInLink });
       } catch (error) {
         console.error("Could not send auth sign-in email.", error);
       }

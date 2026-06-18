@@ -52,6 +52,10 @@ export function resolveEmailLinkContinueUrl(input?: {
   const firebaseAuthHost = originHostname(firebaseAuthOrigin);
   const configuredAppOriginIsLocalhost = configuredAppHost ? isLocalhostHost(configuredAppHost) : false;
 
+  if (configuredAppOriginIsLocalhost && (!currentOriginIsLocalhost || currentProtocol !== "http:")) {
+    return `${emailLinkFallbackOrigin()}${LOGIN_PATH}`;
+  }
+
   if (
     configuredAppOrigin &&
     (!currentOriginIsHttp ||

@@ -81,22 +81,6 @@ function shouldUseRedirectAuth() {
   return isNativeOrFileRuntime();
 }
 
-function buildNativeEmailLinkRedirect(auth: Auth, rawUrl: string) {
-  if (typeof window === "undefined") return "";
-  const sourceUrl = rawUrl.trim();
-  const emailLinkUrl = resolveEmailSignInLink(auth, sourceUrl);
-  if (!emailLinkUrl) return "";
-  try {
-    const openedUrl = new URL(sourceUrl);
-    const targetUrl = new URL("/login/", window.location.href);
-    targetUrl.search = openedUrl.search;
-    targetUrl.hash = openedUrl.hash;
-    return targetUrl.href;
-  } catch {
-    return "";
-  }
-}
-
 function resolveEmailSignInLink(auth: Auth, href: string) {
   const sourceUrl = href.trim();
   if (!sourceUrl) return "";
@@ -392,9 +376,9 @@ export default function SharedWebSignInClient({
     let appUrlOpenHandle: PluginListenerHandle | null = null;
 
     const openEmailLink = (rawUrl: string) => {
-      const targetUrl = buildNativeEmailLinkRedirect(auth, rawUrl);
-      if (!targetUrl || targetUrl === window.location.href) return;
-      window.location.assign(targetUrl);
+      const sourceUrl = rawUrl.trim();
+      if (!resolveEmailSignInLink(auth, sourceUrl)) return;
+      void completeEmailLinkSignIn(sourceUrl, { source: "local" });
     };
 
     const setupNativeEmailLinkHandling = async () => {
@@ -417,7 +401,7 @@ export default function SharedWebSignInClient({
         void appUrlOpenHandle.remove();
       }
     };
-  }, []);
+  }, [completeEmailLinkSignIn]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -98,6 +98,30 @@ describe("resolveEmailLinkContinueUrl", () => {
     ).toBe("https://tasklaunch.app/login/");
   });
 
+  it("does not trust a configured localhost app URL for native app callbacks", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: {
+          origin: "capacitor://localhost",
+          protocol: "capacitor:",
+          hostname: "localhost",
+        },
+        appUrl: "https://localhost/tasklaunch/index.html",
+        authDomain: "tasktimer-prod.firebaseapp.com",
+      })
+    ).toBe("https://tasklaunch.app/login/");
+  });
+
+  it("does not trust a configured localhost app URL when request origin is unavailable", () => {
+    expect(
+      resolveEmailLinkContinueUrl({
+        location: null,
+        appUrl: "http://localhost:3000",
+        authDomain: "tasktimer-prod.firebaseapp.com",
+      })
+    ).toBe("https://tasklaunch.app/login/");
+  });
+
   it("falls back to the canonical app URL instead of the Firebase auth domain", () => {
     expect(
       resolveEmailLinkContinueUrl({
