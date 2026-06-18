@@ -22,12 +22,10 @@ const db = getFirestore(app, databaseId);
 const messaging = getMessaging(app);
 const TASK_TIME_GOAL_ACTIVE_TTL_MS = 2 * 60 * 1000;
 const PUSH_ACTION_SNOOZE_MS = 10 * 60 * 1000;
-const MISSED_SCHEDULED_TASK_GRACE_MS = 10 * 60 * 1000;
 const PLANNED_START_REMINDER_EVENT = "plannedStartReminder";
 const PLANNED_START_SNOOZED_EVENT = "plannedStartReminderSnoozed";
 const PLANNED_START_NOTIFICATION_KIND = "plannedStart";
 const MISSED_SCHEDULED_TASK_EVENT = "missedScheduledTask";
-const MISSED_SCHEDULED_TASK_NOTIFICATION_KIND = "missedScheduledTask";
 const UNSCHEDULED_GAP_REMINDER_EVENT = "unscheduledGapReminder";
 const UNSCHEDULED_GAP_NOTIFICATION_KIND = "unscheduledGap";
 const TIME_GOAL_COMPLETE_EVENT = "timeGoalComplete";
@@ -1149,7 +1147,6 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   const snoozedUntilMs = asInt(data.snoozedUntilMs, null);
   const isMissedCheck = effectiveEventType === MISSED_SCHEDULED_TASK_EVENT;
   const missedScheduledStartDueAtMs = asInt(data.missedScheduledStartDueAtMs, null);
-  const lastMissedDueAtMs = asInt(data.lastMissedDueAtMs, null);
 
   if (!uid || !taskId || dueAtMs == null || dueAtMs > nowMs || baseEventType !== PLANNED_START_REMINDER_EVENT) {
     return {status: "skipped"};
@@ -1157,12 +1154,6 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   if (isStaleScheduleDoc(dueAtMs, nowMs)) {
     await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
-  }
-  if (isMissedCheck && missedScheduledStartDueAtMs != null && lastMissedDueAtMs === missedScheduledStartDueAtMs) {
-    return {status: "duplicate"};
-  }
-  if (sentDueAtMs != null && sentDueAtMs === dueAtMs) {
-    return {status: "duplicate"};
   }
   if (!remindersEnabled || !getPlannedStartEntries(plannedStartDay, plannedStartTime, plannedStartByDay).length) {
     await docSnap.ref.delete().catch(() => {});
@@ -1184,16 +1175,12 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
   const taskPlannedStartTime = asString(taskData.plannedStartTime || plannedStartTime);
   const taskPlannedStartByDay = normalizePlannedStartByDay(taskData.plannedStartByDay) || plannedStartByDay;
   const hasTaskPlannedStart = getPlannedStartEntries(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay).length > 0;
-  if (taskOpenEnded || !taskReminderEnabled || !hasTaskPlannedStart) {
-    await docSnap.ref.delete().catch(() => {});
-    return {status: "skipped"};
-  }
-  if (isTaskCompletedForScheduleDay(taskData, missedScheduledStartDueAtMs || dueAtMs)) {
+  const reschedulePlannedStart = async (fromMs) => {
     const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(
       taskPlannedStartDay,
       taskPlannedStartTime,
       taskPlannedStartByDay,
-      nextLocalDayStartMs(missedScheduledStartDueAtMs || dueAtMs)
+      fromMs
     );
     if (nextDueAtMs != null) {
       await docSnap.ref.set({
@@ -1205,6 +1192,7 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
         plannedStartDay: taskPlannedStartDay || null,
         plannedStartTime: taskPlannedStartTime || null,
         plannedStartByDay: taskPlannedStartByDay || null,
+        plannedStartPushRemindersEnabled: true,
         snoozedUntilMs: null,
         missedCheckDueAtMs: null,
         missedScheduledStartDueAtMs: null,
@@ -1214,101 +1202,29 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     } else {
       await docSnap.ref.delete().catch(() => {});
     }
+    return nextDueAtMs;
+  };
+  if (taskOpenEnded || !taskReminderEnabled || !hasTaskPlannedStart) {
+    await docSnap.ref.delete().catch(() => {});
     return {status: "skipped"};
   }
-  const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(
-    taskPlannedStartDay,
-    taskPlannedStartTime,
-    taskPlannedStartByDay,
-    Math.max(nowMs, missedScheduledStartDueAtMs || dueAtMs)
-  );
-  if (taskRunning) {
-    if (nextDueAtMs != null) {
-      await docSnap.ref.set({
-        dueAtMs: nextDueAtMs,
-        notificationKind: PLANNED_START_NOTIFICATION_KIND,
-        eventType: PLANNED_START_REMINDER_EVENT,
-        baseEventType: PLANNED_START_REMINDER_EVENT,
-        effectiveEventType: PLANNED_START_REMINDER_EVENT,
-        plannedStartDay: taskPlannedStartDay || null,
-        plannedStartTime: taskPlannedStartTime,
-        plannedStartByDay: taskPlannedStartByDay || null,
-        plannedStartPushRemindersEnabled: true,
-        snoozedUntilMs: null,
-        missedCheckDueAtMs: null,
-        missedScheduledStartDueAtMs: null,
-        nextPlannedStartDueAtMs: null,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, {merge: true});
-    }
-    return {status: "running"};
+  const scheduledOccurrenceMs = missedScheduledStartDueAtMs || (sentDueAtMs != null && sentDueAtMs !== dueAtMs ? sentDueAtMs : dueAtMs);
+  if (isMissedCheck || sentDueAtMs === dueAtMs) {
+    await reschedulePlannedStart(Math.max(nowMs, nextLocalDayStartMs(scheduledOccurrenceMs)));
+    return {status: "skipped"};
   }
-
-  if (isMissedCheck) {
-    const scheduledStartDueAtMs = missedScheduledStartDueAtMs || sentDueAtMs || Math.max(0, dueAtMs - MISSED_SCHEDULED_TASK_GRACE_MS);
-    const dayStartMs = startOfLocalDayMs(scheduledStartDueAtMs);
-    const dayEndMs = nextLocalDayStartMs(scheduledStartDueAtMs);
-    if (await hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs)) {
-      await docSnap.ref.set({
-        dueAtMs: nextDueAtMs,
-        notificationKind: PLANNED_START_NOTIFICATION_KIND,
-        eventType: PLANNED_START_REMINDER_EVENT,
-        baseEventType: PLANNED_START_REMINDER_EVENT,
-        effectiveEventType: PLANNED_START_REMINDER_EVENT,
-        plannedStartDay: taskPlannedStartDay || null,
-        plannedStartTime: taskPlannedStartTime || null,
-        plannedStartByDay: taskPlannedStartByDay || null,
-        missedCheckDueAtMs: null,
-        missedScheduledStartDueAtMs: null,
-        nextPlannedStartDueAtMs: null,
-        snoozedUntilMs: null,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, {merge: true});
-      return {status: "skipped"};
-    }
-    const missedPayloadData = {
-      eventType: MISSED_SCHEDULED_TASK_EVENT,
-      baseEventType: PLANNED_START_REMINDER_EVENT,
-      effectiveEventType: MISSED_SCHEDULED_TASK_EVENT,
-      route,
-      taskId,
-      taskName,
-      notificationKind: MISSED_SCHEDULED_TASK_NOTIFICATION_KIND,
-      plannedStartDay: taskPlannedStartDay || "",
-      dueAtMs: String(scheduledStartDueAtMs),
-    };
-    const missedResponse = await sendScheduledTaskNotification({
-      uid,
-      nowMs,
-      route,
-      taskId,
-      taskName,
-      payloadData: missedPayloadData,
-      webTitle: "Missed Scheduled Task",
-      webBody: `You missed your scheduled task: ${taskName}.`,
-    });
-    if (missedResponse.successCount > 0) {
-      await docSnap.ref.set({
-        sentAtMs: nowMs,
-        sentDueAtMs: dueAtMs,
-        dueAtMs: nextDueAtMs,
-        notificationKind: PLANNED_START_NOTIFICATION_KIND,
-        eventType: PLANNED_START_REMINDER_EVENT,
-        baseEventType: PLANNED_START_REMINDER_EVENT,
-        effectiveEventType: PLANNED_START_REMINDER_EVENT,
-        plannedStartDay: taskPlannedStartDay || null,
-        plannedStartTime: taskPlannedStartTime || null,
-        plannedStartByDay: taskPlannedStartByDay || null,
-        snoozedUntilMs: null,
-        missedCheckDueAtMs: null,
-        missedScheduledStartDueAtMs: null,
-        nextPlannedStartDueAtMs: null,
-        lastMissedAtMs: nowMs,
-        lastMissedDueAtMs: scheduledStartDueAtMs,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, {merge: true});
-    }
-    return missedResponse;
+  if (localDayKeyFromMs(dueAtMs) !== localDayKeyFromMs(nowMs)) {
+    await reschedulePlannedStart(Math.max(nowMs, nextLocalDayStartMs(dueAtMs)));
+    return {status: "skipped"};
+  }
+  if (isTaskCompletedForScheduleDay(taskData, scheduledOccurrenceMs)) {
+    await reschedulePlannedStart(nextLocalDayStartMs(scheduledOccurrenceMs));
+    return {status: "skipped"};
+  }
+  const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay, nowMs);
+  if (taskRunning) {
+    await reschedulePlannedStart(nowMs);
+    return {status: "running"};
   }
 
   const payloadData = {
@@ -1334,22 +1250,21 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     webBody: `${taskName} is scheduled to start now.`,
   });
   if (response.successCount > 0) {
-    const missedCheckDueAtMs = dueAtMs + MISSED_SCHEDULED_TASK_GRACE_MS;
     await docSnap.ref.set({
       sentAtMs: nowMs,
       sentDueAtMs: dueAtMs,
-      dueAtMs: missedCheckDueAtMs,
-      notificationKind: MISSED_SCHEDULED_TASK_NOTIFICATION_KIND,
-      eventType: MISSED_SCHEDULED_TASK_EVENT,
+      dueAtMs: nextDueAtMs,
+      notificationKind: PLANNED_START_NOTIFICATION_KIND,
+      eventType: PLANNED_START_REMINDER_EVENT,
       baseEventType: PLANNED_START_REMINDER_EVENT,
-      effectiveEventType: MISSED_SCHEDULED_TASK_EVENT,
+      effectiveEventType: PLANNED_START_REMINDER_EVENT,
       plannedStartDay: taskPlannedStartDay || null,
       plannedStartTime: taskPlannedStartTime || null,
       plannedStartByDay: taskPlannedStartByDay || null,
       snoozedUntilMs: null,
-      missedCheckDueAtMs,
-      missedScheduledStartDueAtMs: dueAtMs,
-      nextPlannedStartDueAtMs: nextDueAtMs,
+      missedCheckDueAtMs: null,
+      missedScheduledStartDueAtMs: null,
+      nextPlannedStartDueAtMs: null,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }

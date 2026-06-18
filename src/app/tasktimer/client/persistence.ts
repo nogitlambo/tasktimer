@@ -56,6 +56,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadTaskViewPreference: () => void;
   loadTaskOrderByPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
+  loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
@@ -292,6 +293,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadTaskViewPreference();
     options.loadTaskOrderByPreference();
     options.loadAutoFocusOnTaskLaunchSetting();
+    options.loadDashboardPreviousWeekSetting();
     options.loadDynamicColorsSetting();
     options.loadInteractionClickSoundSetting();
     options.loadAchievementSoundsSetting();

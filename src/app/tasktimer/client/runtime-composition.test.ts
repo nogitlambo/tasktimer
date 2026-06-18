@@ -127,6 +127,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       taskOrderBy: "custom",
       dynamicColorsEnabled: true,
       autoFocusOnTaskLaunchEnabled: false,
+      dashboardPreviousWeekVisible: true,
       mobilePushAlertsEnabled: false,
       webPushAlertsEnabled: false,
       interactionClickSoundEnabled: true,

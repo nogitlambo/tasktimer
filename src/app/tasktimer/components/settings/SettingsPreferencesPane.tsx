@@ -34,6 +34,17 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             </SettingsDownwardSelect>
           </div>
           <div className="settingsInlineSectionHead">
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/dashboard.webp" alt="" aria-hidden="true" />
+            <div className="settingsInlineSectionTitle">Dashboard Settings</div>
+          </div>
+          <div className="toggleRow" id="dashboardPreviousWeekToggleRow">
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Show Previous Week</span>
+              <span className="settingsPreferenceControlHelp">Shows previous-week comparison bars in the dashboard activity chart.</span>
+            </div>
+            <button className="switch on" id="dashboardPreviousWeekToggle" type="button" role="switch" aria-checked="true" />
+          </div>
+          <div className="settingsInlineSectionHead">
             <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/alarm.webp" alt="" aria-hidden="true" />
             <div className="settingsInlineSectionTitle">Productivity Optimisation</div>
           </div>

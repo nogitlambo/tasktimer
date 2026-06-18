@@ -178,8 +178,6 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
   register("dashboardActivityGoalLine");
-  register("dashboardActivityPreviousWeekToggleWrap");
-  register("dashboardActivityPreviousWeekToggle");
   register("dashboardActivityYAxis");
   register("dashboardActivityXAxis");
   register("dashboardActivityEmpty");
@@ -265,6 +263,7 @@ function createRenderHarness(
     includeHeaderXpCard?: boolean;
     mobileViewport?: boolean;
     weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+    dashboardPreviousWeekVisible?: boolean;
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
@@ -294,8 +293,6 @@ function createRenderHarness(
       dashboardActivityPreviousBars: byId.get("dashboardActivityPreviousBars"),
       dashboardActivityBars: byId.get("dashboardActivityBars"),
       dashboardActivityGoalLine: byId.get("dashboardActivityGoalLine"),
-      dashboardActivityPreviousWeekToggleWrap: byId.get("dashboardActivityPreviousWeekToggleWrap"),
-      dashboardActivityPreviousWeekToggle: byId.get("dashboardActivityPreviousWeekToggle"),
       dashboardActivityYAxis: byId.get("dashboardActivityYAxis"),
       dashboardActivityXAxis: byId.get("dashboardActivityXAxis"),
       dashboardActivityEmpty: byId.get("dashboardActivityEmpty"),
@@ -333,6 +330,7 @@ function createRenderHarness(
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => options?.weekStarting || "mon",
     getOptimalProductivityDays: () => ["mon", "wed", "fri"],
+    getDashboardPreviousWeekVisible: () => options?.dashboardPreviousWeekVisible !== false,
     getDashboardTimelineDensity: () => "medium",
     setDashboardTimelineDensity: () => {},
     getDashboardWidgetHasRenderedData: () => ({
@@ -364,7 +362,6 @@ function createRenderHarness(
     topbarXp,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
     renderActivityOverview: () => dashboardRender.renderDashboardActivityOverviewCard(),
-    toggleActivityPreviousWeek: () => dashboardRender.toggleDashboardActivityPreviousWeek(),
     renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
@@ -452,7 +449,7 @@ describe("dashboard activity overview card", () => {
     }
   });
 
-  it("toggles previous-week ghost bars from the chart pill", () => {
+  it("hides previous-week ghost bars when the dashboard setting is disabled", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
@@ -465,34 +462,21 @@ describe("dashboard activity overview card", () => {
             { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
           ],
         },
+        dashboardPreviousWeekVisible: false,
       }
     );
 
     try {
       harness.renderActivityOverview();
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
-      const toggleWrap = harness.byId.get("dashboardActivityPreviousWeekToggleWrap") as ElementStub & { hidden?: boolean };
-      const toggle = harness.byId.get("dashboardActivityPreviousWeekToggle") as ElementStub & { checked?: boolean };
 
-      expect(previousBars?.style.display).toBe("");
-      expect(toggleWrap?.style.display).toBe("");
-      expect(toggleWrap?.hidden).toBe(false);
-      expect(toggleWrap?.classList.contains("isDisabled")).toBe(false);
-      expect(toggle?.checked).toBe(true);
-
-      expect(harness.toggleActivityPreviousWeek()).toBe(false);
       expect(previousBars?.style.display).toBe("none");
-      expect(toggle?.checked).toBe(false);
-
-      expect(harness.toggleActivityPreviousWeek()).toBe(true);
-      expect(previousBars?.style.display).toBe("");
-      expect(toggle?.checked).toBe(true);
     } finally {
       harness.restore();
     }
   });
 
-  it("shows the previous-week checkbox disabled when no previous-week data exists", () => {
+  it("keeps previous-week ghost bars hidden when no previous-week data exists", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
@@ -510,16 +494,8 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
-      const toggleWrap = harness.byId.get("dashboardActivityPreviousWeekToggleWrap") as ElementStub & { hidden?: boolean };
-      const toggle = harness.byId.get("dashboardActivityPreviousWeekToggle") as ElementStub & { hidden?: boolean; disabled?: boolean };
 
       expect(previousBars?.style.display).toBe("none");
-      expect(toggleWrap?.style.display).toBe("");
-      expect(toggleWrap?.hidden).toBe(false);
-      expect(toggleWrap?.classList.contains("isDisabled")).toBe(true);
-      expect(toggle?.hidden).toBe(false);
-      expect(toggle?.disabled).toBe(true);
-      expect(toggle?.getAttribute("disabled")).toBe("true");
     } finally {
       harness.restore();
     }

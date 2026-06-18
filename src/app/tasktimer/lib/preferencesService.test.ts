@@ -11,6 +11,7 @@ const storageKeys = {
   TASK_VIEW_KEY: "taskticker_tasks_v1:taskView",
   TASK_ORDER_BY_KEY: "taskticker_tasks_v1:taskOrderBy",
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "taskticker_tasks_v1:autoFocusOnTaskLaunchEnabled",
+  DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
   INTERACTION_CLICK_SOUND_KEY: "taskticker_tasks_v1:interactionClickSoundEnabled",
@@ -33,6 +34,7 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
     taskOrderBy: "custom" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
+    dashboardPreviousWeekVisible: true,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
@@ -233,6 +235,53 @@ describe("createTaskTimerPreferencesService", () => {
     expect(service.loadTaskOrderBy()).toBe("schedule");
     expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
     expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
+  });
+
+  it("defaults previous-week dashboard comparison to visible", () => {
+    expect(createService().loadDashboardPreviousWeekVisible()).toBe(true);
+  });
+
+  it("loads previous-week dashboard comparison from cloud preferences", () => {
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), dashboardPreviousWeekVisible: false },
+      }).loadDashboardPreviousWeekVisible()
+    ).toBe(false);
+  });
+
+  it("loads previous-week dashboard comparison from local storage before auth", () => {
+    window.localStorage.setItem(storageKeys.DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY, "false");
+
+    expect(createService().loadDashboardPreviousWeekVisible()).toBe(false);
+  });
+
+  it("persists previous-week dashboard comparison in preference snapshots", () => {
+    const savePreferences = vi.fn();
+    const setCloudPreferencesCache = vi.fn();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      repository: {
+        loadCachedPreferences: () => null,
+        buildDefaultPreferences,
+        savePreferences,
+      },
+      getCloudPreferencesCache: () => null,
+      setCloudPreferencesCache,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      dashboardPreviousWeekVisible: false,
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY)).toBe("false");
+    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ dashboardPreviousWeekVisible: false }));
+    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ dashboardPreviousWeekVisible: false }));
   });
 
   it("loads date added task order values from cloud and local storage", () => {

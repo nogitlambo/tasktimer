@@ -376,6 +376,264 @@ describe("sendScheduledTaskNotification", () => {
       { merge: true }
     );
   });
+
+  it("sends a current-day planned-start push and reschedules without creating a missed-check doc", async () => {
+    const dueAtMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: dueAtMs,
+      },
+    ];
+    state.sendEachForMulticast = vi.fn(async () => ({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    }));
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "plannedStartReminder",
+        baseEventType: "plannedStartReminder",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, dueAtMs);
+
+    expect(result.status).toBe("sent");
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+        effectiveEventType: "plannedStartReminder",
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+        nextPlannedStartDueAtMs: null,
+      }),
+      { merge: true }
+    );
+    expect(ref.set.mock.calls[0][0]).not.toEqual(
+      expect.objectContaining({
+        notificationKind: "missedScheduledTask",
+        eventType: "missedScheduledTask",
+      })
+    );
+  });
+
+  it("cleans up an existing missed scheduled task doc without sending a missed push", async () => {
+    const scheduledStartMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    const dueAtMs = scheduledStartMs + 10 * 60_000;
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: dueAtMs,
+      },
+    ];
+    state.sendEachForMulticast = vi.fn(async () => ({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    }));
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "missedScheduledTask",
+        baseEventType: "plannedStartReminder",
+        effectiveEventType: "missedScheduledTask",
+        notificationKind: "missedScheduledTask",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        missedCheckDueAtMs: dueAtMs,
+        missedScheduledStartDueAtMs: scheduledStartMs,
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, dueAtMs);
+
+    expect(result.status).toBe("skipped");
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+        effectiveEventType: "plannedStartReminder",
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+      }),
+      { merge: true }
+    );
+  });
+
+  it("reschedules a previous-day planned-start doc without sending", async () => {
+    const dueAtMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    const nowMs = new Date(2026, 4, 30, 8, 0, 0).getTime();
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: nowMs,
+      },
+    ];
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "plannedStartReminder",
+        baseEventType: "plannedStartReminder",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, nowMs);
+
+    expect(result.status).toBe("skipped");
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+      }),
+      { merge: true }
+    );
+  });
+
+  it("reschedules a current-day planned-start doc without sending when the task is already running", async () => {
+    const dueAtMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      running: true,
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: dueAtMs,
+      },
+    ];
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "plannedStartReminder",
+        baseEventType: "plannedStartReminder",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, dueAtMs);
+
+    expect(result.status).toBe("running");
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+        missedCheckDueAtMs: null,
+        missedScheduledStartDueAtMs: null,
+      }),
+      { merge: true }
+    );
+  });
 });
 
 describe("processDueTimeGoalCompleteTask", () => {

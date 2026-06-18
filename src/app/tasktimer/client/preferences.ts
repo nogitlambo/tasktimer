@@ -149,6 +149,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       taskView: ctx.getTaskView(),
       taskOrderBy: ctx.getTaskOrderBy(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
+      dashboardPreviousWeekVisible: ctx.getDashboardPreviousWeekVisible(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
@@ -351,6 +352,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setAutoFocusOnTaskLaunchEnabledState(preferenceService.loadAutoFocusOnTaskLaunchEnabled());
   }
 
+  function loadDashboardPreviousWeekSetting() {
+    ctx.setDashboardPreviousWeekVisibleState(preferenceService.loadDashboardPreviousWeekVisible());
+  }
+
   function saveAutoFocusOnTaskLaunchSetting() {
     try {
       localStorage.setItem(
@@ -363,11 +368,24 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
+  function saveDashboardPreviousWeekSetting() {
+    try {
+      localStorage.setItem(
+        ctx.storageKeys.DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY,
+        ctx.getDashboardPreviousWeekVisible() ? "true" : "false"
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
   function syncTaskSettingsUi() {
     const weekStarting = ctx.getWeekStarting();
     const startupModule = ctx.getStartupModule();
     ctx.setTaskViewState("tile");
     ctx.toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
+    ctx.toggleSwitchElement(els.dashboardPreviousWeekToggle as HTMLElement | null, ctx.getDashboardPreviousWeekVisible());
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
@@ -990,6 +1008,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     bindToggleRow({
       on: ctx.on,
+      control: els.dashboardPreviousWeekToggle,
+      row: els.dashboardPreviousWeekToggleRow,
+      ignoreSelector: "#dashboardPreviousWeekToggle",
+      handleToggle: () => {
+        ctx.setDashboardPreviousWeekVisibleState(!ctx.getDashboardPreviousWeekVisible());
+        syncTaskSettingsUi();
+        saveDashboardPreviousWeekSetting();
+        ctx.renderDashboardWidgets();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
       control: els.taskFocusDndToggle,
       row: els.taskFocusDndToggleRow,
       ignoreSelector: "#taskFocusDndToggle",
@@ -1186,6 +1216,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveStartupModulePreference();
       saveTaskOrderByPreference();
       saveAutoFocusOnTaskLaunchSetting();
+      saveDashboardPreviousWeekSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
       saveInteractionClickSoundSetting();
@@ -1226,7 +1257,9 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveTaskViewPreference,
     saveTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting,
+    loadDashboardPreviousWeekSetting,
     saveAutoFocusOnTaskLaunchSetting,
+    saveDashboardPreviousWeekSetting,
     toggleSwitchElement: ctx.toggleSwitchElement,
     isSwitchOn: ctx.isSwitchOn,
     syncTaskSettingsUi,

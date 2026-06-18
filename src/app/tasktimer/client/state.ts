@@ -3,6 +3,7 @@ import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 
 type TaskTimerStorageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+  DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
   THEME_KEY: string;
   MENU_BUTTON_STYLE_KEY: string;
   WEEK_STARTING_KEY: string;
@@ -34,6 +35,7 @@ export const DEFAULT_MODE_COLORS: Record<MainMode, string> = {
 export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorageKeys {
   return {
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: `${storageKey}:autoFocusOnTaskLaunchEnabled`,
+    DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: `${storageKey}:dashboardPreviousWeekVisible`,
     THEME_KEY: `${storageKey}:theme`,
     MENU_BUTTON_STYLE_KEY: `${storageKey}:menuButtonStyle`,
     WEEK_STARTING_KEY: `${storageKey}:weekStarting`,
@@ -81,6 +83,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     taskOrderBy: "custom",
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
+    dashboardPreviousWeekVisible: true,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,

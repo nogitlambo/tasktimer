@@ -134,7 +134,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "tasks",
     label: "Tasks",
     ariaLabel: "Tasks",
-    iconSrc: "/icons/icons_default/task.webp",
+    iconSrc: "/logo/lime-icon-512.webp",
     desktopId: "commandCenterTasksBtn",
     mobileId: "footerTasksBtn",
     href: "/tasklaunch",

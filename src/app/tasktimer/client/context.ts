@@ -852,7 +852,6 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
-  toggleDashboardActivityPreviousWeek: () => boolean;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -873,6 +872,7 @@ export type TaskTimerDashboardRenderContext = {
   getDeletedTaskMeta: () => DeletedTaskMeta;
   getWeekStarting: () => DashboardWeekStart;
   getOptimalProductivityDays: () => OptimalProductivityDays;
+  getDashboardPreviousWeekVisible: () => boolean;
   getDashboardTimelineDensity: () => DashboardTimelineDensity;
   setDashboardTimelineDensity: (value: DashboardTimelineDensity) => void;
   getDashboardWidgetHasRenderedData: () => {
@@ -904,6 +904,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     TASK_ORDER_BY_KEY: string;
     STARTUP_MODULE_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+    DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
     INTERACTION_CLICK_SOUND_KEY: string;
@@ -932,6 +933,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setStartupModuleState: (value: StartupModulePreference) => void;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
+  getDashboardPreviousWeekVisible: () => boolean;
+  setDashboardPreviousWeekVisibleState: (value: boolean) => void;
   getDynamicColorsEnabled: () => boolean;
   setDynamicColorsEnabledState: (value: boolean) => void;
   getMobilePushAlertsEnabled: () => boolean;

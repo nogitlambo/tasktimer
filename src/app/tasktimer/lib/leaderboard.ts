@@ -90,6 +90,7 @@ type LeaderboardIdentityFields = Pick<
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
+const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
   const id = String(avatar?.id || "").trim();
@@ -170,6 +171,16 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
 function asLeaderboardProfile(docSnap: QueryDocumentSnapshot | null): LeaderboardProfile | null {
   if (!docSnap) return null;
   return normalizeLeaderboardProfileRecord(docSnap.id, docSnap.data() as Record<string, unknown>);
+}
+
+function isExcludedLeaderboardProfile(profile: LeaderboardProfile | null | undefined): boolean {
+  if (!profile) return false;
+  const username = String(profile.username || profile.displayLabel || "").trim().toLowerCase();
+  return EXCLUDED_LEADERBOARD_USERNAMES.has(username);
+}
+
+function visibleLeaderboardProfiles(profiles: Array<LeaderboardProfile | null | undefined>): LeaderboardProfile[] {
+  return profiles.filter((profile): profile is LeaderboardProfile => !!profile && !isExcludedLeaderboardProfile(profile));
 }
 
 function docsFromSettledQuery<T extends { docs: QueryDocumentSnapshot[] }>(
@@ -486,8 +497,8 @@ export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Re
   dispatchLeaderboardProfileUpdated(uid);
 }
 
-function filterCurrentUid(entries: LeaderboardProfile[], currentUid: string) {
-  return entries.filter((entry) => entry.uid !== currentUid);
+function filterCurrentUid(entries: Array<LeaderboardProfile | null | undefined>, currentUid: string) {
+  return visibleLeaderboardProfiles(entries).filter((entry) => entry.uid !== currentUid);
 }
 
 function sortWeeklyEntries(entries: LeaderboardProfile[]): LeaderboardProfile[] {
@@ -564,8 +575,9 @@ export function buildGlobalLeaderboardRows(input: {
   currentUserEntry: LeaderboardProfile | null;
   currentUserRank: number | null;
 }): WeeklyLeaderboardRow[] {
-  const currentUid = String(input.currentUserEntry?.uid || "").trim();
-  const rows = (input.topEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
+  const currentUserEntry = isExcludedLeaderboardProfile(input.currentUserEntry) ? null : input.currentUserEntry;
+  const currentUid = String(currentUserEntry?.uid || "").trim();
+  const rows = visibleLeaderboardProfiles(input.topEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
     const isCurrentUser = !!currentUid && profile.uid === currentUid;
     const rank = index + 1;
     return {
@@ -579,14 +591,14 @@ export function buildGlobalLeaderboardRows(input: {
     };
   });
 
-  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
+  if (!currentUserEntry || rows.some((row) => row.profile.uid === currentUserEntry.uid)) {
     return sortLeaderboardRows(rows);
   }
 
   const visibleRows = sortLeaderboardRows(rows);
   return [
     ...visibleRows,
-    createCurrentUserLeaderboardRow(input.currentUserEntry, {
+    createCurrentUserLeaderboardRow(currentUserEntry, {
       rank: input.currentUserRank,
       metric: "totalXp",
       visibleRows,
@@ -599,9 +611,10 @@ export function buildRivalLeaderboardRows(input: {
   currentUserEntry: LeaderboardProfile | null;
   currentUserRivalRank: number | null;
 }): WeeklyLeaderboardRow[] {
-  const currentUid = String(input.currentUserEntry?.uid || "").trim();
-  const rankScope = getRankScope(input.currentUserEntry);
-  const scopedRivalEntries = filterProfilesByRankScope(input.rivalEntries || [], rankScope);
+  const currentUserEntry = isExcludedLeaderboardProfile(input.currentUserEntry) ? null : input.currentUserEntry;
+  const currentUid = String(currentUserEntry?.uid || "").trim();
+  const rankScope = getRankScope(currentUserEntry);
+  const scopedRivalEntries = filterProfilesByRankScope(visibleLeaderboardProfiles(input.rivalEntries || []), rankScope);
   const rows = scopedRivalEntries.slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT).map((profile, index): WeeklyLeaderboardRow => {
     const isCurrentUser = !!currentUid && profile.uid === currentUid;
     const rank = isCurrentUser && input.currentUserRivalRank ? input.currentUserRivalRank : index + 1;
@@ -618,13 +631,13 @@ export function buildRivalLeaderboardRows(input: {
 
   const currentUserRivalRank =
     input.currentUserRivalRank && input.currentUserRivalRank > 0 ? input.currentUserRivalRank : rows.length + 1;
-  const currentUserIsInRows = input.currentUserEntry && rows.some((row) => row.profile.uid === input.currentUserEntry!.uid);
-  if (input.currentUserEntry && !currentUserIsInRows && currentUserRivalRank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+  const currentUserIsInRows = currentUserEntry && rows.some((row) => row.profile.uid === currentUserEntry.uid);
+  if (currentUserEntry && !currentUserIsInRows && currentUserRivalRank <= WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
     rows.splice(Math.max(0, currentUserRivalRank - 1), 0, {
-      profile: input.currentUserEntry,
+      profile: currentUserEntry,
       rank: currentUserRivalRank,
       rankLabel: formatWeeklyRankLabel(currentUserRivalRank),
-      playerLabel: getLeaderboardPlayerLabel(input.currentUserEntry),
+      playerLabel: getLeaderboardPlayerLabel(currentUserEntry),
       isCurrentUser: true,
       isPlaceholder: false,
       isDummy: false,
@@ -636,11 +649,11 @@ export function buildRivalLeaderboardRows(input: {
     });
   }
 
-  if (input.currentUserEntry && !currentUserIsInRows && currentUserRivalRank > WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
+  if (currentUserEntry && !currentUserIsInRows && currentUserRivalRank > WEEKLY_LEADERBOARD_DISPLAY_LIMIT) {
     const visibleRows = sortLeaderboardRows(rows);
     return [
       ...visibleRows,
-      createCurrentUserLeaderboardRow(input.currentUserEntry, {
+      createCurrentUserLeaderboardRow(currentUserEntry, {
         rank: currentUserRivalRank,
         metric: "totalXp",
         visibleRows,
@@ -656,8 +669,9 @@ export function buildWeeklyLeaderboardRows(input: {
   currentUserEntry: LeaderboardProfile | null;
   currentUserWeeklyRank: number | null;
 }): WeeklyLeaderboardRow[] {
-  const currentUid = String(input.currentUserEntry?.uid || "").trim();
-  const sortedEntries = sortWeeklyEntries(input.weeklyEntries || []).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+  const currentUserEntry = isExcludedLeaderboardProfile(input.currentUserEntry) ? null : input.currentUserEntry;
+  const currentUid = String(currentUserEntry?.uid || "").trim();
+  const sortedEntries = sortWeeklyEntries(visibleLeaderboardProfiles(input.weeklyEntries || [])).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
   const rows = sortedEntries.map((profile, index): WeeklyLeaderboardRow => {
     const isCurrentUser = !!currentUid && profile.uid === currentUid;
     const rank = index + 1;
@@ -672,14 +686,14 @@ export function buildWeeklyLeaderboardRows(input: {
     };
   });
 
-  if (!input.currentUserEntry || rows.some((row) => row.profile.uid === input.currentUserEntry!.uid)) {
+  if (!currentUserEntry || rows.some((row) => row.profile.uid === currentUserEntry.uid)) {
     return sortLeaderboardRows(rows);
   }
 
   const visibleRows = sortLeaderboardRows(rows);
   return [
     ...visibleRows,
-    createCurrentUserLeaderboardRow(input.currentUserEntry, {
+    createCurrentUserLeaderboardRow(currentUserEntry, {
       rank: input.currentUserWeeklyRank,
       metric: "weeklyXp",
       visibleRows,
@@ -721,36 +735,37 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
 
   const ownIdentity = await loadOwnLeaderboardIdentity(currentUid).catch(() => null);
   const profiles = collection(db, "leaderboardProfiles");
+  const leaderboardQueryLimit = WEEKLY_LEADERBOARD_DISPLAY_LIMIT + EXCLUDED_LEADERBOARD_USERNAMES.size;
+  const risingQueryLimit = 3 + EXCLUDED_LEADERBOARD_USERNAMES.size;
   const [topSnap, risingSnap, weeklySnap, currentUserSnap] = await Promise.all([
-    getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(10))),
-    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(3))),
-    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(10))),
+    getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(leaderboardQueryLimit))),
+    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(risingQueryLimit))),
+    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(leaderboardQueryLimit))),
     getDoc(doc(db, "leaderboardProfiles", currentUid)),
   ]);
 
-  const topEntries = topSnap.docs
+  const topEntries = visibleLeaderboardProfiles(topSnap.docs
     .map((row) => asLeaderboardProfile(row))
-    .filter((row): row is LeaderboardProfile => !!row)
-    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
-  const weeklyEntries = weeklySnap.docs
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+  const weeklyEntries = visibleLeaderboardProfiles(weeklySnap.docs
     .map((row) => asLeaderboardProfile(row))
-    .filter((row): row is LeaderboardProfile => !!row)
-    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
   const currentUserEntry = currentUserSnap.exists()
     ? normalizeLeaderboardProfileRecord(currentUserSnap.id, currentUserSnap.data() as Record<string, unknown>)
     : null;
   const currentUserEntryWithIdentity = currentUserEntry ? applyOwnIdentity(currentUserEntry, currentUid, ownIdentity) : null;
 
-  if (!currentUserEntryWithIdentity) {
+  if (!currentUserEntryWithIdentity || isExcludedLeaderboardProfile(currentUserEntryWithIdentity)) {
     return {
       topEntries,
       risingEntries: filterCurrentUid(
         risingSnap.docs
           .map((row) => asLeaderboardProfile(row))
-          .filter((row): row is LeaderboardProfile => !!row)
-          .map((row) => applyOwnIdentity(row, currentUid, ownIdentity)),
+          .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)),
         currentUid
-      ),
+      ).slice(0, 3),
       rivalEntries: [],
       weeklyEntries,
       currentUserEntry: null,
@@ -766,7 +781,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const [higherXpResult, aboveResult, rivalResult, higherRivalResult, higherWeeklyResult] = await Promise.allSettled([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),
-    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(10))),
+    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(leaderboardQueryLimit))),
     getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
@@ -777,19 +792,29 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const risingEntries = filterCurrentUid(
     risingSnap.docs
       .map((row) => asLeaderboardProfile(row))
-      .filter((row): row is LeaderboardProfile => !!row)
-      .map((row) => applyOwnIdentity(row, currentUid, ownIdentity)),
+      .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)),
     currentUid
-  );
-  const aboveEntries = docsFromSettledQuery(aboveResult)
+  ).slice(0, 3);
+  const higherXpEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherXpResult)
     .map((row) => asLeaderboardProfile(row))
-    .filter((row): row is LeaderboardProfile => !!row)
-    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity))
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
     .filter((row) => row.uid !== currentUid);
-  const rivalEntries = docsFromSettledQuery(rivalResult)
+  const aboveEntries = visibleLeaderboardProfiles(docsFromSettledQuery(aboveResult)
     .map((row) => asLeaderboardProfile(row))
-    .filter((row): row is LeaderboardProfile => !!row)
-    .map((row) => applyOwnIdentity(row, currentUid, ownIdentity));
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .filter((row) => row.uid !== currentUid);
+  const rivalEntries = visibleLeaderboardProfiles(docsFromSettledQuery(rivalResult)
+    .map((row) => asLeaderboardProfile(row))
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+  const higherRivalEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherRivalResult)
+    .map((row) => asLeaderboardProfile(row))
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .filter((row) => row.uid !== currentUid);
+  const higherWeeklyEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherWeeklyResult)
+    .map((row) => asLeaderboardProfile(row))
+    .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .filter((row) => row.uid !== currentUid);
   const currentUserGapToNextXp =
     aboveEntries.length > 0 ? Math.max(0, aboveEntries[0]!.rewardTotalXp - currentUserEntryWithIdentity.rewardTotalXp) : null;
 
@@ -799,11 +824,11 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     rivalEntries,
     weeklyEntries,
     currentUserEntry: currentUserEntryWithIdentity,
-    currentUserRank: higherXpSize == null ? null : higherXpSize + 1,
+    currentUserRank: higherXpSize == null ? null : higherXpEntries.length + 1,
     currentUserGapToNextXp,
-    currentUserRivalRank: higherRivalSize == null ? null : higherRivalSize + 1,
+    currentUserRivalRank: higherRivalSize == null ? null : higherRivalEntries.length + 1,
     currentUserWeeklyEntry: currentUserEntryWithIdentity,
-    currentUserWeeklyRank: higherWeeklySize == null ? null : higherWeeklySize + 1,
+    currentUserWeeklyRank: higherWeeklySize == null ? null : higherWeeklyEntries.length + 1,
   };
 }
 

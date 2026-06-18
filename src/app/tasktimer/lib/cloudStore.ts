@@ -68,6 +68,7 @@ export type UserPreferencesV1 = {
   taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
+  dashboardPreviousWeekVisible: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
   interactionClickSoundEnabled: boolean;
@@ -1561,6 +1562,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         taskOrderBy: normalizeTaskOrderBy(prefSnap.get("taskOrderBy")),
         dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
         autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
+        dashboardPreviousWeekVisible: asBool(prefSnap.get("dashboardPreviousWeekVisible"), true),
         mobilePushAlertsEnabled: asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
         webPushAlertsEnabled:
           typeof prefSnap.get("webPushAlertsEnabled") === "boolean"
@@ -2212,6 +2214,7 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     taskOrderBy: normalizeTaskOrderBy(data.taskOrderBy),
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
+    dashboardPreviousWeekVisible: asBool(data.dashboardPreviousWeekVisible, true),
     mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),
     webPushAlertsEnabled:
       typeof data.webPushAlertsEnabled === "boolean"

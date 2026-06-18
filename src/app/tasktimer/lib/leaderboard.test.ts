@@ -199,6 +199,20 @@ describe("getLeaderboardAvatarSrc", () => {
 });
 
 describe("buildWeeklyLeaderboardRows", () => {
+  it("excludes denylisted users from weekly rows", () => {
+    const rows = buildWeeklyLeaderboardRows({
+      weeklyEntries: [
+        createProfile({ uid: "blocked-1", username: "codexemaillin_yixnc2", weeklyXpGain: 500 }),
+        createProfile({ uid: "visible", username: "visible", weeklyXpGain: 100 }),
+        createProfile({ uid: "blocked-2", username: "codexemaillinktest", weeklyXpGain: 50 }),
+      ],
+      currentUserEntry: null,
+      currentUserWeeklyRank: null,
+    });
+
+    expect(rows.map((row) => row.profile.uid)).toEqual(["visible"]);
+  });
+
   it("orders weekly leaderboard rows by weekly XP gain", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
@@ -294,6 +308,20 @@ describe("buildWeeklyLeaderboardRows", () => {
 });
 
 describe("buildGlobalLeaderboardRows", () => {
+  it("excludes denylisted users from global rows", () => {
+    const rows = buildGlobalLeaderboardRows({
+      topEntries: [
+        createProfile({ uid: "blocked-1", username: "codexemaillin_yixnc2", rewardTotalXp: 1200 }),
+        createProfile({ uid: "visible", username: "visible", rewardTotalXp: 900 }),
+        createProfile({ uid: "blocked-2", username: "codexemaillinktest", rewardTotalXp: 700 }),
+      ],
+      currentUserEntry: null,
+      currentUserRank: null,
+    });
+
+    expect(rows.map((row) => row.profile.uid)).toEqual(["visible"]);
+  });
+
   it("returns no rows on an empty global board", () => {
     const rows = buildGlobalLeaderboardRows({
       topEntries: [],
@@ -367,6 +395,19 @@ describe("buildGlobalLeaderboardRows", () => {
 });
 
 describe("buildRivalLeaderboardRows", () => {
+  it("excludes denylisted users from rival rows", () => {
+    const rows = buildRivalLeaderboardRows({
+      rivalEntries: [
+        createProfile({ uid: "blocked-1", username: "codexemaillin_yixnc2", rewardTotalXp: 1500 }),
+        createProfile({ uid: "visible", username: "visible", rewardTotalXp: 1300 }),
+      ],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: 2,
+    });
+
+    expect(rows.map((row) => row.profile.uid)).toEqual(["visible", "me"]);
+  });
+
   it("keeps a visible rank one current user in the rivals podium", () => {
     const rows = buildRivalLeaderboardRows({
       rivalEntries: [],
@@ -419,6 +460,61 @@ describe("buildRivalLeaderboardRows", () => {
 });
 
 describe("loadLeaderboardScreenData", () => {
+  it("filters denylisted users from loaded boards and rank counts", async () => {
+    const currentProfile = createProfile({
+      uid: "filtered-uid",
+      username: "pilot",
+      displayLabel: "pilot",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      weeklyXpGain: 20,
+    });
+    const visiblePeerProfile = createProfile({
+      uid: "uid-2",
+      username: "peer",
+      displayLabel: "peer",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 220,
+      weeklyXpGain: 30,
+    });
+    const blockedProfile = createProfile({
+      uid: "blocked-1",
+      username: "codexemaillinktest",
+      displayLabel: "codexemaillinktest",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 320,
+      weeklyXpGain: 40,
+    });
+    const currentDoc = docSnap("filtered-uid", currentProfile);
+    const visiblePeerDoc = docSnap("uid-2", visiblePeerProfile);
+    const blockedDoc = docSnap("blocked-1", blockedProfile);
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(currentDoc);
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc]))
+      .mockResolvedValueOnce(querySnap([blockedDoc, visiblePeerDoc]));
+
+    const result = await loadLeaderboardScreenData("filtered-uid");
+
+    expect(result.topEntries.map((entry) => entry.uid)).toEqual(["uid-2", "filtered-uid"]);
+    expect(result.weeklyEntries.map((entry) => entry.uid)).toEqual(["uid-2", "filtered-uid"]);
+    expect(result.risingEntries.map((entry) => entry.uid)).toEqual(["uid-2"]);
+    expect(result.rivalEntries.map((entry) => entry.uid)).toEqual(["uid-2", "filtered-uid"]);
+    expect(result.currentUserRank).toBe(2);
+    expect(result.currentUserRivalRank).toBe(2);
+    expect(result.currentUserWeeklyRank).toBe(2);
+  });
+
   it("returns available leaderboard data when optional rivals queries need missing indexes", async () => {
     const currentProfile = createProfile({
       uid: "uid-1",

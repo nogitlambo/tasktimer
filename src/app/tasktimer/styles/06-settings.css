@@ -253,7 +253,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   border-bottom:none;
   background: transparent;
   border-radius:0;
-  padding:4px 4px 10px;
+  padding:4px 8px 10px;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .menuTitle{

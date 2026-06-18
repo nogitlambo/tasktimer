@@ -140,6 +140,7 @@ type CreatePersistenceOptionsArgs = {
   loadTaskViewPreference: () => void;
   loadTaskOrderByPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
+  loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
@@ -700,7 +701,6 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
-  toggleDashboardActivityPreviousWeek: () => boolean;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -726,7 +726,6 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
     | "renderDashboardTimelineCard"
-    | "toggleDashboardActivityPreviousWeek"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -899,6 +898,10 @@ export function createTaskTimerPreferencesContext(
     setAutoFocusOnTaskLaunchEnabledState: (value) => {
       args.preferencesState.set("autoFocusOnTaskLaunchEnabled", value);
     },
+    getDashboardPreviousWeekVisible: () => args.preferencesState.get("dashboardPreviousWeekVisible") !== false,
+    setDashboardPreviousWeekVisibleState: (value) => {
+      args.preferencesState.set("dashboardPreviousWeekVisible", value);
+    },
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     setDynamicColorsEnabledState: (value) => {
       args.preferencesState.set("dynamicColorsEnabled", value);
@@ -1043,6 +1046,7 @@ export function createTaskTimerPersistenceContext(
     loadTaskViewPreference: args.loadTaskViewPreference,
     loadTaskOrderByPreference: args.loadTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
+    loadDashboardPreviousWeekSetting: args.loadDashboardPreviousWeekSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting: args.loadAchievementSoundsSetting,
@@ -1534,6 +1538,7 @@ export function createTaskTimerDashboardRenderContext(
     getDeletedTaskMeta: args.taskCollectionBindings.getDeletedTaskMeta,
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerDashboardRender>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
+    getDashboardPreviousWeekVisible: () => args.preferencesState.get("dashboardPreviousWeekVisible") !== false,
     getDashboardTimelineDensity: () => asType<DashboardTimelineDensity>(args.dashboardUiState.get("dashboardTimelineDensity")),
     setDashboardTimelineDensity: (value) => args.dashboardUiState.set("dashboardTimelineDensity", value),
     getDashboardWidgetHasRenderedData: () => args.dashboardWidgetHasRenderedData,
@@ -1602,7 +1607,6 @@ export function createTaskTimerDashboardContext(
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
-    toggleDashboardActivityPreviousWeek: args.toggleDashboardActivityPreviousWeek,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver: args.hasSelectedDashboardMomentumDriver,
@@ -1624,7 +1628,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     renderDashboardLiveWidgets,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
     selectDashboardTimelineSuggestion,
-    toggleDashboardActivityPreviousWeek,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,
     hasSelectedDashboardMomentumDriver,
@@ -1659,7 +1662,6 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
-      toggleDashboardActivityPreviousWeek: () => toggleDashboardActivityPreviousWeek(),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),
       hasSelectedDashboardMomentumDriver: () => hasSelectedDashboardMomentumDriver(),
