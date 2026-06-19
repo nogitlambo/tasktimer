@@ -18,7 +18,7 @@ type TaskListRendererOptions = {
   setCurrentTileColumnCount: (value: number) => void;
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
-  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "opening" | "closing" | "open" | null; revealTimer?: number | null }>;
+  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "open" | null; revealTimer?: number | null }>;
   syncTaskFlipStatesForVisibleTasks: (activeTaskIds: Set<string>) => void;
   applyTaskFlipDomState: (taskId: string, taskEl?: HTMLElement | null) => void;
   renderHistory: (taskId: string) => void;
@@ -223,7 +223,10 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       (tileColumnEl || taskListEl).appendChild(taskEl);
     });
 
-    const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => historyViewByTaskId[taskId]?.revealPhase !== "opening");
+    const stableOpenHistoryTaskIds = Array.from(openHistoryTaskIds).filter((taskId) => {
+      const revealPhase = historyViewByTaskId[taskId]?.revealPhase;
+      return revealPhase !== "openingSpace" && revealPhase !== "opening";
+    });
     for (const taskId of stableOpenHistoryTaskIds) options.renderHistory(taskId);
     if (stableOpenHistoryTaskIds.length) {
       options.requestAnimationFrameRef(() => {

@@ -36,7 +36,7 @@ export type HistoryViewState = {
   page: number;
   rangeDays: 7 | 14;
   rangeMode: "entries" | "day";
-  revealPhase: "opening" | "open" | "closing";
+  revealPhase: "openingSpace" | "opening" | "open" | "closing";
   revealTimer: number | null;
   barRevealProgress: number;
   barRevealAnimRaf: number | null;

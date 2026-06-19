@@ -226,6 +226,30 @@ describe("time goal completion flow guard", () => {
     expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalMinutes: 1 }), { elapsedMs: 59_999 })).toBe(false);
   });
 
+  it("does not double-count resumed partial history when deciding auto-stop", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const task = timeGoalTask({ accumulatedMs: 30_000, timeGoalMinutes: 1 });
+    const historyByTaskId = { "task-1": [{ ts: nowValue, name: "Focus", ms: 30_000 }] };
+    const liveSessionRow = liveSession({ elapsedMs: 30_000, resumedFromMs: 30_000 });
+
+    expect(
+      shouldAutoStopDailyTimeGoalTask(task, {
+        elapsedMs: 30_000,
+        historyByTaskId,
+        liveSession: liveSessionRow,
+        nowMs: nowValue,
+      })
+    ).toBe(false);
+    expect(
+      shouldAutoStopDailyTimeGoalTask(task, {
+        elapsedMs: 60_000,
+        historyByTaskId,
+        liveSession: liveSessionRow,
+        nowMs: nowValue,
+      })
+    ).toBe(true);
+  });
+
   it("auto-stops weekly time goals once elapsed reaches the goal", () => {
     expect(shouldAutoStopDailyTimeGoalTask(timeGoalTask({ timeGoalPeriod: "week", timeGoalMinutes: 1 }), { elapsedMs: 60_000 })).toBe(true);
   });
@@ -256,6 +280,19 @@ describe("time goal completion flow guard", () => {
         liveSession: liveSession(),
       })
     ).toBe(true);
+  });
+
+  it("does not keep completion flow from double-counted resumed partial history", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+
+    expect(
+      shouldKeepTimeGoalCompletionFlowForTask(timeGoalTask({ accumulatedMs: 30_000, timeGoalMinutes: 1 }), {
+        elapsedMs: 30_000,
+        liveSession: liveSession({ elapsedMs: 30_000, resumedFromMs: 30_000 }),
+        historyByTaskId: { "task-1": [{ ts: nowValue, name: "Focus", ms: 30_000 }] },
+        nowMs: nowValue,
+      })
+    ).toBe(false);
   });
 
   it("does not reopen completion from a stale running task after the live session was cleared", () => {
@@ -426,6 +463,14 @@ describe("time goal complete next task launcher", () => {
       [
         timeGoalTask({ id: "active", name: "Active", running: true }),
         timeGoalTask({ id: "daily", name: "Daily Task", running: false, color: "#ff5252", plannedStartTime: "09:30" }),
+        timeGoalTask({
+          id: "partial",
+          name: "Partial Task",
+          running: false,
+          accumulatedMs: 30_000,
+          color: "#35e8ff",
+          plannedStartTime: "10:30",
+        }),
         timeGoalTask({ id: "completed", name: "Completed", running: false, timeGoalCompletedDayKey: today, timeGoalCompletedReason: "goal" }),
         timeGoalTask({ id: "weekly", name: "Weekly", running: false, timeGoalPeriod: "week" }),
         timeGoalTask({ id: "no-goal", name: "No Goal", running: false, timeGoalEnabled: false }),
@@ -438,7 +483,10 @@ describe("time goal complete next task launcher", () => {
       }
     );
 
-    expect(options).toEqual([{ id: "daily", name: "Daily Task", color: "#ff5252", scheduleText: "9:30 AM" }]);
+    expect(options).toEqual([
+      { id: "daily", name: "Daily Task", color: "#ff5252", scheduleText: "9:30 AM" },
+      { id: "partial", name: "Partial Task", color: "#35e8ff", scheduleText: "10:30 AM" },
+    ]);
   });
 
   it("uses the accent fallback when a task has no valid assigned color", () => {
@@ -496,7 +544,8 @@ describe("time goal complete next task launcher", () => {
           timeGoalCompletedReason: "goal",
         }),
         timeGoalTask({ id: "history-completed", name: "History Completed", running: false, plannedStartTime: "10:45" }),
-        timeGoalTask({ id: "next", name: "Next", running: false, plannedStartTime: "11:00" }),
+        timeGoalTask({ id: "partial", name: "Partial", running: false, accumulatedMs: 30_000, plannedStartTime: "11:00" }),
+        timeGoalTask({ id: "next", name: "Next", running: false, plannedStartTime: "11:15" }),
       ],
       {
         activeTaskId: "active",
@@ -506,7 +555,7 @@ describe("time goal complete next task launcher", () => {
       }
     );
 
-    expect(next?.task.id).toBe("next");
+    expect(next?.task.id).toBe("partial");
   });
 
   it("orders scheduled task tiles from earliest to latest and keeps unscheduled tasks last", () => {

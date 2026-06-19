@@ -18,7 +18,7 @@ import {
 } from "../lib/friendsStore";
 import { localDayKey } from "../lib/history";
 import { formatDashboardDurationShort, startOfCurrentWeekMs } from "../lib/historyChart";
-import { getRankForXp, getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
+import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
 
@@ -452,18 +452,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       focusTrend7dMs: timingMetrics.focusTrend7dMs,
       checkpointScaleMs,
     };
-  }
-
-  function renderRankInsigniaMarkup(rankIdRaw: string): string {
-    const rankThumbnail = getRankThumbnailDescriptor(rankIdRaw);
-    if (rankThumbnail.kind === "image") {
-      return `<span class="friendRankInsignia" aria-hidden="true"><img class="friendRankInsigniaImg" src="${ctx.escapeHtmlUI(
-        rankThumbnail.src
-      )}" alt="" /></span>`;
-    }
-    return `<span class="friendRankInsignia friendRankInsigniaPlaceholder" aria-hidden="true">${ctx.escapeHtmlUI(
-      rankThumbnail.label
-    )}</span>`;
   }
 
   function getSharedFriendUidsForTask(taskId: string): string[] {
@@ -1064,11 +1052,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const profile = ctx.getMergedFriendProfile(friendUid, row.profileByUid?.[friendUid]);
         const alias = String(profile?.alias || "").trim() || friendUid;
         const avatarSrc = ctx.getFriendAvatarSrc(profile);
-        const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
-        const totalXp = Math.max(0, Math.floor(Number(profile?.totalXp || 0) || 0));
         const summaries = sharedSummaries.filter((entry) => entry.ownerUid === friendUid);
         const isOpen = openIds.has(friendUid);
-        return { friendUid, alias, avatarSrc, currentRankId, totalXp, summaries, isOpen };
+        return { friendUid, alias, avatarSrc, summaries, isOpen };
       })
       .sort((a, b) => {
         const byAlias = a.alias.localeCompare(b.alias, undefined, { sensitivity: "base" });
@@ -1104,10 +1090,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           .join("");
         const taskCount = row.summaries.length;
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
-        const resolvedRank = getRankForXp(row.totalXp);
-        const rankLabel = getRankLabelById(resolvedRank.id);
-        const totalXpLabel = `${row.totalXp.toLocaleString()} XP`;
-        const rankInsigniaHtml = renderRankInsigniaMarkup(resolvedRank.id);
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow">
@@ -1123,13 +1105,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 </button>
                 <span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
               </div>
-              <div class="friendIdentityStats">
-                <span class="friendStatPrimary">
-                  <span class="friendRankLabel">${ctx.escapeHtmlUI(rankLabel)}</span>
-                  <span class="friendXp friendSharedTasksCountText">${ctx.escapeHtmlUI(totalXpLabel)}</span>
-                </span>
-              </div>
-              ${rankInsigniaHtml}
             </summary>
             <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
           </details>

@@ -39,4 +39,15 @@ describe("Landing", () => {
     expect(landingTabletBlock).toContain('display: none;');
     expect(landingMobileBlock).toContain('url("/rocket_breaking_chains4_opticalflow_60fps_50pct_lastframe_mobile.webp")');
   });
+
+  it("adds a scoped 32px gap between the public landing headers and hero text", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const publicLandingGapBlock = css.match(/\.landingV2LandingPage,\n\.landingSoonV2 \{[\s\S]*?\n\}/)?.[0] || "";
+    const heroRule = css.match(/\.landingV2 \.landingV2Hero \{[\s\S]*?\n\}/)?.[0] || "";
+    const mobileBlock = css.match(/@media \(max-width: 700px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
+
+    expect(publicLandingGapBlock).toContain("--landing-header-hero-gap: 32px;");
+    expect(heroRule).toContain("calc(var(--landing-hero-pad-top-scale) + var(--landing-header-hero-gap, 0px))");
+    expect(mobileBlock).toContain("calc(clamp(10px, 2.8svh, 18px) + var(--landing-header-hero-gap, 0px))");
+  });
 });

@@ -1512,7 +1512,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 #focusModeBackBtn{
-  border-color: rgba(170, 178, 190, .58);
+  border-color: transparent;
   background: rgba(170, 178, 190, .12);
   color: rgba(238, 242, 246, .88);
   box-shadow: none;
@@ -1525,7 +1525,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 #focusModeBackBtn:hover,
 #focusModeBackBtn:focus-visible{
-  border-color: var(--accent);
+  border-color: transparent;
   color: var(--accent);
   background: rgba(170, 178, 190, .16);
 }

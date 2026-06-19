@@ -93,8 +93,6 @@ export default function AboutPage() {
         <section className="landingV2Hero isVisible" aria-label="TaskLaunch about hero">
           <div className="landingV2HeroMain">
             <h1 className="landingV2HeroTitle displayFont">About</h1>
-
-            <p className="landingV2HeroCopy">PRODUCTIVITY THAT FEELS REALISTIC, SUPPORTIVE, AND HUMAN</p>
           </div>
         </section>
 

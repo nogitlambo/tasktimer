@@ -259,12 +259,13 @@ export function shouldKeepTimeGoalCompletionFlowForTask(
   if (!(task.timeGoalEnabled && timeGoalMinutes > 0)) return false;
   if ((opts.getTaskTimeGoalAction?.(task) || "confirmModal") !== "confirmModal") return false;
   const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
-  return getTimeGoalPeriodElapsedMs(task, elapsedMs, opts.historyByTaskId, nowValue, opts.weekStarting) >= Math.round(timeGoalMinutes * 60 * 1000);
+  const resumedFromMs = Math.max(0, Math.floor(Number(opts.liveSession?.resumedFromMs || 0) || 0));
+  return getTimeGoalPeriodElapsedMs(task, elapsedMs, opts.historyByTaskId, nowValue, opts.weekStarting, resumedFromMs) >= Math.round(timeGoalMinutes * 60 * 1000);
 }
 
 export function shouldAutoStopDailyTimeGoalTask(
   task: Task | null | undefined,
-  opts: { elapsedMs: number; historyByTaskId?: HistoryByTaskId | null; nowMs?: number; weekStarting?: DashboardWeekStart }
+  opts: { elapsedMs: number; historyByTaskId?: HistoryByTaskId | null; liveSession?: LiveTaskSession | null; nowMs?: number; weekStarting?: DashboardWeekStart }
 ): boolean {
   const nowValue = opts.nowMs ?? nowMs();
   if (!task || !task.running) return false;
@@ -279,7 +280,8 @@ export function shouldAutoStopDailyTimeGoalTask(
   if (!(task.timeGoalEnabled && timeGoalMinutes > 0)) return false;
   const elapsedMs = Math.max(0, Math.floor(Number(opts.elapsedMs || 0) || 0));
   const goalMs = Math.max(0, Math.round(timeGoalMinutes * 60_000));
-  return goalMs > 0 && getTimeGoalPeriodElapsedMs(task, elapsedMs, opts.historyByTaskId, nowValue, opts.weekStarting) >= goalMs;
+  const resumedFromMs = Math.max(0, Math.floor(Number(opts.liveSession?.resumedFromMs || 0) || 0));
+  return goalMs > 0 && getTimeGoalPeriodElapsedMs(task, elapsedMs, opts.historyByTaskId, nowValue, opts.weekStarting, resumedFromMs) >= goalMs;
 }
 
 export function shouldSuppressTimeGoalCompletionForTask(
@@ -322,10 +324,13 @@ function getTimeGoalPeriodElapsedMs(
   activeElapsedMs: number,
   historyByTaskId: HistoryByTaskId | null | undefined,
   nowValue = nowMs(),
-  weekStarting?: DashboardWeekStart
+  weekStarting?: DashboardWeekStart,
+  resumedFromMsRaw?: number | null
 ): number {
+  const resumedFromMs = Math.max(0, Math.floor(Number(resumedFromMsRaw || 0) || 0));
+  const historyMs = getTimeGoalPeriodHistoryMs(task, historyByTaskId, nowValue, weekStarting);
   return Math.max(0, Math.floor(Number(activeElapsedMs || 0) || 0)) +
-    getTimeGoalPeriodHistoryMs(task, historyByTaskId, nowValue, weekStarting);
+    Math.max(0, historyMs - resumedFromMs);
 }
 
 export function shiftValidDeferredTimeGoalModal(
@@ -1499,13 +1504,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return true;
   }
 
-  function launchNextTaskFromTimeGoalCompletion(nextTaskIdRaw: unknown) {
-    acknowledgeTimeGoalCompletion(getActiveTimeGoalModalTask());
+  function launchNextTaskFromTimeGoalCompletion(nextTaskIdRaw: unknown, completedTaskIdRaw?: unknown) {
     const nextTaskId = String(nextTaskIdRaw || "").trim();
     if (!nextTaskId) return;
     const nextIndex = ctx.getTasks().findIndex((row) => String(row.id || "") === nextTaskId);
     if (nextIndex < 0) return;
-    const shouldReopenFocusMode = shouldOpenFocusModeForTimeGoalNextTask(ctx.getFocusModeTaskId(), getActiveTimeGoalModalTaskId());
+    const completedTaskId = String(completedTaskIdRaw || "").trim();
+    const shouldReopenFocusMode = shouldOpenFocusModeForTimeGoalNextTask(ctx.getFocusModeTaskId(), completedTaskId);
     ctx.startTask(nextIndex);
     if (shouldReopenFocusMode) {
       openFocusMode(nextIndex);
@@ -1562,6 +1567,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       !shouldAutoStopDailyTimeGoalTask(task, {
         elapsedMs,
         historyByTaskId: ctx.getHistoryByTaskId(),
+        liveSession: ctx.getLiveSessionsByTaskId()[String(task.id || "").trim()] || null,
         nowMs: nowMs(),
         weekStarting: ctx.getWeekStarting(),
       })
@@ -2745,11 +2751,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     ctx.on(els.timeGoalCompleteLaunchNextBtn, "click", async () => {
       const task = getActiveTimeGoalModalTask();
+      const completedTaskId = getActiveTimeGoalModalTaskId();
       const nextTaskId = String((els.timeGoalCompleteLaunchNextBtn as HTMLButtonElement | null)?.dataset.nextTaskId || "").trim();
       if (!task || !nextTaskId) return;
       const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
       if (!completed) return;
-      launchNextTaskFromTimeGoalCompletion(nextTaskId);
+      launchNextTaskFromTimeGoalCompletion(nextTaskId, completedTaskId);
       notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteNextTaskGrid, "click", async (event: Event) => {
@@ -2757,10 +2764,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const nextTaskId = String(tile?.dataset.timeGoalNextTaskId || "").trim();
       if (!nextTaskId) return;
       const task = getActiveTimeGoalModalTask();
+      const completedTaskId = getActiveTimeGoalModalTaskId();
       if (!task) return;
       const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
       if (!completed) return;
-      launchNextTaskFromTimeGoalCompletion(nextTaskId);
+      launchNextTaskFromTimeGoalCompletion(nextTaskId, completedTaskId);
       notifyTimeGoalCompleteOverlayClosedForXpAward();
     });
     ctx.on(els.timeGoalCompleteNoteInput, "input", () => {

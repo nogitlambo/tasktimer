@@ -103,16 +103,16 @@ describe("task card view model", () => {
       task: baseTask({ running: true, collapsed: true }),
       elapsedMs: 12_000,
       checkpointRepeatActiveTaskId: "task-1",
-      historyRevealPhase: "opening",
+      historyRevealPhase: "openingSpace",
       showHistory: true,
       isHistoryPinned: true,
       isSharedByOwner: true,
     });
 
-    expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse taskHistoryOpening");
+    expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse taskHistoryOpeningSpace");
     expect(rendered.html).toContain('data-action="stop"');
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
-    expect(rendered.html).toContain("historyInlineMotion isOpening");
+    expect(rendered.html).toContain("historyInlineMotion isOpeningSpace");
     expect(rendered.html).toContain('data-action="unshareTask"');
     expect(rendered.html).toContain('data-action="archive" title="Stop task to archive" type="button" disabled');
     expect(rendered.html).toContain('data-history-action="pin"');
@@ -165,6 +165,7 @@ describe("task card view model", () => {
     expect(css).toContain("center bottom / var(--task-card-tab-border-gap) 22px no-repeat");
     expect(css).toContain("border: 1px solid var(--task-card-bottom-border-color, rgba(255,255,255,.12)) !important;");
     expect(css).toContain("border-top: 0 !important;");
+    expect(css).toContain(".task.taskHistoryOpeningSpace");
     expect(css).toContain(".task.taskHistoryOpening");
     expect(css).toContain("@keyframes taskHistoryDrawerSpaceOpen");
   });

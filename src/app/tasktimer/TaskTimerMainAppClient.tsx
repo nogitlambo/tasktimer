@@ -1130,16 +1130,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <div className="leaderboardScrollBody">
                     {leaderboardView === "weekly" ? (
                       <section
-                        className="dashboardCard leaderboardCard leaderboardWeeklyBoard"
+                        className="dashboardCard leaderboardCard leaderboardWeeklyBoard leaderboardGlobalBoard"
                         id="leaderboardWeeklyPanel"
                         role="tabpanel"
                         aria-labelledby="leaderboardWeeklyTab"
                         aria-label="Weekly leaderboard rankings"
                       >
-                  <div className="leaderboardWeeklyStage" aria-label={`Weekly ladder. ${formatWeeklyLeaderboardPeriod()}`}>
+                  <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. ${formatWeeklyLeaderboardPeriod()}`}>
                     {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
                       <button
-                        className={`leaderboardWeeklyStageHotspot leaderboardWeeklyStageHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+                        className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                         type="button"
                         key={row.profile.uid}
                         disabled={row.isPlaceholder || row.isDummy}
@@ -1149,7 +1149,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
                         }}
                       >
-                        <span className="leaderboardWeeklyStageAvatarSlot">
+                        <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
+                        <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
+                        <span className="leaderboardGlobalPodiumAvatarSlot">
                           {row.isPlaceholder ? null : (
                             <>
                               <LeaderboardAvatar profile={row.profile} />
@@ -1157,11 +1159,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             </>
                           )}
                         </span>
-                        <span className="leaderboardWeeklyStageText">
-                          <span className="leaderboardWeeklyStageRank">{row.rankLabel}</span>
-                          <strong className="leaderboardWeeklyStageName">{row.playerLabel}</strong>
-                          {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardWeeklyStageUserRank" />}
-                          {row.isPlaceholder ? null : <span className="leaderboardWeeklyStageXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
+                        <span className="leaderboardGlobalPodiumText">
+                          <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
+                          <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
+                          {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
+                          {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
                         </span>
                       </button>
                     )) : null}
@@ -1171,7 +1173,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       rows={weeklyTableRows}
                       metricHeader="Weekly XP"
                       ariaLabel="Weekly leaderboard table"
-                      className="leaderboardWeeklyLiveTableWrap"
+                      className="leaderboardGlobalTableWrap"
                       formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
                       onOpenProfile={openWeeklyLeaderboardProfile}
                     />
@@ -1185,31 +1187,30 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </section>
               ) : leaderboardView === "rivals" ? (
                 <section
-                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard"
+                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard leaderboardGlobalBoard"
                   id="leaderboardRivalsPanel"
                   role="tabpanel"
                   aria-labelledby="leaderboardRivalsTab"
                   aria-label="Rank Rivals leaderboard rankings"
                 >
-                  <div className="leaderboardWeeklyIntro">
-                    <p className="dashboardCardEyebrow">Rank Rivals</p>
-                    <p className="leaderboardHeroMeta">Ranked leaderboard for {currentUserRankLabel}</p>
-                  </div>
                   {leaderboardState === "ready" && hasRivalRows ? (
                     <>
-                      <div className="leaderboardWeeklyPodium" aria-label="Rivals top three">
+                      <div className="leaderboardGlobalStage" aria-label={`Rank Rivals ladder for ${currentUserRankLabel}.`}>
                         {rivalPodiumRows.map((row) => (
                           <button
-                            className={`leaderboardWeeklyPodiumPlace leaderboardWeeklyPodiumPlace${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+                            className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
                             type="button"
                             key={row.profile.uid}
-                            disabled={row.isPlaceholder}
-                            aria-disabled={row.isPlaceholder}
-                            data-leaderboard-profile-open={row.isPlaceholder ? undefined : row.profile.uid}
-                            onClick={() => openLeaderboardProfile(row.profile)}
+                            disabled={row.isPlaceholder || row.isDummy}
+                            aria-disabled={row.isPlaceholder || row.isDummy}
+                            data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+                            onClick={() => {
+                              if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
+                            }}
                           >
-                            <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankMobile" aria-hidden="true">{row.rankLabel}</span>
-                            <span className="leaderboardWeeklyPodiumAvatar">
+                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
+                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
+                            <span className="leaderboardGlobalPodiumAvatarSlot">
                               {row.isPlaceholder ? null : (
                                 <>
                                   <LeaderboardAvatar profile={row.profile} />
@@ -1217,21 +1218,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                                 </>
                               )}
                             </span>
-                            <span className="leaderboardWeeklyPodiumIdentity">
-                              <span className="leaderboardWeeklyPodiumRank leaderboardWeeklyPodiumRankDesktop">{row.rankLabel}</span>
-                              <span className="leaderboardWeeklyPodiumPlayer">
-                                <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
-                                {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardWeeklyPodiumUserRank leaderboardWeeklyPodiumUserRankInline" />}
-                                {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumMetric">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                              </span>
-                            </span>
-                            <span className="leaderboardWeeklyPodiumInsignia">
-                              {row.isPlaceholder ? null : (
-                                <>
-                                  <LeaderboardRankInsignia profile={row.profile} />
-                                  <LeaderboardRankText profile={row.profile} className="leaderboardWeeklyPodiumUserRank" />
-                                </>
-                              )}
+                            <span className="leaderboardGlobalPodiumText">
+                              <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
+                              <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
+                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
+                              {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
                             </span>
                           </button>
                         ))}
@@ -1241,6 +1232,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         rows={rivalTableRows}
                         metricHeader="Total XP"
                         ariaLabel="Rivals leaderboard table"
+                        className="leaderboardGlobalTableWrap"
                         formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
                         onOpenProfile={openLeaderboardProfile}
                       />

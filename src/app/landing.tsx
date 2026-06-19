@@ -254,11 +254,6 @@ export default function Landing(props: LandingProps) {
 
         <section className={`landingV2Hero ${showHero ? "isVisible" : ""}`} aria-label="TaskLaunch landing hero">
           <div className="landingV2HeroMain">
-            <div className="landingV2HeroTag">
-              <span className="landingV2HeroTagDot" />
-              <span>Progress over perfection</span>
-            </div>
-
             <h1 className="landingV2HeroTitle displayFont">
               <span className="landingV2HeroTitleGradient">Break free</span> from guilt-driven productivity systems
             </h1>

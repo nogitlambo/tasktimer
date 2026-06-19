@@ -22,10 +22,63 @@ type HistoryUI = {
   deleteBtn: HTMLButtonElement | null;
 };
 
+type HistoryEntryIdentity = {
+  ts: number;
+  ms: number;
+  name: string;
+};
+
+type HistorySummaryDeleteSnapshot = {
+  rangeMode: HistoryViewState["rangeMode"];
+  selectedEntries: any[];
+  selectedDayKeys: string[];
+};
+
+export function getTaskTimerHistoryEntryIdentity(entry: any): HistoryEntryIdentity {
+  return {
+    ts: Number(entry?.ts),
+    ms: Number(entry?.ms),
+    name: String(entry?.name || "").trim(),
+  };
+}
+
+export function taskTimerHistoryEntryIdentityMatches(entry: any, identity: HistoryEntryIdentity) {
+  return (
+    Number(entry?.ts) === identity.ts &&
+    Number(entry?.ms) === identity.ms &&
+    String(entry?.name || "").trim() === identity.name
+  );
+}
+
+export function getTaskTimerHistorySummaryRemainingEntriesAfterDelete(options: {
+  allEntries: any[];
+  snapshot: HistorySummaryDeleteSnapshot;
+  deletedIdentity: HistoryEntryIdentity;
+  getDateKey: (entry: any) => string;
+}) {
+  const allEntries = Array.isArray(options.allEntries) ? options.allEntries : [];
+  const deletedIdentity = options.deletedIdentity;
+  if (options.snapshot.rangeMode === "day") {
+    const selectedDayKeys = new Set(options.snapshot.selectedDayKeys.filter(Boolean));
+    if (!selectedDayKeys.size) return [];
+    return allEntries.filter(
+      (entry) => selectedDayKeys.has(options.getDateKey(entry)) && !taskTimerHistoryEntryIdentityMatches(entry, deletedIdentity)
+    );
+  }
+
+  const selectedIdentities = options.snapshot.selectedEntries.map((entry) => getTaskTimerHistoryEntryIdentity(entry));
+  return selectedIdentities
+    .filter((identity) => !taskTimerHistoryEntryIdentityMatches(identity, deletedIdentity))
+    .map((identity) => allEntries.find((entry) => taskTimerHistoryEntryIdentityMatches(entry, identity)))
+    .filter((entry) => !!entry);
+}
+
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
   const HISTORY_LOOKBACK_DAYS = 30;
   const HISTORY_REVEAL_OPEN_MS = 720;
+  const HISTORY_REVEAL_SPACE_OPEN_MS = 260;
+  const HISTORY_REVEAL_CONTENT_OPEN_MS = HISTORY_REVEAL_OPEN_MS - HISTORY_REVEAL_SPACE_OPEN_MS;
   const HISTORY_REVEAL_CLOSE_MS = 480;
   const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
   const HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS = [0, 120, 280, HISTORY_REVEAL_OPEN_MS + 32] as const;
@@ -34,6 +87,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const { sharedTasks } = ctx;
   const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
   const historyInlineSelection = createHistoryInlineSelectionInteraction();
+  let historyEntrySummaryOpenEntries: any[] = [];
 
   function prefersReducedMotion() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
@@ -85,17 +139,21 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     if (!els.taskList) return;
     const taskEl = els.taskList.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
     if (!taskEl) return;
+    const isOpeningSpace = revealPhase === "openingSpace";
     const isOpening = revealPhase === "opening";
     const isClosing = revealPhase === "closing";
     const isOpen = revealPhase === "open";
+    taskEl.classList.toggle("taskHistoryOpeningSpace", isOpeningSpace);
     taskEl.classList.toggle("taskHistoryOpening", isOpening);
     taskEl.classList.toggle("taskHistoryClosing", isClosing);
     taskEl.classList.toggle("taskHistoryOpen", isOpen);
     const historyInline = taskEl.querySelector(".historyInlineMotion") as HTMLElement | null;
+    historyInline?.classList.toggle("isOpeningSpace", isOpeningSpace);
     historyInline?.classList.toggle("isOpening", isOpening);
     historyInline?.classList.toggle("isClosing", isClosing);
     historyInline?.classList.toggle("isOpen", isOpen);
     const revealBtn = taskEl.querySelector(".taskHistoryReveal") as HTMLElement | null;
+    revealBtn?.classList.toggle("isOpeningSpace", isOpeningSpace);
     revealBtn?.classList.toggle("isOpening", isOpening);
     revealBtn?.classList.toggle("isClosing", isClosing);
     revealBtn?.classList.toggle("isOpen", isOpen);
@@ -525,6 +583,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   });
 
   function closeHistoryEntryNoteOverlay(opts?: { preservePosition?: boolean }) {
+    historyEntrySummaryOpenEntries = [];
     historyEntrySummaryInteraction.clearTarget();
     if (!opts?.preservePosition) clearHistoryEntryNoteOverlayPosition();
     ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
@@ -541,6 +600,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       closeHistoryEntryNoteOverlay();
       return;
     }
+    historyEntrySummaryOpenEntries = Array.isArray(entries) ? entries.slice() : [];
     ctx.setHistoryEntryNoteAnchorTaskId(taskId);
     requestAnimationFrame(() => {
       refreshHistoryEntryNoteOverlayPosition();
@@ -600,7 +660,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return findTaskTimerHistoryEntryIndexByIdentity(entries, identity);
   }
 
-  function deleteHistoryEntryByAbsIndex(taskId: string, state: HistoryViewState, deleteAbsIndex: number) {
+  function deleteHistoryEntryByAbsIndex(
+    taskId: string,
+    state: HistoryViewState,
+    deleteAbsIndex: number,
+    opts?: { syncOverlay?: boolean; selectedDayKeys?: string[]; deletedSelectionIndex?: number }
+  ) {
     const allEntries = getHistoryForTask(taskId);
     if (deleteAbsIndex < 0 || deleteAbsIndex >= allEntries.length) return false;
     if ((allEntries[deleteAbsIndex] as any)?.isLiveSession) return false;
@@ -621,11 +686,21 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     );
     if (clearedCompletion) ctx.save({ forceCloudFlush: true });
 
-    const deletionSelection = historyInlineSelection.applyDeletedIndex(state, deleteAbsIndex);
-    if (deletionSelection.clearedSelected) {
-      startHistorySelectionAnimation(taskId, null);
+    if (state.rangeMode === "day" && opts?.selectedDayKeys?.length) {
+      syncDaySelectionIndexesForSelectedKeys(taskId, state, opts.selectedDayKeys);
+    } else {
+      const deletedSelectionIndex =
+        typeof opts?.deletedSelectionIndex === "number" && opts.deletedSelectionIndex >= 0
+          ? opts.deletedSelectionIndex
+          : deleteAbsIndex;
+      const deletionSelection = historyInlineSelection.applyDeletedIndex(state, deletedSelectionIndex);
+      if (deletionSelection.clearedSelected) {
+        startHistorySelectionAnimation(taskId, null);
+      }
     }
-    syncHistoryEntryNoteOverlayForSelection(taskId, state);
+    if (opts?.syncOverlay !== false) {
+      syncHistoryEntryNoteOverlayForSelection(taskId, state);
+    }
 
     const maxPage = Math.max(0, Math.ceil(allEntries.length / historyPageSize(taskId)) - 1);
     state.page = Math.min(state.page, maxPage);
@@ -638,12 +713,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   function syncHistoryEntryNoteOverlayForSelection(taskId: string, state?: HistoryViewState | null) {
     if (ctx.getHistoryEntryNoteAnchorTaskId() !== taskId) return;
     const nextState = state || ensureHistoryViewState(taskId);
-    const lockedIndexes = historyInlineSelection.getSortedLockedIndexes(nextState);
-    if (!lockedIndexes.length) {
-      closeHistoryEntryNoteOverlay();
-      return;
-    }
-    const selectedEntries = getHistorySummaryEntries(taskId, nextState, lockedIndexes[0], nextState.lockedAbsIndexes);
+    const selectedEntries = getCurrentHistorySummarySelection(taskId, nextState);
     if (!selectedEntries.length) {
       closeHistoryEntryNoteOverlay();
       return;
@@ -713,6 +783,55 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return selectedIndexes
       .map((absIndex) => display[absIndex])
       .filter((entry) => !!entry);
+  }
+
+  function getCurrentHistorySummarySelectedIndexes(state: HistoryViewState) {
+    const primaryAbsIndex = historyInlineSelection.getSummaryPrimaryIndex(state);
+    if (primaryAbsIndex == null) return [];
+    return state.lockedAbsIndexes.size
+      ? Array.from(state.lockedAbsIndexes.values()).sort((a, b) => a - b)
+      : [primaryAbsIndex];
+  }
+
+  function createHistorySummaryDeleteSnapshot(taskId: string, state: HistoryViewState, entry: any): HistorySummaryDeleteSnapshot {
+    const selectedEntries = getCurrentHistorySummarySelection(taskId, state);
+    const openSummaryEntries = historyEntrySummaryOpenEntries.filter(
+      (summaryEntry) => String(summaryEntry?.taskId || taskId) === taskId
+    );
+    const selectedIndexes = getCurrentHistorySummarySelectedIndexes(state);
+    const display = getHistoryDisplayForTask(taskId, state);
+    const selectedDayKeys =
+      state.rangeMode === "day"
+        ? selectedIndexes.map((absIndex) => historyLocalDateKey(display[absIndex]?.ts)).filter((key) => !!key)
+        : [];
+    return {
+      rangeMode: state.rangeMode,
+      selectedEntries: selectedEntries.length ? selectedEntries : openSummaryEntries.length ? openSummaryEntries : [entry],
+      selectedDayKeys,
+    };
+  }
+
+  function syncDaySelectionIndexesForSelectedKeys(taskId: string, state: HistoryViewState, selectedDayKeys: string[]) {
+    const dayKeySet = new Set(selectedDayKeys.filter(Boolean));
+    const display = getHistoryDisplayForTask(taskId, state);
+    const nextIndexes = display
+      .map((entry, index) => (dayKeySet.has(historyLocalDateKey(entry?.ts)) ? index : null))
+      .filter((index): index is number => index != null);
+
+    if (!nextIndexes.length) {
+      historyInlineSelection.clearSelection(state);
+      return;
+    }
+
+    if (state.lockedAbsIndexes.size > 0) {
+      state.lockedAbsIndexes = new Set(nextIndexes);
+      state.selectedAbsIndex = null;
+      state.selectedRelIndex = null;
+      return;
+    }
+
+    state.selectedAbsIndex = nextIndexes[0] ?? null;
+    state.selectedRelIndex = null;
   }
 
   function renderHistoryTrashRow(slice: any[], absStartIndex: number, ui: HistoryUI) {
@@ -1333,18 +1452,24 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     clearHistoryLayoutRetry(state);
     ctx.getOpenHistoryTaskIds().add(taskId);
     const reducedMotion = prefersReducedMotion();
-    state.revealPhase = reducedMotion ? "open" : "opening";
+    state.revealPhase = reducedMotion ? "open" : "openingSpace";
     state.barRevealProgress = 1;
     ctx.render();
-    renderHistoryChartAfterLayout(taskId);
     scheduleHistoryOpenScrollIntoView(taskId);
     if (reducedMotion) return;
-    queueHistoryRevealTimer(state, HISTORY_REVEAL_OPEN_MS, () => {
+    queueHistoryRevealTimer(state, HISTORY_REVEAL_SPACE_OPEN_MS, () => {
       if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
       const nextState = ctx.getHistoryViewByTaskId()[taskId];
       if (!nextState) return;
       nextState.revealPhase = "open";
-      syncHistoryRevealPhaseDom(taskId, "open");
+      syncHistoryRevealPhaseDom(taskId, "opening");
+      renderHistoryChartAfterLayout(taskId);
+      queueHistoryRevealTimer(nextState, HISTORY_REVEAL_CONTENT_OPEN_MS, () => {
+        if (!ctx.getOpenHistoryTaskIds().has(taskId)) return;
+        const finalState = ctx.getHistoryViewByTaskId()[taskId];
+        if (!finalState || finalState.revealPhase !== "open") return;
+        syncHistoryRevealPhaseDom(taskId, "open");
+      });
     });
   }
 
@@ -1458,13 +1583,32 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (deleteAbsIndex < 0) return;
       const entry = getHistoryForTask(taskId)[deleteAbsIndex] as any;
       if (!entry || entry?.isLiveSession) return;
+      const deleteSnapshot = createHistorySummaryDeleteSnapshot(taskId, state, entry);
+      const deletedIdentity = getTaskTimerHistoryEntryIdentity(entry);
+      const deletedSelectionIndex = findHistoryEntryIndexByIdentity(getHistoryDisplayForTask(taskId, state), {
+        ts,
+        ms,
+        name,
+      });
 
       ctx.confirm("Delete Session Entry", `Delete this session entry (${ctx.formatTime(entry.ms || 0)})?`, {
         okLabel: "Delete",
         overlayClassName: "isDeleteSessionEntryConfirm",
         onOk: () => {
-          deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex);
+          deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex, {
+            syncOverlay: false,
+            selectedDayKeys: deleteSnapshot.selectedDayKeys,
+            deletedSelectionIndex,
+          });
           ctx.closeConfirm();
+          const remainingEntries = getTaskTimerHistorySummaryRemainingEntriesAfterDelete({
+            allEntries: getHistoryForTask(taskId),
+            snapshot: deleteSnapshot,
+            deletedIdentity,
+            getDateKey: (nextEntry) => historyLocalDateKey(nextEntry?.ts),
+          });
+          if (remainingEntries.length) openHistoryEntryNoteOverlay(taskId, remainingEntries);
+          else closeHistoryEntryNoteOverlay();
         },
         onCancel: () => {
           ctx.closeConfirm();

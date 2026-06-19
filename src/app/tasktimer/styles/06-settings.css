@@ -2316,6 +2316,23 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   width:min(560px, calc(100vw - 28px));
 }
 
+#app[aria-label="TaskLaunch App"] #rankLadderOverlay .rankLadderCloseBtn,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #rankLadderOverlay .rankLadderCloseBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-color:transparent !important;
+  box-shadow:none !important;
+}
+
+#app[aria-label="TaskLaunch App"] #rankLadderOverlay .rankLadderCloseBtn:hover,
+#app[aria-label="TaskLaunch App"] #rankLadderOverlay .rankLadderCloseBtn:focus-visible,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #rankLadderOverlay .rankLadderCloseBtn:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #rankLadderOverlay .rankLadderCloseBtn:focus-visible{
+  border-color:transparent !important;
+  box-shadow:none !important;
+}
+
 #app[aria-label="TaskLaunch App"] .rankLadderList,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderList{
   display:grid;
@@ -2379,8 +2396,8 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isCurrent{
   background:#17191d;
-  border-color:var(--accent3);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent3) 24%, transparent);
+  border-color:#c9ff24;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, #c9ff24 24%, transparent);
   opacity:1;
 }
 

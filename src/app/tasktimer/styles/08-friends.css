@@ -862,7 +862,7 @@
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary.friendIdentityRow{
   display: grid;
-  grid-template-columns: 34px 54px minmax(0, 1fr) auto 40px;
+  grid-template-columns: 34px 54px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 2px 15px;
@@ -946,14 +946,6 @@
   color: rgba(188, 214, 230, 0.82);
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityStats{
-  display: grid;
-  justify-items: end;
-  gap: 4px;
-  text-align: right;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsignia,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsignia{
   width: 40px;
   height: 40px;
@@ -964,7 +956,6 @@
   overflow: hidden;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsigniaImg,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsigniaImg{
   width: 100%;
   height: 100%;
@@ -973,7 +964,6 @@
   object-position: center;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsigniaPlaceholder,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsigniaPlaceholder{
   border: 1px solid rgba(255,255,255,.16);
   background: rgba(255,255,255,.04);
@@ -982,39 +972,6 @@
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendStatPrimary{
-  display: grid;
-  align-items: center;
-  justify-content: flex-end;
-  justify-items: end;
-  gap: 3px;
-  min-width: 0;
-  text-align: right;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankLabel{
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  color: rgba(233, 252, 255, 0.94);
-  white-space: nowrap;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksCountText{
-  display: block;
-  min-width: 0;
-  justify-self: end;
-  text-align: right;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksCountText::after{
-  content: none;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksList{
@@ -1806,7 +1763,8 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
   text-align:center;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard{
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard,
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel.leaderboardWeeklyBoard{
   min-height:0;
   padding:0 0 18px;
   border-color:transparent;
@@ -1815,7 +1773,9 @@ body[data-theme="lime"] .friendSharedTaskCard.friendSharedTaskCardState-running{
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard::before,
-#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard::after{
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard::after,
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel.leaderboardWeeklyBoard::before,
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel.leaderboardWeeklyBoard::after{
   content:none;
 }
 
@@ -2023,7 +1983,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard,
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel.leaderboardWeeklyBoard,
-body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard{
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard{
   display:flex;
   flex-direction:column;
 }
@@ -2042,7 +2002,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   overflow:hidden;
 }
 
-body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTableWrap{
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalTableWrap{
   margin-top:10px;
   padding:0 12px;
 }
@@ -3011,13 +2971,12 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails > summary.friendIdentityRow{
-    grid-template-columns: 42px minmax(0, 1fr) auto 34px;
+    grid-template-columns: 42px minmax(0, 1fr);
     gap: 10px;
     align-items: center;
     padding: 2px 12px;
   }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendRankInsignia,
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRankInsignia{
     width: 34px;
     height: 34px;
@@ -3044,14 +3003,6 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityAlias{
     flex: 1 1 auto;
     min-width: 0;
-  }
-
-#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityStats{
-    display: grid;
-    align-items: center;
-    justify-content: flex-end;
-    justify-items: end;
-    text-align: right;
   }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRows,
@@ -3189,7 +3140,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 }
 
 /* Global ladder image-backed stage. */
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard{
   position:relative;
   grid-column: span 12;
   --leaderboard-global-table-reserve:238px;
@@ -3204,12 +3155,12 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   box-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard::before,
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard::after{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard::before,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard::after{
   content:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage{
   position:relative;
   flex:1 1 var(--leaderboard-global-stage-height);
   align-self:stretch;
@@ -3224,7 +3175,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   isolation:isolate;
 }
 
-body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage{
   flex:1 1 var(--leaderboard-global-stage-height);
   height:var(--leaderboard-global-stage-height);
   max-height:var(--leaderboard-global-stage-height);
@@ -3232,7 +3183,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   aspect-ratio:1448 / 798;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalBackdropMask{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBackdropMask{
   position:absolute;
   z-index:0;
   display:none;
@@ -3241,7 +3192,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   box-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot{
   position:absolute;
   z-index:2;
   display:block;
@@ -3252,40 +3203,58 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   color:inherit;
   font:inherit;
   cursor:pointer;
+  --global-podium-avatar-size:27%;
+  --global-podium-text-left:14%;
+  --global-podium-text-top:17%;
+  --global-podium-text-width:72%;
+  --global-podium-text-height:66%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1{
-  left:35.9%;
-  top:36.4%;
-  width:28.2%;
-  height:50.2%;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1{
+  left:36.3%;
+  top:51.3%;
+  width:27.3%;
+  height:36.1%;
+  --global-podium-avatar-size:30%;
+  --global-podium-text-left:17%;
+  --global-podium-text-top:14%;
+  --global-podium-text-width:66%;
+  --global-podium-text-height:76%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2{
-  left:11.9%;
-  top:43.8%;
-  width:24.2%;
-  height:42.8%;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2{
+  left:12.2%;
+  top:60.8%;
+  width:22.5%;
+  height:26.6%;
+  --global-podium-text-left:15%;
+  --global-podium-text-top:12%;
+  --global-podium-text-width:72%;
+  --global-podium-text-height:77%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3{
-  left:63.9%;
-  top:43.8%;
-  width:24.2%;
-  height:42.8%;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3{
+  left:66.7%;
+  top:64.1%;
+  width:21.8%;
+  height:23.3%;
+  --global-podium-text-left:14%;
+  --global-podium-text-top:12%;
+  --global-podium-text-width:72%;
+  --global-podium-text-height:78%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot:focus-visible{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot:focus-visible{
   outline:2px solid rgba(103,235,255,.95);
   outline-offset:4px;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot.isPlaceholder,
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot.isDummy{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot.isPlaceholder,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot.isDummy{
   cursor:default;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarMask{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarMask{
   left:50%;
   top:-13%;
   width:72%;
@@ -3294,13 +3263,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   border-radius:14px;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarMask{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarMask{
   top:-12%;
   width:76%;
   height:52%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumTextMask{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumTextMask{
   left:10%;
   right:10%;
   top:43%;
@@ -3310,51 +3279,42 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   box-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumTextMask{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumTextMask{
   top:42%;
   height:44%;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
   position:absolute;
   left:50%;
-  top:-10%;
+  bottom:100%;
   z-index:3;
   display:flex;
   align-items:center;
   justify-content:center;
-  width:42%;
+  width:var(--global-podium-avatar-size);
   aspect-ratio:1;
   transform:translateX(-50%);
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
-  top:-22%;
-  width:48%;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
+  width:var(--global-podium-avatar-size);
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot{
-  top:-11%;
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
-  top:-11%;
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
-  width:62.5%;
-  height:62.5%;
-  margin:auto;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
+  width:100%;
+  height:100%;
+  margin:0;
   border:0;
   box-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
   border-color:transparent;
   box-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardRankInsignia{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot .leaderboardRankInsignia{
   position:absolute;
   top:0;
   right:-12%;
@@ -3392,40 +3352,31 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumText{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumText{
   position:absolute;
-  left:14%;
-  right:14%;
-  top:43%;
+  left:var(--global-podium-text-left);
+  top:var(--global-podium-text-top);
   z-index:1;
   display:grid;
+  align-content:center;
   justify-items:center;
+  width:var(--global-podium-text-width);
+  height:var(--global-podium-text-height);
   gap:6px;
   min-width:0;
+  min-height:0;
+  overflow:hidden;
   text-align:center;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumText{
-  top:44%;
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumText{
   gap:7px;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumText{
-  left:12%;
-  right:16%;
-  top:43%;
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumText{
-  left:16%;
-  right:12%;
-  top:43%;
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumRank,
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumName,
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumUserRank,
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumXp{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumRank,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumName,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumUserRank,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumXp{
   display:block;
   max-width:100%;
   min-width:0;
@@ -3434,31 +3385,31 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   white-space:nowrap;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumRank{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumRank{
   color:#50ff8d;
   font-family:var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:34px;
+  font-size:24px;
   font-weight:900;
   line-height:1;
   letter-spacing:0;
-  text-shadow:0 0 12px rgba(80,255,141,.62);
+  text-shadow:none;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumName{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumName{
   color:#f8fbff;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:18px;
   line-height:1.1;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumUserRank{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumUserRank{
   color:var(--leaderboard-rank-color, #f5d66f);
   font-size:13px;
   font-weight:800;
   line-height:1.15;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumXp{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumXp{
   color:#f8fbff;
   font-family:var(--font-geist-mono), "Ligconsolata", "Inconsolata", monospace;
   font-size:16px;
@@ -3468,7 +3419,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 @media (max-width: 720px){
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardGlobalBoard{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard{
     display:flex;
     flex-direction:column;
     overflow:visible;
@@ -3477,7 +3428,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     background:transparent;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage{
     left:auto;
     width:100%;
     height:var(--leaderboard-global-stage-height);
@@ -3489,7 +3440,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     background-size:100% 100%;
   }
 
-  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage{
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage{
     height:var(--leaderboard-global-stage-height);
     max-height:var(--leaderboard-global-stage-height);
     aspect-ratio:1448 / 798;
@@ -3507,13 +3458,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     padding:7px 12px;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
     width:100%;
     height:100%;
     margin:0;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage::after{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage::after{
     content:none;
     position:absolute;
     z-index:1;
@@ -3526,16 +3477,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     pointer-events:none;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumRank{
-    font-size:22px;
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumRank{
+    font-size:24px;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumName{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumName{
     font-size:13px;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumUserRank,
-  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumXp{
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumUserRank,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumXp{
     font-size:10px;
   }
 }

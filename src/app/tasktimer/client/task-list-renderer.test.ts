@@ -66,7 +66,7 @@ function createHarness(
   const taskListEl = elementStub("section");
   const openHistoryTaskIds = new Set<string>();
   const pinnedHistoryTaskIds = new Set<string>();
-  const historyViewByTaskId: Record<string, { revealPhase?: "opening" | "closing" | "open" | null; revealTimer?: number | null }> = {};
+  const historyViewByTaskId: Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "open" | null; revealTimer?: number | null }> = {};
   const calls: string[] = [];
   const rafQueue: Array<() => void> = [];
   const tasks = overrides.tasks ?? [task({ id: "b", name: "Bravo", order: 2 }), task({ id: "a", name: "Alpha", order: 1 })];
@@ -218,7 +218,26 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
   });
 
-  it("reserves opening history drawer markup before chart rendering", () => {
+  it("reserves opening history drawer space before chart rendering", () => {
+    const harness = createHarness();
+    harness.openHistoryTaskIds.add("a");
+    harness.openHistoryTaskIds.add("b");
+    harness.historyViewByTaskId.a = { revealPhase: "openingSpace", revealTimer: 10 };
+    harness.historyViewByTaskId.b = { revealPhase: "open", revealTimer: null };
+
+    harness.renderer.renderTasksPage();
+    while (harness.rafQueue.length) harness.rafQueue.shift()?.();
+
+    const openingTask = harness.taskListEl.children[0];
+    expect(openingTask?.dataset.taskId).toBe("a");
+    expect(openingTask?.className).toContain("taskHistoryOpeningSpace");
+    expect(openingTask?.innerHTML).toContain("historyInline historyInlineMotion isOpeningSpace");
+    expect(openingTask?.innerHTML).toContain("historyCanvasWrap");
+    expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(0);
+    expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
+  });
+
+  it("waits to rerender opening history until the chart reveal phase is complete", () => {
     const harness = createHarness();
     harness.openHistoryTaskIds.add("a");
     harness.openHistoryTaskIds.add("b");
@@ -232,7 +251,6 @@ describe("task list renderer", () => {
     expect(openingTask?.dataset.taskId).toBe("a");
     expect(openingTask?.className).toContain("taskHistoryOpening");
     expect(openingTask?.innerHTML).toContain("historyInline historyInlineMotion isOpening");
-    expect(openingTask?.innerHTML).toContain("historyCanvasWrap");
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(0);
     expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
   });

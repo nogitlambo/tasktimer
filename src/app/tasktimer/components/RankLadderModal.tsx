@@ -228,7 +228,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
       >
         <div className="rankLadderSwipeHandle" aria-hidden="true" />
         {!isMobileLayout ? (
-          <button className="iconBtn rankLadderCloseBtn" type="button" onClick={onClose} aria-label="Close rank ladder">
+          <button className="btn btn-ghost small settingsMobileBackBtn rankLadderCloseBtn" type="button" onClick={onClose} aria-label="Close rank ladder">
             <span aria-hidden="true">X</span>
           </button>
         ) : null}

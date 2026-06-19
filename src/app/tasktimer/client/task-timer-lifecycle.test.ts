@@ -190,6 +190,33 @@ describe("task timer lifecycle", () => {
     expect(harness.calls).toContain("show-native:task-1:123:300000");
   });
 
+  it("resumes an incomplete stopped daily time-goal task without marking it complete", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          accumulatedMs: 30 * 60 * 1000,
+          hasStarted: true,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+      ],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: true,
+      accumulatedMs: 30 * 60 * 1000,
+      startMs: 123,
+      hasStarted: true,
+      resumePendingSinceDayKey: null,
+    });
+    expect(harness.tasks[0]?.timeGoalCompletedDayKey).toBeUndefined();
+    expect(harness.tasks[0]?.timeGoalCompletedReason).toBeUndefined();
+    expect(harness.calls).toContain("upsert-live:task-1:0:1800000:force");
+  });
+
   it("confirms before switching away from another running task", () => {
     const harness = createHarness({
       tasks: [task({ id: "task-1", name: "Running", running: true, startMs: 1 }), task({ id: "task-2", name: "Next" })],
