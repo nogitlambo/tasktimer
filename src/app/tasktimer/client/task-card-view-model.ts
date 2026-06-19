@@ -31,7 +31,7 @@ type TaskProgressModel = {
   markers: TaskProgressMarkerModel[];
 };
 
-type TaskHistoryRevealPhase = "openingSpace" | "opening" | "closing" | "open" | null;
+type TaskHistoryRevealPhase = "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null;
 
 const TASK_HISTORY_TAB_BORDER_GAP_PX = 160;
 
@@ -197,7 +197,7 @@ function renderTaskHistoryInlineHtml({
   escapeHtml: (value: string) => string;
 }) {
   return `
-          <section class="historyInline historyInlineMotion${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${escapeHtml(taskName)}">
+          <section class="historyInline historyInlineMotion${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${escapeHtml(taskName)}">
               <div class="historyTop">
                 <div class="historyMeta"><div class="historyTitle historyInlineTitle">History</div></div>
                 <div class="historyMeta historyTopActions">
@@ -268,6 +268,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     (historyRevealPhase === "openingSpace" ? " taskHistoryOpeningSpace" : "") +
     (historyRevealPhase === "opening" ? " taskHistoryOpening" : "") +
     (historyRevealPhase === "closing" ? " taskHistoryClosing" : "") +
+    (historyRevealPhase === "closingSpace" ? " taskHistoryClosingSpace" : "") +
     (historyRevealPhase === "open" ? " taskHistoryOpen" : "");
   const taskColor = normalizeTaskColor(task.color);
   const taskColorPillHtml = taskColor
@@ -340,7 +341,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
             </div>
             ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
               <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
             ${historyHTML}

@@ -66,7 +66,7 @@ function createHarness(
   const taskListEl = elementStub("section");
   const openHistoryTaskIds = new Set<string>();
   const pinnedHistoryTaskIds = new Set<string>();
-  const historyViewByTaskId: Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "open" | null; revealTimer?: number | null }> = {};
+  const historyViewByTaskId: Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null; revealTimer?: number | null }> = {};
   const calls: string[] = [];
   const rafQueue: Array<() => void> = [];
   const tasks = overrides.tasks ?? [task({ id: "b", name: "Bravo", order: 2 }), task({ id: "a", name: "Alpha", order: 1 })];

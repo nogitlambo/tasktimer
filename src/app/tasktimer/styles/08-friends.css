@@ -3183,6 +3183,44 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   aspect-ratio:1448 / 798;
 }
 
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+  position:absolute;
+  z-index:1;
+  left:50%;
+  top:7.2%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:clamp(150px, 28%, 310px);
+  min-height:42px;
+  transform:translateX(-50%);
+  pointer-events:none;
+  text-align:center;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
+  color:#f8fbff;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:clamp(11px, 1vw, 15px);
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1.1;
+  text-transform:uppercase;
+  text-shadow:0 0 12px rgba(128,255,137,.24);
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
+  margin-top:5px;
+  color:rgba(219,255,186,.86);
+  font-family:var(--font-geist-mono), "Ligconsolata", "Inconsolata", monospace;
+  font-size:clamp(10px, .86vw, 13px);
+  font-weight:800;
+  letter-spacing:0;
+  line-height:1.15;
+  text-shadow:0 0 10px rgba(128,255,137,.18);
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBackdropMask{
   position:absolute;
   z-index:0;
@@ -3203,7 +3241,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   color:inherit;
   font:inherit;
   cursor:pointer;
-  --global-podium-avatar-size:27%;
+  --global-podium-avatar-size:clamp(30px, 6.1vw, 88px);
+  --global-podium-avatar-lift:clamp(3px, .55vw, 8px);
   --global-podium-text-left:14%;
   --global-podium-text-top:17%;
   --global-podium-text-width:72%;
@@ -3215,7 +3254,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   top:51.3%;
   width:27.3%;
   height:36.1%;
-  --global-podium-avatar-size:30%;
+  --global-podium-avatar-lift:clamp(4px, .72vw, 10px);
   --global-podium-text-left:17%;
   --global-podium-text-top:14%;
   --global-podium-text-width:66%;
@@ -3227,6 +3266,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   top:60.8%;
   width:22.5%;
   height:26.6%;
+  --global-podium-avatar-lift:clamp(3px, .5vw, 7px);
   --global-podium-text-left:15%;
   --global-podium-text-top:12%;
   --global-podium-text-width:72%;
@@ -3238,6 +3278,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   top:64.1%;
   width:21.8%;
   height:23.3%;
+  --global-podium-avatar-lift:clamp(3px, .45vw, 6px);
   --global-podium-text-left:14%;
   --global-podium-text-top:12%;
   --global-podium-text-width:72%;
@@ -3287,7 +3328,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
   position:absolute;
   left:50%;
-  bottom:100%;
+  bottom:calc(100% + var(--global-podium-avatar-lift));
   z-index:3;
   display:flex;
   align-items:center;
@@ -3295,10 +3336,35 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   width:var(--global-podium-avatar-size);
   aspect-ratio:1;
   transform:translateX(-50%);
+  animation:leaderboardPodiumFloat 4.8s ease-in-out infinite;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
-  width:var(--global-podium-avatar-size);
+  animation-delay:-1.2s;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot{
+  animation-delay:-2.4s;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
+  animation-delay:-3.6s;
+}
+
+@keyframes leaderboardPodiumFloat{
+  0%, 100%{
+    transform:translateX(-50%) translateY(0);
+  }
+
+  50%{
+    transform:translateX(-50%) translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
+    animation:none;
+  }
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot .leaderboardAvatar{
@@ -3444,6 +3510,12 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
     height:var(--leaderboard-global-stage-height);
     max-height:var(--leaderboard-global-stage-height);
     aspect-ratio:1448 / 798;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+    top:6.6%;
+    width:clamp(132px, 36%, 210px);
+    min-height:34px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyTableHead{

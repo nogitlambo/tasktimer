@@ -48,6 +48,7 @@ import {
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   formatWeeklyLeaderboardUtcPeriodLabel,
+  getWeeklyLeaderboardUtcPeriod,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
   getLeaderboardResolvedRank,
@@ -138,8 +139,18 @@ function formatLeaderboardTrend(xpRaw: number): string {
   return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "No gain yet";
 }
 
-function formatWeeklyLeaderboardPeriod(): string {
-  return formatWeeklyLeaderboardUtcPeriodLabel();
+function formatWeeklyLeaderboardPeriod(nowMs = Date.now()): string {
+  return formatWeeklyLeaderboardUtcPeriodLabel(nowMs);
+}
+
+function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string {
+  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
+  const remainingMs = Math.max(0, period.endMs - nowMs);
+  const totalHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+  if (totalHours <= 0) return "ending now";
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return days > 0 ? `${days}d ${hours}h remaining` : `${hours}h remaining`;
 }
 
 function formatLeaderboardTaskCount(countRaw: number): string {
@@ -384,6 +395,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
+  const [leaderboardClockMs, setLeaderboardClockMs] = useState(() => Date.now());
   const [hydratedCurrentUserProfile, setHydratedCurrentUserProfile] = useState<Pick<
     LeaderboardProfile,
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
@@ -409,6 +421,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const highlightParam = searchParams.get("highlight");
   const isHighlighting = !!highlightParam && highlightParam !== dismissedHighlightParam;
   const friendsAuthRuntimeKey = initialPage === "friends" ? isAuthenticated : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const clockTimer = window.setInterval(() => {
+      setLeaderboardClockMs(Date.now());
+    }, 60_000);
+    return () => window.clearInterval(clockTimer);
+  }, []);
 
   useEffect(() => {
     displayedXpRef.current = displayedXp;
@@ -856,6 +876,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const weeklyTableRows = weeklyRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasWeeklyRows = weeklyRows.length > 0;
+  const weeklyPeriodLabel = formatWeeklyLeaderboardPeriod(leaderboardClockMs);
+  const weeklyPeriodRemainingLabel = formatWeeklyLeaderboardTimeRemaining(leaderboardClockMs);
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
       topEntries: hydratedTopEntries,
@@ -1136,7 +1158,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         aria-labelledby="leaderboardWeeklyTab"
                         aria-label="Weekly leaderboard rankings"
                       >
-                  <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. ${formatWeeklyLeaderboardPeriod()}`}>
+                  <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. ${weeklyPeriodLabel}`}>
+                    <div className="leaderboardWeeklyPeriodOverlay" aria-label={`${weeklyPeriodLabel}. ${weeklyPeriodRemainingLabel}.`}>
+                      <span className="leaderboardWeeklyPeriodTitle">Week Period</span>
+                      <span className="leaderboardWeeklyPeriodCountdown">{weeklyPeriodRemainingLabel}</span>
+                    </div>
                     {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
                       <button
                         className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}

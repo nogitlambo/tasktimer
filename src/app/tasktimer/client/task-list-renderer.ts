@@ -18,7 +18,7 @@ type TaskListRendererOptions = {
   setCurrentTileColumnCount: (value: number) => void;
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
-  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "open" | null; revealTimer?: number | null }>;
+  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null; revealTimer?: number | null }>;
   syncTaskFlipStatesForVisibleTasks: (activeTaskIds: Set<string>) => void;
   applyTaskFlipDomState: (taskId: string, taskEl?: HTMLElement | null) => void;
   renderHistory: (taskId: string) => void;
@@ -186,7 +186,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
 
       const historyState = historyViewByTaskId[taskId];
       const historyRevealPhase = historyState?.revealPhase || (openHistoryTaskIds.has(taskId) ? "open" : null);
-      const showHistory = openHistoryTaskIds.has(taskId) || historyRevealPhase === "closing";
+      const showHistory = openHistoryTaskIds.has(taskId) || historyRevealPhase === "closing" || historyRevealPhase === "closingSpace";
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const renderedCard = renderTaskCardHtml({
         task,

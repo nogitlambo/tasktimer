@@ -80,6 +80,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_REVEAL_SPACE_OPEN_MS = 260;
   const HISTORY_REVEAL_CONTENT_OPEN_MS = HISTORY_REVEAL_OPEN_MS - HISTORY_REVEAL_SPACE_OPEN_MS;
   const HISTORY_REVEAL_CLOSE_MS = 480;
+  const HISTORY_REVEAL_CONTENT_CLOSE_MS = 240;
+  const HISTORY_REVEAL_SPACE_CLOSE_MS = HISTORY_REVEAL_CLOSE_MS - HISTORY_REVEAL_CONTENT_CLOSE_MS;
   const HISTORY_LAYOUT_RETRY_MAX_FRAMES = 12;
   const HISTORY_OPEN_SCROLL_CHECK_DELAYS_MS = [0, 120, 280, HISTORY_REVEAL_OPEN_MS + 32] as const;
   const HISTORY_OPEN_SCROLL_VIEWPORT_PADDING_PX = 12;
@@ -142,21 +144,54 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const isOpeningSpace = revealPhase === "openingSpace";
     const isOpening = revealPhase === "opening";
     const isClosing = revealPhase === "closing";
+    const isClosingSpace = revealPhase === "closingSpace";
     const isOpen = revealPhase === "open";
     taskEl.classList.toggle("taskHistoryOpeningSpace", isOpeningSpace);
     taskEl.classList.toggle("taskHistoryOpening", isOpening);
     taskEl.classList.toggle("taskHistoryClosing", isClosing);
+    taskEl.classList.toggle("taskHistoryClosingSpace", isClosingSpace);
+    taskEl.classList.remove("taskHistoryCollapsingSpace");
     taskEl.classList.toggle("taskHistoryOpen", isOpen);
     const historyInline = taskEl.querySelector(".historyInlineMotion") as HTMLElement | null;
     historyInline?.classList.toggle("isOpeningSpace", isOpeningSpace);
     historyInline?.classList.toggle("isOpening", isOpening);
     historyInline?.classList.toggle("isClosing", isClosing);
+    historyInline?.classList.toggle("isClosingSpace", isClosingSpace);
     historyInline?.classList.toggle("isOpen", isOpen);
     const revealBtn = taskEl.querySelector(".taskHistoryReveal") as HTMLElement | null;
     revealBtn?.classList.toggle("isOpeningSpace", isOpeningSpace);
     revealBtn?.classList.toggle("isOpening", isOpening);
     revealBtn?.classList.toggle("isClosing", isClosing);
+    revealBtn?.classList.toggle("isClosingSpace", isClosingSpace);
     revealBtn?.classList.toggle("isOpen", isOpen);
+  }
+
+  function startHistoryCloseContentDom(taskId: string) {
+    if (!els.taskList) return;
+    const taskEl = els.taskList.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
+    if (!taskEl) return;
+    taskEl.classList.remove("taskHistoryOpeningSpace", "taskHistoryOpening", "taskHistoryClosing", "taskHistoryClosingSpace");
+    taskEl.classList.add("taskHistoryOpen");
+    const historyInline = taskEl.querySelector(".historyInlineMotion") as HTMLElement | null;
+    historyInline?.classList.remove("isOpeningSpace", "isOpening", "isClosingSpace", "isOpen");
+    historyInline?.classList.add("isClosing");
+    const revealBtn = taskEl.querySelector(".taskHistoryReveal") as HTMLElement | null;
+    revealBtn?.classList.remove("isOpeningSpace", "isOpening", "isClosingSpace", "isOpen");
+    revealBtn?.classList.add("isClosing");
+  }
+
+  function startHistoryCloseSpaceDom(taskId: string) {
+    if (!els.taskList) return;
+    const taskEl = els.taskList.querySelector(`.task[data-task-id="${taskId}"]`) as HTMLElement | null;
+    if (!taskEl) return;
+    taskEl.classList.remove("taskHistoryOpeningSpace", "taskHistoryOpening", "taskHistoryClosing", "taskHistoryOpen");
+    taskEl.classList.add("taskHistoryCollapsingSpace");
+    const historyInline = taskEl.querySelector(".historyInlineMotion") as HTMLElement | null;
+    historyInline?.classList.remove("isOpeningSpace", "isOpening", "isClosing", "isOpen");
+    historyInline?.classList.add("isClosingSpace");
+    const revealBtn = taskEl.querySelector(".taskHistoryReveal") as HTMLElement | null;
+    revealBtn?.classList.remove("isOpeningSpace", "isOpening", "isClosing", "isOpen");
+    revealBtn?.classList.add("isClosingSpace");
   }
 
   function queueHistoryLayoutRetry(taskId: string, state: HistoryViewState, attemptsRemaining = HISTORY_LAYOUT_RETRY_MAX_FRAMES) {
@@ -1489,17 +1524,24 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         clearHistoryCanvasResizeObserver(taskId);
         delete historyViewByTaskId[taskId];
       } else {
-        state.revealPhase = "closing";
-        queueHistoryRevealTimer(state, HISTORY_REVEAL_CLOSE_MS, () => {
+        state.revealPhase = "closingSpace";
+        startHistoryCloseContentDom(taskId);
+        queueHistoryRevealTimer(state, HISTORY_REVEAL_CONTENT_CLOSE_MS, () => {
           const nextState = historyViewByTaskId[taskId];
-          if (!nextState || nextState.revealPhase !== "closing") return;
-          if (nextState.selectionClearTimer != null) window.clearTimeout(nextState.selectionClearTimer);
-          if (nextState.selectionAnimRaf != null) window.cancelAnimationFrame(nextState.selectionAnimRaf);
-          clearHistoryLayoutRetry(nextState);
-          clearHistoryCanvasResizeObserver(taskId);
-          delete historyViewByTaskId[taskId];
-          ctx.render();
+          if (!nextState || nextState.revealPhase !== "closingSpace") return;
+          startHistoryCloseSpaceDom(taskId);
+          queueHistoryRevealTimer(nextState, HISTORY_REVEAL_SPACE_CLOSE_MS, () => {
+            const finalState = historyViewByTaskId[taskId];
+            if (!finalState || finalState.revealPhase !== "closingSpace") return;
+            if (finalState.selectionClearTimer != null) window.clearTimeout(finalState.selectionClearTimer);
+            if (finalState.selectionAnimRaf != null) window.cancelAnimationFrame(finalState.selectionAnimRaf);
+            clearHistoryLayoutRetry(finalState);
+            clearHistoryCanvasResizeObserver(taskId);
+            delete historyViewByTaskId[taskId];
+            ctx.render();
+          });
         });
+        return;
       }
     } else {
       ctx.getOpenHistoryTaskIds().clear();
