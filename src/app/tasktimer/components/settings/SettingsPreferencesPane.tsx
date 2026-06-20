@@ -1,10 +1,91 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
+import type { ChangeEvent, MouseEvent } from "react";
 import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
 
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-days-change";
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-period-change";
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_TIME_PICKER_OPEN_EVENT = "tasktimer:settings-optimal-productivity-time-picker-open";
+const OPTIMAL_PRODUCTIVITY_DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+type TimePickerInput = HTMLInputElement & { showPicker?: () => void };
+type OptimalProductivityPeriodField = "start" | "end";
+
+function getSelectedOptimalProductivityDays(menu: Element | null) {
+  if (!menu) return [];
+  return Array.from(menu.querySelectorAll<HTMLInputElement>("input[data-optimal-productivity-day]"))
+    .filter((input) => input.checked)
+    .map((input) => input.value);
+}
+
+function dispatchOptimalProductivityDaysChange(days: string[], inputId?: string) {
+  window.dispatchEvent(
+    new CustomEvent(TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT, {
+      detail: { days, inputId },
+    })
+  );
+}
+
+function dispatchOptimalProductivityPeriodChange(field: OptimalProductivityPeriodField, value: string, inputId: string) {
+  window.dispatchEvent(
+    new CustomEvent(TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT, {
+      detail: { field, value, inputId },
+    })
+  );
+}
+
+function openNativeTimePicker(input: HTMLInputElement | null) {
+  if (!input) return;
+  input.classList.add("isFallbackVisible");
+  input.focus();
+  const pickerInput = input as TimePickerInput;
+  if (typeof pickerInput.showPicker === "function") {
+    try {
+      pickerInput.showPicker();
+    } catch {
+      // The visible native field remains available when picker access is blocked.
+    }
+  }
+  window.setTimeout(() => input.focus(), 0);
+}
+
+function getProductivityTimeInputId(field: OptimalProductivityPeriodField) {
+  return field === "end" ? "optimalProductivityEndTimeInput" : "optimalProductivityStartTimeInput";
+}
+
 export function SettingsPreferencesPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
+  function handleOptimalProductivityDayChange(event: ChangeEvent<HTMLInputElement>) {
+    event.stopPropagation();
+    const input = event.currentTarget;
+    dispatchOptimalProductivityDaysChange(getSelectedOptimalProductivityDays(input.closest("#optimalProductivityDaysMenu")), input.id);
+  }
+
+  function handleOptimalProductivityAllClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    dispatchOptimalProductivityDaysChange(OPTIMAL_PRODUCTIVITY_DAYS);
+  }
+
+  function handleOptimalProductivityTimeButtonClick(
+    event: MouseEvent<HTMLButtonElement>,
+    field: OptimalProductivityPeriodField
+  ) {
+    event.stopPropagation();
+    openNativeTimePicker(document.getElementById(getProductivityTimeInputId(field)) as HTMLInputElement | null);
+    window.dispatchEvent(
+      new CustomEvent(TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_TIME_PICKER_OPEN_EVENT, {
+        detail: { field },
+      })
+    );
+  }
+
+  function handleOptimalProductivityTimeChange(event: ChangeEvent<HTMLInputElement>, field: OptimalProductivityPeriodField) {
+    event.stopPropagation();
+    const input = event.currentTarget;
+    dispatchOptimalProductivityPeriodChange(field, input.value, input.id);
+  }
+
   return (
     <SettingsDetailPane active={active} exiting={exiting} paneClassName="settingsDisplayTypographyPane" title="Preferences" subtitle="Configure task behavior and dashboard options.">
       <div className="settingsInlineStack">
@@ -72,31 +153,31 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <div className="optimalProductivityDaysMenu" id="optimalProductivityDaysMenu" role="group" aria-label="Optimal productivity days">
                 <label className="chkRow" htmlFor="optimalProductivityDayMon">
                   <span>MON</span>
-                  <input id="optimalProductivityDayMon" type="checkbox" value="mon" data-optimal-productivity-day="mon" />
+                  <input id="optimalProductivityDayMon" type="checkbox" value="mon" data-optimal-productivity-day="mon" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayTue">
                   <span>TUE</span>
-                  <input id="optimalProductivityDayTue" type="checkbox" value="tue" data-optimal-productivity-day="tue" />
+                  <input id="optimalProductivityDayTue" type="checkbox" value="tue" data-optimal-productivity-day="tue" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayWed">
                   <span>WED</span>
-                  <input id="optimalProductivityDayWed" type="checkbox" value="wed" data-optimal-productivity-day="wed" />
+                  <input id="optimalProductivityDayWed" type="checkbox" value="wed" data-optimal-productivity-day="wed" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayThu">
                   <span>THU</span>
-                  <input id="optimalProductivityDayThu" type="checkbox" value="thu" data-optimal-productivity-day="thu" />
+                  <input id="optimalProductivityDayThu" type="checkbox" value="thu" data-optimal-productivity-day="thu" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDayFri">
                   <span>FRI</span>
-                  <input id="optimalProductivityDayFri" type="checkbox" value="fri" data-optimal-productivity-day="fri" />
+                  <input id="optimalProductivityDayFri" type="checkbox" value="fri" data-optimal-productivity-day="fri" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDaySat">
                   <span>SAT</span>
-                  <input id="optimalProductivityDaySat" type="checkbox" value="sat" data-optimal-productivity-day="sat" />
+                  <input id="optimalProductivityDaySat" type="checkbox" value="sat" data-optimal-productivity-day="sat" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <label className="chkRow" htmlFor="optimalProductivityDaySun">
                   <span>SUN</span>
-                  <input id="optimalProductivityDaySun" type="checkbox" value="sun" data-optimal-productivity-day="sun" />
+                  <input id="optimalProductivityDaySun" type="checkbox" value="sun" data-optimal-productivity-day="sun" onChange={handleOptimalProductivityDayChange} />
                 </label>
                 <button
                   className="optimalProductivityDaysAllBtn"
@@ -104,6 +185,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
                   type="button"
                   aria-pressed="false"
                   aria-label="Select all optimal productivity days"
+                  onClick={handleOptimalProductivityAllClick}
                 >
                   ALL
                 </button>
@@ -123,6 +205,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
                   id="optimalProductivityStartTimeButton"
                   type="button"
                   aria-label="Choose optimal productivity start time"
+                  onClick={(event) => handleOptimalProductivityTimeButtonClick(event, "start")}
                 >
                   <span className="optimalProductivityClockValue" id="optimalProductivityStartTimeValue">12:00 AM</span>
                 </button>
@@ -132,6 +215,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
                   type="time"
                   defaultValue="00:00"
                   aria-label="Optimal productivity start time"
+                  onChange={(event) => handleOptimalProductivityTimeChange(event, "start")}
                 />
               </label>
               <label>
@@ -141,6 +225,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
                   id="optimalProductivityEndTimeButton"
                   type="button"
                   aria-label="Choose optimal productivity end time"
+                  onClick={(event) => handleOptimalProductivityTimeButtonClick(event, "end")}
                 >
                   <span className="optimalProductivityClockValue" id="optimalProductivityEndTimeValue">11:59 PM</span>
                 </button>
@@ -150,6 +235,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
                   type="time"
                   defaultValue="23:59"
                   aria-label="Optimal productivity end time"
+                  onChange={(event) => handleOptimalProductivityTimeChange(event, "end")}
                 />
               </label>
             </div>

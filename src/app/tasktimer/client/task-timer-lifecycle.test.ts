@@ -60,7 +60,8 @@ function createHarness(
       calls.push(`clear-live:${taskId}:${opts?.forceCloudFlush === true ? "force" : "queued"}:${opts?.reason || ""}`),
     finalizeLiveSession: (entry, opts) => {
       const base = `finalize-live:${entry.id}:${opts.elapsedMs}:${opts.note || ""}:${opts.completionDifficulty || ""}:${opts.deferTimeGoalXp ? "defer" : "award"}`;
-      calls.push(opts.completedAtMs != null ? `${base}:${opts.completedAtMs}` : base);
+      const withCompletedAt = opts.completedAtMs != null ? `${base}:${opts.completedAtMs}` : base;
+      calls.push(opts.preserveFocusSessionDraft ? `${withCompletedAt}:preserve` : withCompletedAt);
     },
     applyPendingTimeGoalXpForTask: (taskId) => calls.push(`apply-pending:${taskId || ""}`),
     getElapsedMs: () => overrides.elapsedMs ?? 345,
@@ -274,6 +275,17 @@ describe("task timer lifecycle", () => {
       "render",
       "dashboard",
     ]);
+  });
+
+  it("preserves the focus session draft when stopping the focused task", () => {
+    const harness = createHarness({
+      tasks: [task({ running: true, startMs: 1 })],
+      focusTaskId: "task-1",
+    });
+
+    harness.lifecycle.stopTask(0);
+
+    expect(harness.calls).toContain("finalize-live:task-1:345:::award:preserve");
   });
 
   it("marks a daily time-goal task complete when it is stopped after reaching the goal", () => {
@@ -513,6 +525,69 @@ describe("task timer lifecycle", () => {
     expect(calls).toEqual([
       "flush-note:task-1",
       "apply-pending:task-1",
+      "clear-live:task-1:force:reset",
+      "clear-native:task-1",
+      "clear-goal:task-1",
+      "clear-reward:task-1",
+      "reset-checkpoint:task-1",
+      "checkpoint-dirty:true",
+      "clear-focus-draft:task-1",
+    ]);
+    expect(consoleError).toHaveBeenCalledWith("Failed to finalize task session", expect.any(Error));
+    consoleError.mockRestore();
+  });
+
+  it("resets task state and completes cleanup when pending time-goal XP application throws", () => {
+    const calls: string[] = [];
+    nativeTimerNotificationMock.calls = calls;
+    const entry = task({ running: false, startMs: null, accumulatedMs: 55, hasStarted: true });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const commands = createTaskTimerLifecycleCommands({
+      clearTaskTimeGoalFlow: (taskId) => calls.push(`clear-goal:${taskId}`),
+      flushPendingFocusSessionNoteSave: (taskId) => calls.push(`flush-note:${taskId}`),
+      openRewardSessionSegment: () => {},
+      closeRewardSessionSegment: () => {},
+      clearRewardSessionTracker: (taskId) => calls.push(`clear-reward:${taskId}`),
+      upsertLiveSession: () => {},
+      clearLiveSession: (taskId, opts) =>
+        calls.push(`clear-live:${taskId}:${opts?.forceCloudFlush === true ? "force" : "queued"}:${opts?.reason || ""}`),
+      finalizeLiveSession: (task, opts) => calls.push(`finalize-live:${task.id}:${opts.elapsedMs}`),
+      applyPendingTimeGoalXpForTask: () => {
+        throw new Error("xp failed");
+      },
+      getElapsedMs: () => 0,
+      getTaskElapsedMs: () => 678,
+      clearCheckpointBaseline: () => {},
+      resetCheckpointAlertTracking: (taskId) => calls.push(`reset-checkpoint:${taskId}`),
+      setCheckpointAutoResetDirty: (dirty) => calls.push(`checkpoint-dirty:${dirty}`),
+      clearFocusSessionDraft: (taskId) => calls.push(`clear-focus-draft:${taskId}`),
+      getFocusModeTaskId: () => null,
+      syncFocusSessionNotesInput: () => {},
+      syncFocusSessionNotesAccordion: () => {},
+      getCurrentAppPage: () => "tasks",
+      getAutoFocusOnTaskLaunchEnabled: () => false,
+      openFocusMode: () => {},
+      save: () => {},
+      render: () => {},
+      renderDashboardWidgets: () => {},
+      syncSharedTaskSummariesForTask: async () => {},
+    });
+    const adapter = createTaskTimerLifecycle({
+      getTasks: () => [entry],
+      getHistoryByTaskId: () => ({}),
+      getTaskDisplayName: () => "Focus",
+      confirm: () => {},
+      closeConfirm: () => {},
+      addTaskAlreadyRunningConfirmClass: () => {},
+      removeTaskAlreadyRunningConfirmClass: () => {},
+      commands,
+      nowMs: () => 123,
+    });
+
+    expect(() => adapter.resetTaskStateImmediate(entry)).not.toThrow();
+    expect(entry).toMatchObject({ running: false, accumulatedMs: 0, startMs: null, hasStarted: false });
+    expect(calls).toEqual([
+      "flush-note:task-1",
       "clear-live:task-1:force:reset",
       "clear-native:task-1",
       "clear-goal:task-1",

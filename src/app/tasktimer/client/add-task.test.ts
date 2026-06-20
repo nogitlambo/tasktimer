@@ -29,7 +29,7 @@ function createHarness(
   vi.stubGlobal("document", documentStub);
   let addTaskMilestones: Array<{ hours: number; description: string }> = [];
   let addTaskType: "recurring" | "once-off" = overrides?.taskType || "recurring";
-  let addTaskDurationUnit: "minute" | "hour" = "hour";
+  let addTaskDurationUnit: "minute" | "hour" = "minute";
   let addTaskDurationPeriod: "day" | "week" = "day";
   let addTaskOnceOffDay = "mon";
   let addTaskPlannedStartTime = overrides?.plannedStartTime || "09:00";
@@ -268,6 +268,7 @@ function createHarness(
       addTaskMilestones = value;
     },
     clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
+    clickHourUnit: () => handlers.get(addTaskDurationUnitHour)?.get("click")?.(),
     clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
     clickOnceOffType: () => handlers.get(addTaskTypeOnceOffBtn)?.get("click")?.(),
     setSplitAcrossProductivityDays: (checked: boolean) => {
@@ -293,6 +294,7 @@ describe("createTaskTimerAddTask", () => {
     const harness = createHarness("1", { productivityDays: ["mon", "tue", "wed", "thu", "fri"] });
 
     harness.toggleSchedule();
+    harness.clickHourUnit();
     harness.clickWeeklyPeriod();
     harness.setManualPlannedStart("08:00");
 
@@ -308,13 +310,13 @@ describe("createTaskTimerAddTask", () => {
     harness.toggleSchedule();
     harness.setManualPlannedStart("08:00");
     expect(harness.addTaskScheduleSummaryText.textContent).toBe(
-      "Task will be added as 1 hour daily scheduled blocks at 8:00 AM on your 5 productivity days."
+      "Task will be added as 1 minute daily scheduled blocks at 8:00 AM on your 5 productivity days."
     );
 
     harness.clickOnceOffType();
     harness.setOnceOffDay("fri");
 
-    expect(harness.addTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 hour scheduled block at 8:00 AM on Friday.");
+    expect(harness.addTaskScheduleSummaryText.textContent).toBe("Task will be added as a 1 minute scheduled block at 8:00 AM on Friday.");
   });
 
   it("clears the add-task time goal input on focus when the value is the default zero", () => {
@@ -423,9 +425,9 @@ describe("createTaskTimerAddTask", () => {
         taskType: "recurring",
         timeGoalEnabled: true,
         timeGoalValue: 1,
-        timeGoalUnit: "hour",
+        timeGoalUnit: "minute",
         timeGoalPeriod: "day",
-        timeGoalMinutes: 60,
+        timeGoalMinutes: 1,
       }),
     ]);
   });
@@ -581,6 +583,7 @@ describe("createTaskTimerAddTask", () => {
     harness.ctx.getAddTaskDurationPeriod = () => "week";
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.submit();
 
     expect(setTasksMock).toHaveBeenCalledWith([
@@ -619,6 +622,7 @@ describe("createTaskTimerAddTask", () => {
     harness.ctx.getAddTaskDurationPeriod = () => "week";
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.setSplitAcrossProductivityDays(false);
     harness.setWeeklyBlockDay("wed");
     harness.submit();
@@ -643,6 +647,7 @@ describe("createTaskTimerAddTask", () => {
     harness.ctx.getAddTaskDurationPeriod = () => "week";
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.submit();
 
     const savedTask = setTasksMock.mock.calls[0]?.[0]?.[0] as Task | undefined;
@@ -737,6 +742,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.setManualPlannedStart("09:00");
     harness.submit();
 
@@ -833,6 +839,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.setManualPlannedStart("09:00");
     harness.submit();
 
@@ -889,6 +896,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.setManualPlannedStart("09:00");
     harness.submit();
 
@@ -938,6 +946,7 @@ describe("createTaskTimerAddTask", () => {
     harness.addTaskMsToggle.checked = false;
 
     harness.toggleSchedule(true);
+    harness.clickHourUnit();
     harness.setManualPlannedStart("09:00");
     harness.submit();
 

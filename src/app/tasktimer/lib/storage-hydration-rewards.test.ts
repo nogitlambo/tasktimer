@@ -620,8 +620,10 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       optimalProductivityStartTime: "07:30",
       optimalProductivityEndTime: "18:45",
       optimalProductivityDays: ["mon", "tue"],
-      updatedAtMs: 200,
+      updatedAtMs: 50,
     });
+    await Promise.resolve();
+    await Promise.resolve();
     cloudStoreMocks.savePreferences.mockClear();
 
     cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
@@ -652,6 +654,86 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
     expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
       "uid-1",
+      expect.objectContaining({
+        optimalProductivityStartTime: "07:30",
+        optimalProductivityEndTime: "18:45",
+        optimalProductivityDays: ["mon", "tue"],
+      })
+    );
+  });
+
+  it("keeps newer local optimal productivity settings when cloud hydration returns older values after save", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      optimalProductivityStartTime: "07:30",
+      optimalProductivityEndTime: "18:45",
+      optimalProductivityDays: ["mon", "tue"],
+      updatedAtMs: 200,
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    cloudStoreMocks.savePreferences.mockClear();
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        optimalProductivityStartTime: "07:30",
+        optimalProductivityEndTime: "18:45",
+        optimalProductivityDays: ["mon", "tue"],
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalled();
+  });
+
+  it("keeps signed-in pending optimal productivity settings when cloud hydration returns stale values", async () => {
+    cloudStoreMocks.savePreferences.mockImplementation(() => new Promise(() => {}));
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      optimalProductivityStartTime: "07:30",
+      optimalProductivityEndTime: "18:45",
+      optimalProductivityDays: ["mon", "tue"],
+      updatedAtMs: 200,
+    });
+    cloudStoreMocks.savePreferences.mockClear();
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        optimalProductivityStartTime: "09:15",
+        optimalProductivityEndTime: "15:30",
+        optimalProductivityDays: ["wed", "fri"],
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
       expect.objectContaining({
         optimalProductivityStartTime: "07:30",
         optimalProductivityEndTime: "18:45",

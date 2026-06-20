@@ -169,6 +169,23 @@ describe("task list renderer", () => {
     expect(harness.calls).toContain("apply-flip:b");
   });
 
+  it("preserves source indexes when task ids are duplicated", () => {
+    const harness = createHarness({
+      taskOrderBy: "custom",
+      tasks: [
+        task({ id: "duplicate", name: "First", order: 1 }),
+        task({ id: "duplicate", name: "Second", order: 2 }),
+      ],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    expect(harness.taskListEl.children[0]?.dataset.taskId).toBe("duplicate");
+    expect(harness.taskListEl.children[0]?.dataset.index).toBe("0");
+    expect(harness.taskListEl.children[1]?.dataset.taskId).toBe("duplicate");
+    expect(harness.taskListEl.children[1]?.dataset.index).toBe("1");
+  });
+
   it("renders four tile columns when the responsive helper selects four", () => {
     const harness = createHarness({
       taskView: "tile",

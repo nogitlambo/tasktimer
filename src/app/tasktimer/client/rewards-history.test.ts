@@ -24,7 +24,7 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 function createHarness(
-  overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number; historyByTaskId: HistoryByTaskId; tasks: Task[] }> = {}
+  overrides: Partial<{ liveSessionsByTaskId: LiveSessionsByTaskId; elapsedMs: number; historyByTaskId: HistoryByTaskId; tasks: Task[]; focusModeTaskId: string | null }> = {}
 ) {
   const calls: string[] = [];
   const tasks = overrides.tasks || [task()];
@@ -71,7 +71,7 @@ function createHarness(
     setCloudPreferencesCache: (value) => {
       cloudPreferencesCache = value;
     },
-    getFocusModeTaskId: () => null,
+    getFocusModeTaskId: () => (Object.prototype.hasOwnProperty.call(overrides, "focusModeTaskId") ? overrides.focusModeTaskId || null : null),
     getCurrentPlan: () => "free",
     hasEntitlement: () => false,
     currentUid: () => "uid-1",
@@ -253,6 +253,39 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardSessionTrackersByTaskId()).toEqual({});
     expect(harness.calls).toContain("set-focus-draft:task-1:live note");
     expect(harness.calls).toContain("clear-live-session:task-1");
+  });
+
+  it("keeps the focus draft and editor untouched when focused stop finalizes a note", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      focusModeTaskId: "task-1",
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - MIN_REWARD_ELIGIBLE_SESSION_MS,
+          elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+          updatedAtMs: Date.now(),
+          status: "running",
+          note: "focused note",
+        },
+      },
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, {
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      preserveFocusSessionDraft: true,
+    });
+
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({ note: "focused note", sessionId: "session-1" });
+    expect(harness.getLiveSessionsByTaskId()).toEqual({});
+    expect(harness.calls).toContain("set-focus-draft:task-1:focused note");
+    expect(harness.calls).toContain("clear-live-session:task-1");
+    expect(harness.calls).not.toContain("clear-focus-draft:task-1");
+    expect(harness.calls).not.toContain("sync-focus-input:task-1");
+    expect(harness.calls).not.toContain("sync-focus-accordion:task-1");
   });
 
   it("appends sub-threshold sessions but awards 0 XP under current rules", () => {

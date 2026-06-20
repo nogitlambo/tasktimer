@@ -1412,20 +1412,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     if (String(ctx.getTimeGoalModalTaskId() || "").trim()) return;
     const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
-    if (!overdueTask) {
-      const acknowledgedTask = tasks.find((row) => {
-        if (!isFinalizedGoalCompletionAwaitingAcknowledgement(row)) return false;
-        return isTaskTimeGoalCompletedForCurrentPeriod(row) && isTaskTimeGoalLockedForCurrentPeriod(row);
-      }) || tasks.find((row) => {
-        return isFinalizedGoalCompletionAwaitingAcknowledgement(row);
-      });
-      if (!acknowledgedTask) return;
-      openTimeGoalCompleteModal(acknowledgedTask, Math.max(0, Math.floor(Number(acknowledgedTask.timeGoalCompletedElapsedMs || 0) || 0)), {
-        reminder: true,
-        acknowledgement: true,
-      });
-      return;
-    }
+    if (!overdueTask) return;
     openTimeGoalCompleteModal(overdueTask, getTaskElapsedMs(overdueTask), { reminder: true });
   }
 

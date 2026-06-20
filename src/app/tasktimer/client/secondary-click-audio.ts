@@ -19,7 +19,6 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   '[role="switch"]',
   "#closeMenuBtn",
   "[data-nav-page]",
-  ".appFooterBtn",
   ".dashboardRailMenuBtn",
   ".settingsNavTile",
   ".taskLaunchMobileMenuItem",
@@ -30,6 +29,7 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
   "#openFriendRequestModalBtn",
 ].join(",");
 
+const FOOTER_NAV_CLICK_SELECTOR = ".appFooterBtn";
 const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]', ".modalPreviewDropdownOption"].join(",");
 const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]';
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip],[data-heatmap-flip]";
@@ -89,6 +89,7 @@ function isCloseClickControl(element: HTMLElement): boolean {
 }
 
 export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement | null {
+  if (getFooterNavClickTarget(target)) return null;
   if (getCloseClickTarget(target)) return null;
   if (getCheckboxClickTarget(target)) return null;
   if (getDropdownClickTarget(target)) return null;
@@ -106,6 +107,12 @@ export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement
   const textTarget = getClosestElement(target, SECONDARY_CLICK_TEXT_SELECTOR);
   if (!textTarget || isSecondaryClickExcludedControl(textTarget)) return null;
   return isDisabledControl(textTarget) ? null : textTarget;
+}
+
+export function getFooterNavClickTarget(target: EventTarget | null): HTMLElement | null {
+  const footerNavTarget = getClosestElement(target, FOOTER_NAV_CLICK_SELECTOR);
+  if (!footerNavTarget) return null;
+  return isDisabledControl(footerNavTarget) ? null : footerNavTarget;
 }
 
 export function getCheckboxClickTarget(target: EventTarget | null): HTMLElement | null {
@@ -252,8 +259,9 @@ export function registerSecondaryClickAudio(options: {
       const taskFlipTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget ? null : getTaskFlipClickTarget(event.target);
       const modalOpenTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget ? null : getModalOpenClickTarget(event.target);
       const noteToolbarTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget ? null : getNoteToolbarClickTarget(event.target);
-      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget ? null : getSecondaryClickTarget(event.target);
-      const target = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || secondaryTarget;
+      const footerNavTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget ? null : getFooterNavClickTarget(event.target);
+      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || footerNavTarget ? null : getSecondaryClickTarget(event.target);
+      const target = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || footerNavTarget || secondaryTarget;
       if (!target) return;
       if ("isTrusted" in event && event.isTrusted === false) return;
 

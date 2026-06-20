@@ -686,11 +686,19 @@ function loadPendingPreferencesSync(uid = scopedUid()): PendingPreferencesSync |
     if (!normalizedPreferences) return null;
     return {
       ts,
+      uid: pendingUid,
       preferences: normalizedPreferences,
     };
   } catch {
     return null;
   }
+}
+
+function clearPendingPreferencesSyncIfMatches(uid: string, signature: string): void {
+  const pendingPreferences = loadPendingPreferencesSync(uid)?.preferences || null;
+  if (!pendingPreferences) return;
+  if (preferencesSyncSignature(pendingPreferences) !== signature) return;
+  savePendingPreferencesSync(null);
 }
 
 function savePendingPreferencesSync(
@@ -1105,17 +1113,39 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   saveShadowDeletedMeta(cachedDeletedMeta);
   const shadowPreferences = loadShadowPreferences(uid);
   const cloudPreferences = snapshot.preferences || null;
-  const pendingPreferences = loadPendingPreferencesSync(uid)?.preferences || null;
+  const pendingPreferencesSync = loadPendingPreferencesSync(uid);
+  const pendingPreferences = pendingPreferencesSync?.preferences || null;
+  const pendingPreferencesUid = String(pendingPreferencesSync?.uid || "").trim();
   const shadowUpdatedAtMs = Number(shadowPreferences?.updatedAtMs || 0);
   const cloudUpdatedAtMs = Number(cloudPreferences?.updatedAtMs || 0);
   const pendingUpdatedAtMs = Number(pendingPreferences?.updatedAtMs || 0);
-  cachedPreferences =
+  const selectedPreferenceSource =
     pendingUpdatedAtMs > Math.max(shadowUpdatedAtMs, cloudUpdatedAtMs)
-      ? pendingPreferences
+      ? "pending"
       : shadowUpdatedAtMs > cloudUpdatedAtMs
+        ? "shadow"
+        : cloudPreferences
+          ? "cloud"
+          : shadowPreferences
+            ? "shadow"
+            : pendingPreferences
+              ? "pending"
+              : "none";
+  cachedPreferences =
+    selectedPreferenceSource === "pending"
+      ? pendingPreferences
+      : selectedPreferenceSource === "shadow"
         ? shadowPreferences
         : cloudPreferences || shadowPreferences || pendingPreferences || null;
-  if (cloudPreferences) {
+  const hasSignedInPendingPreferences =
+    !!pendingPreferences &&
+    pendingPreferencesUid === uid &&
+    pendingUpdatedAtMs >= Math.max(shadowUpdatedAtMs, cloudUpdatedAtMs);
+  const shouldApplyCloudProductivityPreferenceFields =
+    !!cloudPreferences &&
+    (selectedPreferenceSource === "cloud" ||
+      (selectedPreferenceSource === "pending" && !hasSignedInPendingPreferences));
+  if (shouldApplyCloudProductivityPreferenceFields) {
     cachedPreferences = applyCloudProductivityPreferenceFields(cachedPreferences, cloudPreferences);
   }
   const weekStarting = loadStoredWeekStartingPreference();
@@ -1139,7 +1169,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   }
   saveShadowPreferences(uid, cachedPreferences);
   if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
-    const replayPreferences = normalizePreferenceSnapshot(applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences);
+    const replayPreferences = normalizePreferenceSnapshot(
+      pendingPreferencesUid === uid
+        ? pendingPreferences
+        : applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences
+    );
     if (replayPreferences) {
       void savePreferences(uid, replayPreferences)
         .then(() => {
@@ -1702,10 +1736,16 @@ function flushQueuedCloudPreferences(uid: string): void {
   const syncPromise = savePreferences(uid, nextSnapshot)
     .then(() => {
       lastSuccessfulPreferencesSyncSignature = nextSignature;
+      clearPendingPreferencesSyncIfMatches(uid, nextSignature);
       debugLogCloudQueue("preferences", "drain", { uid, status: "ok" });
     })
     .catch(() => {
-      savePendingPreferencesSync(nextSnapshot);
+      const pending = loadPendingPreferencesSync(uid)?.preferences || null;
+      const hasNewerPending =
+        !!pending &&
+        preferencesSyncSignature(pending) !== nextSignature &&
+        Number(pending.updatedAtMs || 0) >= Number(nextSnapshot.updatedAtMs || 0);
+      if (!hasNewerPending) savePendingPreferencesSync(nextSnapshot, uid);
       debugLogCloudQueue("preferences", "error", { uid, status: "save-pending" });
     })
     .finally(() => {
@@ -2014,7 +2054,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
   const uid = currentUid();
   if (uid) {
     saveShadowPreferences(uid, cachedPreferences);
-    savePendingPreferencesSync(null);
+    savePendingPreferencesSync(cachedPreferences, uid);
   } else {
     savePendingPreferencesSync(cachedPreferences, "");
   }

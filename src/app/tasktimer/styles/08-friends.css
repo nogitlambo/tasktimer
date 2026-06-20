@@ -3187,7 +3187,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   position:absolute;
   z-index:1;
   left:50%;
-  top:7.2%;
+  top:3.8%;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -3200,25 +3200,108 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
-  color:#f8fbff;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  font-size:clamp(11px, 1vw, 15px);
+  color:#c9ff24;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(7px, .74vw, 11px);
   font-weight:900;
   letter-spacing:.08em;
   line-height:1.1;
   text-transform:uppercase;
   text-shadow:0 0 12px rgba(128,255,137,.24);
+  white-space:nowrap;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
   margin-top:5px;
-  color:rgba(219,255,186,.86);
-  font-family:var(--font-geist-mono), "Ligconsolata", "Inconsolata", monospace;
+  color:#fff;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:clamp(10px, .86vw, 13px);
   font-weight:800;
   letter-spacing:0;
   line-height:1.15;
   text-shadow:0 0 10px rgba(128,255,137,.18);
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleOverlay{
+  position:absolute;
+  z-index:1;
+  left:50%;
+  top:3.8%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  width:clamp(150px, 28%, 310px);
+  min-height:58px;
+  transform:translateX(-50%);
+  pointer-events:none;
+  text-align:center;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitle{
+  color:#c9ff24;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(9px, .92vw, 14px);
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1.1;
+  text-transform:uppercase;
+  text-shadow:0 0 12px rgba(128,255,137,.24);
+  white-space:nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleInsignia{
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  overflow:hidden;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleInsigniaImg{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleInsigniaPlaceholder{
+  color:#c9ff24;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.06em;
+  line-height:1;
+  text-transform:uppercase;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
+  position:absolute;
+  z-index:1;
+  left:50%;
+  top:3.8%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:clamp(150px, 28%, 310px);
+  min-height:42px;
+  transform:translateX(-50%);
+  pointer-events:none;
+  text-align:center;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitle{
+  color:cyan;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(9px, .92vw, 14px);
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1.1;
+  text-transform:uppercase;
+  text-shadow:0 0 12px rgba(0,255,255,.28);
+  white-space:nowrap;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBackdropMask{

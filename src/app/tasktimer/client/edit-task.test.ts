@@ -366,6 +366,38 @@ describe("normalizeRecurringScheduleFieldsForSave", () => {
     expect(editDraft.plannedStartDay).toBe("tue");
   });
 
+  it("prunes multi-day recurring schedules to current productivity days on edit save", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 100,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00", sat: "09:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"]);
+
+    expect(editDraft.plannedStartByDay).toEqual({ mon: "09:00" });
+    expect(editDraft.plannedStartDay).toBe("mon");
+    expect(editDraft.plannedStartTime).toBe("09:00");
+  });
+
+  it("preserves remaining per-day times when pruning mixed recurring schedules", () => {
+    const editDraft = task({
+      taskType: "recurring",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "08:00", wed: "10:00", sat: "12:00" },
+    });
+
+    normalizeRecurringScheduleFieldsForSave(editDraft, editDraft, ["mon", "wed", "fri"]);
+
+    expect(editDraft.plannedStartByDay).toEqual({ mon: "08:00", wed: "10:00" });
+    expect(editDraft.plannedStartDay).toBeNull();
+    expect(editDraft.plannedStartTime).toBeNull();
+  });
+
   it("generates weekly recurring schedules from optimal productivity days without existing scheduled day entries", () => {
     const editDraft = task({
       taskType: "recurring",
@@ -1044,7 +1076,7 @@ describe("edit task scheduled days outside productivity preferences", () => {
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 
-  it("saves scheduled days outside productivity preferences without prompting", () => {
+  it("prunes scheduled days outside productivity preferences without prompting", () => {
     const harness = createEditHarness({
       durationPeriod: "week",
       productivityDays: ["mon", "wed", "fri"],
@@ -1063,14 +1095,89 @@ describe("edit task scheduled days outside productivity preferences", () => {
     harness.api.closeEdit(true);
 
     expect(harness.ctx.confirm).not.toHaveBeenCalled();
-    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", sat: "09:00" });
-    expect(harness.sourceTask.plannedStartDay).toBeNull();
-    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBe("mon");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
     expect(harness.ctx.save).toHaveBeenCalled();
     expect(harness.getEditIndex()).toBeNull();
   });
 
-  it("saves daily recurring all-day schedules without removing non-productivity days", () => {
+  it("preserves one-day recurring schedules outside productivity preferences", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ sat: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBe("sat");
+    expect(harness.sourceTask.plannedStartTime).toBe("09:00");
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("adds newly enabled productivity days to legacy weekly split schedules on edit save", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "tue", "thu"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", tue: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.splitAcrossProductivityDays).toBe(true);
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", tue: "09:00", thu: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("adds newly enabled productivity days to recurring daily schedules on edit save", () => {
+    const harness = createEditHarness({
+      durationPeriod: "day",
+      productivityDays: ["mon", "tue", "thu"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", tue: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", tue: "09:00", thu: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("prunes daily recurring all-day schedules to productivity days", () => {
     const harness = createEditHarness({
       durationPeriod: "day",
       productivityDays: ["mon", "tue", "wed", "thu", "fri"],
@@ -1090,7 +1197,66 @@ describe("edit task scheduled days outside productivity preferences", () => {
     harness.api.closeEdit(true);
 
     expect(harness.ctx.confirm).not.toHaveBeenCalled();
-    expect(harness.sourceTask.plannedStartByDay).toEqual(Object.fromEntries(SCHEDULE_DAY_ORDER.map((day) => [day, "09:00"])));
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", tue: "09:00", wed: "09:00", thu: "09:00", fri: "09:00" });
+    expect(harness.sourceTask.plannedStartDay).toBeNull();
+    expect(harness.sourceTask.plannedStartTime).toBeNull();
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("prunes mixed-time recurring schedules without applying a shared-time prompt", () => {
+    const harness = createEditHarness({
+      durationPeriod: "day",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: nonConflictingBusyTask,
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartDay: null,
+        plannedStartTime: null,
+        plannedStartByDay: { mon: "08:00", sat: "12:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "08:00" });
+    expect(harness.sourceTask.plannedStartDay).toBe("mon");
+    expect(harness.sourceTask.plannedStartTime).toBe("08:00");
+    expect(harness.ctx.save).toHaveBeenCalled();
+  });
+
+  it("checks schedule conflicts only after non-productivity days are pruned", () => {
+    const harness = createEditHarness({
+      durationPeriod: "week",
+      productivityDays: ["mon", "wed", "fri"],
+      busyTask: task({
+        id: "busy",
+        name: "Deep Work",
+        taskType: "once-off",
+        onceOffDay: "sat",
+        plannedStartDay: "sat",
+        plannedStartTime: "09:00",
+        plannedStartByDay: { sat: "09:00" },
+      }),
+      sourceTask: task({
+        id: "source",
+        name: "Focus",
+        taskType: "recurring",
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        plannedStartTime: "09:00",
+        plannedStartByDay: { mon: "09:00", sat: "09:00" },
+      }),
+    });
+
+    harness.api.closeEdit(true);
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00" });
     expect(harness.ctx.save).toHaveBeenCalled();
   });
 
@@ -1144,6 +1310,8 @@ describe("edit task scheduled days outside productivity preferences", () => {
 
     expect(harness.ctx.confirm).not.toHaveBeenCalled();
     expect(harness.ctx.save).toHaveBeenCalled();
+    expect(harness.sourceTask.splitAcrossProductivityDays).toBe(true);
+    expect(harness.sourceTask.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00", fri: "09:00" });
   });
 
   it("saves open-ended tasks without prompting", () => {

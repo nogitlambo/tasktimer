@@ -38,6 +38,10 @@ type PreferenceEventDeps = {
 
 const CHECKPOINT_ALERT_SOUND_MODE_KEY = "taskticker_tasks_v1:checkpointAlertSoundMode";
 const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToastMode";
+const TASKTIMER_SETTINGS_PREFERENCES_ACTIVE_EVENT = "tasktimer:settings-preferences-active";
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-days-change";
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-period-change";
+const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_TIME_PICKER_OPEN_EVENT = "tasktimer:settings-optimal-productivity-time-picker-open";
 type TimePickerInput = HTMLInputElement & { showPicker?: () => void };
 
 type FocusDndAccessStatus = {
@@ -412,11 +416,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskStartupModuleSelect.value = startupModule;
     }
     void syncFocusDndSettingsUi();
-    if (els.optimalProductivityStartTimeInput) {
-      els.optimalProductivityStartTimeInput.value = ctx.getOptimalProductivityStartTime();
+    const optimalProductivityStartTimeInput = getOptimalProductivityStartTimeInput();
+    const optimalProductivityEndTimeInput = getOptimalProductivityEndTimeInput();
+    if (optimalProductivityStartTimeInput) {
+      optimalProductivityStartTimeInput.value = ctx.getOptimalProductivityStartTime();
     }
-    if (els.optimalProductivityEndTimeInput) {
-      els.optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
+    if (optimalProductivityEndTimeInput) {
+      optimalProductivityEndTimeInput.value = ctx.getOptimalProductivityEndTime();
     }
     syncOptimalProductivityPeriodUi();
     syncOptimalProductivityDaysUi();
@@ -737,8 +743,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     const endTime = normalizeTimeOfDay(nextEnd, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME);
     ctx.setOptimalProductivityStartTimeState(startTime);
     ctx.setOptimalProductivityEndTimeState(endTime);
-    if (els.optimalProductivityStartTimeInput) els.optimalProductivityStartTimeInput.value = startTime;
-    if (els.optimalProductivityEndTimeInput) els.optimalProductivityEndTimeInput.value = endTime;
+    const startInput = getOptimalProductivityStartTimeInput();
+    const endInput = getOptimalProductivityEndTimeInput();
+    if (startInput) startInput.value = startTime;
+    if (endInput) endInput.value = endTime;
     syncOptimalProductivityPeriodUi();
   }
 
@@ -752,6 +760,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function syncOptimalProductivityPeriodUi() {
+    const startTimeValue = getOptimalProductivityStartTimeValue();
+    const endTimeValue = getOptimalProductivityEndTimeValue();
+    const startTimeButton = getOptimalProductivityStartTimeButton();
+    const endTimeButton = getOptimalProductivityEndTimeButton();
     const startLabel = formatOptimalProductivityClockTimeLabel(
       ctx.getOptimalProductivityStartTime(),
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
@@ -760,18 +772,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ctx.getOptimalProductivityEndTime(),
       DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
     );
-    if (els.optimalProductivityStartTimeValue) els.optimalProductivityStartTimeValue.textContent = startLabel;
-    if (els.optimalProductivityEndTimeValue) els.optimalProductivityEndTimeValue.textContent = endLabel;
-    if (els.optimalProductivityStartTimeButton) {
-      els.optimalProductivityStartTimeButton.setAttribute("aria-label", `Choose optimal productivity start time, current ${startLabel}`);
+    if (startTimeValue) startTimeValue.textContent = startLabel;
+    if (endTimeValue) endTimeValue.textContent = endLabel;
+    if (startTimeButton) {
+      startTimeButton.setAttribute("aria-label", `Choose optimal productivity start time, current ${startLabel}`);
     }
-    if (els.optimalProductivityEndTimeButton) {
-      els.optimalProductivityEndTimeButton.setAttribute("aria-label", `Choose optimal productivity end time, current ${endLabel}`);
+    if (endTimeButton) {
+      endTimeButton.setAttribute("aria-label", `Choose optimal productivity end time, current ${endLabel}`);
     }
   }
 
   function openOptimalProductivityTimePicker(input: HTMLInputElement | null) {
     if (!input) return;
+    input.classList.add("isFallbackVisible");
     input.focus();
     const pickerInput = input as TimePickerInput;
     if (typeof pickerInput.showPicker === "function") {
@@ -782,20 +795,59 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         // Fall back to a visible native field when browser picker access is blocked.
       }
     }
-    input.classList.add("isFallbackVisible");
     window.setTimeout(() => input.focus(), 0);
   }
 
+  function getLiveElement<T extends HTMLElement>(id: string) {
+    return document.getElementById(id) as T | null;
+  }
+
+  function getOptimalProductivityStartTimeButton() {
+    return getLiveElement<HTMLButtonElement>("optimalProductivityStartTimeButton");
+  }
+
+  function getOptimalProductivityEndTimeButton() {
+    return getLiveElement<HTMLButtonElement>("optimalProductivityEndTimeButton");
+  }
+
+  function getOptimalProductivityStartTimeValue() {
+    return getLiveElement<HTMLElement>("optimalProductivityStartTimeValue");
+  }
+
+  function getOptimalProductivityEndTimeValue() {
+    return getLiveElement<HTMLElement>("optimalProductivityEndTimeValue");
+  }
+
+  function getOptimalProductivityStartTimeInput() {
+    return getLiveElement<HTMLInputElement>("optimalProductivityStartTimeInput");
+  }
+
+  function getOptimalProductivityEndTimeInput() {
+    return getLiveElement<HTMLInputElement>("optimalProductivityEndTimeInput");
+  }
+
+  function getOptimalProductivityDaysRow() {
+    return getLiveElement<HTMLElement>("optimalProductivityDaysRow");
+  }
+
+  function getOptimalProductivityDaysTrigger() {
+    return getLiveElement<HTMLButtonElement>("optimalProductivityDaysTrigger");
+  }
+
+  function getOptimalProductivityDaysSummary() {
+    return getLiveElement<HTMLElement>("optimalProductivityDaysSummary");
+  }
+
+  function getOptimalProductivityDaysMenu() {
+    return getLiveElement<HTMLElement>("optimalProductivityDaysMenu");
+  }
+
+  function getOptimalProductivityDaysAllBtn() {
+    return getLiveElement<HTMLButtonElement>("optimalProductivityDaysAllBtn");
+  }
+
   function getOptimalProductivityDayInputs() {
-    return [
-      els.optimalProductivityDaySun,
-      els.optimalProductivityDayMon,
-      els.optimalProductivityDayTue,
-      els.optimalProductivityDayWed,
-      els.optimalProductivityDayThu,
-      els.optimalProductivityDayFri,
-      els.optimalProductivityDaySat,
-    ].filter((input): input is HTMLInputElement => !!input);
+    return Array.from(document.querySelectorAll<HTMLInputElement>('input[data-optimal-productivity-day]'));
   }
 
   function getOptimalProductivityDayDisplayOrder() {
@@ -807,16 +859,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function syncOptimalProductivityDaysOrderUi() {
-    if (!els.optimalProductivityDaysMenu) return;
+    const menu = getOptimalProductivityDaysMenu();
+    if (!menu) return;
     const inputsByDay = new Map(
       getOptimalProductivityDayInputs().map((input) => [normalizeDashboardWeekStart(input.value), input] as const)
     );
     getOptimalProductivityDayDisplayOrder().forEach((day) => {
       const row = inputsByDay.get(day)?.closest(".chkRow");
-      if (row) els.optimalProductivityDaysMenu?.appendChild(row);
+      if (row) menu.appendChild(row);
     });
-    if (els.optimalProductivityDaysAllBtn) {
-      els.optimalProductivityDaysMenu.appendChild(els.optimalProductivityDaysAllBtn);
+    const allButton = getOptimalProductivityDaysAllBtn();
+    if (allButton) {
+      menu.appendChild(allButton);
     }
   }
 
@@ -833,45 +887,50 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function syncOptimalProductivityDaysUi() {
     const days = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
+    const trigger = getOptimalProductivityDaysTrigger();
+    const menu = getOptimalProductivityDaysMenu();
+    const summary = getOptimalProductivityDaysSummary();
+    const allButton = getOptimalProductivityDaysAllBtn();
     syncOptimalProductivityDaysOrderUi();
     getOptimalProductivityDayInputs().forEach((input) => {
       input.checked = days.includes(normalizeDashboardWeekStart(input.value));
     });
-    if (!els.optimalProductivityDaysTrigger) {
-      els.optimalProductivityDaysMenu?.removeAttribute("hidden");
+    if (!trigger) {
+      menu?.removeAttribute("hidden");
     }
-    if (els.optimalProductivityDaysSummary) {
-      els.optimalProductivityDaysSummary.textContent = buildOptimalProductivityDaysSummary(days);
+    if (summary) {
+      summary.textContent = buildOptimalProductivityDaysSummary(days);
     }
-    if (els.optimalProductivityDaysAllBtn) {
+    if (allButton) {
       const allSelected = days.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length;
-      els.optimalProductivityDaysAllBtn.classList.toggle("isSelected", allSelected);
-      els.optimalProductivityDaysAllBtn.setAttribute("aria-pressed", allSelected ? "true" : "false");
+      allButton.classList.toggle("isSelected", allSelected);
+      allButton.setAttribute("aria-pressed", allSelected ? "true" : "false");
     }
     syncTaskScheduleDaysHelper(els.addTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     syncTaskScheduleDaysHelper(els.editTaskOptimalProductivityDaysHelper as HTMLElement | null, days);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("tasktimer:optimal-productivity-days-changed"));
     }
-    if (els.optimalProductivityDaysTrigger) {
-      const expanded = !els.optimalProductivityDaysMenu?.hasAttribute("hidden");
-      els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (trigger) {
+      const expanded = !menu?.hasAttribute("hidden");
+      trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
     }
   }
 
   function closeOptimalProductivityDaysMenu() {
-    if (!els.optimalProductivityDaysTrigger) return;
-    if (els.optimalProductivityDaysMenu) els.optimalProductivityDaysMenu.setAttribute("hidden", "");
-    if (els.optimalProductivityDaysTrigger) els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", "false");
+    const trigger = getOptimalProductivityDaysTrigger();
+    if (!trigger) return;
+    getOptimalProductivityDaysMenu()?.setAttribute("hidden", "");
+    trigger.setAttribute("aria-expanded", "false");
   }
 
   function openOptimalProductivityDaysMenu() {
-    els.optimalProductivityDaysMenu?.removeAttribute("hidden");
-    if (els.optimalProductivityDaysTrigger) els.optimalProductivityDaysTrigger.setAttribute("aria-expanded", "true");
+    getOptimalProductivityDaysMenu()?.removeAttribute("hidden");
+    getOptimalProductivityDaysTrigger()?.setAttribute("aria-expanded", "true");
   }
 
   function toggleOptimalProductivityDaysMenu() {
-    if (els.optimalProductivityDaysMenu?.hasAttribute("hidden")) openOptimalProductivityDaysMenu();
+    if (getOptimalProductivityDaysMenu()?.hasAttribute("hidden")) openOptimalProductivityDaysMenu();
     else closeOptimalProductivityDaysMenu();
   }
 
@@ -907,6 +966,35 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       // ignore localStorage write failures
     }
     persistPreferencesToCloud();
+  }
+
+  function persistOptimalProductivityDaysFromInputs(changedInput?: HTMLInputElement | null, explicitDays?: unknown) {
+    const selectedDays =
+      explicitDays === undefined
+        ? getOptimalProductivityDayInputs()
+            .filter((checkbox) => checkbox.checked)
+            .map((checkbox) => normalizeDashboardWeekStart(checkbox.value))
+        : normalizeOptimalProductivityDays(explicitDays);
+    if (!selectedDays.length) {
+      if (changedInput) changedInput.checked = true;
+      syncOptimalProductivityDaysUi();
+      return;
+    }
+    applyOptimalProductivityDaysPreference(selectedDays);
+    saveOptimalProductivityDaysPreference();
+    ctx.render();
+  }
+
+  function persistOptimalProductivityPeriodField(field: "start" | "end", value: unknown, changedInput?: HTMLInputElement | null) {
+    changedInput?.classList.remove("isFallbackVisible");
+    const timeValue = typeof value === "string" ? value : "";
+    if (field === "start") {
+      applyOptimalProductivityPeriodPreference(timeValue || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME, ctx.getOptimalProductivityEndTime());
+    } else {
+      applyOptimalProductivityPeriodPreference(ctx.getOptimalProductivityStartTime(), timeValue || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME);
+    }
+    saveOptimalProductivityPeriodPreference();
+    ctx.render();
   }
 
   function setThemeMode(next: "lime") {
@@ -953,6 +1041,28 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(window, TASKTIMER_PLAN_CHANGED_EVENT, () => {
       syncThemeAvailabilityUi();
+    });
+    ctx.on(window, TASKTIMER_SETTINGS_PREFERENCES_ACTIVE_EVENT, () => {
+      syncTaskSettingsUi();
+    });
+    ctx.on(window, TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT, (event) => {
+      const detail = (event as CustomEvent<{ days?: unknown; inputId?: unknown }>).detail || {};
+      const inputId = typeof detail.inputId === "string" ? detail.inputId : "";
+      const changedInput = inputId ? (document.getElementById(inputId) as HTMLInputElement | null) : null;
+      persistOptimalProductivityDaysFromInputs(changedInput, detail.days);
+    });
+    ctx.on(window, TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT, (event) => {
+      const detail = (event as CustomEvent<{ field?: unknown; value?: unknown; inputId?: unknown }>).detail || {};
+      const field = detail.field === "end" ? "end" : "start";
+      const inputId = typeof detail.inputId === "string" ? detail.inputId : "";
+      const changedInput = inputId ? (document.getElementById(inputId) as HTMLInputElement | null) : null;
+      persistOptimalProductivityPeriodField(field, detail.value, changedInput);
+    });
+    ctx.on(window, TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_TIME_PICKER_OPEN_EVENT, (event) => {
+      const detail = (event as CustomEvent<{ field?: unknown }>).detail || {};
+      openOptimalProductivityTimePicker(
+        detail.field === "end" ? getOptimalProductivityEndTimeInput() : getOptimalProductivityStartTimeInput()
+      );
     });
     ctx.on(window, TASKTIMER_ONBOARDING_PREFERENCES_EVENT, (event) => {
       const detail = (event as CustomEvent<TaskTimerOnboardingPreferenceEventDetail>).detail;
@@ -1155,61 +1265,51 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         );
       });
     });
-    ctx.on(els.optimalProductivityStartTimeInput, "change", () => {
-      els.optimalProductivityStartTimeInput?.classList.remove("isFallbackVisible");
-      applyOptimalProductivityPeriodPreference(
-        els.optimalProductivityStartTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
-        ctx.getOptimalProductivityEndTime()
-      );
-      saveOptimalProductivityPeriodPreference();
-      ctx.render();
+    ctx.on(document, "change", (event) => {
+      const target = event.target as HTMLInputElement | null;
+      if (!target) return;
+      if (target.id === "optimalProductivityStartTimeInput") {
+        persistOptimalProductivityPeriodField("start", target.value, target);
+        return;
+      }
+      if (target.id === "optimalProductivityEndTimeInput") {
+        persistOptimalProductivityPeriodField("end", target.value, target);
+        return;
+      }
+      if (!target.matches?.('input[data-optimal-productivity-day]')) return;
+      persistOptimalProductivityDaysFromInputs(target);
     });
-    ctx.on(els.optimalProductivityEndTimeInput, "change", () => {
-      els.optimalProductivityEndTimeInput?.classList.remove("isFallbackVisible");
-      applyOptimalProductivityPeriodPreference(
-        ctx.getOptimalProductivityStartTime(),
-        els.optimalProductivityEndTimeInput?.value || DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-      );
-      saveOptimalProductivityPeriodPreference();
-      ctx.render();
-    });
-    ctx.on(els.optimalProductivityStartTimeButton, "click", () => {
-      openOptimalProductivityTimePicker(els.optimalProductivityStartTimeInput);
-    });
-    ctx.on(els.optimalProductivityEndTimeButton, "click", () => {
-      openOptimalProductivityTimePicker(els.optimalProductivityEndTimeInput);
+    ctx.on(document, "click", (event) => {
+      const target = event.target as HTMLElement | null;
+      const startTimeButton = target?.closest?.("#optimalProductivityStartTimeButton") as HTMLButtonElement | null;
+      if (startTimeButton) {
+        openOptimalProductivityTimePicker(getOptimalProductivityStartTimeInput());
+        return;
+      }
+      const endTimeButton = target?.closest?.("#optimalProductivityEndTimeButton") as HTMLButtonElement | null;
+      if (endTimeButton) {
+        openOptimalProductivityTimePicker(getOptimalProductivityEndTimeInput());
+        return;
+      }
+      const allDaysButton = target?.closest?.("#optimalProductivityDaysAllBtn") as HTMLButtonElement | null;
+      if (allDaysButton) {
+        applyOptimalProductivityDaysPreference(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
+        saveOptimalProductivityDaysPreference();
+        ctx.render();
+      }
     });
     ctx.on(window, "resize", () => {
       syncTaskSettingsUi();
     });
-    ctx.on(els.optimalProductivityDaysTrigger, "click", () => {
-      toggleOptimalProductivityDaysMenu();
-    });
     ctx.on(document, "click", (event) => {
-      const target = event.target as Node | null;
-      const row = els.optimalProductivityDaysRow as HTMLElement | null;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.("#optimalProductivityDaysTrigger")) {
+        toggleOptimalProductivityDaysMenu();
+        return;
+      }
+      const row = getOptimalProductivityDaysRow();
       if (!row || !target || row.contains(target)) return;
       closeOptimalProductivityDaysMenu();
-    });
-    getOptimalProductivityDayInputs().forEach((input) => {
-      ctx.on(input, "change", () => {
-        const selectedDays = getOptimalProductivityDayInputs()
-          .filter((checkbox) => checkbox.checked)
-          .map((checkbox) => normalizeDashboardWeekStart(checkbox.value));
-        if (!selectedDays.length) {
-          input.checked = true;
-          syncOptimalProductivityDaysUi();
-          return;
-        }
-        applyOptimalProductivityDaysPreference(selectedDays);
-        saveOptimalProductivityDaysPreference();
-        ctx.render();
-      });
-    });
-    ctx.on(els.optimalProductivityDaysAllBtn, "click", () => {
-      applyOptimalProductivityDaysPreference(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
-      saveOptimalProductivityDaysPreference();
-      ctx.render();
     });
     ctx.on(els.taskSettingsSaveBtn, "click", () => {
       saveWeekStartingPreference();

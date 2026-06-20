@@ -203,6 +203,20 @@ describe("dashboard task overview label layout", () => {
       Math.abs(endpoint.y - (layout.rect.y + layout.rect.height)) < 0.02).toBe(true);
   });
 
+  it("keeps dense micro labels from overlapping after local slot fallback", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "a", sliceStartPct: 0, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+      { key: "b", sliceStartPct: 1.6, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+      { key: "c", sliceStartPct: 3.2, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+      { key: "d", sliceStartPct: 4.8, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+      { key: "e", sliceStartPct: 6.4, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+      { key: "f", sliceStartPct: 8, slicePct: 1.4, labelWidth: 54, labelHeight: 24 },
+    ]);
+
+    expect(layouts).toHaveLength(6);
+    expectNoRectOverlaps(layouts);
+  });
+
   it("routes connector bends outside the donut ring before angling to labels", () => {
     const layouts = buildDashboardTasksCompletedLabelLayout([
       { key: "top", sliceStartPct: 0, slicePct: 10 },

@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
 const EMAIL_SUBJECT = "Early Access List";
 const EARLY_ACCESS_ABOUT_URL = "https://tasklaunch.app/about";
-const EARLY_ACCESS_LOGO_URL = "https://tasklaunch.app/logo/launch-icon-original-transparent.png";
+const EARLY_ACCESS_LOGO_URL = "https://tasklaunch.app/logo/tasklaunch-logo.webp";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";

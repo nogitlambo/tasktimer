@@ -105,18 +105,28 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
         const sessionNote = options.captureResetActionSessionNote(taskId);
         if (sessionNote) options.setFocusSessionDraft(taskId, sessionNote);
         try {
+          const currentTasks = options.getTasks();
+          const taskAtIndex = currentTasks[index];
+          const resetTarget =
+            taskAtIndex && String(taskAtIndex.id || "").trim() === taskId.trim()
+              ? taskAtIndex
+              : currentTasks.find((entry) => String(entry?.id || "").trim() === taskId.trim()) || task;
+          clearTaskTimeGoalCompletionState(resetTarget);
+          options.resetTaskStateImmediate(resetTarget, { logHistory: true, sessionNote });
           if (rewardPreview.awardedXp > 0 && typeof window !== "undefined") {
-            dispatchPendingXpAwardEvent(window, {
-              ...rewardPreview,
-              sourceModal: "resetConfirm",
-              sourceTaskId: taskId || null,
-              sourceOverlayId: "confirmOverlay",
-              sourceElementKey: "confirmResetTaskAwardText",
-              sourceRect: captureXpAwardRectSnapshot(document.getElementById("confirmResetTaskAwardText")),
-            });
+            try {
+              dispatchPendingXpAwardEvent(window, {
+                ...rewardPreview,
+                sourceModal: "resetConfirm",
+                sourceTaskId: taskId || null,
+                sourceOverlayId: "confirmOverlay",
+                sourceElementKey: "confirmResetTaskAwardText",
+                sourceRect: captureXpAwardRectSnapshot(document.getElementById("confirmResetTaskAwardText")),
+              });
+            } catch {
+              // XP animation is cosmetic; reset state must remain authoritative.
+            }
           }
-          clearTaskTimeGoalCompletionState(task);
-          options.resetTaskStateImmediate(task, { logHistory: true, sessionNote });
           options.save({ forceCloudFlush: true });
           options.closeConfirm();
           if (shouldExitFocusModeAfterReset) options.closeFocusMode();

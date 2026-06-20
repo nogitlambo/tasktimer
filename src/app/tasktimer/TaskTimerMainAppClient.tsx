@@ -48,6 +48,7 @@ import {
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   formatWeeklyLeaderboardUtcPeriodLabel,
+  formatWeeklyLeaderboardUtcPeriodTitle,
   getWeeklyLeaderboardUtcPeriod,
   getLeaderboardAvatarSrc,
   getLeaderboardInitials,
@@ -141,6 +142,10 @@ function formatLeaderboardTrend(xpRaw: number): string {
 
 function formatWeeklyLeaderboardPeriod(nowMs = Date.now()): string {
   return formatWeeklyLeaderboardUtcPeriodLabel(nowMs);
+}
+
+function formatWeeklyLeaderboardPeriodTitle(nowMs = Date.now()): string {
+  return formatWeeklyLeaderboardUtcPeriodTitle(nowMs);
 }
 
 function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string {
@@ -877,6 +882,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const weeklyTableRows = weeklyRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasWeeklyRows = weeklyRows.length > 0;
   const weeklyPeriodLabel = formatWeeklyLeaderboardPeriod(leaderboardClockMs);
+  const weeklyPeriodTitle = formatWeeklyLeaderboardPeriodTitle(leaderboardClockMs);
   const weeklyPeriodRemainingLabel = formatWeeklyLeaderboardTimeRemaining(leaderboardClockMs);
   const globalRows = useMemo(() => {
     return buildGlobalLeaderboardRows({
@@ -916,6 +922,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     : getLeaderboardInitials(hydratedCurrentUserProfileLabel || "User");
   const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
   const currentUserRankLabel = hydratedCurrentUserEntry ? getLeaderboardRankLabel(hydratedCurrentUserEntry) : "your rank";
+  const currentUserRankId = hydratedCurrentUserEntry ? getLeaderboardResolvedRank(hydratedCurrentUserEntry).id : "";
+  const rankRivalsTitle = hydratedCurrentUserEntry ? `${currentUserRankLabel} Ranks` : "Rank Rivals";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -1160,7 +1168,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       >
                   <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. ${weeklyPeriodLabel}`}>
                     <div className="leaderboardWeeklyPeriodOverlay" aria-label={`${weeklyPeriodLabel}. ${weeklyPeriodRemainingLabel}.`}>
-                      <span className="leaderboardWeeklyPeriodTitle">Week Period</span>
+                      <span className="leaderboardWeeklyPeriodTitle">{weeklyPeriodTitle}</span>
                       <span className="leaderboardWeeklyPeriodCountdown">{weeklyPeriodRemainingLabel}</span>
                     </div>
                     {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
@@ -1222,6 +1230,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   {leaderboardState === "ready" && hasRivalRows ? (
                     <>
                       <div className="leaderboardGlobalStage" aria-label={`Rank Rivals ladder for ${currentUserRankLabel}.`}>
+                        <div className="leaderboardRivalsTitleOverlay" aria-hidden="true">
+                          <span className="leaderboardRivalsTitle">{rankRivalsTitle}</span>
+                          {currentUserRankId ? (
+                            <RankThumbnail
+                              rankId={currentUserRankId}
+                              storedThumbnailSrc=""
+                              className="leaderboardRivalsTitleInsignia"
+                              imageClassName="leaderboardRivalsTitleInsigniaImg"
+                              placeholderClassName="leaderboardRivalsTitleInsigniaPlaceholder"
+                              alt=""
+                              size={34}
+                              aria-hidden
+                            />
+                          ) : null}
+                        </div>
                         {rivalPodiumRows.map((row) => (
                           <button
                             className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
@@ -1282,6 +1305,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   {leaderboardState === "ready" && hasGlobalRows ? (
                     <>
                       <div className="leaderboardGlobalStage" aria-label="Global ladder. Top XP earners of all time.">
+                        <div className="leaderboardGlobalTitleOverlay" aria-hidden="true">
+                          <span className="leaderboardGlobalTitle">Global Leaderboard</span>
+                        </div>
                         {globalPodiumRows.map((row) => (
                           <button
                             className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}

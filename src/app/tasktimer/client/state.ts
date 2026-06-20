@@ -129,7 +129,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskOnceOffDay: "mon",
     addTaskPlannedStartTime: "09:00",
     addTaskDurationValue: 5,
-    addTaskDurationUnit: "hour",
+    addTaskDurationUnit: "minute",
     addTaskDurationPeriod: "day",
     focusSessionNotesByTaskId: {},
     addTaskNoTimeGoal: false,

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import type { Task } from "../lib/types";
+import type { LiveSessionsByTaskId, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import type { TaskTimerSessionContext } from "./context";
 import type { TaskTimerRuntime } from "./runtime";
@@ -96,6 +96,9 @@ function createCompletionHarness(options?: {
   withCheckpoint?: boolean;
   focusModeTaskId?: string | null;
   timeGoalModalTaskId?: string | null;
+  taskOverrides?: Partial<Task>;
+  liveSessionsByTaskId?: LiveSessionsByTaskId;
+  localStorageValues?: Record<string, string | null>;
   achievementSoundsEnabled?: boolean;
   interactionHapticsEnabled?: boolean;
   interactionHapticsIntensity?: "max" | "medium" | "low";
@@ -113,6 +116,7 @@ function createCompletionHarness(options?: {
     timeGoalEnabled: true,
     timeGoalMinutes: 1,
     timeGoalPeriod: "day",
+    ...options?.taskOverrides,
   });
   const checkpointToastQueue = (options?.queuedToastTaskIds || []).map((taskId, index) => ({
     id: `queued-${index}`,
@@ -182,7 +186,7 @@ function createCompletionHarness(options?: {
     clearTimeout,
     localStorage: {
       setItem: vi.fn(),
-      getItem: vi.fn(() => null),
+      getItem: vi.fn((key: string) => options?.localStorageValues?.[key] ?? null),
       removeItem: vi.fn(),
     },
     matchMedia: vi.fn(() => ({
@@ -320,7 +324,7 @@ function createCompletionHarness(options?: {
     setTimeGoalModalFrozenElapsedMs: (value: number) => {
       timeGoalModalFrozenElapsedMs = value;
     },
-    getLiveSessionsByTaskId: () => ({}),
+    getLiveSessionsByTaskId: () => options?.liveSessionsByTaskId || {},
     getTaskTimeGoalAction: () => "confirmModal",
     getFocusShowCheckpoints: () => false,
     setFocusShowCheckpoints: (value: boolean) => {
@@ -461,6 +465,87 @@ describe("task timer session tick", () => {
         "tasktimer:time-goal-ack",
         expect.stringContaining("task-1")
       );
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("does not restore a synced completed task without a local pending completion flow", () => {
+    const completedAtMs = Date.now();
+    const harness = createCompletionHarness({
+      taskOverrides: {
+        accumulatedMs: 0,
+        running: false,
+        startMs: null,
+        timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+        timeGoalCompletedAtMs: completedAtMs,
+        timeGoalCompletedReason: "goal",
+        timeGoalCompletedElapsedMs: 60_000,
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow();
+
+      expect(harness.openOverlay).not.toHaveBeenCalled();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("restores a local pending completion flow for an overdue running task", () => {
+    const harness = createCompletionHarness({
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - 60_000,
+          elapsedMs: 0,
+          resumedFromMs: 0,
+          status: "running",
+          updatedAtMs: Date.now(),
+        },
+      },
+      localStorageValues: {
+        "tasktimer:time-goal": JSON.stringify({
+          taskId: "task-1",
+          step: "main",
+          frozenElapsedMs: 60_000,
+          reminder: false,
+        }),
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow();
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("opens the completion modal for an overdue running task without a local pending flow", () => {
+    const harness = createCompletionHarness({
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - 60_000,
+          elapsedMs: 0,
+          resumedFromMs: 0,
+          status: "running",
+          updatedAtMs: Date.now(),
+        },
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow();
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
     } finally {
       harness.restoreWindow();
     }

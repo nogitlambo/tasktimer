@@ -408,7 +408,7 @@ export default function TaskTimerAppFrame({
         <div className="brand landingV2FooterBrand appBrandLandingReplica displayFont">
           <AppImg
             className="landingV2HeaderBrandIcon appBrandLandingReplicaIcon"
-            src="/logo/launch-icon-original-transparent.png"
+            src="/logo/tasklaunch-logo.webp"
             alt=""
           />
           <span className="appBrandLandingReplicaText">TaskLaunch</span>
