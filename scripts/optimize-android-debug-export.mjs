@@ -4,6 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const outDir = path.join(root, "out");
+const redirectOnly = process.argv.includes("--redirect-only");
 
 const appLaunchRedirectHtml = `<!doctype html>
 <html lang="en">
@@ -128,6 +129,11 @@ async function main() {
 
   const beforeBytes = await directorySizeBytes(outDir);
   await writeNativeRootRedirect();
+
+  if (redirectOnly) {
+    console.log("Applied Android native root redirect.");
+    return;
+  }
 
   let removedCount = 0;
   for (const relativePath of pruneRelativePaths) {
