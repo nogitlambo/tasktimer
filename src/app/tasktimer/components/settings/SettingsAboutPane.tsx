@@ -18,7 +18,7 @@ export function SettingsAboutPane({ active, exiting = false }: { active: boolean
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsDetailNote">Version: {APP_VERSION}</div>
-          <div className="settingsDetailNote">Release Date: 17th May 2026</div>
+          <div className="settingsDetailNote">Release Date: 21st June 2026</div>
           <ul className="settingsDataList settingsAboutLinkList">
             <li>
               <a

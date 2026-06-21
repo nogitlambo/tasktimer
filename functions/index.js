@@ -1267,6 +1267,8 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
       nextPlannedStartDueAtMs: null,
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
+  } else {
+    await reschedulePlannedStart(nowMs);
   }
 
   return response;
