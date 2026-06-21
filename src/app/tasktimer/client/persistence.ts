@@ -14,6 +14,32 @@ type TaskUiCacheShape = {
   historyRangeModeByTaskId?: Record<string, unknown>;
 } | null;
 
+function normalizeTaskId(task: Task | null | undefined): string {
+  return String(task?.id || "").trim();
+}
+
+function getTaskObservedElapsedMs(task: Task | null | undefined, nowValue: number): number {
+  if (!task) return 0;
+  const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+  if (!task.running) return accumulatedMs;
+  const startMs = Math.max(0, Math.floor(Number(task.startMs || 0) || 0));
+  return accumulatedMs + (startMs > 0 ? Math.max(0, nowValue - startMs) : 0);
+}
+
+function preserveLocalRunningTimerIfAhead(snapshotTask: Task, localTask: Task | null | undefined, nowValue: number): Task {
+  const taskId = normalizeTaskId(snapshotTask);
+  if (!taskId || !localTask?.running || normalizeTaskId(localTask) !== taskId) return snapshotTask;
+  if (getTaskObservedElapsedMs(localTask, nowValue) <= getTaskObservedElapsedMs(snapshotTask, nowValue)) return snapshotTask;
+  return {
+    ...snapshotTask,
+    accumulatedMs: localTask.accumulatedMs,
+    running: true,
+    startMs: localTask.startMs,
+    hasStarted: localTask.hasStarted || snapshotTask.hasStarted,
+    resumePendingSinceDayKey: localTask.resumePendingSinceDayKey ?? null,
+  };
+}
+
 type CreateTaskTimerPersistenceOptions = {
   workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "loadTimerStateSnapshot" | "saveTasks">;
   historyPersistence: TaskTimerWorkspaceHistoryPersistence;
@@ -105,18 +131,22 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
   function applyTaskSnapshot(snapshot: Pick<TaskTimerWorkspaceSnapshot, "tasks" | "liveSessionsByTaskId">) {
     const loaded = snapshot.tasks;
     const liveSessionsByTaskId = snapshot.liveSessionsByTaskId;
+    const nowValue = Math.max(0, Math.floor(Number((options.nowMs || Date.now)()) || 0));
     options.setLiveSessionsByTaskId(liveSessionsByTaskId);
     if (!loaded || !Array.isArray(loaded) || loaded.length === 0) {
       options.setTasks([]);
       return;
     }
-    const migratedTasks = loaded.filter((task) => {
-      if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
-      return true;
-    });
-    const liveSessionResult = applyLiveSessionsToTasksWithCompletions(migratedTasks, liveSessionsByTaskId, options.nowMs || Date.now);
+    const currentTasksById = new Map(options.getTasks().map((task) => [normalizeTaskId(task), task]));
+    const migratedTasks = loaded
+      .filter((task) => {
+        if (options.normalizeLoadedTask) options.normalizeLoadedTask(task);
+        return true;
+      })
+      .map((task) => preserveLocalRunningTimerIfAhead(task, currentTasksById.get(normalizeTaskId(task)), nowValue));
+    const liveSessionResult = applyLiveSessionsToTasksWithCompletions(migratedTasks, liveSessionsByTaskId, () => nowValue);
     const tasksWithLiveSessions = liveSessionResult.tasks;
-    const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, (options.nowMs || Date.now)());
+    const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, nowValue);
     options.setTasks(tasksWithLiveSessions);
     liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
       const completedTask = tasksWithLiveSessions.find((row) => String(row.id || "").trim() === completion.taskId);

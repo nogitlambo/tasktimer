@@ -294,8 +294,13 @@ function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
 function normalizeTaskShape(task: Task | null | undefined): Task | null {
   if (!task) return null;
   const timeGoalAction = "confirmModal";
-  const taskWithoutMode = { ...(task as Task & { mode?: unknown; xpDisqualifiedUntilReset?: unknown }) };
+  const taskWithoutMode = { ...(task as Task & { mode?: unknown; elapsed?: unknown; xpDisqualifiedUntilReset?: unknown }) };
+  const accumulatedMs = [taskWithoutMode.accumulatedMs, taskWithoutMode.elapsed].reduce<number>((max, value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(max, Math.floor(numeric)) : max;
+  }, 0);
   delete taskWithoutMode.mode;
+  delete taskWithoutMode.elapsed;
   delete taskWithoutMode.xpDisqualifiedUntilReset;
   const plannedStartDayRaw = String(task.plannedStartDay || "").trim().toLowerCase();
   const plannedStartDay =
@@ -310,6 +315,8 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
       : null;
   const normalizedTask: Task = {
     ...taskWithoutMode,
+    accumulatedMs,
+    hasStarted: !!task.hasStarted || accumulatedMs > 0,
     taskType: task.taskType === "once-off" ? "once-off" : "recurring",
     onceOffDay: task.taskType === "once-off" ? plannedStartDay : null,
     onceOffTargetDate: task.taskType === "once-off" ? normalizeLocalDateValue(task.onceOffTargetDate) : null,

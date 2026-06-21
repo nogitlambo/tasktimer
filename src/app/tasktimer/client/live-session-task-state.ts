@@ -23,6 +23,20 @@ function getDailyTimeGoalMs(task: Task | null | undefined): number {
   return goalMinutes > 0 ? Math.max(0, Math.round(goalMinutes * 60_000)) : 0;
 }
 
+function getRunningTaskObservedElapsedMs(task: Task | null | undefined, nowValue: number): number {
+  if (!task?.running) return 0;
+  const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+  const startMs = Math.max(0, Math.floor(Number(task.startMs || 0) || 0));
+  return accumulatedMs + (startMs > 0 ? Math.max(0, nowValue - startMs) : 0);
+}
+
+function getLiveSessionObservedElapsedMs(liveSession: LiveSessionsByTaskId[string] | null | undefined, nowValue: number): number {
+  if (!liveSession) return 0;
+  const elapsedMs = Math.max(0, Math.floor(Number(liveSession.elapsedMs || 0) || 0));
+  const updatedAtMs = safeTimestamp(liveSession.updatedAtMs, safeTimestamp(liveSession.startedAtMs, nowValue));
+  return elapsedMs + Math.max(0, nowValue - updatedAtMs);
+}
+
 function hasStoppedSessionState(task: Task | null | undefined): boolean {
   if (!task || task.running) return false;
   const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
@@ -95,6 +109,7 @@ export function applyLiveSessionsToTasksWithCompletions(
     }
 
     if (isTaskTimeGoalStartLockedToday(task, nowValue)) return task;
+    if (getRunningTaskObservedElapsedMs(task, nowValue) > getLiveSessionObservedElapsedMs(liveSession, nowValue)) return task;
 
     const updatedAtMs = Math.max(
       0,

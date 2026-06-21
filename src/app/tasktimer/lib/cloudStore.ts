@@ -1162,6 +1162,13 @@ function asTaskUi(input: unknown): TaskUiConfig | null {
 function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Task {
   const row: Record<string, unknown> = { ...raw };
   row.id = typeof row.id === "string" && row.id ? row.id : taskId;
+  const accumulatedMs = [row.accumulatedMs, row.elapsed].reduce<number>((max, value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(max, Math.floor(numeric)) : max;
+  }, 0);
+  row.accumulatedMs = accumulatedMs;
+  row.hasStarted = !!row.hasStarted || accumulatedMs > 0;
+  delete row.elapsed;
   delete row.xpDisqualifiedUntilReset;
 
   const checkpointsEnabled = row.checkpointsEnabled;

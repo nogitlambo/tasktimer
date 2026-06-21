@@ -47,4 +47,25 @@ describe("createTaskTimerSharedTask checkpoint validation", () => {
 
     expect(task.createdAtMs).toBe(7);
   });
+
+  it("preserves legacy elapsed time when accumulated time is missing", () => {
+    const task = {
+      id: "task-1",
+      name: "Focus",
+      order: 1,
+      accumulatedMs: 0,
+      elapsed: 45_000,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestones: [],
+      hasStarted: false,
+    } as Task & { elapsed: number };
+
+    sharedTasks.normalizeLoadedTask(task);
+
+    expect(task.accumulatedMs).toBe(45_000);
+    expect(task.hasStarted).toBe(true);
+  });
 });

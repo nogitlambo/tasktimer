@@ -40,6 +40,33 @@ describe("applyLiveSessionsToTasks", () => {
     });
   });
 
+  it("does not let a stale zero live session clear local resumed elapsed time", () => {
+    const source = task({
+      accumulatedMs: 5 * 60_000,
+      running: true,
+      startMs: 5000,
+      hasStarted: true,
+    });
+    const liveSessionsByTaskId: LiveSessionsByTaskId = {
+      "task-1": {
+        sessionId: "task-1:1000",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs: 1000,
+        updatedAtMs: 4000,
+        elapsedMs: 0,
+        status: "running",
+      },
+    };
+
+    expect(applyLiveSessionsToTasks([source], liveSessionsByTaskId, () => 6000)[0]).toMatchObject({
+      accumulatedMs: 5 * 60_000,
+      running: true,
+      startMs: 5000,
+      hasStarted: true,
+    });
+  });
+
   it("ignores stale running live sessions for a task that was stopped before completion", () => {
     const source = task({
       accumulatedMs: 30 * 60_000,

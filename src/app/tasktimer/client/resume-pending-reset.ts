@@ -36,10 +36,9 @@ export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now()
     }
 
     if (marker < todayKey) {
-      task.accumulatedMs = 0;
       task.startMs = null;
-      task.hasStarted = false;
-      task.resumePendingSinceDayKey = null;
+      task.hasStarted = true;
+      task.resumePendingSinceDayKey = todayKey;
       if (taskId) changedTaskIds.push(taskId);
     } else if (task.resumePendingSinceDayKey !== marker) {
       task.resumePendingSinceDayKey = marker;

@@ -472,6 +472,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       resumedFromMsOverride != null && Number.isFinite(Number(resumedFromMsOverride))
         ? Math.max(0, Math.floor(Number(resumedFromMsOverride) || 0))
         : Math.max(0, Math.floor(Number(existing?.resumedFromMs || 0) || 0));
+    const sessionElapsedMs = Math.max(elapsedMs, resumedFromMs);
     const note = String(noteOverride || getCurrentSessionNoteForTask(taskId) || "").trim();
     const attachments = normalizeSessionNoteAttachments(
       attachmentsOverride != null ? attachmentsOverride : existing?.attachments
@@ -481,11 +482,11 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       taskId,
       name: String(task.name || "").trim() || "Task",
       startedAtMs,
-      elapsedMs,
+      elapsedMs: sessionElapsedMs,
       ...(resumedFromMs > 0 ? { resumedFromMs } : {}),
       updatedAtMs: nowMs(),
       status: "running",
-      color: ctx.historyEntryColorForTaskMs(task, elapsedMs),
+      color: ctx.historyEntryColorForTaskMs(task, sessionElapsedMs),
       ...(note ? { note } : {}),
       ...(attachments.length ? { attachments } : {}),
     };

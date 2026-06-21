@@ -335,4 +335,22 @@ describe("createTaskTimerImportExport task settings round-trip", () => {
       plannedStartPushRemindersEnabled: true,
     });
   });
+
+  it("imports legacy elapsed task time as accumulated time", async () => {
+    const harness = makeHarness();
+
+    await importPayload(harness, {
+      schema: "taskticka_backup_v1",
+      tasks: [{ name: "Legacy Timer", elapsed: 45_000, accumulatedMs: 0, hasStarted: false }],
+      history: {},
+    });
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      name: "Legacy Timer",
+      accumulatedMs: 45_000,
+      hasStarted: true,
+      running: false,
+      startMs: null,
+    });
+  });
 });

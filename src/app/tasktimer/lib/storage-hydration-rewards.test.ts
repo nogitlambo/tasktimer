@@ -409,6 +409,16 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(cloudStoreMocks.saveTask).not.toHaveBeenCalledWith("uid-1", expect.objectContaining({ id: "guest-task-1" }));
   });
 
+  it("loads legacy elapsed task time as accumulated time", () => {
+    saveTasks([task("task-1", "Focus", { accumulatedMs: 0, elapsed: 45_000, hasStarted: false })]);
+
+    expect(loadTasks()?.[0]).toMatchObject({
+      id: "task-1",
+      accumulatedMs: 45_000,
+      hasStarted: true,
+    });
+  });
+
   it("skips cloud task writes when task signatures are unchanged", async () => {
     const existingTask = task("task-1", "Focus");
 

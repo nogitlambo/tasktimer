@@ -19,7 +19,7 @@ function task(overrides: Partial<Task> = {}): Task {
 }
 
 describe("reconcileResumePendingTasks", () => {
-  it("silently resets stopped resumable tasks from a prior local day", () => {
+  it("keeps stopped resumable tasks from a prior local day available to resume", () => {
     const entry = task({
       accumulatedMs: 30_000,
       hasStarted: true,
@@ -30,11 +30,11 @@ describe("reconcileResumePendingTasks", () => {
 
     expect(result.changedTaskIds).toEqual(["task-1"]);
     expect(entry).toMatchObject({
-      accumulatedMs: 0,
+      accumulatedMs: 30_000,
       running: false,
       startMs: null,
-      hasStarted: false,
-      resumePendingSinceDayKey: null,
+      hasStarted: true,
+      resumePendingSinceDayKey: "2026-05-03",
     });
   });
 

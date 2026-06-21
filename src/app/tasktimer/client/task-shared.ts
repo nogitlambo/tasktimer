@@ -21,6 +21,14 @@ function normalizePlannedStartDay(
     : null;
 }
 
+function normalizeElapsedMs(...values: unknown[]): number {
+  return values.reduce<number>((max, value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return max;
+    return Math.max(max, Math.floor(numeric));
+  }, 0);
+}
+
 type TaskTimerSharedTaskContext = {
   createId: () => string;
   getEditTimeGoalDraft?: () => {
@@ -111,9 +119,12 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
   function normalizeLoadedTask(task: Task) {
     const taskWithMode = task as Task & {
       mode?: string;
+      elapsed?: unknown;
       finalCheckpointAction?: Task["timeGoalAction"];
     };
     delete taskWithMode.mode;
+    task.accumulatedMs = normalizeElapsedMs(task.accumulatedMs, taskWithMode.elapsed);
+    if (task.accumulatedMs > 0) task.hasStarted = true;
     if (task.milestoneTimeUnit !== "hour" && task.milestoneTimeUnit !== "minute") {
       task.milestoneTimeUnit = "hour";
     }

@@ -9,6 +9,12 @@ const firestoreMocks = vi.hoisted(() => ({
     data: () => undefined,
     get: () => undefined,
   })),
+  getDocs: vi.fn(async (ref?: { path?: string }) => {
+    void ref;
+    return {
+      docs: [] as Array<{ id: string; data: () => Record<string, unknown> }>,
+    };
+  }),
   deleteDoc: vi.fn(async () => undefined),
 }));
 
@@ -17,7 +23,7 @@ vi.mock("firebase/firestore", () => ({
   deleteDoc: firestoreMocks.deleteDoc,
   doc: vi.fn((_db, ...parts: string[]) => ({ path: parts.join("/") })),
   getDoc: firestoreMocks.getDoc,
-  getDocs: vi.fn(async () => ({ docs: [] })),
+  getDocs: firestoreMocks.getDocs,
   onSnapshot: vi.fn(() => vi.fn()),
   query: vi.fn((value) => value),
   serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
@@ -37,7 +43,7 @@ vi.mock("@/lib/firebaseClient", () => ({
   getFirebaseAuthClient: vi.fn(() => ({ currentUser: null })),
 }));
 
-const { saveTask } = await import("./cloudStore");
+const { loadUserWorkspace, saveTask } = await import("./cloudStore");
 
 function findSetDocWrite(path: string): Record<string, unknown> | undefined {
   const calls = firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>, unknown?]>;
@@ -65,6 +71,8 @@ describe("saveTask Firestore planned start payloads", () => {
   beforeEach(() => {
     firestoreMocks.setDoc.mockClear();
     firestoreMocks.getDoc.mockClear();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDocs.mockResolvedValue({ docs: [] });
     firestoreMocks.deleteDoc.mockClear();
   });
 
@@ -96,5 +104,40 @@ describe("saveTask Firestore planned start payloads", () => {
       plannedStartTime: "09:00",
       plannedStartByDay: { mon: "09:00", wed: "09:00", fri: "09:00" },
     }));
+  });
+
+  it("maps legacy elapsed cloud task time into accumulated time", async () => {
+    firestoreMocks.getDocs.mockImplementation(async (ref?: { path?: string }) => {
+      if (ref?.path === "users/user-1/tasks") {
+        return {
+          docs: [
+            {
+              id: "task-1",
+              data: () => ({
+                name: "Legacy Timer",
+                order: 1,
+                accumulatedMs: 0,
+                elapsed: 45_000,
+                running: false,
+                startMs: null,
+                collapsed: false,
+                milestonesEnabled: false,
+                milestones: [],
+                hasStarted: false,
+              }),
+            },
+          ],
+        };
+      }
+      return { docs: [] };
+    });
+
+    const snapshot = await loadUserWorkspace("user-1");
+
+    expect(snapshot.tasks[0]).toMatchObject({
+      id: "task-1",
+      accumulatedMs: 45_000,
+      hasStarted: true,
+    });
   });
 });

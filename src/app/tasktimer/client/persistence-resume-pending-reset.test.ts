@@ -159,14 +159,14 @@ function createHarness(
 }
 
 describe("task timer persistence resume-pending cleanup", () => {
-  it("cleans stale stopped resumable tasks during task snapshot load", () => {
+  it("keeps stale stopped resumable tasks available during task snapshot load", () => {
     const harness = createHarness([
       task({ accumulatedMs: 30_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-02" }),
     ]);
 
     harness.api.load();
 
-    expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 0, hasStarted: false, resumePendingSinceDayKey: null });
+    expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 30_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-03" });
     expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });

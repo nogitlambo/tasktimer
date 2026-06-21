@@ -56,6 +56,13 @@ function normalizeNonNegativeNumber(raw: unknown) {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
+function normalizeTaskElapsedValue(rawTask: Record<string, unknown>) {
+  return Math.max(
+    normalizeNonNegativeNumber(rawTask.accumulatedMs),
+    normalizeNonNegativeNumber(rawTask.elapsed)
+  );
+}
+
 export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
   const { els } = ctx;
 
@@ -188,7 +195,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       Number.isFinite(Number(rawTask.createdAtMs)) && Number(rawTask.createdAtMs) > 0
         ? Math.floor(Number(rawTask.createdAtMs))
         : Math.max(0, Math.floor(Number(nextTask.order) || 0));
-    nextTask.accumulatedMs = Number.isFinite(+rawTask.accumulatedMs) ? Math.max(0, +rawTask.accumulatedMs) : 0;
+    nextTask.accumulatedMs = normalizeTaskElapsedValue(rawTask);
     nextTask.running = false;
     nextTask.startMs = null;
     nextTask.collapsed = !!rawTask.collapsed;
@@ -204,7 +211,7 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
         }))
       : [];
     nextTask.milestones = ctx.sortMilestones(nextTask.milestones);
-    nextTask.hasStarted = !!rawTask.hasStarted;
+    nextTask.hasStarted = !!rawTask.hasStarted || nextTask.accumulatedMs > 0;
     nextTask.checkpointSoundEnabled = !!rawTask.checkpointSoundEnabled;
     nextTask.checkpointSoundMode = rawTask.checkpointSoundMode === "repeat" ? "repeat" : "once";
     nextTask.checkpointToastEnabled =
@@ -252,8 +259,8 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     }
     syncLegacyPlannedStartFields(nextTask);
     nextTask.color = rawTask.color ? String(rawTask.color) : null;
-    nextTask.accumulatedMs = normalizeNonNegativeNumber(rawTask.accumulatedMs);
-    nextTask.hasStarted = !!rawTask.hasStarted;
+    nextTask.accumulatedMs = normalizeTaskElapsedValue(rawTask);
+    nextTask.hasStarted = !!rawTask.hasStarted || nextTask.accumulatedMs > 0;
     nextTask.createdAtMs =
       Number.isFinite(Number(rawTask.createdAtMs)) && Number(rawTask.createdAtMs) > 0
         ? Math.floor(Number(rawTask.createdAtMs))

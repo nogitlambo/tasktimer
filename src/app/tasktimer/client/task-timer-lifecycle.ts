@@ -78,6 +78,19 @@ type TaskTimerLifecycleOptions = {
 };
 
 export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleCommandAdapters): TaskTimerLifecycleCommands {
+  function getTaskResumeBaselineMs(task: Task) {
+    const legacyElapsedMs = Number((task as Task & { elapsed?: unknown }).elapsed);
+    return Math.max(
+      0,
+      Math.floor(
+        Math.max(
+          Number.isFinite(Number(task.accumulatedMs)) ? Number(task.accumulatedMs) : 0,
+          Number.isFinite(legacyElapsedMs) ? legacyElapsedMs : 0
+        )
+      )
+    );
+  }
+
   function persistTaskTimerCommand(taskId: string) {
     options.save({ forceCloudFlush: true });
     void options.syncSharedTaskSummariesForTask(taskId).catch(() => {});
@@ -86,16 +99,17 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
 
   function startTaskTimer(task: Task, index: number, startMs: number) {
     const taskId = String(task.id || "");
-    const previousElapsedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
+    const previousElapsedMs = getTaskResumeBaselineMs(task);
     const hadElapsedBeforeStart = previousElapsedMs > 0;
     options.clearTaskTimeGoalFlow(taskId);
     options.flushPendingFocusSessionNoteSave(taskId);
+    task.accumulatedMs = previousElapsedMs;
     task.running = true;
     task.startMs = startMs;
     task.hasStarted = true;
     task.resumePendingSinceDayKey = null;
     options.openRewardSessionSegment(task, startMs);
-    options.upsertLiveSession(task, { elapsedMs: 0, resumedFromMs: previousElapsedMs, forceCloudFlush: true, reason: "start" });
+    options.upsertLiveSession(task, { elapsedMs: previousElapsedMs, resumedFromMs: previousElapsedMs, forceCloudFlush: true, reason: "start" });
     void showNativeRunningTimerNotification({
       taskId,
       taskName: String(task.name || "Task"),

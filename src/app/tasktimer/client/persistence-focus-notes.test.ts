@@ -21,6 +21,7 @@ function task(overrides: Partial<Task> = {}): Task {
 function createHarness(overrides?: {
   liveSessionsByTaskId?: LiveSessionsByTaskId;
   loadedDrafts?: Record<string, string>;
+  initialTasks?: Task[];
   snapshotTasks?: Task[];
 }) {
   const localStorageValues = new Map<string, string>();
@@ -39,7 +40,7 @@ function createHarness(overrides?: {
   if (overrides?.loadedDrafts && Object.keys(overrides.loadedDrafts).length) {
     windowStub.localStorage.setItem("test:focus-notes", JSON.stringify(overrides.loadedDrafts));
   }
-  let tasks: Task[] = [];
+  let tasks: Task[] = overrides?.initialTasks || [];
   let history = {};
   let liveSessions: LiveSessionsByTaskId = {};
   let focusNotes: Record<string, string> = {};
@@ -223,5 +224,48 @@ describe("task timer persistence focus notes", () => {
     expect(harness.getSetHistoryCalls()).toBe(0);
     expect(harness.getPrimeDashboardCalls()).toBe(0);
     expect(harness.getLoadAddTaskCustomNamesCalls()).toBe(0);
+  });
+
+  it("does not let stale live-session hydration reset a resumed focused timer", () => {
+    const harness = createHarness({
+      snapshotTasks: [task({ running: true, startMs: 5000, accumulatedMs: 5 * 60_000, hasStarted: true })],
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: 1000,
+          updatedAtMs: 4000,
+          elapsedMs: 0,
+          status: "running",
+        },
+      },
+    });
+
+    harness.api.hydrateTimerStateFromCaches();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      running: true,
+      startMs: 5000,
+      accumulatedMs: 5 * 60_000,
+      hasStarted: true,
+    });
+  });
+
+  it("does not let stale task hydration reset a resumed focused timer when no live session is present", () => {
+    const harness = createHarness({
+      initialTasks: [task({ running: true, startMs: 5000, accumulatedMs: 5 * 60_000, hasStarted: true })],
+      snapshotTasks: [task({ running: true, startMs: 9000, accumulatedMs: 0, hasStarted: true })],
+      liveSessionsByTaskId: {},
+    });
+
+    harness.api.hydrateTimerStateFromCaches();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      running: true,
+      startMs: 5000,
+      accumulatedMs: 5 * 60_000,
+      hasStarted: true,
+    });
   });
 });

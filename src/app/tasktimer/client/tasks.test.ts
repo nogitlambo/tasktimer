@@ -59,6 +59,7 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
     getElementById: () => null,
   });
   vi.stubGlobal("window", {
+    location: { protocol: "https:" },
     matchMedia: () => ({ matches: false }),
     clearTimeout: vi.fn(),
     dispatchEvent: vi.fn(),
@@ -184,7 +185,7 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
     setResetTaskConfirmBusy: vi.fn(),
     captureResetActionSessionNote: () => "",
     setFocusSessionDraft: vi.fn(),
-    syncSharedTaskSummariesForTask: vi.fn(),
+    syncSharedTaskSummariesForTask: vi.fn(async () => {}),
     syncSharedTaskSummariesForTasks: vi.fn(async () => {}),
   } as unknown as Parameters<typeof createTaskTimerTasks>[0];
 
@@ -239,6 +240,19 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
           },
         },
       }),
+    clickStart: () =>
+      handlers.get(taskList)?.get("click")?.({
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return { dataset: { index: "0", taskId: "task-1" } as Record<string, string> };
+            if (selector === "[data-task-flip]") return null;
+            if (selector === "[data-action]") return { getAttribute: () => "start", dataset: { action: "start" } as Record<string, string> };
+            return null;
+          },
+        },
+      }),
     ctx,
     getTasks: () => tasks,
   };
@@ -269,6 +283,27 @@ describe("createTaskTimerTasks", () => {
     const taskEl = harness.clickTaskTopRow();
 
     expect(harness.ctx.openFocusMode).toHaveBeenCalledWith(0, { sourceElement: taskEl });
+  });
+
+  it("resumes a stopped task from the delegated task-card start action without clearing elapsed time", () => {
+    const harness = createHarness({
+      tasks: [task({ accumulatedMs: 60_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-03" })],
+    });
+
+    harness.clickStart();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      accumulatedMs: 60_000,
+      running: true,
+      hasStarted: true,
+      resumePendingSinceDayKey: null,
+    });
+    expect(harness.ctx.upsertLiveSession).toHaveBeenCalledWith(
+      harness.getTasks()[0],
+      expect.objectContaining({ elapsedMs: 60_000, resumedFromMs: 60_000, forceCloudFlush: true, reason: "start" })
+    );
+    expect(harness.calls).toContain("save");
+    expect(harness.calls).toContain("render");
   });
 
   it("resets a stopped task from the delegated task-card reset action", async () => {

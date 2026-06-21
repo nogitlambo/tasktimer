@@ -474,6 +474,18 @@ describe("task timer rewards history", () => {
     expect(harness.getHistoryByTaskId()).toBe(harness.savedHistoryArgs[0]);
   });
 
+  it("does not publish resumed live sessions with elapsed below the resume baseline", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const harness = createHarness({ elapsedMs: 0, tasks: [task({ running: true, accumulatedMs: 55, startMs: Date.now() })] });
+
+    harness.api.upsertLiveSession(harness.tasks[0]!, { elapsedMs: 0, resumedFromMs: 55, forceCloudFlush: true, reason: "start" });
+
+    expect(harness.getLiveSessionsByTaskId()["task-1"]).toMatchObject({
+      elapsedMs: 55,
+      resumedFromMs: 55,
+    });
+  });
+
   it("throttles repeated live-session sync writes until the interval elapses", () => {
     vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
     const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });

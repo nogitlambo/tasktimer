@@ -186,7 +186,25 @@ describe("task timer lifecycle", () => {
 
     harness.lifecycle.startTask(0);
 
-    expect(harness.calls).toContain("upsert-live:task-1:0:300000:force");
+    expect(harness.calls).toContain("upsert-live:task-1:300000:300000:force");
+    expect(harness.calls).toContain("show-native:task-1:123:300000");
+  });
+
+  it("resumes from legacy elapsed time when accumulated time is missing", () => {
+    const harness = createHarness({
+      tasks: [task({ accumulatedMs: 0, hasStarted: true, elapsed: 5 * 60 * 1000 } as Partial<Task> & { elapsed: number })],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.tasks[0]).toMatchObject({
+      running: true,
+      accumulatedMs: 5 * 60 * 1000,
+      startMs: 123,
+      hasStarted: true,
+      resumePendingSinceDayKey: null,
+    });
+    expect(harness.calls).toContain("upsert-live:task-1:300000:300000:force");
     expect(harness.calls).toContain("show-native:task-1:123:300000");
   });
 
@@ -214,7 +232,7 @@ describe("task timer lifecycle", () => {
     });
     expect(harness.tasks[0]?.timeGoalCompletedDayKey).toBeUndefined();
     expect(harness.tasks[0]?.timeGoalCompletedReason).toBeUndefined();
-    expect(harness.calls).toContain("upsert-live:task-1:0:1800000:force");
+    expect(harness.calls).toContain("upsert-live:task-1:1800000:1800000:force");
   });
 
   it("confirms before switching away from another running task", () => {
