@@ -19,7 +19,7 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskHeader{
-  padding: 8px 10px;
+  padding: 4px 10px;
   background: linear-gradient(
     90deg,
     rgb(var(--session-notes-task-color-rgb) / 1) 0%,

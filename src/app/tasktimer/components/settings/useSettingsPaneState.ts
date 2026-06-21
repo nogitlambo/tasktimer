@@ -97,7 +97,7 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
 export function getSettingsNavItems(): SettingsNavItem[] {
   return [
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
-    { key: "general", label: "Profile", icon: "/landing/avatar-1.svg", desktopOnly: true },
+    { key: "general", label: "Profile", icon: "/avatars/avatar_01.png", desktopOnly: true },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
     { key: "sounds", label: "Sounds & Alerts", icon: "/icons/icons_default/sounds.webp" },
     { key: "notifications", label: "Notifications", icon: "/Settings.svg" },

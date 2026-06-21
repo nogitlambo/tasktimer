@@ -6217,10 +6217,11 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel{
   --dashboard-task-label-color: #35e8ff;
   --dashboard-task-progress-color: #ff3b30;
+  --dashboard-task-label-width: 96px;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   position: absolute;
-  width: max-content;
-  max-width: 96px;
+  width: var(--dashboard-task-label-width);
+  max-width: var(--dashboard-task-label-width);
   min-width: 0;
   transform: translateY(-50%);
   display: flex;
@@ -6245,6 +6246,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   text-shadow: 0 1px 4px rgba(0,0,0,.72);
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isCompact{
+  gap: 2px;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isMicro{
+  gap: 1px;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelName{
   color: rgba(174, 184, 198, .82);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
@@ -6255,6 +6264,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isCompact .dashboardTasksCompletedLabelName{
+  font-size: 10px;
+  line-height: 1;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isMicro .dashboardTasksCompletedLabelName{
+  font-size: 9px;
+  line-height: 1;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isRunning .dashboardTasksCompletedLabelName{
@@ -6271,6 +6290,16 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 10px;
   line-height: 1.08;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isCompact .dashboardTasksCompletedLabelStatus{
+  font-size: 9px;
+  line-height: 1;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isMicro .dashboardTasksCompletedLabelStatus{
+  font-size: 8px;
+  line-height: 1;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isPartial .dashboardTasksCompletedLabelStatus{

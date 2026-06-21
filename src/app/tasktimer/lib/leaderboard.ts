@@ -249,6 +249,16 @@ export function formatWeeklyLeaderboardUtcPeriodLabel(nowMs = Date.now()): strin
   return `Week period from ${formatter.format(new Date(period.startMs))} to ${formatter.format(new Date(period.endMs))} UTC`;
 }
 
+export function formatWeeklyLeaderboardUtcPeriodTitle(nowMs = Date.now()): string {
+  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  });
+  return `Week ${formatter.format(new Date(period.startMs))} to ${formatter.format(new Date(period.endMs))} UTC`;
+}
+
 function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {
   return normalizeRewardProgress(rewards).awardLedger.reduce((sum, entry) => {
     const ts = normalizeInt(entry?.ts);

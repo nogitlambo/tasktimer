@@ -841,11 +841,11 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskOnceOffDayState("mon");
     ctx.setAddTaskPlannedStartTimeState("09:00");
     ctx.setAddTaskDurationValueState(0);
-    ctx.setAddTaskDurationUnitState("hour");
+    ctx.setAddTaskDurationUnitState("minute");
     ctx.setAddTaskDurationPeriodState("day");
     ctx.setAddTaskNoTimeGoalState(false);
     ctx.setAddTaskMilestonesEnabledState(false);
-    ctx.setAddTaskMilestoneTimeUnitState("hour");
+    ctx.setAddTaskMilestoneTimeUnitState("minute");
     ctx.setAddTaskMilestonesState([]);
     ctx.setAddTaskCheckpointSoundEnabledState(false);
     ctx.setAddTaskCheckpointSoundModeState("once");

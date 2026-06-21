@@ -521,7 +521,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     elapsedMs: number,
     noteOverride?: string,
     completionDifficultyRaw?: CompletionDifficulty,
-    opts?: { deferTimeGoalXp?: boolean; attachments?: SessionNoteAttachment[] }
+    opts?: { deferTimeGoalXp?: boolean; attachments?: SessionNoteAttachment[]; preserveFocusSessionDraft?: boolean }
   ) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!task || !task.id || safeElapsedMs <= 0) return;
@@ -546,8 +546,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     }, { canMergeLatestSameDay });
     const awardElapsedMs = Math.max(0, safeElapsedMs - historyResult.previousMs);
     if (!historyResult.changed && awardElapsedMs <= 0) return;
-    ctx.clearFocusSessionDraft(taskId);
-    if (String(ctx.getFocusModeTaskId() || "") === taskId) {
+    if (opts?.preserveFocusSessionDraft !== true) {
+      ctx.clearFocusSessionDraft(taskId);
+    }
+    if (opts?.preserveFocusSessionDraft !== true && String(ctx.getFocusModeTaskId() || "") === taskId) {
       ctx.syncFocusSessionNotesInput(taskId);
       ctx.syncFocusSessionNotesAccordion(taskId);
     }
@@ -625,7 +627,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
 
   function finalizeLiveSession(
     task: Task,
-    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
   ) {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
@@ -639,6 +641,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       appendCompletedSessionHistory(task, completedAtMs, elapsedMs, opts?.note ?? liveSession?.note, opts?.completionDifficulty, {
         deferTimeGoalXp: opts?.deferTimeGoalXp === true,
         attachments: opts?.attachments ?? liveSession?.attachments,
+        preserveFocusSessionDraft: opts?.preserveFocusSessionDraft === true,
       });
     }
     clearRewardSessionTracker(taskId);

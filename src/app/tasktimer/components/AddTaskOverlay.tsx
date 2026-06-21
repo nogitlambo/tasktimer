@@ -62,10 +62,10 @@ export default function AddTaskOverlay() {
                 <div className="addTaskDurationRow editTaskDurationRow" id="addTaskDurationRow">
                   <input id="addTaskDurationValueInput" type="number" min={0} step={1} inputMode="numeric" defaultValue={0} />
                   <div className="unitButtons addTaskDurationPills" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
-                    <button className="btn btn-ghost small unitBtn" id="addTaskDurationUnitMinute" type="button" aria-pressed="false">
+                    <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationUnitMinute" type="button" aria-pressed="true">
                       Min
                     </button>
-                    <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationUnitHour" type="button" aria-pressed="true">
+                    <button className="btn btn-ghost small unitBtn" id="addTaskDurationUnitHour" type="button" aria-pressed="false">
                       Hour
                     </button>
                   </div>

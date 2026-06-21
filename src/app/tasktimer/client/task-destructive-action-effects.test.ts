@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTaskDestructiveActionEffects } from "./task-destructive-action-effects";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
@@ -150,12 +150,19 @@ function createHarness(overrides: {
     syncedTaskIds,
     savedTaskOpts,
     navigatedRoutes,
+    setTasks: (nextTasks: Task[]) => {
+      tasks = nextTasks;
+    },
   };
 }
 
 describe("task destructive action effects", () => {
   beforeEach(() => {
     vi.mocked(playDeleteAlertAudio).mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("opens reset confirmation and marks reset confirm state", () => {
@@ -252,6 +259,46 @@ describe("task destructive action effects", () => {
       timeGoalCompletedElapsedMs: null,
     });
     expect(harness.classes.has("isResetTaskConfirm")).toBe(false);
+  });
+
+  it("resets the current task array entry if tasks are replaced before confirmation", async () => {
+    const originalTask = createTask({ id: "task-1", accumulatedMs: 30 * 60 * 1000 });
+    const replacementTask = createTask({ id: "task-1", accumulatedMs: 30 * 60 * 1000 });
+    const harness = createHarness({ tasks: [originalTask] });
+
+    harness.adapter.resetTask(0);
+    harness.setTasks([replacementTask]);
+    await harness.confirmCalls[0].opts.onOk();
+
+    expect(originalTask.accumulatedMs).toBe(30 * 60 * 1000);
+    expect(harness.tasks[0]).toMatchObject({ accumulatedMs: 0 });
+  });
+
+  it("still resets when the XP award animation event cannot be dispatched", async () => {
+    vi.stubGlobal("CustomEvent", class TestCustomEvent {
+      type: string;
+      detail: unknown;
+
+      constructor(type: string, init?: { detail?: unknown }) {
+        this.type = type;
+        this.detail = init?.detail;
+      }
+    });
+    vi.stubGlobal("window", {
+      dispatchEvent: () => {
+        throw new Error("dispatch failed");
+      },
+    });
+    vi.stubGlobal("document", {
+      getElementById: () => null,
+    });
+    const harness = createHarness({ tasks: [createTask({ accumulatedMs: 30 * 60 * 1000 })] });
+
+    harness.adapter.resetTask(0);
+    await expect(harness.confirmCalls[0].opts.onOk()).resolves.toBeUndefined();
+
+    expect(harness.calls).toContain("resetImmediate:task-1:");
+    expect(harness.tasks[0]).toMatchObject({ accumulatedMs: 0 });
   });
 
   it("resets a daily time-goal task to neutral even when elapsed has reached the goal", async () => {

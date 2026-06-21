@@ -174,31 +174,33 @@ export function SettingsAccountPane({
                 </div>
 
                 <div className="settingsAccountProfileRow settingsAccountIdCardBody">
-                  <div className="settingsAccountIdCardMetaGrid">
-                    <div className="settingsAccountIdCardMetaItem">
-                      <span className="settingsAccountUidLabel">{accountEmailLabel}</span>
-                      <span className="settingsAccountUidValue">{accountEmailValue}</span>
+                  <dl className="settingsAccountIdCardMetaList">
+                    <div className="settingsAccountMetaListItem">
+                      <dt className="settingsAccountUidLabel">{accountEmailLabel}</dt>
+                      <dd className="settingsAccountUidValue">{accountEmailValue}</dd>
                     </div>
                     {account.authUserUid ? (
-                      <div className="settingsAccountIdCardMetaItem settingsAccountUidRow">
-                        <span className="settingsAccountUidLabel">UID</span>
-                        <span className="settingsAccountUidValue">{account.authUserUid}</span>
-                        <button
-                          className="iconBtn settingsUidCopyBtn"
-                          type="button"
-                          onClick={() => void account.onCopyUid()}
-                          aria-label={account.uidCopyStatus || "Copy UID"}
-                          title={account.uidCopyStatus || "Copy UID"}
-                        >
-                          <span className="settingsUidCopyIcon" aria-hidden="true" />
-                        </button>
+                      <div className="settingsAccountMetaListItem settingsAccountUidListItem">
+                        <dt className="settingsAccountUidLabel">UID</dt>
+                        <dd className="settingsAccountUidValue settingsAccountUidValueWithCopy">
+                          <span>{account.authUserUid}</span>
+                          <button
+                            className="iconBtn settingsUidCopyBtn"
+                            type="button"
+                            onClick={() => void account.onCopyUid()}
+                            aria-label={account.uidCopyStatus || "Copy UID"}
+                            title={account.uidCopyStatus || "Copy UID"}
+                          >
+                            <span className="settingsUidCopyIcon" aria-hidden="true" />
+                          </button>
+                        </dd>
                       </div>
                     ) : null}
-                    <div className="settingsAccountIdCardMetaItem settingsAccountMemberSinceRow">
-                      <span className="settingsAccountUidLabel">Member Since</span>
-                      <span className="settingsAccountUidValue">{formatMemberSinceDate(account.authMemberSince)}</span>
+                    <div className="settingsAccountMetaListItem">
+                      <dt className="settingsAccountUidLabel">Member Since</dt>
+                      <dd className="settingsAccountUidValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
                     </div>
-                  </div>
+                  </dl>
                 </div>
               </div>
             </div>

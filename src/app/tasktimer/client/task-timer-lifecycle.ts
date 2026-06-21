@@ -42,7 +42,7 @@ type TaskTimerLifecycleCommandAdapters = {
   clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts: { elapsedMs: number; completedAtMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts: { elapsedMs: number; completedAtMs?: number; note?: string; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
   ) => void;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   getElapsedMs: (task: Task) => number;
@@ -158,6 +158,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       elapsedMs: task.accumulatedMs,
       completedAtMs: completionResolution?.completedAtMs,
       deferTimeGoalXp: shouldDeferTimeGoalXp,
+      preserveFocusSessionDraft: String(options.getFocusModeTaskId() || "") === taskId,
     });
     task.running = false;
     task.startMs = null;
@@ -186,25 +187,19 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     const elapsedMs = options.getTaskElapsedMs(task);
     const shouldFinalizeHistory = opts?.logHistory !== false && !task.resumePendingSinceDayKey;
     let finalizeError: unknown = null;
-    options.applyPendingTimeGoalXpForTask(taskId);
-    if (shouldFinalizeHistory) {
-      try {
+    try {
+      options.applyPendingTimeGoalXpForTask(taskId);
+      if (shouldFinalizeHistory) {
         options.finalizeLiveSession(task, {
           elapsedMs,
           completedAtMs: opts?.completedAtMs,
           note: opts?.sessionNote,
           completionDifficulty: normalizeCompletionDifficulty(opts?.completionDifficulty),
         });
-      } catch (error) {
-        finalizeError = error;
-      } finally {
-        task.accumulatedMs = 0;
-        task.running = false;
-        task.startMs = null;
-        task.hasStarted = false;
-        task.resumePendingSinceDayKey = null;
       }
-    } else {
+    } catch (error) {
+      finalizeError = error;
+    } finally {
       task.accumulatedMs = 0;
       task.running = false;
       task.startMs = null;

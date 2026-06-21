@@ -126,9 +126,10 @@ try {
   const buildStatus = result.status ?? 1;
   let optimizerStatus = 0;
 
-  if (buildStatus === 0 && cliArgs.debug) {
+  if (buildStatus === 0) {
     const optimizerScript = path.join(root, "scripts", "optimize-android-debug-export.mjs");
-    const optimizerResult = spawnSync(process.execPath, [optimizerScript], {
+    const optimizerArgs = cliArgs.debug ? [optimizerScript] : [optimizerScript, "--redirect-only"];
+    const optimizerResult = spawnSync(process.execPath, optimizerArgs, {
       cwd: root,
       stdio: "inherit",
       shell: false,

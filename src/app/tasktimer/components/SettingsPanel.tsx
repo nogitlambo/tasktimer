@@ -50,6 +50,8 @@ const SETTINGS_DETAIL_SUBTITLES: Partial<Record<SettingsPaneKey, string>> = {
   data: "Manage history, export or import backups, and reset local data.",
 };
 
+const TASKTIMER_SETTINGS_PREFERENCES_ACTIVE_EVENT = "tasktimer:settings-preferences-active";
+
 export default function SettingsPanel({ initialPane = null }: { initialPane?: SettingsPaneKey | null } = {}) {
   const navItems = useSettingsNavItems();
   const paneState = useSettingsPaneState(initialPane);
@@ -83,6 +85,16 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     window.addEventListener("tasktimer:closeSettingsMobileDetail", closeMobileDetail);
     return () => window.removeEventListener("tasktimer:closeSettingsMobileDetail", closeMobileDetail);
   }, [setMobileDetailOpen]);
+
+  useEffect(() => {
+    if (paneState.activePane !== "preferences") return;
+    const dispatchPreferencesActive = () => {
+      window.dispatchEvent(new Event(TASKTIMER_SETTINGS_PREFERENCES_ACTIVE_EVENT));
+    };
+    dispatchPreferencesActive();
+    const timerId = window.setTimeout(dispatchPreferencesActive, 0);
+    return () => window.clearTimeout(timerId);
+  }, [paneState.activePane]);
 
   return (
     <div

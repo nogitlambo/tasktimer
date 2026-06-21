@@ -1547,7 +1547,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("hides all task labels and connector paths when any label would overlap the donut area", () => {
+  it("keeps shortened task labels and connector paths when full labels would overlap the donut area", () => {
     const tasks = [
       task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
       task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
@@ -1556,7 +1556,9 @@ describe("dashboard completed card", () => {
 
     try {
       ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
-        ? { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
+        ? element.className.split(/\s+/).includes("isMicro")
+          ? { left: 250, top: 128, right: 304, bottom: 152, width: 54, height: 24 }
+          : { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
         : null;
 
       harness.render();
@@ -1565,16 +1567,20 @@ describe("dashboard completed card", () => {
       const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
       const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
 
-      expect(labelsEl?.children).toHaveLength(0);
-      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(true);
-      expect(connectorEls).toHaveLength(0);
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(false);
+      expect(labelsEl?.children.every((child) => child.className.includes("isMicro"))).toBe(true);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Extre...");
+      expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Extremely Long Deep Work Task: Not complete");
+      expect(labelsEl?.children[0]?.getAttribute("aria-label")).toBe("Extremely Long Deep Work Task: Not complete");
+      expect(connectorEls).toHaveLength(2);
       expect(centerEl?.innerHTML).toContain("0%");
     } finally {
       harness.restore();
     }
   });
 
-  it("hides all task labels and connector paths when the rendered chart viewport would clip a label", () => {
+  it("keeps shortened task labels and connector paths when the rendered chart viewport would clip full labels", () => {
     const tasks = [
       task({ id: "goal-task", name: "Goal Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
       task({ id: "new-task", name: "New Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
@@ -1587,16 +1593,21 @@ describe("dashboard completed card", () => {
         getBoundingClientRect: () => ({ left: 0, top: 0, right: 300, bottom: 380, width: 300, height: 380 }),
       });
       ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
-        ? { left: 280, top: 120, right: 340, bottom: 150, width: 60, height: 30 }
+        ? element.className.split(/\s+/).includes("isMicro")
+          ? { left: 220, top: 128, right: 274, bottom: 152, width: 54, height: 24 }
+          : { left: 280, top: 120, right: 340, bottom: 150, width: 60, height: 30 }
         : null;
 
       harness.render();
       const svgEl = harness.byId.get("dashboardTasksCompletedSvg");
       const connectorEls = svgEl?.children.filter((child) => child.getAttribute("class") === "dashboardTasksCompletedConnector") || [];
 
-      expect(labelsEl?.children).toHaveLength(0);
-      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(true);
-      expect(connectorEls).toHaveLength(0);
+      expect(labelsEl?.children).toHaveLength(2);
+      expect(labelsEl?.classList.contains("isHiddenForLayout")).toBe(false);
+      expect(labelsEl?.children.every((child) => child.className.includes("isMicro"))).toBe(true);
+      expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Goal Task: Not complete");
+      expect(labelsEl?.children[1]?.getAttribute("title")).toBe("New Task: Not complete");
+      expect(connectorEls).toHaveLength(2);
     } finally {
       harness.restore();
     }

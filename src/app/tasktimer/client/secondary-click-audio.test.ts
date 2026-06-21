@@ -12,6 +12,7 @@ import {
   getCancelClickTarget,
   getCloseClickTarget,
   getDropdownClickTarget,
+  getFooterNavClickTarget,
   getModalOpenClickTarget,
   getNoteToolbarClickTarget,
   getSecondaryClickTarget,
@@ -61,7 +62,6 @@ describe("secondary click audio", () => {
       '[role="switch"]',
       "#closeMenuBtn",
       "[data-nav-page]",
-      ".appFooterBtn",
       ".dashboardRailMenuBtn",
       ".settingsNavTile",
       ".taskLaunchMobileMenuItem",
@@ -77,6 +77,30 @@ describe("secondary click audio", () => {
       const element = makeElement({ selectorMatches: { [combinedSelector]: true, [selector]: true } });
       expect(getSecondaryClickTarget(element)).toBe(element);
     }
+  });
+
+  it("matches mobile footer nav controls with an explicit secondary audio route", () => {
+    const footerNavButton = makeElement({
+      selectorMatches: { ".appFooterBtn": true, "button,a": true },
+      textContent: "Tasks",
+    });
+
+    expect(getFooterNavClickTarget(footerNavButton)).toBe(footerNavButton);
+    expect(getSecondaryClickTarget(footerNavButton)).toBeNull();
+  });
+
+  it("ignores disabled mobile footer nav controls", () => {
+    const disabledFooterNavButton = makeElement({
+      selectorMatches: { ".appFooterBtn": true, "button,a": true },
+      disabled: true,
+    });
+    const ariaDisabledFooterNavButton = makeElement({
+      selectorMatches: { ".appFooterBtn": true, "button,a": true },
+      attributes: { "aria-disabled": "true" },
+    });
+
+    expect(getFooterNavClickTarget(disabledFooterNavButton)).toBeNull();
+    expect(getFooterNavClickTarget(ariaDisabledFooterNavButton)).toBeNull();
   });
 
   it("matches checkbox controls for dedicated checkbox audio", () => {
@@ -337,7 +361,7 @@ describe("secondary click audio", () => {
   });
 
   it("ignores unrelated and disabled controls", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const unrelated = makeElement({ textContent: "Done" });
     const disabled = makeElement({ selectorMatches: { [directSelector]: true }, disabled: true });
     const ariaDisabled = makeElement({
@@ -351,7 +375,7 @@ describe("secondary click audio", () => {
   });
 
   it("does not blanket-exclude accent controls from default secondary audio", () => {
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     const accentDirectTarget = makeElement({
       selectorMatches: { [directSelector]: true, ".btn-accent": true },
       textContent: "Done",
@@ -453,12 +477,54 @@ describe("secondary click audio", () => {
     handler({ defaultPrevented: true, target: makeElement({ selectorMatches: { "#menuIcon": true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
-    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
+    const directSelector = ".switch,[role=\"switch\"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action=\"openAddTask\"],[data-action=\"reset\"],[data-action=\"edit\"],#openFriendRequestModalBtn";
     handler({ defaultPrevented: false, isTrusted: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).not.toHaveBeenCalled();
 
     handler({ defaultPrevented: false, target: makeElement({ selectorMatches: { [directSelector]: true } }) } as unknown as Event);
     expect(playAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes trusted mobile footer nav clicks to secondary audio once", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+
+    registerSecondaryClickAudio({ on, documentRef: documentRef as unknown as Document, playAudio });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+    handler({
+      defaultPrevented: false,
+      isTrusted: true,
+      target: makeElement({ selectorMatches: { ".appFooterBtn": true, "button,a": true }, textContent: "Tasks" }),
+    } as unknown as Event);
+
+    expect(playAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not route disabled mobile footer nav clicks to secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+
+    registerSecondaryClickAudio({ on, documentRef: documentRef as unknown as Document, playAudio });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+    handler({
+      defaultPrevented: false,
+      isTrusted: true,
+      target: makeElement({ selectorMatches: { ".appFooterBtn": true, "button,a": true }, disabled: true }),
+    } as unknown as Event);
+    handler({
+      defaultPrevented: false,
+      isTrusted: true,
+      target: makeElement({
+        selectorMatches: { ".appFooterBtn": true, "button,a": true },
+        attributes: { "aria-disabled": "true" },
+      }),
+    } as unknown as Event);
+
+    expect(playAudio).not.toHaveBeenCalled();
   });
 
   it("routes checkbox controls to the dedicated checkbox audio callback", () => {

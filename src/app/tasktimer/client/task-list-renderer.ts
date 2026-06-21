@@ -127,7 +127,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     const tasks = options.getTasks();
     const taskOrderBy = options.getTaskOrderBy();
     const displayedTasks = buildDisplayedTasks(tasks, taskOrderBy);
-    const sourceIndexByTaskId = new Map(tasks.map((task, index) => [String(task.id || ""), index] as const));
+    const sourceIndexByTask = new Map(tasks.map((task, index) => [task, index] as const));
     taskListEl.innerHTML = "";
     const useTileColumns = options.getTaskView() === "tile";
     const tileColumnCount = useTileColumns ? options.getTileColumnCount() : 1;
@@ -180,7 +180,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const timeGoalSec = hasTimeGoal ? Number(task.timeGoalMinutes || 0) * 60 : 0;
 
       const taskEl = options.documentRef.createElement("div");
-      taskEl.dataset.index = String(sourceIndexByTaskId.get(taskId) ?? -1);
+      taskEl.dataset.index = String(sourceIndexByTask.get(task) ?? -1);
       taskEl.dataset.taskId = taskId;
       taskEl.setAttribute("draggable", taskOrderBy === "custom" ? "true" : "false");
 

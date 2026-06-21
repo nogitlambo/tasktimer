@@ -5,6 +5,7 @@ import {
   getCancelClickTarget,
   getCheckboxClickTarget,
   getCloseClickTarget,
+  getFooterNavClickTarget,
   getSecondaryClickTarget,
 } from "./secondary-click-audio";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
@@ -53,7 +54,13 @@ export function isInteractionHapticsRuntimeAvailable(): boolean {
 export function getInteractionHapticImpact(target: EventTarget | null): InteractionHapticImpact | null {
   if (getClosestElement(target, DESTRUCTIVE_CONFIRM_SELECTOR)) return "heavy";
   if (getTaskStopClickTarget(target) || getTaskLaunchClickTarget(target) || getPrimaryClickTarget(target)) return "medium";
-  if (getCloseClickTarget(target) || getCancelClickTarget(target) || getCheckboxClickTarget(target) || getSecondaryClickTarget(target)) {
+  if (
+    getCloseClickTarget(target) ||
+    getCancelClickTarget(target) ||
+    getCheckboxClickTarget(target) ||
+    getFooterNavClickTarget(target) ||
+    getSecondaryClickTarget(target)
+  ) {
     return "light";
   }
   return null;

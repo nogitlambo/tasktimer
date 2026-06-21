@@ -52,11 +52,13 @@ function makeElement(opts: {
   return element as unknown as HTMLElement;
 }
 
-const PRIMARY_CLICK_SELECTOR = "#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction";
+const PRIMARY_CLICK_SELECTOR =
+  '#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction, [data-onboarding-next-action="true"]';
 const TASK_LAUNCH_CLICK_SELECTOR =
   'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
 const SECONDARY_DIRECT_SELECTOR =
-  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.appFooterBtn,.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],[data-onboarding-next-action="true"],#openFriendRequestModalBtn';
+  '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
+const FOOTER_NAV_SELECTOR = ".appFooterBtn";
 const CHECKBOX_SELECTOR = 'input[type="checkbox"],[role="checkbox"],.modalPreviewDropdownOption';
 const DESTRUCTIVE_CONFIRM_SELECTOR =
   "#confirmOverlay.isResetTaskConfirm #confirmOkBtn,#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn,#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,#confirmOverlay.isDeleteFriendConfirm #confirmOkBtn,#confirmOverlay #confirmOkBtn.btn-warn,#confirmOverlay #confirmAltBtn.btn-warn,.modal .btn-warn";
@@ -82,6 +84,7 @@ describe("interaction haptics", () => {
 
   it("classifies secondary and checkbox controls as light", () => {
     expect(getInteractionHapticImpact(makeElement({ selectorMatches: { [SECONDARY_DIRECT_SELECTOR]: true } }))).toBe("light");
+    expect(getInteractionHapticImpact(makeElement({ selectorMatches: { [FOOTER_NAV_SELECTOR]: true } }))).toBe("light");
     expect(getInteractionHapticImpact(makeElement({ selectorMatches: { [CHECKBOX_SELECTOR]: true } }))).toBe("light");
   });
 

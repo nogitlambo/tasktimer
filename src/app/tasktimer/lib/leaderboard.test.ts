@@ -39,6 +39,7 @@ import {
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   formatWeeklyLeaderboardUtcPeriodLabel,
+  formatWeeklyLeaderboardUtcPeriodTitle,
   getWeeklyLeaderboardUtcPeriod,
   getLeaderboardAvatarSrc,
   getLeaderboardResolvedRank,
@@ -664,6 +665,9 @@ describe("buildLeaderboardMetricsSnapshot", () => {
     });
     expect(formatWeeklyLeaderboardUtcPeriodLabel(Date.parse("2026-06-09T12:00:00.000Z"))).toBe(
       "Week period from Jun 7, 2026 to Jun 13, 2026 UTC"
+    );
+    expect(formatWeeklyLeaderboardUtcPeriodTitle(Date.parse("2026-06-09T12:00:00.000Z"))).toBe(
+      "Week Jun 7 to Jun 13 UTC"
     );
   });
 

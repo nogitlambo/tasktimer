@@ -47,6 +47,29 @@ import { readPlannedStartValueFromSelectors, syncPlannedStartSelectors } from ".
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+function getPrunedRecurringPlannedStartByDay(
+  task: Task,
+  optimalProductivityDays?: readonly unknown[]
+): TaskPlannedStartByDay | null | undefined {
+  if (optimalProductivityDays === undefined || task.taskType !== "recurring" || task.plannedStartOpenEnded) return undefined;
+  const byDay = normalizeTaskPlannedStartByDay(task.plannedStartByDay);
+  if (!byDay) return undefined;
+  const scheduledEntries = SCHEDULE_DAY_ORDER.flatMap((day) => {
+    const time = normalizeScheduleStoredTime(byDay[day]);
+    return time ? [{ day, time }] : [];
+  });
+  if (scheduledEntries.length <= 1) return undefined;
+  const productivityDays = new Set(normalizeOptimalProductivityDays(optimalProductivityDays));
+  const prunedEntries = scheduledEntries.filter((entry) => productivityDays.has(entry.day));
+  if (prunedEntries.length === scheduledEntries.length) return undefined;
+  if (prunedEntries.length === 0) return null;
+  return Object.fromEntries(prunedEntries.map((entry) => [entry.day, entry.time])) as TaskPlannedStartByDay;
+}
+
+function hasRecurringScheduleDaysOutsideProductivityDays(task: Task, optimalProductivityDays?: readonly unknown[]) {
+  return getPrunedRecurringPlannedStartByDay(task, optimalProductivityDays) !== undefined;
+}
+
 export function normalizeRecurringScheduleFieldsForSave(
   task: Task,
   sourceTask?: Task | null,
@@ -65,7 +88,9 @@ export function normalizeRecurringScheduleFieldsForSave(
   }
 
   if (!normalizedPlannedStartTime) {
-    if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
+    const prunedByDay = getPrunedRecurringPlannedStartByDay(task, optimalProductivityDays);
+    if (prunedByDay !== undefined) syncLegacyPlannedStartFields(task, prunedByDay);
+    else if (normalizedByDay) syncLegacyPlannedStartFields(task, normalizedByDay);
     return;
   }
 
@@ -83,6 +108,12 @@ export function normalizeRecurringScheduleFieldsForSave(
     }
   }
 
+  const prunedByDay = getPrunedRecurringPlannedStartByDay(task, optimalProductivityDays);
+  if (prunedByDay !== undefined) {
+    syncLegacyPlannedStartFields(task, prunedByDay);
+    return;
+  }
+
   if (isWeeklyTimeGoal) {
     const shouldGenerateFromProductivityDays = !normalizedByDay || Object.keys(normalizedByDay).length === 0;
     if (shouldGenerateFromProductivityDays) {
@@ -98,6 +129,23 @@ export function normalizeRecurringScheduleFieldsForSave(
       ) as TaskPlannedStartByDay;
       syncLegacyPlannedStartFields(task, nextByDay);
       return;
+    }
+  }
+
+  if (task.timeGoalPeriod === "day" && normalizedByDay) {
+    const scheduledDays = SCHEDULE_DAY_ORDER.filter((day) => !!normalizeScheduleStoredTime(normalizedByDay[day]));
+    const uniqueTimes = Array.from(new Set(scheduledDays.map((day) => normalizeScheduleStoredTime(normalizedByDay[day]))));
+    const shouldRegenerateFromProductivityDays =
+      optimalProductivityDays !== undefined &&
+      scheduledDays.length > 1 &&
+      scheduledDays.length < SCHEDULE_DAY_ORDER.length &&
+      uniqueTimes.length === 1;
+    if (shouldRegenerateFromProductivityDays) {
+      const nextByDay = buildWeeklyPlannedStartByDay(optimalProductivityDays || [], normalizedPlannedStartTime);
+      if (nextByDay) {
+        syncLegacyPlannedStartFields(task, nextByDay);
+        return;
+      }
     }
   }
 
@@ -1092,6 +1140,10 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       sourceTask.timeGoalPeriod === "day" &&
       t.taskType === "recurring" &&
       t.timeGoalPeriod === "week";
+    const currentProductivityDays = getEditProductivityDays();
+    const scheduledDays = getTaskScheduledDays(t);
+    const scheduledDaysAreCurrentProductivityDays =
+      scheduledDays.length > 0 && scheduledDays.every((day) => currentProductivityDays.includes(day));
     const splitAcrossProductivityDaysForSave =
       t.taskType === "recurring" && t.timeGoalPeriod === "week"
         ? isEditWeeklySplitOptionVisible(t)
@@ -1099,7 +1151,9 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
             ? !!els.editTaskSplitAcrossProductivityDays?.checked
             : isDailyToWeeklyRecurringConversion
               ? true
-            : undefined
+              : inferSplitAcrossProductivityDays(t) && scheduledDaysAreCurrentProductivityDays
+                ? true
+                : undefined
           : true
         : undefined;
     t.splitAcrossProductivityDays = splitAcrossProductivityDaysForSave;
@@ -1643,7 +1697,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.name = (els.editName?.value || "").trim() || t.name;
       t.plannedStartOpenEnded = false;
       t.plannedStartTime = readEditPlannedStartValueFromSelectors();
-      if (hasTaskMixedScheduleTimes(sourceTask)) {
+      if (hasTaskMixedScheduleTimes(sourceTask) && !hasRecurringScheduleDaysOutsideProductivityDays(sourceTask, ctx.getOptimalProductivityDays())) {
         const sharedTime = readEditPlannedStartValueFromSelectors();
         const scheduledDays = getTaskScheduledDays(sourceTask);
         if (scheduledDays.length > 1) {

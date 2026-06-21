@@ -465,7 +465,7 @@ export type TaskTimerTasksContext = {
   clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
   ) => number;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
