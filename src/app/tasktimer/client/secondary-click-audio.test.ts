@@ -150,7 +150,7 @@ describe("secondary click audio", () => {
   });
 
   it("excludes the Focus Mode Exit button from default secondary audio", () => {
-    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
+    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"],#historyManagerBulkDeleteBtn,.hmDelBtn';
     const focusExitButton = makeElement({
       selectorMatches: { "button,a": true, [excludedSelector]: true, "#focusModeBackBtn": true },
       textContent: "Exit",
@@ -160,7 +160,7 @@ describe("secondary click audio", () => {
   });
 
   it("excludes the Delete Session Entry icon trigger from default secondary audio", () => {
-    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
+    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"],#historyManagerBulkDeleteBtn,.hmDelBtn';
     const deleteSessionButton = makeElement({
       selectorMatches: {
         "button,a": true,
@@ -171,6 +171,21 @@ describe("secondary click audio", () => {
     });
 
     expect(getSecondaryClickTarget(deleteSessionButton)).toBeNull();
+  });
+
+  it("excludes History Manager delete controls from default secondary audio", () => {
+    const excludedSelector = '#focusModeBackBtn,[data-history-summary-action="delete-session"],#historyManagerBulkDeleteBtn,.hmDelBtn';
+    const bulkDeleteButton = makeElement({
+      selectorMatches: { "button,a": true, [excludedSelector]: true, "#historyManagerBulkDeleteBtn": true },
+      textContent: "Delete (1)",
+    });
+    const rowDeleteButton = makeElement({
+      selectorMatches: { "button,a": true, [excludedSelector]: true, ".hmDelBtn": true },
+      attributes: { "aria-label": "Delete log" },
+    });
+
+    expect(getSecondaryClickTarget(bulkDeleteButton)).toBeNull();
+    expect(getSecondaryClickTarget(rowDeleteButton)).toBeNull();
   });
 
   it("excludes controls handled by primary click audio selectors", () => {

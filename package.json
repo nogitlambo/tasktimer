@@ -36,6 +36,7 @@
     "android:sync:debug": "npm run android:java:check && node scripts/prepare-android-firebase-config.mjs debug && npm run build:android:debug && npx cap sync android",
     "android:sync:release": "npm run android:java:check && node scripts/prepare-android-firebase-config.mjs release && npm run build:android:release && npx cap sync android",
     "android:aab": "npm run android:version:check && npm run android:sync:release && cd android && gradlew.bat bundleRelease",
+    "android:apk:release": "npm run android:version:check && npm run android:sync:release && cd android && gradlew.bat assembleRelease",
     "android:apk": "npm run android:sync:debug && cd android && gradlew.bat assembleDebug && cd .. && node scripts/copy-android-apk.mjs",
     "firebase:login": "npx firebase-tools login",
     "firebase:rules:deploy": "npx firebase-tools deploy --only firestore:rules --project tasktimer-prod",

@@ -770,7 +770,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     registerDashboardEvents,
   } = dashboardApi;
 
-  let openManualEntryForTaskFromHistoryManager: (taskId: string) => void = () => {};
   const tasksApi = createTaskTimerTasks(
     createTaskTimerTasksContext({
       els,
@@ -874,7 +873,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openHistoryInline: (index) => historyInlineApi?.openHistory(index),
       openTaskExportModal: (index) => openTaskExportModal(index),
       openShareTaskModal: (index) => openShareTaskModal(index),
-      openManualEntryForTask: (taskId) => openManualEntryForTaskFromHistoryManager(taskId),
       currentUid: () => getCurrentTaskTimerUid(),
       deleteSharedTaskSummariesForTask,
       refreshOwnSharedSummaries,
@@ -1294,8 +1292,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       showUpgradePrompt,
     })
   );
-  const { openHistoryManager, openManualEntryForTask, registerHistoryManagerEvents } = historyManager;
-  openManualEntryForTaskFromHistoryManager = openManualEntryForTask;
+  const { openHistoryManager, registerHistoryManagerEvents } = historyManager;
   openHistoryManagerFromShell = openHistoryManager;
 
   const historyInline = createTaskTimerHistoryInline(

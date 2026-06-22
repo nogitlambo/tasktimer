@@ -523,7 +523,6 @@ export type TaskTimerTasksContext = {
   openHistoryInline: (index: number) => void;
   openTaskExportModal: (index: number) => void;
   openShareTaskModal: (index: number) => void;
-  openManualEntryForTask: (taskId: string) => void;
   currentUid: () => string | null;
   deleteSharedTaskSummariesForTask: (uid: string, taskId: string) => Promise<void>;
   refreshOwnSharedSummaries: () => Promise<void>;

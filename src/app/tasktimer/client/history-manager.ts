@@ -6,25 +6,14 @@ import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./h
 import {
   buildHistoryManagerRowKey,
   groupSelectedHistoryRowsByTask,
-  createDefaultHistoryManagerManualDraft,
-  parseHistoryManagerManualDraft,
-  type HistoryManagerManualDraft,
 } from "./history-manager-shared";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
-import {
-  OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT,
-  type OpenHistoryManagerManualEntryDetail,
-} from "./history-manager-events";
 import { isRichNoteFileInputTarget } from "./rich-session-notes";
-import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
 import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
+import { playDeleteAlertAudio } from "./delete-alert-audio";
 
 export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContext) {
   const { els } = ctx;
-  let manualEntryDraftsByTaskId: Record<string, HistoryManagerManualDraft> = {};
-  let activeManualEntryTaskId: string | null = null;
-  let flashedManualEntryRowId: string | null = null;
-  let flashedManualEntryTimeout: number | null = null;
   let historyManagerLoadCycle = 0;
   let historyManagerLoading = false;
 
@@ -36,120 +25,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     }
     if (els.historyManagerLoadingOverlay) {
       els.historyManagerLoadingOverlay.hidden = !loading;
-    }
-  }
-
-  function syncManualEntryOverlayFromDraft(taskId: string) {
-    const draft = manualEntryDraftsByTaskId[taskId] || createDefaultHistoryManagerManualDraft(Date.now());
-    if (els.historyManagerManualDateTimeInput) els.historyManagerManualDateTimeInput.value = draft.dateTimeValue || "";
-    els.historyManagerManualDateTimeInput?.parentElement?.setAttribute(
-      "data-empty",
-      draft.dateTimeValue ? "false" : "true"
-    );
-    if (els.historyManagerManualHoursInput) els.historyManagerManualHoursInput.value = draft.hoursValue || "";
-    if (els.historyManagerManualMinutesInput) els.historyManagerManualMinutesInput.value = draft.minutesValue || "";
-    if (els.historyManagerManualNoteInput) els.historyManagerManualNoteInput.value = draft.noteValue || "";
-    if (els.historyManagerManualEntryError) {
-      els.historyManagerManualEntryError.textContent = draft.errorMessage || "";
-      (els.historyManagerManualEntryError as HTMLElement).style.display = draft.errorMessage ? "block" : "none";
-    }
-  }
-
-  function openManualEntryOverlay(taskId: string, options?: { forceTaskName?: string | null; allowDeleted?: boolean }) {
-    const meta = getTaskMetaForHistoryId(taskId);
-    if (meta.state !== "active" && !options?.allowDeleted) return;
-    if (!manualEntryDraftsByTaskId[taskId]) {
-      manualEntryDraftsByTaskId = {
-        ...manualEntryDraftsByTaskId,
-        [taskId]: createDefaultHistoryManagerManualDraft(Date.now()),
-      };
-    }
-    activeManualEntryTaskId = taskId;
-    if (els.historyManagerManualEntryTitle) {
-      const taskName = String(options?.forceTaskName || meta.name || "This Task").trim() || "This Task";
-      els.historyManagerManualEntryTitle.textContent = `Add Manual Entry for ${taskName}`;
-    }
-    if (els.historyManagerManualEntryMeta) {
-      els.historyManagerManualEntryMeta.textContent = "";
-      els.historyManagerManualEntryMeta.hidden = true;
-    }
-    syncManualEntryOverlayFromDraft(taskId);
-    if (els.historyManagerManualEntryOverlay) {
-      els.historyManagerManualEntryOverlay.style.display = "flex";
-      els.historyManagerManualEntryOverlay.setAttribute("aria-hidden", "false");
-    }
-    window.setTimeout(() => {
-      try {
-        els.historyManagerManualDateTimeBtn?.focus({ preventScroll: true });
-      } catch {
-        els.historyManagerManualDateTimeBtn?.focus();
-      }
-    }, 0);
-  }
-
-  function closeManualEntryOverlay(options?: { discardDraft?: boolean }) {
-    const taskId = activeManualEntryTaskId;
-    if (options?.discardDraft && taskId && manualEntryDraftsByTaskId[taskId]) {
-      const nextDrafts = { ...manualEntryDraftsByTaskId };
-      delete nextDrafts[taskId];
-      manualEntryDraftsByTaskId = nextDrafts;
-    }
-    activeManualEntryTaskId = null;
-    if (els.historyManagerManualEntryOverlay) {
-      els.historyManagerManualEntryOverlay.style.display = "none";
-      els.historyManagerManualEntryOverlay.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  function openManualEntryDateTimePicker() {
-    const input = els.historyManagerManualDateTimeInput;
-    if (!input) return;
-    try {
-      if (typeof (input as HTMLInputElement & { showPicker?: () => void }).showPicker === "function") {
-        (input as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
-      } else {
-        input.focus();
-        input.click();
-      }
-    } catch {
-      try {
-        input.focus();
-        input.click();
-      } catch {
-        input.focus();
-      }
-    }
-  }
-
-  function clearFlashedManualEntryRow(scheduleRender = false) {
-    if (flashedManualEntryTimeout != null) {
-      window.clearTimeout(flashedManualEntryTimeout);
-      flashedManualEntryTimeout = null;
-    }
-    if (!flashedManualEntryRowId) return;
-    flashedManualEntryRowId = null;
-    if (scheduleRender && isHistoryManagerOpen()) renderHistoryManager();
-  }
-
-  function flashHistoryManagerRow(rowId: string) {
-    clearFlashedManualEntryRow(false);
-    flashedManualEntryRowId = rowId;
-    flashedManualEntryTimeout = window.setTimeout(() => {
-      flashedManualEntryTimeout = null;
-      if (flashedManualEntryRowId !== rowId) return;
-      flashedManualEntryRowId = null;
-      if (isHistoryManagerOpen()) renderHistoryManager();
-    }, 3000);
-  }
-
-  function scrollToFlashedManualEntryRow() {
-    if (!flashedManualEntryRowId || !els.hmList) return;
-    const row = els.hmList.querySelector<HTMLElement>(`[data-hm-row-id="${flashedManualEntryRowId}"]`);
-    if (!row) return;
-    try {
-      row.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-    } catch {
-      row.scrollIntoView();
     }
   }
 
@@ -179,10 +54,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       ctx.save({ forceCloudFlush: true });
     }
     return changed;
-  }
-
-  function canUseAdvancedHistory() {
-    return ctx.hasEntitlement("advancedHistory");
   }
 
   function canUseAdvancedBackup() {
@@ -541,7 +412,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const hmBulkEditMode = ctx.getHmBulkEditMode();
     const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
     if (els.historyManagerBulkBtn) {
-      els.historyManagerBulkBtn.textContent = "Bulk Edit";
+      els.historyManagerBulkBtn.textContent = "Select";
       els.historyManagerBulkBtn.classList.toggle("btn-accent", hmBulkEditMode);
       els.historyManagerBulkBtn.classList.toggle("btn-ghost", !hmBulkEditMode);
     }
@@ -573,18 +444,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       hmSortKey,
       hmSortDir,
       hmExpandedTaskGroups: ctx.getHmExpandedTaskGroups(),
-      hmExpandedDateGroups: ctx.getHmExpandedDateGroups(),
       formatTwo: ctx.formatTwo,
       formatDateTime: ctx.formatDateTime,
       getTaskMetaForHistoryId,
       getHistoryEntryNote: (entry) => ctx.getHistoryEntryNote(entry),
-      canUseManualEntry: canUseAdvancedHistory(),
-      flashedRowId: flashedManualEntryRowId,
     });
     ctx.setHmExpandedTaskGroups(renderResult.expandedTaskGroups);
-    ctx.setHmExpandedDateGroups(renderResult.expandedDateGroups);
     ctx.setHmRowsByTask(renderResult.rowIdsByTask);
-    ctx.setHmRowsByTaskDate(renderResult.rowIdsByTaskDate);
+    ctx.setHmRowsByTaskDate({});
     if (renderResult.isEmpty) {
       listEl.innerHTML = renderResult.emptyHtml;
       syncHistoryManagerBulkUi();
@@ -595,7 +462,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!renderResult.validRowIds.has(id)) hmBulkSelectedRows.delete(id);
     });
     syncHistoryManagerBulkUi();
-    scrollToFlashedManualEntryRow();
   }
 
   function openHistoryManager() {
@@ -669,130 +535,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       (els.historyManagerScreen as HTMLElement).setAttribute("aria-hidden", "true");
     }
     ctx.setHmExpandedTaskGroups(new Set<string>());
-    ctx.setHmExpandedDateGroups(new Set<string>());
     ctx.setHmBulkEditMode(false);
     ctx.setHmBulkSelectedRows(new Set<string>());
     ctx.setHmRowsByTask({});
     ctx.setHmRowsByTaskDate({});
-    manualEntryDraftsByTaskId = {};
-    activeManualEntryTaskId = null;
-    clearFlashedManualEntryRow(false);
-    closeManualEntryOverlay();
     syncHistoryManagerBulkUi();
   }
 
-  function updateManualEntryDraft(taskId: string, updater: (draft: HistoryManagerManualDraft) => HistoryManagerManualDraft) {
-    const currentDraft = manualEntryDraftsByTaskId[taskId] || createDefaultHistoryManagerManualDraft(Date.now());
-    manualEntryDraftsByTaskId = {
-      ...manualEntryDraftsByTaskId,
-      [taskId]: updater(currentDraft),
-    };
-  }
-
-  function openManualEntryDraft(taskId: string) {
-    if (!canUseAdvancedHistory()) {
-      ctx.showUpgradePrompt("Manual history entry", "pro");
-      return;
-    }
-    openManualEntryOverlay(taskId);
-  }
-
-  function openManualEntryForTask(taskIdRaw: string) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return;
-    if (!canUseAdvancedHistory()) {
-      ctx.showUpgradePrompt("Manual history entry", "pro");
-      return;
-    }
-    const task = ctx.getTasks().find((entry) => String(entry?.id || "").trim() === taskId) || null;
-    if (!task) return;
-    openManualEntryOverlay(taskId, { forceTaskName: task.name, allowDeleted: true });
-  }
-
-  function saveManualEntryDraft(taskId: string) {
-    if (!canUseAdvancedHistory()) {
-      ctx.showUpgradePrompt("Manual history entry", "pro");
-      closeManualEntryOverlay({ discardDraft: true });
-      return;
-    }
-    const draft = manualEntryDraftsByTaskId[taskId];
-    if (!draft) return;
-    const meta = getTaskMetaForHistoryId(taskId);
-    const task = ctx.getTasks().find((row) => String(row.id || "") === String(taskId)) || null;
-    const elapsedMs = ((Number(draft.hoursValue || 0) * 60) + Number(draft.minutesValue || 0)) * 60 * 1000;
-    const parsed = parseHistoryManagerManualDraft({
-      draft,
-      taskName: meta.name,
-      historyEntryColor: task ? ctx.historyEntryColorForTaskMs(task, elapsedMs) : null,
-    });
-    if ("error" in parsed) {
-      updateManualEntryDraft(taskId, (currentDraft) => ({ ...currentDraft, errorMessage: parsed.error || "Could not save entry." }));
-      syncManualEntryOverlayFromDraft(taskId);
-      return;
-    }
-    const historyByTaskId = ctx.loadHistory();
-    const nextTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
-    nextTaskHistory.push(parsed.entry);
-    const nextHistory = { ...historyByTaskId, [taskId]: nextTaskHistory };
-    ctx.setHistoryByTaskId(nextHistory);
-    ctx.saveHistory(nextHistory);
-    const completed = task
-      ? completeManualEntryDailyGoalIfReached({
-          task,
-          historyByTaskId: nextHistory,
-          manualEntryTs: Number(parsed.entry.ts || 0),
-          nowMs: Date.now(),
-          weekStarting: ctx.getWeekStarting(),
-        })
-      : { completed: false };
-    if (task && completed.completed) {
-      if (task.running) {
-        ctx.resetTaskStateImmediate(task, { logHistory: true });
-        completeManualEntryDailyGoalIfReached({
-          task,
-          historyByTaskId: ctx.getHistoryByTaskId(),
-          manualEntryTs: Number(parsed.entry.ts || 0),
-          nowMs: Date.now(),
-          weekStarting: ctx.getWeekStarting(),
-        });
-      }
-      ctx.save();
-    }
-    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-    const nextDrafts = { ...manualEntryDraftsByTaskId };
-    delete nextDrafts[taskId];
-    manualEntryDraftsByTaskId = nextDrafts;
-    closeManualEntryOverlay();
-    const date = new Date(parsed.entry.ts);
-    const dateKey = `${date.getFullYear()}-${ctx.formatTwo(date.getMonth() + 1)}-${ctx.formatTwo(date.getDate())}`;
-    const rowId = `${taskId}|${parsed.entry.ts}|${parsed.entry.ms}|${String(parsed.entry.name || "")}`;
-    const nextExpandedTaskGroups = new Set(ctx.getHmExpandedTaskGroups());
-    const nextExpandedDateGroups = new Set(ctx.getHmExpandedDateGroups());
-    nextExpandedTaskGroups.add(taskId);
-    nextExpandedDateGroups.add(`${taskId}|${dateKey}`);
-    ctx.setHmExpandedTaskGroups(nextExpandedTaskGroups);
-    ctx.setHmExpandedDateGroups(nextExpandedDateGroups);
-    flashHistoryManagerRow(rowId);
-    renderHistoryManager();
-  }
-
   function registerHistoryManagerEvents() {
-    if (typeof window !== "undefined") {
-      ctx.on(window, OPEN_HISTORY_MANAGER_MANUAL_ENTRY_EVENT, (event: Event) => {
-        const detail = (event as CustomEvent<OpenHistoryManagerManualEntryDetail | undefined>).detail;
-        const taskId = String(detail?.taskId || "").trim();
-        const taskName = String(detail?.taskName || "").trim();
-        if (!taskId) return;
-        if (!canUseAdvancedHistory()) {
-          ctx.showUpgradePrompt("Manual history entry", "pro");
-          return;
-        }
-        openManualEntryOverlay(taskId, {
-          forceTaskName: taskName || null,
-          allowDeleted: true,
-        });
-      });
-    }
     ctx.on(els.historyManagerBtn, "click", () => {
       ctx.navigateToAppRoute("/history-manager");
     });
@@ -821,10 +571,14 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!nextBulkEditMode) ctx.setHmBulkSelectedRows(new Set<string>());
       renderHistoryManager();
     });
+    ctx.on(els.historyManagerCloseBtn, "click", () => {
+      ctx.navigateToAppRoute("/settings?pane=data");
+    });
     ctx.on(els.historyManagerBulkDeleteBtn, "click", () => {
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const selected = Array.from(hmBulkSelectedRows);
       if (!selected.length) return;
+      playDeleteAlertAudio();
       const byTask = groupSelectedHistoryRowsByTask(selected);
       const taskCount = Object.keys(byTask).length;
       const entryCount = selected.length;
@@ -911,6 +665,24 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         return;
       }
 
+      if (ctx.getHmBulkEditMode()) {
+        const row = ev.target?.closest?.("tr[data-hm-row-id]") as HTMLTableRowElement | null;
+        const rowCheckbox = row?.querySelector<HTMLInputElement>(".hmBulkRowChk");
+        const clickedDeleteButton = ev.target?.closest?.(".hmDelBtn");
+        if (row && rowCheckbox && !clickedDeleteButton) {
+          ev.preventDefault?.();
+          ev.stopPropagation?.();
+          const taskId = rowCheckbox.getAttribute("data-task") || "";
+          const rowKey = rowCheckbox.getAttribute("data-key") || "";
+          const id = `${taskId}|${rowKey}`;
+          const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
+          if (hmBulkSelectedRows.has(id)) hmBulkSelectedRows.delete(id);
+          else hmBulkSelectedRows.add(id);
+          renderHistoryManager();
+          return;
+        }
+      }
+
       const noteBtn = ev.target?.closest?.(".hmNoteBtn");
       if (noteBtn) {
         const taskId = noteBtn.getAttribute("data-task");
@@ -931,14 +703,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               (!liveSessionId || String(e?.liveSessionId || "") === liveSessionId)
           ) || null;
         if (entry) openHistoryManagerNoteOverlay({ ...entry, taskId });
-        return;
-      }
-
-      const addBtn = ev.target?.closest?.(".hmAddBtn");
-      if (addBtn) {
-        const taskId = String(addBtn.getAttribute("data-task") || "").trim();
-        if (!taskId) return;
-        openManualEntryDraft(taskId);
         return;
       }
 
@@ -966,6 +730,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!taskId || !key) return;
       ev.preventDefault?.();
       ev.stopPropagation?.();
+      playDeleteAlertAudio();
 
       ctx.confirm("Delete Log Entry", "Delete this entry?", {
         okLabel: "Delete",
@@ -999,18 +764,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         onCancel: () => ctx.closeConfirm(),
       });
     });
-    ctx.on(els.historyManagerManualEntryOverlay, "click", (ev: any) => {
-      if (ev.target !== els.historyManagerManualEntryOverlay) return;
-      closeManualEntryOverlay({ discardDraft: true });
-    });
-    ctx.on(els.historyManagerManualEntryCancelBtn, "click", () => {
-      closeManualEntryOverlay({ discardDraft: true });
-    });
-    ctx.on(els.historyManagerManualEntrySaveBtn, "click", () => {
-      const taskId = String(activeManualEntryTaskId || "").trim();
-      if (!taskId) return;
-      saveManualEntryDraft(taskId);
-    });
     ctx.on(els.hmList, "change", (ev: any) => {
       if (!ctx.getHmBulkEditMode()) return;
       const el = ev.target as HTMLInputElement | null;
@@ -1018,21 +771,9 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const checked = !!el.checked;
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const hmRowsByTask = ctx.getHmRowsByTask();
-      const hmRowsByTaskDate = ctx.getHmRowsByTaskDate();
       if (el.classList.contains("hmBulkTaskChk")) {
         const taskId = el.getAttribute("data-task") || "";
         const ids = hmRowsByTask[taskId] || [];
-        ids.forEach((id) => {
-          if (checked) hmBulkSelectedRows.add(id);
-          else hmBulkSelectedRows.delete(id);
-        });
-        renderHistoryManager();
-        return;
-      }
-      if (el.classList.contains("hmBulkDateChk")) {
-        const taskId = el.getAttribute("data-task") || "";
-        const dateKey = el.getAttribute("data-date") || "";
-        const ids = hmRowsByTaskDate[`${taskId}|${dateKey}`] || [];
         ids.forEach((id) => {
           if (checked) hmBulkSelectedRows.add(id);
           else hmBulkSelectedRows.delete(id);
@@ -1048,34 +789,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         else hmBulkSelectedRows.delete(id);
         renderHistoryManager();
       }
-    });
-    const bindManualEntryInput = (
-      el: HTMLInputElement | null,
-      field: "dateTimeValue" | "hoursValue" | "minutesValue" | "noteValue"
-    ) => {
-      ctx.on(el, "input", () => {
-        const taskId = String(activeManualEntryTaskId || "").trim();
-        if (!taskId || !manualEntryDraftsByTaskId[taskId]) return;
-        updateManualEntryDraft(taskId, (draft) => ({
-          ...draft,
-          [field]: String(el?.value || ""),
-          errorMessage: "",
-        }));
-        if (els.historyManagerManualEntryError) {
-          els.historyManagerManualEntryError.textContent = "";
-          (els.historyManagerManualEntryError as HTMLElement).style.display = "none";
-        }
-      });
-    };
-    bindManualEntryInput(els.historyManagerManualDateTimeInput, "dateTimeValue");
-    bindManualEntryInput(els.historyManagerManualHoursInput, "hoursValue");
-    bindManualEntryInput(els.historyManagerManualMinutesInput, "minutesValue");
-    bindManualEntryInput(els.historyManagerManualNoteInput, "noteValue");
-    ctx.on(els.historyManagerManualDateTimeInput, "focus", () => {
-      els.historyManagerManualDateTimeInput?.blur();
-    });
-    ctx.on(els.historyManagerManualDateTimeBtn, "click", () => {
-      openManualEntryDateTimePicker();
     });
     ctx.on(document, "click", (event: Event) => {
       const xpReplayTarget = (event.target as HTMLElement | null)?.closest?.(
@@ -1165,7 +878,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     syncHistoryManagerBulkUi,
     renderHistoryManager,
     openHistoryManager,
-    openManualEntryForTask,
     getHistoryManagerReturnRoute,
     isHistoryManagerOpen,
     refreshHistoryManagerFromCloud,

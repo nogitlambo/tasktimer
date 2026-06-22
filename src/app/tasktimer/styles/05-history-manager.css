@@ -102,6 +102,14 @@
   justify-content:flex-end;
 }
 
+#historyManagerScreen #historyManagerBulkBtn.btn-accent,
+#historyManagerScreen #historyManagerBulkBtn.btn-accent:hover:not(:disabled),
+#historyManagerScreen #historyManagerBulkBtn.btn-accent:focus-visible{
+  border-color: #c9ff24 !important;
+  background: #c9ff24 !important;
+  color: #000 !important;
+}
+
 .hmTitle{ font-family:var(--font-tight); font-size:17px; font-weight:700; letter-spacing:.1px; }
 
 .hmList{
@@ -167,14 +175,15 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   box-shadow: none;
 }
 
-.hmSummary{
+#app #historyManagerScreen .hmSummary{
   list-style:none;
   cursor:pointer;
-  padding:14px;
+  padding:8px 14px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:12px;
+  font-family:var(--font-orbitron) !important;
 }
 
 .hmSummaryMeta{
@@ -213,7 +222,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   content:"-";
 }
 
-.hmTaskName{ font-family:var(--font-tight); font-size:14px; font-weight:700; letter-spacing:.1px; }
+#app #historyManagerScreen .hmTaskName{ font-family:var(--font-orbitron) !important; font-size:13px; font-weight:700; letter-spacing:.1px; }
 
 .hmBadge{
   font-size:11px;
@@ -234,27 +243,6 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   color: rgba(255,255,255,.65);
   font-size:12px;
   font-weight:800;
-}
-
-.hmAddBtn{
-  width:32px;
-  height:32px;
-  border:1px solid rgba(160,232,255,.3);
-  background: rgba(255,255,255,.04);
-  color: rgba(236,249,255,.94);
-  cursor:pointer;
-  font-size:18px;
-  line-height:1;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.hmAddBtn:hover,
-.hmAddBtn:focus-visible{
-  border-color: rgba(160,232,255,.58);
-  background: rgba(255,255,255,.08);
-  outline:none;
 }
 
 .hmManualEntryModal{
@@ -440,11 +428,6 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   -moz-appearance:textfield;
 }
 
-#historyManagerManualNoteInput{
-  border-radius:0;
-  clip-path:none;
-}
-
 .hmManualEntryUnit{
   color: rgba(214,238,245,.78);
   font-family: var(--font-orbitron);
@@ -501,7 +484,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 .hmTable th, .hmTable td{
   border-top:1px solid transparent;
-  padding:7px 10px;
+  padding:4px 10px;
   text-align:left;
 }
 
@@ -519,6 +502,10 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 .hmTable tbody tr{
   background: transparent;
+}
+
+.hmTable tbody tr.hmBulkSelectableRow{
+  cursor:pointer;
 }
 
 .hmTable tbody tr:has(.hmBulkRowChk:checked) > td{
@@ -632,11 +619,6 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   cursor:pointer;
 }
 
-.hmDateHeading .hmBulkCheckbox{
-  margin-right:8px;
-  vertical-align:middle;
-}
-
 .hmTitleRow .hmBulkCheckbox{
   margin-right:6px;
 }
@@ -645,35 +627,8 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   margin:0;
 }
 
-.hmDateGroup + .hmDateGroup{
-  border-top:1px solid transparent;
-}
-
-.hmDateHeading{
-  display:block;
-  list-style:none;
-  cursor:pointer;
-  padding:8px 10px 6px;
-  color: rgba(190,230,245,.92);
-  font-family:var(--font-tight);
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.04em;
-  border:none;
-}
-
-.hmDateHeading::-webkit-details-marker{
-  display:none;
-}
-
-.hmDateHeading::after{
-  content: "▸";
-  float:right;
-  color: rgba(190,230,245,.85);
-}
-
-.hmDateGroup[open] .hmDateHeading::after{
-  content: "▾";
+.hmTaskHistoryTableWrap{
+  overflow-x:auto;
 }
 
 .hmDelBtn{
@@ -702,6 +657,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   height:22px;
   display:block;
   object-fit:contain;
+  filter: brightness(0) saturate(100%) invert(43%) sepia(96%) saturate(1883%) hue-rotate(330deg) brightness(104%) contrast(101%);
 }
 
 @media (max-width: 780px){
@@ -711,7 +667,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 .hmTable th,
   .hmTable td{
-    padding:7px 8px;
+    padding:4px 8px;
   }
 
 .hmNotesHead,
@@ -744,7 +700,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
     scroll-padding-bottom: var(--mobile-footer-reserved-space, 0px);
   }
 
-.hmDateGroup{
+.hmTaskHistoryTableWrap{
     overflow-x:auto;
   }
 
@@ -785,7 +741,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 }
 
 /* Rectangular modal shell alignment for history entry forms. */
-:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .hmManualEntryModal{
+#taskManualEntryOverlay .hmManualEntryModal{
   width:min(var(--modal-width-md), calc(100vw - 32px)) !important;
   background: var(--modal-bg) !important;
   border: 1px solid var(--modal-border) !important;
@@ -794,7 +750,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}:is(#historyManagerManualEntryOverlay, #taskManualEntryOverlay) .modalSubtext{
+}#taskManualEntryOverlay .modalSubtext{
   color: rgba(170, 178, 190, .88) !important;
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   font-size: 13px !important;

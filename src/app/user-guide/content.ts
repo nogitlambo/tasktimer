@@ -187,7 +187,7 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
       {
         title: "Bulk edit history safely",
         steps: [
-          "Choose Bulk Edit.",
+          "Choose Select.",
           "Select a task, date group, or individual rows.",
           "Review the selected count and delete summary.",
           "Confirm only when the selected rows are exactly what you intend to remove.",

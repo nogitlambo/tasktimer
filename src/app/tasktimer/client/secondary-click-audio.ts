@@ -36,7 +36,7 @@ const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip],[data-heatmap-flip]";
 const MODAL_OPEN_CLICK_SELECTOR = "[data-friend-profile-open],[data-leaderboard-profile-open]";
 const NOTE_TOOLBAR_CLICK_SELECTOR = ".richNoteToolbar [data-rich-note-command]";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
-const SECONDARY_CLICK_EXCLUDED_SELECTOR = '#focusModeBackBtn,[data-history-summary-action="delete-session"]';
+const SECONDARY_CLICK_EXCLUDED_SELECTOR = '#focusModeBackBtn,[data-history-summary-action="delete-session"],#historyManagerBulkDeleteBtn,.hmDelBtn';
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
   "save",
   "cancel",

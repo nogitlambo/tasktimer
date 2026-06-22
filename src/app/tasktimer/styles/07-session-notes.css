@@ -163,7 +163,11 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteAttachmentItem{
-  display: inline;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
 }
 
 @media (max-width: 720px){
