@@ -7596,10 +7596,38 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingStepMeta{
-  margin: 0 0 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin: 0 0 32px;
+}
+
+#onboardingOverlay .onboardingProgressLabel{
   color: rgba(170, 178, 190, .78);
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+}
+
+#onboardingOverlay .onboardingProgressRing{
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--onboarding-progress, 0%), rgba(170, 178, 190, .22) 0);
+  box-shadow: 0 0 0 1px rgba(170, 178, 190, .24);
+}
+
+#onboardingOverlay .onboardingProgressRing::after{
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #0d0f13;
 }
 
 #onboardingOverlay .onboardingChronotypePreview{
@@ -7612,6 +7640,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: min(100%, 520px);
 }
 
+#onboardingOverlay .onboardingChronotypePreview.onboardingProductivityDaysPreview{
+  aspect-ratio: 1967 / 799;
+  background: #0d0f13;
+  filter:
+    drop-shadow(0 12px 22px rgba(0, 0, 0, .26))
+    drop-shadow(0 0 18px rgba(201, 255, 36, .08));
+  -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
+  mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
+}
+
 #onboardingOverlay .onboardingHoursSubtext{
   color: #fff !important;
 }
@@ -7621,6 +7659,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   min-height: 1.2em;
 }
 
+#onboardingOverlay .onboardingGreetingStepTitle{
+  animation: onboardingGreetingStepTitleSequence 1100ms cubic-bezier(.22,.78,.2,1) 200ms both;
+}
+
+#onboardingOverlay .onboardingGreetingStepSubtext{
+  animation: onboardingGreetingStepSubtextReveal 500ms ease-out 1100ms both;
+  color: #fff !important;
+  margin: 0 auto 28px;
+  max-width: 440px;
+}
+
 #onboardingOverlay .onboardingGreetingDivider{
   animation: onboardingGreetingDividerReveal 500ms ease-out both;
   width: 50% !important;
@@ -7628,6 +7677,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 10px auto 32px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   transform-origin: center;
+}
+
+#onboardingOverlay .onboardingDaysDivider{
+  display: block;
+  flex: 0 0 auto;
+  height: 1px;
+  margin: 0 auto 24px;
+  max-width: 42%;
+  min-height: 1px;
+  opacity: 1;
+  width: 148px !important;
 }
 
 #onboardingOverlay .onboardingUsernameSubtext,
@@ -7685,6 +7745,32 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
+@keyframes onboardingGreetingStepTitleSequence{
+  0%{
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  45%{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes onboardingGreetingStepSubtextReveal{
+  from{
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes onboardingIntroSubtextReveal{
   from{
     opacity: 0;
@@ -7718,6 +7804,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 @media (prefers-reduced-motion: reduce){
   #onboardingOverlay .onboardingGreetingTitle,
+  #onboardingOverlay .onboardingGreetingStepTitle,
+  #onboardingOverlay .onboardingGreetingStepSubtext,
   #onboardingOverlay .onboardingGreetingDivider,
   #onboardingOverlay .onboardingUsernameSubtext,
   #onboardingOverlay .onboardingUsernameField,
@@ -8126,6 +8214,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   border-color: var(--accent) !important;
   background: var(--accent);
   color: #050607;
+  font-weight: 700;
 }
 
 #onboardingOverlay .modalCheckboxRow{
@@ -8207,8 +8296,22 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin-top: clamp(18px, 4vh, 32px);
 }
 
+#onboardingOverlay .modal .confirmBtns.onboardingActions .btn.btn-accent:not(.btn-warn):not(:disabled){
+  border-color: #c9ff24 !important;
+  color: #c9ff24 !important;
+}
+
+#onboardingOverlay .modal .confirmBtns.onboardingActions .btn.btn-accent:not(.btn-warn):hover:not(:disabled),
+#onboardingOverlay .modal .confirmBtns.onboardingActions .btn.btn-accent:not(.btn-warn):focus-visible:not(:disabled){
+  background: #c9ff24 !important;
+  border-color: #c9ff24 !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+}
+
 #onboardingOverlay .onboardingActions .btn-accent:only-child{
   margin-left: auto;
+  margin-right: auto;
 }
 
 @media (max-width: 520px){

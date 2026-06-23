@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 
 import AppImg from "@/components/AppImg";
@@ -42,15 +42,17 @@ type TaskLaunchOnboardingProps = {
   preferences: UserPreferencesV1 | null;
 };
 
-type StepKey = "username" | "intro" | "days" | "hours" | "push" | "weekStart";
+type StepKey = "username" | "greeting" | "intro" | "days" | "hours" | "push" | "weekStart";
 type OnboardingTimeField = "start" | "end";
 
 export const ONBOARDING_CHRONOTYPE_INTRO =
-  "Most productivity tools organize your time. TaskLaunch goes a step further by using chronotype alignment to help you match demanding work with your peak focus periods, so you can achieve more with less mental strain.";
+  "TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and energy are strongest, instead of forcing productivity when it does not fit.";
+export const ONBOARDING_GREETING_SUBTEXT = "Please take a moment to optimise your profile and complete this quick onboarding process.";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
-  { key: "intro", title: "Chronotype Alignment" },
+  { key: "greeting", title: "Greeting" },
+  { key: "intro", title: "A realistic productivity tool" },
   { key: "days", title: "Productivity Days" },
   { key: "hours", title: "Productivity Hours" },
   { key: "weekStart", title: "Week Start" },
@@ -132,7 +134,7 @@ function alertUsernameError(message: string) {
 
 export function onboardingTitle(step: StepKey, username: string) {
   if (step === "username") return "Welcome";
-  if (step === "intro") return `Good to meet you, ${username}!`;
+  if (step === "greeting") return `Good to meet you, ${username}!`;
   return ONBOARDING_STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
 }
 
@@ -180,6 +182,29 @@ export function isOnboardingFinishDisabled(busy: boolean) {
   return busy;
 }
 
+export function onboardingCompletedProgressPercent(stepIndex: number, totalSteps: number) {
+  const total = Math.max(0, Math.floor(Number(totalSteps) || 0));
+  if (total <= 0) return 0;
+  const completed = Math.max(0, Math.min(total, Math.floor(Number(stepIndex) || 0)));
+  return Math.round((completed / total) * 100);
+}
+
+export function shouldShowOnboardingProgressRing(stepIndex: number) {
+  return Math.floor(Number(stepIndex) || 0) >= 2;
+}
+
+export function shouldShowOnboardingStepImage(step: StepKey) {
+  return step !== "username" && step !== "greeting" && step !== "weekStart";
+}
+
+export function shouldShowOnboardingStepSubtext(step: StepKey) {
+  return step !== "days" && step !== "greeting" && step !== "weekStart";
+}
+
+type OnboardingProgressStyle = CSSProperties & {
+  "--onboarding-progress": string;
+};
+
 export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardingProps) {
   const [uid, setUid] = useState("");
   const [username, setUsername] = useState("");
@@ -215,6 +240,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const selectedDays = useMemo(() => normalizeOnboardingProductivityDays(productivityDays), [productivityDays]);
   const selectedWeekStartOption = WEEK_START_OPTIONS.find((option) => option.value === weekStarting) ?? WEEK_START_OPTIONS[0];
   const onboardingHeadingText = onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there");
+  const onboardingProgressPercent = onboardingCompletedProgressPercent(stepIndex, ONBOARDING_STEPS.length);
+  const showProgressRing = shouldShowOnboardingProgressRing(stepIndex);
+  const showStepImage = shouldShowOnboardingStepImage(activeStep);
+  const showStepSubtext = shouldShowOnboardingStepSubtext(activeStep);
   const selectedAvatar = AVATAR_CATALOG.find((avatar) => avatar.id === selectedAvatarId) || AVATAR_CATALOG[0] || null;
 
   useEffect(() => {
@@ -566,33 +595,55 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   if (!open) return null;
 
+  const isGreetingStep = activeStep === "greeting";
+
   return (
     <div className="overlay" id="onboardingOverlay" style={{ display: "flex" }}>
       <div className="modal" role="dialog" aria-modal="true" aria-label="TaskLaunch onboarding">
-        {activeStep !== "username" ? (
+        <div className="onboardingStepMeta" aria-label="Onboarding progress">
+          <span className="onboardingProgressLabel">{onboardingProgressPercent}% Complete</span>
+          {showProgressRing ? (
+            <span
+              className="onboardingProgressRing"
+              role="progressbar"
+              aria-label="Onboarding progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={onboardingProgressPercent}
+              style={{ "--onboarding-progress": `${onboardingProgressPercent}%` } as OnboardingProgressStyle}
+            />
+          ) : null}
+        </div>
+        {activeStep !== "username" && !isGreetingStep ? (
           <button className="onboardingSkipLink" type="button" onClick={() => void closeWithState("dismissed")} disabled={busy}>
             Skip
           </button>
         ) : null}
-        {activeStep === "intro" ? (
+        {showStepImage ? (
           <AppImg
-            className="onboardingChronotypePreview"
-            src="/onboarding/01_onboarding-chronotypes.webp"
-            alt="Chronotype alignment preview"
-            width={1597}
-            height={985}
+            className={`onboardingChronotypePreview${activeStep === "days" ? " onboardingProductivityDaysPreview" : ""}`}
+            src={activeStep === "days" ? "/onboarding/onboarding_productivity_days.webp" : "/onboarding/01_onboarding-chronotypes.webp"}
+            alt={activeStep === "days" ? "Productivity days preview" : "Chronotype alignment preview"}
+            width={activeStep === "days" ? 1967 : 1597}
+            height={activeStep === "days" ? 799 : 985}
           />
         ) : null}
-        {activeStep !== "username" ? (
-          <div className="onboardingStepMeta" aria-label="Onboarding progress">
-            Step {stepIndex + 1} of {ONBOARDING_STEPS.length}
-          </div>
-        ) : null}
-        <h2 className="onboardingGreetingTitle" key={`onboarding-heading-${activeStep}`}>
+        <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
           {onboardingHeadingText}
         </h2>
-        <div className="onboardingGreetingDivider" key={`onboarding-divider-${activeStep}`} aria-hidden="true" />
-        {activeStep !== "days" ? (
+        {isGreetingStep ? (
+          <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
+            {ONBOARDING_GREETING_SUBTEXT}
+          </p>
+        ) : null}
+        {!isGreetingStep && activeStep !== "days" ? (
+          <div
+            className="onboardingGreetingDivider onboardingDaysDivider"
+            key={`onboarding-divider-${activeStep}`}
+            aria-hidden="true"
+          />
+        ) : null}
+        {showStepSubtext ? (
           <p
             className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
               activeStep === "push" || activeStep === "weekStart" ? " onboardingNotificationsSubtext" : ""
@@ -607,9 +658,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               "Please choose an avatar and set a username for your profile:"
             ) : activeStep === "intro" ? (
               <>
-                Most productivity tools organize your time. TaskLaunch goes a step further by using{" "}
-                <span className="onboardingChronotypeAccent">chronotype alignment</span> to help you match demanding work with your peak focus periods, so you can
-                achieve more with less mental strain.
+                TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and
+                energy are strongest, instead of forcing productivity when it does not fit.
               </>
             ) : (
               stepIntro(activeStep, isNativeRuntime)
@@ -681,14 +731,14 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         {activeStep === "days" ? (
           <div className="onboardingFieldsGrid">
             <div className="field modalDropdownField onboardingField">
+              <div className="onboardingGreetingDivider onboardingDaysDivider" aria-hidden="true" />
               <div className="onboardingProductivityIntroText">
                 <p className="onboardingProductivityDaysHelp">
-                  TaskLaunch helps schedule your highest-priority tasks on the days you&apos;re most likely to perform at your best.
+                  Productivity does not look the same every day, and that is okay. Some days your energy might be higher, while others are better for rest or
+                  lighter tasks.
                   <br />
-                  <span id="onboardingProductivityDaysLabel">Select the day(s) of the week you are the most productive.</span>
-                  <br />
-                  <span className="onboardingProductivitySettingsNote">
-                    You can adjust your productivity days at any time from Settings &gt; Preferences.
+                  <span id="onboardingProductivityDaysLabel">
+                    Select the day(s) of the week you are most likely to feel at your peak focus.
                   </span>
                 </p>
               </div>
@@ -844,8 +894,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           </div>
         ) : null}
 
-        {activeStep !== "username" && activeStep !== "push" && status ? <p className="modalSubtext onboardingStatusText">{status}</p> : null}
-        {activeStep !== "username" && error ? <p className="confirmText onboardingErrorText">{error}</p> : null}
+        {activeStep !== "username" && activeStep !== "push" && !isGreetingStep && status ? <p className="modalSubtext onboardingStatusText">{status}</p> : null}
+        {activeStep !== "username" && !isGreetingStep && error ? <p className="confirmText onboardingErrorText">{error}</p> : null}
 
         <div className="confirmBtns onboardingActions">
           {stepIndex > 0 ? (
@@ -867,7 +917,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               onClick={() => void handleNext()}
               disabled={busy}
             >
-              Continue
+              {isGreetingStep ? "Let's Go!" : "Continue"}
             </button>
           ) : (
             <button

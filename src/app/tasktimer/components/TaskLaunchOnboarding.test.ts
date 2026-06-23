@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ONBOARDING_CHRONOTYPE_INTRO,
+  ONBOARDING_GREETING_SUBTEXT,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
@@ -9,8 +10,12 @@ import {
   isOnboardingUsernameTakenError,
   isOnboardingFinishDisabled,
   normalizeOnboardingProductivityDays,
+  onboardingCompletedProgressPercent,
   onboardingAvatarProfilePatch,
   resolveOnboardingAvatarId,
+  shouldShowOnboardingProgressRing,
+  shouldShowOnboardingStepImage,
+  shouldShowOnboardingStepSubtext,
   onboardingStepPreferencePayload,
   onboardingTitle,
 } from "./TaskLaunchOnboarding";
@@ -22,15 +27,43 @@ describe("TaskLaunchOnboarding finish action", () => {
   });
 });
 
-describe("TaskLaunchOnboarding steps", () => {
-  it("places the chronotype intro after username before the productivity setup steps", () => {
-    expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual(["username", "intro", "days", "hours", "weekStart", "push"]);
+describe("TaskLaunchOnboarding progress", () => {
+  it("uses completed steps only for the first visible progress-capable step", () => {
+    expect(onboardingCompletedProgressPercent(2, 7)).toBe(29);
   });
 
-  it("uses the username greeting for the standalone intro step", () => {
-    expect(onboardingTitle("intro", "Avery")).toBe("Good to meet you, Avery!");
+  it("keeps the final onboarding screen below complete until Finish closes onboarding", () => {
+    expect(onboardingCompletedProgressPercent(6, 7)).toBe(86);
+  });
+
+  it("clamps invalid totals and step indexes", () => {
+    expect(onboardingCompletedProgressPercent(4, 0)).toBe(0);
+    expect(onboardingCompletedProgressPercent(4, -1)).toBe(0);
+    expect(onboardingCompletedProgressPercent(-1, 7)).toBe(0);
+    expect(onboardingCompletedProgressPercent(9, 7)).toBe(100);
+  });
+
+  it("hides the progress ring on the first two onboarding steps", () => {
+    expect(shouldShowOnboardingProgressRing(0)).toBe(false);
+    expect(shouldShowOnboardingProgressRing(1)).toBe(false);
+    expect(shouldShowOnboardingProgressRing(2)).toBe(true);
+  });
+});
+
+describe("TaskLaunchOnboarding steps", () => {
+  it("places the greeting after username before the chronotype and productivity setup steps", () => {
+    expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual(["username", "greeting", "intro", "days", "hours", "weekStart", "push"]);
+  });
+
+  it("uses the username greeting for the standalone greeting step", () => {
+    expect(onboardingTitle("greeting", "Avery")).toBe("Good to meet you, Avery!");
+    expect(ONBOARDING_GREETING_SUBTEXT).toBe("Please take a moment to optimise your profile and complete this quick onboarding process.");
+  });
+
+  it("keeps the realistic productivity copy on the intro step", () => {
+    expect(onboardingTitle("intro", "Avery")).toBe("A realistic productivity tool");
     expect(ONBOARDING_CHRONOTYPE_INTRO).toBe(
-      "Most productivity tools organize your time. TaskLaunch goes a step further by using chronotype alignment to help you match demanding work with your peak focus periods, so you can achieve more with less mental strain."
+      "TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and energy are strongest, instead of forcing productivity when it does not fit."
     );
   });
 
@@ -42,7 +75,25 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingTitle("push", "Avery")).toBe("Notifications");
   });
 
+  it("hides image and subtext content on the week-start step", () => {
+    expect(shouldShowOnboardingStepImage("weekStart")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("weekStart")).toBe(false);
+    expect(shouldShowOnboardingStepImage("hours")).toBe(true);
+    expect(shouldShowOnboardingStepSubtext("hours")).toBe(true);
+  });
+
   it("does not create a preference payload for the standalone intro step", () => {
+    expect(
+      onboardingStepPreferencePayload({
+        step: "greeting",
+        weekStarting: "mon",
+        selectedDays: ["mon", "tue", "wed", "thu", "fri"],
+        startTime: "09:00",
+        endTime: "17:00",
+        pushEnabled: false,
+        pushTouched: false,
+      })
+    ).toBeNull();
     expect(
       onboardingStepPreferencePayload({
         step: "intro",
