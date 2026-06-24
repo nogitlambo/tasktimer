@@ -46,46 +46,44 @@ export default function FocusModeScreen() {
           </button>
         </div>
       </div>
-      <div className="focusInsightsRow">
-        <div className="focusSessionNotes" id="focusSessionNotesSection">
-          <div className="focusInsightsTitle">Session Notes</div>
-          <div className="focusSessionNotesBody">
-            <div
-              className="richNoteToolbar"
-              role="toolbar"
-              aria-label="Session note formatting"
-              data-rich-note-toolbar="true"
-              data-rich-note-for="focusSessionNotesInput"
-            >
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bold" aria-label="Bold" data-rich-note-command="bold" aria-pressed="false">B</button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Italic" aria-label="Italic" data-rich-note-command="italic" aria-pressed="false">I</button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Underline" aria-label="Underline" data-rich-note-command="underline" aria-pressed="false">U</button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bulleted list" aria-label="Bulleted list" data-rich-note-command="insertUnorderedList" aria-pressed="false">
-                <AppImg className="richNoteToolbarIcon" src="/icons/list.png" alt="" aria-hidden="true" />
-              </button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Numbered list" aria-label="Numbered list" data-rich-note-command="insertOrderedList" aria-pressed="false">
-                <AppImg className="richNoteToolbarIcon" src="/icons/numbered_list.png" alt="" aria-hidden="true" />
-              </button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Add link" aria-label="Add link" data-rich-note-command="createLink" aria-pressed="false">
-                <AppImg className="richNoteToolbarIcon" src="/icons/link.png" alt="" aria-hidden="true" />
-              </button>
-              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Attach File(s)" aria-label="Attach File(s)" data-rich-note-command="attachFiles" aria-pressed="false">Attach File(s)</button>
-            </div>
-            <div className="sessionNoteEditorGrid">
-              <div
-                className="text focusSessionNotesInput richNoteEditor"
-                id="focusSessionNotesInput"
-                role="textbox"
-                aria-multiline="true"
-                aria-label="Session Notes"
-                contentEditable
-                suppressContentEditableWarning
-                data-rich-note-editor="true"
-              />
-              <div className="sessionNoteAttachments" id="focusSessionNoteAttachments" aria-live="polite" />
-            </div>
-            <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
+      <div className="focusSessionNotes" id="focusSessionNotesSection">
+        <div className="focusInsightsTitle">Session Notes</div>
+        <div className="focusSessionNotesBody">
+          <div
+            className="richNoteToolbar"
+            role="toolbar"
+            aria-label="Session note formatting"
+            data-rich-note-toolbar="true"
+            data-rich-note-for="focusSessionNotesInput"
+          >
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bold" aria-label="Bold" data-rich-note-command="bold" aria-pressed="false">B</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Italic" aria-label="Italic" data-rich-note-command="italic" aria-pressed="false">I</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Underline" aria-label="Underline" data-rich-note-command="underline" aria-pressed="false">U</button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bulleted list" aria-label="Bulleted list" data-rich-note-command="insertUnorderedList" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/list.png" alt="" aria-hidden="true" />
+            </button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Numbered list" aria-label="Numbered list" data-rich-note-command="insertOrderedList" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/numbered_list.png" alt="" aria-hidden="true" />
+            </button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Add link" aria-label="Add link" data-rich-note-command="createLink" aria-pressed="false">
+              <AppImg className="richNoteToolbarIcon" src="/icons/link.png" alt="" aria-hidden="true" />
+            </button>
+            <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Attach File(s)" aria-label="Attach File(s)" data-rich-note-command="attachFiles" aria-pressed="false">Attach File(s)</button>
           </div>
+          <div className="sessionNoteEditorGrid">
+            <div
+              className="text focusSessionNotesInput richNoteEditor"
+              id="focusSessionNotesInput"
+              role="textbox"
+              aria-multiline="true"
+              aria-label="Session Notes"
+              contentEditable
+              suppressContentEditableWarning
+              data-rich-note-editor="true"
+            />
+            <div className="sessionNoteAttachments" id="focusSessionNoteAttachments" aria-live="polite" />
+          </div>
+          <div className="focusSessionNotesSavedText" id="focusSessionNotesSavedText" aria-live="polite" />
         </div>
       </div>
       <div className="focusDndSetup" id="focusDndSetup" hidden>

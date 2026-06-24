@@ -1473,7 +1473,18 @@ describe("task timer session tick", () => {
     const css = readFileSync("src/app/tasktimer/styles/00-base.css", "utf8").replace(/\r\n/g, "\n");
     const taskCss = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
     const focusModeScreenRule = css.match(/#focusModeScreen\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const focusModeOpenRule = css.match(/body\.isFocusModeOpen #focusModeScreen\{[\s\S]*?\n\}/)?.[0] ?? "";
     const dialRule = css.match(/\.focusDial\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const focusNotesRules = Array.from(css.matchAll(/\.focusSessionNotes\{[\s\S]*?\n\}/g)).map(
+      (match) => match[0]
+    );
+    const focusNotesBodyRules = Array.from(css.matchAll(/#focusModeScreen \.focusSessionNotesBody\{[\s\S]*?\n\}/g)).map(
+      (match) => match[0]
+    );
+    const focusNoteEditorGridRule = css.match(/#focusModeScreen \.sessionNoteEditorGrid\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const focusNotesInputRules = Array.from(css.matchAll(/#focusModeScreen \.focusSessionNotesInput\{[\s\S]*?\n\}/g)).map(
+      (match) => match[0]
+    );
     const progressRule = css.match(/\.focusDialProgress\{[\s\S]*?\n\}/)?.[0] ?? "";
     const progressFillRule = css.match(/\.focusDialProgressFill\{[\s\S]*?\n\}/)?.[0] ?? "";
     const exitBarRule = css.match(/\.focusModeExitBar\{[\s\S]*?\n\}/)?.[0] ?? "";
@@ -1481,8 +1492,23 @@ describe("task timer session tick", () => {
     const focusModeScreen = readFileSync("src/app/tasktimer/components/FocusModeScreen.tsx", "utf8").replace(/\r\n/g, "\n");
 
     expect(focusModeScreenRule).toContain('url("/leaderboard/deep-space-bg.webp") center / cover no-repeat #000');
+    expect(focusModeOpenRule).toContain("display:flex !important");
+    expect(focusModeOpenRule).toContain("flex-direction:column");
+    expect(focusModeOpenRule).toContain("overflow-y:auto");
     expect(focusModeHeadRule).toContain("padding-top:32px");
     expect(dialRule).toContain("--focus-inner-inset: calc(16.125cqw - 1px)");
+    expect(focusNotesRules.some((rule) => rule.includes("overflow-x:clip"))).toBe(true);
+    expect(focusNotesRules.some((rule) => rule.includes("overflow-y:visible"))).toBe(true);
+    expect(focusNotesRules.some((rule) => rule.includes("flex:0 0 auto"))).toBe(true);
+    expect(focusNotesRules.some((rule) => rule.includes("margin-bottom:clamp(18px, 2.8dvh, 34px)"))).toBe(true);
+    expect(focusNotesBodyRules.some((rule) => rule.includes("display:flex"))).toBe(true);
+    expect(focusNotesBodyRules.some((rule) => rule.includes("flex-direction:column"))).toBe(true);
+    expect(focusNoteEditorGridRule).toContain("margin-bottom:clamp(18px, 2.8dvh, 34px)");
+    expect(
+      focusNotesInputRules.some((rule) =>
+        rule.includes("max-height:max(var(--focus-session-notes-min-height), min(34dvh, 300px))")
+      )
+    ).toBe(true);
     expect(progressRule).toContain("inset:0");
     expect(progressRule).toContain("z-index:7");
     expect(progressRule).toContain("visibility:hidden");
@@ -1492,6 +1518,9 @@ describe("task timer session tick", () => {
     expect(progressFillRule).toContain("stroke-dashoffset:0");
     expect(progressFillRule).toContain("vector-effect: non-scaling-stroke");
     expect(exitBarRule).toContain("padding-bottom:32px");
+    expect(exitBarRule).toContain("align-self:center");
+    expect(exitBarRule).toContain("flex:0 0 auto");
+    expect(exitBarRule).toContain("margin:clamp(14px, 2dvh, 24px) auto 0");
     expect(focusModeScreen).toContain('className="focusDialProgress"');
     expect(focusModeScreen).toContain('className="focusDialProgressFill"');
     expect(focusModeScreen).not.toContain("focusDialProgressShimmer");

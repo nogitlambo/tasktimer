@@ -47,7 +47,7 @@ type OnboardingTimeField = "start" | "end";
 
 export const ONBOARDING_CHRONOTYPE_INTRO =
   "TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and energy are strongest, instead of forcing productivity when it does not fit.";
-export const ONBOARDING_GREETING_SUBTEXT = "Please take a moment to optimise your profile and complete this quick onboarding process.";
+export const ONBOARDING_GREETING_SUBTEXT = "Let’s set up your profile around how you work best. A few quick questions will help personalise your experience.";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
@@ -646,10 +646,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         {showStepSubtext ? (
           <p
             className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
-              activeStep === "push" || activeStep === "weekStart" ? " onboardingNotificationsSubtext" : ""
-            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
-              activeStep === "weekStart" ? " onboardingWeekStartSubtext" : ""
-            }${activeStep === "intro" ? " onboardingIntroSubtext" : ""}${
+              activeStep === "push" ? " onboardingNotificationsSubtext" : ""
+            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${activeStep === "intro" ? " onboardingIntroSubtext" : ""}${
               activeStep === "username" ? " onboardingUsernameSubtext" : ""
             }`}
             key={`onboarding-subtext-${activeStep}`}

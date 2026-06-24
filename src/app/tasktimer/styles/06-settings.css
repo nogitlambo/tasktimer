@@ -973,6 +973,22 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsI
   margin-top:12px !important;
 }
 
+@media (max-width: 640px){
+  body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsInlineConfirmBtns, .accountInlineConfirmBtns){
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:10px !important;
+  }
+
+  body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
+    flex:0 1 auto !important;
+    min-width:0 !important;
+  }
+}
+
 body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBtns, .footerBtns) .btn{
   border-color:rgba(255,255,255,.86) !important;
   border-radius:0 !important;
@@ -5238,7 +5254,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
-#app[aria-label="TaskLaunch Account"] .accountPageBackBtn{
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:not(.accountProfileBackAction){
   margin-left: auto;
   min-width: 74px;
   min-height: 32px;
@@ -5256,8 +5272,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   transition: background-color .16s ease, border-color .16s ease, color .16s ease;
 }
 
-#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:hover,
-#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:focus-visible{
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:not(.accountProfileBackAction):hover,
+#app[aria-label="TaskLaunch Account"] .accountPageBackBtn:not(.accountProfileBackAction):focus-visible{
   outline: none;
   border-color: rgba(205, 213, 224, .78);
   background: rgba(255,255,255,.06);
@@ -5755,12 +5771,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app[aria-label="TaskLaunch Account"] .accountProfileBackAction{
-  margin-left: 0;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-#app[aria-label="TaskLaunch Account"] .accountProfileBackAction span{
-  gap: 4px;
+  justify-self: center;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 #app[aria-label="TaskLaunch Account"] .accountInlineConfirmOverlay{
@@ -5990,7 +6006,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app[aria-label="TaskLaunch Account"] .accountProfilePage{
     width: 100%;
     min-height: 100%;
-    padding: 24px 14px 30px;
+    padding: calc(var(--safe-top) + 24px) 14px 30px;
     border: 0;
     box-shadow: none;
   }

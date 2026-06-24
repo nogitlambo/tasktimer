@@ -2034,20 +2034,6 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border-radius: 0;
 }
 
-.focusInsightsRow{
-  display:grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items:center;
-  gap:14px;
-  grid-area: focusStats;
-  align-self:stretch;
-  width:100%;
-  max-width:620px;
-  margin:0 auto;
-  min-height:0;
-  overflow-x:hidden;
-}
-
 .focusInsights{
   align-self:start;
   display:flex;
@@ -2115,13 +2101,22 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 .focusSessionNotes{
+  grid-area: focusStats;
   width:50%;
+  max-width:620px;
   margin-top: 0;
+  margin-left:auto;
+  margin-right:auto;
+  margin-bottom:clamp(18px, 2.8dvh, 34px);
+  padding-left:0;
+  padding-right:0;
   padding-bottom:32px;
   display:flex;
+  flex:0 0 auto;
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
+  justify-self:center;
   align-self:start;
   background:transparent;
   border:0;
@@ -2129,6 +2124,8 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   clip-path:none;
   text-align:center;
   min-height:0;
+  overflow-x:clip;
+  overflow-y:visible;
 }
 
 .focusSessionNotesSummary{
@@ -2310,6 +2307,25 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 #focusModeScreen .sessionNoteEditorGrid{
   grid-template-columns:1fr;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin-bottom:clamp(18px, 2.8dvh, 34px);
+}
+
+#focusModeScreen .focusSessionNotesBody{
+  justify-self:center;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+#focusModeScreen .richNoteToolbar,
+#focusModeScreen .focusSessionNotesInput{
+  max-width:100%;
+  min-width:0;
 }
 
 .sessionNoteAttachments{
@@ -2437,6 +2453,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 #focusModeScreen .focusSessionNotesInput{
   padding: 8px;
+  max-height:max(var(--focus-session-notes-min-height), min(34dvh, 300px));
   background: #1a1b20 !important;
   background-color: #1a1b20 !important;
   border-color: rgba(174,184,194,.45) !important;
@@ -2470,6 +2487,11 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   align-content:start;
   gap:0;
   min-height:0;
+}
+
+#focusModeScreen .focusSessionNotesBody{
+  display:flex;
+  flex-direction:column;
 }
 
 .focusSessionNotesActions{
@@ -2616,22 +2638,15 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 body.isFocusModeOpen #focusModeScreen{
-  display:grid !important;
-  grid-template-columns:minmax(0, min(920px, 100%));
-  grid-template-rows:auto auto minmax(0, auto) minmax(0, auto) minmax(0, 1fr) auto;
-  grid-template-areas:
-    "focusHead"
-    "focusTitle"
-    "focusDial"
-    "focusControls"
-    "focusStats"
-    "focusExit";
-  justify-content:center;
-  align-content:start;
-  align-items:start;
+  display:flex !important;
+  flex-direction:column;
+  justify-content:flex-start;
+  align-items:center;
   gap:clamp(6px, 1.3dvh, 14px);
   height:100dvh;
   max-height:100dvh;
+  overflow-y:auto;
+  overflow-x:hidden;
 }
 
 body.isFocusModeOpen{
@@ -2672,10 +2687,10 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages{
 body.isFocusModeOpen #focusModeScreen{
     position:fixed;
     inset:0;
-    width:100vw;
+    width:100%;
     height:100dvh;
     max-height:100dvh;
-    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    padding: var(--safe-top) calc(16px + var(--safe-right)) var(--safe-bottom) calc(16px + var(--safe-left));
   }
 }
 
@@ -2723,15 +2738,14 @@ body.isFocusModeOpen #focusModeScreen{
 body.isFocusModeOpen #focusModeScreen .focusModeHead,
   body.isFocusModeOpen #focusModeScreen .focusTaskTitle,
   body.isFocusModeOpen #focusModeScreen .focusDialWrap,
-  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop,
-  body.isFocusModeOpen #focusModeScreen .focusInsightsRow{
+  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
     width:100%;
     max-width:none;
     justify-self:stretch;
   }
 
 body.isFocusModeOpen #focusModeScreen .focusDialWrap{
-    padding: 0 0 14px;
+    padding: 0 0 48px;
   }
 
 body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
@@ -2767,12 +2781,15 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
 .focusModeExitBar{
   grid-area:focusExit;
   display:flex;
-  align-self:end;
+  align-self:center;
   justify-content:center;
+  flex:0 0 auto;
   width:100%;
   max-width:620px;
-  margin:0 auto;
+  margin:clamp(14px, 2dvh, 24px) auto 0;
   padding-bottom:32px;
+  position:relative;
+  z-index:1;
 }
 
 /* About */
@@ -3510,12 +3527,16 @@ body[data-theme="lime"] .settingsNavItemIcon{
 
 @media (max-width: 980px){
 body.isFocusModeOpen #focusModeScreen{
-    grid-template-columns:minmax(0, min(620px, 100%));
     gap:clamp(5px, 1.1dvh, 10px);
+    align-items:center;
   }
 
 .focusDial{
     width:min(58.5vw, 28.5dvh, 315px);
+  }
+
+.focusDialWrap{
+    margin-bottom:clamp(16px, 2.8dvh, 30px);
   }
 
 .focusCheckpointLabelDesc{
@@ -3526,75 +3547,55 @@ body.isFocusModeOpen #focusModeScreen{
 @media (max-width: 760px){
 body.isFocusModeOpen #focusModeScreen{
     gap:clamp(5px, 1dvh, 10px) 8px;
-    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    padding: var(--safe-top) calc(16px + var(--safe-right)) var(--safe-bottom) calc(16px + var(--safe-left));
   }
 
 .focusModeExitBar{
-    grid-area:focusHead;
+    grid-area:focusExit;
     align-self:start;
-    justify-self:end;
-    width:0;
-    height:0;
-    max-width:none;
-    margin:0;
-    padding:0;
-    pointer-events:none;
+    justify-self:center;
+    flex:0 0 auto;
+    width:100%;
+    height:auto;
+    max-width:620px;
+    margin:clamp(14px, 2dvh, 24px) auto 0;
+    padding-bottom:32px;
+    position:relative;
+    z-index:1;
+    pointer-events:auto;
   }
 
 #focusModeBackBtn{
-    position:fixed;
-    top:calc(var(--safe-top) + 12px);
-    right:calc(var(--safe-right) + 12px);
-    z-index:3;
-    width:36px;
-    height:36px;
-    min-width:36px;
-    padding:0;
+    position:static;
+    width:auto;
+    height:auto;
+    min-width:0;
+    padding:8px 16px;
     border-radius:0;
-    font-size:0;
-    line-height:1;
+    font-size:11px;
+    line-height:normal;
     pointer-events:auto;
   }
 
 #focusModeBackBtn::before,
   #focusModeBackBtn::after{
-    content:"";
-    position:absolute;
-    left:50%;
-    top:50%;
-    width:16px;
-    height:2px;
-    background:currentColor;
-    transform-origin:center;
-  }
-
-#focusModeBackBtn::before{
-    transform:translate(-50%, -50%) rotate(45deg);
-  }
-
-#focusModeBackBtn::after{
-    transform:translate(-50%, -50%) rotate(-45deg);
+    content:none;
   }
 
 .focusDialWrap{
-    padding:8px 18px 34px;
+    padding:8px 18px 54px;
   }
 
 .focusDial{
     width:min(58.5vw, 26.25dvh, 270px);
   }
 
-.focusCheckpointToggleTop,
-  .focusInsightsRow{
+.focusCheckpointToggleTop{
     align-self:start;
   }
 
 .focusCheckpointToggleTop{
     gap:6px;
-  }
-
-.focusInsightsRow{
-    gap:8px;
   }
 
 .focusCheckpointToggleRow{
@@ -3616,6 +3617,12 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotes{
+    width:100%;
+    max-width:620px;
+    margin-left:auto;
+    margin-right:auto;
+    padding-left:0;
+    padding-right:0;
     padding-bottom:32px;
   }
 
@@ -3637,14 +3644,14 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     --focus-session-notes-min-height: 76px;
     min-height:var(--focus-session-notes-min-height);
-    max-height:max(var(--focus-session-notes-min-height), 36dvh);
+    max-height:max(var(--focus-session-notes-min-height), 28dvh);
     resize:none;
   }
 }
 
 @media (max-height: 680px){
 #focusModeScreen{
-    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    padding: var(--safe-top) calc(16px + var(--safe-right)) var(--safe-bottom) calc(16px + var(--safe-left));
   }
 
 .focusModeTitle{
@@ -3665,6 +3672,12 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotes{
+    width:100%;
+    max-width:620px;
+    margin-left:auto;
+    margin-right:auto;
+    padding-left:0;
+    padding-right:0;
     padding-bottom:32px;
   }
 
@@ -3680,7 +3693,7 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     --focus-session-notes-min-height: 76px;
     min-height:var(--focus-session-notes-min-height);
-    max-height:max(var(--focus-session-notes-min-height), 34dvh);
+    max-height:max(var(--focus-session-notes-min-height), 28dvh);
     resize:none;
   }
 }
@@ -3697,7 +3710,7 @@ body.isFocusModeOpen #focusModeScreen{
 
 @media (max-width: 360px){
 #focusModeScreen{
-    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    padding: var(--safe-top) calc(16px + var(--safe-right)) var(--safe-bottom) calc(16px + var(--safe-left));
   }
 
 .focusDialWrap{
@@ -3706,10 +3719,6 @@ body.isFocusModeOpen #focusModeScreen{
 
 .focusCheckpointToggleTop{
     margin: 0;
-  }
-
-.focusInsightsRow{
-    grid-template-columns:minmax(0, 1fr);
   }
 
 .focusTaskTitle{
@@ -3733,7 +3742,14 @@ body.isFocusModeOpen #focusModeScreen{
   }
 
 .focusSessionNotes{
+    width:100%;
+    max-width:620px;
     margin-top: 2px;
+    margin-left:auto;
+    margin-right:auto;
+    margin-bottom:clamp(18px, 2.8dvh, 34px);
+    padding-left:0;
+    padding-right:0;
     padding-bottom:32px;
   }
 

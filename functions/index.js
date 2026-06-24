@@ -1,6 +1,7 @@
 import {getApp, getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions";
@@ -32,6 +33,10 @@ const TIME_GOAL_COMPLETE_EVENT = "timeGoalComplete";
 const TIME_GOAL_COMPLETE_NOTIFICATION_KIND = "timeGoalComplete";
 const FRIEND_TASK_REMINDER_EVENT = "friendTaskReminder";
 const FRIEND_TASK_REMINDER_NOTIFICATION_KIND = "friendTaskReminder";
+const FRIEND_REQUEST_NOTIFICATION_TITLE = "You have a pending friend request";
+const FRIEND_REQUEST_NOTIFICATION_BODY = "Tap to view the request";
+const FRIEND_REQUEST_NOTIFICATION_ROUTE = "/friends";
+const FRIEND_REQUEST_NOTIFICATION_TYPE = "friendRequest";
 const PUSH_ACTION_LAUNCH_TASK = "launchTask";
 const PUSH_ACTION_SNOOZE_10M = "snooze10m";
 const PUSH_ACTION_POSTPONE_NEXT_GAP = "postponeNextGap";
@@ -1016,6 +1021,75 @@ async function sendScheduledTaskNotification({
   };
 }
 
+function snapshotData(snapshot) {
+  if (!snapshot || snapshot.exists === false || typeof snapshot.data !== "function") return null;
+  return snapshot.data() || {};
+}
+
+async function sendFriendRequestPendingNotification(event) {
+  const requestId = asString(event?.params?.requestId);
+  const beforeData = snapshotData(event?.data?.before);
+  const afterData = snapshotData(event?.data?.after);
+  if (!afterData) {
+    return {ok: false, status: "missing-after"};
+  }
+
+  const status = asString(afterData.status);
+  const previousStatus = beforeData ? asString(beforeData.status) : "";
+  if (status !== "pending") {
+    return {ok: false, status: "not-pending"};
+  }
+  if (previousStatus === "pending") {
+    return {ok: false, status: "already-pending"};
+  }
+
+  const receiverUid = asString(afterData.receiverUid);
+  if (!receiverUid) {
+    return {ok: false, status: "missing-receiver"};
+  }
+
+  const normalizedRequestId = asString(afterData.requestId, requestId) || requestId;
+  const result = await sendScheduledTaskNotification({
+    uid: receiverUid,
+    nowMs: Date.now(),
+    route: FRIEND_REQUEST_NOTIFICATION_ROUTE,
+    taskId: normalizedRequestId,
+    taskName: "Friend request",
+    payloadData: {
+      route: FRIEND_REQUEST_NOTIFICATION_ROUTE,
+      requestId: normalizedRequestId,
+      type: FRIEND_REQUEST_NOTIFICATION_TYPE,
+    },
+    webTitle: FRIEND_REQUEST_NOTIFICATION_TITLE,
+    webBody: FRIEND_REQUEST_NOTIFICATION_BODY,
+    allowWeb: true,
+    skipIfForeground: false,
+  });
+
+  logger.info("Friend request push notification processed", {
+    requestId: normalizedRequestId,
+    receiverUid,
+    resultStatus: result.status,
+    successCount: result.successCount || 0,
+    failureCount: result.failureCount || 0,
+  });
+
+  return {
+    ok: true,
+    requestId: normalizedRequestId,
+    ...result,
+  };
+}
+
+export const notifyFriendRequestPending = onDocumentWritten(
+  {
+    region,
+    database: databaseId,
+    document: "friend_requests/{requestId}",
+  },
+  sendFriendRequestPendingNotification
+);
+
 export const sendSharedTaskReminder = onCall(protectedCallableOptions, async (request) => {
   const requesterUid = asString(request.auth?.uid);
   if (!requesterUid) {
@@ -1858,6 +1932,7 @@ export const __testing = {
   buildScheduledBlocksForDay,
   extractAndroidDeviceRows,
   isUnscheduledGapCandidateTask,
+  sendFriendRequestPendingNotification,
   sendScheduledTaskNotification,
   processDuePlannedStartTask,
   processDueTimeGoalCompleteTask,

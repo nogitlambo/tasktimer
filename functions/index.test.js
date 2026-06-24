@@ -16,12 +16,54 @@ const state = {
   sendEachForMulticast: vi.fn(),
 };
 
+function resetState() {
+  state.devices = [];
+  state.tasks = {};
+  state.activeSessions = {};
+  state.historyEntries = [];
+  state.writes = [];
+  state.deletes = [];
+  state.batchWrites = [];
+  state.prefExists = true;
+  state.prefs = {
+    mobilePushAlertsEnabled: true,
+    webPushAlertsEnabled: true,
+  };
+  state.sendEachForMulticast = vi.fn(async () => ({
+    successCount: 1,
+    failureCount: 0,
+    responses: [{ success: true }],
+  }));
+}
+
 function createDocSnapshot(id, data) {
   return {
     id,
     get: (field) => data[field],
     data: () => data,
     exists: true,
+  };
+}
+
+function createMaybeDocSnapshot(id, data) {
+  if (!data) {
+    return {
+      id,
+      get: () => undefined,
+      data: () => undefined,
+      exists: false,
+    };
+  }
+  return createDocSnapshot(id, data);
+}
+
+function friendRequestEvent({ requestId = "pending:sender-1:receiver-1", before = null, after = null } = {}) {
+  return {
+    params: { requestId },
+    data: {
+      before: createMaybeDocSnapshot(requestId, before),
+      after: createMaybeDocSnapshot(requestId, after),
+    },
   };
 }
 
@@ -140,6 +182,10 @@ vi.mock("firebase-functions/v2/scheduler", () => ({
   onSchedule: vi.fn((_config, handler) => handler),
 }));
 
+vi.mock("firebase-functions/v2/firestore", () => ({
+  onDocumentWritten: vi.fn((_config, handler) => handler),
+}));
+
 vi.mock("firebase-functions", () => ({
   logger: {
     info: vi.fn(),
@@ -150,25 +196,182 @@ vi.mock("firebase-functions", () => ({
 
 const { __testing } = await import("./index.js");
 
+describe("sendFriendRequestPendingNotification", () => {
+  beforeEach(() => {
+    resetState();
+  });
+
+  it("sends a friend request push to all eligible recipient devices when a request becomes pending", async () => {
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      requestId: "pending:sender-1:receiver-1",
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        senderUid: "sender-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      requestId: "pending:sender-1:receiver-1",
+      status: "sent",
+      successCount: 2,
+    }));
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(2);
+    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ["native-token"],
+        notification: {
+          title: "You have a pending friend request",
+          body: "Tap to view the request",
+        },
+        data: {
+          route: "/friends",
+          requestId: "pending:sender-1:receiver-1",
+          type: "friendRequest",
+        },
+      })
+    );
+    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ["web-token"],
+        notification: {
+          title: "You have a pending friend request",
+          body: "Tap to view the request",
+        },
+        webpush: expect.objectContaining({
+          fcmOptions: { link: "/friends" },
+          data: {
+            route: "/friends",
+            requestId: "pending:sender-1:receiver-1",
+            type: "friendRequest",
+          },
+        }),
+        data: {
+          route: "/friends",
+          requestId: "pending:sender-1:receiver-1",
+          type: "friendRequest",
+        },
+      })
+    );
+  });
+
+  it("sends when a previously declined request returns to pending", async () => {
+    state.devices = [
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      before: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "declined",
+      },
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result.status).toBe("sent");
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not resend when a pending request is updated without leaving pending", async () => {
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      before: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual({ ok: false, status: "already-pending" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it("ignores non-pending request states", async () => {
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "approved",
+      },
+    }));
+
+    expect(result).toEqual({ ok: false, status: "not-pending" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it("ignores pending requests without a receiver uid", async () => {
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual({ ok: false, status: "missing-receiver" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it("ignores events without an after snapshot", async () => {
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      before: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+      after: null,
+    }));
+
+    expect(result).toEqual({ ok: false, status: "missing-after" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+});
+
 describe("sendScheduledTaskNotification", () => {
   beforeEach(() => {
-    state.devices = [];
-    state.tasks = {};
-    state.activeSessions = {};
-    state.historyEntries = [];
-    state.writes = [];
-    state.deletes = [];
-    state.batchWrites = [];
-    state.prefExists = true;
-    state.prefs = {
-      mobilePushAlertsEnabled: true,
-      webPushAlertsEnabled: true,
-    };
-    state.sendEachForMulticast = vi.fn(async () => ({
-      successCount: 1,
-      failureCount: 0,
-      responses: [{ success: true }],
-    }));
+    resetState();
   });
 
   it("still sends to web devices when the app is active", async () => {

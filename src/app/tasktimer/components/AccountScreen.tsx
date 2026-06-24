@@ -227,13 +227,6 @@ export default function AccountScreen() {
                       <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
                       <span>
                         <strong>Delete Account</strong>
-                        <small>Permanently remove this sign-in account</small>
-                      </span>
-                    </button>
-                    <button className="accountProfileAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
-                      <span>
-                        <strong>Back</strong>
-                        <small>Return to the previous page</small>
                       </span>
                     </button>
                     <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
@@ -242,6 +235,9 @@ export default function AccountScreen() {
                         <strong>{signOutActionCopy.label}</strong>
                         <small>{signOutActionCopy.description}</small>
                       </span>
+                    </button>
+                    <button className="btn btn-ghost accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+                      Back
                     </button>
                   </div>
 

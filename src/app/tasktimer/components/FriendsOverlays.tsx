@@ -31,13 +31,57 @@ export default function FriendsOverlays() {
       <div className="overlay" id="shareTaskModal" style={{ display: "none" }}>
         <div className="modal" role="dialog" aria-modal="true" aria-label="Share Task">
           <h2 id="shareTaskTitle">Share Task</h2>
-          <p className="modalSubtext shareTaskModalSubtext">Choose who should receive this task and its live progress.</p>
-          <div className="field">
-            <label htmlFor="shareTaskScopeSelect">Sharing scope</label>
-            <select id="shareTaskScopeSelect" className="text w100" defaultValue="all">
-              <option value="all">Share with all friends</option>
-              <option value="specific">Share with specific friend(s)</option>
+          <p className="modalSubtext shareTaskModalSubtext">Select who to share this task with:</p>
+          <div className="field modalDropdownField">
+            <select
+              id="shareTaskScopeSelect"
+              className="text w100 shareTaskScopeNativeSelect"
+              defaultValue="all"
+              aria-label="Sharing scope"
+              tabIndex={-1}
+            >
+              <option value="all">All friends</option>
+              <option value="specific">Specific friend(s)</option>
             </select>
+            <div className="modalDropdown" id="shareTaskScopeDropdown">
+              <button
+                className="modalDropdownButton modalPreviewDropdownButton"
+                id="shareTaskScopeDropdownButton"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="shareTaskScopeDropdownList"
+              >
+                <span id="shareTaskScopeDropdownLabel">All friends</span>
+                <span aria-hidden="true">v</span>
+              </button>
+              <div
+                className="modalDropdownList"
+                id="shareTaskScopeDropdownList"
+                role="listbox"
+                aria-labelledby="shareTaskScopeDropdownButton"
+                hidden
+              >
+                <button
+                  className="modalDropdownOption modalPreviewDropdownOption isSelected"
+                  type="button"
+                  role="option"
+                  aria-selected="true"
+                  data-share-task-scope-option="all"
+                >
+                  All friends
+                </button>
+                <button
+                  className="modalDropdownOption modalPreviewDropdownOption"
+                  type="button"
+                  role="option"
+                  aria-selected="false"
+                  data-share-task-scope-option="specific"
+                >
+                  Specific friend(s)
+                </button>
+              </div>
+            </div>
           </div>
           <div className="field" id="shareTaskFriendsField" style={{ display: "none" }}>
             <label>Select friend(s)</label>

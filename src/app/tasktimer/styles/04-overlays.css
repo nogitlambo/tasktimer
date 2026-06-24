@@ -7110,6 +7110,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow: var(--modal-shadow) !important;
 }
 
+.modalDropdownList[hidden]{
+  display: none !important;
+}
+
 .modalDropdownOption{
   width: 100% !important;
   min-height: 32px !important;

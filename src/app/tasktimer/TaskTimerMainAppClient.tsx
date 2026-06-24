@@ -137,7 +137,7 @@ function formatLeaderboardXp(xpRaw: number): string {
 
 function formatLeaderboardTrend(xpRaw: number): string {
   const xp = Math.max(0, Math.floor(xpRaw || 0));
-  return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "No gain yet";
+  return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "-";
 }
 
 function formatWeeklyLeaderboardPeriod(nowMs = Date.now()): string {
@@ -322,7 +322,7 @@ function LeaderboardSharedTable({
     <div className={`leaderboardWeeklyTableWrap${className ? ` ${className}` : ""}`}>
       <div className="leaderboardWeeklyTable" role="table" aria-label={ariaLabel}>
         <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-          <span role="columnheader">Position</span>
+          <span role="columnheader">Pos</span>
           <span role="columnheader">User</span>
           <span role="columnheader">{metricHeader}</span>
           <span role="columnheader">Rank</span>
@@ -1196,8 +1196,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         <span className="leaderboardGlobalPodiumText">
                           <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                           <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                          {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                           {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
+                          {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                         </span>
                       </button>
                     )) : null}
@@ -1270,8 +1270,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span className="leaderboardGlobalPodiumText">
                               <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                               <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                               {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
+                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                             </span>
                           </button>
                         ))}
@@ -1333,8 +1333,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                             <span className="leaderboardGlobalPodiumText">
                               <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                               <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                               {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
+                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                             </span>
                           </button>
                         ))}

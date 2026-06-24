@@ -486,6 +486,97 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     return String(els.shareTaskScopeSelect?.value || "all") === "specific";
   }
 
+  function getShareTaskScopeDropdownEls() {
+    const modal = els.shareTaskModal as HTMLElement | null;
+    return {
+      button: modal?.querySelector<HTMLButtonElement>("#shareTaskScopeDropdownButton") || null,
+      label: modal?.querySelector<HTMLElement>("#shareTaskScopeDropdownLabel") || null,
+      list: modal?.querySelector<HTMLElement>("#shareTaskScopeDropdownList") || null,
+      options: Array.from(modal?.querySelectorAll<HTMLButtonElement>("[data-share-task-scope-option]") || []),
+    };
+  }
+
+  function getShareTaskScopeLabel(value: string) {
+    return value === "specific" ? "Specific friend(s)" : "All friends";
+  }
+
+  function setShareTaskScopeDropdownOpen(open: boolean) {
+    const dropdownEls = getShareTaskScopeDropdownEls();
+    if (dropdownEls.button) dropdownEls.button.setAttribute("aria-expanded", open ? "true" : "false");
+    if (dropdownEls.list) dropdownEls.list.hidden = !open;
+  }
+
+  function syncShareTaskScopeDropdownUi() {
+    const value = String(els.shareTaskScopeSelect?.value || "all");
+    const dropdownEls = getShareTaskScopeDropdownEls();
+    if (dropdownEls.label) dropdownEls.label.textContent = getShareTaskScopeLabel(value);
+    dropdownEls.options.forEach((option) => {
+      const selected = String(option.getAttribute("data-share-task-scope-option") || "all") === value;
+      option.classList.toggle("isSelected", selected);
+      option.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+  }
+
+  function setShareTaskScopeValue(value: string) {
+    const nextValue = value === "specific" ? "specific" : "all";
+    if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = nextValue;
+    syncShareTaskScopeDropdownUi();
+    renderShareTaskFriendOptions();
+    syncShareTaskScopeUi();
+  }
+
+  function focusShareTaskScopeOption(offset: number) {
+    const dropdownEls = getShareTaskScopeDropdownEls();
+    if (!dropdownEls.options.length) return;
+    const currentValue = String(els.shareTaskScopeSelect?.value || "all");
+    const currentIndex = Math.max(
+      0,
+      dropdownEls.options.findIndex((option) => String(option.getAttribute("data-share-task-scope-option") || "all") === currentValue)
+    );
+    const nextIndex = Math.min(dropdownEls.options.length - 1, Math.max(0, currentIndex + offset));
+    dropdownEls.options[nextIndex]?.focus();
+  }
+
+  function handleShareTaskScopeDropdownKeyDown(e: any) {
+    const target = e?.target as HTMLElement | null;
+    if (!target?.closest?.("#shareTaskScopeDropdown")) return;
+    const key = String(e?.key || "");
+    const dropdownEls = getShareTaskScopeDropdownEls();
+    const option = target.closest("[data-share-task-scope-option]") as HTMLElement | null;
+    const button = target.closest("#shareTaskScopeDropdownButton") as HTMLElement | null;
+    if (key === "Escape") {
+      e?.preventDefault?.();
+      setShareTaskScopeDropdownOpen(false);
+      dropdownEls.button?.focus();
+      return;
+    }
+    if (button && (key === "ArrowDown" || key === "ArrowUp")) {
+      e?.preventDefault?.();
+      setShareTaskScopeDropdownOpen(true);
+      focusShareTaskScopeOption(key === "ArrowDown" ? 0 : dropdownEls.options.length - 1);
+      return;
+    }
+    if (!option) return;
+    if (key === "Enter" || key === " ") {
+      e?.preventDefault?.();
+      setShareTaskScopeValue(String(option.getAttribute("data-share-task-scope-option") || "all"));
+      setShareTaskScopeDropdownOpen(false);
+      dropdownEls.button?.focus();
+      return;
+    }
+    if (key === "ArrowDown" || key === "ArrowUp" || key === "Home" || key === "End") {
+      e?.preventDefault?.();
+      const optionIndex = dropdownEls.options.indexOf(option as HTMLButtonElement);
+      const nextIndex =
+        key === "Home"
+          ? 0
+          : key === "End"
+            ? dropdownEls.options.length - 1
+            : Math.min(dropdownEls.options.length - 1, Math.max(0, optionIndex + (key === "ArrowDown" ? 1 : -1)));
+      dropdownEls.options[nextIndex]?.focus();
+    }
+  }
+
   function getShareTaskFriendRows() {
     const uid = ctx.getCurrentUid();
     if (!uid || !ctx.getGroupsFriendships().length) return [] as Array<{ friendUid: string; alias: string }>;
@@ -555,7 +646,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       subtextEl.textContent =
         mode === "unshare"
           ? "Choose which friends should no longer receive this task and its live progress."
-          : "Choose who should receive this task and its live progress.";
+          : "Select who to share this task with:";
     }
     if (scopeField) scopeField.style.display = mode === "share" ? "grid" : "none";
     if (friendsField) {
@@ -563,7 +654,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }
     if (friendsLabel) {
       friendsLabel.textContent = mode === "unshare" ? "Select friend(s) to unshare" : "Select friend(s)";
+      friendsLabel.style.display = mode === "unshare" ? "" : "none";
     }
+    syncShareTaskScopeDropdownUi();
     if (els.shareTaskConfirmBtn) {
       els.shareTaskConfirmBtn.textContent = mode === "unshare" ? "Unshare" : "Share";
       els.shareTaskConfirmBtn.disabled = !hasChoices;
@@ -627,6 +720,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.setShareTaskTaskId(null);
     ctx.setShareTaskMode("share");
     if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
+    syncShareTaskScopeDropdownUi();
+    setShareTaskScopeDropdownOpen(false);
     if (els.shareTaskConfirmBtn) els.shareTaskConfirmBtn.disabled = false;
     setShareTaskStatus("");
   }
@@ -644,6 +739,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.setShareTaskMode("share");
     setShareTaskModalModeUi({ mode: "share", taskName, hasChoices: true });
     if (els.shareTaskScopeSelect) els.shareTaskScopeSelect.value = "all";
+    syncShareTaskScopeDropdownUi();
+    setShareTaskScopeDropdownOpen(false);
     syncShareTaskScopeUi();
     renderShareTaskFriendOptions();
     const uid = ctx.getCurrentUid();
@@ -1435,9 +1532,29 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       closeShareTaskModal();
     });
     ctx.on(els.shareTaskModal, "click", (e: any) => {
-      if (e?.target === els.shareTaskModal) closeShareTaskModal();
+      if (e?.target === els.shareTaskModal) {
+        closeShareTaskModal();
+        return;
+      }
+      const scopeOption = e?.target?.closest?.("[data-share-task-scope-option]") as HTMLElement | null;
+      if (scopeOption) {
+        e?.preventDefault?.();
+        setShareTaskScopeValue(String(scopeOption.getAttribute("data-share-task-scope-option") || "all"));
+        setShareTaskScopeDropdownOpen(false);
+        return;
+      }
+      const scopeButton = e?.target?.closest?.("#shareTaskScopeDropdownButton") as HTMLElement | null;
+      if (scopeButton) {
+        e?.preventDefault?.();
+        const expanded = scopeButton.getAttribute("aria-expanded") === "true";
+        setShareTaskScopeDropdownOpen(!expanded);
+        return;
+      }
+      if (!e?.target?.closest?.("#shareTaskScopeDropdown")) setShareTaskScopeDropdownOpen(false);
     });
+    ctx.on(els.shareTaskModal, "keydown", handleShareTaskScopeDropdownKeyDown);
     ctx.on(els.shareTaskScopeSelect, "change", () => {
+      syncShareTaskScopeDropdownUi();
       renderShareTaskFriendOptions();
       syncShareTaskScopeUi();
     });
