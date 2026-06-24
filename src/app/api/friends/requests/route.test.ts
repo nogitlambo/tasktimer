@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   enforceUidRateLimit: vi.fn(),
   getFirebaseAdminDb: vi.fn(),
+  getFirebaseAdminMessaging: vi.fn(),
+  sendEachForMulticast: vi.fn(),
+  deleteField: vi.fn(() => "DELETE_FIELD"),
   serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
   verifyFirebaseRequestUser: vi.fn(),
 }));
 
 vi.mock("firebase-admin/firestore", () => ({
   FieldValue: {
+    delete: mocks.deleteField,
     serverTimestamp: mocks.serverTimestamp,
   },
 }));
@@ -31,6 +35,7 @@ vi.mock("../../shared/rateLimit", async (importOriginal) => {
 
 vi.mock("@/lib/firebaseAdmin", () => ({
   getFirebaseAdminDb: mocks.getFirebaseAdminDb,
+  getFirebaseAdminMessaging: mocks.getFirebaseAdminMessaging,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -47,6 +52,113 @@ function friendRequest(body: Record<string, unknown>, origin = "capacitor://loca
   });
 }
 
+function createDocSnapshot(id: string, data: Record<string, unknown> | null) {
+  return {
+    id,
+    exists: !!data,
+    get: (field: string) => data?.[field],
+    data: () => data || undefined,
+  };
+}
+
+function createFriendRequestDb() {
+  type FakeDocRef = {
+    path: string;
+    id: string;
+    collection: (name: string) => FakeCollectionRef;
+    get: () => Promise<ReturnType<typeof createDocSnapshot>>;
+    set: (data: Record<string, unknown>, options?: unknown) => Promise<void>;
+    update: (data: Record<string, unknown>) => Promise<void>;
+  };
+  type FakeCollectionRef = {
+    path: string;
+    doc: (id: string) => FakeDocRef;
+    collection: (name: string) => FakeCollectionRef;
+    get: () => Promise<{ docs: Array<ReturnType<typeof createDocSnapshot>> }>;
+  };
+  type FakeTransaction = {
+    get: (ref: { path: string }) => Promise<ReturnType<typeof createDocSnapshot>>;
+    set: (ref: { path: string }, data: Record<string, unknown>, options?: unknown) => void;
+    update: (ref: { path: string }, data: Record<string, unknown>) => void;
+  };
+  const writes: Array<{ path: string; data: Record<string, unknown>; options?: unknown }> = [];
+  const docs: Record<string, Record<string, unknown> | null> = {
+    "userEmailLookup/receiver%40example.com": {
+      uid: "receiver-uid",
+      email: "receiver@example.com",
+    },
+    "friend_requests/pending:sender-uid:receiver-uid": null,
+    "friendships/pair:receiver-uid:sender-uid": null,
+    "users/sender-uid": {
+      username: "Sender",
+    },
+    "users/receiver-uid": {
+      username: "Receiver",
+    },
+    "users/receiver-uid/preferences/v1": {
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: false,
+    },
+  };
+  const collectionDocs: Record<string, Array<Record<string, unknown> & { id: string }>> = {
+    "users/receiver-uid/devices": [
+      {
+        id: "receiver-native-device",
+        token: "receiver-native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+      },
+    ],
+  };
+
+  function docRef(path: string): FakeDocRef {
+    return {
+      path,
+      id: path.split("/").pop() || "",
+      collection: (name: string) => collectionRef(`${path}/${name}`),
+      get: async () => createDocSnapshot(path.split("/").pop() || "", docs[path] || null),
+      set: async (data: Record<string, unknown>, options?: unknown) => {
+        writes.push({ path, data, options });
+        docs[path] = { ...(docs[path] || {}), ...data };
+      },
+      update: async (data: Record<string, unknown>) => {
+        writes.push({ path, data });
+        docs[path] = { ...(docs[path] || {}), ...data };
+      },
+    };
+  }
+
+  function collectionRef(path: string): FakeCollectionRef {
+    return {
+      path,
+      doc: (id: string) => docRef(`${path}/${id}`),
+      collection: (name: string) => collectionRef(`${path}/${name}`),
+      get: async () => ({
+        docs: (collectionDocs[path] || []).map((row) => createDocSnapshot(row.id, row)),
+      }),
+    };
+  }
+
+  return {
+    writes,
+    collection: (name: string) => collectionRef(name),
+    runTransaction: async (handler: (tx: FakeTransaction) => Promise<unknown>) =>
+      handler({
+        get: async (ref: { path: string }) => createDocSnapshot(ref.path.split("/").pop() || "", docs[ref.path] || null),
+        set: (ref: { path: string }, data: Record<string, unknown>, options?: unknown) => {
+          writes.push({ path: ref.path, data, options });
+          docs[ref.path] = { ...(docs[ref.path] || {}), ...data };
+        },
+        update: (ref: { path: string }, data: Record<string, unknown>) => {
+          writes.push({ path: ref.path, data });
+          docs[ref.path] = { ...(docs[ref.path] || {}), ...data };
+        },
+      }),
+  };
+}
+
 describe("POST /api/friends/requests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,6 +167,14 @@ describe("POST /api/friends/requests", () => {
       uid: "sender-uid",
       email: "sender@example.com",
       idToken: "token",
+    });
+    mocks.sendEachForMulticast.mockResolvedValue({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    });
+    mocks.getFirebaseAdminMessaging.mockReturnValue({
+      sendEachForMulticast: mocks.sendEachForMulticast,
     });
   });
 
@@ -97,5 +217,50 @@ describe("POST /api/friends/requests", () => {
     expect(response.status).toBe(400);
     expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
     expect(payload).toEqual({ error: "Email address is required." });
+  });
+
+  it("sends a native push notification to the receiver after creating a pending request", async () => {
+    const db = createFriendRequestDb();
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+    expect(db.writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "friend_requests/pending:sender-uid:receiver-uid",
+          data: expect.objectContaining({
+            requestId: "pending:sender-uid:receiver-uid",
+            senderUid: "sender-uid",
+            receiverUid: "receiver-uid",
+            status: "pending",
+            notificationDeliveryMode: "api",
+          }),
+        }),
+      ])
+    );
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ["receiver-native-token"],
+        notification: {
+          title: "You have a pending friend request",
+          body: "Tap to view the request",
+        },
+        android: expect.objectContaining({
+          notification: {
+            channelId: "tasklaunch-default",
+          },
+        }),
+        data: {
+          route: "/friends",
+          requestId: "pending:sender-uid:receiver-uid",
+          type: "friendRequest",
+        },
+      })
+    );
   });
 });

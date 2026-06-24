@@ -1,6 +1,7 @@
 import { cert, getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 import { getStorage } from "firebase-admin/storage";
 
 import { FIREBASE_DATABASE_ID } from "./firebaseDatabase";
@@ -58,6 +59,10 @@ function getFirebaseAdminApp() {
 
 export function getFirebaseAdminDb() {
   return getFirestore(getFirebaseAdminApp(), FIREBASE_DATABASE_ID);
+}
+
+export function getFirebaseAdminMessaging() {
+  return getMessaging(getFirebaseAdminApp());
 }
 
 export function getFirebaseAdminAuth() {

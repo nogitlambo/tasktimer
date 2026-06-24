@@ -1042,6 +1042,9 @@ async function sendFriendRequestPendingNotification(event) {
   if (previousStatus === "pending") {
     return {ok: false, status: "already-pending"};
   }
+  if (asString(afterData.notificationDeliveryMode) === "api") {
+    return {ok: false, status: "api-delivered"};
+  }
 
   const receiverUid = asString(afterData.receiverUid);
   if (!receiverUid) {

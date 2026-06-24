@@ -329,6 +329,20 @@ describe("sendFriendRequestPendingNotification", () => {
     expect(state.sendEachForMulticast).not.toHaveBeenCalled();
   });
 
+  it("does not send when an API-created request is marked for direct delivery", async () => {
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+        notificationDeliveryMode: "api",
+      },
+    }));
+
+    expect(result).toEqual({ ok: false, status: "api-delivered" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
   it("ignores non-pending request states", async () => {
     const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
       after: {
