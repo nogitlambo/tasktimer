@@ -100,6 +100,14 @@ function createFriendRequestDb(docOverrides: Record<string, Record<string, unkno
       mobilePushAlertsEnabled: true,
       webPushAlertsEnabled: false,
     },
+    "users/receiver-uid/devices/receiver-native-device": {
+      id: "receiver-native-device",
+      token: "receiver-native-token",
+      enabled: true,
+      native: true,
+      provider: "fcm",
+      platform: "android",
+    },
     ...docOverrides,
   };
   const collectionDocs: Record<string, Array<Record<string, unknown> & { id: string }>> = {
@@ -144,6 +152,7 @@ function createFriendRequestDb(docOverrides: Record<string, Record<string, unkno
   }
 
   return {
+    docs,
     writes,
     collection: (name: string) => collectionRef(name),
     runTransaction: async (handler: (tx: FakeTransaction) => Promise<unknown>) =>
@@ -323,6 +332,63 @@ describe("POST /api/friends/requests", () => {
           }),
         ])
       );
+    } finally {
+      infoSpy.mockRestore();
+    }
+  });
+
+  it("does not clear a freshly rotated receiver token after an old token fails", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const db = createFriendRequestDb();
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+    mocks.sendEachForMulticast.mockImplementation(async () => {
+      db.docs["users/receiver-uid/devices/receiver-native-device"] = {
+        id: "receiver-native-device",
+        token: "fresh-receiver-native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+      };
+      return {
+        successCount: 0,
+        failureCount: 1,
+        responses: [
+          {
+            success: false,
+            error: {
+              code: "messaging/registration-token-not-registered",
+              message: "Requested entity was not found.",
+            },
+          },
+        ],
+      };
+    });
+
+    try {
+      const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+      expect(infoSpy).toHaveBeenCalledWith(
+        "[api/friends/requests] Friend request push not sent",
+        expect.objectContaining({
+          status: "failed",
+          invalidTokenCount: 1,
+        })
+      );
+      expect(db.writes).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "users/receiver-uid/devices/receiver-native-device",
+            data: expect.objectContaining({
+              token: "DELETE_FIELD",
+            }),
+          }),
+        ])
+      );
+      expect(db.docs["users/receiver-uid/devices/receiver-native-device"]?.token).toBe("fresh-receiver-native-token");
     } finally {
       infoSpy.mockRestore();
     }

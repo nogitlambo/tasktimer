@@ -130,6 +130,7 @@ async function cleanupInvalidDeviceTokens(
       errorCode: item.error?.code || "",
       errorMessage: asString(item.error?.message, 240),
       deviceId: deviceRows[index]?.id || "",
+      token: deviceRows[index]?.token || "",
       platform: deviceRows[index]?.platform || "",
       native: deviceRows[index]?.native === true,
       removable: removableCodes.has(item.error?.code || ""),
@@ -139,15 +140,18 @@ async function cleanupInvalidDeviceTokens(
   await Promise.all(
     failedRows
       .filter((row) => row.deviceId && row.removable)
-      .map((row) =>
-        db.collection("users").doc(uid).collection("devices").doc(row.deviceId).set(
+      .map(async (row) => {
+        const deviceRef = db.collection("users").doc(uid).collection("devices").doc(row.deviceId);
+        const currentSnap = await deviceRef.get();
+        if (asString(currentSnap.get("token")) !== row.token) return;
+        await deviceRef.set(
           {
             token: FieldValue.delete(),
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true }
-        )
-      )
+        );
+      })
   );
 
   return failedRows;
