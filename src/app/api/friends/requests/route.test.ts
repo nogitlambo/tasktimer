@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   enforceUidRateLimit: vi.fn(),
   getFirebaseAdminDb: vi.fn(),
   getFirebaseAdminMessaging: vi.fn(),
+  getFirebaseAdminProjectId: vi.fn(),
   sendEachForMulticast: vi.fn(),
   deleteField: vi.fn(() => "DELETE_FIELD"),
   serverTimestamp: vi.fn(() => "SERVER_TIMESTAMP"),
@@ -36,6 +37,7 @@ vi.mock("../../shared/rateLimit", async (importOriginal) => {
 vi.mock("@/lib/firebaseAdmin", () => ({
   getFirebaseAdminDb: mocks.getFirebaseAdminDb,
   getFirebaseAdminMessaging: mocks.getFirebaseAdminMessaging,
+  getFirebaseAdminProjectId: mocks.getFirebaseAdminProjectId,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -187,6 +189,9 @@ describe("POST /api/friends/requests", () => {
     mocks.getFirebaseAdminMessaging.mockReturnValue({
       sendEachForMulticast: mocks.sendEachForMulticast,
     });
+    mocks.getFirebaseAdminProjectId.mockReturnValue("tasktimer-prod");
+    vi.stubEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "tasktimer-prod");
+    vi.stubEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "996538028829");
   });
 
   it("allows Capacitor preflight requests with the Firebase auth header", () => {
@@ -307,7 +312,11 @@ describe("POST /api/friends/requests", () => {
           status: "failed",
           successCount: 0,
           failureCount: 1,
-          invalidTokenCount: 1,
+          invalidTokenFailureCount: 1,
+          adminProjectId: "tasktimer-prod",
+          clientProjectId: "tasktimer-prod",
+          messagingSenderId: "996538028829",
+          tokenCleanupApplied: false,
           failures: [
             {
               deviceId: "receiver-native-device",
@@ -315,7 +324,7 @@ describe("POST /api/friends/requests", () => {
               native: true,
               errorCode: "messaging/registration-token-not-registered",
               errorMessage: "Requested entity was not found.",
-              removable: true,
+              tokenRejectedAsInvalid: true,
             },
           ],
         })
@@ -374,7 +383,8 @@ describe("POST /api/friends/requests", () => {
         "[api/friends/requests] Friend request push not sent",
         expect.objectContaining({
           status: "failed",
-          invalidTokenCount: 1,
+          invalidTokenFailureCount: 1,
+          tokenCleanupApplied: false,
         })
       );
       expect(db.writes).not.toEqual(

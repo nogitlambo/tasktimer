@@ -10,7 +10,7 @@ function asString(value: string | undefined) {
   return String(value || "").trim();
 }
 
-function getFirebaseAdminProjectId() {
+export function getFirebaseAdminProjectId() {
   return (
     asString(process.env.FIREBASE_ADMIN_PROJECT_ID) ||
     asString(process.env.GOOGLE_CLOUD_PROJECT) ||

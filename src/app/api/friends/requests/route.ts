@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
-import { getFirebaseAdminDb, getFirebaseAdminMessaging } from "@/lib/firebaseAdmin";
+import { getFirebaseAdminDb, getFirebaseAdminMessaging, getFirebaseAdminProjectId } from "@/lib/firebaseAdmin";
 
 const FRIEND_REQUEST_NOTIFICATION_TITLE = "You have a pending friend request";
 const FRIEND_REQUEST_NOTIFICATION_BODY = "Tap to view the request";
@@ -18,7 +18,7 @@ type PushFailureDiagnostic = {
   native: boolean;
   errorCode: string;
   errorMessage: string;
-  removable: boolean;
+  tokenRejectedAsInvalid: boolean;
 };
 
 function asString(value: unknown, maxLength = 0) {
@@ -120,7 +120,7 @@ async function cleanupInvalidDeviceTokens(
   deviceRows: ReturnType<typeof extractPushDeviceRows>,
   response: { responses?: Array<{ success?: boolean; error?: { code?: string; message?: string } }> }
 ) {
-  const removableCodes = new Set(["messaging/invalid-registration-token", "messaging/registration-token-not-registered"]);
+  const invalidTokenCodes = new Set(["messaging/invalid-registration-token", "messaging/registration-token-not-registered"]);
   const responses = Array.isArray(response.responses) ? response.responses : [];
   const failedRows = responses
     .map((item, index) => ({
@@ -130,7 +130,7 @@ async function cleanupInvalidDeviceTokens(
       deviceId: deviceRows[index]?.id || "",
       platform: deviceRows[index]?.platform || "",
       native: deviceRows[index]?.native === true,
-      removable: removableCodes.has(item.error?.code || ""),
+      tokenRejectedAsInvalid: invalidTokenCodes.has(item.error?.code || ""),
     }))
     .filter((row) => !row.success);
 
@@ -149,7 +149,7 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
   const data = buildPushData(requestId);
 
   if (!deviceRows.length) {
-    return { status: "no-devices" as const, successCount: 0, failureCount: 0, failedRows: [], invalidTokenCount: 0 };
+    return { status: "no-devices" as const, successCount: 0, failureCount: 0, failedRows: [], invalidTokenFailureCount: 0 };
   }
 
   const responses = [];
@@ -226,9 +226,9 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
       native: row.native,
       errorCode: row.errorCode,
       errorMessage: row.errorMessage,
-      removable: row.removable,
+      tokenRejectedAsInvalid: row.tokenRejectedAsInvalid,
     })),
-    invalidTokenCount: failedRows.filter((row) => row.removable).length,
+    invalidTokenFailureCount: failedRows.filter((row) => row.tokenRejectedAsInvalid).length,
   };
 }
 
@@ -357,7 +357,11 @@ export async function POST(req: Request) {
           status: pushResult.status,
           successCount: pushResult.successCount,
           failureCount: pushResult.failureCount,
-          invalidTokenCount: pushResult.invalidTokenCount,
+          invalidTokenFailureCount: pushResult.invalidTokenFailureCount,
+          adminProjectId: getFirebaseAdminProjectId() || null,
+          clientProjectId: asString(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) || null,
+          messagingSenderId: asString(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) || null,
+          tokenCleanupApplied: false,
           failures: pushResult.failedRows,
         });
       }
