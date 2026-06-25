@@ -230,6 +230,7 @@ export type TaskTimerMutableState = {
   dashboardBusyHideTimer: number | null;
   initialAuthHydrating: boolean;
   friendProfileCacheByUid: Record<string, FriendProfile>;
+  friendEmailByUid: Record<string, string>;
   cloudRefreshInFlight: Promise<void> | null;
   lastCloudRefreshAtMs: number;
   pendingDeferredCloudRefresh: boolean;

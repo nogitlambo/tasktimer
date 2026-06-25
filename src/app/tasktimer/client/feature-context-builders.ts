@@ -839,6 +839,10 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     setFriendProfileCacheByUid: (value) => {
       args.groupsState.set("friendProfileCacheByUid", value);
     },
+    getFriendEmailByUid: () => asType<Record<string, string>>(args.groupsState.get("friendEmailByUid")),
+    setFriendEmailByUid: (value) => {
+      args.groupsState.set("friendEmailByUid", value);
+    },
     getShareTaskIndex: () => asType<number | null>(args.groupsState.get("shareTaskIndex")),
     setShareTaskIndex: (value) => {
       args.groupsState.set("shareTaskIndex", value);

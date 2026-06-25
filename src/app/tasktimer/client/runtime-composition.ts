@@ -229,6 +229,7 @@ export function createTaskTimerRuntimeComposition(
     activeFriendProfileUid: initialState.activeFriendProfileUid,
     activeFriendProfileName: initialState.activeFriendProfileName,
     friendProfileCacheByUid: initialState.friendProfileCacheByUid,
+    friendEmailByUid: initialState.friendEmailByUid,
   });
 
   const workspaceAdapters = {

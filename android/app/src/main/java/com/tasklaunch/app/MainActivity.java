@@ -6,12 +6,15 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 
+import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 import io.capawesome.capacitorjs.plugins.firebase.authentication.FirebaseAuthenticationPlugin;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
+    private static final long SPLASH_MIN_VISIBLE_MS = 2000L;
     private static final String STORAGE_KEY = "taskticker_tasks_v1";
     private static final String PENDING_PUSH_TASK_ID_KEY = STORAGE_KEY + ":pendingPushTaskId";
     private static final String PENDING_PUSH_ACTION_KEY = STORAGE_KEY + ":pendingPushAction";
@@ -21,6 +24,11 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        final long splashStartedAtMs = SystemClock.elapsedRealtime();
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        splashScreen.setKeepOnScreenCondition(
+            () -> SystemClock.elapsedRealtime() - splashStartedAtMs < SPLASH_MIN_VISIBLE_MS
+        );
         registerPlugin(FirebaseAuthenticationPlugin.class);
         registerPlugin(TaskLaunchTimerNotificationPlugin.class);
         registerPlugin(TaskLaunchFocusDndPlugin.class);

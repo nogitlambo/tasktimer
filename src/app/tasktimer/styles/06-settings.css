@@ -6144,6 +6144,27 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   width:min(var(--modal-width-lg), calc(100vw - 28px)) !important;
 }
 
+@media (max-width: 640px){
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarGroupRow,
+  #app[aria-label="TaskLaunch Account"] .accountAvatarGroupRow{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarOption,
+  #app[aria-label="TaskLaunch Account"] .accountAvatarOption{
+    box-sizing:border-box;
+    min-width:0;
+    width:100%;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarOptionImg,
+  #app[aria-label="TaskLaunch Account"] .accountAvatarOptionImg{
+    height:clamp(72px, 24vw, 104px);
+  }
+}
+
 :is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) :where(.modalSubtext, .confirmText, label, p),
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal :where(.settingsInlineConfirmText, label, p){
   font-family: var(--font-readable) !important;

@@ -5136,47 +5136,25 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   justify-content: center;
 }
 
-#rankPromotionOverlay .rankPromotionCloseSlot #rankPromotionCloseBtn{
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 #rankPromotionOverlay .rankPromotionModal.is-close-ready{
   cursor: pointer;
 }
 
-#rankPromotionOverlay .rankPromotionCloseSlot.is-ready button{
-  cursor: pointer;
-}
-
-#rankPromotionOverlay .rankPromotionCloseSlot.is-ready #rankPromotionCloseBtn{
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
 #rankPromotionOverlay .rankPromotionTapCloseText{
-  display: none;
+  display: block;
+  margin: 0 auto;
+  color: rgba(190,196,205,.72);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: center;
+  visibility: hidden;
+  pointer-events: none;
 }
 
-#rankPromotionOverlay #rankPromotionCloseBtn{
-  min-width: 132px;
-  justify-content: center;
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border-color: rgba(190,196,205,.62);
-  color: rgba(235,239,245,.92);
-  box-shadow: inset 0 0 0 1px rgba(190,196,205,.12);
-}
-
-#rankPromotionOverlay #rankPromotionCloseBtn:hover,
-#rankPromotionOverlay #rankPromotionCloseBtn:focus-visible{
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border-color: rgba(218,224,232,.78);
+#rankPromotionOverlay .rankPromotionCloseSlot.is-ready .rankPromotionTapCloseText{
+  visibility: visible;
 }
 
 body[data-theme="lime"] #rankPromotionOverlay .modal{
@@ -5645,27 +5623,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     font-size: 81px;
   }
 
-#rankPromotionOverlay .rankPromotionCloseSlot #rankPromotionCloseBtn{
-    display: none;
-  }
-
 #rankPromotionOverlay .rankPromotionCloseSlot .rankPromotionTapCloseText{
-    display: block;
-    margin: 0 auto;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: rgba(190,196,205,.72);
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
     font-size: 11px;
-    font-weight: 400;
-    line-height: 1.3;
-    text-align: center;
-  }
-
-#rankPromotionOverlay .rankPromotionCloseSlot:not(.is-ready) .rankPromotionTapCloseText{
-    visibility: hidden;
-    pointer-events: none;
   }
 }
 

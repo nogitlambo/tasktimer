@@ -111,6 +111,7 @@ export default function FriendsOverlays() {
               </span>
               <div className="friendUserSummaryIdentityText">
                 <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+                <span className="friendUserSummaryEmail" id="friendProfileEmail" style={{ display: "none" }} />
                 <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
               </div>
               <div className="friendUserSummaryAchievementSlots" aria-label="Achievement badges">

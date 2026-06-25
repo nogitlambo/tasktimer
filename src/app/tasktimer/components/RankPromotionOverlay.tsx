@@ -425,11 +425,6 @@ export default function RankPromotionOverlay({
     onClose();
   };
 
-  const handleCloseButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    handleClose();
-  };
-
   return (
     <div className={`overlay is-${phase}`} id="rankPromotionOverlay" style={{ display: "flex" }}>
       <div className="rankPromotionContent">
@@ -521,28 +516,10 @@ export default function RankPromotionOverlay({
             </div>
           </div>
           </div>
-          <div className={`confirmBtns rankPromotionCloseSlot${isCloseReady ? " is-ready" : ""}`}>
-            <button
-              className="btn btn-accent"
-              id="rankPromotionCloseBtn"
-              type="button"
-              onClick={handleCloseButtonClick}
-              disabled={!isCloseReady}
-              aria-hidden={!isCloseReady}
-              tabIndex={isCloseReady ? 0 : -1}
-            >
-              Close
-            </button>
-            <button
-              className="rankPromotionTapCloseText"
-              type="button"
-              onClick={handleCloseButtonClick}
-              disabled={!isCloseReady}
-              aria-hidden={!isCloseReady}
-              tabIndex={isCloseReady ? 0 : -1}
-            >
+          <div className={`confirmBtns rankPromotionCloseSlot${isCloseReady ? " is-ready" : ""}`} aria-live="polite">
+            <span className="rankPromotionTapCloseText" aria-hidden={!isCloseReady}>
               Tap to close
-            </button>
+            </span>
         </div>
       </div>
     </div>

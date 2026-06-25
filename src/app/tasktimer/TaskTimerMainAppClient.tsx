@@ -220,17 +220,6 @@ function getLeaderboardRankColor(): string {
   return LEADERBOARD_RANK_LABEL_COLOR;
 }
 
-function LeaderboardRankText({ profile, className }: { profile: LeaderboardProfile; className: string }) {
-  return (
-    <span
-      className={className}
-      style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}
-    >
-      {getLeaderboardRankLabel(profile)}
-    </span>
-  );
-}
-
 function LeaderboardRankInsignia({ profile }: { profile: LeaderboardProfile }) {
   const resolvedRank = getLeaderboardResolvedRank(profile);
   return (
@@ -352,7 +341,6 @@ function LeaderboardSharedTable({
               {row.isPlaceholder ? null : (
                 <>
                   <LeaderboardRankInsignia profile={row.profile} />
-                  <LeaderboardRankText profile={row.profile} className="leaderboardWeeklyInsigniaLabel" />
                 </>
               )}
             </span>
@@ -1197,7 +1185,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                           <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                           <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
                           {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
-                          {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                         </span>
                       </button>
                     )) : null}
@@ -1271,7 +1258,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                               <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
                               {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                             </span>
                           </button>
                         ))}
@@ -1334,7 +1320,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                               <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
                               <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
                               {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                              {row.isPlaceholder ? null : <LeaderboardRankText profile={row.profile} className="leaderboardGlobalPodiumUserRank" />}
                             </span>
                           </button>
                         ))}

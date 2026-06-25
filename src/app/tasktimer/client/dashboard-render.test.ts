@@ -403,7 +403,7 @@ describe("dashboard activity overview card", () => {
       expect(axisDayCount).toBe(7);
       expect(bars).toHaveLength(7);
       expect(Number.parseFloat(String(firstBar?.getAttribute("width") || "0"))).toBeGreaterThan(60);
-      expect(Number.parseFloat(String(firstBar?.getAttribute("x") || "0"))).toBeLessThan(90);
+      expect(Number.parseFloat(String(firstBar?.getAttribute("x") || "0"))).toBeGreaterThan(90);
       expect(Number.parseFloat(String(lastBar?.getAttribute("x") || "0"))).toBeGreaterThan(600);
     } finally {
       harness.restore();

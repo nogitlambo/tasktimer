@@ -89,6 +89,7 @@ const els = {
   friendProfileModal: documentRef.getElementById("friendProfileModal"),
   friendProfileAvatar: documentRef.getElementById("friendProfileAvatar") as HTMLImageElement | null,
   friendProfileName: documentRef.getElementById("friendProfileName"),
+  friendProfileEmail: documentRef.getElementById("friendProfileEmail"),
   friendProfileRankImage: documentRef.getElementById("friendProfileRankImage") as HTMLImageElement | null,
   friendProfileRankPlaceholder: documentRef.getElementById("friendProfileRankPlaceholder"),
   friendProfileRank: documentRef.getElementById("friendProfileRank"),

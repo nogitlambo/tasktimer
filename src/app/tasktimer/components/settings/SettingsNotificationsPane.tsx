@@ -1,13 +1,10 @@
 "use client";
 
 import AppImg from "@/components/AppImg";
-import { isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { SettingsDownwardSelect } from "./SettingsDownwardSelect";
 import { SettingsDetailPane } from "./SettingsShared";
 
 export function SettingsNotificationsPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
-  const isNativeRuntime = isNativeOrFileRuntime();
-
   return (
     <SettingsDetailPane
       active={active}
@@ -23,23 +20,13 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
             <div className="settingsInlineSectionTitle">Push Notifications</div>
           </div>
           <div className="checkpointAlertsGroup" id="taskCheckpointAlertsGroup">
-            {isNativeRuntime ? (
-              <div className="toggleRow" id="taskMobilePushAlertsToggleRow">
-                <div className="settingsPreferenceControlCopy">
-                  <span className="settingsPreferenceControlLabel">Enable Mobile Push Notifications</span>
-                  <span className="settingsPreferenceControlHelp">Send scheduled task reminders and completed task alerts through your device notification system when the mobile app is available.</span>
-                </div>
-                <button className="switch" id="taskMobilePushAlertsToggle" type="button" role="switch" aria-checked="false" />
+            <div className="toggleRow" id="taskMobilePushAlertsToggleRow">
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Enable Mobile Push Notifications</span>
+                <span className="settingsPreferenceControlHelp">Send scheduled task reminders and completed task alerts through your device notification system when the mobile app is available.</span>
               </div>
-            ) : (
-              <div className="toggleRow" id="taskWebPushAlertsToggleRow">
-                <div className="settingsPreferenceControlCopy">
-                  <span className="settingsPreferenceControlLabel">Enable Web Push Notifications</span>
-                  <span className="settingsPreferenceControlHelp">Send scheduled task reminders and completed task alerts through your browser when TaskLaunch is open.</span>
-                </div>
-                <button className="switch" id="taskWebPushAlertsToggle" type="button" role="switch" aria-checked="false" />
-              </div>
-            )}
+              <button className="switch" id="taskMobilePushAlertsToggle" type="button" role="switch" aria-checked="false" />
+            </div>
             <div className="settingsInlineSectionHead" id="taskFocusDndSectionHead" hidden>
               <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/privacy-policy.webp" alt="" aria-hidden="true" />
               <div className="settingsInlineSectionTitle">Focus Do Not Disturb</div>

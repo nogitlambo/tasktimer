@@ -1239,7 +1239,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     };
   }
 
-  const dashboardActivityChartBounds = { left: 68, right: 692, top: 34, bottom: 289 };
+  const dashboardActivityChartBounds = { left: 84, right: 692, top: 34, bottom: 289 };
 
   function getDashboardActivityY(valueMs: number, maxChartMs: number) {
     const chart = dashboardActivityChartBounds;

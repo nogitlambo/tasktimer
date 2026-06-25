@@ -9,7 +9,9 @@ import {
   deleteSharedTaskSummary,
   loadFriendProfile,
   loadFriendships,
+  loadIncomingFriendRequestEmailHints,
   loadIncomingRequests,
+  loadOutgoingFriendRequestEmailHints,
   loadOutgoingRequests,
   loadSharedTaskSummariesForOwner,
   loadSharedTaskSummariesForViewer,
@@ -29,6 +31,8 @@ type GroupsBusyResult<T> =
 type GroupsSnapshotLoaders = {
   loadIncomingRequests: typeof loadIncomingRequests;
   loadOutgoingRequests: typeof loadOutgoingRequests;
+  loadIncomingFriendRequestEmailHints: typeof loadIncomingFriendRequestEmailHints;
+  loadOutgoingFriendRequestEmailHints: typeof loadOutgoingFriendRequestEmailHints;
   loadFriendships: typeof loadFriendships;
   loadFriendProfile: typeof loadFriendProfile;
   loadSharedTaskSummariesForViewer: typeof loadSharedTaskSummariesForViewer;
@@ -60,6 +64,8 @@ type SharedTaskHistoryEntryLike = {
 const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
   loadIncomingRequests,
   loadOutgoingRequests,
+  loadIncomingFriendRequestEmailHints,
+  loadOutgoingFriendRequestEmailHints,
   loadFriendships,
   loadFriendProfile,
   loadSharedTaskSummariesForViewer,
@@ -69,6 +75,37 @@ const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
 export function getFriendProfileOpenUidFromTarget(target: unknown) {
   const btn = (target as { closest?: (selector: string) => HTMLElement | null } | null)?.closest?.("[data-friend-profile-open]");
   return String(btn?.getAttribute?.("data-friend-profile-open") || "").trim();
+}
+
+export function getFriendRequestActionCompleteStatus(action: "approve" | "decline" | "cancel") {
+  return action === "approve"
+    ? "Friend request approved."
+    : action === "decline"
+      ? "Friend request declined."
+      : "Friend request cancelled.";
+}
+
+export function deriveFriendEmailByUid(
+  uid: string,
+  incomingRows: Array<{ senderUid?: string; senderEmail?: string | null; status?: string }>,
+  outgoingRows: Array<{ receiverUid?: string; receiverEmail?: string | null; status?: string }>
+) {
+  const currentUid = String(uid || "").trim();
+  const emailByUid: Record<string, string> = {};
+  if (!currentUid) return emailByUid;
+  incomingRows.forEach((row) => {
+    if (row.status !== "approved") return;
+    const peerUid = String(row.senderUid || "").trim();
+    const email = String(row.senderEmail || "").trim();
+    if (peerUid && email) emailByUid[peerUid] = email;
+  });
+  outgoingRows.forEach((row) => {
+    if (row.status !== "approved") return;
+    const peerUid = String(row.receiverUid || "").trim();
+    const email = String(row.receiverEmail || "").trim();
+    if (peerUid && email) emailByUid[peerUid] = email;
+  });
+  return emailByUid;
 }
 
 export function getSharedTaskGoalMetrics(task: SharedTaskMetricsTask | null | undefined) {
@@ -177,14 +214,19 @@ export function computeSharedTaskTimingMetrics(options: {
 }
 
 export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnapshotLoaders = defaultGroupsSnapshotLoaders) {
-  const [incomingResult, outgoingResult, friendshipsResult] = await Promise.allSettled([
+  const [incomingResult, outgoingResult, incomingEmailResult, outgoingEmailResult, friendshipsResult] = await Promise.allSettled([
     loaders.loadIncomingRequests(uid),
     loaders.loadOutgoingRequests(uid),
+    loaders.loadIncomingFriendRequestEmailHints(uid),
+    loaders.loadOutgoingFriendRequestEmailHints(uid),
     loaders.loadFriendships(uid),
   ]);
   const incoming = incomingResult.status === "fulfilled" ? incomingResult.value || [] : [];
   const outgoing = outgoingResult.status === "fulfilled" ? outgoingResult.value || [] : [];
+  const incomingEmailRows = incomingEmailResult.status === "fulfilled" ? incomingEmailResult.value || [] : [];
+  const outgoingEmailRows = outgoingEmailResult.status === "fulfilled" ? outgoingEmailResult.value || [] : [];
   const friendships = friendshipsResult.status === "fulfilled" ? friendshipsResult.value || [] : [];
+  const friendEmailByUid = deriveFriendEmailByUid(uid, incomingEmailRows, outgoingEmailRows);
   const requestPeerUids = [...incoming, ...outgoing]
     .map((row) => (row.senderUid === uid ? row.receiverUid : row.senderUid))
     .map((peerUid) => String(peerUid || "").trim())
@@ -220,6 +262,7 @@ export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnaps
     outgoing,
     friendships,
     friendProfileCache: nextFriendProfileCache,
+    friendEmailByUid,
     sharedSummaries: sharedForViewerResult.status === "fulfilled" ? sharedForViewerResult.value || [] : [],
     ownSharedSummaries: sharedForOwnerResult.status === "fulfilled" ? sharedForOwnerResult.value || [] : [],
   };
@@ -331,6 +374,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const currentRankId = String(profile?.currentRankId || "").trim() || "unranked";
         const totalXp = Math.max(0, Math.floor(Number(profile?.totalXp || 0) || 0));
         const completedTaskCount = Math.max(0, Math.floor(Number(profile?.completedTaskCount || 0) || 0));
+        const email = String(ctx.getFriendEmailByUid()[peerUid] || "").trim();
         const avatarSrc = ctx.getFriendAvatarSrc(profile);
         const sharedCount = ctx.getGroupsSharedSummaries().filter((entry) => entry.ownerUid === peerUid).length;
         const createdAtMs =
@@ -344,12 +388,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
               summaries.reduce((sum, entry) => sum + Math.max(0, Number(entry.avgTimeLoggedThisWeekMs || 0) || 0), 0) / summaries.length
             )
           : 0;
-        return { peerUid, alias, avatarSrc, currentRankId, totalXp, completedTaskCount, sharedCount, sharedTotalMs, sharedAverageMs, createdAtMs };
+        return { peerUid, alias, email, avatarSrc, currentRankId, totalXp, completedTaskCount, sharedCount, sharedTotalMs, sharedAverageMs, createdAtMs };
       })
       .filter(
         (row): row is {
           peerUid: string;
           alias: string;
+          email: string;
           avatarSrc: string;
           currentRankId: string;
           totalXp: number;
@@ -376,6 +421,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       els.friendProfileAvatar.alt = "";
     }
     if (els.friendProfileName) els.friendProfileName.textContent = row.alias;
+    if (els.friendProfileEmail) {
+      els.friendProfileEmail.textContent = row.email;
+      (els.friendProfileEmail as HTMLElement).style.display = row.email ? "block" : "none";
+    }
     if (els.friendProfileRankImage) {
       const rankThumbnail = getRankThumbnailDescriptor(row.currentRankId);
       if (rankThumbnail.kind === "image") {
@@ -585,7 +634,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .map((row) => {
         const friendUid = row.users[0] === uid ? row.users[1] : row.users[0];
         if (!friendUid) return null;
-        const alias = String(row.profileByUid?.[friendUid]?.alias || "").trim() || friendUid;
+        const profile = ctx.getMergedFriendProfile(friendUid, row.profileByUid?.[friendUid]);
+        const aliasRaw = String(profile?.alias || "").trim();
+        const alias = aliasRaw.includes("@") ? aliasRaw.split("@")[0] || friendUid : aliasRaw || friendUid;
         return { friendUid, alias };
       })
       .filter((row): row is { friendUid: string; alias: string } => !!row);
@@ -1029,6 +1080,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.setGroupsOutgoingRequests(snapshot.outgoing);
     ctx.setGroupsFriendships(snapshot.friendships);
     ctx.setFriendProfileCacheByUid(snapshot.friendProfileCache);
+    ctx.setFriendEmailByUid(snapshot.friendEmailByUid);
     ctx.setGroupsSharedSummaries(snapshot.sharedSummaries);
     ctx.setOwnSharedSummaries(snapshot.ownSharedSummaries);
   }
@@ -1334,6 +1386,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       ctx.setGroupsSharedSummaries([]);
       ctx.setOwnSharedSummaries([]);
       ctx.setFriendProfileCacheByUid({});
+      ctx.setFriendEmailByUid({});
       setGroupsStatus("Sign in to use Friends.");
       renderGroupsPage();
       return;
@@ -1422,13 +1475,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       renderGroupsPage();
       return;
     }
-    const completeStatus =
-      action === "approve"
-        ? "Friend request approved."
-        : action === "decline"
-          ? "Friend request declined."
-          : "Friend request cancelled.";
-    setGroupsStatus(completeStatus);
+    const completeStatus = getFriendRequestActionCompleteStatus(action);
+    setGroupsStatus("");
+    ctx.showActionConfirmation(completeStatus);
     renderGroupsPage();
     void refreshGroupsData({ preserveStatus: true });
   }

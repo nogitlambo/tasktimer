@@ -358,6 +358,24 @@ export async function loadOutgoingRequests(uid: string): Promise<FriendRequest[]
     .sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
 }
 
+export async function loadIncomingFriendRequestEmailHints(uid: string): Promise<FriendRequest[]> {
+  const db = dbOrNull();
+  if (!db || !uid) return [];
+  const snap = await getDocs(query(collection(db, "friend_requests"), where("receiverUid", "==", uid)));
+  return snap.docs
+    .map((d) => asFriendRequest(d.id, d.data() as Record<string, unknown>))
+    .filter((row) => row.status === "approved");
+}
+
+export async function loadOutgoingFriendRequestEmailHints(uid: string): Promise<FriendRequest[]> {
+  const db = dbOrNull();
+  if (!db || !uid) return [];
+  const snap = await getDocs(query(collection(db, "friend_requests"), where("senderUid", "==", uid)));
+  return snap.docs
+    .map((d) => asFriendRequest(d.id, d.data() as Record<string, unknown>))
+    .filter((row) => row.status === "approved");
+}
+
 export async function loadFriendships(uid: string): Promise<Friendship[]> {
   const db = dbOrNull();
   if (!db || !uid) return [];

@@ -195,6 +195,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     dashboardBusyHideTimer: null,
     initialAuthHydrating: true,
     friendProfileCacheByUid: {},
+    friendEmailByUid: {},
     cloudRefreshInFlight: null,
     lastCloudRefreshAtMs: 0,
     pendingDeferredCloudRefresh: false,

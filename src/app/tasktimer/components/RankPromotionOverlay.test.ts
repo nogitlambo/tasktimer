@@ -28,10 +28,11 @@ describe("RankPromotionOverlay", () => {
     expect(html).toContain('class="rankPromotionShieldFrame"');
     expect(html).toContain('class="rankPromotionShieldClipLayer"');
     expect(html).toContain('id="rankPromotionText"');
-    expect(html).toContain('id="rankPromotionCloseBtn"');
+    expect(html).not.toContain('id="rankPromotionCloseBtn"');
+    expect(html).toContain('<span class="rankPromotionTapCloseText" aria-hidden="true">Tap to close</span>');
     expect(html).toContain('class="rankPromotionTitleRibbon"');
     expect(html).toContain('<div class="rankPromotionContent"><h2 class="rankPromotionTitleRibbon">LEVEL UP!</h2><div class="modal rankPromotionModal');
-    expect(html).toContain('</div></div></div><div class="confirmBtns rankPromotionCloseSlot"><button class="btn btn-accent" id="rankPromotionCloseBtn"');
+    expect(html).toContain('</div></div></div><div class="confirmBtns rankPromotionCloseSlot" aria-live="polite"><span class="rankPromotionTapCloseText"');
 
     const titleIndex = html.indexOf("rankPromotionTitleRibbon");
     const modalIndex = html.indexOf("rankPromotionModal");
