@@ -12,6 +12,15 @@ const FRIEND_REQUEST_NOTIFICATION_ROUTE = "/friends";
 const FRIEND_REQUEST_NOTIFICATION_TYPE = "friendRequest";
 const MAX_PUSH_DEVICE_ROWS_PER_USER = 20;
 
+type PushFailureDiagnostic = {
+  deviceId: string;
+  platform: string;
+  native: boolean;
+  errorCode: string;
+  errorMessage: string;
+  removable: boolean;
+};
+
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
   return maxLength > 0 ? normalized.slice(0, maxLength) : normalized;
@@ -115,14 +124,21 @@ async function cleanupInvalidDeviceTokens(
 ) {
   const removableCodes = new Set(["messaging/invalid-registration-token", "messaging/registration-token-not-registered"]);
   const responses = Array.isArray(response.responses) ? response.responses : [];
+  const failedRows = responses
+    .map((item, index) => ({
+      success: item.success,
+      errorCode: item.error?.code || "",
+      errorMessage: asString(item.error?.message, 240),
+      deviceId: deviceRows[index]?.id || "",
+      platform: deviceRows[index]?.platform || "",
+      native: deviceRows[index]?.native === true,
+      removable: removableCodes.has(item.error?.code || ""),
+    }))
+    .filter((row) => !row.success);
+
   await Promise.all(
-    responses
-      .map((item, index) => ({
-        success: item.success,
-        errorCode: item.error?.code || "",
-        deviceId: deviceRows[index]?.id || "",
-      }))
-      .filter((row) => !row.success && row.deviceId && removableCodes.has(row.errorCode))
+    failedRows
+      .filter((row) => row.deviceId && row.removable)
       .map((row) =>
         db.collection("users").doc(uid).collection("devices").doc(row.deviceId).set(
           {
@@ -133,6 +149,8 @@ async function cleanupInvalidDeviceTokens(
         )
       )
   );
+
+  return failedRows;
 }
 
 async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore, receiverUid: string, requestId: string) {
@@ -147,10 +165,11 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
   const data = buildPushData(requestId);
 
   if (!deviceRows.length) {
-    return { status: "no-devices" as const, successCount: 0, failureCount: 0 };
+    return { status: "no-devices" as const, successCount: 0, failureCount: 0, failedRows: [], invalidTokenCount: 0 };
   }
 
   const responses = [];
+  const failedRows: PushFailureDiagnostic[] = [];
   if (nativeRows.length) {
     const nativeResponse = await messaging.sendEachForMulticast({
       tokens: nativeRows.map((row) => row.token),
@@ -178,7 +197,7 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
       data,
     });
     responses.push(nativeResponse);
-    await cleanupInvalidDeviceTokens(db, receiverUid, nativeRows, nativeResponse);
+    failedRows.push(...(await cleanupInvalidDeviceTokens(db, receiverUid, nativeRows, nativeResponse)));
   }
 
   if (webRows.length) {
@@ -204,7 +223,7 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
       data,
     });
     responses.push(webResponse);
-    await cleanupInvalidDeviceTokens(db, receiverUid, webRows, webResponse);
+    failedRows.push(...(await cleanupInvalidDeviceTokens(db, receiverUid, webRows, webResponse)));
   }
 
   const totals = responses.reduce(
@@ -217,6 +236,15 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
   return {
     status: totals.successCount > 0 ? ("sent" as const) : ("failed" as const),
     ...totals,
+    failedRows: failedRows.slice(0, 5).map((row) => ({
+      deviceId: row.deviceId,
+      platform: row.platform,
+      native: row.native,
+      errorCode: row.errorCode,
+      errorMessage: row.errorMessage,
+      removable: row.removable,
+    })),
+    invalidTokenCount: failedRows.filter((row) => row.removable).length,
   };
 }
 
@@ -345,6 +373,8 @@ export async function POST(req: Request) {
           status: pushResult.status,
           successCount: pushResult.successCount,
           failureCount: pushResult.failureCount,
+          invalidTokenCount: pushResult.invalidTokenCount,
+          failures: pushResult.failedRows,
         });
       }
     } catch (error) {

@@ -266,6 +266,68 @@ describe("POST /api/friends/requests", () => {
     );
   });
 
+  it("logs FCM failure diagnostics and clears removable receiver tokens", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const db = createFriendRequestDb();
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+    mocks.sendEachForMulticast.mockResolvedValue({
+      successCount: 0,
+      failureCount: 1,
+      responses: [
+        {
+          success: false,
+          error: {
+            code: "messaging/registration-token-not-registered",
+            message: "Requested entity was not found.",
+          },
+        },
+      ],
+    });
+
+    try {
+      const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+      const payload = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+      expect(infoSpy).toHaveBeenCalledWith(
+        "[api/friends/requests] Friend request push not sent",
+        expect.objectContaining({
+          requestId: "pending:sender-uid:receiver-uid",
+          receiverUid: "receiver-uid",
+          status: "failed",
+          successCount: 0,
+          failureCount: 1,
+          invalidTokenCount: 1,
+          failures: [
+            {
+              deviceId: "receiver-native-device",
+              platform: "android",
+              native: true,
+              errorCode: "messaging/registration-token-not-registered",
+              errorMessage: "Requested entity was not found.",
+              removable: true,
+            },
+          ],
+        })
+      );
+      expect(db.writes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "users/receiver-uid/devices/receiver-native-device",
+            data: {
+              token: "DELETE_FIELD",
+              updatedAt: "SERVER_TIMESTAMP",
+            },
+            options: { merge: true },
+          }),
+        ])
+      );
+    } finally {
+      infoSpy.mockRestore();
+    }
+  });
+
   it("rejects duplicate pending requests in the same direction without writing or sending push", async () => {
     const db = createFriendRequestDb({
       "friend_requests/pending:sender-uid:receiver-uid": {
