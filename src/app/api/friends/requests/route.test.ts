@@ -275,7 +275,7 @@ describe("POST /api/friends/requests", () => {
     );
   });
 
-  it("logs FCM failure diagnostics and clears removable receiver tokens", async () => {
+  it("logs FCM failure diagnostics without clearing receiver tokens", async () => {
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);
@@ -320,18 +320,17 @@ describe("POST /api/friends/requests", () => {
           ],
         })
       );
-      expect(db.writes).toEqual(
+      expect(db.writes).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             path: "users/receiver-uid/devices/receiver-native-device",
-            data: {
+            data: expect.objectContaining({
               token: "DELETE_FIELD",
-              updatedAt: "SERVER_TIMESTAMP",
-            },
-            options: { merge: true },
+            }),
           }),
         ])
       );
+      expect(db.docs["users/receiver-uid/devices/receiver-native-device"]?.token).toBe("receiver-native-token");
     } finally {
       infoSpy.mockRestore();
     }

@@ -117,8 +117,6 @@ function filterDeviceRowsByPushPreferences(
 }
 
 async function cleanupInvalidDeviceTokens(
-  db: FirebaseFirestore.Firestore,
-  uid: string,
   deviceRows: ReturnType<typeof extractPushDeviceRows>,
   response: { responses?: Array<{ success?: boolean; error?: { code?: string; message?: string } }> }
 ) {
@@ -130,29 +128,11 @@ async function cleanupInvalidDeviceTokens(
       errorCode: item.error?.code || "",
       errorMessage: asString(item.error?.message, 240),
       deviceId: deviceRows[index]?.id || "",
-      token: deviceRows[index]?.token || "",
       platform: deviceRows[index]?.platform || "",
       native: deviceRows[index]?.native === true,
       removable: removableCodes.has(item.error?.code || ""),
     }))
     .filter((row) => !row.success);
-
-  await Promise.all(
-    failedRows
-      .filter((row) => row.deviceId && row.removable)
-      .map(async (row) => {
-        const deviceRef = db.collection("users").doc(uid).collection("devices").doc(row.deviceId);
-        const currentSnap = await deviceRef.get();
-        if (asString(currentSnap.get("token")) !== row.token) return;
-        await deviceRef.set(
-          {
-            token: FieldValue.delete(),
-            updatedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-      })
-  );
 
   return failedRows;
 }
@@ -201,7 +181,7 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
       data,
     });
     responses.push(nativeResponse);
-    failedRows.push(...(await cleanupInvalidDeviceTokens(db, receiverUid, nativeRows, nativeResponse)));
+    failedRows.push(...(await cleanupInvalidDeviceTokens(nativeRows, nativeResponse)));
   }
 
   if (webRows.length) {
@@ -227,7 +207,7 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
       data,
     });
     responses.push(webResponse);
-    failedRows.push(...(await cleanupInvalidDeviceTokens(db, receiverUid, webRows, webResponse)));
+    failedRows.push(...(await cleanupInvalidDeviceTokens(webRows, webResponse)));
   }
 
   const totals = responses.reduce(
