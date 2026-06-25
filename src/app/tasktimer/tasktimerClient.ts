@@ -1676,6 +1676,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderGroupsPage,
       openHistoryManager,
       pendingPushEvent: PENDING_PUSH_TASK_EVENT,
+      applyAppPage,
       maybeHandlePendingTaskJump: () => runtimeActions.maybeHandlePendingTaskJump(),
       maybeHandlePendingPushAction,
       rehydrateFromCloudAndRender,

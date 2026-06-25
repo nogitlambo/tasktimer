@@ -3,6 +3,7 @@
 import type { Task } from "../lib/types";
 import type { TaskTimerConfirmOptions } from "./context";
 import type { MoveTaskScheduleResult } from "./schedule-runtime";
+import type { AppPage } from "./types";
 
 type ScheduleDay = Task["plannedStartDay"];
 type NonNullScheduleDay = NonNullable<ScheduleDay>;
@@ -42,6 +43,7 @@ type RegisterWindowRuntimeEventsOptions = {
   windowRef: Window;
   runtimeDestroyed: () => boolean;
   pendingPushEvent: string;
+  applyAppPage: (page: AppPage, opts?: { syncUrl?: "replace" | "push" | false }) => void;
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
@@ -54,6 +56,12 @@ type RegisterDashboardShellEventsOptions = {
   dashboardHeatSummaryCloseBtn: EventTarget | null | undefined;
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
 };
+
+function appPageForPushRoute(routeRaw: unknown): AppPage | null {
+  const route = String(routeRaw || "").trim().split("#")[0]?.split("?")[0]?.replace(/\/index\.html$/i, "").replace(/\/+$/, "") || "";
+  if (route === "/friends") return "friends";
+  return null;
+}
 
 export function registerTaskTimerScheduleEvents(options: RegisterScheduleEventsOptions) {
   options.on(options.documentRef as unknown as EventTarget, "click", (event: any) => {
@@ -185,7 +193,13 @@ export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRunt
   } catch {
     // Ignore readiness marker failures.
   }
-  options.on(options.windowRef, options.pendingPushEvent as any, () => {
+  options.on(options.windowRef, options.pendingPushEvent as any, (event: unknown) => {
+    const detail = event && typeof event === "object" && "detail" in event ? (event as { detail?: unknown }).detail : null;
+    const route = detail && typeof detail === "object" && "route" in detail ? (detail as { route?: unknown }).route : "";
+    const routePage = appPageForPushRoute(route);
+    if (routePage) {
+      options.applyAppPage(routePage, { syncUrl: "replace" });
+    }
     options.maybeHandlePendingTaskJump();
     options.maybeHandlePendingPushAction();
     void options.rehydrateFromCloudAndRender({ force: true }).then(() => {

@@ -1104,8 +1104,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           ? ctx.getFriendAvatarSrcById(String(row.senderAvatarId || "").trim())
           : ctx.buildFriendInitialAvatarDataUrl(peerAlias);
         const peerEmailText = String(peerEmail || "").trim();
-        const outgoingEmailHtml =
-          !opts.incoming && peerEmailText && peerEmailText.toLowerCase() !== peerAlias.toLowerCase()
+        const requestEmailHtml =
+          peerEmailText && peerEmailText.toLowerCase() !== peerAlias.toLowerCase()
             ? `<div class="friendRequestEmail">${ctx.escapeHtmlUI(peerEmailText)}</div>`
             : "";
         const outgoingActionHtml = !opts.incoming ? actionBtns : "";
@@ -1113,7 +1113,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           <img src="${ctx.escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">
             <div class="friendRequestAlias">${ctx.escapeHtmlUI(peerAlias)}</div>
-            ${outgoingEmailHtml}
+            ${requestEmailHtml}
             ${outgoingActionHtml}
           </div>
         </div>`;

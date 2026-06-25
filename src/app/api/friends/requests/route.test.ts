@@ -61,7 +61,7 @@ function createDocSnapshot(id: string, data: Record<string, unknown> | null) {
   };
 }
 
-function createFriendRequestDb() {
+function createFriendRequestDb(docOverrides: Record<string, Record<string, unknown> | null> = {}) {
   type FakeDocRef = {
     path: string;
     id: string;
@@ -88,6 +88,7 @@ function createFriendRequestDb() {
       email: "receiver@example.com",
     },
     "friend_requests/pending:sender-uid:receiver-uid": null,
+    "friend_requests/pending:receiver-uid:sender-uid": null,
     "friendships/pair:receiver-uid:sender-uid": null,
     "users/sender-uid": {
       username: "Sender",
@@ -99,6 +100,7 @@ function createFriendRequestDb() {
       mobilePushAlertsEnabled: true,
       webPushAlertsEnabled: false,
     },
+    ...docOverrides,
   };
   const collectionDocs: Record<string, Array<Record<string, unknown> & { id: string }>> = {
     "users/receiver-uid/devices": [
@@ -262,5 +264,45 @@ describe("POST /api/friends/requests", () => {
         },
       })
     );
+  });
+
+  it("rejects duplicate pending requests in the same direction without writing or sending push", async () => {
+    const db = createFriendRequestDb({
+      "friend_requests/pending:sender-uid:receiver-uid": {
+        requestId: "pending:sender-uid:receiver-uid",
+        senderUid: "sender-uid",
+        receiverUid: "receiver-uid",
+        status: "pending",
+      },
+    });
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload).toEqual({ error: "A pending request already exists for this user." });
+    expect(db.writes).toEqual([]);
+    expect(mocks.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it("rejects crossed pending requests without writing or sending push", async () => {
+    const db = createFriendRequestDb({
+      "friend_requests/pending:receiver-uid:sender-uid": {
+        requestId: "pending:receiver-uid:sender-uid",
+        senderUid: "receiver-uid",
+        receiverUid: "sender-uid",
+        status: "pending",
+      },
+    });
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload).toEqual({ error: "This user has already sent you a pending friend request." });
+    expect(db.writes).toEqual([]);
+    expect(mocks.sendEachForMulticast).not.toHaveBeenCalled();
   });
 });

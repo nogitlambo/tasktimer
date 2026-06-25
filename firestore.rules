@@ -655,6 +655,7 @@ service cloud.firestore {
         "receiverCurrentRankId",
         "receiverTotalXp",
         "status",
+        "notificationDeliveryMode",
         "createdAt",
         "updatedAt",
         "respondedAt",
@@ -676,6 +677,7 @@ service cloud.firestore {
       && (!("receiverCurrentRankId" in request.resource.data) || request.resource.data.receiverCurrentRankId == null || request.resource.data.receiverCurrentRankId is string)
       && (!("receiverTotalXp" in request.resource.data) || request.resource.data.receiverTotalXp == null || request.resource.data.receiverTotalXp is int)
       && (!("status" in request.resource.data) || request.resource.data.status in ["pending", "approved", "declined"])
+      && (!("notificationDeliveryMode" in request.resource.data) || request.resource.data.notificationDeliveryMode in ["api"])
       && (!("createdAt" in request.resource.data) || request.resource.data.createdAt != null)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
       && (!("respondedAt" in request.resource.data) || request.resource.data.respondedAt == null || request.resource.data.respondedAt != null)
@@ -703,6 +705,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
+      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;
@@ -729,6 +732,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
+      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == null
       && request.resource.data.respondedAt == null;
@@ -755,6 +759,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
+      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;

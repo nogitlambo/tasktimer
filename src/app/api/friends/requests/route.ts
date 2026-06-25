@@ -260,14 +260,17 @@ export async function POST(req: Request) {
     }
 
     const requestId = requestDocId(senderUid, receiverUid);
+    const reverseRequestId = requestDocId(receiverUid, senderUid);
     const requestRef = db.collection("friend_requests").doc(requestId);
+    const reverseRequestRef = db.collection("friend_requests").doc(reverseRequestId);
     const pairRef = db.collection("friendships").doc(friendshipDocId(senderUid, receiverUid));
     const senderUserRef = db.collection("users").doc(senderUid);
     const receiverUserRef = db.collection("users").doc(receiverUid);
 
     const requestResult = await db.runTransaction(async (tx) => {
-      const [existingSnap, friendshipSnap, senderUserSnap, receiverUserSnap] = await Promise.all([
+      const [existingSnap, reverseExistingSnap, friendshipSnap, senderUserSnap, receiverUserSnap] = await Promise.all([
         tx.get(requestRef),
+        tx.get(reverseRequestRef),
         tx.get(pairRef),
         tx.get(senderUserRef),
         tx.get(receiverUserRef),
@@ -311,8 +314,15 @@ export async function POST(req: Request) {
         if (status !== "declined" && status !== "approved") {
           return { ok: false as const, status: 409, error: "Request state is invalid. Remove or fix the existing request first." };
         }
+        if (reverseExistingSnap.exists && asString(reverseExistingSnap.get("status"), 24) === "pending") {
+          return { ok: false as const, status: 409, error: "This user has already sent you a pending friend request." };
+        }
         tx.update(requestRef, basePayload);
         return { ok: true as const };
+      }
+
+      if (reverseExistingSnap.exists && asString(reverseExistingSnap.get("status"), 24) === "pending") {
+        return { ok: false as const, status: 409, error: "This user has already sent you a pending friend request." };
       }
 
       tx.set(requestRef, {

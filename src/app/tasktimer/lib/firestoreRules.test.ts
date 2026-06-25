@@ -58,3 +58,21 @@ describe("firestore friendship profile rules", () => {
     expect(block).toContain('(!("completedTaskCount" in value) || value.completedTaskCount == null || value.completedTaskCount is int)');
   });
 });
+
+describe("firestore friend request rules", () => {
+  it("allows API-created notification delivery mode to survive receiver decision updates", () => {
+    const block = functionBlock(readRules(), "isFriendRequestDocShape");
+    const decisionBlock = functionBlock(readRules(), "isFriendRequestDecisionUpdate");
+    const retryBlock = functionBlock(readRules(), "isFriendRequestRetryUpdate");
+    const cancelBlock = functionBlock(readRules(), "isFriendRequestSenderCancelUpdate");
+    const immutableCheck = "request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode";
+
+    expect(block).toContain('"notificationDeliveryMode"');
+    expect(block).toContain(
+      '(!("notificationDeliveryMode" in request.resource.data) || request.resource.data.notificationDeliveryMode in ["api"])'
+    );
+    expect(decisionBlock).toContain(immutableCheck);
+    expect(retryBlock).toContain(immutableCheck);
+    expect(cancelBlock).toContain(immutableCheck);
+  });
+});
