@@ -4,22 +4,7 @@ import { NextResponse } from "next/server";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
-import { getFirebaseAdminDb, getFirebaseAdminMessaging, getFirebaseAdminProjectId } from "@/lib/firebaseAdmin";
-
-const FRIEND_REQUEST_NOTIFICATION_TITLE = "You have a pending friend request";
-const FRIEND_REQUEST_NOTIFICATION_BODY = "Tap to view the request";
-const FRIEND_REQUEST_NOTIFICATION_ROUTE = "/friends";
-const FRIEND_REQUEST_NOTIFICATION_TYPE = "friendRequest";
-const MAX_PUSH_DEVICE_ROWS_PER_USER = 20;
-
-type PushFailureDiagnostic = {
-  deviceId: string;
-  platform: string;
-  native: boolean;
-  errorCode: string;
-  errorMessage: string;
-  tokenRejectedAsInvalid: boolean;
-};
+import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -57,10 +42,6 @@ function normalizeTotalXp(value: unknown) {
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
 }
 
-function asBool(value: unknown) {
-  return value === true;
-}
-
 function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) {
   return {
     alias: normalizeField(data?.username, 40),
@@ -68,167 +49,6 @@ function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) 
     rankThumbnailSrc: normalizeField(data?.rankThumbnailSrc, 900000),
     currentRankId: normalizeField(data?.rewardCurrentRankId, 120),
     totalXp: normalizeTotalXp(data?.rewardTotalXp),
-  };
-}
-
-function asStringMap(value: Record<string, string>) {
-  return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, String(entryValue || "")]));
-}
-
-function buildPushData(requestId: string) {
-  return asStringMap({
-    route: FRIEND_REQUEST_NOTIFICATION_ROUTE,
-    requestId,
-    type: FRIEND_REQUEST_NOTIFICATION_TYPE,
-  });
-}
-
-function extractPushDeviceRows(snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>) {
-  return snapshot.docs
-    .map((docSnap) => ({
-      id: docSnap.id,
-      token: asString(docSnap.get("token")),
-      enabled: docSnap.get("enabled") !== false,
-      native: asBool(docSnap.get("native")),
-      provider: asString(docSnap.get("provider")),
-      platform: asString(docSnap.get("platform")).toLowerCase(),
-    }))
-    .filter((row) => !!row.token && row.enabled && row.provider === "fcm" && (row.native || row.platform === "web"));
-}
-
-async function loadUserPushPreferences(db: FirebaseFirestore.Firestore, uid: string) {
-  const prefSnap = await db.collection("users").doc(uid).collection("preferences").doc("v1").get();
-  if (!prefSnap.exists) {
-    return { mobilePushAlertsEnabled: false, webPushAlertsEnabled: false };
-  }
-  const mobilePushAlertsEnabled = prefSnap.get("mobilePushAlertsEnabled") === true;
-  const webPushAlertsEnabled =
-    typeof prefSnap.get("webPushAlertsEnabled") === "boolean"
-      ? prefSnap.get("webPushAlertsEnabled") === true
-      : mobilePushAlertsEnabled;
-  return { mobilePushAlertsEnabled, webPushAlertsEnabled };
-}
-
-function filterDeviceRowsByPushPreferences(
-  deviceRows: ReturnType<typeof extractPushDeviceRows>,
-  prefs: { mobilePushAlertsEnabled: boolean; webPushAlertsEnabled: boolean }
-) {
-  return deviceRows.filter((row) => (row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled));
-}
-
-async function cleanupInvalidDeviceTokens(
-  deviceRows: ReturnType<typeof extractPushDeviceRows>,
-  response: { responses?: Array<{ success?: boolean; error?: { code?: string; message?: string } }> }
-) {
-  const invalidTokenCodes = new Set(["messaging/invalid-registration-token", "messaging/registration-token-not-registered"]);
-  const responses = Array.isArray(response.responses) ? response.responses : [];
-  const failedRows = responses
-    .map((item, index) => ({
-      success: item.success,
-      errorCode: item.error?.code || "",
-      errorMessage: asString(item.error?.message, 240),
-      deviceId: deviceRows[index]?.id || "",
-      platform: deviceRows[index]?.platform || "",
-      native: deviceRows[index]?.native === true,
-      tokenRejectedAsInvalid: invalidTokenCodes.has(item.error?.code || ""),
-    }))
-    .filter((row) => !row.success);
-
-  return failedRows;
-}
-
-async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore, receiverUid: string, requestId: string) {
-  const [devicesSnap, prefs] = await Promise.all([
-    db.collection("users").doc(receiverUid).collection("devices").get(),
-    loadUserPushPreferences(db, receiverUid),
-  ]);
-  const deviceRows = filterDeviceRowsByPushPreferences(extractPushDeviceRows(devicesSnap), prefs).slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
-  const nativeRows = deviceRows.filter((row) => row.native);
-  const webRows = deviceRows.filter((row) => !row.native);
-  const messaging = getFirebaseAdminMessaging();
-  const data = buildPushData(requestId);
-
-  if (!deviceRows.length) {
-    return { status: "no-devices" as const, successCount: 0, failureCount: 0, failedRows: [], invalidTokenFailureCount: 0 };
-  }
-
-  const responses = [];
-  const failedRows: PushFailureDiagnostic[] = [];
-  if (nativeRows.length) {
-    const nativeResponse = await messaging.sendEachForMulticast({
-      tokens: nativeRows.map((row) => row.token),
-      notification: {
-        title: FRIEND_REQUEST_NOTIFICATION_TITLE,
-        body: FRIEND_REQUEST_NOTIFICATION_BODY,
-      },
-      android: {
-        priority: "high",
-        notification: {
-          channelId: "tasklaunch-default",
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: FRIEND_REQUEST_NOTIFICATION_TITLE,
-              body: FRIEND_REQUEST_NOTIFICATION_BODY,
-            },
-            sound: "default",
-          },
-        },
-      },
-      data,
-    });
-    responses.push(nativeResponse);
-    failedRows.push(...(await cleanupInvalidDeviceTokens(nativeRows, nativeResponse)));
-  }
-
-  if (webRows.length) {
-    const webResponse = await messaging.sendEachForMulticast({
-      tokens: webRows.map((row) => row.token),
-      notification: {
-        title: FRIEND_REQUEST_NOTIFICATION_TITLE,
-        body: FRIEND_REQUEST_NOTIFICATION_BODY,
-      },
-      webpush: {
-        notification: {
-          title: FRIEND_REQUEST_NOTIFICATION_TITLE,
-          body: FRIEND_REQUEST_NOTIFICATION_BODY,
-        },
-        headers: {
-          Urgency: "high",
-        },
-        fcmOptions: {
-          link: FRIEND_REQUEST_NOTIFICATION_ROUTE,
-        },
-        data,
-      },
-      data,
-    });
-    responses.push(webResponse);
-    failedRows.push(...(await cleanupInvalidDeviceTokens(webRows, webResponse)));
-  }
-
-  const totals = responses.reduce(
-    (acc, item) => ({
-      successCount: acc.successCount + (Number(item.successCount) || 0),
-      failureCount: acc.failureCount + (Number(item.failureCount) || 0),
-    }),
-    { successCount: 0, failureCount: 0 }
-  );
-  return {
-    status: totals.successCount > 0 ? ("sent" as const) : ("failed" as const),
-    ...totals,
-    failedRows: failedRows.slice(0, 5).map((row) => ({
-      deviceId: row.deviceId,
-      platform: row.platform,
-      native: row.native,
-      errorCode: row.errorCode,
-      errorMessage: row.errorMessage,
-      tokenRejectedAsInvalid: row.tokenRejectedAsInvalid,
-    })),
-    invalidTokenFailureCount: failedRows.filter((row) => row.tokenRejectedAsInvalid).length,
   };
 }
 
@@ -312,7 +132,6 @@ export async function POST(req: Request) {
         receiverCurrentRankId: receiverProfile.currentRankId,
         receiverTotalXp: receiverProfile.totalXp,
         status: "pending",
-        notificationDeliveryMode: "api",
         updatedAt: FieldValue.serverTimestamp(),
         respondedAt: null,
         respondedBy: null,
@@ -346,32 +165,6 @@ export async function POST(req: Request) {
 
     if (!requestResult.ok) {
       return withAuthenticatedApiCors(req, NextResponse.json({ error: requestResult.error }, { status: requestResult.status }));
-    }
-
-    try {
-      const pushResult = await sendFriendRequestPushNotification(db, receiverUid, requestId);
-      if (pushResult.status !== "sent") {
-        console.info("[api/friends/requests] Friend request push not sent", {
-          requestId,
-          receiverUid,
-          status: pushResult.status,
-          successCount: pushResult.successCount,
-          failureCount: pushResult.failureCount,
-          invalidTokenFailureCount: pushResult.invalidTokenFailureCount,
-          adminProjectId: getFirebaseAdminProjectId() || null,
-          clientProjectId: asString(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) || null,
-          messagingSenderId: asString(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) || null,
-          tokenCleanupApplied: false,
-          failures: pushResult.failedRows,
-        });
-      }
-    } catch (error) {
-      console.error("[api/friends/requests] Friend request push failed", {
-        requestId,
-        receiverUid,
-        message: error instanceof Error ? error.message : "Unknown push failure",
-        error,
-      });
     }
 
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, requestId }));

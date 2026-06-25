@@ -235,7 +235,7 @@ describe("POST /api/friends/requests", () => {
     expect(payload).toEqual({ error: "Email address is required." });
   });
 
-  it("sends a native push notification to the receiver after creating a pending request", async () => {
+  it("creates a pending request for the Firestore trigger to deliver", async () => {
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);
 
@@ -253,154 +253,12 @@ describe("POST /api/friends/requests", () => {
             senderUid: "sender-uid",
             receiverUid: "receiver-uid",
             status: "pending",
-            notificationDeliveryMode: "api",
           }),
         }),
       ])
     );
-    expect(mocks.sendEachForMulticast).toHaveBeenCalledTimes(1);
-    expect(mocks.sendEachForMulticast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tokens: ["receiver-native-token"],
-        notification: {
-          title: "You have a pending friend request",
-          body: "Tap to view the request",
-        },
-        android: expect.objectContaining({
-          notification: {
-            channelId: "tasklaunch-default",
-          },
-        }),
-        data: {
-          route: "/friends",
-          requestId: "pending:sender-uid:receiver-uid",
-          type: "friendRequest",
-        },
-      })
-    );
-  });
-
-  it("logs FCM failure diagnostics without clearing receiver tokens", async () => {
-    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
-    const db = createFriendRequestDb();
-    mocks.getFirebaseAdminDb.mockReturnValue(db);
-    mocks.sendEachForMulticast.mockResolvedValue({
-      successCount: 0,
-      failureCount: 1,
-      responses: [
-        {
-          success: false,
-          error: {
-            code: "messaging/registration-token-not-registered",
-            message: "Requested entity was not found.",
-          },
-        },
-      ],
-    });
-
-    try {
-      const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
-      const payload = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
-      expect(infoSpy).toHaveBeenCalledWith(
-        "[api/friends/requests] Friend request push not sent",
-        expect.objectContaining({
-          requestId: "pending:sender-uid:receiver-uid",
-          receiverUid: "receiver-uid",
-          status: "failed",
-          successCount: 0,
-          failureCount: 1,
-          invalidTokenFailureCount: 1,
-          adminProjectId: "tasktimer-prod",
-          clientProjectId: "tasktimer-prod",
-          messagingSenderId: "996538028829",
-          tokenCleanupApplied: false,
-          failures: [
-            {
-              deviceId: "receiver-native-device",
-              platform: "android",
-              native: true,
-              errorCode: "messaging/registration-token-not-registered",
-              errorMessage: "Requested entity was not found.",
-              tokenRejectedAsInvalid: true,
-            },
-          ],
-        })
-      );
-      expect(db.writes).not.toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "users/receiver-uid/devices/receiver-native-device",
-            data: expect.objectContaining({
-              token: "DELETE_FIELD",
-            }),
-          }),
-        ])
-      );
-      expect(db.docs["users/receiver-uid/devices/receiver-native-device"]?.token).toBe("receiver-native-token");
-    } finally {
-      infoSpy.mockRestore();
-    }
-  });
-
-  it("does not clear a freshly rotated receiver token after an old token fails", async () => {
-    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
-    const db = createFriendRequestDb();
-    mocks.getFirebaseAdminDb.mockReturnValue(db);
-    mocks.sendEachForMulticast.mockImplementation(async () => {
-      db.docs["users/receiver-uid/devices/receiver-native-device"] = {
-        id: "receiver-native-device",
-        token: "fresh-receiver-native-token",
-        enabled: true,
-        native: true,
-        provider: "fcm",
-        platform: "android",
-      };
-      return {
-        successCount: 0,
-        failureCount: 1,
-        responses: [
-          {
-            success: false,
-            error: {
-              code: "messaging/registration-token-not-registered",
-              message: "Requested entity was not found.",
-            },
-          },
-        ],
-      };
-    });
-
-    try {
-      const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
-      const payload = await response.json();
-
-      expect(response.status).toBe(200);
-      expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
-      expect(infoSpy).toHaveBeenCalledWith(
-        "[api/friends/requests] Friend request push not sent",
-        expect.objectContaining({
-          status: "failed",
-          invalidTokenFailureCount: 1,
-          tokenCleanupApplied: false,
-        })
-      );
-      expect(db.writes).not.toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            path: "users/receiver-uid/devices/receiver-native-device",
-            data: expect.objectContaining({
-              token: "DELETE_FIELD",
-            }),
-          }),
-        ])
-      );
-      expect(db.docs["users/receiver-uid/devices/receiver-native-device"]?.token).toBe("fresh-receiver-native-token");
-    } finally {
-      infoSpy.mockRestore();
-    }
+    expect(db.writes[0].data).not.toHaveProperty("notificationDeliveryMode");
+    expect(mocks.sendEachForMulticast).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate pending requests in the same direction without writing or sending push", async () => {
