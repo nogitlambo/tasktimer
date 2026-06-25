@@ -311,6 +311,85 @@ describe("sendFriendRequestPendingNotification", () => {
     expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
   });
 
+  it("marks but does not clear the receiver token when a friend request push send is rejected by FCM", async () => {
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+    state.sendEachForMulticast = vi.fn(async () => ({
+      successCount: 0,
+      failureCount: 1,
+      responses: [
+        {
+          success: false,
+          error: {
+            code: "messaging/registration-token-not-registered",
+            message: "Requested entity was not found.",
+          },
+        },
+      ],
+    }));
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      requestId: "pending:sender-1:receiver-1",
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        senderUid: "sender-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      status: "failed",
+      failureCount: 1,
+      invalidTokenCount: 1,
+      failures: [
+        expect.objectContaining({
+          deviceId: "native-1",
+          errorCode: "messaging/registration-token-not-registered",
+          platform: "android",
+          native: true,
+          appActive: false,
+          tokenLength: "native-token".length,
+          tokenHash: expect.stringMatching(/^[a-f0-9]{12}$/),
+        }),
+      ],
+    }));
+    expect(state.writes).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "users/receiver-1/devices/native-1",
+          data: expect.objectContaining({
+            token: "DELETE_FIELD",
+          }),
+        }),
+      ])
+    );
+    expect(state.writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "users/receiver-1/devices/native-1",
+          data: expect.objectContaining({
+            lastPushErrorCode: "messaging/registration-token-not-registered",
+            lastPushErrorMessage: "Requested entity was not found.",
+            lastPushErrorAtMs: expect.any(Number),
+            lastPushErrorTokenHash: expect.stringMatching(/^[a-f0-9]{12}$/),
+          }),
+        }),
+      ])
+    );
+  });
+
   it("does not resend when a pending request is updated without leaving pending", async () => {
     const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
       before: {
@@ -329,7 +408,20 @@ describe("sendFriendRequestPendingNotification", () => {
     expect(state.sendEachForMulticast).not.toHaveBeenCalled();
   });
 
-  it("does not send when an API-created request is marked for direct delivery", async () => {
+  it("still sends when a legacy API-created request is marked for direct delivery", async () => {
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+
     const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
       after: {
         requestId: "pending:sender-1:receiver-1",
@@ -339,8 +431,12 @@ describe("sendFriendRequestPendingNotification", () => {
       },
     }));
 
-    expect(result).toEqual({ ok: false, status: "api-delivered" });
-    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      status: "sent",
+      successCount: 1,
+    }));
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
   });
 
   it("ignores non-pending request states", async () => {

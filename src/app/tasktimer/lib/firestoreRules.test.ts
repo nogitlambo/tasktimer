@@ -60,19 +60,36 @@ describe("firestore friendship profile rules", () => {
 });
 
 describe("firestore friend request rules", () => {
-  it("allows API-created notification delivery mode to survive receiver decision updates", () => {
+  it("allows notification delivery mode to survive receiver decision updates when present or absent", () => {
     const block = functionBlock(readRules(), "isFriendRequestDocShape");
     const decisionBlock = functionBlock(readRules(), "isFriendRequestDecisionUpdate");
     const retryBlock = functionBlock(readRules(), "isFriendRequestRetryUpdate");
     const cancelBlock = functionBlock(readRules(), "isFriendRequestSenderCancelUpdate");
-    const immutableCheck = "request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode";
 
     expect(block).toContain('"notificationDeliveryMode"');
     expect(block).toContain(
       '(!("notificationDeliveryMode" in request.resource.data) || request.resource.data.notificationDeliveryMode in ["api"])'
     );
-    expect(decisionBlock).toContain(immutableCheck);
-    expect(retryBlock).toContain(immutableCheck);
-    expect(cancelBlock).toContain(immutableCheck);
+    expect(readRules()).toContain("function friendRequestNotificationDeliveryModeUnchanged()");
+    expect(readRules()).toContain('!("notificationDeliveryMode" in resource.data)');
+    expect(readRules()).toContain('!("notificationDeliveryMode" in request.resource.data)');
+    expect(decisionBlock).toContain("friendRequestNotificationDeliveryModeUnchanged()");
+    expect(retryBlock).toContain("friendRequestNotificationDeliveryModeUnchanged()");
+    expect(cancelBlock).toContain("friendRequestNotificationDeliveryModeUnchanged()");
+  });
+});
+
+describe("firestore device rules", () => {
+  it("allows push delivery error markers for client recovery", () => {
+    const block = functionBlock(readRules(), "isDeviceDoc");
+
+    expect(block).toContain('"lastPushErrorCode"');
+    expect(block).toContain('"lastPushErrorMessage"');
+    expect(block).toContain('"lastPushErrorAtMs"');
+    expect(block).toContain('"lastPushErrorTokenHash"');
+    expect(block).toContain('optionalNullableStringMax("lastPushErrorCode", 160)');
+    expect(block).toContain('optionalNullableStringMax("lastPushErrorMessage", 240)');
+    expect(block).toContain('request.resource.data.lastPushErrorAtMs == null || request.resource.data.lastPushErrorAtMs is int');
+    expect(block).toContain('optionalNullableStringMax("lastPushErrorTokenHash", 40)');
   });
 });

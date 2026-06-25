@@ -1096,7 +1096,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   row.requestId
                 )}"${disabledAttr}>Decline</button><button class="btn btn-ghost small" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
-                )}"${disabledAttr}>Approve</button></div>`
+                )}"${disabledAttr}>Accept</button></div>`
               : `<button class="friendRequestCancelLink" type="button" data-friend-action="cancel" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
                 )}"${disabledAttr}>Cancel request</button>`;

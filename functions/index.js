@@ -5,6 +5,7 @@ import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions";
+import {createHash} from "node:crypto";
 
 if (!getApps().length) {
   initializeApp();
@@ -213,13 +214,20 @@ async function resolveFriendReminderSenderName(callerUid, ownerUid) {
   };
 }
 
-async function cleanupInvalidDeviceTokens(uid, deviceRows, response) {
+async function cleanupInvalidDeviceTokens(uid, deviceRows, response, opts = {}) {
+  const nowMs = Date.now();
   const invalidRows = response.responses
     .map((item, index) => ({
       success: item.success,
       errorCode: item.error?.code || "",
       errorMessage: item.error?.message || "",
       deviceId: deviceRows[index]?.id || "",
+      platform: deviceRows[index]?.platform || "",
+      native: deviceRows[index]?.native === true,
+      appActive: deviceRows[index]?.appActive === true,
+      appStateUpdatedAtMs: asInt(deviceRows[index]?.appStateUpdatedAtMs, 0),
+      tokenLength: asString(deviceRows[index]?.token).length,
+      tokenHash: tokenLogHash(deviceRows[index]?.token),
     }))
     .filter((row) => !row.success);
 
@@ -228,26 +236,56 @@ async function cleanupInvalidDeviceTokens(uid, deviceRows, response) {
     "messaging/registration-token-not-registered",
   ]);
 
-  await Promise.all(
-    invalidRows
-      .filter((row) => removableCodes.has(row.errorCode) && row.deviceId)
-      .map((row) =>
-        db
-          .collection("users")
-          .doc(uid)
-          .collection("devices")
-          .doc(row.deviceId)
-          .set(
-            {
-              token: FieldValue.delete(),
-              updatedAt: FieldValue.serverTimestamp(),
-            },
-            {merge: true}
-          )
-      )
-  );
+  if (opts.deleteInvalidTokens !== false) {
+    await Promise.all(
+      invalidRows
+        .filter((row) => removableCodes.has(row.errorCode) && row.deviceId)
+        .map((row) =>
+          db
+            .collection("users")
+            .doc(uid)
+            .collection("devices")
+            .doc(row.deviceId)
+            .set(
+              {
+                token: FieldValue.delete(),
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              {merge: true}
+            )
+        )
+    );
+  } else {
+    await Promise.all(
+      invalidRows
+        .filter((row) => removableCodes.has(row.errorCode) && row.deviceId)
+        .map((row) =>
+          db
+            .collection("users")
+            .doc(uid)
+            .collection("devices")
+            .doc(row.deviceId)
+            .set(
+              {
+                lastPushErrorCode: asString(row.errorCode).slice(0, 160),
+                lastPushErrorMessage: asString(row.errorMessage).slice(0, 240),
+                lastPushErrorAtMs: nowMs,
+                lastPushErrorTokenHash: asString(row.tokenHash).slice(0, 40),
+                updatedAt: FieldValue.serverTimestamp(),
+              },
+              {merge: true}
+            )
+        )
+    );
+  }
 
   return invalidRows;
+}
+
+function tokenLogHash(token) {
+  const normalizedToken = asString(token);
+  if (!normalizedToken) return "";
+  return createHash("sha256").update(normalizedToken).digest("hex").slice(0, 12);
 }
 
 export const sendPushTest = onCall(protectedCallableOptions, async (request) => {
@@ -926,6 +964,7 @@ async function sendScheduledTaskNotification({
   webBody,
   allowWeb = true,
   skipIfForeground = false,
+  cleanupInvalidTokens = true,
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const prefs = await loadUserPushPreferences(uid);
@@ -943,6 +982,7 @@ async function sendScheduledTaskNotification({
       successCount: 0,
       failureCount: 0,
       invalidTokenCount: 0,
+      failures: [],
       taskId,
       taskName,
     };
@@ -978,7 +1018,9 @@ async function sendScheduledTaskNotification({
       data: pushData,
     });
     responses.push(nativeResponse);
-    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse));
+    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse, {
+      deleteInvalidTokens: cleanupInvalidTokens,
+    }));
   }
 
   if (allowWeb && webRows.length) {
@@ -992,7 +1034,9 @@ async function sendScheduledTaskNotification({
       data: pushData,
     });
     responses.push(webResponse);
-    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, webRows, webResponse));
+    invalidRows.push(...await cleanupInvalidDeviceTokens(uid, webRows, webResponse, {
+      deleteInvalidTokens: cleanupInvalidTokens,
+    }));
   }
 
   const response = responses.reduce((acc, item) => ({
@@ -1006,6 +1050,7 @@ async function sendScheduledTaskNotification({
       successCount: 0,
       failureCount: 0,
       invalidTokenCount: invalidRows.length,
+      failures: invalidRows,
       taskId,
       taskName,
     };
@@ -1016,6 +1061,7 @@ async function sendScheduledTaskNotification({
     successCount: response.successCount,
     failureCount: response.failureCount,
     invalidTokenCount: invalidRows.length,
+    failures: invalidRows,
     taskId,
     taskName,
   };
@@ -1042,10 +1088,6 @@ async function sendFriendRequestPendingNotification(event) {
   if (previousStatus === "pending") {
     return {ok: false, status: "already-pending"};
   }
-  if (asString(afterData.notificationDeliveryMode) === "api") {
-    return {ok: false, status: "api-delivered"};
-  }
-
   const receiverUid = asString(afterData.receiverUid);
   if (!receiverUid) {
     return {ok: false, status: "missing-receiver"};
@@ -1067,6 +1109,7 @@ async function sendFriendRequestPendingNotification(event) {
     webBody: FRIEND_REQUEST_NOTIFICATION_BODY,
     allowWeb: true,
     skipIfForeground: false,
+    cleanupInvalidTokens: false,
   });
 
   logger.info("Friend request push notification processed", {
@@ -1075,6 +1118,8 @@ async function sendFriendRequestPendingNotification(event) {
     resultStatus: result.status,
     successCount: result.successCount || 0,
     failureCount: result.failureCount || 0,
+    invalidTokenCount: result.invalidTokenCount || 0,
+    failures: Array.isArray(result.failures) ? result.failures : [],
   });
 
   return {

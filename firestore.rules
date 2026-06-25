@@ -419,6 +419,10 @@ service cloud.firestore {
         "appId",
         "appActive",
         "appStateUpdatedAtMs",
+        "lastPushErrorCode",
+        "lastPushErrorMessage",
+        "lastPushErrorAtMs",
+        "lastPushErrorTokenHash",
           "kind",
           "scope",
           "checkpointAlertMuteTaskId",
@@ -440,6 +444,10 @@ service cloud.firestore {
       && optionalNullableStringMax("appId", 160)
       && (!("appActive" in request.resource.data) || request.resource.data.appActive is bool)
       && (!("appStateUpdatedAtMs" in request.resource.data) || request.resource.data.appStateUpdatedAtMs is int)
+      && optionalNullableStringMax("lastPushErrorCode", 160)
+      && optionalNullableStringMax("lastPushErrorMessage", 240)
+      && (!("lastPushErrorAtMs" in request.resource.data) || request.resource.data.lastPushErrorAtMs == null || request.resource.data.lastPushErrorAtMs is int)
+      && optionalNullableStringMax("lastPushErrorTokenHash", 40)
         && (!("kind" in request.resource.data) || request.resource.data.kind in ["native", "webpush"])
         && (!("scope" in request.resource.data) || request.resource.data.scope in ["native", "web"])
         && optionalNullableStringMax("checkpointAlertMuteTaskId", 160)
@@ -684,6 +692,18 @@ service cloud.firestore {
       && (!("respondedBy" in request.resource.data) || request.resource.data.respondedBy == null || request.resource.data.respondedBy is string);
     }
 
+    function friendRequestNotificationDeliveryModeUnchanged() {
+      return (
+        !("notificationDeliveryMode" in resource.data)
+        && !("notificationDeliveryMode" in request.resource.data)
+      )
+      || (
+        "notificationDeliveryMode" in resource.data
+        && "notificationDeliveryMode" in request.resource.data
+        && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
+      );
+    }
+
     function isFriendRequestDecisionUpdate() {
       return isFriendRequestDocShape()
       && request.auth != null
@@ -705,7 +725,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
-      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
+      && friendRequestNotificationDeliveryModeUnchanged()
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;
@@ -732,7 +752,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
-      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
+      && friendRequestNotificationDeliveryModeUnchanged()
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == null
       && request.resource.data.respondedAt == null;
@@ -759,7 +779,7 @@ service cloud.firestore {
       && request.resource.data.receiverRankThumbnailSrc == resource.data.receiverRankThumbnailSrc
       && request.resource.data.receiverCurrentRankId == resource.data.receiverCurrentRankId
       && request.resource.data.receiverTotalXp == resource.data.receiverTotalXp
-      && request.resource.data.notificationDeliveryMode == resource.data.notificationDeliveryMode
+      && friendRequestNotificationDeliveryModeUnchanged()
       && request.resource.data.createdAt == resource.data.createdAt
       && request.resource.data.respondedBy == request.auth.uid
       && request.resource.data.respondedAt is timestamp;

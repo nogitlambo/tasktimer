@@ -32,6 +32,11 @@ const PENDING_PUSH_TASK_ID_KEY = `${STORAGE_KEY}:pendingPushTaskId`;
 const PENDING_PUSH_ACTION_KEY = `${STORAGE_KEY}:pendingPushAction`;
 const PENDING_PUSH_TASK_EVENT = "tasktimer:pendingTaskJump";
 export const TASKLAUNCH_PUSH_CHANNEL_ID = "tasklaunch-default";
+const INVALID_FCM_TOKEN_ERROR_CODES = new Set([
+  "messaging/invalid-registration-token",
+  "messaging/registration-token-not-registered",
+]);
+const INVALID_NATIVE_PUSH_REFRESH_COOLDOWN_MS = 30_000;
 const firebaseWebPushVapidKey = normalizePublicFirebaseConfigValue(
   process.env.NEXT_PUBLIC_FIREBASE_WEB_PUSH_VAPID_KEY
 );
@@ -109,6 +114,7 @@ let runtimeEnabled = false;
 let desiredPushEnabled: PushChannelPreference = { mobileEnabled: false, webEnabled: false };
 let syncPromise: Promise<PushChannelPreference> = Promise.resolve(desiredPushEnabled);
 let lastSyncedUid = "";
+let lastInvalidNativePushRefreshAtMs = 0;
 
 function normalizePublicFirebaseConfigValue(value: string | undefined): string {
   const normalized = String(value || "").trim();
@@ -416,6 +422,10 @@ async function savePushTokenForUser(user: User | null, token: string) {
     enabled: true,
     appActive: isAppActivelyForegrounded(),
     appStateUpdatedAtMs: Date.now(),
+    lastPushErrorCode: null,
+    lastPushErrorMessage: null,
+    lastPushErrorAtMs: null,
+    lastPushErrorTokenHash: null,
   });
 }
 
@@ -485,6 +495,35 @@ async function savePushAppStateForUser(user: User | null, isActive: boolean) {
     appActive: !!isActive,
     appStateUpdatedAtMs: Date.now(),
   });
+}
+
+async function refreshNativePushRegistrationAfterRemoteInvalidation(user: User | null) {
+  const uid = String(user?.uid || "").trim();
+  const db = getFirebaseFirestoreClient();
+  if (!uid || !db || !isNativePushRuntime()) return;
+  const nowMs = Date.now();
+  if (nowMs - lastInvalidNativePushRefreshAtMs < INVALID_NATIVE_PUSH_REFRESH_COOLDOWN_MS) return;
+
+  let errorCode = "";
+  try {
+    const snap = await getDoc(doc(db, "users", uid, "devices", getPushDeviceId()));
+    errorCode = snap.exists() ? String(snap.get("lastPushErrorCode") || "").trim() : "";
+  } catch (error) {
+    recordPushRegistrationIssue("android", "read-invalid-token-marker", error);
+    return;
+  }
+  if (!INVALID_FCM_TOKEN_ERROR_CODES.has(errorCode)) return;
+
+  lastInvalidNativePushRefreshAtMs = nowMs;
+  try {
+    await unregisterForPush();
+    latestPushToken = "";
+    await registerForPush();
+  } catch (error) {
+    recordPushRegistrationIssue("android", "refresh-invalid-token", error, {
+      errorCode,
+    });
+  }
 }
 
 async function registerForPush() {
@@ -584,6 +623,9 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
 
   if (runtimeEnabled && runtimeCleanup) {
     void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
+    if (nativeRuntime) {
+      void refreshNativePushRegistrationAfterRemoteInvalidation(auth.currentUser).catch(() => {});
+    }
     return true;
   }
 
@@ -683,6 +725,9 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
         });
       }
       void savePushAppStateForUser(user, isAppActivelyForegrounded()).catch(() => {});
+      if (nativeRuntime) {
+        void refreshNativePushRegistrationAfterRemoteInvalidation(user).catch(() => {});
+      }
       return;
     }
     if (previousUid) {
@@ -697,6 +742,9 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
 
   const onVisibilityChange = () => {
     void savePushAppStateForUser(auth.currentUser, isAppActivelyForegrounded()).catch(() => {});
+    if (nativeRuntime && isAppActivelyForegrounded()) {
+      void refreshNativePushRegistrationAfterRemoteInvalidation(auth.currentUser).catch(() => {});
+    }
   };
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -708,6 +756,9 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
     if (capApp?.addListener) {
       const maybeHandle = capApp.addListener("appStateChange", (state: { isActive?: boolean } | null) => {
         void savePushAppStateForUser(auth.currentUser, !!state?.isActive).catch(() => {});
+        if (state?.isActive) {
+          void refreshNativePushRegistrationAfterRemoteInvalidation(auth.currentUser).catch(() => {});
+        }
       });
       if (isPromiseLike(maybeHandle)) {
         maybeHandle.catch(() => {});
