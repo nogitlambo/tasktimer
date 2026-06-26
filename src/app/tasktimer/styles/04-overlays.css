@@ -82,6 +82,12 @@
   transform:translate(-50%, 0);
 }
 
+@media (max-width: 980px){
+  .actionConfirmationHost{
+    bottom:calc(var(--mobile-footer-reserved-space, calc(72px + env(safe-area-inset-bottom))) + 14px);
+  }
+}
+
 @keyframes actionConfirmationTickPop{
   to{
     opacity:1;
@@ -4523,6 +4529,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteFriendConfirm .confirmText{
   color: rgba(255,228,232,.92);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  padding: 8px 0;
 }
 
 #confirmOverlay.isDeleteFriendConfirm .confirmBtns{
@@ -4535,6 +4542,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-width: 92px;
   justify-content: center;
   border-color: rgba(148,152,161,.62);
+}
+
+#confirmOverlay.isDeleteFriendConfirm #confirmOkBtn{
+  align-items: center;
+  background: #ff4d4d !important;
+  border-color: #ff4d4d !important;
+  color: #fff !important;
+  display: inline-flex;
+  line-height: 1;
 }
 
 #confirmOverlay.isDeleteFriendConfirm .modal{

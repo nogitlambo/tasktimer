@@ -218,7 +218,7 @@
 .friendRequestCancelLink{
   width: fit-content;
   min-width: 0;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
   appearance: none;
@@ -301,7 +301,7 @@
 
 .friendSharedTaskCard{
   background: rgba(9, 15, 24, 0.55);
-  padding: 10px 0;
+  padding: 4px 0;
   border-radius: 0;
 }
 
@@ -315,11 +315,27 @@
 .friendSharedTaskActions{
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .friendSharedTaskActions .btn{
   margin: 0;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(188, 214, 230, 0.88) !important;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 11px !important;
+  line-height: 1.2;
+  text-transform: none !important;
+}
+
+.friendSharedTaskActions .btn:hover,
+.friendSharedTaskActions .btn:focus-visible{
+  border: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
 }
 
 .friendSharedTaskCard.isJumpCard{
@@ -336,8 +352,37 @@
 }
 
 .friendSharedTaskTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
   font-weight: 700;
   margin-bottom: 4px;
+}
+
+.friendSharedTaskTitle .taskColorPill{
+  position: static;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+}
+
+.friendSharedTaskTitleText{
+  min-width: 0;
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+.friendSharedTaskActions [data-friend-action="open-unshare-task"]{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 11px !important;
+}
+
+.friendRequestStatusTitle{
+  font-family: var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .friendSharedTasksSection{
@@ -733,7 +778,7 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestRow,
-#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestRow :where(.friendRequestAlias, .friendRequestEmail){
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestRow .friendRequestAlias{
   color: #fff;
 }
 
@@ -747,31 +792,54 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 0;
   padding-left: 54px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .btn{
+  min-width: 0 !important;
   border-radius: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
   box-shadow: none !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0 !important;
+  padding: 0 !important;
   text-transform: uppercase !important;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .btn-ghost{
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestDeclineBtn{
+  color: #ff5f6d !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestAcceptBtn{
+  color: #35d07f !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestActionSeparator{
+  color: rgba(170, 178, 190, .72);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .btn-ghost:hover:not(:disabled),
 #app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .btn-ghost:focus-visible{
-  border-color: var(--accent) !important;
-  background: rgba(170, 178, 190, .16) !important;
-  color: var(--accent) !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestDeclineBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestDeclineBtn:focus-visible{
+  color: #ff8a94 !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestAcceptBtn:hover:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .friendRequestAcceptBtn:focus-visible{
+  color: #57e99a !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .groupsIncomingRequestActions .btn:disabled,
@@ -1035,7 +1103,7 @@
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskCard{
   min-width: 0;
   height: 100%;
-  padding: 12px 0;
+  padding: 4px 0;
   box-sizing: border-box;
 }
 
@@ -1054,6 +1122,20 @@
   min-width: 0;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTitle{
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 11px !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskTitleText{
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskActions [data-friend-action="open-unshare-task"]{
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size: 11px !important;
+}
+
 @media (max-width: 900px){
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTasksGrid{
     grid-template-columns: 1fr;
@@ -1064,7 +1146,7 @@
   }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo{
-    padding: 8px 0;
+    padding: 0;
   }
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,

@@ -159,7 +159,7 @@ function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): 
 
 export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listEl">) {
   const rows = collectSessionNotesRows(args);
-  if (!rows.length) return '<div class="sessionNotesEmpty">No session notes yet.</div>';
+  if (!rows.length) return '<div class="sessionNotesEmpty">No notes yet.</div>';
 
   const rowsByTask = new Map<string, SessionNoteRow[]>();
   rows.forEach((row) => {

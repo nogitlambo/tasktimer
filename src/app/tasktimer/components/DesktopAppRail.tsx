@@ -40,7 +40,7 @@ import SignOutConfirmModal from "./SignOutConfirmModal";
 type DesktopRailPage =
   | "dashboard"
   | "tasks"
-  | "session-notes"
+  | "notes"
   | "friends"
   | "leaderboard"
   | "account"
@@ -122,13 +122,13 @@ const NAV_ITEMS: NavItem[] = [
     href: "/dashboard",
   },
   {
-    page: "session-notes",
-    label: "Session Notes",
-    ariaLabel: "Session Notes",
+    page: "notes",
+    label: "Notes",
+    ariaLabel: "Notes",
     iconSrc: "/icons/icons_default/notes.webp",
     desktopId: "commandCenterSessionNotesBtn",
     mobileId: "footerSessionNotesBtn",
-    href: "/session-notes",
+    href: "/notes",
   },
   {
     page: "tasks",
@@ -239,7 +239,7 @@ export function getMobileFooterNavItems() {
 const RAIL_TRANSITION_STORAGE_KEY = "tasktimer:railSlideTransition";
 function railPageOrder(page: DesktopRailPage) {
   if (page === "dashboard") return 0;
-  if (page === "session-notes") return 1;
+  if (page === "notes") return 1;
   if (page === "tasks") return 2;
   if (page === "friends") return 3;
   if (page === "leaderboard") return 4;

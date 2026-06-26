@@ -16,6 +16,7 @@ import type { FirebaseError } from "firebase/app";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getApiUrl } from "./apiClient";
+import { normalizeTaskColor } from "./taskColors";
 
 export type FriendRequestStatus = "pending" | "approved" | "declined";
 
@@ -63,6 +64,7 @@ export type SharedTaskSummary = {
   friendUid: string;
   taskId: string;
   taskName: string;
+  taskColor: string | null;
   timerState: "running" | "stopped";
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
@@ -87,6 +89,7 @@ export type SharedTaskSummaryInput = {
   friendUid: string;
   taskId: string;
   taskName: string;
+  taskColor?: string | null;
   timerState: "running" | "stopped";
   focusTrend7dMs: number[];
   checkpointScaleMs: number | null;
@@ -271,6 +274,7 @@ function asSharedTaskSummary(id: string, row: Record<string, unknown>): SharedTa
     friendUid: String(row.friendUid || ""),
     taskId: String(row.taskId || ""),
     taskName: String(row.taskName || ""),
+    taskColor: normalizeTaskColor(row.taskColor) || null,
     timerState,
     focusTrend7dMs,
     checkpointScaleMs: row.checkpointScaleMs == null ? null : Math.max(0, Number(row.checkpointScaleMs || 0)),
@@ -418,6 +422,7 @@ export async function upsertSharedTaskSummary(
     const friendUid = String(summary.friendUid || "").trim();
     const taskId = String(summary.taskId || "").trim();
     const taskName = String(summary.taskName || "").trim();
+    const taskColor = normalizeTaskColor(summary.taskColor) || null;
     const timerState: "running" | "stopped" = summary.timerState === "running" ? "running" : "stopped";
     const focusTrend7dMs = new Array(7)
       .fill(0)
@@ -446,6 +451,7 @@ export async function upsertSharedTaskSummary(
       friendUid,
       taskId,
       taskName,
+      taskColor,
       timerState,
       focusTrend7dMs,
       checkpointScaleMs,
@@ -458,7 +464,7 @@ export async function upsertSharedTaskSummary(
       totalTimeLoggedMs,
       sharedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     return { ok: true };
   } catch (err: unknown) {

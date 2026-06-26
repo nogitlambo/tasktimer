@@ -1,18 +1,18 @@
 import type { AppPage } from "../client/types";
 import { STORAGE_KEY, loadCachedPreferences } from "./storage";
 
-export type StartupModulePreference = "dashboard" | "tasks" | "session-notes" | "friends" | "leaderboard";
+export type StartupModulePreference = "dashboard" | "tasks" | "notes" | "friends" | "leaderboard";
 
 export function normalizeStartupModule(raw: unknown): StartupModulePreference {
   const value = String(raw || "").trim().toLowerCase();
-  if (value === "tasks" || value === "session-notes" || value === "friends" || value === "leaderboard") return value;
+  if (value === "tasks" || value === "notes" || value === "friends" || value === "leaderboard") return value;
   if (value === "dashboard") return value;
   return "tasks";
 }
 
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {
   if (startupModule === "tasks") return "tasks";
-  if (startupModule === "session-notes") return "session-notes";
+  if (startupModule === "notes") return "notes";
   if (startupModule === "friends") return "friends";
   if (startupModule === "leaderboard") return "leaderboard";
   return "dashboard";
@@ -20,7 +20,7 @@ export function startupModuleToAppPage(startupModule: StartupModulePreference): 
 
 export function startupModuleToRoute(startupModule: StartupModulePreference): string {
   if (startupModule === "tasks") return "/tasklaunch";
-  if (startupModule === "session-notes") return "/session-notes";
+  if (startupModule === "notes") return "/notes";
   if (startupModule === "friends") return "/friends";
   if (startupModule === "leaderboard") return "/leaderboards";
   return "/dashboard";

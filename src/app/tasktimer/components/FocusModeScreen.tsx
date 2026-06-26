@@ -47,7 +47,7 @@ export default function FocusModeScreen() {
         </div>
       </div>
       <div className="focusSessionNotes" id="focusSessionNotesSection">
-        <div className="focusInsightsTitle">Session Notes</div>
+        <div className="focusInsightsTitle">Notes</div>
         <div className="focusSessionNotesBody">
           <div
             className="richNoteToolbar"
@@ -76,7 +76,7 @@ export default function FocusModeScreen() {
               id="focusSessionNotesInput"
               role="textbox"
               aria-multiline="true"
-              aria-label="Session Notes"
+              aria-label="Notes"
               contentEditable
               suppressContentEditableWarning
               data-rich-note-editor="true"

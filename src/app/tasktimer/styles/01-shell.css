@@ -866,7 +866,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-transform:uppercase;
   font-size:11px;
   font-weight:700;
@@ -1116,7 +1116,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-transform:uppercase;
   font-size:11px;
   font-weight:700;

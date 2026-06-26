@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  RANK_PROMOTION_QUARTER_ROTATION_DELAY_MS,
+  RANK_PROMOTION_SMASH_DURATION_MS,
+  RANK_PROMOTION_SMASH_PHASE_START_MS,
+  RANK_PROMOTION_TIMING,
+  createRankPromotionAudioController,
+  type RankPromotionAudioController,
+} from "../client/rank-promotion-audio";
 import { getRankPlaceholderLabel, getStoredRankThumbnailDescriptor } from "../lib/rewards";
 import RankThumbnail from "./RankThumbnail";
 
@@ -12,30 +20,7 @@ type RankPromotionOverlayProps = {
   onClose: () => void;
 };
 
-const RANK_PROMOTION_DIM_DURATION_MS = 1000;
 const RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS = 1000;
-const RANK_PROMOTION_DRUMS_SMASH_MARK_MS = 3500;
-const RANK_PROMOTION_SMASH_PHASE_START_MS =
-  RANK_PROMOTION_DRUMS_SMASH_MARK_MS - RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS;
-const RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS = RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + 200;
-const RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS = 2900;
-const RANK_PROMOTION_BLOOM_HOLD_MS = 100;
-const RANK_PROMOTION_SETTLE_MS = 3300;
-const RANK_PROMOTION_COMPLETE_SPIN_DURATION_MS = 8000;
-const RANK_PROMOTION_QUARTER_ROTATION_DELAY_MS = RANK_PROMOTION_COMPLETE_SPIN_DURATION_MS / 4;
-const RANK_PROMOTION_SMASH_DURATION_MS =
-  RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS + RANK_PROMOTION_BLOOM_HOLD_MS + RANK_PROMOTION_SETTLE_MS;
-const RANK_PROMOTION_INTRO_AUDIO_SRC = "/rank_up.mp3";
-const RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC = "/promotion_boom2.mp3";
-const RANK_PROMOTION_LABEL_BASS_DRIVE_AUDIO_SRC = "/promotion_bass_drive.mp3";
-const RANK_PROMOTION_LABEL_IMPACT_AUDIO_SRC = "/promotion_impact.mp3";
-const RANK_PROMOTION_HIT_AUDIO_SRC = "/promotion_hit.mp3";
-const RANK_PROMOTION_DRUMS_AUDIO_SRC = "/promotion_drums.mp3";
-const RANK_PROMOTION_DRUMS_AFTER_INTRO_DELAY_MS = 1500;
-const RANK_PROMOTION_DRUMS_DELAY_MS = 2925;
-const RANK_PROMOTION_DRUMS_START_VOLUME = 0.1;
-const RANK_PROMOTION_DRUMS_END_VOLUME = 0.8;
-const RANK_PROMOTION_DRUMS_FADE_IN_MS = 2000;
 const RANK_PROMOTION_FRAGMENT_COLUMNS = 26;
 const RANK_PROMOTION_FRAGMENT_ROWS = 24;
 const RANK_PROMOTION_FRAGMENT_CANVAS_SIZE = 640;
@@ -57,43 +42,6 @@ type RankPromotionShardParticle = {
   rotation: number;
   scale: number;
 };
-
-function playPromotionAudio(src: string, playbackRate = 1, volume = 1) {
-  try {
-    const audio = new Audio(src);
-    audio.preload = "auto";
-    audio.playbackRate = playbackRate;
-    audio.volume = volume;
-    audio.currentTime = 0;
-    const playback = audio.play();
-    if (playback && typeof playback.catch === "function") playback.catch(() => {});
-    return audio;
-  } catch {
-    // Browser autoplay failures are non-blocking for the promotion UI.
-    return null;
-  }
-}
-
-function playPromotionAudioFadeIn(src: string, startVolume: number, endVolume: number, durationMs: number) {
-  try {
-    const audio = new Audio(src);
-    audio.preload = "auto";
-    audio.volume = startVolume;
-    audio.currentTime = 0;
-    const playback = audio.play();
-    if (playback && typeof playback.catch === "function") playback.catch(() => {});
-
-    const startTime = performance.now();
-    const step = (now: number) => {
-      const progress = Math.min(1, (now - startTime) / durationMs);
-      audio.volume = startVolume + (endVolume - startVolume) * progress;
-      if (progress < 1) window.requestAnimationFrame(step);
-    };
-    window.requestAnimationFrame(step);
-  } catch {
-    // Browser autoplay failures are non-blocking for the promotion UI.
-  }
-}
 
 function easeOutZeroGravity(progress: number) {
   return 1 - Math.pow(1 - progress, 3);
@@ -330,6 +278,7 @@ export default function RankPromotionOverlay({
   const [phase, setPhase] = useState<RankPromotionPhase>("dimming");
   const [isCloseReady, setIsCloseReady] = useState(false);
   const onPresentationStartRef = useRef(onPresentationStart);
+  const audioControllerRef = useRef<RankPromotionAudioController | null>(null);
   const isDimming = phase === "dimming";
   const isComplete = phase === "complete";
 
@@ -338,39 +287,14 @@ export default function RankPromotionOverlay({
   }, [onPresentationStart]);
 
   useEffect(() => {
-    let drumsTimer: number | null = null;
-    let introAudio: HTMLAudioElement | null = null;
-    let hasScheduledDrums = false;
-    let hasStartedDrums = false;
-
-    const startDrums = () => {
-      if (hasStartedDrums) return;
-      hasStartedDrums = true;
-      playPromotionAudioFadeIn(
-        RANK_PROMOTION_DRUMS_AUDIO_SRC,
-        RANK_PROMOTION_DRUMS_START_VOLUME,
-        RANK_PROMOTION_DRUMS_END_VOLUME,
-        RANK_PROMOTION_DRUMS_FADE_IN_MS,
-      );
-    };
-
-    const scheduleDrums = () => {
-      if (hasScheduledDrums) return;
-      hasScheduledDrums = true;
-      if (drumsTimer != null) window.clearTimeout(drumsTimer);
-      drumsTimer = window.setTimeout(startDrums, RANK_PROMOTION_DRUMS_AFTER_INTRO_DELAY_MS);
-    };
-
     if (achievementSoundsEnabled) {
-      introAudio = playPromotionAudio(RANK_PROMOTION_INTRO_AUDIO_SRC);
-      if (introAudio) introAudio.addEventListener("ended", scheduleDrums, { once: true });
-      drumsTimer = window.setTimeout(startDrums, RANK_PROMOTION_DRUMS_DELAY_MS);
+      audioControllerRef.current = createRankPromotionAudioController();
     }
 
     const dimTimer = window.setTimeout(() => {
       setPhase("intro");
       onPresentationStartRef.current();
-    }, RANK_PROMOTION_DIM_DURATION_MS);
+    }, RANK_PROMOTION_TIMING.dimDurationMs);
     const smashTimer = window.setTimeout(() => {
       setPhase("smashing");
     }, RANK_PROMOTION_SMASH_PHASE_START_MS);
@@ -379,8 +303,8 @@ export default function RankPromotionOverlay({
     }, RANK_PROMOTION_SMASH_PHASE_START_MS + RANK_PROMOTION_SMASH_DURATION_MS);
 
     return () => {
-      if (introAudio) introAudio.removeEventListener("ended", scheduleDrums);
-      if (drumsTimer != null) window.clearTimeout(drumsTimer);
+      audioControllerRef.current?.dispose();
+      audioControllerRef.current = null;
       window.clearTimeout(dimTimer);
       window.clearTimeout(smashTimer);
       window.clearTimeout(completeTimer);
@@ -392,26 +316,14 @@ export default function RankPromotionOverlay({
 
     if (!achievementSoundsEnabled) return;
 
-    playPromotionAudio(RANK_PROMOTION_LABEL_BASS_DRIVE_AUDIO_SRC);
-
-    const boomTwoTimer = window.setTimeout(() => {
-      playPromotionAudio(RANK_PROMOTION_IMPACT_BOOM_TWO_AUDIO_SRC);
-    }, RANK_PROMOTION_IMPACT_BOOM_TWO_DELAY_MS);
-    const labelImpactTimer = window.setTimeout(() => {
-      playPromotionAudio(RANK_PROMOTION_LABEL_IMPACT_AUDIO_SRC);
-    }, RANK_PROMOTION_LABEL_SMASH_REVEAL_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(boomTwoTimer);
-      window.clearTimeout(labelImpactTimer);
-    };
+    audioControllerRef.current?.startSmashCues();
   }, [achievementSoundsEnabled, phase]);
 
   useEffect(() => {
     if (!isComplete) return;
 
     const hitTimer = window.setTimeout(() => {
-      if (achievementSoundsEnabled) playPromotionAudio(RANK_PROMOTION_HIT_AUDIO_SRC);
+      if (achievementSoundsEnabled) audioControllerRef.current?.startHitCue();
       setIsCloseReady(true);
     }, RANK_PROMOTION_QUARTER_ROTATION_DELAY_MS);
 

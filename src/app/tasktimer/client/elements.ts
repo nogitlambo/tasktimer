@@ -124,7 +124,6 @@ const els = {
   groupsFriendsList: documentRef.getElementById("groupsFriendsList"),
   groupsSharedByYouList: documentRef.getElementById("groupsSharedByYouList"),
   groupsSharedByYouTitle: documentRef.getElementById("groupsSharedByYouTitle"),
-  groupsFriendRequestStatus: documentRef.getElementById("groupsFriendRequestStatus"),
   historySaveWorkingIndicator: documentRef.getElementById("historySaveWorkingIndicator"),
   historySaveWorkingText: documentRef.getElementById("historySaveWorkingText"),
   dashboardShellScene: documentRef.getElementById("dashboardShellScene"),

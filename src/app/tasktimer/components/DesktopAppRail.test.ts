@@ -13,13 +13,13 @@ import {
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
-  it("keeps Session Notes before Tasks in the desktop rail and mobile footer", () => {
+  it("keeps Notes before Tasks in the desktop rail and mobile footer", () => {
     const desktopItems = getDesktopRailPrimaryNavItems();
     const mobileItems = getMobileFooterNavItems();
 
     expect(desktopItems.map((item) => item.label)).toEqual([
       "Dashboard",
-      "Session Notes",
+      "Notes",
       "Tasks",
       "Friends",
       "Leaderboards",
@@ -31,7 +31,8 @@ describe("DesktopAppRail profile menu", () => {
       "footerTest2Btn",
       "footerLeaderboardBtn",
     ]);
-    expect(desktopItems.find((item) => item.page === "session-notes")?.iconSrc).toBe("/icons/icons_default/notes.webp");
+    expect(desktopItems.find((item) => item.page === "notes")?.iconSrc).toBe("/icons/icons_default/notes.webp");
+    expect(desktopItems.find((item) => item.page === "notes")?.href).toBe("/notes");
     expect(desktopItems.find((item) => item.page === "leaderboard")?.iconSrc).toBe("/icons/icons_default/leaderboards.webp");
   });
 

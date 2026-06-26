@@ -19,9 +19,13 @@ describe("startupModule", () => {
     expect(readStartupModulePreference()).toBe("tasks");
   });
 
-  it("accepts Session Notes as a startup module", () => {
-    expect(normalizeStartupModule("session-notes")).toBe("session-notes");
-    expect(startupModuleToAppPage("session-notes")).toBe("session-notes");
-    expect(startupModuleToRoute("session-notes")).toBe("/session-notes");
+  it("accepts Notes as a startup module", () => {
+    expect(normalizeStartupModule("notes")).toBe("notes");
+    expect(startupModuleToAppPage("notes")).toBe("notes");
+    expect(startupModuleToRoute("notes")).toBe("/notes");
+  });
+
+  it("does not preserve the legacy Session Notes startup module value", () => {
+    expect(normalizeStartupModule("session-notes")).toBe("tasks");
   });
 });

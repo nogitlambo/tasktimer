@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   approveFriendRequest,
   cancelOutgoingFriendRequest,
+  deleteFriendship,
   declineFriendRequest,
 } from "../lib/friendsStore";
 import {
@@ -196,7 +197,6 @@ describe("friend request action status", () => {
       clearTimeout,
     } as unknown as Window & typeof globalThis;
 
-    const statusEl = makeElement();
     const incomingList = makeElement();
     const outgoingList = makeElement();
     const eventHandlers: Record<string, (event: FriendRequestClickEvent) => void> = {};
@@ -208,7 +208,6 @@ describe("friend request action status", () => {
         footerTest2AlertBadge: null,
         friendProfileDeleteBtn: null,
         friendRequestSendBtn: null,
-        groupsFriendRequestStatus: statusEl,
         groupsFriendsList: makeElement(),
         groupsIncomingRequestsDetails: makeElement(),
         groupsIncomingRequestsList: incomingList,
@@ -291,7 +290,6 @@ describe("friend request action status", () => {
         globalThis.window = originalWindow;
       },
       showActionConfirmation,
-      statusEl,
     };
   }
 
@@ -318,14 +316,12 @@ describe("friend request action status", () => {
 
       expect(getFriendRequestActionCompleteStatus(action)).toBe(message);
       expect(harness.showActionConfirmation).toHaveBeenCalledWith(message);
-      expect(harness.statusEl.textContent).toBe("");
-      expect(harness.statusEl.style.display).toBe("none");
     } finally {
       harness.restoreWindow();
     }
   });
 
-  it("keeps failed friend request action messages inline", async () => {
+  it("routes failed friend request action messages through the action confirmation overlay", async () => {
     vi.mocked(approveFriendRequest).mockResolvedValue({ ok: false, message: "Request is no longer pending." });
 
     const harness = makeGroupsHarness("approve");
@@ -333,9 +329,181 @@ describe("friend request action status", () => {
       harness.handler(harness.event);
       await flushFriendRequestAction();
 
-      expect(harness.showActionConfirmation).not.toHaveBeenCalled();
-      expect(harness.statusEl.textContent).toBe("Request is no longer pending.");
-      expect(harness.statusEl.style.display).toBe("block");
+      expect(harness.showActionConfirmation).toHaveBeenCalledWith("Request is no longer pending.");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+});
+
+describe("friend removal status", () => {
+  function makeElement() {
+    return {
+      className: "",
+      disabled: false,
+      innerHTML: "",
+      style: {} as Record<string, string>,
+      textContent: "",
+      classList: {
+        add: vi.fn(),
+        remove: vi.fn(),
+        toggle: vi.fn(),
+      },
+      querySelectorAll: vi.fn(() => []),
+      setAttribute: vi.fn(),
+    };
+  }
+
+  function makeRemoveFriendHarness() {
+    const originalWindow = globalThis.window;
+    globalThis.window = {
+      setTimeout,
+      clearTimeout,
+    } as unknown as Window & typeof globalThis;
+
+    let friendships: Friendship[] = [
+      {
+        pairId: "pair:friend-b:user-a",
+        users: ["friend-b", "user-a"],
+        profileByUid: {
+          "friend-b": {
+            alias: "Friend Bee",
+            avatarId: null,
+            avatarCustomSrc: null,
+            googlePhotoUrl: null,
+            rankThumbnailSrc: null,
+            currentRankId: null,
+            totalXp: null,
+            completedTaskCount: null,
+          },
+        },
+        createdAt: null,
+        createdBy: "user-a",
+      },
+    ];
+    const deleteBtn = makeElement();
+    const eventHandlers: Record<string, (event: { preventDefault?: () => void }) => void> = {};
+    const confirmActions: Array<() => void> = [];
+    const showActionConfirmation = vi.fn();
+
+    const ctx = {
+      els: {
+        commandCenterGroupsAlertBadge: null,
+        confirmOverlay: makeElement(),
+        footerTest2AlertBadge: null,
+        friendProfileDeleteBtn: deleteBtn,
+        friendProfileModal: makeElement(),
+        friendProfileName: { textContent: "Friend Bee" },
+        friendRequestSendBtn: null,
+        groupsFriendsList: makeElement(),
+        groupsIncomingRequestsDetails: makeElement(),
+        groupsIncomingRequestsList: makeElement(),
+        groupsIncomingRequestsTitle: makeElement(),
+        groupsOutgoingRequestsDetails: makeElement(),
+        groupsOutgoingRequestsList: makeElement(),
+        groupsOutgoingRequestsTitle: makeElement(),
+        groupsSharedByYouList: makeElement(),
+        groupsSharedByYouTitle: makeElement(),
+        openFriendRequestModalBtn: null,
+      },
+      on: (target: unknown, event: string, handler: (event: unknown) => void) => {
+        if (target === deleteBtn && event === "click") eventHandlers.delete = handler;
+      },
+      confirm: (_title: string, _text: string, opts: { onOk: () => void }) => {
+        confirmActions.push(opts.onOk);
+      },
+      closeConfirm: vi.fn(),
+      getCurrentUid: () => "user-a",
+      getGroupsLoading: () => false,
+      getGroupsLoadingDepth: () => 0,
+      setGroupsLoading: vi.fn(),
+      setGroupsLoadingDepth: vi.fn(),
+      getGroupsRefreshSeq: () => 0,
+      setGroupsRefreshSeq: vi.fn(),
+      getGroupsIncomingRequests: () => [],
+      setGroupsIncomingRequests: vi.fn(),
+      getGroupsOutgoingRequests: () => [],
+      setGroupsOutgoingRequests: vi.fn(),
+      getGroupsFriendships: () => friendships,
+      setGroupsFriendships: (value: Friendship[]) => {
+        friendships = value;
+      },
+      getGroupsSharedSummaries: () => [],
+      setGroupsSharedSummaries: vi.fn(),
+      getOwnSharedSummaries: () => [],
+      setOwnSharedSummaries: vi.fn(),
+      getFriendProfileCacheByUid: () => ({ "friend-b": { alias: "Friend Bee" } }),
+      setFriendProfileCacheByUid: vi.fn(),
+      getFriendEmailByUid: () => ({}),
+      setFriendEmailByUid: vi.fn(),
+      getOpenFriendSharedTaskUids: () => new Set<string>(),
+      getActiveFriendProfileName: () => "Friend Bee",
+      getActiveFriendProfileUid: () => "friend-b",
+      setActiveFriendProfileName: vi.fn(),
+      setActiveFriendProfileUid: vi.fn(),
+      getShareTaskIndex: () => null,
+      setShareTaskIndex: vi.fn(),
+      getShareTaskMode: () => "share",
+      setShareTaskMode: vi.fn(),
+      getShareTaskTaskId: () => null,
+      setShareTaskTaskId: vi.fn(),
+      hasEntitlement: () => true,
+      showActionConfirmation,
+      showUpgradePrompt: vi.fn(),
+      showWorkingIndicator: vi.fn(() => 1),
+      hideWorkingIndicator: vi.fn(),
+      getFriendAvatarSrcById: vi.fn(() => ""),
+      buildFriendInitialAvatarDataUrl: vi.fn(() => ""),
+      getFriendAvatarSrc: vi.fn(() => ""),
+      getMergedFriendProfile: vi.fn(() => ({ alias: "Friend Bee" })),
+      getTasks: () => [],
+      jumpToTaskById: vi.fn(),
+      escapeHtmlUI: (value: unknown) => String(value ?? ""),
+      fillBackgroundForPct: vi.fn(() => ""),
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value || 0),
+      getCurrentPlan: () => "pro",
+    };
+
+    createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).registerGroupsEvents();
+    eventHandlers.delete?.({ preventDefault: vi.fn() });
+    confirmActions[0]?.();
+
+    return {
+      restoreWindow: () => {
+        globalThis.window = originalWindow;
+      },
+      showActionConfirmation,
+    };
+  }
+
+  async function flushRemoveFriendAction() {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+
+  it("routes friend removal success through the action confirmation overlay", async () => {
+    vi.mocked(deleteFriendship).mockResolvedValue({ ok: true });
+
+    const harness = makeRemoveFriendHarness();
+    try {
+      await flushRemoveFriendAction();
+
+      expect(harness.showActionConfirmation).toHaveBeenCalledWith("Friend Bee was removed from your friends.");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("routes friend removal failure through the action confirmation overlay", async () => {
+    vi.mocked(deleteFriendship).mockResolvedValue({ ok: false, message: "Could not remove friend." });
+
+    const harness = makeRemoveFriendHarness();
+    try {
+      await flushRemoveFriendAction();
+
+      expect(harness.showActionConfirmation).toHaveBeenCalledWith("Could not remove friend.");
     } finally {
       harness.restoreWindow();
     }

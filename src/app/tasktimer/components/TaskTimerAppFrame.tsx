@@ -20,7 +20,7 @@ import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
 
-type MainAppPage = "tasks" | "schedule" | "dashboard" | "session-notes" | "friends" | "leaderboard" | "history";
+type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "friends" | "leaderboard" | "history";
 
 type TaskLaunchMobileMenuLinkItem = {
   kind: "link";

@@ -95,7 +95,9 @@
 }
 
 #app[aria-label="TaskLaunch Primitives"] .primitiveDisabledButton:disabled{
+  border-color: rgba(170, 178, 190, .42) !important;
   background: #1a1b20 !important;
+  color: #1a1b20 !important;
 }
 
 #app[aria-label="TaskLaunch Primitives"] .primitiveExamplePanel,

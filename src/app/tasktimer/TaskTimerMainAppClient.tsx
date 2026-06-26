@@ -1037,7 +1037,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
           <DashboardPageContent active={initialPage === "dashboard"} />
 
-          <SessionNotesPageContent active={initialPage === "session-notes"} />
+          <SessionNotesPageContent active={initialPage === "notes"} />
 
           <section className={`appPage${initialPage === "friends" ? " appPageOn" : ""}`} id="appPageFriends" aria-label="Friends page">
             <div className="friendsShell" id="groupsFriendsSection">
@@ -1059,8 +1059,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               </div>
 
               <div className="dashboardGrid">
-                <div id="groupsFriendRequestStatus" className="settingsDetailNote" style={{ display: "none" }} />
-
                 <section className="dashboardCard" aria-label="Friends list">
                   <div id="groupsFriendsList" className="settingsDetailNote" />
                 </section>

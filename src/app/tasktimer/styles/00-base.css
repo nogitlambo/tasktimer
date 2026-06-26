@@ -228,10 +228,17 @@ body[data-app-page="leaderboard"] #modeSwitch{
 .btn:active{ transform: translateY(0px); }
 
 .btn-accent{
-  border-color: rgba(170, 178, 190, .58);
-  background: rgba(170, 178, 190, .12);
-  color: rgba(238, 242, 246, .88);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000;
   box-shadow: none;
+}
+
+.btn-accent:hover:not(:disabled),
+.btn-accent:focus-visible{
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000;
 }
 
 .btn-ghost{
@@ -243,15 +250,15 @@ body[data-app-page="leaderboard"] #modeSwitch{
 
 .btn-warn{
   border-color: var(--warn);
-  background: rgba(255,255,255,.01);
-  color: var(--warn);
+  background: var(--warn);
+  color: #fff;
 }
 
 .btn-warn:hover:not(:disabled),
 .btn-warn:focus-visible{
   border-color: var(--warn);
-  background: rgba(255,255,255,.01);
-  color: var(--warn);
+  background: var(--warn);
+  color: #fff;
 }
 
 .btn-resume{
@@ -3169,9 +3176,9 @@ body[data-theme="lime"] .btn:focus-visible{
 }
 
 body[data-theme="lime"] .btn-accent{
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: #000 !important;
   box-shadow: none !important;
 }
 
@@ -3192,8 +3199,8 @@ body[data-theme="lime"] .btn-ghost{
 
 body[data-theme="lime"] .btn-warn{
   border-color: var(--warn);
-  background: rgba(255,255,255,.01);
-  color: var(--warn);
+  background: var(--warn);
+  color: #fff;
 }
 
 body[data-theme="lime"] .iconBtn{
@@ -3208,7 +3215,12 @@ body[data-theme="lime"] .iconBtn:focus-visible{
 }
 
 body[data-theme="lime"] .btn-accent:hover:not(:disabled),
-body[data-theme="lime"] .btn-accent:focus-visible,
+body[data-theme="lime"] .btn-accent:focus-visible{
+  border-color: var(--accent) !important;
+  color: #000 !important;
+  background: var(--accent) !important;
+}
+
 body[data-theme="lime"] .btn-ghost:hover:not(:disabled),
 body[data-theme="lime"] .btn-ghost:focus-visible{
   border-color: var(--accent) !important;
@@ -3219,8 +3231,8 @@ body[data-theme="lime"] .btn-ghost:focus-visible{
 body[data-theme="lime"] .btn-warn:hover:not(:disabled),
 body[data-theme="lime"] .btn-warn:focus-visible{
   border-color: var(--warn);
-  background: rgba(255,255,255,.01);
-  color: var(--warn);
+  background: var(--warn);
+  color: #fff;
 }
 
 body[data-theme="lime"] .switch{

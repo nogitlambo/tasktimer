@@ -21,6 +21,7 @@ import {
 import { localDayKey } from "../lib/history";
 import { formatDashboardDurationShort, startOfCurrentWeekMs } from "../lib/historyChart";
 import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
+import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
 
@@ -276,7 +277,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function renderGroupsLockedState() {
-    setGroupsStatus("Friends and shared tasks are available on Pro.");
     if (els.groupsFriendsList) {
       els.groupsFriendsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Upgrade to Pro to unlock friends, sharing, and social progress.</div>';
     }
@@ -290,25 +290,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       els.groupsOutgoingRequestsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Outgoing requests are available on Pro.</div>';
     }
     if (els.openFriendRequestModalBtn) els.openFriendRequestModalBtn.disabled = true;
-  }
-
-  function setGroupsStatus(message: string, tone: "error" | "success" | "info" = "info") {
-    const host = els.groupsFriendRequestStatus as HTMLElement | null;
-    if (!host) return;
-    const text = String(message || "").trim();
-    host.textContent = text;
-    host.style.display = text ? "block" : "none";
-    host.style.color = "";
-    if (!text) return;
-    if (tone === "error") {
-      host.style.color = "#ff8f8f";
-      return;
-    }
-    if (tone === "success") {
-      host.style.color = "var(--accent, #35e8ff)";
-      return;
-    }
-    host.style.color = "rgba(188,214,230,.78)";
   }
 
   function openFriendRequestModal() {
@@ -858,25 +839,28 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const uid = String(ctx.getCurrentUid() || "");
     const ownSharedSummaries = ctx.getOwnSharedSummaries();
     if (!uid || !Array.isArray(ownSharedSummaries) || !ownSharedSummaries.length) return [];
-    const runningByTaskId = new Map<string, boolean>();
+    const taskStateById = new Map<string, { running: boolean; color: string | null }>();
     ctx.getTasks().forEach((task) => {
       const taskId = String(task?.id || "").trim();
       if (!taskId) return;
-      runningByTaskId.set(taskId, !!task.running);
+      taskStateById.set(taskId, { running: !!task.running, color: normalizeTaskColor(task.color) || null });
     });
     const mismatched = new Set<string>();
     ownSharedSummaries.forEach((row) => {
       const ownerUid = String(row?.ownerUid || "").trim();
       if (!ownerUid || ownerUid !== uid) return;
       const taskId = String(row?.taskId || "").trim();
-      if (!taskId || !runningByTaskId.has(taskId)) return;
-      if (Math.floor(Number(row?.schemaVersion || 1) || 1) < 2) {
+      const taskState = taskStateById.get(taskId);
+      if (!taskId || !taskState) return;
+      if (Math.floor(Number(row?.schemaVersion || 1) || 1) < 3) {
         mismatched.add(taskId);
         return;
       }
       const summaryRunning = String(row?.timerState || "").trim().toLowerCase() === "running";
-      const taskRunning = !!runningByTaskId.get(taskId);
+      const taskRunning = taskState.running;
       if (summaryRunning !== taskRunning) mismatched.add(taskId);
+      const summaryColor = normalizeTaskColor(row?.taskColor) || null;
+      if (summaryColor !== taskState.color) mismatched.add(taskId);
     });
     return Array.from(mismatched);
   }
@@ -902,6 +886,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           friendUid,
           taskId,
           taskName: String(task.name || ""),
+          taskColor: task.color,
           timerState: task.running ? "running" : "stopped",
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
@@ -994,6 +979,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           friendUid,
           taskId: activeTaskId,
           taskName: String(shareTask.name || ""),
+          taskColor: shareTask.color,
           timerState: shareTask.running ? "running" : "stopped",
           focusTrend7dMs: metrics.focusTrend7dMs,
           checkpointScaleMs: metrics.checkpointScaleMs,
@@ -1113,6 +1099,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
   }
 
+  function renderFriendSharedTaskTitle(taskName: unknown, taskColor: unknown) {
+    const color = normalizeTaskColor(taskColor);
+    const colorPill = color
+      ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${ctx.escapeHtmlUI(color)}"></span>`
+      : "";
+    return `<div class="friendSharedTaskTitle">${colorPill}<span class="friendSharedTaskTitleText">${ctx.escapeHtmlUI(taskName)}</span></div>`;
+  }
+
   function renderGroupsRequestsList(container: HTMLElement | null, rows: any[], opts: { incoming: boolean }) {
     const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
     const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
@@ -1144,9 +1138,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           status !== "pending"
             ? ""
             : opts.incoming
-              ? `<div class="groupsIncomingRequestActions"><button class="btn btn-ghost small" type="button" data-friend-action="decline" data-request-id="${ctx.escapeHtmlUI(
+              ? `<div class="groupsIncomingRequestActions"><button class="btn btn-ghost small friendRequestDeclineBtn" type="button" data-friend-action="decline" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
-                )}"${disabledAttr}>Decline</button><button class="btn btn-ghost small" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
+                )}"${disabledAttr}>Decline</button><span class="friendRequestActionSeparator" aria-hidden="true">|</span><button class="btn btn-ghost small friendRequestAcceptBtn" type="button" data-friend-action="approve" data-request-id="${ctx.escapeHtmlUI(
                   row.requestId
                 )}"${disabledAttr}>Accept</button></div>`
               : `<button class="friendRequestCancelLink" type="button" data-friend-action="cancel" data-request-id="${ctx.escapeHtmlUI(
@@ -1172,7 +1166,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         if (opts.incoming) {
           return `<div class="settingsDetailNote groupsIncomingRequestRow">${identityHtml}${actionBtns}</div>`;
         }
-        return `<div class="settingsDetailNote"><div><b>${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}</div>`;
+        return `<div class="settingsDetailNote"><div><b class="friendRequestStatusTitle">${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}</div>`;
       })
       .join("");
   }
@@ -1229,7 +1223,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
             return `<div class="friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
-                  <div class="friendSharedTaskTitle">${ctx.escapeHtmlUI(entry.taskName)}</div>
+                  ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
                   ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
                 </div>
@@ -1290,19 +1284,27 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       friendNameByUid.set(friendUid, alias || friendUid);
     });
 
-    const sharedByTaskId = new Map<string, { taskId: string; taskName: string; friendLabels: string[] }>();
+    const taskColorById = new Map<string, string | null>();
+    ctx.getTasks().forEach((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId) return;
+      taskColorById.set(taskId, normalizeTaskColor(task.color) || null);
+    });
+    const sharedByTaskId = new Map<string, { taskId: string; taskName: string; taskColor: string | null; friendLabels: string[] }>();
     ownSharedSummaries.forEach((entry) => {
       const taskId = String(entry.taskId || "").trim();
       if (!taskId) return;
       const friendLabel = friendNameByUid.get(entry.friendUid) || String(entry.friendUid || "").trim() || "Unknown friend";
       const existing = sharedByTaskId.get(taskId);
       if (existing) {
+        existing.taskColor = existing.taskColor || normalizeTaskColor(entry.taskColor) || taskColorById.get(taskId) || null;
         if (existing.friendLabels.indexOf(friendLabel) === -1) existing.friendLabels.push(friendLabel);
         return;
       }
       sharedByTaskId.set(taskId, {
         taskId,
         taskName: String(entry.taskName || "").trim() || "Untitled task",
+        taskColor: normalizeTaskColor(entry.taskColor) || taskColorById.get(taskId) || null,
         friendLabels: [friendLabel],
       });
     });
@@ -1313,11 +1315,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const friendLabel = entry.friendLabels.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })).join(", ");
         return `<div class="friendSharedTaskCard isJumpCard" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
           <div class="friendSharedTaskInfo">
-            <div class="friendSharedTaskTitle">${ctx.escapeHtmlUI(entry.taskName)}</div>
+            ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
             <div class="friendSharedTaskMeta">Shared with: ${ctx.escapeHtmlUI(friendLabel)}</div>
-          </div>
-          <div class="friendSharedTaskActions">
-            <button class="btn btn-ghost small" type="button" data-friend-action="open-unshare-task" data-task-id="${ctx.escapeHtmlUI(entry.taskId)}">Unshare</button>
+            <div class="friendSharedTaskActions">
+              <button class="btn btn-ghost small" type="button" data-friend-action="open-unshare-task" data-task-id="${ctx.escapeHtmlUI(entry.taskId)}">Change</button>
+            </div>
           </div>
         </div>`;
       })
@@ -1387,7 +1389,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       ctx.setOwnSharedSummaries([]);
       ctx.setFriendProfileCacheByUid({});
       ctx.setFriendEmailByUid({});
-      setGroupsStatus("Sign in to use Friends.");
       renderGroupsPage();
       return;
     }
@@ -1397,10 +1398,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const snapshot = await loadGroupsSnapshot(uid);
       if (refreshSeq !== ctx.getGroupsRefreshSeq()) return;
       applyGroupsSnapshot(snapshot);
-      if (!opts?.preserveStatus) setGroupsStatus("");
     } catch {
       if (refreshSeq !== ctx.getGroupsRefreshSeq()) return;
-      if (!opts?.preserveStatus) setGroupsStatus("Could not load friend data.");
+      if (!opts?.preserveStatus) ctx.showActionConfirmation("Could not load friend data.");
     } finally {
       renderGroupsPage();
     }
@@ -1414,30 +1414,25 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     setFriendRequestModalStatus("");
     if (!uid || !email) {
       setFriendRequestModalStatus("Sign in to send friend requests.", "error");
-      setGroupsStatus("Sign in to send friend requests.");
       renderGroupsPage();
       return;
     }
-    setGroupsStatus("Sending request...");
     const result = await runGroupsBusy("Sending friend request...", "Friend request timed out. Please try again.", () =>
       sendFriendRequest(uid, email, receiverEmail)
     );
     if (!result.ok) {
       const message = result.timedOut ? result.message : "Could not send friend request.";
       setFriendRequestModalStatus(`Friend request failed: ${message}`, "error");
-      setGroupsStatus(message);
       renderGroupsPage();
       return;
     }
     if (!result.value.ok) {
       const failureMessage = result.value.message || "Could not find a matching email.";
       setFriendRequestModalStatus(`Friend request failed: ${failureMessage}`, "error");
-      setGroupsStatus(failureMessage);
       renderGroupsPage();
       return;
     }
     setFriendRequestModalStatus("");
-    setGroupsStatus("");
     ctx.showActionConfirmation("Friend request sent.");
     renderGroupsPage();
     void refreshGroupsData({ preserveStatus: true });
@@ -1451,7 +1446,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (!uid || !requestId) return;
     const pendingStatus =
       action === "approve" ? "Approving request..." : action === "decline" ? "Declining request..." : "Cancelling request...";
-    setGroupsStatus(pendingStatus);
     const timeoutStatus =
       action === "approve"
         ? "Approving request timed out. Please try again."
@@ -1466,17 +1460,16 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           : await cancelOutgoingFriendRequest(requestId, uid)
     );
     if (!result.ok) {
-      setGroupsStatus(result.timedOut ? result.message : "Could not update friend request.");
+      ctx.showActionConfirmation(result.timedOut ? result.message : "Could not update friend request.");
       renderGroupsPage();
       return;
     }
     if (!result.value.ok) {
-      setGroupsStatus(result.value.message || "Action failed.");
+      ctx.showActionConfirmation(result.value.message || "Action failed.");
       renderGroupsPage();
       return;
     }
     const completeStatus = getFriendRequestActionCompleteStatus(action);
-    setGroupsStatus("");
     ctx.showActionConfirmation(completeStatus);
     renderGroupsPage();
     void refreshGroupsData({ preserveStatus: true });
@@ -1507,8 +1500,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (ctx.getGroupsLoading()) return;
       const fallbackName = String(els.friendProfileName?.textContent || "").trim();
       const friendName = String(ctx.getActiveFriendProfileName() || fallbackName || "this user").trim();
-      ctx.confirm("Delete Friend", `Are you sure you want to delete ${friendName} as a friend?`, {
-        okLabel: "Delete",
+      ctx.confirm("Remove Friend", `Remove ${friendName} as a friend?`, {
+        okLabel: "Remove",
         cancelLabel: "Cancel",
         onOk: () => {
           if (ctx.getGroupsLoading()) return;
@@ -1516,29 +1509,28 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           const friendUid = String(ctx.getActiveFriendProfileUid() || "").trim();
           if (!ownUid) {
             ctx.closeConfirm();
-            setGroupsStatus("Sign in to manage friends.");
+            ctx.showActionConfirmation("Sign in to manage friends.");
             return;
           }
           if (!friendUid) {
             ctx.closeConfirm();
-            setGroupsStatus("Friend account could not be resolved.");
+            ctx.showActionConfirmation("Friend account could not be resolved.");
             return;
           }
           ctx.closeConfirm();
           closeFriendProfileModal();
-          setGroupsStatus(`Deleting ${friendName}...`);
           renderGroupsPage();
           void (async () => {
             const result = await runGroupsBusy(`Deleting ${friendName}...`, "Deleting friend timed out. Please try again.", () =>
               deleteFriendship(ownUid, friendUid)
             );
             if (!result.ok) {
-              setGroupsStatus(result.timedOut ? result.message : "Could not delete friend.");
+              ctx.showActionConfirmation(result.timedOut ? result.message : "Could not delete friend.");
               renderGroupsPage();
               return;
             }
             if (!result.value.ok) {
-              setGroupsStatus(result.value.message || "Could not delete friend.");
+              ctx.showActionConfirmation(result.value.message || "Could not delete friend.");
               renderGroupsPage();
               return;
             }
@@ -1554,7 +1546,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
             const nextCache = { ...ctx.getFriendProfileCacheByUid() };
             delete nextCache[friendUid];
             ctx.setFriendProfileCacheByUid(nextCache);
-            setGroupsStatus(result.value.message || `${friendName} was removed from your friends.`);
+            ctx.showActionConfirmation(result.value.message || `${friendName} was removed from your friends.`);
             renderGroupsPage();
             void refreshGroupsData({ preserveStatus: true });
           })();

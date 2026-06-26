@@ -9,6 +9,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SessionNotesLayout({ children }: { children: ReactNode }) {
+export default function NotesLayout({ children }: { children: ReactNode }) {
   return <TaskLaunchAuthGuard>{children}</TaskLaunchAuthGuard>;
 }
