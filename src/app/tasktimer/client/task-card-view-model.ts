@@ -336,7 +336,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               <div class="actions">
                 ${startStopHtml}
                 <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || !hasResettableTime ? "disabled" : ""}>&#10227;</button>
-                <button class="iconBtn" data-action="edit" title="Edit">&#9998;</button>
                 <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>
             </div>
@@ -355,6 +354,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
               </div>
               <div class="taskBackActions">
+                <button class="taskMenuItem" data-action="edit" title="Edit" type="button">Edit</button>
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${manualEntryLabel}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
                 <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>Archive</button>

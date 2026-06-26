@@ -844,10 +844,12 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
 
 export function getLeaderboardAvatarSrc(profile: LeaderboardProfile | null | undefined): string {
   if (!profile) return "";
-  const customSrc = String(profile.avatarCustomSrc || "").trim();
-  if (customSrc) return normalizeBundledAvatarWebpSrc(customSrc);
   const avatarId = String(profile.avatarId || "").trim();
   if (avatarId) {
+    const customSrc = String(profile.avatarCustomSrc || "").trim();
+    if (isCustomAvatarIdForUid(profile.uid, avatarId) && customSrc) {
+      return normalizeBundledAvatarWebpSrc(customSrc);
+    }
     if (/^google\/profile-photo:/i.test(avatarId)) {
       return String(profile.googlePhotoUrl || "").trim();
     }
@@ -857,6 +859,8 @@ export function getLeaderboardAvatarSrc(profile: LeaderboardProfile | null | und
       return normalizeBundledAvatarWebpSrc(avatarId);
     }
   }
+  const customSrc = String(profile.avatarCustomSrc || "").trim();
+  if (customSrc) return normalizeBundledAvatarWebpSrc(customSrc);
   const googlePhotoUrl = String(profile.googlePhotoUrl || "").trim();
   if (googlePhotoUrl) return googlePhotoUrl;
   return "";

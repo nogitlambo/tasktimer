@@ -64,6 +64,18 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
+  it("renders Edit as the first back-face task menu action", () => {
+    const rendered = renderCard();
+
+    const editIndex = rendered.html.indexOf('<button class="taskMenuItem" data-action="edit" title="Edit" type="button">Edit</button>');
+    const manualEntryIndex = rendered.html.indexOf('data-action="manualEntry"');
+
+    expect(editIndex).toBeGreaterThan(-1);
+    expect(manualEntryIndex).toBeGreaterThan(-1);
+    expect(editIndex).toBeLessThan(manualEntryIndex);
+    expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
+  });
+
   it("disables reset until the task has logged time", () => {
     const rendered = renderCard();
 
@@ -168,6 +180,15 @@ describe("task card view model", () => {
     expect(css).toContain(".task.taskHistoryOpeningSpace");
     expect(css).toContain(".task.taskHistoryOpening");
     expect(css).toContain("@keyframes taskHistoryDrawerSpaceOpen");
+  });
+
+  it("centers the three front task actions with the launch button matching the secondary pair", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain("grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) !important;");
+    expect(css).toContain("width: min(100%, 224px) !important;");
+    expect(css).toContain("justify-self: center !important;");
+    expect(css).toContain("grid-column: 1 / 2 !important;");
   });
 
   it("keeps mobile task cards within the active Tasks viewport", () => {

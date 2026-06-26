@@ -206,8 +206,8 @@ function withCurrentUserProfileHydration(
     ...profile,
     username: hydratedProfile.username || profile.username,
     displayLabel: hydratedProfile.displayLabel || profile.displayLabel,
-    avatarId: hydratedProfile.avatarId || profile.avatarId,
-    avatarCustomSrc: hydratedProfile.avatarCustomSrc || profile.avatarCustomSrc,
+    avatarId: hydratedProfile.avatarId ?? profile.avatarId,
+    avatarCustomSrc: hydratedProfile.avatarCustomSrc,
     googlePhotoUrl: hydratedProfile.googlePhotoUrl || profile.googlePhotoUrl,
   };
 }
@@ -684,12 +684,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
       const storedAvatarId = readStoredAvatarId(uid);
       const storedCustomAvatarSrc = readStoredCustomAvatarSrc(uid);
+      const storedIsCustomAvatar = isCustomAvatarIdForUid(uid, storedAvatarId);
       setHydratedCurrentUserProfile({
         uid,
         username: null,
         displayLabel: fallbackLabel,
         avatarId: storedAvatarId || null,
-        avatarCustomSrc: storedCustomAvatarSrc || null,
+        avatarCustomSrc: storedIsCustomAvatar ? storedCustomAvatarSrc || null : null,
         googlePhotoUrl: googlePhotoUrl || null,
       });
       if (isAnonymous) return;
@@ -711,7 +712,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           username: username || null,
           displayLabel: username || fallbackLabel,
           avatarId: avatarId || null,
-          avatarCustomSrc: (isCustomAvatar ? resolvedAvatarSrc || avatarCustomSrc : avatarCustomSrc) || null,
+          avatarCustomSrc: isCustomAvatar ? (resolvedAvatarSrc || avatarCustomSrc) || null : null,
           googlePhotoUrl: remoteGooglePhotoUrl || null,
         });
       } catch {
@@ -1079,7 +1080,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
                       0 Incoming Requests
                     </summary>
-                    <div id="groupsIncomingRequestsList" className="settingsDetailNote">
+                    <div id="groupsIncomingRequestsList" className="settingsDetailNote isEmptyStatus">
                       No incoming requests.
                     </div>
                   </details>
@@ -1090,7 +1091,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
                       0 Outgoing Requests
                     </summary>
-                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote">
+                    <div id="groupsOutgoingRequestsList" className="settingsDetailNote isEmptyStatus">
                       No outgoing requests.
                     </div>
                   </details>

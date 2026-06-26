@@ -32,6 +32,7 @@ import {
   writeStoredCustomAvatarSrc,
   writeStoredRankThumbnailSrc,
 } from "@/app/tasktimer/lib/accountProfileStorage";
+import { resizeCustomAvatarFile } from "./avatarImageProcessing";
 import { getErrorMessage, saveUserDocPatch, userDocRef } from "./settingsAccountService";
 import { saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
 import type { SettingsAvatarGroup, SettingsAvatarViewModel } from "./types";
@@ -201,12 +202,14 @@ export function useSettingsAvatarState({
       const savedRankThumbnail = snapshot.exists() ? String(snapshot.get("rankThumbnailSrc") || "").trim() : "";
       const customAvatarId = customAvatarIdForUid(authUserUid);
       const cachedCustomSrc = readStoredCustomAvatarSrc(authUserUid);
+      const savedAvatarIsCustom = isCustomAvatarIdForUid(authUserUid, savedAvatarId);
+      const cachedAvatarIsCustom = isCustomAvatarIdForUid(authUserUid, cachedAvatarId);
       let nextCustomAvatarUploads = readStoredCustomAvatarUploads(authUserUid);
       const cachedRankThumbnail = readStoredRankThumbnailSrc(authUserUid);
 
-      if (savedCustomSrc) {
+      if (savedCustomSrc && savedAvatarIsCustom) {
         writeStoredCustomAvatarSrc(authUserUid, savedCustomSrc);
-        const savedCustomId = isCustomAvatarIdForUid(authUserUid, savedAvatarId) ? savedAvatarId : customAvatarId;
+        const savedCustomId = savedAvatarId || customAvatarId;
         if (!nextCustomAvatarUploads.some((upload) => upload.id === savedCustomId || upload.src === savedCustomSrc)) {
           nextCustomAvatarUploads = appendStoredCustomAvatarUpload(authUserUid, {
             id: savedCustomId,
@@ -215,8 +218,13 @@ export function useSettingsAvatarState({
             createdAt: Date.now(),
           });
         }
-      } else if (cachedCustomSrc) {
+      } else if (savedCustomSrc) {
+        writeStoredCustomAvatarSrc(authUserUid, "");
+        await saveUserDocPatch(authUserUid, { avatarCustomSrc: null });
+      } else if (cachedCustomSrc && cachedAvatarIsCustom) {
         await saveUserDocPatch(authUserUid, { avatarCustomSrc: cachedCustomSrc });
+      } else if (cachedCustomSrc) {
+        writeStoredCustomAvatarSrc(authUserUid, "");
       }
       nextCustomAvatarUploads = migrateStoredCustomAvatarSrcToUploads(authUserUid);
 
@@ -365,7 +373,7 @@ export function useSettingsAvatarState({
         avatarCustomSrc: isCustomAvatar ? customAvatarSrc || null : null,
         googlePhotoUrl: authHasGoogleProvider ? authGooglePhotoUrl || null : null,
       };
-      if (isCustomAvatar) writeStoredCustomAvatarSrc(authUserUid, customAvatarSrc);
+      writeStoredCustomAvatarSrc(authUserUid, isCustomAvatar ? customAvatarSrc : "");
       writeStoredAvatarId(authUserUid, avatarId);
       setAuthError("");
       if (authIsAnonymous) {
@@ -417,14 +425,16 @@ export function useSettingsAvatarState({
         setAuthStatus("");
         return;
       }
-      const reader = new FileReader();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error("Could not read selected image."));
-        reader.readAsDataURL(file);
-      });
+      let dataUrl = "";
+      try {
+        dataUrl = await resizeCustomAvatarFile(file);
+      } catch {
+        setAuthError("Could not process selected image.");
+        setAuthStatus("");
+        return;
+      }
       if (!dataUrl) {
-        setAuthError("Could not read selected image.");
+        setAuthError("Could not process selected image.");
         setAuthStatus("");
         return;
       }

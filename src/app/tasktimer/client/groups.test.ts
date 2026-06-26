@@ -4,6 +4,14 @@ import {
   cancelOutgoingFriendRequest,
   deleteFriendship,
   declineFriendRequest,
+  loadFriendProfile,
+  loadFriendships,
+  loadIncomingFriendRequestEmailHints,
+  loadIncomingRequests,
+  loadOutgoingFriendRequestEmailHints,
+  loadOutgoingRequests,
+  loadSharedTaskSummariesForOwner,
+  loadSharedTaskSummariesForViewer,
 } from "../lib/friendsStore";
 import {
   computeSharedTaskTimingMetrics,
@@ -17,7 +25,7 @@ import {
   renderSharedTaskMetricRows,
 } from "./groups";
 import type { TaskTimerGroupsContext } from "./context";
-import type { FriendProfile, Friendship } from "../lib/friendsStore";
+import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 
 vi.mock("../lib/friendsStore", () => ({
   approveFriendRequest: vi.fn(),
@@ -166,6 +174,130 @@ describe("friend profile row targets", () => {
   });
 });
 
+describe("groups friends list shared task counts", () => {
+  function makeElement() {
+    return {
+      className: "",
+      disabled: false,
+      innerHTML: "",
+      style: {} as Record<string, string>,
+      textContent: "",
+      classList: {
+        add: vi.fn(),
+        remove: vi.fn(),
+        toggle: vi.fn(),
+      },
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+      removeAttribute: vi.fn(),
+      setAttribute: vi.fn(),
+    };
+  }
+
+  function makeSharedSummary(overrides: Partial<SharedTaskSummary> = {}): SharedTaskSummary {
+    return {
+      shareDocId: "share-1",
+      ownerUid: "friend-b",
+      friendUid: "user-a",
+      taskId: "task-1",
+      taskName: "Deep Work",
+      taskColor: null,
+      timerState: "stopped",
+      focusTrend7dMs: [],
+      checkpointScaleMs: null,
+      taskCreatedAtMs: null,
+      dailyGoalMs: null,
+      todayLoggedMs: 0,
+      weekLoggedMs: 0,
+      weekGoalMs: null,
+      avgTimeLoggedThisWeekMs: 0,
+      totalTimeLoggedMs: 0,
+      sharedAt: null,
+      updatedAt: null,
+      schemaVersion: 1,
+      ...overrides,
+    };
+  }
+
+  function renderFriendsList(sharedSummaries: SharedTaskSummary[]) {
+    const groupsFriendsList = makeElement();
+    const friendship = {
+      pairId: "pair:friend-b:user-a",
+      users: ["friend-b", "user-a"],
+      profileByUid: {
+        "friend-b": {
+          alias: "Friend Bee",
+          avatarId: null,
+          avatarCustomSrc: null,
+          googlePhotoUrl: null,
+          rankThumbnailSrc: null,
+          currentRankId: null,
+          totalXp: null,
+          completedTaskCount: null,
+        },
+      },
+      createdAt: null,
+      createdBy: "user-a",
+    } satisfies Friendship;
+
+    const ctx = {
+      els: {
+        commandCenterGroupsAlertBadge: null,
+        footerTest2AlertBadge: null,
+        friendProfileDeleteBtn: null,
+        friendRequestSendBtn: null,
+        groupsFriendsList,
+        groupsIncomingRequestsDetails: makeElement(),
+        groupsIncomingRequestsList: makeElement(),
+        groupsIncomingRequestsTitle: makeElement(),
+        groupsOutgoingRequestsDetails: makeElement(),
+        groupsOutgoingRequestsList: makeElement(),
+        groupsOutgoingRequestsTitle: makeElement(),
+        groupsSharedByYouList: makeElement(),
+        groupsSharedByYouTitle: makeElement(),
+        openFriendRequestModalBtn: null,
+      },
+      on: vi.fn(),
+      getCurrentUid: () => "user-a",
+      getGroupsLoading: () => false,
+      getGroupsIncomingRequests: () => [],
+      getGroupsOutgoingRequests: () => [],
+      getGroupsFriendships: () => [friendship],
+      getGroupsSharedSummaries: () => sharedSummaries,
+      getOwnSharedSummaries: () => [],
+      getOpenFriendSharedTaskUids: () => new Set<string>(),
+      hasEntitlement: () => true,
+      getCurrentPlan: () => "pro",
+      getMergedFriendProfile: (_friendUid: string, baseProfile?: FriendProfile | null) => baseProfile || ({ alias: "Friend Bee" } as FriendProfile),
+      getFriendAvatarSrc: vi.fn(() => "/friend-row-avatar.webp"),
+      escapeHtmlUI: (value: unknown) =>
+        String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;"),
+    };
+
+    createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).renderGroupsPage();
+    return groupsFriendsList.innerHTML;
+  }
+
+  it("omits the shared count meta when a friend has zero shared tasks", () => {
+    const html = renderFriendsList([]);
+
+    expect(html).not.toContain("0 tasks shared with you");
+    expect(html).not.toContain('class="friendIdentityMeta"');
+    expect(html).toContain("No tasks shared with you.");
+  });
+
+  it("keeps the shared count meta when a friend has shared tasks", () => {
+    const html = renderFriendsList([makeSharedSummary()]);
+
+    expect(html).toContain('class="friendIdentityMeta"');
+    expect(html).toContain("1 task shared with you");
+    expect(html).not.toContain("No tasks shared with you.");
+  });
+});
+
 describe("friend request action status", () => {
   type FriendRequestClickEvent = {
     target?: {
@@ -185,7 +317,9 @@ describe("friend request action status", () => {
         remove: vi.fn(),
         toggle: vi.fn(),
       },
+      querySelector: vi.fn(() => null),
       querySelectorAll: vi.fn(() => []),
+      removeAttribute: vi.fn(),
       setAttribute: vi.fn(),
     };
   }
@@ -300,6 +434,297 @@ describe("friend request action status", () => {
     await new Promise((resolve) => setImmediate(resolve));
   }
 
+  function makeRect(overrides: Partial<DOMRect> = {}) {
+    const rect = {
+      left: 20,
+      top: 240,
+      right: 220,
+      bottom: 284,
+      width: 200,
+      height: 44,
+      x: 20,
+      y: 240,
+      toJSON: () => ({}),
+      ...overrides,
+    };
+    return rect as DOMRect;
+  }
+
+  function makeAnimationHarness(options: { action?: "approve" | "decline"; withTarget?: boolean; hidden?: boolean } = {}) {
+    const action = options.action || "approve";
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    const appendChild = vi.fn();
+    type CreatedAnimationElement = {
+      tagName: string;
+      alt: string;
+      classList: {
+        add: ReturnType<typeof vi.fn>;
+        remove: ReturnType<typeof vi.fn>;
+      };
+      className: string;
+      src: string;
+      style: Record<string, string>;
+      append: ReturnType<typeof vi.fn>;
+      setAttribute: ReturnType<typeof vi.fn>;
+      addEventListener: ReturnType<typeof vi.fn>;
+      removeEventListener: ReturnType<typeof vi.fn>;
+      remove: ReturnType<typeof vi.fn>;
+      listeners: Record<string, () => void>;
+      textContent?: string;
+    };
+    const createdElements: CreatedAnimationElement[] = [];
+    const createElement = vi.fn((tagName: string) => {
+      const listeners: Record<string, () => void> = {};
+      const element = {
+        tagName,
+        alt: "",
+        classList: {
+          add: vi.fn(),
+          remove: vi.fn(),
+        },
+        className: "",
+        src: "",
+        style: {} as Record<string, string>,
+        append: vi.fn(),
+        setAttribute: vi.fn(),
+        addEventListener: vi.fn((event: string, handler: () => void) => {
+          listeners[event] = handler;
+        }),
+        removeEventListener: vi.fn(),
+        remove: vi.fn(),
+        listeners,
+      };
+      createdElements.push(element);
+      return element;
+    });
+    globalThis.window = {
+      setTimeout,
+      clearTimeout,
+      requestAnimationFrame: vi.fn((handler: FrameRequestCallback) => {
+        handler(0);
+        return 1;
+      }),
+      matchMedia: vi.fn(() => ({ matches: false })),
+    } as unknown as Window & typeof globalThis;
+    globalThis.document = {
+      hidden: !!options.hidden,
+      body: { appendChild },
+      createElement,
+    } as unknown as Document;
+
+    const request = {
+      requestId: "request-1",
+      senderUid: "friend-b",
+      senderEmail: "friend@example.com",
+      senderAvatarId: "toon-1",
+      status: "pending",
+    } as FriendRequest;
+    let incomingRequests: FriendRequest[] = [request];
+    let friendships: Friendship[] = [];
+    let friendProfiles: Record<string, FriendProfile> = {};
+
+    vi.mocked(loadIncomingRequests).mockImplementation(async () => incomingRequests);
+    vi.mocked(loadOutgoingRequests).mockResolvedValue([]);
+    vi.mocked(loadIncomingFriendRequestEmailHints).mockResolvedValue([]);
+    vi.mocked(loadOutgoingFriendRequestEmailHints).mockResolvedValue([]);
+    vi.mocked(loadFriendships).mockImplementation(async () => friendships);
+    vi.mocked(loadFriendProfile).mockImplementation(async (uid) => friendProfiles[String(uid)] || null);
+    vi.mocked(loadSharedTaskSummariesForViewer).mockResolvedValue([]);
+    vi.mocked(loadSharedTaskSummariesForOwner).mockResolvedValue([]);
+
+    const sourceIdentity = {
+      getBoundingClientRect: vi.fn(() => makeRect()),
+    };
+    const sourceRow = {
+      querySelector: vi.fn((selector: string) => {
+        if (selector === ".friendRequestIdentityRow") return sourceIdentity;
+        if (selector === ".friendRequestAvatar") return { src: "/avatar.webp", currentSrc: "/avatar.webp" };
+        if (selector === ".friendRequestAlias") return { textContent: "Friend Bee" };
+        return null;
+      }),
+    };
+    const button = {
+      getAttribute: vi.fn((name: string) =>
+        name === "data-request-id" ? "request-1" : name === "data-friend-action" ? action : null
+      ),
+      closest: vi.fn((selector: string) => (selector === ".groupsIncomingRequestRow" ? sourceRow : null)),
+    };
+    const event = {
+      target: {
+        closest: vi.fn((selector: string) => (selector === "[data-friend-action][data-request-id]" ? button : null)),
+      },
+    };
+
+    const targetIdentity = { getBoundingClientRect: vi.fn(() => makeRect({ top: 80, bottom: 134, height: 54 })) };
+    const targetRow = {
+      open: false,
+      offsetWidth: 320,
+      classList: {
+        add: vi.fn(),
+        remove: vi.fn(),
+      },
+      getAttribute: vi.fn((name: string) => (name === "data-friend-uid" ? "friend-b" : null)),
+      querySelector: vi.fn((selector: string) => (selector === ".friendIdentityRow" ? targetIdentity : null)),
+      addEventListener: vi.fn(),
+      getBoundingClientRect: vi.fn(() => makeRect({ top: 80, bottom: 134, height: 54 })),
+    };
+
+    const incomingList = makeElement();
+    const outgoingList = makeElement();
+    const friendProfilePanel = {
+      ...makeElement(),
+      getBoundingClientRect: vi.fn(() => makeRect({ left: 100, top: 100, right: 660, bottom: 520, width: 560, height: 420 })),
+      style: {
+        removeProperty: vi.fn(),
+        setProperty: vi.fn(),
+      },
+    };
+    const friendProfileModal = {
+      ...makeElement(),
+      querySelector: vi.fn((selector: string) => (selector === ".modal" ? friendProfilePanel : null)),
+    };
+    const setActiveFriendProfileName = vi.fn();
+    const setActiveFriendProfileUid = vi.fn();
+    const friendsList = {
+      ...makeElement(),
+      querySelectorAll: vi.fn((selector: string) =>
+        options.withTarget !== false && selector === ".friendSharedTasksDetails[data-friend-uid]" ? [targetRow] : []
+      ),
+    };
+    const eventHandlers: Record<string, (event: FriendRequestClickEvent) => void> = {};
+    const showActionConfirmation = vi.fn();
+
+    const ctx = {
+      els: {
+        commandCenterGroupsAlertBadge: null,
+        footerTest2AlertBadge: null,
+        friendProfileAvatar: makeElement(),
+        friendProfileCloseBtn: null,
+        friendProfileCompletedTaskCount: makeElement(),
+        friendProfileDeleteBtn: null,
+        friendProfileEmail: makeElement(),
+        friendProfileMemberSince: makeElement(),
+        friendProfileModal,
+        friendProfileName: makeElement(),
+        friendProfileRank: makeElement(),
+        friendProfileRankImage: makeElement(),
+        friendProfileRankPlaceholder: makeElement(),
+        friendProfileSharedTaskCount: makeElement(),
+        friendProfileSharedTime: makeElement(),
+        friendProfileXp: makeElement(),
+        friendRequestSendBtn: null,
+        groupsFriendsList: friendsList,
+        groupsIncomingRequestsDetails: makeElement(),
+        groupsIncomingRequestsList: incomingList,
+        groupsIncomingRequestsTitle: makeElement(),
+        groupsOutgoingRequestsDetails: makeElement(),
+        groupsOutgoingRequestsList: outgoingList,
+        groupsOutgoingRequestsTitle: makeElement(),
+        groupsSharedByYouList: makeElement(),
+        openFriendRequestModalBtn: null,
+      },
+      on: (target: unknown, eventName: string, handler: (event: unknown) => void) => {
+        if (target === incomingList && eventName === "click") eventHandlers.incoming = handler;
+        if (target === outgoingList && eventName === "click") eventHandlers.outgoing = handler;
+      },
+      getCurrentUid: () => "user-a",
+      getGroupsLoading: () => false,
+      getGroupsLoadingDepth: () => 0,
+      setGroupsLoading: vi.fn(),
+      setGroupsLoadingDepth: vi.fn(),
+      getGroupsRefreshSeq: () => 0,
+      setGroupsRefreshSeq: vi.fn(),
+      getGroupsIncomingRequests: () => incomingRequests,
+      setGroupsIncomingRequests: vi.fn((value: FriendRequest[]) => {
+        incomingRequests = value;
+      }),
+      getGroupsOutgoingRequests: () => [],
+      setGroupsOutgoingRequests: vi.fn(),
+      getGroupsFriendships: () => friendships,
+      setGroupsFriendships: vi.fn((value: Friendship[]) => {
+        friendships = value;
+      }),
+      getGroupsSharedSummaries: () => [],
+      setGroupsSharedSummaries: vi.fn(),
+      getOwnSharedSummaries: () => [],
+      setOwnSharedSummaries: vi.fn(),
+      getFriendProfileCacheByUid: () => friendProfiles,
+      setFriendProfileCacheByUid: vi.fn((value: Record<string, FriendProfile>) => {
+        friendProfiles = value;
+      }),
+      getFriendEmailByUid: () => ({}),
+      setFriendEmailByUid: vi.fn(),
+      getOpenFriendSharedTaskUids: () => new Set<string>(),
+      getActiveFriendProfileName: () => "",
+      getActiveFriendProfileUid: () => null,
+      setActiveFriendProfileName,
+      setActiveFriendProfileUid,
+      getShareTaskIndex: () => null,
+      setShareTaskIndex: vi.fn(),
+      getShareTaskMode: () => "share",
+      setShareTaskMode: vi.fn(),
+      getShareTaskTaskId: () => null,
+      setShareTaskTaskId: vi.fn(),
+      hasEntitlement: () => true,
+      showActionConfirmation,
+      showUpgradePrompt: vi.fn(),
+      showWorkingIndicator: vi.fn(() => 1),
+      hideWorkingIndicator: vi.fn(),
+      getFriendAvatarSrcById: vi.fn(() => "/fallback-avatar.webp"),
+      buildFriendInitialAvatarDataUrl: vi.fn(() => ""),
+      getFriendAvatarSrc: vi.fn(() => "/friend-row-avatar.webp"),
+      getMergedFriendProfile: vi.fn((_friendUid: string, baseProfile?: FriendProfile | null) => baseProfile || ({ alias: "Friend Bee" } as FriendProfile)),
+      jumpToTaskById: vi.fn(),
+      escapeHtmlUI: (value: unknown) => String(value ?? ""),
+      fillBackgroundForPct: vi.fn(() => ""),
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value || 0),
+      getCurrentPlan: () => "pro",
+    };
+
+    createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).registerGroupsEvents();
+
+    return {
+      appendChild,
+      createdElements,
+      event,
+      handler: action === "decline" ? eventHandlers.incoming : eventHandlers.incoming,
+      restoreWindow: () => {
+        globalThis.window = originalWindow;
+        globalThis.document = originalDocument;
+      },
+      setApprovedRefreshData: () => {
+        incomingRequests = [];
+        friendships = [
+          {
+            pairId: "pair:friend-b:user-a",
+            users: ["friend-b", "user-a"],
+            profileByUid: {
+              "friend-b": {
+                alias: "Friend Bee",
+                avatarId: "toon-1",
+                avatarCustomSrc: null,
+                googlePhotoUrl: null,
+                rankThumbnailSrc: null,
+                currentRankId: null,
+                totalXp: null,
+                completedTaskCount: null,
+              },
+            },
+            createdAt: null,
+            createdBy: "friend-b",
+          },
+        ];
+      },
+      targetRow,
+      friendProfileModal,
+      friendProfilePanel,
+      setActiveFriendProfileName,
+      setActiveFriendProfileUid,
+      showActionConfirmation,
+    };
+  }
+
   it.each([
     ["approve", "Friend request approved."],
     ["decline", "Friend request declined."],
@@ -330,6 +755,79 @@ describe("friend request action status", () => {
       await flushFriendRequestAction();
 
       expect(harness.showActionConfirmation).toHaveBeenCalledWith("Request is no longer pending.");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("animates a successful accepted request and opens Friend Info from the new friend row", async () => {
+    vi.mocked(approveFriendRequest).mockImplementation(async () => {
+      harness.setApprovedRefreshData();
+      return { ok: true };
+    });
+    const harness = makeAnimationHarness();
+    try {
+      harness.handler(harness.event);
+      await flushFriendRequestAction();
+
+      expect(harness.showActionConfirmation).toHaveBeenCalledWith("Friend request approved.");
+      expect(harness.targetRow.classList.add).toHaveBeenCalledWith("isFriendAcceptLanding");
+      expect(harness.appendChild).toHaveBeenCalledTimes(1);
+      expect(harness.createdElements[0]?.className).toBe("friendAcceptFloatClone");
+      harness.createdElements[0]?.listeners.transitionend?.();
+      await flushFriendRequestAction();
+
+      expect(harness.setActiveFriendProfileUid).toHaveBeenCalledWith("friend-b");
+      expect(harness.setActiveFriendProfileName).toHaveBeenCalledWith("Friend Bee");
+      expect(harness.friendProfileModal.style.display).toBe("flex");
+      expect(harness.friendProfilePanel.style.setProperty).toHaveBeenCalledWith("--friend-profile-zoom-origin-x", expect.any(String));
+      expect(harness.friendProfilePanel.style.setProperty).toHaveBeenCalledWith("--friend-profile-zoom-origin-y", expect.any(String));
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("does not animate failed or non-approve request actions", async () => {
+    vi.mocked(approveFriendRequest).mockResolvedValue({ ok: false, message: "Request is no longer pending." });
+    vi.mocked(declineFriendRequest).mockResolvedValue({ ok: true });
+
+    const failedApprove = makeAnimationHarness();
+    try {
+      failedApprove.handler(failedApprove.event);
+      await flushFriendRequestAction();
+      expect(failedApprove.appendChild).not.toHaveBeenCalled();
+      expect(failedApprove.targetRow.classList.add).not.toHaveBeenCalledWith("isFriendAcceptLanding");
+      expect(failedApprove.friendProfileModal.style.display).not.toBe("flex");
+    } finally {
+      failedApprove.restoreWindow();
+    }
+
+    const decline = makeAnimationHarness({ action: "decline" });
+    try {
+      decline.handler(decline.event);
+      await flushFriendRequestAction();
+      expect(decline.appendChild).not.toHaveBeenCalled();
+      expect(decline.targetRow.classList.add).not.toHaveBeenCalledWith("isFriendAcceptLanding");
+      expect(decline.friendProfileModal.style.display).not.toBe("flex");
+    } finally {
+      decline.restoreWindow();
+    }
+  });
+
+  it("skips the float when the accepted friend target row is unavailable", async () => {
+    const harness = makeAnimationHarness({ withTarget: false });
+    vi.mocked(approveFriendRequest).mockImplementation(async () => {
+      harness.setApprovedRefreshData();
+      return { ok: true };
+    });
+    try {
+      harness.handler(harness.event);
+      await flushFriendRequestAction();
+
+      expect(harness.showActionConfirmation).toHaveBeenCalledWith("Friend request approved.");
+      expect(harness.appendChild).not.toHaveBeenCalled();
+      expect(harness.targetRow.classList.add).not.toHaveBeenCalledWith("isFriendAcceptLanding");
+      expect(harness.friendProfileModal.style.display).not.toBe("flex");
     } finally {
       harness.restoreWindow();
     }
@@ -536,6 +1034,8 @@ describe("friend info modal email", () => {
     const emailEl = makeElement();
     const nameEl = makeElement();
     const memberSinceEl = makeElement();
+    const setActiveFriendProfileName = vi.fn();
+    const setActiveFriendProfileUid = vi.fn();
     const friendship = {
       pairId: "pair:friend-b:user-a",
       users: ["friend-b", "user-a"],
@@ -576,8 +1076,8 @@ describe("friend info modal email", () => {
       getFriendEmailByUid: () => emailByUid,
       getMergedFriendProfile: (_friendUid: string, baseProfile?: FriendProfile | null) => baseProfile || ({} as FriendProfile),
       getFriendAvatarSrc: vi.fn(() => "/avatar.webp"),
-      setActiveFriendProfileName: vi.fn(),
-      setActiveFriendProfileUid: vi.fn(),
+      setActiveFriendProfileName,
+      setActiveFriendProfileUid,
       hasEntitlement: () => true,
       getGroupsIncomingRequests: () => [],
       getGroupsOutgoingRequests: () => [],
@@ -588,9 +1088,10 @@ describe("friend info modal email", () => {
       getCurrentPlan: () => "pro",
     };
 
-    createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).openFriendProfileModal("friend-b");
+    const api = createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext);
+    api.openFriendProfileModal("friend-b");
 
-    return { emailEl, memberSinceEl, modal, nameEl };
+    return { api, emailEl, memberSinceEl, modal, nameEl, setActiveFriendProfileName, setActiveFriendProfileUid };
   }
 
   it("shows a friend's email between username and member since when available", () => {
@@ -608,6 +1109,42 @@ describe("friend info modal email", () => {
 
     expect(harness.emailEl.textContent).toBe("");
     expect(harness.emailEl.style.display).toBe("none");
+  });
+
+  it("zooms Friend Info out before hiding and clearing active friend state", () => {
+    const originalWindow = globalThis.window;
+    const closeTimers: Array<() => void> = [];
+    globalThis.window = {
+      setTimeout: vi.fn((handler: () => void) => {
+        closeTimers.push(handler);
+        return 1;
+      }),
+      clearTimeout: vi.fn(),
+      requestAnimationFrame: vi.fn((handler: FrameRequestCallback) => {
+        handler(0);
+        return 1;
+      }),
+      matchMedia: vi.fn(() => ({ matches: false })),
+    } as unknown as Window & typeof globalThis;
+
+    const harness = makeFriendInfoHarness({});
+    try {
+      harness.api.closeFriendProfileModal();
+
+      expect(harness.modal.classList.add).toHaveBeenCalledWith("isFriendProfileZoomingOut");
+      expect(harness.modal.style.display).toBe("flex");
+      expect(harness.setActiveFriendProfileUid).not.toHaveBeenCalledWith(null);
+
+      const runCloseTimer = closeTimers[0];
+      expect(runCloseTimer).toBeTruthy();
+      runCloseTimer?.();
+
+      expect(harness.modal.style.display).toBe("none");
+      expect(harness.setActiveFriendProfileUid).toHaveBeenCalledWith(null);
+      expect(harness.setActiveFriendProfileName).toHaveBeenCalledWith("");
+    } finally {
+      globalThis.window = originalWindow;
+    }
   });
 });
 

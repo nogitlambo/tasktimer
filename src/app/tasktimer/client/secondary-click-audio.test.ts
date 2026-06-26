@@ -6,11 +6,13 @@ import {
   CHECKBOX_CLICK_AUDIO_SRC,
   CLOSE_CLICK_AUDIO_SRC,
   DROPDOWN_CLICK_AUDIO_SRC,
+  DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC,
   MODAL_OPEN_AUDIO_SRC,
   NOTE_TOOLBAR_CLICK_AUDIO_SRC,
   getCheckboxClickTarget,
   getCancelClickTarget,
   getCloseClickTarget,
+  getDestructiveAlertClickTarget,
   getDropdownClickTarget,
   getFooterNavClickTarget,
   getModalOpenClickTarget,
@@ -20,6 +22,7 @@ import {
   playCancelClickAudio,
   playCheckboxClickAudio,
   playCloseClickAudio,
+  playDestructiveAlertClickAudio,
   playDropdownClickAudio,
   playModalOpenClickAudio,
   playNoteToolbarClickAudio,
@@ -132,6 +135,16 @@ describe("secondary click audio", () => {
       expect(getSecondaryClickTarget(byAria)).toBe(byAria);
       expect(getSecondaryClickTarget(byTitle)).toBe(byTitle);
     }
+  });
+
+  it("routes the Friend Info remove button to destructive alert audio instead of secondary audio", () => {
+    const removeButton = makeElement({
+      selectorMatches: { "#friendProfileDeleteBtn": true, "button,a": true },
+      textContent: "Remove",
+    });
+
+    expect(getDestructiveAlertClickTarget(removeButton)).toBe(removeButton);
+    expect(getSecondaryClickTarget(removeButton)).toBeNull();
   });
 
   it("excludes action labels with dedicated or destructive sounds from default secondary audio", () => {
@@ -953,6 +966,46 @@ describe("secondary click audio", () => {
 
     expect(playCancelAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("routes Friend Info remove clicks to alert audio instead of default secondary audio", () => {
+    const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const on = vi.fn();
+    const playAudio = vi.fn();
+    const playDestructiveAlertAudio = vi.fn();
+
+    registerSecondaryClickAudio({
+      on,
+      documentRef: documentRef as unknown as Document,
+      playAudio,
+      playDestructiveAlertAudio,
+    });
+
+    const handler = on.mock.calls[0]?.[2] as EventListener;
+
+    handler({
+      defaultPrevented: false,
+      isTrusted: true,
+      target: makeElement({
+        selectorMatches: { "#friendProfileDeleteBtn": true, "button,a": true },
+        textContent: "Remove",
+      }),
+    } as unknown as Event);
+
+    expect(playDestructiveAlertAudio).toHaveBeenCalledTimes(1);
+    expect(playAudio).not.toHaveBeenCalled();
+  });
+
+  it("plays alert.mp3 for destructive alert clicks", () => {
+    const audioFactory = vi.fn(() => ({
+      currentTime: 0,
+      play: vi.fn(),
+    }));
+
+    playDestructiveAlertClickAudio(audioFactory);
+
+    expect(audioFactory).toHaveBeenCalledWith(DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC);
+    expect(DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC).toBe("/alert.mp3");
   });
 
   it("does not replay close clicks when audio is still unready", () => {

@@ -197,6 +197,17 @@ describe("getLeaderboardAvatarSrc", () => {
       )
     ).toBe("/avatars/bottts/bottts-1777442377436.webp");
   });
+
+  it("uses a bundled avatar id over a stale custom avatar source", () => {
+    expect(
+      getLeaderboardAvatarSrc(
+        createProfile({
+          avatarId: "action-heroes/commando",
+          avatarCustomSrc: "data:image/webp;base64,stale-custom",
+        })
+      )
+    ).toBe("/avatars/action-heroes/commando.webp");
+  });
 });
 
 describe("buildWeeklyLeaderboardRows", () => {

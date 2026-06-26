@@ -6144,6 +6144,30 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   width:min(var(--modal-width-lg), calc(100vw - 28px)) !important;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .accountAvatarPlaceholder,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .accountAvatarImage,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .accountAvatarPlaceholderInner{
+  border-radius:999px !important;
+  overflow:hidden !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .accountAvatarImage{
+  object-fit:cover !important;
+  object-position:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarOption{
+  border-radius:999px !important;
+  aspect-ratio:1;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarOptionImg{
+  height:100% !important;
+  border-radius:999px !important;
+  object-fit:cover !important;
+  object-position:center !important;
+}
+
 @media (max-width: 640px){
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsAvatarGroupRow,
   #app[aria-label="TaskLaunch Account"] .accountAvatarGroupRow{

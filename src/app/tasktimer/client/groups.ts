@@ -62,6 +62,17 @@ type SharedTaskHistoryEntryLike = {
   ms?: unknown;
 };
 
+type FriendAcceptAnimationSource = {
+  friendUid: string;
+  alias: string;
+  avatarSrc: string;
+  sourceRect: DOMRect | null;
+};
+
+type FriendProfileModalOpenOptions = {
+  zoomSource?: HTMLElement | null;
+};
+
 const defaultGroupsSnapshotLoaders: GroupsSnapshotLoaders = {
   loadIncomingRequests,
   loadOutgoingRequests,
@@ -271,6 +282,7 @@ export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnaps
 
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
+  let friendProfileCloseTimer: number | null = null;
 
   function canUseSocialFeatures() {
     return ctx.hasEntitlement("socialFeatures");
@@ -333,17 +345,71 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
-  function closeFriendProfileModal() {
+  function clearFriendProfileZoomState() {
+    const overlay = els.friendProfileModal as HTMLElement | null;
+    if (!overlay) return;
+    overlay.classList.remove("isFriendProfileZoomingIn", "isFriendProfileZoomingOut");
+    const modal = overlay.querySelector?.(".modal") as HTMLElement | null;
+    modal?.style.removeProperty("--friend-profile-zoom-origin-x");
+    modal?.style.removeProperty("--friend-profile-zoom-origin-y");
+  }
+
+  function finishFriendProfileClose() {
+    if (friendProfileCloseTimer != null) {
+      window.clearTimeout(friendProfileCloseTimer);
+      friendProfileCloseTimer = null;
+    }
+    clearFriendProfileZoomState();
     hideOverlay(els.friendProfileModal as HTMLElement | null);
     ctx.setActiveFriendProfileUid(null);
     ctx.setActiveFriendProfileName("");
   }
 
-  function openFriendProfileModal(friendUid: string) {
+  function applyFriendProfileZoomOrigin(zoomSource?: HTMLElement | null) {
+    const overlay = els.friendProfileModal as HTMLElement | null;
+    const modal = overlay?.querySelector?.(".modal") as HTMLElement | null;
+    if (!overlay || !modal || !zoomSource || prefersReducedFriendMotion()) return;
+    const sourceRect = zoomSource.getBoundingClientRect?.() || null;
+    const modalRect = modal.getBoundingClientRect?.() || null;
+    if (!isUsableFriendAnimationRect(sourceRect) || !isUsableFriendAnimationRect(modalRect)) return;
+    const originX = sourceRect.left + sourceRect.width / 2 - modalRect.left;
+    const originY = sourceRect.top + sourceRect.height / 2 - modalRect.top;
+    modal.style.setProperty("--friend-profile-zoom-origin-x", `${Math.max(0, Math.min(modalRect.width, originX))}px`);
+    modal.style.setProperty("--friend-profile-zoom-origin-y", `${Math.max(0, Math.min(modalRect.height, originY))}px`);
+  }
+
+  function animateFriendProfileOpen(zoomSource?: HTMLElement | null) {
+    const overlay = els.friendProfileModal as HTMLElement | null;
+    if (!overlay || prefersReducedFriendMotion() || typeof window.requestAnimationFrame !== "function") return;
+    clearFriendProfileZoomState();
+    applyFriendProfileZoomOrigin(zoomSource);
+    overlay.classList.add("isFriendProfileZoomingIn");
+    window.requestAnimationFrame(() => {
+      overlay.classList.remove("isFriendProfileZoomingIn");
+    });
+  }
+
+  function closeFriendProfileModal() {
+    const overlay = els.friendProfileModal as HTMLElement | null;
+    if (!overlay || overlay.style.display === "none" || prefersReducedFriendMotion()) {
+      finishFriendProfileClose();
+      return;
+    }
+    if (friendProfileCloseTimer != null) return;
+    clearFriendProfileZoomState();
+    overlay.classList.add("isFriendProfileZoomingOut");
+    friendProfileCloseTimer = window.setTimeout(finishFriendProfileClose, 220);
+  }
+
+  function openFriendProfileModal(friendUid: string, opts?: FriendProfileModalOpenOptions) {
     const uid = ctx.getCurrentUid();
     if (!uid || !els.friendProfileModal) return;
     const targetUid = String(friendUid || "").trim();
     if (!targetUid) return;
+    if (friendProfileCloseTimer != null) {
+      window.clearTimeout(friendProfileCloseTimer);
+      friendProfileCloseTimer = null;
+    }
 
     const rankedFriends = ctx
       .getGroupsFriendships()
@@ -430,6 +496,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.setActiveFriendProfileUid(row.peerUid);
     ctx.setActiveFriendProfileName(row.alias);
     showOverlay(els.friendProfileModal as HTMLElement | null);
+    animateFriendProfileOpen(opts?.zoomSource || null);
   }
 
   function getTaskCreatedAtMs(taskId: string): number | null {
@@ -1021,6 +1088,119 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.setGroupsLoading(nextDepth > 0);
   }
 
+  function prefersReducedFriendMotion() {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  }
+
+  function isUsableFriendAnimationRect(rect: DOMRect | null | undefined) {
+    return !!rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 4 && rect.height > 4;
+  }
+
+  function findRequestRowForActionButton(button: HTMLElement | null) {
+    return button?.closest?.(".groupsIncomingRequestRow") as HTMLElement | null;
+  }
+
+  function getIncomingRequestById(requestId: string) {
+    return ctx
+      .getGroupsIncomingRequests()
+      .find((row) => String(row?.requestId || "").trim() === requestId) || null;
+  }
+
+  function getFriendProfileZoomSourceFromTarget(target: unknown) {
+    const node = target as { closest?: (selector: string) => HTMLElement | null } | null;
+    return node?.closest?.(".friendSharedTasksDetails[data-friend-uid]") || node?.closest?.("[data-friend-profile-open]") || null;
+  }
+
+  function captureFriendAcceptAnimationSource(button: HTMLElement | null, requestId: string): FriendAcceptAnimationSource | null {
+    const request = getIncomingRequestById(requestId);
+    const friendUid = String(request?.senderUid || "").trim();
+    if (!friendUid) return null;
+    const row = findRequestRowForActionButton(button);
+    const identityRow = (row?.querySelector?.(".friendRequestIdentityRow") as HTMLElement | null) || row;
+    const avatarEl = row?.querySelector?.(".friendRequestAvatar") as HTMLImageElement | null;
+    const aliasEl = row?.querySelector?.(".friendRequestAlias") as HTMLElement | null;
+    const peerEmail = String(request?.senderEmail || "").trim();
+    const alias = String(aliasEl?.textContent || request?.senderEmail || friendUid).trim() || peerEmail || friendUid;
+    const avatarSrc = String(avatarEl?.currentSrc || avatarEl?.src || ctx.getFriendAvatarSrcById(String(request?.senderAvatarId || "").trim()) || "").trim();
+    const sourceRect = identityRow?.getBoundingClientRect?.() || null;
+    return {
+      friendUid,
+      alias,
+      avatarSrc,
+      sourceRect: isUsableFriendAnimationRect(sourceRect) ? sourceRect : null,
+    };
+  }
+
+  function findFriendAcceptAnimationTarget(friendUid: string) {
+    const list = els.groupsFriendsList as HTMLElement | null;
+    if (!list || !friendUid) return null;
+    const rows = Array.from(list.querySelectorAll(".friendSharedTasksDetails[data-friend-uid]"));
+    return (rows.find((node) => String(node.getAttribute("data-friend-uid") || "").trim() === friendUid) as HTMLElement | undefined) || null;
+  }
+
+  function triggerFriendAcceptLandingAccent(target: HTMLElement | null) {
+    if (!target) return;
+    target.classList.remove("isFriendAcceptLanding");
+    void target.offsetWidth;
+    target.classList.add("isFriendAcceptLanding");
+    window.setTimeout(() => {
+      target.classList.remove("isFriendAcceptLanding");
+    }, prefersReducedFriendMotion() ? 260 : 1100);
+  }
+
+  function createFriendAcceptFloatClone(source: FriendAcceptAnimationSource, sourceRect: DOMRect) {
+    const clone = document.createElement("div");
+    clone.className = "friendAcceptFloatClone";
+    clone.setAttribute("aria-hidden", "true");
+    const avatar = document.createElement("img");
+    avatar.className = "friendAcceptFloatAvatar";
+    avatar.alt = "";
+    if (source.avatarSrc) avatar.src = source.avatarSrc;
+    const label = document.createElement("strong");
+    label.className = "friendAcceptFloatName";
+    label.textContent = source.alias;
+    clone.append(avatar, label);
+    clone.style.left = `${sourceRect.left}px`;
+    clone.style.top = `${sourceRect.top}px`;
+    clone.style.width = `${Math.min(Math.max(sourceRect.width, 180), 320)}px`;
+    document.body.appendChild(clone);
+    return clone;
+  }
+
+  function animateFriendAcceptToList(source: FriendAcceptAnimationSource | null): Promise<HTMLElement | null> {
+    if (!source || typeof document === "undefined" || document.hidden) return Promise.resolve(null);
+    const target = findFriendAcceptAnimationTarget(source.friendUid);
+    if (!target) return Promise.resolve(null);
+    triggerFriendAcceptLandingAccent(target);
+    if (prefersReducedFriendMotion()) return Promise.resolve(target);
+    const sourceRect = source.sourceRect;
+    const targetIdentity = (target.querySelector(".friendIdentityRow") as HTMLElement | null) || target;
+    const targetRect = targetIdentity.getBoundingClientRect?.() || null;
+    if (!sourceRect || !isUsableFriendAnimationRect(sourceRect) || !isUsableFriendAnimationRect(targetRect) || !document.body) return Promise.resolve(target);
+    if (typeof window.requestAnimationFrame !== "function") return Promise.resolve(target);
+    const clone = createFriendAcceptFloatClone(source, sourceRect);
+    const deltaX = targetRect.left - sourceRect.left;
+    const deltaY = targetRect.top + Math.max(0, (targetRect.height - sourceRect.height) / 2) - sourceRect.top;
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clone.removeEventListener("transitionend", finish);
+        clone.remove();
+        resolve(target);
+      };
+      clone.addEventListener("transitionend", finish, { once: true });
+      window.setTimeout(finish, 760);
+      window.requestAnimationFrame(() => {
+        clone.classList.add("isFriendAcceptFloatActive");
+        clone.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.04)`;
+        clone.style.opacity = "0";
+      });
+    });
+  }
+
   async function runGroupsBusy<T>(message: string, timeoutMessage: string, work: () => Promise<T>): Promise<GroupsBusyResult<T>> {
     beginGroupsLoading();
     renderGroupsPage();
@@ -1154,17 +1334,19 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           peerEmailText && peerEmailText.toLowerCase() !== peerAlias.toLowerCase()
             ? `<div class="friendRequestEmail">${ctx.escapeHtmlUI(peerEmailText)}</div>`
             : "";
+        const incomingActionHtml = opts.incoming ? actionBtns : "";
         const outgoingActionHtml = !opts.incoming ? actionBtns : "";
         const identityHtml = `<div class="friendRequestIdentityRow">
           <img src="${ctx.escapeHtmlUI(identityAvatarSrc)}" alt="" aria-hidden="true" class="friendRequestAvatar" />
           <div class="friendRequestIdentityText">
             <div class="friendRequestAlias">${ctx.escapeHtmlUI(peerAlias)}</div>
             ${requestEmailHtml}
+            ${incomingActionHtml}
             ${outgoingActionHtml}
           </div>
         </div>`;
         if (opts.incoming) {
-          return `<div class="settingsDetailNote groupsIncomingRequestRow">${identityHtml}${actionBtns}</div>`;
+          return `<div class="settingsDetailNote groupsIncomingRequestRow">${identityHtml}</div>`;
         }
         return `<div class="settingsDetailNote"><div><b class="friendRequestStatusTitle">${ctx.escapeHtmlUI(statusLabel)}</b></div>${identityHtml}</div>`;
       })
@@ -1211,7 +1393,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
 
     els.groupsFriendsList.innerHTML = friendRows
-      .map((row, index) => {
+      .map((row) => {
         const summaryHtml = row.summaries
           .map((entry) => {
             const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
@@ -1220,7 +1402,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
               String(entry.timerState || "stopped").toLowerCase() === "running"
                 ? "friendSharedTaskState isRunning"
                 : "friendSharedTaskState isStopped";
-            return `<div class="friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
+            return `<div class="dashboardCard friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
               <div class="friendSharedTaskCardLayout">
                 <div class="friendSharedTaskInfo">
                   ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
@@ -1233,10 +1415,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           .join("");
         const taskCount = row.summaries.length;
         const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
+        const sharedCountMetaHtml =
+          taskCount > 0 ? `<span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>` : "";
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow">
-              <div class="friendIdentityRank">${index + 1}</div>
               <button class="friendIdentityBtn friendAvatarButton" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}" aria-label="Open ${ctx.escapeHtmlUI(row.alias)} profile">
                 <span class="friendAvatar friendIdentityAvatarWrap" aria-hidden="true">
                   <img class="friendAvatarImg friendIdentityAvatar" src="${ctx.escapeHtmlUI(row.avatarSrc)}" alt="" />
@@ -1246,7 +1429,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 <button class="friendIdentityBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
                   <strong class="friendName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
                 </button>
-                <span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>
+                ${sharedCountMetaHtml}
               </div>
             </summary>
             <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
@@ -1313,7 +1496,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .sort((a, b) => a.taskName.localeCompare(b.taskName, undefined, { sensitivity: "base" }))
       .map((entry) => {
         const friendLabel = entry.friendLabels.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })).join(", ");
-        return `<div class="friendSharedTaskCard isJumpCard" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
+        return `<div class="dashboardCard friendSharedTaskCard isJumpCard" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
           <div class="friendSharedTaskInfo">
             ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
             <div class="friendSharedTaskMeta">Shared with: ${ctx.escapeHtmlUI(friendLabel)}</div>
@@ -1441,7 +1624,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     }, 700);
   }
 
-  async function handleFriendRequestAction(requestId: string, action: "approve" | "decline" | "cancel") {
+  async function handleFriendRequestAction(
+    requestId: string,
+    action: "approve" | "decline" | "cancel",
+    acceptAnimationSource?: FriendAcceptAnimationSource | null
+  ) {
     const uid = ctx.getCurrentUid();
     if (!uid || !requestId) return;
     const pendingStatus =
@@ -1472,6 +1659,12 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const completeStatus = getFriendRequestActionCompleteStatus(action);
     ctx.showActionConfirmation(completeStatus);
     renderGroupsPage();
+    if (action === "approve" && acceptAnimationSource) {
+      await refreshGroupsData({ preserveStatus: true });
+      const acceptedFriendRow = await animateFriendAcceptToList(acceptAnimationSource);
+      if (acceptedFriendRow) openFriendProfileModal(acceptAnimationSource.friendUid, { zoomSource: acceptedFriendRow });
+      return;
+    }
     void refreshGroupsData({ preserveStatus: true });
   }
 
@@ -1611,7 +1804,8 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (!requestId) return;
       if (action !== "approve" && action !== "decline" && action !== "cancel") return;
       if (ctx.getGroupsLoading()) return;
-      void handleFriendRequestAction(requestId, action);
+      const acceptAnimationSource = action === "approve" ? captureFriendAcceptAnimationSource(btn, requestId) : null;
+      void handleFriendRequestAction(requestId, action, acceptAnimationSource);
     });
     ctx.on(els.groupsOutgoingRequestsList, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
@@ -1628,7 +1822,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (!friendUid) return;
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      openFriendProfileModal(friendUid);
+      openFriendProfileModal(friendUid, { zoomSource: getFriendProfileZoomSourceFromTarget(e.target) });
     });
     ctx.on(els.groupsFriendsList, "keydown", (e: any) => {
       if (e?.key !== "Enter" && e?.key !== " ") return;
@@ -1636,7 +1830,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (!friendUid) return;
       e?.preventDefault?.();
       e?.stopPropagation?.();
-      openFriendProfileModal(friendUid);
+      openFriendProfileModal(friendUid, { zoomSource: getFriendProfileZoomSourceFromTarget(e.target) });
     });
     ctx.on(els.groupsSharedByYouList, "click", (e: any) => {
       const unshareBtn = e.target?.closest?.('[data-friend-action="open-unshare-task"]') as HTMLElement | null;

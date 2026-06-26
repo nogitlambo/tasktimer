@@ -59,6 +59,17 @@ describe("firestore friendship profile rules", () => {
   });
 });
 
+describe("firestore shared task summary rules", () => {
+  it("allows the task color field written by task sharing", () => {
+    const block = functionBlock(readRules(), "isSharedTaskSummaryV1");
+
+    expect(block).toContain('"taskColor"');
+    expect(block).toContain(
+      '(!("taskColor" in request.resource.data) || request.resource.data.taskColor == null || request.resource.data.taskColor is string)'
+    );
+  });
+});
+
 describe("firestore friend request rules", () => {
   it("allows notification delivery mode to survive receiver decision updates when present or absent", () => {
     const block = functionBlock(readRules(), "isFriendRequestDocShape");

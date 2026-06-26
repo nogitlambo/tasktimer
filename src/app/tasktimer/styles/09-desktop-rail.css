@@ -1711,25 +1711,25 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
     width: 52px !important;
     height: 52px !important;
     border: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 999px !important;
     box-shadow: none !important;
     overflow: hidden !important;
     background: transparent !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
     clip-path: none !important;
   }
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardAvatarImage.dashboardRailProfileAvatar,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardAvatarImage.dashboardRailProfileAvatar{
-    object-fit: contain !important;
+    object-fit: cover !important;
     object-position: center !important;
     background: transparent !important;
-    border-radius: 0 !important;
+    border-radius: 999px !important;
     clip-path: none !important;
     width: 100% !important;
     height: 100% !important;
     display: block !important;
-    padding: 4px !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
 
@@ -1737,7 +1737,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardProfileCard .dashboardAvatar,
   body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardProfileCard .dashboardRailProfileAvatarImage,
   body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardProfileCard .dashboardRailProfileAvatarImage{
-    border-radius: 0 !important;
+    border-radius: 999px !important;
     clip-path: none !important;
   }
 

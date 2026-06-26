@@ -886,6 +886,7 @@ service cloud.firestore {
         "friendUid",
         "taskId",
         "taskName",
+        "taskColor",
         "timerState",
         "focusTrend7dMs",
         "checkpointScaleMs",
@@ -925,6 +926,7 @@ service cloud.firestore {
       && request.resource.data.friendUid is string
       && request.resource.data.taskId is string
       && request.resource.data.taskName is string
+      && (!("taskColor" in request.resource.data) || request.resource.data.taskColor == null || request.resource.data.taskColor is string)
       && request.resource.data.timerState in ["running", "stopped"]
       && request.resource.data.focusTrend7dMs is list
       && request.resource.data.focusTrend7dMs.size() == 7

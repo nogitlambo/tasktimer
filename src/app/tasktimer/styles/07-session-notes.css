@@ -42,7 +42,13 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDescription,
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesEmpty,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesEmpty{
+  font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #fff;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteMeta{
   font-family: "Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
   font-size: 13px;

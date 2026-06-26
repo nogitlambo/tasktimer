@@ -1,4 +1,5 @@
 import { createClickAudioPlayer, type ClickAudioFactory } from "./click-audio-player";
+import { DELETE_ALERT_AUDIO_SRC } from "./delete-alert-audio";
 import { getPrimaryClickTarget, getTaskLaunchClickTarget, getTaskStopClickTarget } from "./primary-click-audio";
 
 export const SECONDARY_CLICK_AUDIO_SRC = "/click-secondary.mp3";
@@ -9,6 +10,7 @@ export const DROPDOWN_CLICK_AUDIO_SRC = "/click-dropdown.mp3";
 export const TASK_FLIP_CLICK_AUDIO_SRC = "/click_flip.mp3";
 export const MODAL_OPEN_AUDIO_SRC = "/modal_open.mp3";
 export const NOTE_TOOLBAR_CLICK_AUDIO_SRC = "/click_notetoolbar.mp3";
+export const DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC = DELETE_ALERT_AUDIO_SRC;
 
 type ClosestCapable = {
   closest?: (selector: string) => Element | null;
@@ -35,6 +37,7 @@ const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-act
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip],[data-heatmap-flip]";
 const MODAL_OPEN_CLICK_SELECTOR = "[data-friend-profile-open],[data-leaderboard-profile-open]";
 const NOTE_TOOLBAR_CLICK_SELECTOR = ".richNoteToolbar [data-rich-note-command]";
+const DESTRUCTIVE_ALERT_CLICK_SELECTOR = "#friendProfileDeleteBtn";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";
 const SECONDARY_CLICK_EXCLUDED_SELECTOR = '#focusModeBackBtn,[data-history-summary-action="delete-session"],#historyManagerBulkDeleteBtn,.hmDelBtn';
 const SECONDARY_CLICK_EXCLUDED_LABELS = new Set([
@@ -96,6 +99,7 @@ export function getSecondaryClickTarget(target: EventTarget | null): HTMLElement
   if (getClosestElement(target, TASK_FLIP_CLICK_SELECTOR)) return null;
   if (getModalOpenClickTarget(target)) return null;
   if (getNoteToolbarClickTarget(target)) return null;
+  if (getDestructiveAlertClickTarget(target)) return null;
   if (getTaskStopClickTarget(target) || getTaskLaunchClickTarget(target) || getPrimaryClickTarget(target)) return null;
 
   const directTarget = getClosestElement(target, SECONDARY_CLICK_DIRECT_SELECTOR);
@@ -143,6 +147,12 @@ export function getNoteToolbarClickTarget(target: EventTarget | null): HTMLEleme
   const noteToolbarTarget = getClosestElement(target, NOTE_TOOLBAR_CLICK_SELECTOR);
   if (!noteToolbarTarget) return null;
   return isDisabledControl(noteToolbarTarget) ? null : noteToolbarTarget;
+}
+
+export function getDestructiveAlertClickTarget(target: EventTarget | null): HTMLElement | null {
+  const destructiveTarget = getClosestElement(target, DESTRUCTIVE_ALERT_CLICK_SELECTOR);
+  if (!destructiveTarget) return null;
+  return isDisabledControl(destructiveTarget) ? null : destructiveTarget;
 }
 
 export function getCancelClickTarget(target: EventTarget | null): HTMLElement | null {
@@ -211,6 +221,12 @@ export function playNoteToolbarClickAudio(audioFactory?: ClickAudioFactory) {
   createClickAudioPlayer(NOTE_TOOLBAR_CLICK_AUDIO_SRC, audioFactory).play();
 }
 
+export function playDestructiveAlertClickAudio(audioFactory?: ClickAudioFactory) {
+  if (typeof window === "undefined" && !audioFactory) return;
+
+  createClickAudioPlayer(DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC, audioFactory).play();
+}
+
 export function registerSecondaryClickAudio(options: {
   on: (
     el: EventTarget | null | undefined,
@@ -227,6 +243,7 @@ export function registerSecondaryClickAudio(options: {
   playTaskFlipAudio?: () => void;
   playModalOpenAudio?: () => void;
   playNoteToolbarAudio?: () => void;
+  playDestructiveAlertAudio?: () => void;
   isEnabled?: () => boolean;
 }) {
   const player = options.playAudio ? null : createClickAudioPlayer(SECONDARY_CLICK_AUDIO_SRC);
@@ -237,6 +254,7 @@ export function registerSecondaryClickAudio(options: {
   const taskFlipPlayer = options.playTaskFlipAudio ? null : createClickAudioPlayer(TASK_FLIP_CLICK_AUDIO_SRC);
   const modalOpenPlayer = options.playModalOpenAudio ? null : createClickAudioPlayer(MODAL_OPEN_AUDIO_SRC);
   const noteToolbarPlayer = options.playNoteToolbarAudio ? null : createClickAudioPlayer(NOTE_TOOLBAR_CLICK_AUDIO_SRC);
+  const destructiveAlertPlayer = options.playDestructiveAlertAudio ? null : createClickAudioPlayer(DESTRUCTIVE_ALERT_CLICK_AUDIO_SRC);
   player?.warm();
   cancelPlayer?.warm();
   closePlayer?.warm();
@@ -245,6 +263,7 @@ export function registerSecondaryClickAudio(options: {
   taskFlipPlayer?.warm();
   modalOpenPlayer?.warm();
   noteToolbarPlayer?.warm();
+  destructiveAlertPlayer?.warm();
 
   options.on(
     options.documentRef,
@@ -259,9 +278,29 @@ export function registerSecondaryClickAudio(options: {
       const taskFlipTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget ? null : getTaskFlipClickTarget(event.target);
       const modalOpenTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget ? null : getModalOpenClickTarget(event.target);
       const noteToolbarTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget ? null : getNoteToolbarClickTarget(event.target);
-      const footerNavTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget ? null : getFooterNavClickTarget(event.target);
-      const secondaryTarget = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || footerNavTarget ? null : getSecondaryClickTarget(event.target);
-      const target = closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || footerNavTarget || secondaryTarget;
+      const destructiveAlertTarget =
+        closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget
+          ? null
+          : getDestructiveAlertClickTarget(event.target);
+      const footerNavTarget =
+        closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || destructiveAlertTarget
+          ? null
+          : getFooterNavClickTarget(event.target);
+      const secondaryTarget =
+        closeTarget || cancelTarget || checkboxTarget || dropdownTarget || taskFlipTarget || modalOpenTarget || noteToolbarTarget || destructiveAlertTarget || footerNavTarget
+          ? null
+          : getSecondaryClickTarget(event.target);
+      const target =
+        closeTarget ||
+        cancelTarget ||
+        checkboxTarget ||
+        dropdownTarget ||
+        taskFlipTarget ||
+        modalOpenTarget ||
+        noteToolbarTarget ||
+        destructiveAlertTarget ||
+        footerNavTarget ||
+        secondaryTarget;
       if (!target) return;
       if ("isTrusted" in event && event.isTrusted === false) return;
 
@@ -279,7 +318,9 @@ export function registerSecondaryClickAudio(options: {
                 ? options.playModalOpenAudio || (() => modalOpenPlayer?.play())
                 : noteToolbarTarget
                   ? options.playNoteToolbarAudio || (() => noteToolbarPlayer?.play())
-                  : options.playAudio || (() => player?.play());
+                  : destructiveAlertTarget
+                    ? options.playDestructiveAlertAudio || (() => destructiveAlertPlayer?.play())
+                    : options.playAudio || (() => player?.play());
 
       playAudio();
     },
