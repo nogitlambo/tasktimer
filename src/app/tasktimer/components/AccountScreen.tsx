@@ -236,9 +236,6 @@ export default function AccountScreen() {
                         <small>{signOutActionCopy.description}</small>
                       </span>
                     </button>
-                    <button className="btn btn-ghost accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
-                      Back
-                    </button>
                   </div>
 
                   <div className="accountProfileStatus" aria-live="polite">
@@ -249,6 +246,10 @@ export default function AccountScreen() {
                     ) : null}
                     {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
                   </div>
+
+                  <button className="btn btn-ghost accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+                    Back
+                  </button>
                 </section>
                 ) : (
                   <section className="accountProfilePage accountProfileLoadingPage" aria-label="Loading account profile" aria-busy="true">

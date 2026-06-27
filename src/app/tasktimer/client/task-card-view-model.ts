@@ -75,6 +75,12 @@ type DispatchTaskCardActionOptions = {
   handlers: Partial<TaskCardActionHandlers>;
 };
 
+function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => string) {
+  const trimmedLabel = label.trim();
+  const tileLetter = trimmedLabel.charAt(0).toUpperCase();
+  return `<span class="taskMenuTile" aria-hidden="true">${escapeHtml(tileLetter)}</span>`;
+}
+
 export function buildTaskProgressModel({
   milestones,
   elapsedSec,
@@ -354,12 +360,12 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
               </div>
               <div class="taskBackActions">
-                <button class="taskMenuItem" data-action="edit" title="Edit" type="button">Edit</button>
-                <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${manualEntryLabel}</button>
-                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${shareLabel}</button>
-                <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>Archive</button>
-                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">Export</button>
-                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">Delete</button>
+                <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>${renderTaskBackActionTile("Archive", escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">${renderTaskBackActionTile("Export", escapeHtml)}</button>
+                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">${renderTaskBackActionTile("Delete", escapeHtml)}</button>
               </div>
             </div>
             </div>

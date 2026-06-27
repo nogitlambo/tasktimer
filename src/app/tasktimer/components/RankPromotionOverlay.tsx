@@ -26,6 +26,7 @@ const RANK_PROMOTION_FRAGMENT_ROWS = 24;
 const RANK_PROMOTION_FRAGMENT_CANVAS_SIZE = 640;
 const RANK_PROMOTION_FRAGMENT_SOURCE_SIZE = 112;
 const RANK_PROMOTION_FRAGMENT_ANIMATION_MS = 3400;
+const RANK_PROMOTION_LABEL_FRAGMENT_COUNT = 16;
 
 type RankPromotionPhase = "dimming" | "intro" | "smashing" | "complete";
 
@@ -42,6 +43,15 @@ type RankPromotionShardParticle = {
   rotation: number;
   scale: number;
 };
+
+export function startRankPromotionIntroPresentation(
+  audioController: Pick<RankPromotionAudioController, "startSmashCues"> | null | undefined,
+  achievementSoundsEnabled: boolean,
+  onPresentationStart: () => void,
+) {
+  if (achievementSoundsEnabled) audioController?.startSmashCues();
+  onPresentationStart();
+}
 
 function easeOutZeroGravity(progress: number) {
   return 1 - Math.pow(1 - progress, 3);
@@ -293,7 +303,11 @@ export default function RankPromotionOverlay({
 
     const dimTimer = window.setTimeout(() => {
       setPhase("intro");
-      onPresentationStartRef.current();
+      startRankPromotionIntroPresentation(
+        audioControllerRef.current,
+        achievementSoundsEnabled,
+        onPresentationStartRef.current,
+      );
     }, RANK_PROMOTION_TIMING.dimDurationMs);
     const smashTimer = window.setTimeout(() => {
       setPhase("smashing");
@@ -310,14 +324,6 @@ export default function RankPromotionOverlay({
       window.clearTimeout(completeTimer);
     };
   }, [achievementSoundsEnabled]);
-
-  useEffect(() => {
-    if (phase !== "smashing") return;
-
-    if (!achievementSoundsEnabled) return;
-
-    audioControllerRef.current?.startSmashCues();
-  }, [achievementSoundsEnabled, phase]);
 
   useEffect(() => {
     if (!isComplete) return;
@@ -411,7 +417,14 @@ export default function RankPromotionOverlay({
                   <RankPromotionShatterCanvas rankId={previousRankId} isActive={phase === "smashing"} />
                 </span>
               </span>
-              <p className="modalSubtext confirmText rankPromotionLabel">{previousRankLabel}</p>
+              <span className="rankPromotionOldLabelPlate">
+                <p className="modalSubtext confirmText rankPromotionLabel rankPromotionOldLabelText">{previousRankLabel}</p>
+                <span className="rankPromotionOldLabelShatter" aria-hidden="true">
+                  {Array.from({ length: RANK_PROMOTION_LABEL_FRAGMENT_COUNT }, (_, index) => (
+                    <span className="rankPromotionOldLabelShard" key={index} />
+                  ))}
+                </span>
+              </span>
             </div>
             <div className="rankPromotionRank rankPromotionRankNew" aria-hidden={isDimming || phase === "intro" ? "true" : undefined}>
               <RankThumbnail

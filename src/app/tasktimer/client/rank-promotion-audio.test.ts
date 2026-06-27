@@ -76,7 +76,7 @@ describe("rank promotion audio controller", () => {
     );
   });
 
-  it("starts the intro cue immediately and retains it until completion", () => {
+  it("starts the intro cue immediately and starts drums 1.2 seconds after intro starts", () => {
     vi.useFakeTimers();
     stubAnimationFrame();
 
@@ -91,20 +91,11 @@ describe("rank promotion audio controller", () => {
     expect(created[0]?.play).toHaveBeenCalledTimes(1);
     expect(controller.getActiveAudioCount()).toBe(1);
 
-    created[0]?.dispatch("ended");
+    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsAfterIntroStartDelayMs - 1);
 
-    expect(controller.getActiveAudioCount()).toBe(0);
-    controller.dispose();
-  });
+    expect(created.map((audio) => audio.src)).toEqual([RANK_PROMOTION_AUDIO_SRC.intro]);
 
-  it("starts drums through the intro-ended path and does not duplicate through the fallback timer", () => {
-    vi.useFakeTimers();
-    stubAnimationFrame();
-
-    const { controller, created } = createHarness();
-
-    created[0]?.dispatch("ended");
-    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsAfterIntroDelayMs);
+    vi.advanceTimersByTime(1);
 
     expect(created.map((audio) => audio.src)).toEqual([
       RANK_PROMOTION_AUDIO_SRC.intro,
@@ -112,26 +103,41 @@ describe("rank promotion audio controller", () => {
     ]);
     expect(created[1]?.volume).toBe(0.1);
     expect(created[1]?.play).toHaveBeenCalledTimes(1);
-
-    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsDelayMs);
-
-    expect(created.filter((audio) => audio.src === RANK_PROMOTION_AUDIO_SRC.drums)).toHaveLength(1);
+    expect(controller.getActiveAudioCount()).toBe(2);
     controller.dispose();
   });
 
-  it("starts drums through the fallback timer when the intro does not end", () => {
+  it("does not start drums early when intro ends before the 1.2-second timer", () => {
     vi.useFakeTimers();
     stubAnimationFrame();
 
     const { controller, created } = createHarness();
 
-    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsDelayMs);
+    created[0]?.dispatch("ended");
+    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsAfterIntroStartDelayMs - 1);
+
+    expect(created.map((audio) => audio.src)).toEqual([RANK_PROMOTION_AUDIO_SRC.intro]);
+
+    vi.advanceTimersByTime(1);
 
     expect(created.map((audio) => audio.src)).toEqual([
       RANK_PROMOTION_AUDIO_SRC.intro,
       RANK_PROMOTION_AUDIO_SRC.drums,
     ]);
     controller.dispose();
+  });
+
+  it("does not start drums after disposal before the 1.2-second timer", () => {
+    vi.useFakeTimers();
+    stubAnimationFrame();
+
+    const { controller, created } = createHarness();
+
+    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsAfterIntroStartDelayMs - 1);
+    controller.dispose();
+    vi.advanceTimersByTime(1);
+
+    expect(created.map((audio) => audio.src)).toEqual([RANK_PROMOTION_AUDIO_SRC.intro]);
   });
 
   it("starts smash cues at their configured offsets", () => {
@@ -199,15 +205,15 @@ describe("rank promotion audio controller", () => {
     });
 
     controller.startSmashCues();
-    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.drumsDelayMs);
+    vi.advanceTimersByTime(RANK_PROMOTION_TIMING.labelSmashRevealDelayMs);
     await Promise.resolve();
 
     expect(created.map((audio) => audio.src)).toEqual([
       RANK_PROMOTION_AUDIO_SRC.intro,
       RANK_PROMOTION_AUDIO_SRC.bassDrive,
+      RANK_PROMOTION_AUDIO_SRC.drums,
       RANK_PROMOTION_AUDIO_SRC.boomTwo,
       RANK_PROMOTION_AUDIO_SRC.labelImpact,
-      RANK_PROMOTION_AUDIO_SRC.drums,
     ]);
     controller.dispose();
   });

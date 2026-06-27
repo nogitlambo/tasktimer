@@ -259,6 +259,18 @@ export function formatWeeklyLeaderboardUtcPeriodTitle(nowMs = Date.now()): strin
   return `Week ${formatter.format(new Date(period.startMs))} to ${formatter.format(new Date(period.endMs))} UTC`;
 }
 
+export function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string {
+  const period = getWeeklyLeaderboardUtcPeriod(nowMs);
+  const remainingMs = Math.max(0, period.endMs - nowMs);
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const days = Math.floor(totalSeconds / (24 * 60 * 60));
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+}
+
 function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {
   return normalizeRewardProgress(rewards).awardLedger.reduce((sum, entry) => {
     const ts = normalizeInt(entry?.ts);

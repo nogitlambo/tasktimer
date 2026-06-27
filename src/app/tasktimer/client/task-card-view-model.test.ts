@@ -64,15 +64,21 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
-  it("renders Edit as the first back-face task menu action", () => {
+  it("renders back-face task menu actions as icon-only placeholder tiles", () => {
     const rendered = renderCard();
 
-    const editIndex = rendered.html.indexOf('<button class="taskMenuItem" data-action="edit" title="Edit" type="button">Edit</button>');
+    const editIndex = rendered.html.indexOf(
+      '<button class="taskMenuItem" data-action="edit" title="Edit" type="button"><span class="taskMenuTile" aria-hidden="true">E</span></button>'
+    );
     const manualEntryIndex = rendered.html.indexOf('data-action="manualEntry"');
 
     expect(editIndex).toBeGreaterThan(-1);
     expect(manualEntryIndex).toBeGreaterThan(-1);
     expect(editIndex).toBeLessThan(manualEntryIndex);
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">A</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">D</span>');
+    expect(rendered.html).not.toContain("taskMenuLabel");
     expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
   });
 
@@ -140,10 +146,11 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain('data-action="manualEntry"');
     expect(rendered.html).toContain('data-plan-locked="advancedHistory"');
-    expect(rendered.html).toContain("Add Manual Entry (Pro)");
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">A</span>');
     expect(rendered.html).toContain('data-action="shareTask"');
     expect(rendered.html).toContain('data-plan-locked="socialFeatures"');
-    expect(rendered.html).toContain("Share (Pro)");
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
+    expect(rendered.html).not.toContain("Share (Pro)</span>");
   });
 
   it("disables sharing when there are no friends", () => {
@@ -152,7 +159,16 @@ describe("task card view model", () => {
     });
 
     expect(rendered.html).toContain('data-action="shareTask" title="Add friends to share tasks" type="button" disabled');
-    expect(rendered.html).toContain(">Share</button>");
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
+  });
+
+  it("renders Unshare with a dynamic placeholder letter for shared-owner tasks", () => {
+    const rendered = renderCard({
+      isSharedByOwner: true,
+    });
+
+    expect(rendered.html).toContain('data-action="unshareTask"');
+    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">U</span>');
   });
 
   it("renders a history-tab border footprint for shell border alignment", () => {
@@ -189,6 +205,24 @@ describe("task card view model", () => {
     expect(css).toContain("width: min(100%, 224px) !important;");
     expect(css).toContain("justify-self: center !important;");
     expect(css).toContain("grid-column: 1 / 2 !important;");
+  });
+
+  it("lays out back-face task actions as a fixed grid of square tiles", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).not.toContain("position:absolute;\n  inset:0;\n  height:100%;\n  min-height:0;");
+    expect(css).toContain("grid-template-rows:auto auto;");
+    expect(css).toContain("grid-template-columns:repeat(3, minmax(0, 1fr));");
+    expect(css).toContain("gap:4px;");
+    expect(css).not.toContain("width:75%;");
+    expect(css).not.toContain("justify-self:center;");
+    expect(css).toContain("padding:0 16px 16px;");
+    expect(css).toContain("box-sizing:border-box;");
+    expect(css).toContain("aspect-ratio:4 / 3;");
+    expect(css).toContain("width:100%;\n  height:100%;");
+    expect(css).toContain("font-size:clamp(20px, 9vw, 38px);");
+    expect(css).toContain("place-items:center;");
+    expect(css).not.toContain(".taskBackActions .taskMenuLabel");
   });
 
   it("keeps mobile task cards within the active Tasks viewport", () => {

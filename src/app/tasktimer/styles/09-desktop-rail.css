@@ -429,6 +429,11 @@
     scroll-padding-bottom: var(--mobile-footer-reserved-space);
   }
 
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: 0;
+  }
+
 #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
     margin-bottom: var(--mobile-footer-reserved-space);
     padding-bottom: var(--mobile-footer-reserved-space);
@@ -583,6 +588,11 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppMain,
     padding-left: 0 !important;
     --app-pages-bottom-padding: 102px;
     padding-bottom: 102px;
+  }
+
+body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
+    --app-pages-bottom-padding: 0;
+    padding-bottom: 0 !important;
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages{

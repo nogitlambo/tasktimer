@@ -5762,8 +5762,9 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   line-height: 1.25;
 }
 
-.accountProfileActionDanger strong{
+#app[aria-label="TaskLaunch Account"] .accountProfileActionDanger strong{
   color: #ff8c8c;
+  font-size: 13px;
 }
 
 .accountProfileActionDanger img{
@@ -5977,6 +5978,29 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     margin-top: 0;
   }
 
+#app[aria-label="TaskLaunch Account"] .accountProfilePage{
+    padding-bottom: calc(var(--safe-bottom) + 116px);
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileActionDanger{
+    grid-template-columns: 22px auto;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileActionDanger span{
+    width: auto;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction{
+    position: sticky;
+    bottom: calc(var(--safe-bottom) + 16px);
+    z-index: 12;
+    justify-self: center;
+    align-self: end;
+  }
+
 #app[aria-label="TaskLaunch Account"] .accountDetailPanel{
     flex: 1 1 0;
     height: 100%;
@@ -6006,7 +6030,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app[aria-label="TaskLaunch Account"] .accountProfilePage{
     width: 100%;
     min-height: 100%;
-    padding: calc(var(--safe-top) + 24px) 14px 30px;
+    padding: calc(var(--safe-top) + 24px) 14px calc(var(--safe-bottom) + 116px);
     border: 0;
     box-shadow: none;
   }

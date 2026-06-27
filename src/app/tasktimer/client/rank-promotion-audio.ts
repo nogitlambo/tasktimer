@@ -8,8 +8,7 @@ export const RANK_PROMOTION_TIMING = {
   bloomHoldMs: 100,
   settleMs: 3300,
   completeSpinDurationMs: 8000,
-  drumsAfterIntroDelayMs: 1500,
-  drumsDelayMs: 2925,
+  drumsAfterIntroStartDelayMs: 1200,
   drumsFadeInMs: 2000,
 } as const;
 
@@ -81,7 +80,6 @@ export function createRankPromotionAudioController(
 
   const activeAudios = new Set<RankPromotionAudioLike>();
   const cleanupByAudio = new WeakMap<RankPromotionAudioLike, () => void>();
-  const listenerCleanups = new Set<() => void>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const animationFrames = new Set<number>();
   let disposed = false;
@@ -195,17 +193,8 @@ export function createRankPromotionAudioController(
     );
   };
 
-  const scheduleDrumsAfterIntro = () => {
-    if (disposed || drumsStarted) return;
-    setTimer(startDrums, RANK_PROMOTION_TIMING.drumsAfterIntroDelayMs);
-  };
-
-  const introAudio = playAudio(RANK_PROMOTION_AUDIO_SRC.intro);
-  if (introAudio?.addEventListener) {
-    introAudio.addEventListener("ended", scheduleDrumsAfterIntro, { once: true });
-    listenerCleanups.add(() => introAudio.removeEventListener?.("ended", scheduleDrumsAfterIntro));
-  }
-  setTimer(startDrums, RANK_PROMOTION_TIMING.drumsDelayMs);
+  playAudio(RANK_PROMOTION_AUDIO_SRC.intro);
+  setTimer(startDrums, RANK_PROMOTION_TIMING.drumsAfterIntroStartDelayMs);
 
   return {
     startSmashCues() {
@@ -224,8 +213,6 @@ export function createRankPromotionAudioController(
     },
     dispose() {
       disposed = true;
-      for (const cleanup of Array.from(listenerCleanups)) cleanup();
-      listenerCleanups.clear();
       for (const timer of Array.from(timers)) clearTimer(timer);
       for (const frame of Array.from(animationFrames)) cancelFrame(frame);
       for (const audio of Array.from(activeAudios)) {

@@ -1868,6 +1868,7 @@ body[data-theme="lime"] .friendIdentityMeta{
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow:not(.leaderboardWeeklyTableHead){
   cursor:pointer;
+  font-size:10px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow:not(.leaderboardWeeklyTableHead):hover,
@@ -1926,7 +1927,7 @@ body[data-theme="lime"] .friendIdentityMeta{
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyRankCell{
   font-family: var(--font-orbitron), "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   color:#67ff9f;
-  font-size:11px;
+  font-size:10px;
   font-weight:800;
 }
 
@@ -1955,7 +1956,7 @@ body[data-theme="lime"] .friendIdentityMeta{
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPlayerText strong{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:11px;
+  font-size:10px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTimeCell{
@@ -3304,7 +3305,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     display:inline-block;
     min-width:max-content;
     text-align:left;
-    font-size:12px;
+    font-size:10px;
     font-weight:700;
     letter-spacing:.04em;
   }
@@ -3443,68 +3444,70 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   aspect-ratio:1448 / 798;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay,
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleOverlay,
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
   position:absolute;
   z-index:1;
   left:50%;
   top:3.8%;
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  width:clamp(150px, 28%, 310px);
-  min-height:42px;
+  width:clamp(250px, 40%, 430px);
+  min-height:56px;
   transform:translateX(-50%);
   pointer-events:none;
   text-align:center;
+  padding:8px 18px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:3px;
+  background:rgba(5,8,15,.88);
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  box-sizing:border-box;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+  flex-direction:column;
+  gap:4px;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
   color:#c9ff24;
   font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(7px, .74vw, 11px);
+  font-size:clamp(8px, .72vw, 11px);
   font-weight:900;
   letter-spacing:.08em;
-  line-height:1.1;
+  line-height:1;
   text-transform:uppercase;
-  text-shadow:0 0 12px rgba(128,255,137,.24);
+  text-shadow:0 0 10px rgba(128,255,137,.22);
   white-space:nowrap;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
-  margin-top:5px;
   color:#fff;
   font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(10px, .86vw, 13px);
+  font-size:clamp(20px, 1.62vw, 26px);
   font-weight:800;
   letter-spacing:0;
   line-height:1.15;
   text-shadow:0 0 10px rgba(128,255,137,.18);
+  white-space:nowrap;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleOverlay{
-  position:absolute;
-  z-index:1;
-  left:50%;
-  top:3.8%;
-  display:flex;
   flex-direction:column;
-  align-items:center;
-  justify-content:center;
   gap:3px;
-  width:clamp(150px, 28%, 310px);
-  min-height:58px;
-  transform:translateX(-50%);
-  pointer-events:none;
-  text-align:center;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitle{
   color:#c9ff24;
   font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(9px, .92vw, 14px);
+  font-size:clamp(16px, 1.55vw, 24px);
   font-weight:900;
-  letter-spacing:.08em;
+  letter-spacing:.04em;
   line-height:1.1;
   text-transform:uppercase;
   text-shadow:0 0 12px rgba(128,255,137,.24);
@@ -3538,29 +3541,25 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
-  position:absolute;
-  z-index:1;
-  left:50%;
-  top:3.8%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:clamp(150px, 28%, 310px);
-  min-height:42px;
-  transform:translateX(-50%);
-  pointer-events:none;
-  text-align:center;
+  width:clamp(300px, 52%, 560px);
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 0 18px rgba(0,255,255,.10);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitle{
   color:cyan;
   font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(9px, .92vw, 14px);
+  font-size:clamp(16px, 1.55vw, 24px);
   font-weight:900;
-  letter-spacing:.08em;
+  letter-spacing:.04em;
   line-height:1.1;
   text-transform:uppercase;
   text-shadow:0 0 12px rgba(0,255,255,.28);
+  display:block;
+  width:100%;
+  text-align:center;
   white-space:nowrap;
 }
 
@@ -3832,6 +3831,41 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 @media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
+    flex:1 1 0;
+    min-height:0;
+    max-height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    padding-bottom:0;
+  }
+
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardWeeklyBoard,
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardGlobalBoard{
+    flex:1 1 auto;
+    height:auto;
+    max-height:none;
+    min-height:0;
+  }
+
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard{
+    min-height:100%;
+  }
+
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap,
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyTableWrap,
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyTableWrap{
+    flex:1 0 auto;
+    overflow-x:auto;
+    overflow-y:visible;
+  }
+
+  body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap .leaderboardWeeklyTable{
+    min-height:100%;
+    align-content:start;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard{
     display:flex;
     flex-direction:column;
@@ -3863,10 +3897,31 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
     aspect-ratio:1448 / 798;
   }
 
-  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay,
+  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleOverlay,
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
     top:6.6%;
-    width:clamp(132px, 36%, 210px);
-    min-height:34px;
+    width:clamp(196px, 58%, 290px);
+    min-height:38px;
+    padding:6px 10px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
+    font-size:clamp(15px, 4.7vw, 20px);
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
+    font-size:clamp(7px, 2.2vw, 9px);
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitle,
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitle{
+    font-size:clamp(14px, 4vw, 18px);
+    letter-spacing:.03em;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
+    width:min(calc(100% - 48px), 330px);
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyTableHead,
