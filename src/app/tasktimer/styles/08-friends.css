@@ -544,7 +544,7 @@
 #friendProfileMemberSince{
   font-size: 11px;
   line-height: 1.2;
-  color: rgba(188, 214, 230, 0.84);
+  color: #7ef3ff;
 }
 
 #friendProfileEmail{
@@ -555,7 +555,7 @@
   white-space: nowrap;
   font-size: 11px;
   line-height: 1.2;
-  color: rgba(188, 214, 230, 0.84);
+  color: #7ef3ff;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList{
@@ -987,6 +987,12 @@
   border: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsTitle{
+  color: #fff;
+  padding: 8px 12px;
+  line-height: 1.25;
 }
 
 /* Friends list rows: preserve details disclosure while matching the app row treatment. */
@@ -2300,6 +2306,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   justify-items: center;
   gap: 5px;
   flex: 0 0 auto;
+  margin-top: -6px;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionRankSummary strong{
@@ -2328,8 +2335,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 #leaderboardPositionOverlay .leaderboardRankInsignia{
-  width: 72px;
-  height: 72px;
+  width: 54px;
+  height: 54px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -2454,7 +2461,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   font-size: 11px;
   line-height: 1.25;
   font-weight: 400;
-  color: rgba(170, 176, 184, 0.82);
+  color: #7ef3ff;
 }
 
 #leaderboardPositionOverlay .leaderboardPositionStats,
@@ -2672,7 +2679,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   flex: 0 0 auto;
   align-self: start;
   align-content: start;
-  margin-top: -2px;
+  margin-top: -8px;
   padding-top: 0;
 }
 
@@ -2687,8 +2694,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 }
 
 #friendProfileModal .friendUserSummaryRankInsignia{
-  width: 72px;
-  height: 72px;
+  width: 54px;
+  height: 54px;
   display: grid;
   justify-items: center;
   align-items: start;
@@ -2867,7 +2874,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   font-size: 11px;
   line-height: 1.25;
   font-weight: 400;
-  color: rgba(170, 176, 184, 0.82);
+  color: #7ef3ff;
 }
 
 #friendProfileModal .friendUserSummaryMemberSince{
@@ -2880,7 +2887,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   font-size: 11px;
   line-height: 1.25;
   font-weight: 400;
-  color: rgba(170, 176, 184, 0.82);
+  color: #7ef3ff;
 }
 
 #friendProfileModal .friendUserSummaryRemoveBtn{

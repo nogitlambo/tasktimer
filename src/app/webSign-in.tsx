@@ -113,12 +113,6 @@ export default function WebSignIn(props: WebSignInProps) {
                 id="landingAuthPanel"
                 className="webSignInAuthPanel relative w-full px-6 pb-4 pt-2 text-left sm:px-8"
               >
-                <div className="relative">
-                  <p className="webSignInKicker text-center text-[12px] uppercase tracking-[0.22em]">
-                    Flexible task management
-                  </p>
-                </div>
-
                 {!authUserEmail ? (
                   <div className="relative flex flex-col gap-3 pt-8">
                     <div

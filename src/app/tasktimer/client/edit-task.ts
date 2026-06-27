@@ -38,8 +38,8 @@ import {
   clampCheckpointValueToTimeGoal,
   formatCheckpointSliderLabel,
   formatCheckpointSliderProgress,
-  getCheckpointSliderMaxMinutes,
-  sliderMinutesToCheckpointValue,
+  getCheckpointSliderMaxSeconds,
+  sliderSecondsToCheckpointValue,
   type CheckpointSliderUnit,
 } from "./checkpoint-slider";
 import type { TaskTimerEditTaskContext } from "./context";
@@ -1031,7 +1031,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const ms = (t.milestones || []).slice();
     const unit = (t.milestoneTimeUnit === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
     const timeGoalMinutes = getEditTaskTimeGoalMinutes();
-    const sliderMax = getCheckpointSliderMaxMinutes(timeGoalMinutes);
+    const sliderMax = getCheckpointSliderMaxSeconds(timeGoalMinutes);
 
     ms.forEach((m, idx) => {
       const clamped = clampCheckpointValueToTimeGoal(Number(m.hours) || 0, unit, timeGoalMinutes);
@@ -1047,8 +1047,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         </button>
         <div class="msSliderCluster">
           <div class="msSliderReadout" aria-live="polite">
-            <span class="msSliderValue" data-field="value-label">${formatCheckpointSliderLabel(clamped.sliderMinutes)}</span>
-            <span class="msSliderMeta" data-field="value-progress">${formatCheckpointSliderProgress(clamped.sliderMinutes, timeGoalMinutes)}</span>
+            <span class="msSliderValue" data-field="value-label">${formatCheckpointSliderLabel(clamped.sliderSeconds)}</span>
+            <span class="msSliderMeta" data-field="value-progress">${formatCheckpointSliderProgress(clamped.sliderSeconds, timeGoalMinutes)}</span>
           </div>
           <div class="msSliderTrackRow">
             <span class="msSliderBound" aria-hidden="true">Start</span>
@@ -1059,7 +1059,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
               min="1"
               max="${sliderMax}"
               step="1"
-              value="${clamped.sliderMinutes}"
+              value="${clamped.sliderSeconds}"
               aria-label="Checkpoint time"
             />
             <span class="msSliderBound" aria-hidden="true">Goal</span>
@@ -1084,11 +1084,11 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const valueLabel = row.querySelector('[data-field="value-label"]') as HTMLElement | null;
       const valueProgress = row.querySelector('[data-field="value-progress"]') as HTMLElement | null;
       const syncCheckpointValue = () => {
-        const nextSliderMinutes = Number(sliderInput?.value || clamped.sliderMinutes) || clamped.sliderMinutes;
-        const next = clampCheckpointValueToTimeGoal(sliderMinutesToCheckpointValue(nextSliderMinutes, unit), unit, timeGoalMinutes);
-        if (sliderInput) sliderInput.value = String(next.sliderMinutes);
-        if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(next.sliderMinutes);
-        if (valueProgress) valueProgress.textContent = formatCheckpointSliderProgress(next.sliderMinutes, timeGoalMinutes);
+        const nextSliderSeconds = Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds;
+        const next = clampCheckpointValueToTimeGoal(sliderSecondsToCheckpointValue(nextSliderSeconds, unit), unit, timeGoalMinutes);
+        if (sliderInput) sliderInput.value = String(next.sliderSeconds);
+        if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(next.sliderSeconds);
+        if (valueProgress) valueProgress.textContent = formatCheckpointSliderProgress(next.sliderSeconds, timeGoalMinutes);
         m.hours = next.value;
         t.milestones = ms;
         clearEditValidationState();

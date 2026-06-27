@@ -121,6 +121,7 @@ const els = {
   groupsOutgoingRequestsDetails: documentRef.getElementById("groupsOutgoingRequestsDetails") as HTMLDetailsElement | null,
   groupsOutgoingRequestsTitle: documentRef.getElementById("groupsOutgoingRequestsTitle"),
   groupsOutgoingRequestsList: documentRef.getElementById("groupsOutgoingRequestsList"),
+  groupsFriendsTitle: documentRef.getElementById("groupsFriendsTitle"),
   groupsFriendsList: documentRef.getElementById("groupsFriendsList"),
   groupsSharedByYouList: documentRef.getElementById("groupsSharedByYouList"),
   groupsSharedByYouTitle: documentRef.getElementById("groupsSharedByYouTitle"),

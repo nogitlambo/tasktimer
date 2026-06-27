@@ -289,6 +289,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function renderGroupsLockedState() {
+    if (els.groupsFriendsTitle) {
+      els.groupsFriendsTitle.textContent = "Friends (0)";
+    }
     if (els.groupsFriendsList) {
       els.groupsFriendsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Upgrade to Pro to unlock friends, sharing, and social progress.</div>';
     }
@@ -1358,13 +1361,17 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     syncOpenFriendSharedTaskUidsFromDom();
     els.groupsFriendsList.className = "settingsDetailNote";
     const uid = ctx.getCurrentUid();
+    const friendCount = uid ? ctx.getGroupsFriendships().length : 0;
+    if (els.groupsFriendsTitle) {
+      els.groupsFriendsTitle.textContent = `Friends (${friendCount})`;
+    }
     const openIds = ctx.getOpenFriendSharedTaskUids();
     if (!uid) {
       openIds.clear();
       els.groupsFriendsList.textContent = "Sign in to view friends.";
       return;
     }
-    if (!ctx.getGroupsFriendships().length) {
+    if (!friendCount) {
       openIds.clear();
       els.groupsFriendsList.textContent = "";
       return;

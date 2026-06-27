@@ -348,7 +348,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   position:var(--settings-nav-panel-position);
   top:var(--settings-nav-panel-top);
   border:none;
-  box-shadow:none;
+  box-shadow:none !important;
   background:transparent !important;
 }
 
@@ -399,7 +399,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
   padding-right: var(--settings-detail-panel-padding-inline);
   border:none;
   background:transparent !important;
-  box-shadow:none;
+  box-shadow:none !important;
   filter:none !important;
   clip-path:none !important;
   overflow-x:hidden;
@@ -2932,7 +2932,7 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn{
   border-color: rgba(255,77,77,.72) !important;
-  color: rgba(255,98,98,.96) !important;
+  color: #fff !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px;
   box-shadow: 0 0 0 1px rgba(255,77,77,.24) inset, 0 0 10px rgba(255,77,77,.14) !important;
@@ -2941,7 +2941,7 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn:hover:not(:disabled),
 #app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsDangerDisclosureActions .btn.btn-warn:focus-visible{
   border-color: rgba(255,120,120,.95) !important;
-  color: #ffd4d4 !important;
+  color: #fff !important;
   box-shadow: 0 0 0 1px rgba(255,77,77,.34) inset, 0 0 13px rgba(255,77,77,.2) !important;
 }
 
@@ -5763,7 +5763,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app[aria-label="TaskLaunch Account"] .accountProfileActionDanger strong{
-  color: #ff8c8c;
+  color: #fff;
   font-size: 13px;
 }
 

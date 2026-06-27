@@ -219,14 +219,13 @@ describe("groups friends list shared task counts", () => {
     };
   }
 
-  function renderFriendsList(sharedSummaries: SharedTaskSummary[]) {
-    const groupsFriendsList = makeElement();
-    const friendship = {
-      pairId: "pair:friend-b:user-a",
-      users: ["friend-b", "user-a"],
+  function makeFriendship(friendUid: string, alias: string): Friendship {
+    return {
+      pairId: `pair:${friendUid}:user-a`,
+      users: [friendUid, "user-a"],
       profileByUid: {
-        "friend-b": {
-          alias: "Friend Bee",
+        [friendUid]: {
+          alias,
           avatarId: null,
           avatarCustomSrc: null,
           googlePhotoUrl: null,
@@ -238,7 +237,16 @@ describe("groups friends list shared task counts", () => {
       },
       createdAt: null,
       createdBy: "user-a",
-    } satisfies Friendship;
+    };
+  }
+
+  function renderFriendsList(
+    sharedSummaries: SharedTaskSummary[],
+    opts: { currentUid?: string; friendships?: Friendship[] } = {}
+  ) {
+    const groupsFriendsList = makeElement();
+    const groupsFriendsTitle = makeElement();
+    const friendships = opts.friendships ?? [makeFriendship("friend-b", "Friend Bee")];
 
     const ctx = {
       els: {
@@ -246,6 +254,7 @@ describe("groups friends list shared task counts", () => {
         footerTest2AlertBadge: null,
         friendProfileDeleteBtn: null,
         friendRequestSendBtn: null,
+        groupsFriendsTitle,
         groupsFriendsList,
         groupsIncomingRequestsDetails: makeElement(),
         groupsIncomingRequestsList: makeElement(),
@@ -258,11 +267,11 @@ describe("groups friends list shared task counts", () => {
         openFriendRequestModalBtn: null,
       },
       on: vi.fn(),
-      getCurrentUid: () => "user-a",
+      getCurrentUid: () => opts.currentUid ?? "user-a",
       getGroupsLoading: () => false,
       getGroupsIncomingRequests: () => [],
       getGroupsOutgoingRequests: () => [],
-      getGroupsFriendships: () => [friendship],
+      getGroupsFriendships: () => friendships,
       getGroupsSharedSummaries: () => sharedSummaries,
       getOwnSharedSummaries: () => [],
       getOpenFriendSharedTaskUids: () => new Set<string>(),
@@ -278,11 +287,11 @@ describe("groups friends list shared task counts", () => {
     };
 
     createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).renderGroupsPage();
-    return groupsFriendsList.innerHTML;
+    return { html: groupsFriendsList.innerHTML, title: groupsFriendsTitle.textContent };
   }
 
   it("omits the shared count meta when a friend has zero shared tasks", () => {
-    const html = renderFriendsList([]);
+    const { html } = renderFriendsList([]);
 
     expect(html).not.toContain("0 tasks shared with you");
     expect(html).not.toContain('class="friendIdentityMeta"');
@@ -290,11 +299,34 @@ describe("groups friends list shared task counts", () => {
   });
 
   it("keeps the shared count meta when a friend has shared tasks", () => {
-    const html = renderFriendsList([makeSharedSummary()]);
+    const { html } = renderFriendsList([makeSharedSummary()]);
 
     expect(html).toContain('class="friendIdentityMeta"');
     expect(html).toContain("1 task shared with you");
     expect(html).not.toContain("No tasks shared with you.");
+  });
+
+  it("renders the friends title count for zero friends", () => {
+    const { title } = renderFriendsList([], { friendships: [] });
+
+    expect(title).toBe("Friends (0)");
+  });
+
+  it("renders the friends title count for accepted friendships", () => {
+    const { title } = renderFriendsList([], {
+      friendships: [makeFriendship("friend-b", "Friend Bee"), makeFriendship("friend-c", "Friend Cee")],
+    });
+
+    expect(title).toBe("Friends (2)");
+  });
+
+  it("renders zero friends in the title when signed out", () => {
+    const { title } = renderFriendsList([], {
+      currentUid: "",
+      friendships: [makeFriendship("friend-b", "Friend Bee"), makeFriendship("friend-c", "Friend Cee")],
+    });
+
+    expect(title).toBe("Friends (0)");
   });
 });
 

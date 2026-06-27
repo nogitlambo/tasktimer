@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -29,6 +39,15 @@ import SchedulePageContent from "./components/SchedulePageContent";
 import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
 import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
+import {
+  getMobileLeaderboardSwipeDirection,
+  getNextLeaderboardSwipeView,
+  getResetMobileLeaderboardSwipeState,
+  getStartMobileLeaderboardSwipeState,
+  getUpdatedMobileLeaderboardSwipeState,
+  isMobileLeaderboardSwipeViewport,
+  type MobileLeaderboardSwipeState,
+} from "./components/mobileLeaderboardSwipe";
 import type { AppPage } from "./client/types";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./lib/avatarCatalog";
 import {
@@ -374,6 +393,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
   > | null>(null);
   const leaderboardStateRef = useRef<LeaderboardLoadState>("error");
+  const leaderboardSwipeRef = useRef<MobileLeaderboardSwipeState>(getResetMobileLeaderboardSwipeState());
+  const suppressLeaderboardSwipeClickRef = useRef(false);
   const displayedXpRef = useRef(displayedXp);
   const previousActiveAwardRef = useRef<PendingXpAward | null>(null);
   const xpAnimationFrameRef = useRef<number | null>(null);
@@ -904,6 +925,106 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
+  const resetLeaderboardSwipe = useCallback(() => {
+    leaderboardSwipeRef.current = getResetMobileLeaderboardSwipeState();
+  }, []);
+
+  const shouldUseLeaderboardTouchFallback = useCallback(() => (
+    typeof window !== "undefined" && !("PointerEvent" in window)
+  ), []);
+
+  const suppressNextLeaderboardSwipeClick = useCallback(() => {
+    suppressLeaderboardSwipeClickRef.current = true;
+    if (typeof window === "undefined") return;
+    window.setTimeout(() => {
+      suppressLeaderboardSwipeClickRef.current = false;
+    }, 350);
+  }, []);
+
+  const navigateFromLeaderboardSwipe = useCallback((swipeState: MobileLeaderboardSwipeState) => {
+    const direction = getMobileLeaderboardSwipeDirection(swipeState);
+    if (!direction) return false;
+
+    suppressNextLeaderboardSwipeClick();
+    leaderboardSwipeRef.current = {
+      ...swipeState,
+      consumed: true,
+    };
+    setLeaderboardView((currentView) => getNextLeaderboardSwipeView(currentView, direction));
+    return true;
+  }, [suppressNextLeaderboardSwipeClick]);
+
+  const handleLeaderboardSwipePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+    resetLeaderboardSwipe();
+    if (event.button !== 0 || !isMobileLeaderboardSwipeViewport()) return;
+
+    leaderboardSwipeRef.current = getStartMobileLeaderboardSwipeState(event.pointerId, event.clientX, event.clientY);
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore pointer capture failures on older embedded browsers.
+    }
+  }, [resetLeaderboardSwipe]);
+
+  const handleLeaderboardSwipePointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
+    const swipeState = leaderboardSwipeRef.current;
+    if (!swipeState.active || swipeState.consumed || swipeState.pointerId !== event.pointerId) return;
+
+    const nextSwipeState = getUpdatedMobileLeaderboardSwipeState(swipeState, event.pointerId, event.clientX, event.clientY);
+    leaderboardSwipeRef.current = nextSwipeState;
+    if (getMobileLeaderboardSwipeDirection(nextSwipeState)) event.preventDefault();
+  }, []);
+
+  const handleLeaderboardSwipePointerEnd = useCallback((event: PointerEvent<HTMLElement>) => {
+    const swipeState = leaderboardSwipeRef.current;
+    if (swipeState.pointerId !== event.pointerId) return;
+
+    if (navigateFromLeaderboardSwipe(swipeState)) return;
+    resetLeaderboardSwipe();
+  }, [navigateFromLeaderboardSwipe, resetLeaderboardSwipe]);
+
+  const handleLeaderboardSwipeTouchStart = useCallback((event: ReactTouchEvent<HTMLElement>) => {
+    resetLeaderboardSwipe();
+    if (!shouldUseLeaderboardTouchFallback() || event.touches.length !== 1 || !isMobileLeaderboardSwipeViewport()) return;
+
+    const touch = event.touches[0];
+    leaderboardSwipeRef.current = getStartMobileLeaderboardSwipeState(touch.identifier, touch.clientX, touch.clientY);
+  }, [resetLeaderboardSwipe, shouldUseLeaderboardTouchFallback]);
+
+  const handleLeaderboardSwipeTouchMove = useCallback((event: ReactTouchEvent<HTMLElement>) => {
+    if (!shouldUseLeaderboardTouchFallback()) return;
+
+    const swipeState = leaderboardSwipeRef.current;
+    if (!swipeState.active || swipeState.consumed || swipeState.pointerId == null) return;
+
+    const touch = Array.from(event.touches).find((currentTouch) => currentTouch.identifier === swipeState.pointerId);
+    if (!touch) return;
+
+    const nextSwipeState = getUpdatedMobileLeaderboardSwipeState(swipeState, touch.identifier, touch.clientX, touch.clientY);
+    leaderboardSwipeRef.current = nextSwipeState;
+    if (getMobileLeaderboardSwipeDirection(nextSwipeState)) event.preventDefault();
+  }, [shouldUseLeaderboardTouchFallback]);
+
+  const handleLeaderboardSwipeTouchEnd = useCallback((event: ReactTouchEvent<HTMLElement>) => {
+    if (!shouldUseLeaderboardTouchFallback()) return;
+
+    const swipeState = leaderboardSwipeRef.current;
+    if (swipeState.pointerId == null) return;
+    if (!Array.from(event.changedTouches).some((touch) => touch.identifier === swipeState.pointerId)) return;
+
+    if (navigateFromLeaderboardSwipe(swipeState)) return;
+    resetLeaderboardSwipe();
+  }, [navigateFromLeaderboardSwipe, resetLeaderboardSwipe, shouldUseLeaderboardTouchFallback]);
+
+  const handleLeaderboardSwipeClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    if (!suppressLeaderboardSwipeClickRef.current) return;
+
+    suppressLeaderboardSwipeClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
   return (
     <>
       <TaskTimerAppFrame
@@ -1039,6 +1160,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
               <div className="dashboardGrid">
                 <section className="dashboardCard" aria-label="Friends list">
+                  <div className="dashboardCardTitle" id="groupsFriendsTitle">
+                    Friends (0)
+                  </div>
                   <div id="groupsFriendsList" className="settingsDetailNote" />
                 </section>
 
@@ -1078,7 +1202,20 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </div>
           </section>
 
-          <section className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`} id="appPageLeaderboard" aria-label="Leaderboards page">
+          <section
+            className={`appPage${initialPage === "leaderboard" ? " appPageOn" : ""}`}
+            id="appPageLeaderboard"
+            aria-label="Leaderboards page"
+            onPointerDown={handleLeaderboardSwipePointerDown}
+            onPointerMove={handleLeaderboardSwipePointerMove}
+            onPointerUp={handleLeaderboardSwipePointerEnd}
+            onPointerCancel={resetLeaderboardSwipe}
+            onTouchStart={handleLeaderboardSwipeTouchStart}
+            onTouchMove={handleLeaderboardSwipeTouchMove}
+            onTouchEnd={handleLeaderboardSwipeTouchEnd}
+            onTouchCancel={resetLeaderboardSwipe}
+            onClickCapture={handleLeaderboardSwipeClickCapture}
+          >
             <div className="dashboardShell leaderboardShell">
               {leaderboardState === "signedOut" ? (
                 <SignedOutPrompt message="Sign in to view the leaderboard" />
