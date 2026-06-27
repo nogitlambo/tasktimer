@@ -113,10 +113,17 @@ export function getRichNoteEditorValue(editor: HTMLElement | null | undefined) {
 export function setRichNoteEditorValue(editor: HTMLElement | null | undefined, value: unknown) {
   if (!editor) return;
   const nextValue = sanitizeRichNoteHtml(value);
+  const valueBackedEditor = editor as ValueBackedElement;
+  const hasValueProperty = "value" in editor;
+  const currentHtml = String(editor.innerHTML || "");
+  const currentValue = hasValueProperty ? String(valueBackedEditor.value || "") : "";
+  const htmlAlreadySynced = currentHtml === nextValue || (!currentHtml && hasValueProperty && currentValue === nextValue);
+  const valueAlreadySynced = !hasValueProperty || currentValue === nextValue;
+  if (htmlAlreadySynced && valueAlreadySynced) return;
   editor.innerHTML = nextValue;
   if ("value" in editor) {
     try {
-      (editor as ValueBackedElement).value = nextValue;
+      valueBackedEditor.value = nextValue;
     } catch {
       // ignore read-only test doubles
     }

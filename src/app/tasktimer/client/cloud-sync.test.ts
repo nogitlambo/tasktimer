@@ -201,4 +201,28 @@ describe("task timer cloud sync", () => {
     expect(harness.hydrateTimerStateFromCloud).not.toHaveBeenCalled();
     expect(harness.hydrateFromCloud).not.toHaveBeenCalled();
   });
+
+  it("defers focused timer-state hydration while a rich note editor is active", async () => {
+    const harness = createHarness({ hasPendingTaskOrLiveSessionSync: false });
+    const documentStub = document as unknown as ReturnType<typeof createDocumentStub>;
+    documentStub.activeElement = {
+      matches: (selector: string) => selector === 'input, textarea, select, [contenteditable="true"]',
+    } as never;
+
+    harness.api.initCloudRefreshSync();
+    const listener = (harness.workspaceRepository.subscribeTaskCollection as unknown as {
+      mock: { calls: Array<[string, () => void]> };
+    }).mock.calls[0]?.[1];
+    listener?.();
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(harness.hydrateTimerStateFromCloud).not.toHaveBeenCalled();
+    expect(harness.hydrateFromCloud).not.toHaveBeenCalled();
+
+    documentStub.activeElement = null;
+    await vi.advanceTimersByTimeAsync(300);
+    await Promise.resolve();
+
+    expect(harness.hydrateTimerStateFromCloud).toHaveBeenCalledTimes(1);
+  });
 });

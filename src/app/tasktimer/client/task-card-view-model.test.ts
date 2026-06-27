@@ -64,20 +64,20 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
-  it("renders back-face task menu actions as icon-only placeholder tiles", () => {
+  it("renders back-face task menu actions with full labels", () => {
     const rendered = renderCard();
 
     const editIndex = rendered.html.indexOf(
-      '<button class="taskMenuItem" data-action="edit" title="Edit" type="button"><span class="taskMenuTile" aria-hidden="true">E</span></button>'
+      '<button class="taskMenuItem" data-action="edit" title="Edit" type="button"><span class="taskMenuTile">Edit</span></button>'
     );
     const manualEntryIndex = rendered.html.indexOf('data-action="manualEntry"');
 
     expect(editIndex).toBeGreaterThan(-1);
     expect(manualEntryIndex).toBeGreaterThan(-1);
     expect(editIndex).toBeLessThan(manualEntryIndex);
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">A</span>');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">D</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Add Entry</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Share</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Delete</span>');
     expect(rendered.html).not.toContain("taskMenuLabel");
     expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
   });
@@ -146,11 +146,10 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain('data-action="manualEntry"');
     expect(rendered.html).toContain('data-plan-locked="advancedHistory"');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">A</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Add Entry (Pro)</span>');
     expect(rendered.html).toContain('data-action="shareTask"');
     expect(rendered.html).toContain('data-plan-locked="socialFeatures"');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
-    expect(rendered.html).not.toContain("Share (Pro)</span>");
+    expect(rendered.html).toContain('<span class="taskMenuTile">Share (Pro)</span>');
   });
 
   it("disables sharing when there are no friends", () => {
@@ -159,16 +158,16 @@ describe("task card view model", () => {
     });
 
     expect(rendered.html).toContain('data-action="shareTask" title="Add friends to share tasks" type="button" disabled');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">S</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Share</span>');
   });
 
-  it("renders Unshare with a dynamic placeholder letter for shared-owner tasks", () => {
+  it("renders Unshare with the full label for shared-owner tasks", () => {
     const rendered = renderCard({
       isSharedByOwner: true,
     });
 
     expect(rendered.html).toContain('data-action="unshareTask"');
-    expect(rendered.html).toContain('<span class="taskMenuTile" aria-hidden="true">U</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Unshare</span>');
   });
 
   it("renders a history-tab border footprint for shell border alignment", () => {
@@ -207,7 +206,7 @@ describe("task card view model", () => {
     expect(css).toContain("grid-column: 1 / 2 !important;");
   });
 
-  it("lays out back-face task actions as a fixed grid of square tiles", () => {
+  it("lays out back-face task actions as a fixed grid of labeled tiles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
 
     expect(css).not.toContain("position:absolute;\n  inset:0;\n  height:100%;\n  min-height:0;");
@@ -220,7 +219,9 @@ describe("task card view model", () => {
     expect(css).toContain("box-sizing:border-box;");
     expect(css).toContain("aspect-ratio:4 / 3;");
     expect(css).toContain("width:100%;\n  height:100%;");
-    expect(css).toContain("font-size:clamp(20px, 9vw, 38px);");
+    expect(css).toContain('font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
+    expect(css).toContain("font-size:11px;");
+    expect(css).toContain("overflow-wrap:anywhere;");
     expect(css).toContain("place-items:center;");
     expect(css).not.toContain(".taskBackActions .taskMenuLabel");
   });

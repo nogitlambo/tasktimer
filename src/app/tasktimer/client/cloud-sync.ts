@@ -250,6 +250,10 @@ export function createTaskTimerCloudSync(options: CreateTaskTimerCloudSyncOption
         scheduleTimerStateRefresh();
         return;
       }
+      if (!hasActiveTimeGoalCompletionFlow() && (hasActiveFormInteraction() || hasRecentUiInteraction())) {
+        scheduleTimerStateRefresh();
+        return;
+      }
       void refreshTimerStateFromCloudAndRender();
     }, delayMs);
   }

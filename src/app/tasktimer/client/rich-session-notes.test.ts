@@ -6,6 +6,7 @@ import {
   richNoteToolbarHtml,
   richNotePlainText,
   sanitizeRichNoteHtml,
+  setRichNoteEditorValue,
   syncRichNoteToolbarState,
 } from "./rich-session-notes";
 
@@ -46,6 +47,25 @@ describe("rich session notes", () => {
   it("treats markup-only notes as empty", () => {
     expect(sanitizeRichNoteHtml("<p><br></p>")).toBe("");
     expect(richNoteHasMeaningfulText("<p><br></p>")).toBe(false);
+  });
+
+  it("does not rewrite unchanged editor html", () => {
+    let html = "<b>Already synced</b>";
+    let writeCount = 0;
+    const editor = {
+      get innerHTML() {
+        return html;
+      },
+      set innerHTML(value: string) {
+        writeCount += 1;
+        html = value;
+      },
+    };
+
+    setRichNoteEditorValue(editor as unknown as HTMLElement, "<b>Already synced</b>");
+
+    expect(writeCount).toBe(0);
+    expect(html).toBe("<b>Already synced</b>");
   });
 
   it("renders toolbar buttons as unpressed by default", () => {

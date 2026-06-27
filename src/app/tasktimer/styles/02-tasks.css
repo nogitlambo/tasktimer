@@ -1676,9 +1676,9 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   padding:0;
   border:0;
   background:transparent;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(20px, 9vw, 38px);
-  line-height:1;
+  font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:11px;
+  line-height:1.15;
   text-align:center;
 }
 
@@ -1694,8 +1694,11 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.04);
   color:var(--text);
+  font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:inherit;
   font-weight:800;
+  padding:6px;
+  overflow-wrap:anywhere;
   box-sizing:border-box;
 }
 

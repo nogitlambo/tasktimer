@@ -77,8 +77,7 @@ type DispatchTaskCardActionOptions = {
 
 function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => string) {
   const trimmedLabel = label.trim();
-  const tileLetter = trimmedLabel.charAt(0).toUpperCase();
-  return `<span class="taskMenuTile" aria-hidden="true">${escapeHtml(tileLetter)}</span>`;
+  return `<span class="taskMenuTile">${escapeHtml(trimmedLabel)}</span>`;
 }
 
 export function buildTaskProgressModel({
@@ -322,8 +321,8 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         ? "Share"
         : "Add friends to share tasks"
     : "Pro feature: Sharing";
-  const manualEntryLabel = canUseAdvancedHistory ? "Add Manual Entry" : "Add Manual Entry (Pro)";
-  const manualEntryTitle = canUseAdvancedHistory ? "Add Manual Entry" : "Pro feature: Manual history entry";
+  const manualEntryLabel = canUseAdvancedHistory ? "Add Entry" : "Add Entry (Pro)";
+  const manualEntryTitle = canUseAdvancedHistory ? "Add Entry" : "Pro feature: Manual history entry";
   return {
     className,
     html: `
