@@ -1,3 +1,5 @@
+import AppImg from "@/components/AppImg";
+
 export default function TaskManualEntryOverlay() {
   return (
     <div className="overlay" id="taskManualEntryOverlay" style={{ display: "none" }}>
@@ -75,17 +77,42 @@ export default function TaskManualEntryOverlay() {
             </div>
           </div>
 
-          <div className="hmManualEntryField">
-            <label className="hmManualEntryLabel" htmlFor="taskManualNoteInput">
-              Notes
+          <div className="hmManualEntryField hmManualEntryNoteField">
+            <label className="hmManualEntryLabel historyEntryNoteEditorLabel" htmlFor="taskManualNoteInput">
+              Session Notes
             </label>
-            <input
-              className="hmManualEntryInput"
-              id="taskManualNoteInput"
-              maxLength={280}
-              placeholder="Optional note"
-              type="text"
-            />
+            <div
+              className="richNoteToolbar"
+              role="toolbar"
+              aria-label="Session note formatting"
+              data-rich-note-toolbar="true"
+              data-rich-note-for="taskManualNoteInput"
+            >
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bold" aria-label="Bold" data-rich-note-command="bold" aria-pressed="false">B</button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Italic" aria-label="Italic" data-rich-note-command="italic" aria-pressed="false">I</button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Underline" aria-label="Underline" data-rich-note-command="underline" aria-pressed="false">U</button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Bulleted list" aria-label="Bulleted list" data-rich-note-command="insertUnorderedList" aria-pressed="false">
+                <AppImg className="richNoteToolbarIcon" src="/icons/list.png" alt="" aria-hidden="true" />
+              </button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Numbered list" aria-label="Numbered list" data-rich-note-command="insertOrderedList" aria-pressed="false">
+                <AppImg className="richNoteToolbarIcon" src="/icons/numbered_list.png" alt="" aria-hidden="true" />
+              </button>
+              <button className="btn btn-ghost small richNoteToolbarBtn" type="button" title="Add link" aria-label="Add link" data-rich-note-command="createLink" aria-pressed="false">
+                <AppImg className="richNoteToolbarIcon" src="/icons/link.png" alt="" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="sessionNoteEditorGrid">
+              <div
+                className="text focusSessionNotesInput richNoteEditor hmManualEntryNoteInput"
+                id="taskManualNoteInput"
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Session note"
+                contentEditable
+                suppressContentEditableWarning
+                data-rich-note-editor="true"
+              />
+            </div>
           </div>
 
           <div className="hmManualEntryError" id="taskManualEntryError" style={{ display: "none" }} />

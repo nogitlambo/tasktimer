@@ -24,7 +24,7 @@ import {
 } from "./accountProfileStorage";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./avatarCatalog";
 import type { DashboardWeekStart } from "./historyChart";
-import { getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RewardProgressV1 } from "./rewards";
+import { RANK_LADDER, getNextRank, getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RankDefinition, type RewardProgressV1 } from "./rewards";
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
 
 export const LEADERBOARD_PROFILE_UPDATED_EVENT = "tasktimer:leaderboardProfileUpdated";
@@ -82,6 +82,28 @@ export type WeeklyLeaderboardRow = {
   isDummy: boolean;
 };
 
+export type RankRivalStatus = "closest" | "current" | "rival";
+
+export type RankRivalLadderRow = WeeklyLeaderboardRow & {
+  status: RankRivalStatus;
+  statusLabel: string;
+  remainingXp: number | null;
+  remainingLabel: string;
+  progressPct: number;
+  progressLabel: string;
+};
+
+export type RankRivalLadderViewModel = {
+  previousRank: RankDefinition | null;
+  currentRank: RankDefinition;
+  nextRank: RankDefinition | null;
+  targetLabel: string;
+  targetXp: number | null;
+  subtitle: string;
+  rows: RankRivalLadderRow[];
+  isMaxRank: boolean;
+};
+
 type LeaderboardIdentityFields = Pick<
   LeaderboardProfile,
   "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl" | "rankThumbnailSrc" | "rewardCurrentRankId" | "memberSinceMs"
@@ -90,6 +112,8 @@ type LeaderboardIdentityFields = Pick<
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
+const RANK_RIVALS_QUERY_LIMIT = 100;
+const RANK_RIVALS_DISPLAY_LIMIT = 6;
 const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
@@ -559,6 +583,14 @@ function filterProfilesByRankScope(profiles: LeaderboardProfile[], rankScope: { 
   return profiles.filter((profile) => getRankForXp(profile.rewardTotalXp).id === rankScope.id);
 }
 
+function sortRankRivals(entries: LeaderboardProfile[]): LeaderboardProfile[] {
+  return entries.slice().sort((left, right) => {
+    const totalDelta = normalizeInt(right.rewardTotalXp) - normalizeInt(left.rewardTotalXp);
+    if (totalDelta !== 0) return totalDelta;
+    return String(left.username || left.displayLabel || left.uid).localeCompare(String(right.username || right.displayLabel || right.uid));
+  });
+}
+
 function getLeaderboardPlayerLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
 }
@@ -686,6 +718,106 @@ export function buildRivalLeaderboardRows(input: {
   return sortLeaderboardRows(rows);
 }
 
+function getRankIndex(rank: RankDefinition): number {
+  return RANK_LADDER.findIndex((entry) => entry.id === rank.id);
+}
+
+function selectRankRivalProfiles(input: {
+  rivalEntries: LeaderboardProfile[];
+  currentUserEntry: LeaderboardProfile;
+}): LeaderboardProfile[] {
+  const currentUid = String(input.currentUserEntry.uid || "").trim();
+  const rankScope = getRankScope(input.currentUserEntry);
+  const byUid = new Map<string, LeaderboardProfile>();
+  filterProfilesByRankScope(visibleLeaderboardProfiles(input.rivalEntries || []), rankScope).forEach((profile) => {
+    byUid.set(profile.uid, profile);
+  });
+  byUid.set(input.currentUserEntry.uid, input.currentUserEntry);
+
+  const sorted = sortRankRivals(Array.from(byUid.values()));
+  const currentIndex = sorted.findIndex((profile) => profile.uid === currentUid);
+  if (sorted.length <= RANK_RIVALS_DISPLAY_LIMIT || currentIndex < 0 || currentIndex < RANK_RIVALS_DISPLAY_LIMIT) {
+    return sorted.slice(0, RANK_RIVALS_DISPLAY_LIMIT);
+  }
+
+  const start = Math.max(0, Math.min(currentIndex - (RANK_RIVALS_DISPLAY_LIMIT - 1), sorted.length - RANK_RIVALS_DISPLAY_LIMIT));
+  return sorted.slice(start, start + RANK_RIVALS_DISPLAY_LIMIT);
+}
+
+export function buildRankRivalLadderViewModel(input: {
+  rivalEntries: LeaderboardProfile[];
+  currentUserEntry: LeaderboardProfile | null;
+  currentUserRivalRank: number | null;
+}): RankRivalLadderViewModel | null {
+  const currentUserEntry = isExcludedLeaderboardProfile(input.currentUserEntry) ? null : input.currentUserEntry;
+  if (!currentUserEntry) return null;
+
+  const currentRank = getRankForXp(currentUserEntry.rewardTotalXp);
+  const currentRankIndex = getRankIndex(currentRank);
+  const previousRank = currentRankIndex > 0 ? RANK_LADDER[currentRankIndex - 1] || null : null;
+  const nextRank = getNextRank(currentUserEntry.rewardTotalXp);
+  const isMaxRank = !nextRank;
+  const bandStart = currentRank.minXp;
+  const bandEnd = nextRank?.minXp ?? currentRank.minXp;
+  const bandWidth = Math.max(1, bandEnd - bandStart);
+  const selectedProfiles = selectRankRivalProfiles({
+    rivalEntries: input.rivalEntries,
+    currentUserEntry,
+  });
+  const sortedAllProfiles = sortRankRivals(
+    filterProfilesByRankScope(visibleLeaderboardProfiles([...input.rivalEntries, currentUserEntry]), { id: currentRank.id })
+  );
+  const currentUid = String(currentUserEntry.uid || "").trim();
+  const closestRivalUid = sortedAllProfiles.find((profile) => profile.uid !== currentUid)?.uid || "";
+  const rankByUid = new Map<string, number>();
+  sortedAllProfiles.forEach((profile, index) => {
+    if (!rankByUid.has(profile.uid)) rankByUid.set(profile.uid, index + 1);
+  });
+  if (input.currentUserRivalRank && input.currentUserRivalRank > 0) {
+    rankByUid.set(currentUserEntry.uid, input.currentUserRivalRank);
+  }
+
+  const rows = selectedProfiles.map((profile, index): RankRivalLadderRow => {
+    const isCurrentUser = profile.uid === currentUid;
+    const rank = rankByUid.get(profile.uid) || index + 1;
+    const totalXp = normalizeInt(profile.rewardTotalXp);
+    const remainingXp = nextRank ? Math.max(0, nextRank.minXp - totalXp) : null;
+    const progressPct = nextRank
+      ? Math.max(0, Math.min(100, ((totalXp - bandStart) / bandWidth) * 100))
+      : 100;
+    const status: RankRivalStatus = isCurrentUser ? "current" : profile.uid === closestRivalUid ? "closest" : "rival";
+    return {
+      profile,
+      rank,
+      rankLabel: formatWeeklyRankLabel(rank),
+      playerLabel: getLeaderboardPlayerLabel(profile),
+      isCurrentUser,
+      isPinnedCurrentUser: isCurrentUser && rank > RANK_RIVALS_DISPLAY_LIMIT,
+      isPlaceholder: false,
+      isDummy: false,
+      status,
+      statusLabel: status === "closest" ? "Closest Rival" : status === "current" ? "Current User" : "Rival",
+      remainingXp,
+      remainingLabel: remainingXp == null ? "-" : `${remainingXp.toLocaleString()} XP`,
+      progressPct,
+      progressLabel: `${Math.round(progressPct)}%`,
+    };
+  });
+
+  return {
+    previousRank,
+    currentRank,
+    nextRank,
+    targetLabel: nextRank ? nextRank.label : "Max Rank",
+    targetXp: nextRank ? nextRank.minXp : null,
+    subtitle: nextRank
+      ? `Competing to reach: ${nextRank.label} (${nextRank.minXp.toLocaleString()} XP)`
+      : `${currentRank.label} rank standing`,
+    rows,
+    isMaxRank,
+  };
+}
+
 export function buildWeeklyLeaderboardRows(input: {
   weeklyEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
@@ -803,7 +935,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const [higherXpResult, aboveResult, rivalResult, higherRivalResult, higherWeeklyResult] = await Promise.allSettled([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),
-    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(leaderboardQueryLimit))),
+    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(RANK_RIVALS_QUERY_LIMIT))),
     getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
@@ -828,7 +960,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const rivalEntries = visibleLeaderboardProfiles(docsFromSettledQuery(rivalResult)
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
-    .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+    .slice(0, RANK_RIVALS_QUERY_LIMIT);
   const higherRivalEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherRivalResult)
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))

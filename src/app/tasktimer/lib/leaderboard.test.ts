@@ -36,6 +36,7 @@ vi.mock("./accountProfileStorage", () => ({
 import {
   buildLeaderboardMetricsSnapshot,
   buildGlobalLeaderboardRows,
+  buildRankRivalLadderViewModel,
   buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   formatWeeklyLeaderboardTimeRemaining,
@@ -469,6 +470,77 @@ describe("buildRivalLeaderboardRows", () => {
     expect(realNonCurrentRows.map((row) => row.profile.uid)).toEqual(["same-1"]);
     expect(rows.find((row) => row.isCurrentUser)).toMatchObject({ rank: 2, rankLabel: "#2", playerLabel: "me" });
     expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
+  });
+});
+
+describe("buildRankRivalLadderViewModel", () => {
+  it("filters rows to the current user's rank band and computes progress to next rank", () => {
+    const viewModel = buildRankRivalLadderViewModel({
+      rivalEntries: [
+        createProfile({ uid: "same-1", username: "same_1", rewardTotalXp: 1500 }),
+        createProfile({ uid: "lower-1", username: "lower_1", rewardTotalXp: 700 }),
+        createProfile({ uid: "higher-1", username: "higher_1", rewardTotalXp: 3200 }),
+      ],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: 2,
+    });
+
+    expect(viewModel).toBeTruthy();
+    expect(viewModel?.previousRank?.id).toBe("technician");
+    expect(viewModel?.currentRank.id).toBe("engineer");
+    expect(viewModel?.nextRank?.id).toBe("analyst");
+    expect(viewModel?.targetLabel).toBe("Analyst");
+    expect(viewModel?.rows.map((row) => row.profile.uid)).toEqual(["same-1", "me"]);
+    expect(viewModel?.rows.find((row) => row.profile.uid === "same-1")).toMatchObject({
+      status: "closest",
+      remainingXp: 1380,
+      progressLabel: "28%",
+    });
+    expect(viewModel?.rows.find((row) => row.profile.uid === "me")).toMatchObject({
+      status: "current",
+      statusLabel: "Current User",
+      rank: 2,
+      remainingXp: 1680,
+      progressLabel: "13%",
+    });
+  });
+
+  it("keeps the current user visible when they are outside the top six rivals", () => {
+    const viewModel = buildRankRivalLadderViewModel({
+      rivalEntries: Array.from({ length: 8 }, (_, index) =>
+        createProfile({
+          uid: `rival-${index + 1}`,
+          username: `rival_${index + 1}`,
+          rewardTotalXp: 2850 - index * 100,
+        })
+      ),
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: 9,
+    });
+
+    expect(viewModel?.rows).toHaveLength(6);
+    expect(viewModel?.rows.at(-1)).toMatchObject({
+      profile: expect.objectContaining({ uid: "me" }),
+      isCurrentUser: true,
+      isPinnedCurrentUser: true,
+      rank: 9,
+    });
+  });
+
+  it("uses stable max-rank labels and progress values", () => {
+    const viewModel = buildRankRivalLadderViewModel({
+      rivalEntries: [createProfile({ uid: "same-1", username: "same_1", rewardTotalXp: 52000 })],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 51000 }),
+      currentUserRivalRank: 2,
+    });
+
+    expect(viewModel).toMatchObject({
+      targetLabel: "Max Rank",
+      targetXp: null,
+      isMaxRank: true,
+    });
+    expect(viewModel?.nextRank).toBeNull();
+    expect(viewModel?.rows.every((row) => row.remainingXp === null && row.remainingLabel === "-" && row.progressPct === 100 && row.progressLabel === "100%")).toBe(true);
   });
 });
 

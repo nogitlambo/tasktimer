@@ -1646,17 +1646,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   line-height:1.35;
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskFlipBtn{
   border-radius:0 !important;
-}
-
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBackBtn{
-  min-width:42px;
-  width:42px;
-  height:42px;
-  flex:0 0 42px;
-  border-color: transparent !important;
-  box-shadow: none !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions{
@@ -2282,13 +2273,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-width: 0;
 }
 
-body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn{
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskFlipBtn{
   border-color: rgba(214,246,116,.28);
-}
-
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipBtn.taskFlipBackBtn{
-  border-color: transparent !important;
-  box-shadow: none !important;
 }
 
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tasksModeMenuBtn{

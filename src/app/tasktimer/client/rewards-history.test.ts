@@ -152,6 +152,39 @@ describe("task timer rewards history", () => {
     expect(harness.calls).toContain("save-preferences:1");
   });
 
+  it("awards XP and writes goal-length history for a completed 10-minute daily goal", () => {
+    vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
+    const completedAtMs = Date.now();
+    const elapsedMs = 10 * 60 * 1000;
+    const harness = createHarness({
+      elapsedMs,
+      tasks: [
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 10,
+        }),
+      ],
+    });
+
+    const finalizedElapsedMs = harness.api.finalizeLiveSession(harness.tasks[0]!, {
+      elapsedMs,
+      completedAtMs,
+    });
+
+    expect(finalizedElapsedMs).toBe(elapsedMs);
+    expect(harness.getHistoryByTaskId()["task-1"]).toEqual([
+      expect.objectContaining({
+        ts: completedAtMs,
+        name: "Focus",
+        ms: elapsedMs,
+      }),
+    ]);
+    expect(harness.getRewardProgress().totalXp).toBe(5);
+    expect(harness.getRewardProgress().completedSessions).toBe(1);
+    expect(harness.calls).toContain("save-preferences:5");
+  });
+
   it("logs time-goal stop history while deferring XP from the visible total", () => {
     vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
     const harness = createHarness({

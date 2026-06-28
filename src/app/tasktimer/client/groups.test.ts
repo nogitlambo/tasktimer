@@ -23,6 +23,7 @@ import {
   getSharedTaskGoalMetrics,
   loadGroupsSnapshotForUid,
   renderSharedTaskMetricRows,
+  renderSharedTaskWeeklyChart,
 } from "./groups";
 import type { TaskTimerGroupsContext } from "./context";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
@@ -242,11 +243,23 @@ describe("groups friends list shared task counts", () => {
 
   function renderFriendsList(
     sharedSummaries: SharedTaskSummary[],
-    opts: { currentUid?: string; friendships?: Friendship[] } = {}
+    opts: {
+      currentUid?: string;
+      friendships?: Friendship[];
+      incomingRequests?: Array<Partial<FriendRequest>>;
+      outgoingRequests?: Array<Partial<FriendRequest>>;
+      ownSharedSummaries?: SharedTaskSummary[];
+    } = {}
   ) {
     const groupsFriendsList = makeElement();
     const groupsFriendsTitle = makeElement();
+    const groupsIncomingRequestsTitle = makeElement();
+    const groupsOutgoingRequestsTitle = makeElement();
+    const groupsSharedByYouTitle = makeElement();
     const friendships = opts.friendships ?? [makeFriendship("friend-b", "Friend Bee")];
+    const incomingRequests = opts.incomingRequests ?? [];
+    const outgoingRequests = opts.outgoingRequests ?? [];
+    const ownSharedSummaries = opts.ownSharedSummaries ?? [];
 
     const ctx = {
       els: {
@@ -258,23 +271,28 @@ describe("groups friends list shared task counts", () => {
         groupsFriendsList,
         groupsIncomingRequestsDetails: makeElement(),
         groupsIncomingRequestsList: makeElement(),
-        groupsIncomingRequestsTitle: makeElement(),
+        groupsIncomingRequestsTitle,
         groupsOutgoingRequestsDetails: makeElement(),
         groupsOutgoingRequestsList: makeElement(),
-        groupsOutgoingRequestsTitle: makeElement(),
+        groupsOutgoingRequestsTitle,
         groupsSharedByYouList: makeElement(),
-        groupsSharedByYouTitle: makeElement(),
+        groupsSharedByYouTitle,
         openFriendRequestModalBtn: null,
       },
       on: vi.fn(),
       getCurrentUid: () => opts.currentUid ?? "user-a",
       getGroupsLoading: () => false,
-      getGroupsIncomingRequests: () => [],
-      getGroupsOutgoingRequests: () => [],
+      getGroupsIncomingRequests: () => incomingRequests,
+      getGroupsOutgoingRequests: () => outgoingRequests,
       getGroupsFriendships: () => friendships,
       getGroupsSharedSummaries: () => sharedSummaries,
-      getOwnSharedSummaries: () => [],
+      getOwnSharedSummaries: () => ownSharedSummaries,
       getOpenFriendSharedTaskUids: () => new Set<string>(),
+      getFriendProfileCacheByUid: () => ({}),
+      getFriendAvatarSrcById: vi.fn(() => "/incoming-avatar.webp"),
+      buildFriendInitialAvatarDataUrl: vi.fn(() => "/outgoing-avatar.webp"),
+      getTasks: () => [{ id: "task-1", color: null }],
+      getWeekStarting: () => "mon",
       hasEntitlement: () => true,
       getCurrentPlan: () => "pro",
       getMergedFriendProfile: (_friendUid: string, baseProfile?: FriendProfile | null) => baseProfile || ({ alias: "Friend Bee" } as FriendProfile),
@@ -287,14 +305,20 @@ describe("groups friends list shared task counts", () => {
     };
 
     createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).renderGroupsPage();
-    return { html: groupsFriendsList.innerHTML, title: groupsFriendsTitle.textContent };
+    return {
+      html: groupsFriendsList.innerHTML,
+      title: groupsFriendsTitle.textContent,
+      incomingTitle: groupsIncomingRequestsTitle.textContent,
+      outgoingTitle: groupsOutgoingRequestsTitle.textContent,
+      sharedByYouTitle: groupsSharedByYouTitle.textContent,
+    };
   }
 
-  it("omits the shared count meta when a friend has zero shared tasks", () => {
+  it("renders the shared count meta when a friend has zero shared tasks", () => {
     const { html } = renderFriendsList([]);
 
-    expect(html).not.toContain("0 tasks shared with you");
-    expect(html).not.toContain('class="friendIdentityMeta"');
+    expect(html).toContain('class="friendIdentityMeta"');
+    expect(html).toContain("Tasks shared with you | 0");
     expect(html).toContain("No tasks shared with you.");
   });
 
@@ -302,14 +326,14 @@ describe("groups friends list shared task counts", () => {
     const { html } = renderFriendsList([makeSharedSummary()]);
 
     expect(html).toContain('class="friendIdentityMeta"');
-    expect(html).toContain("1 task shared with you");
+    expect(html).toContain("Tasks shared with you | 1");
     expect(html).not.toContain("No tasks shared with you.");
   });
 
   it("renders the friends title count for zero friends", () => {
     const { title } = renderFriendsList([], { friendships: [] });
 
-    expect(title).toBe("Friends (0)");
+    expect(title).toBe("Friends | 0");
   });
 
   it("renders the friends title count for accepted friendships", () => {
@@ -317,7 +341,7 @@ describe("groups friends list shared task counts", () => {
       friendships: [makeFriendship("friend-b", "Friend Bee"), makeFriendship("friend-c", "Friend Cee")],
     });
 
-    expect(title).toBe("Friends (2)");
+    expect(title).toBe("Friends | 2");
   });
 
   it("renders zero friends in the title when signed out", () => {
@@ -326,7 +350,28 @@ describe("groups friends list shared task counts", () => {
       friendships: [makeFriendship("friend-b", "Friend Bee"), makeFriendship("friend-c", "Friend Cee")],
     });
 
-    expect(title).toBe("Friends (0)");
+    expect(title).toBe("Friends | 0");
+  });
+
+  it("renders request title counts with pipe separators", () => {
+    const { incomingTitle, outgoingTitle } = renderFriendsList([], {
+      incomingRequests: [{ requestId: "incoming-1", senderUid: "friend-b", senderEmail: "bee@example.com", status: "pending" }],
+      outgoingRequests: [
+        { requestId: "outgoing-1", receiverUid: "friend-c", receiverEmail: "cee@example.com", status: "pending" },
+        { requestId: "outgoing-2", receiverUid: "friend-d", receiverEmail: "dee@example.com", status: "pending" },
+      ],
+    });
+
+    expect(incomingTitle).toBe("Incoming requests | 1");
+    expect(outgoingTitle).toBe("Outgoing requests | 2");
+  });
+
+  it("renders shared-by-you title count with a pipe separator", () => {
+    const { sharedByYouTitle } = renderFriendsList([], {
+      ownSharedSummaries: [makeSharedSummary({ ownerUid: "user-a", friendUid: "friend-b" })],
+    });
+
+    expect(sharedByYouTitle).toBe("Shared by you | 1");
   });
 });
 
@@ -1203,8 +1248,6 @@ describe("shared task info metrics", () => {
         todayLoggedMs: 30 * 60_000,
         weekLoggedMs: 2 * 60 * 60_000,
         weekGoalMs: 7 * 60 * 60_000,
-        avgTimeLoggedThisWeekMs: 20 * 60_000,
-        totalTimeLoggedMs: 5 * 60 * 60_000,
       },
       escapeHtmlUI
     );
@@ -1212,8 +1255,8 @@ describe("shared task info metrics", () => {
     expect(html).toContain("Goal: 01h");
     expect(html).toContain("Today: 30m");
     expect(html).toContain("This Week: 29%");
-    expect(html).toContain("Daily avg: 20m");
-    expect(html).toContain("Total logged: 05h");
+    expect(html).not.toContain("Daily avg:");
+    expect(html).not.toContain("Total logged:");
     expect(html).not.toContain("Created:");
   });
 
@@ -1253,13 +1296,48 @@ describe("shared task info metrics", () => {
         todayLoggedMs: 0,
         weekLoggedMs: 0,
         weekGoalMs: null,
-        avgTimeLoggedThisWeekMs: 0,
-        totalTimeLoggedMs: 0,
       },
       escapeHtmlUI
     );
 
     expect(html).toContain("Goal: No goal");
     expect(html).toContain("This Week: No goal");
+  });
+
+  it("renders a weekly chart with seven rotated bars for the configured week start", () => {
+    const html = renderSharedTaskWeeklyChart(
+      {
+        focusTrend7dMs: [10 * 60_000, 20 * 60_000, 30 * 60_000, 40 * 60_000, 50 * 60_000, 60 * 60_000, 90 * 60_000],
+      },
+      "mon",
+      escapeHtmlUI
+    );
+
+    expect(html.match(/friendSharedTaskChartBarSlot/g)).toHaveLength(7);
+    expect(html).toContain("<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>");
+    expect(html).toContain('aria-label="Mon: 20m"');
+    expect(html).toContain('aria-label="Sat: 01h 30m"');
+    expect(html).toContain('aria-label="Sun: 10m"');
+  });
+
+  it("renders a stable empty weekly chart when trend data is missing", () => {
+    const html = renderSharedTaskWeeklyChart({}, "sun", escapeHtmlUI);
+
+    expect(html.match(/friendSharedTaskChartBarSlot/g)).toHaveLength(7);
+    expect(html).toContain("Scale 0 to 01h.");
+    expect(html).toContain('aria-label="Sun: 00s"');
+  });
+
+  it("formats the weekly chart y-axis max as a rounded compact duration", () => {
+    const html = renderSharedTaskWeeklyChart(
+      {
+        focusTrend7dMs: [0, 0, 0, 0, 0, 0, 95 * 60_000],
+      },
+      "sat",
+      escapeHtmlUI
+    );
+
+    expect(html).toContain("Scale 0 to 02h.");
+    expect(html).toContain("<span>02h</span>");
   });
 });

@@ -62,8 +62,8 @@ import {
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  buildRankRivalLadderViewModel,
   buildGlobalLeaderboardRows,
-  buildRivalLeaderboardRows,
   buildWeeklyLeaderboardRows,
   buildLeaderboardMetricsSnapshot,
   formatWeeklyLeaderboardTimeRemaining,
@@ -74,6 +74,8 @@ import {
   saveLeaderboardProfile,
   type LeaderboardProfile,
   type LeaderboardScreenData,
+  type RankRivalLadderViewModel,
+  type RankRivalLadderRow,
   type WeeklyLeaderboardRow,
 } from "./lib/leaderboard";
 import {
@@ -345,6 +347,125 @@ function LeaderboardSharedTable({
             </span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function RankRivalsRankSlot({
+  rank,
+  eyebrow,
+  emptyLabel,
+  active = false,
+}: {
+  rank: RankRivalLadderViewModel["currentRank"] | null;
+  eyebrow: string;
+  emptyLabel?: string;
+  active?: boolean;
+}) {
+  return (
+    <div className={`rankRivalsRankSlot${active ? " isCurrent" : ""}${rank ? "" : " isEmpty"}`}>
+      <RankThumbnail
+        rankId={rank?.id || "unranked"}
+        storedThumbnailSrc=""
+        className="rankRivalsRankBadge"
+        imageClassName="rankRivalsRankBadgeImg"
+        placeholderClassName="rankRivalsRankBadgePlaceholder"
+        alt=""
+        size={active ? 92 : 72}
+        aria-hidden
+      />
+      <span className="rankRivalsRankEyebrow">{eyebrow}</span>
+      <strong className="rankRivalsRankName">{rank?.label || emptyLabel || eyebrow}</strong>
+    </div>
+  );
+}
+
+function RankRivalsRow({
+  row,
+  isMaxRank,
+  onOpenProfile,
+}: {
+  row: RankRivalLadderRow;
+  isMaxRank: boolean;
+  onOpenProfile: (profile: LeaderboardProfile) => void;
+}) {
+  const progressStyle = { "--rank-rival-progress": `${row.progressPct}%` } as CSSProperties;
+  return (
+    <button
+      className={`rankRivalsTableRow${row.isCurrentUser ? " isCurrentUser" : ""} isStatus-${row.status}`}
+      type="button"
+      role="row"
+      data-leaderboard-profile-open={row.profile.uid}
+      onClick={() => onOpenProfile(row.profile)}
+    >
+      <span className="rankRivalsPositionCell" role="cell">
+        <strong>{row.rank}</strong>
+      </span>
+      <span className="rankRivalsUserCell" role="cell">
+        <LeaderboardAvatar profile={row.profile} small />
+        <strong>{row.playerLabel}</strong>
+      </span>
+      <span className="rankRivalsStatusCell" role="cell">
+        <span className="rankRivalsStatusPill">{row.statusLabel}</span>
+      </span>
+      <span className="rankRivalsXpCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp).replace(" XP", "")}</span>
+      <span className="rankRivalsRemainingCell" role="cell">{row.remainingLabel}</span>
+      <span
+        className="rankRivalsProgressCell"
+        role="cell"
+        aria-label={isMaxRank ? "Max rank reached" : `${row.progressLabel} progress toward next rank`}
+      >
+        <strong>{row.progressLabel}</strong>
+        <span className="rankRivalsProgressTrack" style={progressStyle} aria-hidden="true" />
+      </span>
+    </button>
+  );
+}
+
+function RankRivalsLadder({
+  viewModel,
+  onOpenProfile,
+}: {
+  viewModel: RankRivalLadderViewModel;
+  onOpenProfile: (profile: LeaderboardProfile) => void;
+}) {
+  return (
+    <div className="rankRivalsLadder" aria-label={`Rank Rivals ladder for ${viewModel.currentRank.label}.`}>
+      <div className="rankRivalsRankPanel">
+        <div className="rankRivalsHexPattern" aria-hidden="true" />
+        <div className="rankRivalsRankTrack">
+          <RankRivalsRankSlot rank={viewModel.previousRank} eyebrow="Previous Rank" />
+          <span className="rankRivalsArrow" aria-hidden="true">-&gt;</span>
+          <RankRivalsRankSlot rank={viewModel.currentRank} eyebrow="Current Rank" active />
+          <span className="rankRivalsArrow" aria-hidden="true">-&gt;</span>
+          <RankRivalsRankSlot rank={viewModel.nextRank} eyebrow="Next Rank" emptyLabel="Max Rank" />
+        </div>
+      </div>
+
+      <div className="rankRivalsTablePanel">
+        <div className="rankRivalsTargetLine">
+          <span className="rankRivalsTargetIcon" aria-hidden="true">R</span>
+          <strong>{viewModel.subtitle}</strong>
+        </div>
+        <div className="rankRivalsTable" role="table" aria-label="Rank Rivals standings">
+          <div className="rankRivalsTableRow rankRivalsTableHead" role="row">
+            <span role="columnheader">Position</span>
+            <span role="columnheader">User</span>
+            <span role="columnheader">Status</span>
+            <span role="columnheader">XP</span>
+            <span role="columnheader">Remaining</span>
+            <span role="columnheader">Progress</span>
+          </div>
+          {viewModel.rows.map((row) => (
+            <RankRivalsRow
+              key={`${row.profile.uid}-${row.rank}`}
+              row={row}
+              isMaxRank={viewModel.isMaxRank}
+              onOpenProfile={onOpenProfile}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -882,18 +1003,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const globalTableRows = globalRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasGlobalRows = globalRows.length > 0;
-  const rivalRows = useMemo(
+  const rankRivalLadder = useMemo(
     () =>
-      buildRivalLeaderboardRows({
+      buildRankRivalLadderViewModel({
         rivalEntries: hydratedRivalEntries,
         currentUserEntry: hydratedCurrentUserEntry,
         currentUserRivalRank: leaderboardData.currentUserRivalRank,
       }),
     [hydratedCurrentUserEntry, hydratedRivalEntries, leaderboardData.currentUserRivalRank]
   );
-  const rivalPodiumRows = rivalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
-  const rivalTableRows = rivalRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
-  const hasRivalRows = rivalRows.length > 0;
+  const hasRivalRows = !!rankRivalLadder && rankRivalLadder.rows.length > 0;
   const selectedLeaderboardLabel = selectedLeaderboardProfile ? getLeaderboardLabel(selectedLeaderboardProfile) : "";
   const selectedLeaderboardMemberSince = selectedLeaderboardProfile
     ? formatLeaderboardMemberSince(selectedLeaderboardProfile.memberSinceMs)
@@ -909,9 +1028,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     ? getLeaderboardInitials(getLeaderboardLabel(hydratedCurrentUserEntry))
     : getLeaderboardInitials(hydratedCurrentUserProfileLabel || "User");
   const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
-  const currentUserRankLabel = hydratedCurrentUserEntry ? getLeaderboardRankLabel(hydratedCurrentUserEntry) : "your rank";
-  const currentUserRankId = hydratedCurrentUserEntry ? getLeaderboardResolvedRank(hydratedCurrentUserEntry).id : "";
-  const rankRivalsTitle = hydratedCurrentUserEntry ? `${currentUserRankLabel} Ranks` : "Rank Rivals";
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -1161,26 +1277,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               <div className="dashboardGrid">
                 <section className="dashboardCard" aria-label="Friends list">
                   <div className="dashboardCardTitle" id="groupsFriendsTitle">
-                    Friends (0)
+                    Friends | 0
                   </div>
                   <div id="groupsFriendsList" className="settingsDetailNote" />
-                </section>
-
-                <section className="dashboardCard" aria-label="Tasks shared by you">
-                  <details id="groupsSharedByYouDetails">
-                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
-                      0 shared by you
-                    </summary>
-                    <div id="groupsSharedByYouList" className="settingsDetailNote">
-                      No shared tasks.
-                    </div>
-                  </details>
                 </section>
 
                 <section className="dashboardCard" aria-label="Incoming requests">
                   <details id="groupsIncomingRequestsDetails">
                     <summary className="dashboardCardTitle" id="groupsIncomingRequestsTitle">
-                      0 Incoming Requests
+                      Incoming requests | 0
                     </summary>
                     <div id="groupsIncomingRequestsList" className="settingsDetailNote isEmptyStatus">
                       No incoming requests.
@@ -1191,10 +1296,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <section className="dashboardCard" aria-label="Outgoing requests">
                   <details id="groupsOutgoingRequestsDetails">
                     <summary className="dashboardCardTitle" id="groupsOutgoingRequestsTitle">
-                      0 Outgoing Requests
+                      Outgoing requests | 0
                     </summary>
                     <div id="groupsOutgoingRequestsList" className="settingsDetailNote isEmptyStatus">
                       No outgoing requests.
+                    </div>
+                  </details>
+                </section>
+
+                <section className="dashboardCard" aria-label="Tasks shared by you">
+                  <details id="groupsSharedByYouDetails">
+                    <summary className="dashboardCardTitle" id="groupsSharedByYouTitle">
+                      Shared by you | 0
+                    </summary>
+                    <div id="groupsSharedByYouList" className="settingsDetailNote">
+                      No shared tasks.
                     </div>
                   </details>
                 </section>
@@ -1322,70 +1438,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 </section>
               ) : leaderboardView === "rivals" ? (
                 <section
-                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard leaderboardGlobalBoard"
+                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard rankRivalsBoard"
                   id="leaderboardRivalsPanel"
                   role="tabpanel"
                   aria-labelledby="leaderboardRivalsTab"
                   aria-label="Rank Rivals leaderboard rankings"
                 >
-                  {leaderboardState === "ready" && hasRivalRows ? (
-                    <>
-                      <div className="leaderboardGlobalStage" aria-label={`Rank Rivals ladder for ${currentUserRankLabel}.`}>
-                        <div className="leaderboardRivalsTitleOverlay" aria-hidden="true">
-                          <span className="leaderboardRivalsTitle">{rankRivalsTitle}</span>
-                          {currentUserRankId ? (
-                            <RankThumbnail
-                              rankId={currentUserRankId}
-                              storedThumbnailSrc=""
-                              className="leaderboardRivalsTitleInsignia"
-                              imageClassName="leaderboardRivalsTitleInsigniaImg"
-                              placeholderClassName="leaderboardRivalsTitleInsigniaPlaceholder"
-                              alt=""
-                              size={34}
-                              aria-hidden
-                            />
-                          ) : null}
-                        </div>
-                        {rivalPodiumRows.map((row) => (
-                          <button
-                            className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                            type="button"
-                            key={row.profile.uid}
-                            disabled={row.isPlaceholder || row.isDummy}
-                            aria-disabled={row.isPlaceholder || row.isDummy}
-                            data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                            onClick={() => {
-                              if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
-                            }}
-                          >
-                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
-                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
-                            <span className="leaderboardGlobalPodiumAvatarSlot">
-                              {row.isPlaceholder ? null : (
-                                <>
-                                  <LeaderboardAvatar profile={row.profile} />
-                                  <LeaderboardRankInsignia profile={row.profile} />
-                                </>
-                              )}
-                            </span>
-                            <span className="leaderboardGlobalPodiumText">
-                              <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
-                              <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                              {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <LeaderboardSharedTable
-                        rows={rivalTableRows}
-                        metricHeader="Total XP"
-                        ariaLabel="Rivals leaderboard table"
-                        className="leaderboardGlobalTableWrap"
-                        formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
-                        onOpenProfile={openLeaderboardProfile}
-                      />
-                    </>
+                  {leaderboardState === "ready" && hasRivalRows && rankRivalLadder ? (
+                    <RankRivalsLadder viewModel={rankRivalLadder} onOpenProfile={openLeaderboardProfile} />
                   ) : (
                     leaderboardState === "ready" ? null : (
                       <div className="leaderboardPanelText">

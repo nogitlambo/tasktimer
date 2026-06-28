@@ -1390,6 +1390,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-height: 36px;
 }
 
+@media (max-width: 640px){
+  #taskManualEntryOverlay .hmManualEntryFooterBtns{
+    display:flex;
+    flex-direction:row;
+    flex-wrap:nowrap;
+    justify-content:stretch;
+  }
+
+  #taskManualEntryOverlay .hmManualEntryFooterBtns .btn{
+    flex:1 1 0;
+    min-width:0;
+  }
+}
+
 #editOverlay .unitBtn.isOn,
 #editOverlay .timerTypePill.isOn{
   border-color: rgba(201,255,36,.56) !important;

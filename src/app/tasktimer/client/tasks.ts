@@ -7,6 +7,7 @@ import { createTaskDestructiveActionEffects } from "./task-destructive-action-ef
 import { createTaskListRenderer } from "./task-list-renderer";
 import { createTaskManualEntryInteraction } from "./task-manual-entry-interaction";
 import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal";
+import { getRichNoteEditorValue } from "./rich-session-notes";
 import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 
@@ -350,7 +351,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       taskManualEntry.setMinutesValue(value);
     });
     ctx.on(els.taskManualNoteInput, "input", () => {
-      const value = String(els.taskManualNoteInput?.value || "");
+      const value = getRichNoteEditorValue(els.taskManualNoteInput as HTMLElement | null);
       taskManualEntry.setNoteValue(value);
     });
   }

@@ -19,7 +19,7 @@ import {
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
 import { localDayKey } from "../lib/history";
-import { formatDashboardDurationShort, startOfCurrentWeekMs } from "../lib/historyChart";
+import { formatDashboardDurationShort, getDashboardWeekdayLabels, startOfCurrentWeekMs } from "../lib/historyChart";
 import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerGroupsContext } from "./context";
@@ -53,8 +53,7 @@ type SharedTaskCardSummary = {
   todayLoggedMs?: number;
   weekLoggedMs?: number;
   weekGoalMs?: number | null;
-  avgTimeLoggedThisWeekMs?: number;
-  totalTimeLoggedMs?: number;
+  focusTrend7dMs?: number[];
 };
 
 type SharedTaskHistoryEntryLike = {
@@ -170,13 +169,66 @@ export function renderSharedTaskMetricRows(summary: SharedTaskCardSummary, escap
                   <div class="friendSharedTaskMeta">Today: ${escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(summary.todayLoggedMs || 0))
                   )}</div>
-                  <div class="friendSharedTaskMeta">This Week: ${escapeHtmlUI(formatSharedTaskWeekPercent(summary))}</div>
-                  <div class="friendSharedTaskMeta">Daily avg: ${escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(summary.avgTimeLoggedThisWeekMs || 0))
-                  )}</div>
-                  <div class="friendSharedTaskMeta">Total logged: ${escapeHtmlUI(
-                    formatCompactDurationForSharedCard(Number(summary.totalTimeLoggedMs || 0))
-                  )}</div>`;
+                  <div class="friendSharedTaskMeta">This Week: ${escapeHtmlUI(formatSharedTaskWeekPercent(summary))}</div>`;
+}
+
+const sharedTaskDayIndexesByWeekStart: Record<Parameters<typeof startOfCurrentWeekMs>[1], number[]> = {
+  sun: [0, 1, 2, 3, 4, 5, 6],
+  mon: [1, 2, 3, 4, 5, 6, 0],
+  tue: [2, 3, 4, 5, 6, 0, 1],
+  wed: [3, 4, 5, 6, 0, 1, 2],
+  thu: [4, 5, 6, 0, 1, 2, 3],
+  fri: [5, 6, 0, 1, 2, 3, 4],
+  sat: [6, 0, 1, 2, 3, 4, 5],
+};
+
+function roundSharedTaskChartMaxMs(maxMsRaw: number) {
+  const maxMs = Math.max(0, Math.floor(Number(maxMsRaw) || 0));
+  if (maxMs <= 0) return 60 * 60_000;
+  const hourMs = 60 * 60_000;
+  const fifteenMinuteMs = 15 * 60_000;
+  if (maxMs >= hourMs) return Math.ceil(maxMs / hourMs) * hourMs;
+  return Math.ceil(maxMs / fifteenMinuteMs) * fifteenMinuteMs;
+}
+
+export function renderSharedTaskWeeklyChart(
+  summary: SharedTaskCardSummary,
+  weekStarting: Parameters<typeof startOfCurrentWeekMs>[1],
+  escapeHtmlUI: (value: unknown) => string
+) {
+  const rawTrend = Array.isArray(summary.focusTrend7dMs) ? summary.focusTrend7dMs : [];
+  const trend = new Array(7).fill(0).map((_, i) => Math.max(0, Math.floor(Number(rawTrend[i] || 0))));
+  const dayIndexes = sharedTaskDayIndexesByWeekStart[weekStarting] || sharedTaskDayIndexesByWeekStart.mon;
+  const labels = getDashboardWeekdayLabels(weekStarting);
+  const orderedValues = dayIndexes.map((dayIndex) => trend[dayIndex] || 0);
+  const chartMaxMs = roundSharedTaskChartMaxMs(Math.max(...orderedValues, 0));
+  const maxLabel = formatCompactDurationForSharedCard(chartMaxMs);
+  const barsHtml = orderedValues
+    .map((value, index) => {
+      const label = labels[index] || "";
+      const duration = formatCompactDurationForSharedCard(value);
+      const heightPct = chartMaxMs > 0 ? Math.max(0, Math.min(100, Math.round((value / chartMaxMs) * 100))) : 0;
+      const barClass = value > 0 ? "friendSharedTaskChartBar isActive" : "friendSharedTaskChartBar";
+      return `<div class="friendSharedTaskChartBarSlot" title="${escapeHtmlUI(`${label}: ${duration}`)}" aria-label="${escapeHtmlUI(
+        `${label}: ${duration}`
+      )}">
+                      <span class="${barClass}" style="--friend-shared-task-chart-bar: ${heightPct}%"></span>
+                    </div>`;
+    })
+    .join("");
+  const labelsHtml = labels.map((label) => `<span>${escapeHtmlUI(label)}</span>`).join("");
+  return `<div class="friendSharedTaskChart" role="img" aria-label="${escapeHtmlUI(
+    `Weekly logged time chart. Scale 0 to ${maxLabel}.`
+  )}">
+                  <div class="friendSharedTaskChartYAxis" aria-hidden="true">
+                    <span>${escapeHtmlUI(maxLabel)}</span>
+                    <span>0</span>
+                  </div>
+                  <div class="friendSharedTaskChartBody">
+                    <div class="friendSharedTaskChartBars">${barsHtml}</div>
+                    <div class="friendSharedTaskChartXAxis" aria-hidden="true">${labelsHtml}</div>
+                  </div>
+                </div>`;
 }
 
 export function computeSharedTaskTimingMetrics(options: {
@@ -290,7 +342,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
 
   function renderGroupsLockedState() {
     if (els.groupsFriendsTitle) {
-      els.groupsFriendsTitle.textContent = "Friends (0)";
+      els.groupsFriendsTitle.textContent = "Friends | 0";
     }
     if (els.groupsFriendsList) {
       els.groupsFriendsList.innerHTML = '<div class="settingsDetailNote isEmptyStatus">Upgrade to Pro to unlock friends, sharing, and social progress.</div>';
@@ -1293,9 +1345,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function renderGroupsRequestsList(container: HTMLElement | null, rows: any[], opts: { incoming: boolean }) {
     const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
     const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
-    const titleSuffix = opts.incoming ? "Incoming Requests" : "Outgoing Requests";
+    const titlePrefix = opts.incoming ? "Incoming requests" : "Outgoing requests";
     if (titleEl) {
-      titleEl.textContent = `${rows.length} ${titleSuffix}`;
+      titleEl.textContent = `${titlePrefix} | ${rows.length}`;
       titleEl.classList.toggle("isEmptyCount", rows.length === 0);
     }
     if (detailsEl) detailsEl.open = rows.length > 0;
@@ -1363,7 +1415,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const uid = ctx.getCurrentUid();
     const friendCount = uid ? ctx.getGroupsFriendships().length : 0;
     if (els.groupsFriendsTitle) {
-      els.groupsFriendsTitle.textContent = `Friends (${friendCount})`;
+      els.groupsFriendsTitle.textContent = `Friends | ${friendCount}`;
     }
     const openIds = ctx.getOpenFriendSharedTaskUids();
     if (!uid) {
@@ -1416,14 +1468,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
                   ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
                 </div>
+                ${renderSharedTaskWeeklyChart(entry, ctx.getWeekStarting(), ctx.escapeHtmlUI)}
               </div>
             </div>`;
           })
           .join("");
         const taskCount = row.summaries.length;
-        const sharedCountLabel = `${taskCount} task${taskCount === 1 ? "" : "s"} shared with you`;
-        const sharedCountMetaHtml =
-          taskCount > 0 ? `<span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>` : "";
+        const sharedCountLabel = `Tasks shared with you | ${taskCount}`;
+        const sharedCountMetaHtml = `<span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>`;
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
             <summary class="settingsDetailNote friendIdentityRow">
@@ -1454,7 +1506,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const ownSharedSummaries = ctx.getOwnSharedSummaries();
     const uniqueSharedTaskCount = new Set(ownSharedSummaries.map((entry) => String(entry.taskId || "").trim()).filter(Boolean)).size;
     if (titleEl) {
-      titleEl.textContent = `${uniqueSharedTaskCount} shared by you`;
+      titleEl.textContent = `Shared by you | ${uniqueSharedTaskCount}`;
       titleEl.classList.toggle("isEmptyCount", uniqueSharedTaskCount === 0);
     }
     if (!ownSharedSummaries.length) {

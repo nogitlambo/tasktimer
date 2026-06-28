@@ -135,7 +135,7 @@ describe("dashboard tasks completed card module", () => {
     expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
   });
 
-  it("does not complete a goal task from metadata alone", () => {
+  it("bridges valid goal completion metadata when history is missing", () => {
     const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
     const goalFocus = task({
       id: "task-1",
@@ -157,8 +157,73 @@ describe("dashboard tasks completed card module", () => {
       normalizeHistoryTimestampMs: (value) => Number(value) || 0,
     });
 
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
+  });
+
+  it("bridges valid goal completion metadata when history is temporarily short", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const goalFocus = task({
+      id: "task-1",
+      name: "Goal Focus",
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(goalFocus)],
+      historyByTaskId: {
+        "task-1": [{ ts: nowMs - 1000, name: "Goal Focus", ms: 30 * 60 * 1000 }],
+      },
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
+  });
+
+  it("does not bridge stale or under-goal goal completion metadata", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const staleGoalFocus = task({
+      id: "task-1",
+      name: "Goal Focus",
+      timeGoalCompletedDayKey: "2026-05-04",
+      timeGoalCompletedAtMs: nowMs - 24 * 60 * 60 * 1000,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
+    const underGoalFocus = task({
+      id: "task-2",
+      name: "Under Goal Focus",
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 30 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(staleGoalFocus), opportunity(underGoalFocus)],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
     expect(model.totalCompleted).toBe(0);
-    expect(model.items[0]).toMatchObject({ progress: 0, complete: false });
+    expect(model.items.map((item) => ({ progress: item.progress, complete: item.complete }))).toEqual([
+      { progress: 0, complete: false },
+      { progress: 0, complete: false },
+    ]);
   });
 
   it("weights scheduled weekly tasks by today's split duration", () => {
@@ -221,5 +286,35 @@ describe("dashboard tasks completed card module", () => {
 
     expect(model.items[0]).toMatchObject({ name: "Weekly", goalMinutes: 120, progress: 1, complete: true });
     expect(model.ariaLabel).toContain("Today's task completion");
+  });
+
+  it("bridges valid weekly goal metadata for weekly task opportunities", () => {
+    const nowMs = new Date("2026-05-06T12:00:00Z").getTime();
+    const weekStartMs = new Date("2026-05-04T00:00:00Z").getTime();
+    const weekly = task({
+      id: "weekly",
+      name: "Weekly",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 360,
+      timeGoalCompletedWeekKey: "2026-05-04",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 120 * 60 * 1000,
+      plannedStartByDay: { mon: "10:00", wed: "10:00", fri: "10:00" },
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(weekly, { goalMinutes: 120, historyScope: "week" })],
+      historyByTaskId: {},
+      nowMs,
+      weekStartMs,
+      todayKey: "2026-05-06",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ name: "Weekly", goalMinutes: 120, progress: 1, complete: true });
   });
 });

@@ -236,7 +236,7 @@ const els = {
   taskManualElapsedField: documentRef.getElementById("taskManualElapsedField") as HTMLElement | null,
   taskManualHoursInput: documentRef.getElementById("taskManualHoursInput") as HTMLInputElement | null,
   taskManualMinutesInput: documentRef.getElementById("taskManualMinutesInput") as HTMLInputElement | null,
-  taskManualNoteInput: documentRef.getElementById("taskManualNoteInput") as HTMLInputElement | null,
+  taskManualNoteInput: documentRef.getElementById("taskManualNoteInput") as HTMLElement | null,
   taskManualEntryError: documentRef.getElementById("taskManualEntryError"),
   taskManualEntryCancelBtn: documentRef.getElementById("taskManualEntryCancelBtn") as HTMLButtonElement | null,
   taskManualEntrySaveBtn: documentRef.getElementById("taskManualEntrySaveBtn") as HTMLButtonElement | null,

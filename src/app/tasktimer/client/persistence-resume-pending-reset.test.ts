@@ -246,4 +246,56 @@ describe("task timer persistence resume-pending cleanup", () => {
     expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
+
+  it("finalizes a 10-minute closed-app daily goal with a goal-length history row", () => {
+    const startedAtMs = new Date(2026, 4, 2, 9, 0, 0).getTime();
+    const updatedAtMs = startedAtMs + 7 * 60_000;
+    const nowValue = startedAtMs + 15 * 60_000;
+    const goalMs = 10 * 60_000;
+    const harness = createHarness(
+      [
+        task({
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 10,
+        }),
+      ],
+      nowValue,
+      {
+        "task-1": {
+          sessionId: "session-10m",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs,
+          updatedAtMs,
+          elapsedMs: 7 * 60_000,
+          status: "running",
+        },
+      }
+    );
+
+    harness.api.load();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      accumulatedMs: goalMs,
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: "2026-05-02",
+      timeGoalCompletedAtMs: startedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: goalMs,
+    });
+    expect(harness.getHistory()["task-1"]).toEqual([
+      {
+        ts: startedAtMs,
+        name: "Focus",
+        ms: goalMs,
+        sessionId: "session-10m",
+      },
+    ]);
+    expect(harness.finalizeLiveSession).toHaveBeenCalledWith(harness.getTasks()[0], {
+      elapsedMs: goalMs,
+      completedAtMs: startedAtMs,
+    });
+  });
 });

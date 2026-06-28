@@ -475,6 +475,20 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
     0 0 0 1px rgba(194, 201, 211, .18);
 }
 
+#taskManualEntryOverlay .hmManualEntryNoteField{
+  gap:0;
+}
+
+#taskManualEntryOverlay .hmManualEntryNoteField .hmManualEntryLabel{
+  margin-bottom:6px;
+}
+
+#taskManualEntryOverlay .hmManualEntryNoteInput{
+  min-height:108px;
+  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-size:13px;
+}
+
 .hmTable{
   width:100%;
   border-collapse: collapse;

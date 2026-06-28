@@ -4,6 +4,7 @@ import {
   parseHistoryManagerManualDraft,
   type HistoryManagerManualDraft,
 } from "./history-manager-shared";
+import { setRichNoteEditorValue } from "./rich-session-notes";
 
 type TaskManualEntryElements = {
   overlay: HTMLElement | null;
@@ -15,7 +16,7 @@ type TaskManualEntryElements = {
   elapsedField: HTMLElement | null;
   hoursInput: HTMLInputElement | null;
   minutesInput: HTMLInputElement | null;
-  noteInput: HTMLInputElement | HTMLTextAreaElement | null;
+  noteInput: HTMLElement | null;
   error: HTMLElement | null;
 };
 
@@ -89,8 +90,7 @@ export function createTaskManualEntryInteraction(
       elements.hoursInput.value = currentDraft.hoursValue || "";
     if (elements.minutesInput)
       elements.minutesInput.value = currentDraft.minutesValue || "";
-    if (elements.noteInput)
-      elements.noteInput.value = currentDraft.noteValue || "";
+    setRichNoteEditorValue(elements.noteInput, currentDraft.noteValue || "");
     const logTimeGoalOn = currentDraft.logTimeGoalAvailable && currentDraft.logTimeGoal;
     if (elements.logTimeGoalToggle) {
       elements.logTimeGoalToggle.disabled = !currentDraft.logTimeGoalAvailable;

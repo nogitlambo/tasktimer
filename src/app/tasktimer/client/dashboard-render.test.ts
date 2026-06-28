@@ -1170,7 +1170,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("does not complete scheduled tasks from time-goal state without qualifying history", () => {
+  it("bridges valid scheduled task completion metadata while history is delayed", () => {
     const today = todaySchedule();
     const todayKey = localDayKey(Date.now());
     const tasks = [
@@ -1184,6 +1184,7 @@ describe("dashboard completed card", () => {
         timeGoalCompletedDayKey: todayKey,
         timeGoalCompletedAtMs: Date.now(),
         timeGoalCompletedReason: "goal",
+        timeGoalCompletedElapsedMs: 60 * 60 * 1000,
         plannedStartByDay: today,
       }),
       task({
@@ -1205,10 +1206,10 @@ describe("dashboard completed card", () => {
 
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Done Task");
-      expect(labelsEl?.children[0]?.innerHTML).toContain("Not complete");
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Completed");
       expect(labelsEl?.children[1]?.innerHTML).toContain("Open Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("Not complete");
-      expect(centerEl?.innerHTML).toContain("0%");
+      expect(centerEl?.innerHTML).toContain("50%");
     } finally {
       harness.restore();
     }
