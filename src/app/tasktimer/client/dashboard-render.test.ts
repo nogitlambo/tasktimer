@@ -1265,9 +1265,34 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("excludes scheduled tasks when their scheduled day is not today", () => {
+  it("shows recurring daily scheduled tasks when their scheduled day is not today", () => {
     const tasks = [
       task({ id: "scheduled-task", name: "Scheduled Task", plannedStartByDay: nonTodaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const centerEl = harness.byId.get("dashboardTasksCompletedCenter");
+
+      expect(labelsEl?.children).toHaveLength(1);
+      expect(labelsEl?.children[0]?.innerHTML).toContain("Scheduled Task");
+      expect(centerEl?.innerHTML).toContain("0%");
+      expect(centerEl?.innerHTML).toContain("completed today");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("excludes once-off scheduled tasks when their scheduled day is not today", () => {
+    const tasks = [
+      task({
+        id: "once-off-task",
+        name: "Once Off Task",
+        taskType: "once-off",
+        plannedStartByDay: nonTodaySchedule(),
+      }),
     ];
     const harness = createRenderHarness(tasks);
 

@@ -1257,6 +1257,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailBottomSection{
   margin-top: auto;
   padding-top: 18px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailMiddleSection{
@@ -1266,6 +1268,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .desktopRailBottomSection{
     margin-top: auto;
     padding-top: 18px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileDock,
@@ -2086,7 +2090,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileSummarySdCard{
     position: relative;
     overflow: hidden !important;
-    padding: 0 18px 2px !important;
+    padding: 0 0 2px !important;
     border-radius: 8px !important;
     border: 0 !important;
     background: transparent !important;

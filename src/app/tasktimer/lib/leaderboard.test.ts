@@ -505,7 +505,7 @@ describe("buildRankRivalLadderViewModel", () => {
     });
   });
 
-  it("keeps the current user visible when they are outside the top six rivals", () => {
+  it("lists every fetched same-rank rival instead of capping the ladder to six rows", () => {
     const viewModel = buildRankRivalLadderViewModel({
       rivalEntries: Array.from({ length: 8 }, (_, index) =>
         createProfile({
@@ -518,11 +518,21 @@ describe("buildRankRivalLadderViewModel", () => {
       currentUserRivalRank: 9,
     });
 
-    expect(viewModel?.rows).toHaveLength(6);
+    expect(viewModel?.rows).toHaveLength(9);
+    expect(viewModel?.rows.map((row) => row.profile.uid)).toEqual([
+      "rival-1",
+      "rival-2",
+      "rival-3",
+      "rival-4",
+      "rival-5",
+      "rival-6",
+      "rival-7",
+      "rival-8",
+      "me",
+    ]);
     expect(viewModel?.rows.at(-1)).toMatchObject({
       profile: expect.objectContaining({ uid: "me" }),
       isCurrentUser: true,
-      isPinnedCurrentUser: true,
       rank: 9,
     });
   });
@@ -598,6 +608,66 @@ describe("loadLeaderboardScreenData", () => {
     expect(result.currentUserRank).toBe(2);
     expect(result.currentUserRivalRank).toBe(2);
     expect(result.currentUserWeeklyRank).toBe(2);
+  });
+
+  it("loads rank rivals by XP rank band when stored rank ids are stale", async () => {
+    const currentProfile = createProfile({
+      uid: "uid-rank-band",
+      username: "pilot",
+      displayLabel: "pilot",
+      rewardCurrentRankId: "engineer",
+      rewardTotalXp: 1200,
+      weeklyXpGain: 20,
+    });
+    const sameRankStaleLowProfile = createProfile({
+      uid: "uid-2",
+      username: "peer_low",
+      displayLabel: "peer_low",
+      rewardCurrentRankId: "unranked",
+      rewardTotalXp: 1500,
+      weeklyXpGain: 30,
+    });
+    const sameRankStaleHighProfile = createProfile({
+      uid: "uid-3",
+      username: "peer_high",
+      displayLabel: "peer_high",
+      rewardCurrentRankId: "analyst",
+      rewardTotalXp: 1700,
+      weeklyXpGain: 40,
+    });
+    const currentDoc = docSnap("uid-rank-band", currentProfile);
+    const staleLowDoc = docSnap("uid-2", sameRankStaleLowProfile);
+    const staleHighDoc = docSnap("uid-3", sameRankStaleHighProfile);
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.where.mockClear();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(currentDoc);
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc]))
+      .mockResolvedValueOnce(querySnap([staleLowDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc]))
+      .mockResolvedValueOnce(querySnap([staleHighDoc, staleLowDoc]));
+
+    const result = await loadLeaderboardScreenData("uid-rank-band");
+
+    expect(result.rivalEntries.map((entry) => entry.uid)).toEqual(["uid-3", "uid-2", "uid-rank-band"]);
+    expect(result.currentUserRivalRank).toBe(3);
+    expect(firestoreMocks.where.mock.calls.some(([field]) => field === "rewardCurrentRankId")).toBe(false);
+    expect(firestoreMocks.getDocs.mock.calls[5]?.[0]).toMatchObject({
+      constraints: expect.arrayContaining([
+        { type: "where", field: "rewardTotalXp", op: ">=", value: 960 },
+        { type: "where", field: "rewardTotalXp", op: "<", value: 2880 },
+        { type: "orderBy", field: "rewardTotalXp", direction: "desc" },
+        { type: "limit", value: 100 },
+      ]),
+    });
   });
 
   it("returns available leaderboard data when optional rivals queries need missing indexes", async () => {

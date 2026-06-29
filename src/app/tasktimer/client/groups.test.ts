@@ -1320,10 +1320,59 @@ describe("shared task info metrics", () => {
     expect(html).toContain('aria-label="Sun: 10m"');
   });
 
+  it("renders goal-scale y-axis labels at quarter increments for a 20-minute goal", () => {
+    const html = renderSharedTaskWeeklyChart(
+      {
+        dailyGoalMs: 20 * 60_000,
+        focusTrend7dMs: [5 * 60_000, 10 * 60_000, 15 * 60_000, 20 * 60_000, 30 * 60_000, 0, 0],
+      },
+      "sun",
+      escapeHtmlUI
+    );
+
+    expect(html).toContain('class="friendSharedTaskChart isGoalScale"');
+    expect(html).toContain("Goal scale 0 to 20m.");
+    expect(html).toContain("<span>20m</span><span>15m</span><span>10m</span><span>5m</span>");
+    expect(html).toContain("--friend-shared-task-chart-bar: 25%");
+    expect(html).toContain("--friend-shared-task-chart-bar: 50%");
+    expect(html).toContain("--friend-shared-task-chart-bar: 75%");
+    expect(html).toContain("--friend-shared-task-chart-bar: 100%");
+  });
+
+  it("renders goal-scale y-axis labels at quarter increments for a 1-hour goal", () => {
+    const html = renderSharedTaskWeeklyChart(
+      {
+        dailyGoalMs: 60 * 60_000,
+        focusTrend7dMs: [15 * 60_000, 30 * 60_000, 45 * 60_000, 60 * 60_000],
+      },
+      "sun",
+      escapeHtmlUI
+    );
+
+    expect(html).toContain("Goal scale 0 to 1h.");
+    expect(html).toContain("<span>1h</span><span>45m</span><span>30m</span><span>15m</span>");
+  });
+
+  it("caps goal-scale over-goal bars while preserving actual logged duration labels", () => {
+    const html = renderSharedTaskWeeklyChart(
+      {
+        dailyGoalMs: 20 * 60_000,
+        focusTrend7dMs: [45 * 60_000],
+      },
+      "sun",
+      escapeHtmlUI
+    );
+
+    expect(html).toContain('aria-label="Sun: 45m"');
+    expect(html).toContain('title="Sun: 45m"');
+    expect(html).toContain("--friend-shared-task-chart-bar: 100%");
+  });
+
   it("renders a stable empty weekly chart when trend data is missing", () => {
     const html = renderSharedTaskWeeklyChart({}, "sun", escapeHtmlUI);
 
     expect(html.match(/friendSharedTaskChartBarSlot/g)).toHaveLength(7);
+    expect(html).not.toContain("isGoalScale");
     expect(html).toContain("Scale 0 to 01h.");
     expect(html).toContain('aria-label="Sun: 00s"');
   });

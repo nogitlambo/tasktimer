@@ -7,28 +7,9 @@ import { buildPageMetadata, jsonLdScript, organizationJsonLd, softwareApplicatio
 export const metadata: Metadata = buildPageMetadata({
   title: "About TaskLaunch",
   description:
-    "Learn how TaskLaunch supports neurodivergent productivity, ADHD-friendly workflows, sustainable momentum, and progress without perfectionism.",
+    "TaskLaunch is a time tracking and productivity app for sustainable progress, stronger habits, momentum, XP, ranks, and optional productivity leaderboards.",
   path: "/about/",
 });
-
-const HELP_POINTS = [
-  "Quickly resume work without falling victim to self-blame.",
-  "Increase your momentum without stressing out.",
-  "Feel organized without becoming overwhelmed.",
-  "Avoid all-or-nothing thinking.",
-  "Focus on results instead of perfection.",
-  "Recover faster after setbacks and downtime.",
-  "Remain engaged without having to follow a strict streak-based system.",
-];
-
-const FEATURE_POINTS = [
-  "Flexible task management to ease the process of getting started.",
-  "Setting goals and forming habits with less pressure on your shoulders.",
-  "Push notifications and reminders to help you take action.",
-  "Public leaderboards and social systems to give you additional motivation (optional).",
-  "Progress tracking that rewards persistence and recovery.",
-  "Clean and minimalist interfaces for better focus.",
-];
 
 function AboutSection({
   id,
@@ -49,21 +30,6 @@ function AboutSection({
       </div>
       <div className="privacyLandingContent">{children}</div>
     </section>
-  );
-}
-
-function AboutList({ items }: { items: string[] }) {
-  return (
-    <div className="privacyLandingStack">
-      {items.map((item) => (
-        <div className="privacyLandingClause" key={item}>
-          <span className="privacyLandingClauseKey" aria-hidden="true">
-            &bull;
-          </span>
-          <div>{item}</div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -97,64 +63,56 @@ export default function AboutPage() {
         </section>
 
         <div className="privacyLandingBody">
-          <AboutSection id="mission" number={1} title="Mission">
+          <AboutSection id="realistic-productivity-tool" number={1} title="A realistic productivity tool">
             <p>
-              TaskLaunch is a highly adaptive productivity tool aimed at neurodivergent brains. It doesn&apos;t require
-              you to be perfect or follow strict schedules, but rather helps create sustainable momentum by being
-              realistic and human-centric.
+              TaskLaunch is a time tracking and productivity app built around sustainable progress. It helps turn small
+              moments of effort into stronger habits by supporting the way your focus and energy naturally shift
+              throughout the week.
             </p>
             <p>
-              TaskLaunch doesn&apos;t transform you into a productivity machine. Instead, it helps you function in a way
-              that supports your focus patterns and optimize your output in those periods.
-            </p>
-          </AboutSection>
-
-          <AboutSection id="cycle" number={2} title="Cycle to break">
-            <p>
-              Most productivity tools assume that success lies within doing something the same way every day without a
-              break. Failure to hit a goal or missing a habit makes you lose all momentum instantly. One bad day turns
-              into guilt, which eventually leads to avoiding work entirely and becoming overwhelmed and exhausted.
-            </p>
-            <p>
-              The vicious cycle of procrastination and lack of motivation becomes a regular routine for many people
-              suffering from ADHD, executive dysfunction, autism, burnout, fluctuating motivation, or inconsistent
-              energy levels. TaskLaunch helps break that circle.
+              Instead of pushing you to perform at the same level every day, TaskLaunch helps you plan tasks around your
+              strongest focus windows. Work when your mind is more ready, reduce friction when energy is low, and build
+              a routine that feels achievable rather than forced.
             </p>
           </AboutSection>
 
-          <AboutSection id="different-way" number={3} title="Alternative approach">
+          <AboutSection id="stronger-habits" number={2} title="Build stronger habits">
             <p>
-              Rather than punishing for inconsistency, TaskLaunch lets you regain control and resume productivity
-              without feeling guilty or expecting perfection from yourself. One challenging day shouldn&apos;t make you
-              abandon all your goals or lose all the momentum you&apos;ve gained previously.
+              Each completed task becomes part of a larger progress picture. TaskLaunch converts logged effort into
+              real-time feedback, helping you see what you are doing well, where your patterns are forming, and how your
+              habits are developing.
             </p>
             <p>
-              It is still progress even if it goes slowly or unpredictably because of your condition. TaskLaunch works
-              with the ways your mind naturally processes information and doesn&apos;t try to make you fit a specific set
-              of rules, making things more complicated over time.
+              Your stats show what you complete, when you are most active, and how your effort changes over time. These
+              insights make it easier to plan smarter and keep moving without relying on guesswork.
+            </p>
+            <p>
+              The aim is not perfect daily performance. The aim is visible, repeatable progress that is easier to
+              maintain.
             </p>
           </AboutSection>
 
-          <AboutSection id="helps-you" number={4} title="Advantages">
-            <AboutList items={HELP_POINTS} />
-          </AboutSection>
-
-          <AboutSection id="features" number={5} title="Features">
-            <p>TaskLaunch offers an expanding list of mechanisms aimed at developing sustainable productivity.</p>
-            <AboutList items={FEATURE_POINTS} />
-          </AboutSection>
-
-          <AboutSection id="philosophy" number={6} title="Philosophy">
+          <AboutSection id="momentum" number={3} title="Momentum is key">
             <p>
-              Unlike other productivity tools that constantly push you to do more, TaskLaunch encourages you to be more
-              resilient and realistic. Productivity is not a straight line where each next step follows previous ones.
-              Sometimes you feel highly motivated and ready to do anything. At other times, even a minor task seems
-              impossible to complete.
+              TaskLaunch changes the way momentum works. Consistency still matters, but it is not treated as something
+              that disappears the moment you miss a day.
             </p>
             <p>
-              Both states are natural. What&apos;s important is being able to overcome failures and resume working without
-              falling into depression and self-blame. Real productivity can only be achieved through recovery,
-              persistence, and self-confidence.
+              Every focused effort contributes to your momentum score. Smaller sessions still count, restarted tasks
+              still matter, and uneven weeks can still move you forward. Missed days may lower your momentum, but they
+              do not wipe out everything you have built.
+            </p>
+          </AboutSection>
+
+          <AboutSection id="visible-progress" number={4} title="Progress you can see and feel">
+            <p>
+              The time you log earns XP, and stronger momentum increases the rate at which XP is awarded. This gives
+              your effort a visible sense of growth and helps make progress feel more rewarding.
+            </p>
+            <p>
+              XP supports rank progression and optional leaderboard participation, adding a social and competitive
+              element for users who enjoy extra motivation. It creates a clearer sense of achievement without adding
+              unnecessary pressure.
             </p>
           </AboutSection>
         </div>

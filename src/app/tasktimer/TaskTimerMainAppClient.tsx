@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type AnimationEvent as ReactAnimationEvent,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent,
@@ -40,6 +41,7 @@ import TaskManualEntryOverlay from "./components/TaskManualEntryOverlay";
 import TaskLaunchOnboarding from "./components/TaskLaunchOnboarding";
 import TaskTimerAppFrame, { type DesktopInsigniaUpgradePayload } from "./components/TaskTimerAppFrame";
 import {
+  canStartLeaderboardSwipePointer,
   getMobileLeaderboardSwipeDirection,
   getNextLeaderboardSwipeView,
   getResetMobileLeaderboardSwipeState,
@@ -148,7 +150,14 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
 
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
 type LeaderboardView = "global" | "weekly" | "rivals";
+type LeaderboardTransitionDirection = "next" | "previous";
 const LEADERBOARD_RANK_LABEL_COLOR = "#f5d66f";
+const LEADERBOARD_VIEW_ORDER: LeaderboardView[] = ["global", "weekly", "rivals"];
+const LEADERBOARD_VIEW_TRANSITION_MS = 560;
+
+function isLeaderboardViewToggleTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest(".leaderboardViewToggleBtn"));
+}
 
 function formatLeaderboardXp(xpRaw: number): string {
   return `${new Intl.NumberFormat().format(Math.max(0, Math.floor(xpRaw || 0)))} XP`;
@@ -406,11 +415,7 @@ function RankRivalsRow({
         <LeaderboardAvatar profile={row.profile} small />
         <strong>{row.playerLabel}</strong>
       </span>
-      <span className="rankRivalsStatusCell" role="cell">
-        <span className="rankRivalsStatusPill">{row.statusLabel}</span>
-      </span>
       <span className="rankRivalsXpCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp).replace(" XP", "")}</span>
-      <span className="rankRivalsRemainingCell" role="cell">{row.remainingLabel}</span>
       <span
         className="rankRivalsProgressCell"
         role="cell"
@@ -450,11 +455,9 @@ function RankRivalsLadder({
         </div>
         <div className="rankRivalsTable" role="table" aria-label="Rank Rivals standings">
           <div className="rankRivalsTableRow rankRivalsTableHead" role="row">
-            <span role="columnheader">Position</span>
+            <span role="columnheader">Pos</span>
             <span role="columnheader">User</span>
-            <span role="columnheader">Status</span>
             <span role="columnheader">XP</span>
-            <span role="columnheader">Remaining</span>
             <span role="columnheader">Progress</span>
           </div>
           {viewModel.rows.map((row) => (
@@ -508,6 +511,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
+  const [exitingLeaderboardView, setExitingLeaderboardView] = useState<LeaderboardView | null>(null);
+  const [leaderboardTransitionDirection, setLeaderboardTransitionDirection] = useState<LeaderboardTransitionDirection>("next");
   const [leaderboardClockMs, setLeaderboardClockMs] = useState(() => Date.now());
   const [hydratedCurrentUserProfile, setHydratedCurrentUserProfile] = useState<Pick<
     LeaderboardProfile,
@@ -1041,6 +1046,31 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(profile);
   };
 
+  const getLeaderboardTransitionDirection = useCallback((
+    currentView: LeaderboardView,
+    nextView: LeaderboardView
+  ): LeaderboardTransitionDirection => {
+    const currentIndex = LEADERBOARD_VIEW_ORDER.indexOf(currentView);
+    const nextIndex = LEADERBOARD_VIEW_ORDER.indexOf(nextView);
+    return nextIndex >= currentIndex ? "next" : "previous";
+  }, []);
+
+  const selectLeaderboardView = useCallback((nextView: LeaderboardView) => {
+    if (nextView === leaderboardView) return;
+    setLeaderboardTransitionDirection(getLeaderboardTransitionDirection(leaderboardView, nextView));
+    setExitingLeaderboardView(leaderboardView);
+    setLeaderboardView(nextView);
+  }, [getLeaderboardTransitionDirection, leaderboardView]);
+
+  useEffect(() => {
+    if (!exitingLeaderboardView) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      setExitingLeaderboardView(null);
+    }, LEADERBOARD_VIEW_TRANSITION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [exitingLeaderboardView, leaderboardView]);
+
   const resetLeaderboardSwipe = useCallback(() => {
     leaderboardSwipeRef.current = getResetMobileLeaderboardSwipeState();
   }, []);
@@ -1066,13 +1096,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       ...swipeState,
       consumed: true,
     };
-    setLeaderboardView((currentView) => getNextLeaderboardSwipeView(currentView, direction));
+    setLeaderboardTransitionDirection(direction);
+    const nextView = getNextLeaderboardSwipeView(leaderboardView, direction);
+    if (nextView !== leaderboardView) setExitingLeaderboardView(leaderboardView);
+    setLeaderboardView(nextView);
     return true;
-  }, [suppressNextLeaderboardSwipeClick]);
+  }, [leaderboardView, suppressNextLeaderboardSwipeClick]);
 
   const handleLeaderboardSwipePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     resetLeaderboardSwipe();
-    if (event.button !== 0 || !isMobileLeaderboardSwipeViewport()) return;
+    if (isLeaderboardViewToggleTarget(event.target)) return;
+    if (!canStartLeaderboardSwipePointer({
+      button: event.button,
+      pointerType: event.pointerType,
+      mobileViewport: isMobileLeaderboardSwipeViewport(),
+    })) return;
 
     leaderboardSwipeRef.current = getStartMobileLeaderboardSwipeState(event.pointerId, event.clientX, event.clientY);
 
@@ -1089,8 +1127,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     const nextSwipeState = getUpdatedMobileLeaderboardSwipeState(swipeState, event.pointerId, event.clientX, event.clientY);
     leaderboardSwipeRef.current = nextSwipeState;
-    if (getMobileLeaderboardSwipeDirection(nextSwipeState)) event.preventDefault();
-  }, []);
+    if (!navigateFromLeaderboardSwipe(nextSwipeState)) return;
+
+    event.preventDefault();
+  }, [navigateFromLeaderboardSwipe]);
 
   const handleLeaderboardSwipePointerEnd = useCallback((event: PointerEvent<HTMLElement>) => {
     const swipeState = leaderboardSwipeRef.current;
@@ -1102,6 +1142,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   const handleLeaderboardSwipeTouchStart = useCallback((event: ReactTouchEvent<HTMLElement>) => {
     resetLeaderboardSwipe();
+    if (isLeaderboardViewToggleTarget(event.target)) return;
     if (!shouldUseLeaderboardTouchFallback() || event.touches.length !== 1 || !isMobileLeaderboardSwipeViewport()) return;
 
     const touch = event.touches[0];
@@ -1119,8 +1160,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     const nextSwipeState = getUpdatedMobileLeaderboardSwipeState(swipeState, touch.identifier, touch.clientX, touch.clientY);
     leaderboardSwipeRef.current = nextSwipeState;
-    if (getMobileLeaderboardSwipeDirection(nextSwipeState)) event.preventDefault();
-  }, [shouldUseLeaderboardTouchFallback]);
+    if (!navigateFromLeaderboardSwipe(nextSwipeState)) return;
+
+    event.preventDefault();
+  }, [navigateFromLeaderboardSwipe, shouldUseLeaderboardTouchFallback]);
 
   const handleLeaderboardSwipeTouchEnd = useCallback((event: ReactTouchEvent<HTMLElement>) => {
     if (!shouldUseLeaderboardTouchFallback()) return;
@@ -1135,11 +1178,187 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
   const handleLeaderboardSwipeClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
     if (!suppressLeaderboardSwipeClickRef.current) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest(".leaderboardViewToggleBtn")) {
+      suppressLeaderboardSwipeClickRef.current = false;
+      return;
+    }
 
     suppressLeaderboardSwipeClickRef.current = false;
     event.preventDefault();
     event.stopPropagation();
   }, []);
+
+  const handleLeaderboardViewAnimationEnd = useCallback((event: ReactAnimationEvent<HTMLElement>) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    if (!event.target.classList.contains("leaderboardCardEnter")) return;
+    setExitingLeaderboardView(null);
+  }, []);
+
+  const renderLeaderboardPanel = (
+    view: LeaderboardView,
+    transitionClassName: "leaderboardCardEnter" | "leaderboardCardExit",
+    isExiting = false
+  ) => {
+    if (view === "weekly") {
+      return (
+        <section
+          key={`leaderboard-${view}-${transitionClassName}`}
+          className={`dashboardCard leaderboardCard leaderboardWeeklyBoard leaderboardGlobalBoard ${transitionClassName}`}
+          id="leaderboardWeeklyPanel"
+          role="tabpanel"
+          aria-labelledby="leaderboardWeeklyTab"
+          aria-label="Weekly leaderboard rankings"
+          aria-hidden={isExiting || undefined}
+          inert={isExiting ? true : undefined}
+        >
+          <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. Time remaining ${weeklyPeriodRemainingLabel}.`}>
+            <div className="leaderboardWeeklyPeriodOverlay" aria-label={`Week ends in ${weeklyPeriodRemainingLabel}.`}>
+              <span className="leaderboardWeeklyPeriodTitle">Week ends in:</span>
+              <span className="leaderboardWeeklyPeriodCountdown">{weeklyPeriodRemainingLabel}</span>
+            </div>
+            {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
+              <button
+                className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+                type="button"
+                key={row.profile.uid}
+                disabled={row.isPlaceholder || row.isDummy}
+                aria-disabled={row.isPlaceholder || row.isDummy}
+                data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+                onClick={() => {
+                  if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
+                }}
+              >
+                <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
+                <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
+                <span className="leaderboardGlobalPodiumAvatarSlot">
+                  {row.isPlaceholder ? null : (
+                    <>
+                      <LeaderboardAvatar profile={row.profile} />
+                      <LeaderboardRankInsignia profile={row.profile} />
+                    </>
+                  )}
+                </span>
+                <span className="leaderboardGlobalPodiumText">
+                  <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
+                  <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
+                  {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
+                </span>
+              </button>
+            )) : null}
+          </div>
+          {leaderboardState === "ready" && hasWeeklyRows ? (
+            <LeaderboardSharedTable
+              rows={weeklyTableRows}
+              metricHeader="Weekly XP"
+              ariaLabel="Weekly leaderboard table"
+              className="leaderboardGlobalTableWrap"
+              formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
+              onOpenProfile={openWeeklyLeaderboardProfile}
+            />
+          ) : (
+            leaderboardState === "ready" ? null : (
+              <div className="leaderboardPanelText">
+                {leaderboardState === "loading" ? "Loading weekly leaderboard." : leaderboardError || "Could not load the leaderboard."}
+              </div>
+            )
+          )}
+        </section>
+      );
+    }
+
+    if (view === "rivals") {
+      return (
+        <section
+          key={`leaderboard-${view}-${transitionClassName}`}
+          className={`dashboardCard leaderboardCard leaderboardWeeklyBoard rankRivalsBoard ${transitionClassName}`}
+          id="leaderboardRivalsPanel"
+          role="tabpanel"
+          aria-labelledby="leaderboardRivalsTab"
+          aria-label="Rank Rivals leaderboard rankings"
+          aria-hidden={isExiting || undefined}
+          inert={isExiting ? true : undefined}
+        >
+          {leaderboardState === "ready" && hasRivalRows && rankRivalLadder ? (
+            <RankRivalsLadder viewModel={rankRivalLadder} onOpenProfile={openLeaderboardProfile} />
+          ) : (
+            leaderboardState === "ready" ? null : (
+              <div className="leaderboardPanelText">
+                {leaderboardState === "loading" ? "Loading rivals." : leaderboardError || "Could not load the leaderboard."}
+              </div>
+            )
+          )}
+        </section>
+      );
+    }
+
+    return (
+      <section
+        key={`leaderboard-${view}-${transitionClassName}`}
+        className={`dashboardCard leaderboardCard leaderboardGlobalBoard ${transitionClassName}`}
+        id="leaderboardGlobalPanel"
+        role="tabpanel"
+        aria-labelledby="leaderboardGlobalTab"
+        aria-label="Global leaderboard rankings"
+        aria-hidden={isExiting || undefined}
+        inert={isExiting ? true : undefined}
+      >
+        {leaderboardState === "ready" && hasGlobalRows ? (
+          <>
+            <div className="leaderboardGlobalStage" aria-label="Global ladder. Top XP earners of all time.">
+              <div className="leaderboardGlobalTitleOverlay" aria-hidden="true">
+                <span className="leaderboardGlobalTitle">Global Leaderboard</span>
+              </div>
+              {globalPodiumRows.map((row) => (
+                <button
+                  className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+                  type="button"
+                  key={row.profile.uid}
+                  disabled={row.isPlaceholder || row.isDummy}
+                  aria-disabled={row.isPlaceholder || row.isDummy}
+                  data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+                  onClick={() => {
+                    if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
+                  }}
+                >
+                  <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
+                  <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
+                  <span className="leaderboardGlobalPodiumAvatarSlot">
+                    {row.isPlaceholder ? null : (
+                      <>
+                        <LeaderboardAvatar profile={row.profile} />
+                        <LeaderboardRankInsignia profile={row.profile} />
+                      </>
+                    )}
+                  </span>
+                  <span className="leaderboardGlobalPodiumText">
+                    <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
+                    <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
+                    {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <LeaderboardSharedTable
+              rows={globalTableRows}
+              metricHeader="Total XP"
+              ariaLabel="Global leaderboard table"
+              className="leaderboardGlobalTableWrap"
+              formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
+              onOpenProfile={openLeaderboardProfile}
+            />
+          </>
+        ) : (
+          leaderboardState === "ready" ? null : (
+            <div className="leaderboardPanelText">
+              {leaderboardState === "loading" ? "Loading leaderboard standings." : leaderboardError || "Could not load the leaderboard."}
+            </div>
+          )
+        )}
+      </section>
+    );
+  };
 
   return (
     <>
@@ -1346,7 +1565,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         role="tab"
                         aria-controls="leaderboardGlobalPanel"
                         aria-selected={leaderboardView === "global"}
-                        onClick={() => setLeaderboardView("global")}
+                        onClick={() => selectLeaderboardView("global")}
                       >
                         Global
                       </button>
@@ -1357,7 +1576,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         role="tab"
                         aria-controls="leaderboardWeeklyPanel"
                         aria-selected={leaderboardView === "weekly"}
-                        onClick={() => setLeaderboardView("weekly")}
+                        onClick={() => selectLeaderboardView("weekly")}
                       >
                         Weekly
                       </button>
@@ -1368,155 +1587,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                         role="tab"
                         aria-controls="leaderboardRivalsPanel"
                         aria-selected={leaderboardView === "rivals"}
-                        onClick={() => setLeaderboardView("rivals")}
+                        onClick={() => selectLeaderboardView("rivals")}
                       >
                         Rank Rivals
                       </button>
                     </div>
                   </div>
 
-                  <div className="leaderboardScrollBody">
-                    {leaderboardView === "weekly" ? (
-                      <section
-                        className="dashboardCard leaderboardCard leaderboardWeeklyBoard leaderboardGlobalBoard"
-                        id="leaderboardWeeklyPanel"
-                        role="tabpanel"
-                        aria-labelledby="leaderboardWeeklyTab"
-                        aria-label="Weekly leaderboard rankings"
-                      >
-                  <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. Time remaining ${weeklyPeriodRemainingLabel}.`}>
-                    <div className="leaderboardWeeklyPeriodOverlay" aria-label={`Week ends in ${weeklyPeriodRemainingLabel}.`}>
-                      <span className="leaderboardWeeklyPeriodTitle">Week ends in:</span>
-                      <span className="leaderboardWeeklyPeriodCountdown">{weeklyPeriodRemainingLabel}</span>
-                    </div>
-                    {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
-                      <button
-                        className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                        type="button"
-                        key={row.profile.uid}
-                        disabled={row.isPlaceholder || row.isDummy}
-                        aria-disabled={row.isPlaceholder || row.isDummy}
-                        data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                        onClick={() => {
-                          if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
-                        }}
-                      >
-                        <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
-                        <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
-                        <span className="leaderboardGlobalPodiumAvatarSlot">
-                          {row.isPlaceholder ? null : (
-                            <>
-                              <LeaderboardAvatar profile={row.profile} />
-                              <LeaderboardRankInsignia profile={row.profile} />
-                            </>
-                          )}
-                        </span>
-                        <span className="leaderboardGlobalPodiumText">
-                          <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
-                          <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                          {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
-                        </span>
-                      </button>
-                    )) : null}
-                  </div>
-                  {leaderboardState === "ready" && hasWeeklyRows ? (
-                    <LeaderboardSharedTable
-                      rows={weeklyTableRows}
-                      metricHeader="Weekly XP"
-                      ariaLabel="Weekly leaderboard table"
-                      className="leaderboardGlobalTableWrap"
-                      formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
-                      onOpenProfile={openWeeklyLeaderboardProfile}
-                    />
-                  ) : (
-                    leaderboardState === "ready" ? null : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading" ? "Loading weekly leaderboard." : leaderboardError || "Could not load the leaderboard."}
-                      </div>
-                    )
-                  )}
-                </section>
-              ) : leaderboardView === "rivals" ? (
-                <section
-                  className="dashboardCard leaderboardCard leaderboardWeeklyBoard rankRivalsBoard"
-                  id="leaderboardRivalsPanel"
-                  role="tabpanel"
-                  aria-labelledby="leaderboardRivalsTab"
-                  aria-label="Rank Rivals leaderboard rankings"
-                >
-                  {leaderboardState === "ready" && hasRivalRows && rankRivalLadder ? (
-                    <RankRivalsLadder viewModel={rankRivalLadder} onOpenProfile={openLeaderboardProfile} />
-                  ) : (
-                    leaderboardState === "ready" ? null : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading" ? "Loading rivals." : leaderboardError || "Could not load the leaderboard."}
-                      </div>
-                    )
-                  )}
-                </section>
-              ) : (
-                <section
-                  className="dashboardCard leaderboardCard leaderboardGlobalBoard"
-                  id="leaderboardGlobalPanel"
-                  role="tabpanel"
-                  aria-labelledby="leaderboardGlobalTab"
-                  aria-label="Global leaderboard rankings"
-                >
-                  {leaderboardState === "ready" && hasGlobalRows ? (
-                    <>
-                      <div className="leaderboardGlobalStage" aria-label="Global ladder. Top XP earners of all time.">
-                        <div className="leaderboardGlobalTitleOverlay" aria-hidden="true">
-                          <span className="leaderboardGlobalTitle">Global Leaderboard</span>
-                        </div>
-                        {globalPodiumRows.map((row) => (
-                          <button
-                            className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                            type="button"
-                            key={row.profile.uid}
-                            disabled={row.isPlaceholder || row.isDummy}
-                            aria-disabled={row.isPlaceholder || row.isDummy}
-                            data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                            onClick={() => {
-                              if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
-                            }}
-                          >
-                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
-                            <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
-                            <span className="leaderboardGlobalPodiumAvatarSlot">
-                              {row.isPlaceholder ? null : (
-                                <>
-                                  <LeaderboardAvatar profile={row.profile} />
-                                  <LeaderboardRankInsignia profile={row.profile} />
-                                </>
-                              )}
-                            </span>
-                            <span className="leaderboardGlobalPodiumText">
-                              <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
-                              <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                              {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <LeaderboardSharedTable
-                        rows={globalTableRows}
-                        metricHeader="Total XP"
-                        ariaLabel="Global leaderboard table"
-                        className="leaderboardGlobalTableWrap"
-                        formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
-                        onOpenProfile={openLeaderboardProfile}
-                      />
-                    </>
-                  ) : (
-                    leaderboardState === "ready" ? null : (
-                      <div className="leaderboardPanelText">
-                        {leaderboardState === "loading" ? "Loading leaderboard standings." : leaderboardError || "Could not load the leaderboard."}
-                      </div>
-                    )
-                  )}
-                      </section>
-                    )}
+                  <div
+                    className={`leaderboardScrollBody leaderboardTransition${leaderboardTransitionDirection === "next" ? "Next" : "Previous"}${exitingLeaderboardView ? " isTransitioning" : ""}`}
+                    onAnimationEnd={handleLeaderboardViewAnimationEnd}
+                  >
+                    {exitingLeaderboardView ? renderLeaderboardPanel(exitingLeaderboardView, "leaderboardCardExit", true) : null}
+                    {renderLeaderboardPanel(leaderboardView, "leaderboardCardEnter")}
                   </div>
                 </>
               )}

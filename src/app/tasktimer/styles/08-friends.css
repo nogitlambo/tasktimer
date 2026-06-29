@@ -674,6 +674,7 @@
 }
 
 .friendSharedTaskChartBars{
+  position:relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
@@ -684,7 +685,23 @@
   padding: 0 0 0 5px;
 }
 
+.friendSharedTaskChart.isGoalScale .friendSharedTaskChartYAxis{
+  display:grid;
+  grid-template-rows:repeat(4, 1fr);
+  justify-content:stretch;
+}
+
+.friendSharedTaskChart.isGoalScale .friendSharedTaskChartBars{
+  background:
+    linear-gradient(to bottom, rgba(188, 214, 230, 0.18) 0 1px, transparent 1px),
+    linear-gradient(to bottom, transparent calc(25% - .5px), rgba(188, 214, 230, 0.14) calc(25% - .5px) calc(25% + .5px), transparent calc(25% + .5px)),
+    linear-gradient(to bottom, transparent calc(50% - .5px), rgba(188, 214, 230, 0.14) calc(50% - .5px) calc(50% + .5px), transparent calc(50% + .5px)),
+    linear-gradient(to bottom, transparent calc(75% - .5px), rgba(188, 214, 230, 0.14) calc(75% - .5px) calc(75% + .5px), transparent calc(75% + .5px));
+}
+
 .friendSharedTaskChartBarSlot{
+  position:relative;
+  z-index:1;
   display: flex;
   align-items: end;
   min-width: 0;
@@ -1291,10 +1308,18 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksList{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
   padding: 10px 15px 12px;
   border-top: 1px solid rgba(255,255,255,.1);
 }
+
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksList .isEmptyStatus{
+  grid-column: 1 / -1;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTasksGrid{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 520px));
@@ -1354,6 +1379,12 @@
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendSharedTaskInfo{
     padding: 0;
+  }
+}
+
+@media (max-width: 980px){
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksList{
+    grid-template-columns: 1fr;
   }
 }
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks,
@@ -1684,6 +1715,7 @@ body[data-theme="lime"] .friendIdentityMeta{
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
+  position:relative;
   flex:1 1 auto;
   display:flex;
   flex-direction:column;
@@ -1691,6 +1723,104 @@ body[data-theme="lime"] .friendIdentityMeta{
   overflow-y:hidden;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+  isolation:isolate;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody::-webkit-scrollbar{
+  width:0;
+  height:0;
+  display:none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.isTransitioning > .leaderboardCard{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  max-height:100%;
+  will-change:transform, opacity;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.isTransitioning > .leaderboardCardEnter{
+  z-index:2;
+  animation:leaderboardViewSlideIn .56s cubic-bezier(.16,.84,.2,1) both;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.isTransitioning > .leaderboardCardExit{
+  z-index:1;
+  pointer-events:none;
+  animation:leaderboardViewSlideOut .56s cubic-bezier(.16,.84,.2,1) both;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.leaderboardTransitionPrevious > .leaderboardCardEnter{
+  animation-name:leaderboardViewSlideInPrevious;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.leaderboardTransitionPrevious > .leaderboardCardExit{
+  animation-name:leaderboardViewSlideOutPrevious;
+}
+
+@keyframes leaderboardViewSlideIn{
+  from{
+    opacity:.96;
+    transform:translateX(104%) scale(.992);
+  }
+
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@keyframes leaderboardViewSlideInPrevious{
+  from{
+    opacity:.96;
+    transform:translateX(-104%) scale(.992);
+  }
+
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@keyframes leaderboardViewSlideOut{
+  from{
+    opacity:1;
+    transform:translateX(0) scale(1);
+  }
+
+  to{
+    opacity:.96;
+    transform:translateX(-104%) scale(.992);
+  }
+}
+
+@keyframes leaderboardViewSlideOutPrevious{
+  from{
+    opacity:1;
+    transform:translateX(0) scale(1);
+  }
+
+  to{
+    opacity:.96;
+    transform:translateX(104%) scale(.992);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.isTransitioning > .leaderboardCard{
+    position:relative;
+    inset:auto;
+    animation:none;
+    will-change:auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody.isTransitioning > .leaderboardCardExit{
+    display:none;
+  }
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn{
@@ -3749,6 +3879,28 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   cursor:default;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot::before{
+  content:"";
+  position:absolute;
+  left:var(--global-podium-avatar-left);
+  bottom:calc(100% + var(--global-podium-avatar-lift) - 2px);
+  z-index:2;
+  width:calc(var(--global-podium-avatar-size) * .78);
+  height:calc(var(--global-podium-avatar-size) * .18);
+  pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(0,0,0,.34) 0%, rgba(0,0,0,.22) 36%, rgba(0,0,0,0) 72%);
+  filter:blur(2px);
+  opacity:.72;
+  transform:translateX(-50%) translateY(58%) scaleX(1.08) scaleY(.92);
+  transform-origin:center center;
+  animation:leaderboardPodiumShadow 4.8s linear infinite;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot.isPlaceholder::before,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot.isDummy::before{
+  content:none;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarMask{
   left:50%;
   top:-13%;
@@ -3790,10 +3942,15 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   width:var(--global-podium-avatar-size);
   aspect-ratio:1;
   transform:translateX(-50%);
-  animation:leaderboardPodiumFloat 4.8s ease-in-out infinite;
+  transform-origin:center bottom;
+  animation:leaderboardPodiumFloat 4.8s linear infinite;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarSlot{
+  animation-delay:-1.2s;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1::before{
   animation-delay:-1.2s;
 }
 
@@ -3801,22 +3958,72 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   animation-delay:-2.4s;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2::before{
+  animation-delay:-2.4s;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
+  animation-delay:-3.6s;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3::before{
   animation-delay:-3.6s;
 }
 
 @keyframes leaderboardPodiumFloat{
   0%, 100%{
-    transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%) translateY(0) scaleX(1.025) scaleY(.975);
+    animation-timing-function:cubic-bezier(.18,.72,.28,1);
   }
 
-  50%{
-    transform:translateX(-50%) translateY(-4px);
+  34%{
+    transform:translateX(-50%) translateY(-32px) scaleX(1) scaleY(1);
+    animation-timing-function:linear;
+  }
+
+  46%{
+    transform:translateX(-50%) translateY(-32px) scaleX(1) scaleY(1);
+    animation-timing-function:cubic-bezier(.58,0,.86,.38);
+  }
+
+  88%{
+    transform:translateX(-50%) translateY(-3px) scaleX(1.005) scaleY(.995);
+    animation-timing-function:cubic-bezier(.24,.66,.32,1);
+  }
+}
+
+@keyframes leaderboardPodiumShadow{
+  0%, 100%{
+    opacity:.72;
+    transform:translateX(-50%) translateY(58%) scaleX(1.08) scaleY(.92);
+    animation-timing-function:cubic-bezier(.18,.72,.28,1);
+  }
+
+  34%{
+    opacity:.28;
+    transform:translateX(-50%) translateY(58%) scaleX(.48) scaleY(.62);
+    animation-timing-function:linear;
+  }
+
+  46%{
+    opacity:.28;
+    transform:translateX(-50%) translateY(58%) scaleX(.48) scaleY(.62);
+    animation-timing-function:cubic-bezier(.58,0,.86,.38);
+  }
+
+  88%{
+    opacity:.66;
+    transform:translateX(-50%) translateY(58%) scaleX(1.02) scaleY(.9);
+    animation-timing-function:cubic-bezier(.24,.66,.32,1);
   }
 }
 
 @media (prefers-reduced-motion: reduce){
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
+    animation:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot::before{
     animation:none;
   }
 }
@@ -4157,22 +4364,23 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTable{
   flex:1 1 auto;
-  min-width:840px;
+  width:100%;
+  min-width:0;
   min-height:0;
   display:grid;
   align-content:start;
   margin-top:12px;
   overflow:hidden;
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:16px;
+  border:0;
+  border-radius:0;
   background:rgba(0,0,0,.16);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow{
   display:grid;
-  grid-template-columns:110px minmax(190px, 1.25fr) minmax(160px, .9fr) minmax(96px, .55fr) minmax(138px, .7fr) minmax(180px, 1fr);
+  grid-template-columns:minmax(86px, .52fr) minmax(180px, 1.45fr) minmax(92px, .62fr) minmax(172px, 1.05fr);
   align-items:center;
-  min-height:64px;
+  min-height:34px;
   padding:0;
   border:0;
   border-top:1px solid rgba(255,255,255,.1);
@@ -4180,6 +4388,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   color:inherit;
   font:inherit;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:10px;
   text-align:left;
 }
 
@@ -4197,28 +4406,47 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   position:relative;
   z-index:1;
   margin:-1px 0;
-  min-height:72px;
-  border:1px solid rgba(201,255,36,.95);
-  border-radius:16px;
-  background:linear-gradient(90deg, rgba(201,255,36,.13), rgba(201,255,36,.04));
-  box-shadow:
-    inset 0 0 26px rgba(201,255,36,.08),
-    0 0 18px rgba(201,255,36,.22);
+  min-height:34px;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.1);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow.isStatus-closest:not(.isCurrentUser){
+  background:transparent;
+  box-shadow:inset 3px 0 0 rgba(201,255,36,.72);
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead{
-  min-height:42px;
+  min-height:28px;
   border-top:0;
-  color:rgba(221,226,233,.78);
-  font-size:13px;
+  background:rgba(255,255,255,.025);
+  color:rgba(188,214,230,.78);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:10px;
   font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
   pointer-events:none;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead > span{
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  text-align:left;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead > span:nth-child(4){
+  justify-self:stretch;
+  text-align:center;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow > span{
   min-width:0;
   overflow:hidden;
   padding:0 12px;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
@@ -4226,7 +4454,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsPositionCell strong{
   color:var(--rank-rivals-lime);
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(24px, 2.8vw, 38px);
+  font-size:10px;
   font-weight:900;
   line-height:1;
 }
@@ -4239,10 +4467,10 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsUserCell .leaderboardAvatar{
   flex:0 0 auto;
-  width:48px;
-  height:48px;
-  border:1px solid rgba(201,255,36,.72);
-  background:rgba(201,255,36,.08);
+  width:42px;
+  height:42px;
+  border:0;
+  background:transparent;
   color:var(--rank-rivals-lime);
 }
 
@@ -4250,41 +4478,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   min-width:0;
   overflow:hidden;
   color:#fff;
-  font-size:clamp(12px, 1.35vw, 19px);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:10px;
   font-weight:900;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsStatusPill{
-  display:inline-flex;
-  max-width:100%;
-  min-height:34px;
-  align-items:center;
-  justify-content:center;
-  padding:6px 12px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:9px;
-  background:rgba(255,255,255,.06);
-  color:rgba(221,226,233,.84);
-  font-size:clamp(10px, 1vw, 15px);
-  font-weight:800;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .isStatus-closest .rankRivalsStatusPill,
-#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .isStatus-current .rankRivalsStatusPill{
-  border-color:rgba(201,255,36,.78);
-  background:rgba(201,255,36,.09);
-  color:var(--rank-rivals-lime);
-}
-
-#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsXpCell,
-#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsRemainingCell{
+#app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsXpCell{
   color:rgba(235,239,245,.86);
-  font-size:clamp(12px, 1.25vw, 18px);
+  font-size:10px;
   font-weight:850;
 }
 
@@ -4296,7 +4499,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsProgressCell strong{
   color:var(--rank-rivals-lime);
-  font-size:clamp(12px, 1.4vw, 20px);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:10px;
   font-weight:900;
   line-height:1;
 }
@@ -4305,7 +4509,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   position:relative;
   display:block;
   width:100%;
-  height:10px;
+  height:6px;
   overflow:hidden;
   border-radius:999px;
   background:rgba(115,125,137,.28);
@@ -4321,7 +4525,18 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   box-shadow:0 0 12px rgba(201,255,36,.46);
 }
 
+@media (min-width: 721px){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
+    user-select:none;
+  }
+}
+
 @media (max-width: 720px){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
+    touch-action:pan-y;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
     flex:1 1 0;
     min-height:0;
@@ -4598,12 +4813,12 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     flex:1 0 auto;
     padding:10px 8px 12px;
     border-radius:0;
-    overflow-x:auto;
+    overflow-x:hidden;
     overflow-y:visible;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTargetLine{
-    min-width:760px;
+    min-width:0;
     min-height:36px;
     gap:8px;
     padding-bottom:10px;
@@ -4618,22 +4833,22 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTable{
-    min-width:760px;
-    border-radius:12px;
+    width:100%;
+    min-width:0;
+    border-radius:0;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow{
-    grid-template-columns:78px 180px 142px 92px 124px 144px;
-    min-height:54px;
+    grid-template-columns:minmax(48px, .46fr) minmax(0, 1.36fr) minmax(50px, .48fr) minmax(76px, .7fr);
+    min-height:34px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead{
-    min-height:34px;
     font-size:10px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow.isCurrentUser{
-    min-height:62px;
+    min-height:34px;
     border-radius:12px;
   }
 
@@ -4642,7 +4857,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsPositionCell strong{
-    font-size:26px;
+    font-size:10px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsUserCell{
@@ -4650,23 +4865,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsUserCell .leaderboardAvatar{
-    width:38px;
-    height:38px;
+    width:34px;
+    height:34px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsUserCell strong,
-  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsXpCell,
-  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsRemainingCell{
-    font-size:12px;
-  }
-
-  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsStatusPill{
-    min-height:28px;
-    padding:5px 8px;
+  #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsXpCell{
     font-size:10px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsProgressCell strong{
-    font-size:12px;
+    font-size:10px;
   }
 }

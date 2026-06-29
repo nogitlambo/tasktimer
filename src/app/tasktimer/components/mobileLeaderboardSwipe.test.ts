@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canStartLeaderboardSwipePointer,
   getMobileLeaderboardSwipeDirection,
   getNextLeaderboardSwipeView,
   getStartMobileLeaderboardSwipeState,
@@ -39,11 +40,31 @@ describe("mobile leaderboard swipe gesture", () => {
     expect(getMobileLeaderboardSwipeDirection(swipe(220, 120, 160, 220))).toBeNull();
   });
 
+  it("does not navigate again after a swipe has been consumed", () => {
+    const state = {
+      ...swipe(220, 120, 150, 126),
+      consumed: true,
+    };
+
+    expect(getMobileLeaderboardSwipeDirection(state)).toBeNull();
+  });
+
   it("ignores events from another active pointer or touch", () => {
     const state = getStartMobileLeaderboardSwipeState(7, 220, 120);
     const updated = getUpdatedMobileLeaderboardSwipeState(state, 8, 140, 120);
 
     expect(updated).toBe(state);
     expect(getMobileLeaderboardSwipeDirection(updated)).toBeNull();
+  });
+
+  it("starts pointer swipes on mobile viewports and desktop mouse drags", () => {
+    expect(canStartLeaderboardSwipePointer({ button: 0, pointerType: "touch", mobileViewport: true })).toBe(true);
+    expect(canStartLeaderboardSwipePointer({ button: 0, pointerType: "mouse", mobileViewport: false })).toBe(true);
+  });
+
+  it("ignores non-primary mouse buttons and non-mouse desktop pointers", () => {
+    expect(canStartLeaderboardSwipePointer({ button: 1, pointerType: "mouse", mobileViewport: false })).toBe(false);
+    expect(canStartLeaderboardSwipePointer({ button: 2, pointerType: "touch", mobileViewport: true })).toBe(false);
+    expect(canStartLeaderboardSwipePointer({ button: 0, pointerType: "touch", mobileViewport: false })).toBe(false);
   });
 });

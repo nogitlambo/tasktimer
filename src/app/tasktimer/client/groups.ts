@@ -162,6 +162,24 @@ function formatCompactDurationForSharedCard(msRaw: number): string {
   return parts.join(" ");
 }
 
+function formatCompactDurationForSharedChartTick(msRaw: number): string {
+  const totalMs = Math.max(0, Math.floor(Number(msRaw) || 0));
+  let totalSeconds = Math.floor(totalMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  totalSeconds -= days * 86400;
+  const hours = Math.floor(totalSeconds / 3600);
+  totalSeconds -= hours * 3600;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds - minutes * 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0) parts.push(`${seconds}s`);
+  if (!parts.length) parts.push("0s");
+  return parts.join(" ");
+}
+
 export function renderSharedTaskMetricRows(summary: SharedTaskCardSummary, escapeHtmlUI: (value: unknown) => string) {
   const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Number(summary.dailyGoalMs || 0));
   const goalText = dailyGoalMs && dailyGoalMs > 0 ? formatCompactDurationForSharedCard(dailyGoalMs) : "No goal";
@@ -201,8 +219,13 @@ export function renderSharedTaskWeeklyChart(
   const dayIndexes = sharedTaskDayIndexesByWeekStart[weekStarting] || sharedTaskDayIndexesByWeekStart.mon;
   const labels = getDashboardWeekdayLabels(weekStarting);
   const orderedValues = dayIndexes.map((dayIndex) => trend[dayIndex] || 0);
-  const chartMaxMs = roundSharedTaskChartMaxMs(Math.max(...orderedValues, 0));
-  const maxLabel = formatCompactDurationForSharedCard(chartMaxMs);
+  const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Math.floor(Number(summary.dailyGoalMs || 0)));
+  const hasGoalScale = !!(dailyGoalMs && dailyGoalMs > 0);
+  const chartMaxMs = hasGoalScale ? dailyGoalMs : roundSharedTaskChartMaxMs(Math.max(...orderedValues, 0));
+  const maxLabel = hasGoalScale ? formatCompactDurationForSharedChartTick(chartMaxMs) : formatCompactDurationForSharedCard(chartMaxMs);
+  const yAxisLabels = hasGoalScale
+    ? [1, 0.75, 0.5, 0.25].map((ratio) => formatCompactDurationForSharedChartTick(chartMaxMs * ratio))
+    : [maxLabel, "0"];
   const barsHtml = orderedValues
     .map((value, index) => {
       const label = labels[index] || "";
@@ -217,12 +240,16 @@ export function renderSharedTaskWeeklyChart(
     })
     .join("");
   const labelsHtml = labels.map((label) => `<span>${escapeHtmlUI(label)}</span>`).join("");
-  return `<div class="friendSharedTaskChart" role="img" aria-label="${escapeHtmlUI(
-    `Weekly logged time chart. Scale 0 to ${maxLabel}.`
+  const yAxisLabelsHtml = yAxisLabels.map((label) => `<span>${escapeHtmlUI(label)}</span>`).join("");
+  const chartClass = hasGoalScale ? "friendSharedTaskChart isGoalScale" : "friendSharedTaskChart";
+  const chartAriaLabel = hasGoalScale
+    ? `Weekly logged time chart. Goal scale 0 to ${maxLabel}.`
+    : `Weekly logged time chart. Scale 0 to ${maxLabel}.`;
+  return `<div class="${chartClass}" role="img" aria-label="${escapeHtmlUI(
+    chartAriaLabel
   )}">
                   <div class="friendSharedTaskChartYAxis" aria-hidden="true">
-                    <span>${escapeHtmlUI(maxLabel)}</span>
-                    <span>0</span>
+                    ${yAxisLabelsHtml}
                   </div>
                   <div class="friendSharedTaskChartBody">
                     <div class="friendSharedTaskChartBars">${barsHtml}</div>

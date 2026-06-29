@@ -113,7 +113,6 @@ const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
 const RANK_RIVALS_QUERY_LIMIT = 100;
-const RANK_RIVALS_DISPLAY_LIMIT = 6;
 const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
@@ -726,22 +725,13 @@ function selectRankRivalProfiles(input: {
   rivalEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile;
 }): LeaderboardProfile[] {
-  const currentUid = String(input.currentUserEntry.uid || "").trim();
   const rankScope = getRankScope(input.currentUserEntry);
   const byUid = new Map<string, LeaderboardProfile>();
   filterProfilesByRankScope(visibleLeaderboardProfiles(input.rivalEntries || []), rankScope).forEach((profile) => {
     byUid.set(profile.uid, profile);
   });
   byUid.set(input.currentUserEntry.uid, input.currentUserEntry);
-
-  const sorted = sortRankRivals(Array.from(byUid.values()));
-  const currentIndex = sorted.findIndex((profile) => profile.uid === currentUid);
-  if (sorted.length <= RANK_RIVALS_DISPLAY_LIMIT || currentIndex < 0 || currentIndex < RANK_RIVALS_DISPLAY_LIMIT) {
-    return sorted.slice(0, RANK_RIVALS_DISPLAY_LIMIT);
-  }
-
-  const start = Math.max(0, Math.min(currentIndex - (RANK_RIVALS_DISPLAY_LIMIT - 1), sorted.length - RANK_RIVALS_DISPLAY_LIMIT));
-  return sorted.slice(start, start + RANK_RIVALS_DISPLAY_LIMIT);
+  return sortRankRivals(Array.from(byUid.values()));
 }
 
 export function buildRankRivalLadderViewModel(input: {
@@ -792,7 +782,6 @@ export function buildRankRivalLadderViewModel(input: {
       rankLabel: formatWeeklyRankLabel(rank),
       playerLabel: getLeaderboardPlayerLabel(profile),
       isCurrentUser,
-      isPinnedCurrentUser: isCurrentUser && rank > RANK_RIVALS_DISPLAY_LIMIT,
       isPlaceholder: false,
       isDummy: false,
       status,
@@ -931,12 +920,39 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     };
   }
 
-  const currentUserRankId = getRankForXp(currentUserEntryWithIdentity.rewardTotalXp).id;
+  const currentUserRank = getRankForXp(currentUserEntryWithIdentity.rewardTotalXp);
+  const nextRank = getNextRank(currentUserEntryWithIdentity.rewardTotalXp);
+  const rankBandStartXp = currentUserRank.minXp;
   const [higherXpResult, aboveResult, rivalResult, higherRivalResult, higherWeeklyResult] = await Promise.allSettled([
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp), orderBy("rewardTotalXp", "asc"), limit(1))),
-    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), orderBy("rewardTotalXp", "desc"), limit(RANK_RIVALS_QUERY_LIMIT))),
-    getDocs(query(profiles, where("rewardCurrentRankId", "==", currentUserRankId), where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
+    nextRank
+      ? getDocs(
+          query(
+            profiles,
+            where("rewardTotalXp", ">=", rankBandStartXp),
+            where("rewardTotalXp", "<", nextRank.minXp),
+            orderBy("rewardTotalXp", "desc"),
+            limit(RANK_RIVALS_QUERY_LIMIT)
+          )
+        )
+      : getDocs(
+          query(
+            profiles,
+            where("rewardTotalXp", ">=", rankBandStartXp),
+            orderBy("rewardTotalXp", "desc"),
+            limit(RANK_RIVALS_QUERY_LIMIT)
+          )
+        ),
+    nextRank
+      ? getDocs(
+          query(
+            profiles,
+            where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp),
+            where("rewardTotalXp", "<", nextRank.minXp)
+          )
+        )
+      : getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
     getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
   ]);
   const higherXpSize = sizeFromSettledQuery(higherXpResult);

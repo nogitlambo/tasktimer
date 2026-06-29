@@ -377,6 +377,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return !!onceOffDay && onceOffDay === todayScheduleDay;
   }
 
+  function isRecurringDailyTaskScheduledForTaskOverview(task: Task) {
+    if (task.taskType === "once-off") return false;
+    if (!task.timeGoalEnabled || task.timeGoalPeriod !== "day" || !(Number(task.timeGoalMinutes || 0) > 0)) return false;
+    const durationMinutes = getScheduleTaskDurationMinutes(task);
+    if (!(durationMinutes > 0)) return false;
+    return getTaskScheduledDayEntries(task).some((entry) => {
+      const startMinutes = parseScheduleTimeMinutes(entry.time);
+      return startMinutes != null && startMinutes + durationMinutes <= 24 * 60;
+    });
+  }
+
   function getTaskOverviewOpportunity(task: Task, todayMs: number) {
     if (!task) return null;
     const todayScheduleDay = getScheduleDayForDate(todayMs);
@@ -393,6 +404,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       task.timeGoalCompletedReason === "goal" &&
       String(task.timeGoalCompletedDayKey || "").trim() === todayKey;
     if (!todayEntries.length && isCompletedDailyTaskToday) {
+      return { task, goalMinutes: getScheduleTaskDurationMinutes(task), historyScope: "day" as const };
+    }
+    if (!todayEntries.length && isRecurringDailyTaskScheduledForTaskOverview(task)) {
       return { task, goalMinutes: getScheduleTaskDurationMinutes(task), historyScope: "day" as const };
     }
     if (!todayEntries.length) return null;

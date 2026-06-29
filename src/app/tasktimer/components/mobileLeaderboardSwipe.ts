@@ -25,6 +25,18 @@ export const MOBILE_LEADERBOARD_SWIPE_INITIAL_STATE: MobileLeaderboardSwipeState
 export const LEADERBOARD_SWIPE_THRESHOLD_PX = 48;
 export const LEADERBOARD_SWIPE_MOBILE_QUERY = "(max-width: 720px)";
 
+export type LeaderboardSwipePointerStartInput = {
+  button: number;
+  pointerType?: string;
+  mobileViewport: boolean;
+};
+
+export function canStartLeaderboardSwipePointer({ button, pointerType, mobileViewport }: LeaderboardSwipePointerStartInput) {
+  if (button !== 0) return false;
+  if (mobileViewport) return true;
+  return pointerType === "mouse";
+}
+
 export function getResetMobileLeaderboardSwipeState(): MobileLeaderboardSwipeState {
   return { ...MOBILE_LEADERBOARD_SWIPE_INITIAL_STATE };
 }
