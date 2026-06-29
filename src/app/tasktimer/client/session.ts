@@ -2504,6 +2504,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function updateTaskProgressFill(node: Element, task: Task, elapsedMs: number) {
     const fill = node.querySelector(".progressFill") as HTMLElement | null;
     if (!fill) return;
+    const label = node.querySelector(".progressPctLabel") as HTMLElement | null;
     const hasMilestones = !!task.milestonesEnabled && Array.isArray(task.milestones) && task.milestones.length > 0;
     const hasTimeGoal = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
     if (!hasMilestones && !hasTimeGoal) return;
@@ -2516,6 +2517,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!progressModel) return;
     fill.style.width = `${progressModel.pct}%`;
     fill.style.background = ctx.getDynamicColorsEnabled() ? ctx.fillBackgroundForPct(progressModel.pct) : ctx.getModeColor("mode1");
+    if (label) label.textContent = `${Math.round(progressModel.pct)}%`;
   }
 
   function tick() {

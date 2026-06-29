@@ -6297,17 +6297,17 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabelStatus{
   color: rgba(188,214,230,.7);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.08;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isCompact .dashboardTasksCompletedLabelStatus{
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardTasksCompletedLabel.isMicro .dashboardTasksCompletedLabelStatus{
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1;
 }
 

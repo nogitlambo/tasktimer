@@ -1,15 +1,13 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import {
   getDesktopRailHelpCenterMenuItems,
   getDesktopRailPrimaryNavItems,
   getDesktopRailProfileMenuItems,
   getDesktopRailProfileSignOutLabel,
   getMobileFooterNavItems,
-  openTaskLaunchOnboarding,
-  shouldShowDesktopRailDevEnv,
+  shouldCloseDesktopRailProfileMenuOnPointerDown,
 } from "./DesktopAppRail";
 
 describe("DesktopAppRail profile menu", () => {
@@ -67,52 +65,26 @@ describe("DesktopAppRail profile menu", () => {
     expect(getDesktopRailProfileSignOutLabel(false)).toBe("Sign Out");
     expect(getDesktopRailProfileSignOutLabel(true)).toBe("Signing Out");
   });
-});
 
-describe("DesktopAppRail Dev env gate", () => {
-  it("shows on localhost development when the flag is unset", () => {
-    expect(shouldShowDesktopRailDevEnv({ hostname: "localhost", protocol: "http:", nodeEnv: "development" })).toBe(true);
+  it("collapses the profile menu only for outside pointer targets", () => {
+    const insideTarget = {} as Node;
+    const outsideTarget = {} as Node;
+    const menu = {
+      contains: (target: Node) => target === insideTarget,
+    };
+
+    expect(shouldCloseDesktopRailProfileMenuOnPointerDown(menu, insideTarget)).toBe(false);
+    expect(shouldCloseDesktopRailProfileMenuOnPointerDown(menu, outsideTarget)).toBe(true);
+    expect(shouldCloseDesktopRailProfileMenuOnPointerDown(menu, null)).toBe(false);
+    expect(shouldCloseDesktopRailProfileMenuOnPointerDown(null, outsideTarget)).toBe(false);
   });
 
-  it("shows on 127.0.0.1 development when the flag is unset", () => {
-    expect(shouldShowDesktopRailDevEnv({ hostname: "127.0.0.1", protocol: "http:", nodeEnv: "development" })).toBe(true);
-  });
+  it("registers a pointerdown listener while the profile menu is expanded", () => {
+    const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
 
-  it("hides on non-localhost development even when the flag is enabled", () => {
-    expect(
-      shouldShowDesktopRailDevEnv({
-        hostname: "tasklaunch.test",
-        protocol: "https:",
-        nodeEnv: "development",
-        flag: "true",
-      })
-    ).toBe(false);
-  });
-
-  it("hides on localhost production", () => {
-    expect(shouldShowDesktopRailDevEnv({ hostname: "localhost", protocol: "http:", nodeEnv: "production" })).toBe(false);
-  });
-
-  it.each(["false", "0", "off"])("hides on localhost development when the flag is %s", (flag) => {
-    expect(shouldShowDesktopRailDevEnv({ hostname: "localhost", protocol: "http:", nodeEnv: "development", flag })).toBe(
-      false
-    );
-  });
-
-  it("hides in native-style localhost runtimes", () => {
-    expect(shouldShowDesktopRailDevEnv({ hostname: "localhost", protocol: "capacitor:", nodeEnv: "development" })).toBe(
-      false
-    );
-    expect(shouldShowDesktopRailDevEnv({ hostname: "", protocol: "file:", nodeEnv: "development" })).toBe(false);
-  });
-
-  it("dispatches the onboarding event from the Dev env action", () => {
-    const target = new EventTarget();
-    const events: string[] = [];
-    target.addEventListener(TASKTIMER_OPEN_ONBOARDING_EVENT, (event) => events.push(event.type));
-
-    expect(openTaskLaunchOnboarding(target)).toBe(true);
-    expect(events).toEqual([TASKTIMER_OPEN_ONBOARDING_EVENT]);
+    expect(source).toContain('document.addEventListener("pointerdown", handleProfileMenuOutsidePointerDown)');
+    expect(source).toContain('document.removeEventListener("pointerdown", handleProfileMenuOutsidePointerDown)');
+    expect(source).toContain("shouldCloseDesktopRailProfileMenuOnPointerDown(profileMenuRef.current, target)");
   });
 });
 

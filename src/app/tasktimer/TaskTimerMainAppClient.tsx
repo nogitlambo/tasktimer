@@ -159,6 +159,10 @@ function isLeaderboardViewToggleTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest(".leaderboardViewToggleBtn"));
 }
 
+function isLeaderboardProfileOpenTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest("[data-leaderboard-profile-open]"));
+}
+
 function formatLeaderboardXp(xpRaw: number): string {
   return `${new Intl.NumberFormat().format(Math.max(0, Math.floor(xpRaw || 0)))} XP`;
 }
@@ -1106,6 +1110,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const handleLeaderboardSwipePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     resetLeaderboardSwipe();
     if (isLeaderboardViewToggleTarget(event.target)) return;
+    if (isLeaderboardProfileOpenTarget(event.target)) return;
     if (!canStartLeaderboardSwipePointer({
       button: event.button,
       pointerType: event.pointerType,
@@ -1143,6 +1148,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const handleLeaderboardSwipeTouchStart = useCallback((event: ReactTouchEvent<HTMLElement>) => {
     resetLeaderboardSwipe();
     if (isLeaderboardViewToggleTarget(event.target)) return;
+    if (isLeaderboardProfileOpenTarget(event.target)) return;
     if (!shouldUseLeaderboardTouchFallback() || event.touches.length !== 1 || !isMobileLeaderboardSwipeViewport()) return;
 
     const touch = event.touches[0];
@@ -1180,6 +1186,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (!suppressLeaderboardSwipeClickRef.current) return;
     const target = event.target as HTMLElement | null;
     if (target?.closest(".leaderboardViewToggleBtn")) {
+      suppressLeaderboardSwipeClickRef.current = false;
+      return;
+    }
+    if (target?.closest("[data-leaderboard-profile-open]")) {
       suppressLeaderboardSwipeClickRef.current = false;
       return;
     }
@@ -1606,64 +1616,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </div>
           </section>
 
-          {selectedLeaderboardProfile ? (
-            <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
-              <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
-                <div className="leaderboardPositionModalHeaderRow">
-                  <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
-                </div>
-                <div className="leaderboardPositionModalHeader">
-                  <div className="leaderboardPositionModalIdentity">
-                    <LeaderboardAvatar profile={selectedLeaderboardProfile} />
-                    <div className="leaderboardPositionModalIdentityText">
-                      <strong
-                        className="leaderboardName leaderboardPositionName"
-                      >
-                        {selectedLeaderboardLabel}
-                      </strong>
-                      {selectedLeaderboardMemberSince ? (
-                        <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
-                      ) : null}
-                    </div>
-                    <div className="leaderboardPositionAchievementSlots" aria-label="Achievement badges">
-                      {Array.from({ length: 4 }).map((_, index) => (
-                        <span
-                          className="leaderboardPositionAchievementSlot"
-                          key={`leaderboard-achievement-slot-${index}`}
-                          aria-hidden="true"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="leaderboardPositionRankSummary">
-                    <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
-                    <strong style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
-                  </div>
-                </div>
-                <div className="leaderboardPositionStats" aria-label="User stats">
-                  <div className="leaderboardPositionStatsTitle">User Stats</div>
-                  <div>
-                    <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
-                    <span>Total XP</span>
-                  </div>
-                  <div>
-                    <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
-                    <span>Time Logged</span>
-                  </div>
-                  <div>
-                    <strong>{formatLeaderboardTaskCount(selectedLeaderboardProfile.completedTaskCount)}</strong>
-                    <span>Tasks Completed</span>
-                  </div>
-                </div>
-                <div className="confirmBtns">
-                  <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
           <section className={`appPage${initialPage === "history" ? " appPageOn" : ""}`} id="appPageHistory" aria-label="History Manager page">
             <HistoryManagerScreen />
           </section>
@@ -1671,6 +1623,64 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
         <EditTaskOverlay />
       </TaskTimerAppFrame>
+
+      {selectedLeaderboardProfile ? (
+        <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
+          <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
+            <div className="leaderboardPositionModalHeaderRow">
+              <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
+            </div>
+            <div className="leaderboardPositionModalHeader">
+              <div className="leaderboardPositionModalIdentity">
+                <LeaderboardAvatar profile={selectedLeaderboardProfile} />
+                <div className="leaderboardPositionModalIdentityText">
+                  <strong
+                    className="leaderboardName leaderboardPositionName"
+                  >
+                    {selectedLeaderboardLabel}
+                  </strong>
+                  {selectedLeaderboardMemberSince ? (
+                    <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
+                  ) : null}
+                </div>
+                <div className="leaderboardPositionAchievementSlots" aria-label="Achievement badges">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <span
+                      className="leaderboardPositionAchievementSlot"
+                      key={`leaderboard-achievement-slot-${index}`}
+                      aria-hidden="true"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="leaderboardPositionRankSummary">
+                <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
+                <strong style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
+              </div>
+            </div>
+            <div className="leaderboardPositionStats" aria-label="User stats">
+              <div className="leaderboardPositionStatsTitle">User Stats</div>
+              <div>
+                <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
+                <span>Total XP</span>
+              </div>
+              <div>
+                <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
+                <span>Time Logged</span>
+              </div>
+              <div>
+                <strong>{formatLeaderboardTaskCount(selectedLeaderboardProfile.completedTaskCount)}</strong>
+                <span>Tasks Completed</span>
+              </div>
+            </div>
+            <div className="confirmBtns">
+              <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <AddTaskOverlay />
       <TaskManualEntryOverlay />

@@ -711,6 +711,8 @@ describe("task timer session tick", () => {
       running: true,
       startMs: 1_000,
       hasStarted: true,
+      milestonesEnabled: true,
+      milestones: [{ hours: 1, description: "" }],
     });
     const timeEl = { innerHTML: "" } as HTMLElement;
     const primaryActionBtn = {
@@ -727,12 +729,14 @@ describe("task timer session tick", () => {
       setAttribute: vi.fn(),
     } as unknown as HTMLButtonElement;
     const progressFill = { style: { width: "", background: "" } } as HTMLElement;
+    const progressPctLabel = { textContent: "" } as HTMLElement;
     const taskNode = {
       dataset: { index: "0", taskId: "task-1" },
       classList: createClassList(["task"]),
       querySelector: (selector: string) => {
         if (selector === ".time") return timeEl;
         if (selector === ".progressFill") return progressFill;
+        if (selector === ".progressPctLabel") return progressPctLabel;
         if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
         if (selector === '.actions > .iconBtn[data-action="reset"]') return resetBtn;
         return null;
@@ -856,6 +860,8 @@ describe("task timer session tick", () => {
     expect(taskNode.classList.contains("taskRunning")).toBe(true);
     expect(primaryActionBtn.className).toBe("btn btn-warn small");
     expect(primaryActionBtn.dataset.action).toBe("stop");
+    expect(progressFill.style.width).toBe("100%");
+    expect(progressPctLabel.textContent).toBe("100%");
 
     expect(windowStub.requestAnimationFrame).toHaveBeenCalled();
     expect(windowStub.setTimeout).toHaveBeenCalled();

@@ -157,6 +157,7 @@ export function renderTaskProgressHtml(
           </div>`;
   }
   const { escapeHtml, fillColor } = opts;
+  const progressPctLabel = `${Math.round(model.pct)}%`;
   const markersHtml = model.markers
     .map((marker) => {
       if (marker.kind === "baseline") {
@@ -182,6 +183,7 @@ export function renderTaskProgressHtml(
             <div class="progressWrap">
               <div class="progressTrack">
                 <div class="progressFill" style="width:${model.pct}%;background:${fillColor}"></div>
+                <div class="progressPctLabel" aria-hidden="true">${escapeHtml(progressPctLabel)}</div>
                 ${markersHtml}
               </div>
             </div>

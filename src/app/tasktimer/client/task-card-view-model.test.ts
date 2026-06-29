@@ -290,6 +290,23 @@ describe("task card view model", () => {
     expect(rendered.html).toContain(">1h 45m<");
   });
 
+  it("renders a centered percentage label only for progress-enabled task cards", () => {
+    const withoutProgress = renderCard();
+    const withProgress = renderCard({
+      elapsedMs: 30 * 60 * 1000,
+      task: baseTask({
+        elapsed: 30 * 60 * 1000,
+        timeGoalEnabled: true,
+        timeGoalMinutes: 60,
+      }),
+      timeGoalSec: 60 * 60,
+    });
+
+    expect(withoutProgress.html).toContain("progressRowEmpty");
+    expect(withoutProgress.html).not.toContain("progressPctLabel");
+    expect(withProgress.html).toContain('<div class="progressPctLabel" aria-hidden="true">50%</div>');
+  });
+
   it("dispatches allowed task card actions", () => {
     const calls: string[] = [];
 

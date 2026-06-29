@@ -78,7 +78,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function estimateDashboardCompletedLabelWidth(name: string, statusLabel: string, maxWidth = DASHBOARD_COMPLETED_LABEL_MAX_WIDTH) {
     const nameWidth = name.length * 6.5;
-    const statusWidth = statusLabel.length * 5.3;
+    const statusWidth = statusLabel.length * 6.1;
     return Math.max(28, Math.min(maxWidth, Math.ceil(Math.max(nameWidth, statusWidth) + 4)));
   }
   function shortenDashboardCompletedLabel(value: string, maxChars: number) {
@@ -1641,7 +1641,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
             labelMode,
             maxWidth,
             labelWidth: estimateDashboardCompletedLabelWidth(displayName, displayStatus, maxWidth),
-            labelHeight: labelMode === "micro" ? 24 : 30,
+            labelHeight: labelMode === "micro" ? 26 : 32,
           };
         });
         const labelLayouts = buildDashboardTasksCompletedLabelLayout(labelEntries.map((entry) => ({

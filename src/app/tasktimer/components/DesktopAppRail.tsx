@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import AppImg from "@/components/AppImg";
@@ -17,7 +16,6 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "../lib/avatarCatalog";
-import { TASKTIMER_OPEN_ONBOARDING_EVENT } from "../client/onboarding-events";
 import { playDropdownClickAudio, playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import {
   readTaskTimerPlanFromStorage,
@@ -56,49 +54,6 @@ type DesktopAppRailProps = {
   showDesktopRail?: boolean;
   showMobileFooter?: boolean;
 };
-
-type DesktopRailDevEnvInput = {
-  hostname?: string;
-  protocol?: string;
-  nodeEnv?: string;
-  flag?: string;
-};
-
-const DESKTOP_RAIL_DEV_ENV_DISABLED_VALUES = new Set(["false", "0", "off"]);
-
-export function shouldShowDesktopRailDevEnv(input: DesktopRailDevEnvInput = {}) {
-  const nodeEnv = input.nodeEnv ?? process.env.NODE_ENV;
-  if (nodeEnv === "production") return false;
-
-  const flag = (input.flag ?? process.env.NEXT_PUBLIC_SHOW_DESKTOP_RAIL_DEV_ENV ?? "").trim().toLowerCase();
-  if (DESKTOP_RAIL_DEV_ENV_DISABLED_VALUES.has(flag)) return false;
-
-  const protocol = String(input.protocol || "").trim().toLowerCase();
-  if (protocol && protocol !== "http:" && protocol !== "https:") return false;
-
-  const hostname = String(input.hostname || "").trim().toLowerCase();
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
-}
-
-function subscribeToDesktopRailDevEnvSnapshot() {
-  return () => {};
-}
-
-function getDesktopRailDevEnvSnapshot() {
-  return shouldShowDesktopRailDevEnv({
-    hostname: window.location.hostname,
-    protocol: window.location.protocol,
-  });
-}
-
-function getDesktopRailDevEnvServerSnapshot() {
-  return false;
-}
-
-export function openTaskLaunchOnboarding(target: Pick<EventTarget, "dispatchEvent"> | null = typeof window !== "undefined" ? window : null) {
-  if (!target) return false;
-  return target.dispatchEvent(new Event(TASKTIMER_OPEN_ONBOARDING_EVENT));
-}
 
 type NavItem = {
   page: DesktopRailPage;
@@ -501,6 +456,13 @@ export function getDesktopRailProfileSignOutLabel(signOutBusy: boolean) {
   return signOutBusy ? "Signing Out" : "Sign Out";
 }
 
+export function shouldCloseDesktopRailProfileMenuOnPointerDown(
+  profileMenu: Pick<Node, "contains"> | null,
+  target: Node | null
+) {
+  return !!profileMenu && !!target && !profileMenu.contains(target);
+}
+
 function renderProfileSignOutButton(signOutBusy: boolean, onSignOut: () => void) {
   const label = getDesktopRailProfileSignOutLabel(signOutBusy);
   return (
@@ -543,12 +505,8 @@ export default function DesktopAppRail({
   const [profileMenuClosing, setProfileMenuClosing] = useState(false);
   const [helpCenterMenuOpen, setHelpCenterMenuOpen] = useState(false);
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
-  const showDesktopRailDevEnv = useSyncExternalStore(
-    subscribeToDesktopRailDevEnvSnapshot,
-    getDesktopRailDevEnvSnapshot,
-    getDesktopRailDevEnvServerSnapshot
-  );
   const profileMenuCloseTimerRef = useRef<number | null>(null);
+  const profileMenuRef = useRef<HTMLDetailsElement | null>(null);
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -685,6 +643,21 @@ export default function DesktopAppRail({
     setProfileMenuClosing(false);
   }, [closeProfileMenu, profileMenuClosing, profileMenuOpen]);
 
+  useEffect(() => {
+    if (!profileMenuOpen || profileMenuClosing || typeof document === "undefined") return undefined;
+
+    const handleProfileMenuOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target instanceof Node ? event.target : null;
+      if (!shouldCloseDesktopRailProfileMenuOnPointerDown(profileMenuRef.current, target)) return;
+      closeProfileMenu();
+    };
+
+    document.addEventListener("pointerdown", handleProfileMenuOutsidePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleProfileMenuOutsidePointerDown);
+    };
+  }, [closeProfileMenu, profileMenuClosing, profileMenuOpen]);
+
   const toggleHelpCenterMenu = useCallback(() => {
     playDropdownClickAudio();
     setHelpCenterMenuOpen((open) => !open);
@@ -767,25 +740,6 @@ export default function DesktopAppRail({
                   {item.page === "leaderboard" ? <div className="desktopRailNavDivider" aria-hidden="true" /> : null}
                 </Fragment>
               ))}
-              {showDesktopRailDevEnv ? (
-                <>
-                  <div className="dashboardRailSectionLabel desktopRailDevEnvLabel">Dev env</div>
-                  <button
-                    className="btn btn-ghost small dashboardRailMenuBtn desktopRailDevEnvMenuBtn"
-                    type="button"
-                    aria-label="Run onboarding"
-                    onClick={() => openTaskLaunchOnboarding()}
-                  >
-                    <AppImg
-                      className="dashboardRailMenuIconImage"
-                      src="/icons/icons_default/question.webp"
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    <span className="dashboardRailMenuLabel">Onboarding</span>
-                  </button>
-                </>
-              ) : null}
             </nav>
           </div>
 
@@ -793,6 +747,7 @@ export default function DesktopAppRail({
 
           <div className="desktopRailBottomSection">
             <details
+              ref={profileMenuRef}
               className="desktopRailProfileDock desktopRailProfileMenu"
               open={profileMenuOpen || profileMenuClosing}
               data-closing={profileMenuClosing ? "true" : undefined}

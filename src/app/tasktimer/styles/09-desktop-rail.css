@@ -228,31 +228,6 @@
     flex: 0 0 auto;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailDevEnvLabel,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailDevEnvLabel{
-    margin-top: 8px;
-    color: #ff4d4d;
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuLabel,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuLabel{
-    color: #ff4d4d;
-  }
-
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuIconImage,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuIconImage{
-    filter:
-      brightness(0)
-      saturate(100%)
-      invert(46%)
-      sepia(92%)
-      saturate(2922%)
-      hue-rotate(335deg)
-      brightness(103%)
-      contrast(101%)
-      drop-shadow(0 0 8px rgba(255,77,77,.35));
-  }
-
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailAlertBadge{
     top: 8px;
     right: 12px;
@@ -1223,13 +1198,6 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     text-transform: none;
   }
 
-  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailSectionLabel.desktopRailDevEnvLabel,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailSectionLabel.desktopRailDevEnvLabel,
-  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailSectionLabel.desktopRailDevEnvLabel,
-  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailSectionLabel.desktopRailDevEnvLabel{
-    color: #ff4d4d;
-  }
-
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileSummary,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileSummary,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailProfileSummary,
@@ -1686,20 +1654,6 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
       brightness(103%)
       contrast(104%)
       drop-shadow(0 0 10px rgba(241,255,122,.58));
-  }
-
-body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuIconImage,
-  body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailDevEnvMenuBtn .dashboardRailMenuIconImage{
-    filter:
-      brightness(0)
-      saturate(100%)
-      invert(46%)
-      sepia(92%)
-      saturate(2922%)
-      hue-rotate(335deg)
-      brightness(103%)
-      contrast(101%)
-      drop-shadow(0 0 8px rgba(255,77,77,.35));
   }
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail,

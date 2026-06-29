@@ -983,6 +983,14 @@ describe("dashboard completed card", () => {
     expect(css).toContain(".dashboardTasksCompletedRingEdge{\n  fill: none;\n  stroke: #0d0f13;\n  stroke-width: 5;");
   });
 
+  it("uses larger status text for outer donut task labels", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain(".dashboardTasksCompletedLabelStatus{\n  color: rgba(188,214,230,.7);\n  font-family: var(--font-orbitron), \"Segoe UI Variable\", \"Segoe UI\", Arial, sans-serif !important;\n  font-size: 12px;");
+    expect(css).toContain(".dashboardTasksCompletedLabel.isCompact .dashboardTasksCompletedLabelStatus{\n  font-size: 11px;");
+    expect(css).toContain(".dashboardTasksCompletedLabel.isMicro .dashboardTasksCompletedLabelStatus{\n  font-size: 10px;");
+  });
+
   it("shows scheduled due tasks without daily goals in the donut", () => {
     const today = todaySchedule();
     const tasks = [
