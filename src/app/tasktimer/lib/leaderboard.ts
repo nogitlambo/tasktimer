@@ -28,6 +28,11 @@ import { RANK_LADDER, getNextRank, getRankForXp, getRewardStreakLength, normaliz
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
 
 export const LEADERBOARD_PROFILE_UPDATED_EVENT = "tasktimer:leaderboardProfileUpdated";
+export const TASKTIMER_OPEN_FRIEND_PROFILE_EVENT = "tasktimer:openFriendProfileFromLeaderboard";
+
+export type OpenFriendProfileFromLeaderboardEventDetail = {
+  friendUid: string;
+};
 
 export type LeaderboardProfile = {
   uid: string;
@@ -759,17 +764,10 @@ export function buildRankRivalLadderViewModel(input: {
   );
   const currentUid = String(currentUserEntry.uid || "").trim();
   const closestRivalUid = sortedAllProfiles.find((profile) => profile.uid !== currentUid)?.uid || "";
-  const rankByUid = new Map<string, number>();
-  sortedAllProfiles.forEach((profile, index) => {
-    if (!rankByUid.has(profile.uid)) rankByUid.set(profile.uid, index + 1);
-  });
-  if (input.currentUserRivalRank && input.currentUserRivalRank > 0) {
-    rankByUid.set(currentUserEntry.uid, input.currentUserRivalRank);
-  }
 
   const rows = selectedProfiles.map((profile, index): RankRivalLadderRow => {
     const isCurrentUser = profile.uid === currentUid;
-    const rank = rankByUid.get(profile.uid) || index + 1;
+    const rank = index + 1;
     const totalXp = normalizeInt(profile.rewardTotalXp);
     const remainingXp = nextRank ? Math.max(0, nextRank.minXp - totalXp) : null;
     const progressPct = nextRank

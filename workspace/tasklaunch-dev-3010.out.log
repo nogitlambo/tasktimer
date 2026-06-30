@@ -1,0 +1,14 @@
+
+> tasklaunch@1.1.8 dev
+> node scripts/ensure-port-free.mjs 3000 && next dev --turbopack --port 3010
+
+[dev] Releasing port 3000 from PID 14092.
+[dev] Port 3000 is free.
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3010
+- Network:       http://192.168.4.22:3010
+- Environments: .env.local
+✓ Ready in 475ms
+Creating turbopack project { dir: 'G:\\Apps\\tasklaunch', testMode: true }
+
+[?25h

@@ -64,6 +64,7 @@ import {
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  TASKTIMER_OPEN_FRIEND_PROFILE_EVENT,
   buildRankRivalLadderViewModel,
   buildGlobalLeaderboardRows,
   buildWeeklyLeaderboardRows,
@@ -74,12 +75,14 @@ import {
   getLeaderboardResolvedRank,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
+  type OpenFriendProfileFromLeaderboardEventDetail,
   type LeaderboardProfile,
   type LeaderboardScreenData,
   type RankRivalLadderViewModel,
   type RankRivalLadderRow,
   type WeeklyLeaderboardRow,
 } from "./lib/leaderboard";
+import { loadFriendships } from "./lib/friendsStore";
 import {
   buildRewardsHeaderViewModel,
   DEFAULT_REWARD_PROGRESS,
@@ -311,6 +314,8 @@ function LeaderboardSharedTable({
   metricHeader,
   ariaLabel,
   className = "",
+  rankBeforeMetric = false,
+  friendUidSet,
   formatMetric,
   onOpenProfile,
 }: {
@@ -318,48 +323,89 @@ function LeaderboardSharedTable({
   metricHeader: string;
   ariaLabel: string;
   className?: string;
+  rankBeforeMetric?: boolean;
+  friendUidSet: Set<string>;
   formatMetric: (profile: LeaderboardProfile) => string;
   onOpenProfile: (profile: LeaderboardProfile) => void;
 }) {
   return (
     <div className={`leaderboardWeeklyTableWrap${className ? ` ${className}` : ""}`}>
-      <div className="leaderboardWeeklyTable" role="table" aria-label={ariaLabel}>
-        <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-          <span role="columnheader">Pos</span>
-          <span role="columnheader">User</span>
-          <span role="columnheader">{metricHeader}</span>
-          <span role="columnheader">Rank</span>
+      <div className="leaderboardSharedTablePanel">
+        <div className="leaderboardWeeklyTable" role="table" aria-label={ariaLabel}>
+          <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
+            <span role="columnheader">Pos</span>
+            <span role="columnheader">User</span>
+            {rankBeforeMetric ? (
+              <>
+                <span role="columnheader">Rank</span>
+                <span role="columnheader">{metricHeader}</span>
+              </>
+            ) : (
+              <>
+                <span role="columnheader">{metricHeader}</span>
+                <span role="columnheader">Rank</span>
+              </>
+            )}
+          </div>
+          {rows.map((row) => {
+            const isFriend = !row.isPlaceholder && !row.isDummy && friendUidSet.has(row.profile.uid);
+
+            return (
+              <button
+                className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}${isFriend ? " isFriend" : ""}`}
+                role="row"
+                type="button"
+                key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
+                disabled={row.isPlaceholder || row.isDummy}
+                aria-disabled={row.isPlaceholder || row.isDummy}
+                data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+                onClick={() => {
+                  if (row.isPlaceholder || row.isDummy) return;
+                  if (isFriend) {
+                    window.dispatchEvent(
+                      new CustomEvent<OpenFriendProfileFromLeaderboardEventDetail>(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, {
+                        detail: { friendUid: row.profile.uid },
+                      })
+                    );
+                    return;
+                  }
+                  onOpenProfile(row.profile);
+                }}
+              >
+                <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
+                <span className="leaderboardWeeklyPlayerCell" role="cell">
+                  {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
+                  <span className="leaderboardWeeklyPlayerText">
+                    <strong>{row.playerLabel}</strong>
+                  </span>
+                </span>
+                {rankBeforeMetric ? (
+                  <>
+                    <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+                      {row.isPlaceholder ? null : (
+                        <>
+                          <LeaderboardRankInsignia profile={row.profile} />
+                        </>
+                      )}
+                    </span>
+                    <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
+                    <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+                      {row.isPlaceholder ? null : (
+                        <>
+                          <LeaderboardRankInsignia profile={row.profile} />
+                        </>
+                      )}
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
-        {rows.map((row) => (
-          <button
-            className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-            role="row"
-            type="button"
-            key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-            disabled={row.isPlaceholder || row.isDummy}
-            aria-disabled={row.isPlaceholder || row.isDummy}
-            data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-            onClick={() => {
-              if (!row.isPlaceholder && !row.isDummy) onOpenProfile(row.profile);
-            }}
-          >
-            <span className="leaderboardWeeklyRankCell" role="cell">{row.rankLabel}</span>
-            <span className="leaderboardWeeklyPlayerCell" role="cell">
-              {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
-              <span className="leaderboardWeeklyPlayerText">
-                <strong>{row.playerLabel}</strong>
-              </span>
-            </span>
-            <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
-            <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-              {row.isPlaceholder ? null : (
-                <>
-                  <LeaderboardRankInsignia profile={row.profile} />
-                </>
-              )}
-            </span>
-          </button>
-        ))}
       </div>
     </div>
   );
@@ -419,7 +465,7 @@ function RankRivalsRow({
         <LeaderboardAvatar profile={row.profile} small />
         <strong>{row.playerLabel}</strong>
       </span>
-      <span className="rankRivalsXpCell" role="cell">{formatLeaderboardXp(row.profile.rewardTotalXp).replace(" XP", "")}</span>
+      <span className="rankRivalsXpCell" role="cell">{row.remainingLabel.replace(" XP", "")}</span>
       <span
         className="rankRivalsProgressCell"
         role="cell"
@@ -461,7 +507,7 @@ function RankRivalsLadder({
           <div className="rankRivalsTableRow rankRivalsTableHead" role="row">
             <span role="columnheader">Pos</span>
             <span role="columnheader">User</span>
-            <span role="columnheader">XP</span>
+            <span role="columnheader">XP Needed</span>
             <span role="columnheader">Progress</span>
           </div>
           {viewModel.rows.map((row) => (
@@ -518,6 +564,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [exitingLeaderboardView, setExitingLeaderboardView] = useState<LeaderboardView | null>(null);
   const [leaderboardTransitionDirection, setLeaderboardTransitionDirection] = useState<LeaderboardTransitionDirection>("next");
   const [leaderboardClockMs, setLeaderboardClockMs] = useState(() => Date.now());
+  const [leaderboardFriendUidSet, setLeaderboardFriendUidSet] = useState<Set<string>>(() => new Set());
   const [hydratedCurrentUserProfile, setHydratedCurrentUserProfile] = useState<Pick<
     LeaderboardProfile,
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
@@ -913,11 +960,30 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       }
     };
 
+    const loadFriendUidsForUid = async (uid: string) => {
+      try {
+        const rows = await loadFriendships(uid);
+        if (cancelled || activeUid !== uid) return;
+        const friendUids = new Set<string>();
+        rows.forEach((row) => {
+          const users = row.users || [];
+          if (users.indexOf(uid) === -1) return;
+          const peerUid = users[0] === uid ? users[1] : users[0];
+          if (peerUid) friendUids.add(peerUid);
+        });
+        setLeaderboardFriendUidSet(friendUids);
+      } catch {
+        if (cancelled || activeUid !== uid) return;
+        setLeaderboardFriendUidSet(new Set());
+      }
+    };
+
     const scheduleRefresh = () => {
       if (refreshTimer != null) window.clearInterval(refreshTimer);
       refreshTimer = window.setInterval(() => {
         if (!activeUid || document.visibilityState !== "visible") return;
         void loadForUid(activeUid, { preserveReadyState: true });
+        void loadFriendUidsForUid(activeUid);
       }, 60_000);
     };
 
@@ -927,12 +993,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setIsAuthenticated(!!user && !isAnonymous);
       if (!activeUid || isAnonymous) {
         setLeaderboardData(EMPTY_LEADERBOARD_SCREEN_DATA);
+        setLeaderboardFriendUidSet(new Set());
         setLeaderboardState("signedOut");
         setLeaderboardError(null);
         return;
       }
       scheduleRefresh();
       void loadForUid(activeUid);
+      void loadFriendUidsForUid(activeUid);
     });
 
     const handleProfileUpdated = (event: Event) => {
@@ -941,6 +1009,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const detailUid = String((event as CustomEvent<{ uid?: string }>).detail?.uid || "").trim();
       if (detailUid && detailUid !== activeUid) return;
       void loadForUid(activeUid, { preserveReadyState: true });
+      void loadFriendUidsForUid(activeUid);
     };
 
     if (typeof window !== "undefined") {
@@ -953,6 +1022,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (activeUid) {
       scheduleRefresh();
       void loadForUid(activeUid);
+      void loadFriendUidsForUid(activeUid);
     }
 
     return () => {
@@ -1246,6 +1316,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                     <>
                       <LeaderboardAvatar profile={row.profile} />
                       <LeaderboardRankInsignia profile={row.profile} />
+                      <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
                     </>
                   )}
                 </span>
@@ -1260,9 +1331,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           {leaderboardState === "ready" && hasWeeklyRows ? (
             <LeaderboardSharedTable
               rows={weeklyTableRows}
-              metricHeader="Weekly XP"
+              metricHeader="XP Gain"
               ariaLabel="Weekly leaderboard table"
               className="leaderboardGlobalTableWrap"
+              rankBeforeMetric
+              friendUidSet={leaderboardFriendUidSet}
               formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
               onOpenProfile={openWeeklyLeaderboardProfile}
             />
@@ -1338,6 +1411,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                       <>
                         <LeaderboardAvatar profile={row.profile} />
                         <LeaderboardRankInsignia profile={row.profile} />
+                        <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
                       </>
                     )}
                   </span>
@@ -1355,6 +1429,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               metricHeader="Total XP"
               ariaLabel="Global leaderboard table"
               className="leaderboardGlobalTableWrap"
+              rankBeforeMetric
+              friendUidSet={leaderboardFriendUidSet}
               formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
               onOpenProfile={openLeaderboardProfile}
             />

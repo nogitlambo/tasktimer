@@ -253,6 +253,23 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
           },
         },
       }),
+    clickTaskFlip: (direction: "open" | "close") => {
+      const taskEl = { dataset: { index: "0", taskId: "task-1" } as Record<string, string> };
+      const flipBtn = { getAttribute: (name: string) => (name === "data-task-flip" ? direction : null) };
+      handlers.get(taskList)?.get("click")?.({
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        target: {
+          closest: (selector: string) => {
+            if (selector === ".task") return taskEl;
+            if (selector === "[data-task-flip]") return flipBtn;
+            if (selector === "[data-action]") return null;
+            return null;
+          },
+        },
+      });
+      return taskEl;
+    },
     ctx,
     getTasks: () => tasks,
   };
@@ -283,6 +300,25 @@ describe("createTaskTimerTasks", () => {
     const taskEl = harness.clickTaskTopRow();
 
     expect(harness.ctx.openFocusMode).toHaveBeenCalledWith(0, { sourceElement: taskEl });
+  });
+
+  it("leaves a flipped task card open after delegated menu actions", () => {
+    const harness = createHarness();
+
+    harness.clickStart();
+
+    expect(harness.ctx.setTaskFlipped).not.toHaveBeenCalled();
+    expect(harness.getTasks()[0]?.running).toBe(true);
+  });
+
+  it("updates task card flip state only from explicit flip controls", () => {
+    const harness = createHarness();
+
+    const openedTaskEl = harness.clickTaskFlip("open");
+    const closedTaskEl = harness.clickTaskFlip("close");
+
+    expect(harness.ctx.setTaskFlipped).toHaveBeenNthCalledWith(1, "task-1", true, openedTaskEl);
+    expect(harness.ctx.setTaskFlipped).toHaveBeenNthCalledWith(2, "task-1", false, closedTaskEl);
   });
 
   it("resumes a stopped task from the delegated task-card start action without clearing elapsed time", () => {

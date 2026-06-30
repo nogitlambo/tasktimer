@@ -537,6 +537,25 @@ describe("buildRankRivalLadderViewModel", () => {
     });
   });
 
+  it("numbers visible rank-rival rows sequentially even when the stored current-user rank is higher", () => {
+    const viewModel = buildRankRivalLadderViewModel({
+      rivalEntries: [
+        createProfile({ uid: "rival-1", username: "rival_1", rewardTotalXp: 1600 }),
+        createProfile({ uid: "rival-2", username: "rival_2", rewardTotalXp: 1400 }),
+      ],
+      currentUserEntry: createProfile({ uid: "me", username: "me", rewardTotalXp: 1200 }),
+      currentUserRivalRank: 4,
+    });
+
+    expect(viewModel?.rows.map((row) => row.rank)).toEqual([1, 2, 3]);
+    expect(viewModel?.rows.map((row) => row.rankLabel)).toEqual(["#1", "#2", "#3"]);
+    expect(viewModel?.rows.at(-1)).toMatchObject({
+      profile: expect.objectContaining({ uid: "me" }),
+      isCurrentUser: true,
+      rank: 3,
+    });
+  });
+
   it("uses stable max-rank labels and progress values", () => {
     const viewModel = buildRankRivalLadderViewModel({
       rivalEntries: [createProfile({ uid: "same-1", username: "same_1", rewardTotalXp: 52000 })],

@@ -312,7 +312,6 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       taskId,
       sourceElement: element as HTMLElement,
     });
-    if (taskId) ctx.setTaskFlipped(taskId, false, taskEl as HTMLElement);
   }
 
   function registerTaskEvents() {

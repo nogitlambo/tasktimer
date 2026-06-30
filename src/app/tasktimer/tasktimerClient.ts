@@ -13,6 +13,10 @@ import {
   syncOwnFriendshipProfile,
 } from "./lib/friendsStore";
 import {
+  TASKTIMER_OPEN_FRIEND_PROFILE_EVENT,
+  type OpenFriendProfileFromLeaderboardEventDetail,
+} from "./lib/leaderboard";
+import {
   STORAGE_KEY,
 } from "./lib/storage";
 import type { DashboardConfig, TaskUiConfig, UserPreferencesV1 } from "./lib/cloudStore";
@@ -227,9 +231,14 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   }
 
   let actionConfirmationTimer: number | null = null;
+  let openFriendProfileFromLeaderboardListener: EventListener | null = null;
 
   const destroy = () => {
     delete document.body.dataset.tasktimerNativeRuntime;
+    if (openFriendProfileFromLeaderboardListener) {
+      window.removeEventListener(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, openFriendProfileFromLeaderboardListener);
+      openFriendProfileFromLeaderboardListener = null;
+    }
     if (actionConfirmationTimer != null) {
       window.clearTimeout(actionConfirmationTimer);
       actionConfirmationTimer = null;
@@ -606,6 +615,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     renderGroupsPage,
     renderFriendsFooterAlertBadge,
     refreshGroupsData,
+    openFriendProfileModal,
     closeFriendProfileModal,
     closeFriendRequestModal,
     openShareTaskModal,
@@ -616,6 +626,30 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     syncSharedTaskSummariesForTasks,
     registerGroupsEvents,
   } = groupsApi;
+
+  const isCurrentFriendUid = (friendUidRaw: string) => {
+    const uid = getCurrentTaskTimerUid();
+    const friendUid = String(friendUidRaw || "").trim();
+    if (!uid || !friendUid || uid === friendUid) return false;
+    return groupsState.get("groupsFriendships").some((row) => {
+      const users = row.users || [];
+      return users.indexOf(uid) !== -1 && users.indexOf(friendUid) !== -1;
+    });
+  };
+
+  openFriendProfileFromLeaderboardListener = ((event: Event) => {
+    const friendUid = String((event as CustomEvent<OpenFriendProfileFromLeaderboardEventDetail>).detail?.friendUid || "").trim();
+    if (!friendUid) return;
+    void (async () => {
+      if (!isCurrentFriendUid(friendUid)) {
+        await refreshGroupsData({ preserveStatus: true });
+      }
+      if (!isCurrentFriendUid(friendUid)) return;
+      openFriendProfileModal(friendUid);
+    })();
+  }) as EventListener;
+  window.addEventListener(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, openFriendProfileFromLeaderboardListener);
+
   const {
     dashboardBindings,
     dashboardApi,
