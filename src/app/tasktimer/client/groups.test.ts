@@ -318,7 +318,7 @@ describe("groups friends list shared task counts", () => {
     const { html } = renderFriendsList([]);
 
     expect(html).toContain('class="friendIdentityMeta"');
-    expect(html).toContain("Tasks shared with you | 0");
+    expect(html).toContain("Sharing 0 tasks");
     expect(html).toContain("No tasks shared with you.");
   });
 
@@ -326,7 +326,7 @@ describe("groups friends list shared task counts", () => {
     const { html } = renderFriendsList([makeSharedSummary()]);
 
     expect(html).toContain('class="friendIdentityMeta"');
-    expect(html).toContain("Tasks shared with you | 1");
+    expect(html).toContain("Sharing 1 tasks");
     expect(html).not.toContain("No tasks shared with you.");
   });
 

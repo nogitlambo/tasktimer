@@ -1501,7 +1501,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           })
           .join("");
         const taskCount = row.summaries.length;
-        const sharedCountLabel = `Tasks shared with you | ${taskCount}`;
+        const sharedCountLabel = `Sharing ${taskCount} tasks`;
         const sharedCountMetaHtml = `<span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>`;
         return `<div class="friendEntryWrap">
           <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>

@@ -146,7 +146,7 @@ export default function FriendsOverlays() {
           </div>
           <div className="confirmBtns friendProfileCloseRow">
             <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
-              Remove
+              Unfriend
             </button>
             <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
               Close

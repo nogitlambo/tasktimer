@@ -979,7 +979,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   align-items:center;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-transform:none !important;
-  font-size:12px;
+  font-size:10px;
   line-height:1;
   letter-spacing:.08em;
   color:#f7fbff;
@@ -1073,7 +1073,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   white-space:nowrap;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-transform:lowercase !important;
-  font-size:12px;
+  font-size:13px;
   font-weight:700 !important;
   line-height:1.1;
   letter-spacing:.06em;
@@ -1118,7 +1118,7 @@ body[data-theme="lime"] .xpAwardSpotlightLayer{
   white-space:nowrap;
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-transform:uppercase;
-  font-size:11px;
+  font-size:10px;
   font-weight:700;
   line-height:normal;
   letter-spacing:.08em;

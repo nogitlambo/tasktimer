@@ -5012,7 +5012,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionOldLabelShard{
-  animation: rankPromotionOldLabelPlateShardExplosion 1.5s cubic-bezier(.08,.86,.14,1) 2.9s both;
+  animation: rankPromotionOldLabelPlateShardExplosion 2.2s cubic-bezier(.16,.62,.18,1) 2.9s both;
 }
 
 #rankPromotionOverlay .rankPromotionModal.is-smashing .rankPromotionRankNew{
@@ -5254,22 +5254,38 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   filter: drop-shadow(0 0 16px rgba(228,231,234,.32));
 }
 
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(1){ --rank-promotion-label-shard-width: 78px; --rank-promotion-label-shard-height: 18px; --rank-promotion-label-shard-start-x: -42px; --rank-promotion-label-shard-start-y: -8px; --rank-promotion-label-shard-mid-x: -19vw; --rank-promotion-label-shard-mid-y: -18vh; --rank-promotion-label-shard-end-x: -72vw; --rank-promotion-label-shard-end-y: -56vh; --rank-promotion-label-shard-start-rot: -10deg; --rank-promotion-label-shard-mid-rot: -92deg; --rank-promotion-label-shard-end-rot: -305deg; --rank-promotion-label-shard-scale: .98; clip-path: polygon(0 14%, 100% 0, 84% 100%, 9% 78%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(2){ --rank-promotion-label-shard-width: 62px; --rank-promotion-label-shard-height: 24px; --rank-promotion-label-shard-start-x: -10px; --rank-promotion-label-shard-start-y: -12px; --rank-promotion-label-shard-mid-x: -4vw; --rank-promotion-label-shard-mid-y: -24vh; --rank-promotion-label-shard-end-x: -15vw; --rank-promotion-label-shard-end-y: -76vh; --rank-promotion-label-shard-start-rot: 8deg; --rank-promotion-label-shard-mid-rot: 76deg; --rank-promotion-label-shard-end-rot: 258deg; --rank-promotion-label-shard-scale: .9; clip-path: polygon(8% 0, 88% 12%, 100% 74%, 24% 100%, 0 48%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(3){ --rank-promotion-label-shard-width: 86px; --rank-promotion-label-shard-height: 20px; --rank-promotion-label-shard-start-x: 35px; --rank-promotion-label-shard-start-y: -6px; --rank-promotion-label-shard-mid-x: 22vw; --rank-promotion-label-shard-mid-y: -18vh; --rank-promotion-label-shard-end-x: 78vw; --rank-promotion-label-shard-end-y: -54vh; --rank-promotion-label-shard-start-rot: 12deg; --rank-promotion-label-shard-mid-rot: 104deg; --rank-promotion-label-shard-end-rot: 326deg; --rank-promotion-label-shard-scale: 1; clip-path: polygon(4% 18%, 74% 0, 100% 52%, 83% 100%, 0 84%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(4){ --rank-promotion-label-shard-width: 52px; --rank-promotion-label-shard-height: 34px; --rank-promotion-label-shard-start-x: -58px; --rank-promotion-label-shard-start-y: 8px; --rank-promotion-label-shard-mid-x: -28vw; --rank-promotion-label-shard-mid-y: 2vh; --rank-promotion-label-shard-end-x: -84vw; --rank-promotion-label-shard-end-y: 4vh; --rank-promotion-label-shard-start-rot: -18deg; --rank-promotion-label-shard-mid-rot: -128deg; --rank-promotion-label-shard-end-rot: -392deg; --rank-promotion-label-shard-scale: .92; clip-path: polygon(0 0, 82% 8%, 100% 68%, 48% 100%, 10% 72%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(5){ --rank-promotion-label-shard-width: 46px; --rank-promotion-label-shard-height: 28px; --rank-promotion-label-shard-start-x: -24px; --rank-promotion-label-shard-start-y: 6px; --rank-promotion-label-shard-mid-x: -14vw; --rank-promotion-label-shard-mid-y: 17vh; --rank-promotion-label-shard-end-x: -48vw; --rank-promotion-label-shard-end-y: 70vh; --rank-promotion-label-shard-start-rot: 5deg; --rank-promotion-label-shard-mid-rot: 118deg; --rank-promotion-label-shard-end-rot: 344deg; --rank-promotion-label-shard-scale: .82; clip-path: polygon(22% 0, 100% 20%, 76% 100%, 0 78%, 8% 22%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(6){ --rank-promotion-label-shard-width: 66px; --rank-promotion-label-shard-height: 30px; --rank-promotion-label-shard-start-x: 18px; --rank-promotion-label-shard-start-y: 6px; --rank-promotion-label-shard-mid-x: 11vw; --rank-promotion-label-shard-mid-y: 20vh; --rank-promotion-label-shard-end-x: 42vw; --rank-promotion-label-shard-end-y: 72vh; --rank-promotion-label-shard-start-rot: -6deg; --rank-promotion-label-shard-mid-rot: -96deg; --rank-promotion-label-shard-end-rot: -286deg; --rank-promotion-label-shard-scale: .94; clip-path: polygon(0 18%, 60% 0, 100% 34%, 86% 100%, 18% 78%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(7){ --rank-promotion-label-shard-width: 44px; --rank-promotion-label-shard-height: 38px; --rank-promotion-label-shard-start-x: 58px; --rank-promotion-label-shard-start-y: 12px; --rank-promotion-label-shard-mid-x: 30vw; --rank-promotion-label-shard-mid-y: 8vh; --rank-promotion-label-shard-end-x: 88vw; --rank-promotion-label-shard-end-y: 18vh; --rank-promotion-label-shard-start-rot: 18deg; --rank-promotion-label-shard-mid-rot: 146deg; --rank-promotion-label-shard-end-rot: 408deg; --rank-promotion-label-shard-scale: .88; clip-path: polygon(10% 0, 94% 22%, 74% 100%, 0 82%, 24% 36%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(8){ --rank-promotion-label-shard-width: 92px; --rank-promotion-label-shard-height: 16px; --rank-promotion-label-shard-start-x: 4px; --rank-promotion-label-shard-start-y: 18px; --rank-promotion-label-shard-mid-x: 2vw; --rank-promotion-label-shard-mid-y: 28vh; --rank-promotion-label-shard-end-x: 8vw; --rank-promotion-label-shard-end-y: 84vh; --rank-promotion-label-shard-start-rot: -2deg; --rank-promotion-label-shard-mid-rot: 74deg; --rank-promotion-label-shard-end-rot: 246deg; --rank-promotion-label-shard-scale: .86; clip-path: polygon(0 18%, 92% 0, 100% 72%, 12% 100%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(9){ --rank-promotion-label-shard-width: 36px; --rank-promotion-label-shard-height: 30px; --rank-promotion-label-shard-start-x: -2px; --rank-promotion-label-shard-start-y: -4px; --rank-promotion-label-shard-mid-x: -9vw; --rank-promotion-label-shard-mid-y: -9vh; --rank-promotion-label-shard-end-x: -38vw; --rank-promotion-label-shard-end-y: -34vh; --rank-promotion-label-shard-start-rot: 22deg; --rank-promotion-label-shard-mid-rot: -68deg; --rank-promotion-label-shard-end-rot: -258deg; --rank-promotion-label-shard-scale: .72; clip-path: polygon(30% 0, 100% 42%, 72% 100%, 0 60%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(10){ --rank-promotion-label-shard-width: 40px; --rank-promotion-label-shard-height: 24px; --rank-promotion-label-shard-start-x: 6px; --rank-promotion-label-shard-start-y: -2px; --rank-promotion-label-shard-mid-x: 10vw; --rank-promotion-label-shard-mid-y: -7vh; --rank-promotion-label-shard-end-x: 40vw; --rank-promotion-label-shard-end-y: -32vh; --rank-promotion-label-shard-start-rot: -16deg; --rank-promotion-label-shard-mid-rot: 86deg; --rank-promotion-label-shard-end-rot: 288deg; --rank-promotion-label-shard-scale: .76; clip-path: polygon(0 20%, 70% 0, 100% 82%, 18% 100%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(11){ --rank-promotion-label-shard-width: 54px; --rank-promotion-label-shard-height: 18px; --rank-promotion-label-shard-start-x: -38px; --rank-promotion-label-shard-start-y: -20px; --rank-promotion-label-shard-mid-x: -27vw; --rank-promotion-label-shard-mid-y: -32vh; --rank-promotion-label-shard-end-x: -78vw; --rank-promotion-label-shard-end-y: -82vh; --rank-promotion-label-shard-start-rot: -28deg; --rank-promotion-label-shard-mid-rot: -166deg; --rank-promotion-label-shard-end-rot: -468deg; --rank-promotion-label-shard-scale: .68; clip-path: polygon(0 0, 94% 14%, 72% 100%, 12% 78%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(12){ --rank-promotion-label-shard-width: 48px; --rank-promotion-label-shard-height: 20px; --rank-promotion-label-shard-start-x: 42px; --rank-promotion-label-shard-start-y: -22px; --rank-promotion-label-shard-mid-x: 29vw; --rank-promotion-label-shard-mid-y: -30vh; --rank-promotion-label-shard-end-x: 84vw; --rank-promotion-label-shard-end-y: -80vh; --rank-promotion-label-shard-start-rot: 26deg; --rank-promotion-label-shard-mid-rot: 172deg; --rank-promotion-label-shard-end-rot: 462deg; --rank-promotion-label-shard-scale: .7; clip-path: polygon(12% 0, 100% 30%, 84% 100%, 0 70%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(13){ --rank-promotion-label-shard-width: 34px; --rank-promotion-label-shard-height: 36px; --rank-promotion-label-shard-start-x: -64px; --rank-promotion-label-shard-start-y: 28px; --rank-promotion-label-shard-mid-x: -35vw; --rank-promotion-label-shard-mid-y: 28vh; --rank-promotion-label-shard-end-x: -90vw; --rank-promotion-label-shard-end-y: 84vh; --rank-promotion-label-shard-start-rot: 34deg; --rank-promotion-label-shard-mid-rot: 152deg; --rank-promotion-label-shard-end-rot: 374deg; --rank-promotion-label-shard-scale: .66; clip-path: polygon(20% 0, 100% 18%, 76% 92%, 10% 100%, 0 34%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(14){ --rank-promotion-label-shard-width: 38px; --rank-promotion-label-shard-height: 34px; --rank-promotion-label-shard-start-x: 64px; --rank-promotion-label-shard-start-y: 30px; --rank-promotion-label-shard-mid-x: 36vw; --rank-promotion-label-shard-mid-y: 30vh; --rank-promotion-label-shard-end-x: 92vw; --rank-promotion-label-shard-end-y: 86vh; --rank-promotion-label-shard-start-rot: -32deg; --rank-promotion-label-shard-mid-rot: -158deg; --rank-promotion-label-shard-end-rot: -382deg; --rank-promotion-label-shard-scale: .68; clip-path: polygon(0 24%, 78% 0, 100% 76%, 30% 100%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(15){ --rank-promotion-label-shard-width: 70px; --rank-promotion-label-shard-height: 12px; --rank-promotion-label-shard-start-x: -2px; --rank-promotion-label-shard-start-y: -28px; --rank-promotion-label-shard-mid-x: 0; --rank-promotion-label-shard-mid-y: -36vh; --rank-promotion-label-shard-end-x: 2vw; --rank-promotion-label-shard-end-y: -88vh; --rank-promotion-label-shard-start-rot: 1deg; --rank-promotion-label-shard-mid-rot: -112deg; --rank-promotion-label-shard-end-rot: -330deg; --rank-promotion-label-shard-scale: .74; clip-path: polygon(4% 0, 100% 18%, 86% 100%, 0 72%); }
-#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(16){ --rank-promotion-label-shard-width: 74px; --rank-promotion-label-shard-height: 14px; --rank-promotion-label-shard-start-x: 2px; --rank-promotion-label-shard-start-y: 32px; --rank-promotion-label-shard-mid-x: -1vw; --rank-promotion-label-shard-mid-y: 34vh; --rank-promotion-label-shard-end-x: -4vw; --rank-promotion-label-shard-end-y: 88vh; --rank-promotion-label-shard-start-rot: -3deg; --rank-promotion-label-shard-mid-rot: 126deg; --rank-promotion-label-shard-end-rot: 342deg; --rank-promotion-label-shard-scale: .78; clip-path: polygon(0 26%, 92% 0, 100% 78%, 10% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(1){ --rank-promotion-label-shard-width: 44px; --rank-promotion-label-shard-height: 12px; --rank-promotion-label-shard-start-x: -70px; --rank-promotion-label-shard-start-y: -18px; --rank-promotion-label-shard-mid-x: -15vw; --rank-promotion-label-shard-mid-y: -14vh; --rank-promotion-label-shard-end-x: -62vw; --rank-promotion-label-shard-end-y: -48vh; --rank-promotion-label-shard-start-rot: -11deg; --rank-promotion-label-shard-mid-rot: -76deg; --rank-promotion-label-shard-end-rot: -246deg; --rank-promotion-label-shard-scale: .78; clip-path: polygon(0 18%, 100% 0, 86% 100%, 10% 78%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(2){ --rank-promotion-label-shard-width: 34px; --rank-promotion-label-shard-height: 16px; --rank-promotion-label-shard-start-x: -42px; --rank-promotion-label-shard-start-y: -20px; --rank-promotion-label-shard-mid-x: -5vw; --rank-promotion-label-shard-mid-y: -20vh; --rank-promotion-label-shard-end-x: -18vw; --rank-promotion-label-shard-end-y: -66vh; --rank-promotion-label-shard-start-rot: 7deg; --rank-promotion-label-shard-mid-rot: 62deg; --rank-promotion-label-shard-end-rot: 216deg; --rank-promotion-label-shard-scale: .72; clip-path: polygon(8% 0, 88% 10%, 100% 74%, 22% 100%, 0 48%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(3){ --rank-promotion-label-shard-width: 48px; --rank-promotion-label-shard-height: 13px; --rank-promotion-label-shard-start-x: -10px; --rank-promotion-label-shard-start-y: -18px; --rank-promotion-label-shard-mid-x: 12vw; --rank-promotion-label-shard-mid-y: -17vh; --rank-promotion-label-shard-end-x: 56vw; --rank-promotion-label-shard-end-y: -46vh; --rank-promotion-label-shard-start-rot: 12deg; --rank-promotion-label-shard-mid-rot: 86deg; --rank-promotion-label-shard-end-rot: 274deg; --rank-promotion-label-shard-scale: .82; clip-path: polygon(4% 18%, 76% 0, 100% 52%, 82% 100%, 0 84%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(4){ --rank-promotion-label-shard-width: 30px; --rank-promotion-label-shard-height: 22px; --rank-promotion-label-shard-start-x: 28px; --rank-promotion-label-shard-start-y: -17px; --rank-promotion-label-shard-mid-x: 25vw; --rank-promotion-label-shard-mid-y: -10vh; --rank-promotion-label-shard-end-x: 76vw; --rank-promotion-label-shard-end-y: -28vh; --rank-promotion-label-shard-start-rot: -18deg; --rank-promotion-label-shard-mid-rot: -94deg; --rank-promotion-label-shard-end-rot: -288deg; --rank-promotion-label-shard-scale: .74; clip-path: polygon(0 0, 82% 8%, 100% 68%, 48% 100%, 10% 72%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(5){ --rank-promotion-label-shard-width: 38px; --rank-promotion-label-shard-height: 14px; --rank-promotion-label-shard-start-x: 64px; --rank-promotion-label-shard-start-y: -14px; --rank-promotion-label-shard-mid-x: 18vw; --rank-promotion-label-shard-mid-y: -19vh; --rank-promotion-label-shard-end-x: 68vw; --rank-promotion-label-shard-end-y: -60vh; --rank-promotion-label-shard-start-rot: 5deg; --rank-promotion-label-shard-mid-rot: 104deg; --rank-promotion-label-shard-end-rot: 318deg; --rank-promotion-label-shard-scale: .76; clip-path: polygon(22% 0, 100% 20%, 76% 100%, 0 78%, 8% 22%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(6){ --rank-promotion-label-shard-width: 26px; --rank-promotion-label-shard-height: 20px; --rank-promotion-label-shard-start-x: -82px; --rank-promotion-label-shard-start-y: 1px; --rank-promotion-label-shard-mid-x: -26vw; --rank-promotion-label-shard-mid-y: -1vh; --rank-promotion-label-shard-end-x: -78vw; --rank-promotion-label-shard-end-y: -4vh; --rank-promotion-label-shard-start-rot: -6deg; --rank-promotion-label-shard-mid-rot: -82deg; --rank-promotion-label-shard-end-rot: -248deg; --rank-promotion-label-shard-scale: .7; clip-path: polygon(0 18%, 60% 0, 100% 34%, 86% 100%, 18% 78%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(7){ --rank-promotion-label-shard-width: 28px; --rank-promotion-label-shard-height: 24px; --rank-promotion-label-shard-start-x: -52px; --rank-promotion-label-shard-start-y: 2px; --rank-promotion-label-shard-mid-x: -17vw; --rank-promotion-label-shard-mid-y: 10vh; --rank-promotion-label-shard-end-x: -58vw; --rank-promotion-label-shard-end-y: 38vh; --rank-promotion-label-shard-start-rot: 18deg; --rank-promotion-label-shard-mid-rot: 118deg; --rank-promotion-label-shard-end-rot: 338deg; --rank-promotion-label-shard-scale: .72; clip-path: polygon(10% 0, 94% 22%, 74% 100%, 0 82%, 24% 36%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(8){ --rank-promotion-label-shard-width: 42px; --rank-promotion-label-shard-height: 10px; --rank-promotion-label-shard-start-x: -18px; --rank-promotion-label-shard-start-y: 1px; --rank-promotion-label-shard-mid-x: -2vw; --rank-promotion-label-shard-mid-y: 21vh; --rank-promotion-label-shard-end-x: -8vw; --rank-promotion-label-shard-end-y: 72vh; --rank-promotion-label-shard-start-rot: -2deg; --rank-promotion-label-shard-mid-rot: 66deg; --rank-promotion-label-shard-end-rot: 224deg; --rank-promotion-label-shard-scale: .7; clip-path: polygon(0 18%, 92% 0, 100% 72%, 12% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(9){ --rank-promotion-label-shard-width: 32px; --rank-promotion-label-shard-height: 18px; --rank-promotion-label-shard-start-x: 18px; --rank-promotion-label-shard-start-y: 1px; --rank-promotion-label-shard-mid-x: 12vw; --rank-promotion-label-shard-mid-y: 12vh; --rank-promotion-label-shard-end-x: 46vw; --rank-promotion-label-shard-end-y: 44vh; --rank-promotion-label-shard-start-rot: 22deg; --rank-promotion-label-shard-mid-rot: -62deg; --rank-promotion-label-shard-end-rot: -226deg; --rank-promotion-label-shard-scale: .68; clip-path: polygon(30% 0, 100% 42%, 72% 100%, 0 60%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(10){ --rank-promotion-label-shard-width: 36px; --rank-promotion-label-shard-height: 15px; --rank-promotion-label-shard-start-x: 54px; --rank-promotion-label-shard-start-y: 2px; --rank-promotion-label-shard-mid-x: 27vw; --rank-promotion-label-shard-mid-y: 4vh; --rank-promotion-label-shard-end-x: 84vw; --rank-promotion-label-shard-end-y: 14vh; --rank-promotion-label-shard-start-rot: -16deg; --rank-promotion-label-shard-mid-rot: 78deg; --rank-promotion-label-shard-end-rot: 252deg; --rank-promotion-label-shard-scale: .72; clip-path: polygon(0 20%, 70% 0, 100% 82%, 18% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(11){ --rank-promotion-label-shard-width: 24px; --rank-promotion-label-shard-height: 18px; --rank-promotion-label-shard-start-x: 82px; --rank-promotion-label-shard-start-y: 5px; --rank-promotion-label-shard-mid-x: 35vw; --rank-promotion-label-shard-mid-y: 18vh; --rank-promotion-label-shard-end-x: 88vw; --rank-promotion-label-shard-end-y: 60vh; --rank-promotion-label-shard-start-rot: -28deg; --rank-promotion-label-shard-mid-rot: -132deg; --rank-promotion-label-shard-end-rot: -354deg; --rank-promotion-label-shard-scale: .64; clip-path: polygon(0 0, 94% 14%, 72% 100%, 12% 78%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(12){ --rank-promotion-label-shard-width: 46px; --rank-promotion-label-shard-height: 9px; --rank-promotion-label-shard-start-x: 2px; --rank-promotion-label-shard-start-y: 13px; --rank-promotion-label-shard-mid-x: 2vw; --rank-promotion-label-shard-mid-y: 28vh; --rank-promotion-label-shard-end-x: 6vw; --rank-promotion-label-shard-end-y: 82vh; --rank-promotion-label-shard-start-rot: 3deg; --rank-promotion-label-shard-mid-rot: 112deg; --rank-promotion-label-shard-end-rot: 318deg; --rank-promotion-label-shard-scale: .68; clip-path: polygon(12% 0, 100% 30%, 84% 100%, 0 70%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(13){ --rank-promotion-label-shard-width: 25px; --rank-promotion-label-shard-height: 22px; --rank-promotion-label-shard-start-x: -68px; --rank-promotion-label-shard-start-y: 19px; --rank-promotion-label-shard-mid-x: -34vw; --rank-promotion-label-shard-mid-y: 24vh; --rank-promotion-label-shard-end-x: -86vw; --rank-promotion-label-shard-end-y: 76vh; --rank-promotion-label-shard-start-rot: 34deg; --rank-promotion-label-shard-mid-rot: 126deg; --rank-promotion-label-shard-end-rot: 332deg; --rank-promotion-label-shard-scale: .62; clip-path: polygon(20% 0, 100% 18%, 76% 92%, 10% 100%, 0 34%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(14){ --rank-promotion-label-shard-width: 30px; --rank-promotion-label-shard-height: 20px; --rank-promotion-label-shard-start-x: -36px; --rank-promotion-label-shard-start-y: 20px; --rank-promotion-label-shard-mid-x: -20vw; --rank-promotion-label-shard-mid-y: 30vh; --rank-promotion-label-shard-end-x: -54vw; --rank-promotion-label-shard-end-y: 86vh; --rank-promotion-label-shard-start-rot: -32deg; --rank-promotion-label-shard-mid-rot: -122deg; --rank-promotion-label-shard-end-rot: -326deg; --rank-promotion-label-shard-scale: .64; clip-path: polygon(0 24%, 78% 0, 100% 76%, 30% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(15){ --rank-promotion-label-shard-width: 38px; --rank-promotion-label-shard-height: 8px; --rank-promotion-label-shard-start-x: -3px; --rank-promotion-label-shard-start-y: 22px; --rank-promotion-label-shard-mid-x: 0; --rank-promotion-label-shard-mid-y: 34vh; --rank-promotion-label-shard-end-x: 2vw; --rank-promotion-label-shard-end-y: 88vh; --rank-promotion-label-shard-start-rot: 1deg; --rank-promotion-label-shard-mid-rot: -96deg; --rank-promotion-label-shard-end-rot: -284deg; --rank-promotion-label-shard-scale: .62; clip-path: polygon(4% 0, 100% 18%, 86% 100%, 0 72%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(16){ --rank-promotion-label-shard-width: 34px; --rank-promotion-label-shard-height: 10px; --rank-promotion-label-shard-start-x: 34px; --rank-promotion-label-shard-start-y: 21px; --rank-promotion-label-shard-mid-x: 18vw; --rank-promotion-label-shard-mid-y: 29vh; --rank-promotion-label-shard-end-x: 56vw; --rank-promotion-label-shard-end-y: 82vh; --rank-promotion-label-shard-start-rot: -3deg; --rank-promotion-label-shard-mid-rot: 108deg; --rank-promotion-label-shard-end-rot: 296deg; --rank-promotion-label-shard-scale: .64; clip-path: polygon(0 26%, 92% 0, 100% 78%, 10% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(17){ --rank-promotion-label-shard-width: 22px; --rank-promotion-label-shard-height: 16px; --rank-promotion-label-shard-start-x: 70px; --rank-promotion-label-shard-start-y: 22px; --rank-promotion-label-shard-mid-x: 31vw; --rank-promotion-label-shard-mid-y: 32vh; --rank-promotion-label-shard-end-x: 82vw; --rank-promotion-label-shard-end-y: 88vh; --rank-promotion-label-shard-start-rot: 16deg; --rank-promotion-label-shard-mid-rot: 118deg; --rank-promotion-label-shard-end-rot: 340deg; --rank-promotion-label-shard-scale: .58; clip-path: polygon(12% 0, 100% 24%, 74% 100%, 0 70%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(18){ --rank-promotion-label-shard-width: 24px; --rank-promotion-label-shard-height: 12px; --rank-promotion-label-shard-start-x: -90px; --rank-promotion-label-shard-start-y: -8px; --rank-promotion-label-shard-mid-x: -34vw; --rank-promotion-label-shard-mid-y: -20vh; --rank-promotion-label-shard-end-x: -90vw; --rank-promotion-label-shard-end-y: -64vh; --rank-promotion-label-shard-start-rot: -22deg; --rank-promotion-label-shard-mid-rot: -118deg; --rank-promotion-label-shard-end-rot: -334deg; --rank-promotion-label-shard-scale: .56; clip-path: polygon(0 22%, 82% 0, 100% 66%, 18% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(19){ --rank-promotion-label-shard-width: 20px; --rank-promotion-label-shard-height: 14px; --rank-promotion-label-shard-start-x: -58px; --rank-promotion-label-shard-start-y: -33px; --rank-promotion-label-shard-mid-x: -29vw; --rank-promotion-label-shard-mid-y: -32vh; --rank-promotion-label-shard-end-x: -82vw; --rank-promotion-label-shard-end-y: -86vh; --rank-promotion-label-shard-start-rot: 27deg; --rank-promotion-label-shard-mid-rot: 142deg; --rank-promotion-label-shard-end-rot: 366deg; --rank-promotion-label-shard-scale: .54; clip-path: polygon(22% 0, 100% 32%, 66% 100%, 0 62%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(20){ --rank-promotion-label-shard-width: 30px; --rank-promotion-label-shard-height: 8px; --rank-promotion-label-shard-start-x: -20px; --rank-promotion-label-shard-start-y: -34px; --rank-promotion-label-shard-mid-x: -8vw; --rank-promotion-label-shard-mid-y: -35vh; --rank-promotion-label-shard-end-x: -28vw; --rank-promotion-label-shard-end-y: -90vh; --rank-promotion-label-shard-start-rot: -5deg; --rank-promotion-label-shard-mid-rot: -106deg; --rank-promotion-label-shard-end-rot: -300deg; --rank-promotion-label-shard-scale: .58; clip-path: polygon(0 18%, 100% 0, 82% 100%, 8% 78%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(21){ --rank-promotion-label-shard-width: 26px; --rank-promotion-label-shard-height: 9px; --rank-promotion-label-shard-start-x: 20px; --rank-promotion-label-shard-start-y: -34px; --rank-promotion-label-shard-mid-x: 8vw; --rank-promotion-label-shard-mid-y: -35vh; --rank-promotion-label-shard-end-x: 30vw; --rank-promotion-label-shard-end-y: -90vh; --rank-promotion-label-shard-start-rot: 9deg; --rank-promotion-label-shard-mid-rot: 116deg; --rank-promotion-label-shard-end-rot: 322deg; --rank-promotion-label-shard-scale: .58; clip-path: polygon(8% 0, 100% 16%, 78% 100%, 0 84%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(22){ --rank-promotion-label-shard-width: 22px; --rank-promotion-label-shard-height: 15px; --rank-promotion-label-shard-start-x: 58px; --rank-promotion-label-shard-start-y: -31px; --rank-promotion-label-shard-mid-x: 29vw; --rank-promotion-label-shard-mid-y: -30vh; --rank-promotion-label-shard-end-x: 84vw; --rank-promotion-label-shard-end-y: -82vh; --rank-promotion-label-shard-start-rot: -26deg; --rank-promotion-label-shard-mid-rot: -138deg; --rank-promotion-label-shard-end-rot: -356deg; --rank-promotion-label-shard-scale: .56; clip-path: polygon(0 0, 88% 16%, 100% 76%, 22% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(23){ --rank-promotion-label-shard-width: 18px; --rank-promotion-label-shard-height: 18px; --rank-promotion-label-shard-start-x: 92px; --rank-promotion-label-shard-start-y: -4px; --rank-promotion-label-shard-mid-x: 38vw; --rank-promotion-label-shard-mid-y: -13vh; --rank-promotion-label-shard-end-x: 94vw; --rank-promotion-label-shard-end-y: -42vh; --rank-promotion-label-shard-start-rot: 31deg; --rank-promotion-label-shard-mid-rot: 154deg; --rank-promotion-label-shard-end-rot: 392deg; --rank-promotion-label-shard-scale: .52; clip-path: polygon(18% 0, 100% 22%, 72% 100%, 0 76%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(24){ --rank-promotion-label-shard-width: 19px; --rank-promotion-label-shard-height: 16px; --rank-promotion-label-shard-start-x: -96px; --rank-promotion-label-shard-start-y: 16px; --rank-promotion-label-shard-mid-x: -40vw; --rank-promotion-label-shard-mid-y: 19vh; --rank-promotion-label-shard-end-x: -96vw; --rank-promotion-label-shard-end-y: 58vh; --rank-promotion-label-shard-start-rot: -34deg; --rank-promotion-label-shard-mid-rot: -148deg; --rank-promotion-label-shard-end-rot: -382deg; --rank-promotion-label-shard-scale: .52; clip-path: polygon(0 28%, 80% 0, 100% 70%, 26% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(25){ --rank-promotion-label-shard-width: 24px; --rank-promotion-label-shard-height: 10px; --rank-promotion-label-shard-start-x: -52px; --rank-promotion-label-shard-start-y: 36px; --rank-promotion-label-shard-mid-x: -26vw; --rank-promotion-label-shard-mid-y: 36vh; --rank-promotion-label-shard-end-x: -74vw; --rank-promotion-label-shard-end-y: 92vh; --rank-promotion-label-shard-start-rot: 14deg; --rank-promotion-label-shard-mid-rot: 122deg; --rank-promotion-label-shard-end-rot: 344deg; --rank-promotion-label-shard-scale: .54; clip-path: polygon(16% 0, 100% 22%, 84% 100%, 0 72%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(26){ --rank-promotion-label-shard-width: 20px; --rank-promotion-label-shard-height: 12px; --rank-promotion-label-shard-start-x: -16px; --rank-promotion-label-shard-start-y: 38px; --rank-promotion-label-shard-mid-x: -6vw; --rank-promotion-label-shard-mid-y: 39vh; --rank-promotion-label-shard-end-x: -20vw; --rank-promotion-label-shard-end-y: 94vh; --rank-promotion-label-shard-start-rot: -13deg; --rank-promotion-label-shard-mid-rot: -126deg; --rank-promotion-label-shard-end-rot: -336deg; --rank-promotion-label-shard-scale: .52; clip-path: polygon(0 12%, 86% 0, 100% 82%, 20% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(27){ --rank-promotion-label-shard-width: 28px; --rank-promotion-label-shard-height: 8px; --rank-promotion-label-shard-start-x: 20px; --rank-promotion-label-shard-start-y: 38px; --rank-promotion-label-shard-mid-x: 8vw; --rank-promotion-label-shard-mid-y: 39vh; --rank-promotion-label-shard-end-x: 26vw; --rank-promotion-label-shard-end-y: 94vh; --rank-promotion-label-shard-start-rot: 4deg; --rank-promotion-label-shard-mid-rot: 102deg; --rank-promotion-label-shard-end-rot: 292deg; --rank-promotion-label-shard-scale: .54; clip-path: polygon(6% 0, 100% 20%, 78% 100%, 0 74%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(28){ --rank-promotion-label-shard-width: 22px; --rank-promotion-label-shard-height: 12px; --rank-promotion-label-shard-start-x: 58px; --rank-promotion-label-shard-start-y: 36px; --rank-promotion-label-shard-mid-x: 29vw; --rank-promotion-label-shard-mid-y: 37vh; --rank-promotion-label-shard-end-x: 78vw; --rank-promotion-label-shard-end-y: 92vh; --rank-promotion-label-shard-start-rot: -18deg; --rank-promotion-label-shard-mid-rot: -116deg; --rank-promotion-label-shard-end-rot: -322deg; --rank-promotion-label-shard-scale: .54; clip-path: polygon(0 22%, 78% 0, 100% 72%, 24% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(29){ --rank-promotion-label-shard-width: 16px; --rank-promotion-label-shard-height: 14px; --rank-promotion-label-shard-start-x: -100px; --rank-promotion-label-shard-start-y: -28px; --rank-promotion-label-shard-mid-x: -44vw; --rank-promotion-label-shard-mid-y: -34vh; --rank-promotion-label-shard-end-x: -98vw; --rank-promotion-label-shard-end-y: -92vh; --rank-promotion-label-shard-start-rot: 38deg; --rank-promotion-label-shard-mid-rot: 168deg; --rank-promotion-label-shard-end-rot: 420deg; --rank-promotion-label-shard-scale: .5; clip-path: polygon(24% 0, 100% 38%, 64% 100%, 0 54%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(30){ --rank-promotion-label-shard-width: 16px; --rank-promotion-label-shard-height: 14px; --rank-promotion-label-shard-start-x: 100px; --rank-promotion-label-shard-start-y: -26px; --rank-promotion-label-shard-mid-x: 44vw; --rank-promotion-label-shard-mid-y: -33vh; --rank-promotion-label-shard-end-x: 98vw; --rank-promotion-label-shard-end-y: -90vh; --rank-promotion-label-shard-start-rot: -39deg; --rank-promotion-label-shard-mid-rot: -172deg; --rank-promotion-label-shard-end-rot: -426deg; --rank-promotion-label-shard-scale: .5; clip-path: polygon(0 36%, 76% 0, 100% 62%, 28% 100%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(31){ --rank-promotion-label-shard-width: 18px; --rank-promotion-label-shard-height: 10px; --rank-promotion-label-shard-start-x: -92px; --rank-promotion-label-shard-start-y: 42px; --rank-promotion-label-shard-mid-x: -41vw; --rank-promotion-label-shard-mid-y: 41vh; --rank-promotion-label-shard-end-x: -96vw; --rank-promotion-label-shard-end-y: 96vh; --rank-promotion-label-shard-start-rot: -41deg; --rank-promotion-label-shard-mid-rot: -158deg; --rank-promotion-label-shard-end-rot: -402deg; --rank-promotion-label-shard-scale: .48; clip-path: polygon(8% 0, 100% 24%, 80% 100%, 0 70%); }
+#rankPromotionOverlay .rankPromotionOldLabelShard:nth-child(32){ --rank-promotion-label-shard-width: 18px; --rank-promotion-label-shard-height: 10px; --rank-promotion-label-shard-start-x: 92px; --rank-promotion-label-shard-start-y: 42px; --rank-promotion-label-shard-mid-x: 41vw; --rank-promotion-label-shard-mid-y: 41vh; --rank-promotion-label-shard-end-x: 96vw; --rank-promotion-label-shard-end-y: 96vh; --rank-promotion-label-shard-start-rot: 42deg; --rank-promotion-label-shard-mid-rot: 162deg; --rank-promotion-label-shard-end-rot: 408deg; --rank-promotion-label-shard-scale: .48; clip-path: polygon(0 28%, 82% 0, 100% 74%, 22% 100%); }
 
 #rankPromotionOverlay .confirmBtns{
   margin-top: 14px;
@@ -5360,21 +5376,23 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }@keyframes rankPromotionIntroShieldSmashReveal{0%{
     opacity: 0;
-    transform: scale(var(--rank-promotion-birdseye-scale));
-    filter: blur(10px) drop-shadow(0 0 44px rgba(201,255,36,.34));
-  }7%{
+    transform: scale(.46);
+    filter: blur(5px) drop-shadow(0 0 18px rgba(201,255,36,.2));
+  }12%{
+    opacity: .74;
+    transform: scale(.58);
+    filter: blur(3px) drop-shadow(0 0 24px rgba(201,255,36,.26));
+  }58%{
     opacity: 1;
-  }35%{
-    opacity: 1;
-    transform: scale(1.08);
+    transform: scale(1.12);
     filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
-  }40%{
-    transform: scale(.88);
-    filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
-  }47%{
-    transform: scale(1.05);
+  }70%{
+    transform: scale(.97);
+    filter: blur(0) drop-shadow(0 10px 20px rgba(0,0,0,.44));
+  }82%{
+    transform: scale(1.04);
     filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
-  }72%{
+  }94%{
     transform: scale(.99);
     filter: blur(0) drop-shadow(0 12px 24px rgba(0,0,0,.46));
   }100%{
@@ -5384,21 +5402,23 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }@keyframes rankPromotionIntroClipSmashReveal{0%{
     opacity: 0;
-    transform: scale(var(--rank-promotion-birdseye-scale));
-    filter: blur(10px) drop-shadow(0 0 44px rgba(201,255,36,.34));
-  }7%{
+    transform: scale(.46);
+    filter: blur(5px) drop-shadow(0 0 18px rgba(201,255,36,.2));
+  }12%{
+    opacity: .74;
+    transform: scale(.58);
+    filter: blur(3px) drop-shadow(0 0 24px rgba(201,255,36,.26));
+  }58%{
     opacity: 1;
-  }35%{
-    opacity: 1;
-    transform: scale(1.08);
+    transform: scale(1.12);
     filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
-  }40%{
-    transform: scale(.88);
-    filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
-  }47%{
-    transform: scale(1.05);
+  }70%{
+    transform: scale(.97);
+    filter: blur(0) drop-shadow(0 10px 20px rgba(0,0,0,.44));
+  }82%{
+    transform: scale(1.04);
     filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
-  }72%{
+  }94%{
     transform: scale(.99);
     filter: blur(0) drop-shadow(0 12px 24px rgba(0,0,0,.46));
   }100%{
@@ -5408,21 +5428,23 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }@keyframes rankPromotionIntroInsigniaSmashReveal{0%{
     opacity: 0;
-    transform: scale(var(--rank-promotion-birdseye-scale));
-    filter: blur(10px) drop-shadow(0 0 44px rgba(201,255,36,.34));
-  }7%{
+    transform: scale(.52);
+    filter: blur(5px) drop-shadow(0 0 18px rgba(201,255,36,.2));
+  }12%{
+    opacity: .74;
+    transform: scale(.62);
+    filter: blur(3px) drop-shadow(0 0 24px rgba(201,255,36,.26));
+  }58%{
     opacity: 1;
-  }35%{
-    opacity: 1;
-    transform: scale(1.08);
+    transform: scale(1.1);
     filter: blur(0) drop-shadow(0 20px 34px rgba(0,0,0,.52));
-  }40%{
-    transform: scale(.88);
-    filter: blur(0) drop-shadow(0 8px 18px rgba(0,0,0,.44));
-  }47%{
-    transform: scale(1.05);
+  }70%{
+    transform: scale(.97);
+    filter: blur(0) drop-shadow(0 10px 20px rgba(0,0,0,.44));
+  }82%{
+    transform: scale(1.03);
     filter: blur(0) drop-shadow(0 14px 26px rgba(0,0,0,.48));
-  }72%{
+  }94%{
     transform: scale(.99);
     filter: blur(0) drop-shadow(0 12px 24px rgba(0,0,0,.46));
   }100%{
@@ -5491,7 +5513,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       )
       rotate(var(--rank-promotion-label-shard-start-rot))
       scale(.5);
-  }28%{
+  }38%{
     opacity: 1;
     filter: blur(0) brightness(1.16) drop-shadow(0 10px 18px rgba(0,0,0,.44));
     transform:
@@ -5502,7 +5524,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       )
       rotate(var(--rank-promotion-label-shard-mid-rot))
       scale(var(--rank-promotion-label-shard-scale));
-  }72%{
+  }82%{
     opacity: .78;
     filter: blur(.2px) brightness(.95) drop-shadow(0 14px 22px rgba(0,0,0,.36));
     transform:

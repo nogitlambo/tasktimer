@@ -31,7 +31,7 @@ describe("RankPromotionOverlay", () => {
     expect(html).toContain('class="rankPromotionOldLabelPlate"');
     expect(html).toContain('class="modalSubtext confirmText rankPromotionLabel rankPromotionOldLabelText"');
     expect(html).toContain('class="rankPromotionOldLabelShatter" aria-hidden="true"');
-    expect(html.match(/class="rankPromotionOldLabelShard"/g)).toHaveLength(16);
+    expect(html.match(/class="rankPromotionOldLabelShard"/g)).toHaveLength(32);
     expect(html).toContain('<span class="rankPromotionOldLabelShard"></span>');
     expect(html.match(/Initiate/g)).toHaveLength(1);
     expect(html).not.toContain('id="rankPromotionCloseBtn"');

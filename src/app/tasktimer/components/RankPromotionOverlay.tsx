@@ -21,12 +21,12 @@ type RankPromotionOverlayProps = {
 };
 
 const RANK_PROMOTION_IMPACT_AUDIO_LEAD_MS = 1000;
-const RANK_PROMOTION_FRAGMENT_COLUMNS = 26;
-const RANK_PROMOTION_FRAGMENT_ROWS = 24;
+const RANK_PROMOTION_FRAGMENT_COLUMNS = 34;
+const RANK_PROMOTION_FRAGMENT_ROWS = 32;
 const RANK_PROMOTION_FRAGMENT_CANVAS_SIZE = 640;
 const RANK_PROMOTION_FRAGMENT_SOURCE_SIZE = 112;
-const RANK_PROMOTION_FRAGMENT_ANIMATION_MS = 3400;
-const RANK_PROMOTION_LABEL_FRAGMENT_COUNT = 16;
+const RANK_PROMOTION_FRAGMENT_ANIMATION_MS = 4400;
+const RANK_PROMOTION_LABEL_FRAGMENT_COUNT = 32;
 
 type RankPromotionPhase = "dimming" | "intro" | "smashing" | "complete";
 
@@ -54,7 +54,7 @@ export function startRankPromotionIntroPresentation(
 }
 
 function easeOutZeroGravity(progress: number) {
-  return 1 - Math.pow(1 - progress, 3);
+  return 1 - Math.pow(1 - progress, 2);
 }
 
 function drawRankPromotionPlaceholder(
