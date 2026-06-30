@@ -189,6 +189,35 @@ describe("dashboard tasks completed card module", () => {
     expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
   });
 
+  it("uses the actual daily time goal for completion metadata instead of the schedule minimum", () => {
+    const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
+    const goalFocus = task({
+      id: "task-1",
+      name: "Five Minute Goal",
+      timeGoalMinutes: 5,
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: nowMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 5 * 60 * 1000,
+    });
+    const model = buildDashboardTasksCompletedModel({
+      opportunities: [opportunity(goalFocus, { goalMinutes: 15 })],
+      historyByTaskId: {
+        "task-1": [{ ts: nowMs - 1000, name: "Five Minute Goal", ms: 5 * 60 * 1000 }],
+      },
+      nowMs,
+      weekStartMs: nowMs - 86400000,
+      todayKey: "2026-05-05",
+      fallbackColor: "#00ffff",
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.totalCompleted).toBe(1);
+    expect(model.items[0]).toMatchObject({ progress: 1, complete: true });
+  });
+
   it("does not bridge stale or under-goal goal completion metadata", () => {
     const nowMs = new Date("2026-05-05T12:00:00Z").getTime();
     const staleGoalFocus = task({

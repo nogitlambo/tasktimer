@@ -62,7 +62,12 @@ export function buildDashboardTasksCompletedModel(options: {
     if (!isCurrentPeriodCompletion(opportunity)) return null;
     const elapsedMs = Number(task.timeGoalCompletedElapsedMs);
     if (!Number.isFinite(elapsedMs)) return null;
-    return elapsedMs >= goalMinutes * 60000 ? 1 : null;
+    const taskGoalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+    const completionGoalMinutes =
+      opportunity.historyScope === "day" && task.timeGoalPeriod === "day" && taskGoalMinutes > 0
+        ? taskGoalMinutes
+        : goalMinutes;
+    return elapsedMs >= completionGoalMinutes * 60000 ? 1 : null;
   }
 
   function getResetCompletionProgress(opportunity: DashboardTasksCompletedOpportunity, goalMinutes: number) {
