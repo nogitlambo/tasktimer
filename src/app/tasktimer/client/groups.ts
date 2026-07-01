@@ -17,6 +17,7 @@ import {
   loadSharedTaskSummariesForOwner,
   loadSharedTaskSummariesForViewer,
   sendFriendRequest,
+  type SharedTaskImportConfig,
   type SharedTaskSummary,
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
@@ -183,14 +184,49 @@ function formatCompactDurationForSharedChartTick(msRaw: number): string {
   return parts.join(" ");
 }
 
+function formatSharedTaskSettingToggle(value: unknown): string {
+  return value ? "On" : "Off";
+}
+
+function formatSharedTaskSettingTime(value: unknown): string {
+  const normalized = String(value || "").trim();
+  return normalized || "None";
+}
+
+function formatSharedTaskSettingTaskType(value: SharedTaskImportConfig["taskType"]): string {
+  return value === "once-off" ? "Once-off" : "Recurring";
+}
+
+function formatSharedTaskSettingGoalValue(config: SharedTaskImportConfig): string {
+  if (!config.timeGoalEnabled) return "Off";
+  const value = Math.max(0, Number(config.timeGoalValue) || 0);
+  const unit = config.timeGoalUnit === "minute" ? "minute" : "hour";
+  return `${value} ${value === 1 ? unit : `${unit}s`} ${config.timeGoalPeriod === "day" ? "per day" : "per week"}`;
+}
+
+function formatSharedTaskSettingMilestoneTime(
+  milestone: SharedTaskImportConfig["milestones"][number],
+  unit: SharedTaskImportConfig["milestoneTimeUnit"]
+): string {
+  const value = Math.max(0, Number(milestone?.hours) || 0);
+  if (unit === "minute") return `${Math.round(value * 60)}m`;
+  if (unit === "day") return `${value}d`;
+  return `${value}h`;
+}
+
+function getSharedTaskSettingMilestoneMinutes(milestone: SharedTaskImportConfig["milestones"][number], unit: SharedTaskImportConfig["milestoneTimeUnit"]): number {
+  const value = Math.max(0, Number(milestone?.hours) || 0);
+  if (unit === "day") return value * 24 * 60;
+  return value * 60;
+}
+
 export function renderSharedTaskMetricRows(summary: SharedTaskCardSummary, escapeHtmlUI: (value: unknown) => string) {
-  const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Number(summary.dailyGoalMs || 0));
-  const goalText = dailyGoalMs && dailyGoalMs > 0 ? formatCompactDurationForSharedCard(dailyGoalMs) : "No goal";
-  return `<div class="friendSharedTaskMeta">Goal: ${escapeHtmlUI(goalText)}</div>
-                  <div class="friendSharedTaskMeta">Today: ${escapeHtmlUI(
+  return `<div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Today:</span> ${escapeHtmlUI(
                     formatCompactDurationForSharedCard(Number(summary.todayLoggedMs || 0))
                   )}</div>
-                  <div class="friendSharedTaskMeta">This Week: ${escapeHtmlUI(formatSharedTaskWeekPercent(summary))}</div>`;
+                  <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">This Week:</span> ${escapeHtmlUI(
+                    formatCompactDurationForSharedCard(Number(summary.weekLoggedMs || 0))
+                  )}</div>`;
 }
 
 const sharedTaskDayIndexesByWeekStart: Record<Parameters<typeof startOfCurrentWeekMs>[1], number[]> = {
@@ -1378,12 +1414,137 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (!entry.importConfig) return "";
     const alreadyImported = hasImportedSharedTask(ctx.getTasks(), entry.ownerUid, entry.taskId);
     const disabledAttr = ctx.getGroupsLoading() || alreadyImported ? ' disabled aria-disabled="true"' : "";
-    const label = alreadyImported ? "Added" : "Add to my tasks";
+    const label = alreadyImported ? "Added" : "Import this task";
     return `<div class="friendSharedTaskActions">
-      <button class="btn btn-ghost small" type="button" data-friend-action="import-shared-task" data-share-doc-id="${ctx.escapeHtmlUI(
+      <button class="btn btn-accent small" type="button" data-friend-action="import-shared-task" data-share-doc-id="${ctx.escapeHtmlUI(
         entry.shareDocId
       )}"${disabledAttr}>${ctx.escapeHtmlUI(label)}</button>
     </div>`;
+  }
+
+  function renderSharedTaskImportPrompt(entry: SharedTaskSummary) {
+    const action = renderFriendSharedTaskImportAction(entry);
+    if (!action) return "";
+    return `<section class="sharedTaskImportPrompt" aria-label="Import shared task">
+      <p class="sharedTaskImportPromptText">Import this task to your list, and TaskLaunch will automatically schedule it into an available time slot based on your optimal productivity preferences.</p>
+      <div class="sharedTaskImportPromptAction">${action}</div>
+    </section>`;
+  }
+
+  function getFriendSharedTaskTimerState(entry: SharedTaskSummary) {
+    const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
+    const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
+    const timerStateClass = timerStateKey === "running" ? "friendSharedTaskState isRunning" : "friendSharedTaskState isStopped";
+    return { timerState, timerStateKey, timerStateClass };
+  }
+
+  function getSharedTaskOwnerLabel(ownerUidRaw: string) {
+    const ownerUid = String(ownerUidRaw || "").trim();
+    if (!ownerUid) return "Unknown";
+    const cachedProfile = ctx.getFriendProfileCacheByUid()[ownerUid] || null;
+    const friendshipProfile =
+      ctx
+        .getGroupsFriendships()
+        .map((row) => row.profileByUid?.[ownerUid] || null)
+        .find((profile) => !!profile) || null;
+    const profile = ctx.getMergedFriendProfile(ownerUid, cachedProfile || friendshipProfile);
+    return String(profile?.alias || "").trim() || ownerUid;
+  }
+
+  function renderSharedTaskOwnerMeta(entry: SharedTaskSummary, opts?: { modal?: boolean }) {
+    if (!opts?.modal) return "";
+    return `<div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Owner:</span> ${ctx.escapeHtmlUI(
+      getSharedTaskOwnerLabel(entry.ownerUid)
+    )}</div>`;
+  }
+
+  function renderSharedTaskSettingRow(label: string, value: string) {
+    return `<div class="sharedTaskSettingsRow">
+      <dt>${ctx.escapeHtmlUI(label)}</dt>
+      <dd>${ctx.escapeHtmlUI(value)}</dd>
+    </div>`;
+  }
+
+  function renderSharedTaskSettingsMilestonesTimeline(config: SharedTaskImportConfig) {
+    if (!config.milestonesEnabled || !config.milestones.length) {
+      return `<div class="sharedTaskCheckpointTimelineEmpty">None</div>`;
+    }
+    const milestoneMinutes = config.milestones.map((milestone) => getSharedTaskSettingMilestoneMinutes(milestone, config.milestoneTimeUnit));
+    const goalMinutes = config.timeGoalEnabled ? Math.max(0, Number(config.timeGoalMinutes) || 0) : 0;
+    const maxMinutes = Math.max(goalMinutes, ...milestoneMinutes, 1);
+    const markers = config.milestones
+        .map((milestone, index) => {
+          const description = String(milestone?.description || "").trim() || `Checkpoint ${index + 1}`;
+          const time = formatSharedTaskSettingMilestoneTime(milestone, config.milestoneTimeUnit);
+          const alerts = milestone?.alertsEnabled === false ? "Alerts off" : "Alerts on";
+        const pct = Math.max(0, Math.min(100, Math.round((milestoneMinutes[index] / maxMinutes) * 100)));
+          return `<li class="sharedTaskCheckpointTimelineMarker" style="--checkpoint-left:${pct}%" title="${ctx.escapeHtmlUI(
+            `${time} ${description} | ${alerts}`
+          )}" aria-label="${ctx.escapeHtmlUI(`${time} ${description} | ${alerts}`)}">
+            <span class="sharedTaskCheckpointTimelineDot" aria-hidden="true"></span>
+            <span class="sharedTaskCheckpointTimelineLabel">${ctx.escapeHtmlUI(time)}</span>
+          </li>`;
+        })
+        .join("");
+    return `<ol class="sharedTaskCheckpointTimeline" role="list">${markers}</ol>`;
+  }
+
+  function renderSharedTaskSettingsSummary(config: SharedTaskImportConfig | null) {
+    if (!config) return "";
+    const rows = [
+      renderSharedTaskSettingRow("Task type", formatSharedTaskSettingTaskType(config.taskType)),
+      renderSharedTaskSettingRow("Time goal", formatSharedTaskSettingGoalValue(config)),
+      renderSharedTaskSettingRow("Planned start", formatSharedTaskSettingTime(config.plannedStartTime)),
+      renderSharedTaskSettingRow("Checkpoint alerts", formatSharedTaskSettingToggle(config.milestonesEnabled)),
+    ].join("");
+    return `<section class="sharedTaskSettingsSummary" aria-label="Task Settings">
+      <h3>Task Settings</h3>
+      <dl class="sharedTaskSettingsGrid">${rows}</dl>
+      <div class="sharedTaskSettingsMilestoneGroup">
+        <h4>Checkpoints</h4>
+        ${renderSharedTaskSettingsMilestonesTimeline(config)}
+      </div>
+    </section>`;
+  }
+
+  function renderFriendSharedTaskSummaryContent(entry: SharedTaskSummary, opts?: { modal?: boolean }) {
+    const { timerState, timerStateClass } = getFriendSharedTaskTimerState(entry);
+    const modalClass = opts?.modal ? " isModalSummary" : "";
+    const importAction = opts?.modal ? "" : renderFriendSharedTaskImportAction(entry);
+    const importPrompt = opts?.modal ? renderSharedTaskImportPrompt(entry) : "";
+    const settingsSummary = opts?.modal ? renderSharedTaskSettingsSummary(entry.importConfig) : "";
+    return `<div class="friendSharedTaskCardLayout${modalClass}">
+      <div class="friendSharedTaskInfo">
+        ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
+        ${renderSharedTaskOwnerMeta(entry, opts)}
+        <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Status:</span> <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
+        ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
+        ${importAction}
+      </div>
+      ${renderSharedTaskWeeklyChart(entry, ctx.getWeekStarting(), ctx.escapeHtmlUI)}
+    </div>${settingsSummary}${importPrompt}`;
+  }
+
+  function getSharedSummaryByShareDocId(shareDocIdRaw: string) {
+    const shareDocId = String(shareDocIdRaw || "").trim();
+    if (!shareDocId) return null;
+    return ctx.getGroupsSharedSummaries().find((entry) => String(entry.shareDocId || "").trim() === shareDocId) || null;
+  }
+
+  function closeSharedTaskSummaryModal() {
+    hideOverlay(els.sharedTaskSummaryModal as HTMLElement | null);
+  }
+
+  function openSharedTaskSummaryModal(shareDocIdRaw: string) {
+    const entry = getSharedSummaryByShareDocId(shareDocIdRaw);
+    if (!entry || !els.sharedTaskSummaryModal) return;
+    if (els.sharedTaskSummaryTitle) els.sharedTaskSummaryTitle.textContent = "Shared Task Summary";
+    if (els.sharedTaskSummaryBody) {
+      els.sharedTaskSummaryBody.innerHTML = `<div class="dashboardCard friendSharedTaskCard sharedTaskSummaryCard friendSharedTaskCardState-${ctx.escapeHtmlUI(
+        getFriendSharedTaskTimerState(entry).timerStateKey
+      )}">${renderFriendSharedTaskSummaryContent(entry, { modal: true })}</div>`;
+    }
+    showOverlay(els.sharedTaskSummaryModal as HTMLElement | null);
   }
 
   function renderGroupsRequestsList(container: HTMLElement | null, rows: any[], opts: { incoming: boolean }) {
@@ -1499,22 +1660,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .map((row) => {
         const summaryHtml = row.summaries
           .map((entry) => {
-            const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
-            const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
-            const timerStateClass =
-              String(entry.timerState || "stopped").toLowerCase() === "running"
-                ? "friendSharedTaskState isRunning"
-                : "friendSharedTaskState isStopped";
-            return `<div class="dashboardCard friendSharedTaskCard friendSharedTaskCardState-${ctx.escapeHtmlUI(timerStateKey)}">
-              <div class="friendSharedTaskCardLayout">
-                <div class="friendSharedTaskInfo">
-                  ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
-                  <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
-                  ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
-                  ${renderFriendSharedTaskImportAction(entry)}
-                </div>
-                ${renderSharedTaskWeeklyChart(entry, ctx.getWeekStarting(), ctx.escapeHtmlUI)}
-              </div>
+            const { timerStateKey } = getFriendSharedTaskTimerState(entry);
+            const taskName = String(entry.taskName || "").trim() || "Shared Task";
+            return `<div class="dashboardCard friendSharedTaskCard isSummaryCard friendSharedTaskCardState-${ctx.escapeHtmlUI(
+              timerStateKey
+            )}" role="button" tabindex="0" data-shared-task-summary-id="${ctx.escapeHtmlUI(entry.shareDocId)}" title="Open shared task summary" aria-label="Open shared task summary for ${ctx.escapeHtmlUI(
+              taskName
+            )}">
+              ${renderFriendSharedTaskSummaryContent(entry)}
             </div>`;
           })
           .join("");
@@ -1603,7 +1756,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         return `<div class="dashboardCard friendSharedTaskCard isJumpCard" role="button" tabindex="0" data-shared-owned-task-id="${ctx.escapeHtmlUI(entry.taskId)}" title="Open task">
           <div class="friendSharedTaskInfo">
             ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
-            <div class="friendSharedTaskMeta">Shared with: ${ctx.escapeHtmlUI(friendLabel)}</div>
+            <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Shared with:</span> ${ctx.escapeHtmlUI(friendLabel)}</div>
             <div class="friendSharedTaskActions">
               <button class="btn btn-ghost small" type="button" data-friend-action="open-unshare-task" data-task-id="${ctx.escapeHtmlUI(entry.taskId)}">Change</button>
             </div>
@@ -1943,6 +2096,24 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       e?.preventDefault?.();
       void submitShareTaskModal();
     });
+    ctx.on(els.sharedTaskSummaryCloseBtn, "click", (e: any) => {
+      e?.preventDefault?.();
+      closeSharedTaskSummaryModal();
+    });
+    ctx.on(els.sharedTaskSummaryModal, "click", (e: any) => {
+      if (e?.target === els.sharedTaskSummaryModal) {
+        closeSharedTaskSummaryModal();
+        return;
+      }
+      const importBtn = e.target?.closest?.('[data-friend-action="import-shared-task"]') as HTMLElement | null;
+      if (!importBtn) return;
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      if (ctx.getGroupsLoading() || (importBtn as HTMLButtonElement).disabled) return;
+      importSharedTask(String(importBtn.getAttribute("data-share-doc-id") || ""));
+      const shareDocId = String(importBtn.getAttribute("data-share-doc-id") || "");
+      openSharedTaskSummaryModal(shareDocId);
+    });
     ctx.on(els.groupsIncomingRequestsList, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
       if (!btn) return;
@@ -1973,6 +2144,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         importSharedTask(String(importBtn.getAttribute("data-share-doc-id") || ""));
         return;
       }
+      const sharedTaskCard = e.target?.closest?.("[data-shared-task-summary-id]") as HTMLElement | null;
+      if (sharedTaskCard) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        openSharedTaskSummaryModal(String(sharedTaskCard.getAttribute("data-shared-task-summary-id") || ""));
+        return;
+      }
       const friendUid = getFriendProfileOpenUidFromTarget(e.target);
       if (!friendUid) return;
       e?.preventDefault?.();
@@ -1981,6 +2159,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
     ctx.on(els.groupsFriendsList, "keydown", (e: any) => {
       if (e?.key !== "Enter" && e?.key !== " ") return;
+      const sharedTaskCard = e.target?.closest?.("[data-shared-task-summary-id]") as HTMLElement | null;
+      if (sharedTaskCard) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        openSharedTaskSummaryModal(String(sharedTaskCard.getAttribute("data-shared-task-summary-id") || ""));
+        return;
+      }
       const friendUid = getFriendProfileOpenUidFromTarget(e.target);
       if (!friendUid) return;
       e?.preventDefault?.();

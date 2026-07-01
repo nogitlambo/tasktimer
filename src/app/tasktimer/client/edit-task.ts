@@ -39,6 +39,8 @@ import {
   formatCheckpointSliderLabel,
   formatCheckpointSliderProgress,
   getCheckpointSliderMaxSeconds,
+  getNextCheckpointSliderSeconds,
+  parseCheckpointDurationInput,
   sliderSecondsToCheckpointValue,
   type CheckpointSliderUnit,
 } from "./checkpoint-slider";
@@ -1047,7 +1049,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         </button>
         <div class="msSliderCluster">
           <div class="msSliderReadout" aria-live="polite">
-            <span class="msSliderValue" data-field="value-label">${formatCheckpointSliderLabel(clamped.sliderSeconds)}</span>
+            <span class="msSliderValue" data-field="value-label" role="button" tabindex="0" title="Edit checkpoint time" aria-label="Edit checkpoint time">${formatCheckpointSliderLabel(clamped.sliderSeconds)}</span>
             <span class="msSliderMeta" data-field="value-progress">${formatCheckpointSliderProgress(clamped.sliderSeconds, timeGoalMinutes)}</span>
           </div>
           <div class="msSliderTrackRow">
@@ -1083,8 +1085,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const sliderInput = row.querySelector('[data-field="value-slider"]') as HTMLInputElement | null;
       const valueLabel = row.querySelector('[data-field="value-label"]') as HTMLElement | null;
       const valueProgress = row.querySelector('[data-field="value-progress"]') as HTMLElement | null;
-      const syncCheckpointValue = () => {
-        const nextSliderSeconds = Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds;
+      const syncCheckpointValue = (sliderSeconds?: number) => {
+        const nextSliderSeconds = sliderSeconds == null ? Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds : sliderSeconds;
         const next = clampCheckpointValueToTimeGoal(sliderSecondsToCheckpointValue(nextSliderSeconds, unit), unit, timeGoalMinutes);
         if (sliderInput) sliderInput.value = String(next.sliderSeconds);
         if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(next.sliderSeconds);
@@ -1095,8 +1097,55 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
         syncEditCheckpointAlertUi(t);
         syncEditSaveAvailability(t);
       };
-      ctx.on(sliderInput, "input", syncCheckpointValue);
-      ctx.on(sliderInput, "change", syncCheckpointValue);
+      ctx.on(sliderInput, "input", () => syncCheckpointValue());
+      ctx.on(sliderInput, "change", () => syncCheckpointValue());
+
+      const beginManualCheckpointEdit = () => {
+        if (!valueLabel || valueLabel.parentElement?.querySelector('[data-field="value-editor"]')) return;
+        const editor = document.createElement("input");
+        editor.className = "msSliderValueInput";
+        editor.dataset.field = "value-editor";
+        editor.type = "text";
+        editor.inputMode = "text";
+        editor.autocomplete = "off";
+        editor.spellcheck = false;
+        editor.value = formatCheckpointSliderLabel(Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds);
+        editor.setAttribute("aria-label", "Checkpoint time");
+
+        let closed = false;
+        const closeEditor = (commit: boolean) => {
+          if (closed) return;
+          closed = true;
+          if (commit) {
+            const parsedSeconds = parseCheckpointDurationInput(editor.value);
+            if (parsedSeconds != null) syncCheckpointValue(parsedSeconds);
+            else if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds);
+          }
+          editor.replaceWith(valueLabel);
+        };
+
+        valueLabel.replaceWith(editor);
+        editor.focus();
+        editor.select();
+        ctx.on(editor, "keydown", (event: Event) => {
+          const keyboardEvent = event as KeyboardEvent;
+          if (keyboardEvent.key === "Enter") {
+            keyboardEvent.preventDefault();
+            closeEditor(true);
+          } else if (keyboardEvent.key === "Escape") {
+            keyboardEvent.preventDefault();
+            closeEditor(false);
+          }
+        });
+        ctx.on(editor, "blur", () => closeEditor(true));
+      };
+      ctx.on(valueLabel, "click", beginManualCheckpointEdit);
+      ctx.on(valueLabel, "keydown", (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") return;
+        keyboardEvent.preventDefault();
+        beginManualCheckpointEdit();
+      });
 
       const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
       ctx.on(rm, "click", () => {
@@ -1367,7 +1416,16 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     t.milestones = t.milestones || [];
     sharedTasks.ensureMilestoneIdentity(t);
     const nextSeq = sharedTasks.getPresetIntervalNextSeqNum(t);
-    t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "", alertsEnabled: true });
+    const unit = (t.milestoneTimeUnit === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
+    const nextSliderSeconds = getNextCheckpointSliderSeconds([], unit, getEditTaskTimeGoalMinutes());
+    if (nextSliderSeconds == null) return false;
+    t.milestones.push({
+      id: sharedTasks.createId(),
+      createdSeq: nextSeq,
+      hours: sliderSecondsToCheckpointValue(nextSliderSeconds, unit),
+      description: "",
+      alertsEnabled: true,
+    });
     t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
     t.presetIntervalNextSeq = nextSeq + 1;
     renderMilestoneEditor(t);
@@ -2031,7 +2089,19 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       t.milestones = t.milestones || [];
       sharedTasks.ensureMilestoneIdentity(t);
       const nextSeq = sharedTasks.getPresetIntervalNextSeqNum(t);
-      t.milestones.push({ id: sharedTasks.createId(), createdSeq: nextSeq, hours: 0, description: "", alertsEnabled: true });
+      const unit = (t.milestoneTimeUnit === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
+      const nextSliderSeconds = getNextCheckpointSliderSeconds(t.milestones, unit, ctx.getEditTaskTimeGoalMinutes());
+      if (nextSliderSeconds == null) {
+        ctx.showEditValidationError(t, "No more space before the time goal.");
+        return;
+      }
+      t.milestones.push({
+        id: sharedTasks.createId(),
+        createdSeq: nextSeq,
+        hours: sliderSecondsToCheckpointValue(nextSliderSeconds, unit),
+        description: "",
+        alertsEnabled: true,
+      });
       t.presetIntervalLastMilestoneId = t.milestones[t.milestones.length - 1]?.id || null;
       t.presetIntervalNextSeq = nextSeq + 1;
       ctx.renderMilestoneEditor(t);

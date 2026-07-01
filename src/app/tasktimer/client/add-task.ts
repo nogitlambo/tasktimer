@@ -38,6 +38,8 @@ import {
   formatCheckpointSliderLabel,
   formatCheckpointSliderProgress,
   getCheckpointSliderMaxSeconds,
+  getNextCheckpointSliderSeconds,
+  parseCheckpointDurationInput,
   sliderSecondsToCheckpointValue,
   type CheckpointSliderUnit,
 } from "./checkpoint-slider";
@@ -463,7 +465,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       row.innerHTML = `
         <div class="msSliderCluster">
           <div class="msSliderReadout" aria-live="polite">
-            <span class="msSliderValue" data-field="value-label">${formatCheckpointSliderLabel(clamped.sliderSeconds)}</span>
+            <span class="msSliderValue" data-field="value-label" role="button" tabindex="0" title="Edit checkpoint time" aria-label="Edit checkpoint time">${formatCheckpointSliderLabel(clamped.sliderSeconds)}</span>
             <span class="msSliderMeta" data-field="value-progress">${formatCheckpointSliderProgress(clamped.sliderSeconds, timeGoalMinutes)}</span>
           </div>
           <div class="msSliderTrackRow">
@@ -486,8 +488,8 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       const sliderInput = row.querySelector('[data-field="value-slider"]') as HTMLInputElement | null;
       const valueLabel = row.querySelector('[data-field="value-label"]') as HTMLElement | null;
       const valueProgress = row.querySelector('[data-field="value-progress"]') as HTMLElement | null;
-      const syncCheckpointValue = () => {
-        const nextSliderSeconds = Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds;
+      const syncCheckpointValue = (sliderSeconds?: number) => {
+        const nextSliderSeconds = sliderSeconds == null ? Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds : sliderSeconds;
         const next = clampCheckpointValueToTimeGoal(sliderSecondsToCheckpointValue(nextSliderSeconds, unit), unit, timeGoalMinutes);
         if (sliderInput) sliderInput.value = String(next.sliderSeconds);
         if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(next.sliderSeconds);
@@ -497,8 +499,55 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         clearAddTaskValidationState();
         syncAddTaskCheckpointAlertUi();
       };
-      ctx.on(sliderInput, "input", syncCheckpointValue);
-      ctx.on(sliderInput, "change", syncCheckpointValue);
+      ctx.on(sliderInput, "input", () => syncCheckpointValue());
+      ctx.on(sliderInput, "change", () => syncCheckpointValue());
+
+      const beginManualCheckpointEdit = () => {
+        if (!valueLabel || valueLabel.parentElement?.querySelector('[data-field="value-editor"]')) return;
+        const editor = document.createElement("input");
+        editor.className = "msSliderValueInput";
+        editor.dataset.field = "value-editor";
+        editor.type = "text";
+        editor.inputMode = "text";
+        editor.autocomplete = "off";
+        editor.spellcheck = false;
+        editor.value = formatCheckpointSliderLabel(Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds);
+        editor.setAttribute("aria-label", "Checkpoint time");
+
+        let closed = false;
+        const closeEditor = (commit: boolean) => {
+          if (closed) return;
+          closed = true;
+          if (commit) {
+            const parsedSeconds = parseCheckpointDurationInput(editor.value);
+            if (parsedSeconds != null) syncCheckpointValue(parsedSeconds);
+            else if (valueLabel) valueLabel.textContent = formatCheckpointSliderLabel(Number(sliderInput?.value || clamped.sliderSeconds) || clamped.sliderSeconds);
+          }
+          editor.replaceWith(valueLabel);
+        };
+
+        valueLabel.replaceWith(editor);
+        editor.focus();
+        editor.select();
+        ctx.on(editor, "keydown", (event: Event) => {
+          const keyboardEvent = event as KeyboardEvent;
+          if (keyboardEvent.key === "Enter") {
+            keyboardEvent.preventDefault();
+            closeEditor(true);
+          } else if (keyboardEvent.key === "Escape") {
+            keyboardEvent.preventDefault();
+            closeEditor(false);
+          }
+        });
+        ctx.on(editor, "blur", () => closeEditor(true));
+      };
+      ctx.on(valueLabel, "click", beginManualCheckpointEdit);
+      ctx.on(valueLabel, "keydown", (event: Event) => {
+        const keyboardEvent = event as KeyboardEvent;
+        if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") return;
+        keyboardEvent.preventDefault();
+        beginManualCheckpointEdit();
+      });
 
       const rm = row.querySelector('[data-action="rmMs"]') as HTMLElement | null;
       ctx.on(rm, "click", () => {
@@ -554,7 +603,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   function ensureAddTaskDefaultCheckpoint() {
     if (getAddTaskTimeGoalMinutes() <= 0) return false;
     if ((ctx.getAddTaskMilestones() || []).length > 0) return false;
-    ctx.setAddTaskMilestonesState([{ hours: 0, description: "" }]);
+    const unit = (ctx.getAddTaskMilestoneTimeUnit() === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
+    const nextSliderSeconds = getNextCheckpointSliderSeconds([], unit, getAddTaskTimeGoalMinutes());
+    if (nextSliderSeconds == null) return false;
+    ctx.setAddTaskMilestonesState([{ hours: sliderSecondsToCheckpointValue(nextSliderSeconds, unit), description: "" }]);
     renderAddTaskMilestoneEditor();
     return true;
   }
@@ -1238,7 +1290,14 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
         syncAddTaskCheckpointAlertUi();
         return;
       }
-      ctx.setAddTaskMilestonesState([...ctx.getAddTaskMilestones(), { hours: 0, description: "" }]);
+      const milestones = ctx.getAddTaskMilestones();
+      const unit = (ctx.getAddTaskMilestoneTimeUnit() === "minute" ? "minute" : "hour") as CheckpointSliderUnit;
+      const nextSliderSeconds = getNextCheckpointSliderSeconds(milestones, unit, getAddTaskTimeGoalMinutes());
+      if (nextSliderSeconds == null) {
+        showAddTaskValidationError("No more space before the time goal.", { checkpoints: true, checkpointRows: true });
+        return;
+      }
+      ctx.setAddTaskMilestonesState([...milestones, { hours: sliderSecondsToCheckpointValue(nextSliderSeconds, unit), description: "" }]);
       renderAddTaskMilestoneEditor();
       clearAddTaskValidationState();
       syncAddTaskCheckpointAlertUi();

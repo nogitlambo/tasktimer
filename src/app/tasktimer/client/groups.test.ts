@@ -178,8 +178,9 @@ describe("friend profile row targets", () => {
 });
 
 describe("groups friends list shared task counts", () => {
-  function makeElement() {
+  function makeElement(id = "") {
     return {
+      id,
       className: "",
       disabled: false,
       innerHTML: "",
@@ -351,6 +352,135 @@ describe("groups friends list shared task counts", () => {
     };
   }
 
+  function setupGroupsEvents(
+    sharedSummaries: SharedTaskSummary[],
+    opts: { tasks?: Partial<Task>[]; mergedFriendProfile?: FriendProfile | null } = {}
+  ) {
+    const handlers = new Map<string, (event: unknown) => void>();
+    const groupsFriendsList = makeElement("groupsFriendsList");
+    const sharedTaskSummaryModal = makeElement("sharedTaskSummaryModal");
+    sharedTaskSummaryModal.style.display = "none";
+    const sharedTaskSummaryTitle = makeElement("sharedTaskSummaryTitle");
+    const sharedTaskSummaryBody = makeElement("sharedTaskSummaryBody");
+    const sharedTaskSummaryCloseBtn = makeElement("sharedTaskSummaryCloseBtn");
+    const tasks: Partial<Task>[] = opts.tasks ?? [{ id: "task-1", color: null }];
+    const ctx = {
+      els: {
+        commandCenterGroupsAlertBadge: null,
+        footerTest2AlertBadge: null,
+        friendProfileCloseBtn: null,
+        friendProfileDeleteBtn: null,
+        friendProfileModal: null,
+        friendRequestCancelBtn: null,
+        friendRequestEmailInput: null,
+        friendRequestModal: null,
+        friendRequestSendBtn: null,
+        groupsFriendsList,
+        groupsIncomingRequestsList: null,
+        groupsOutgoingRequestsList: null,
+        groupsSharedByYouList: null,
+        openFriendRequestModalBtn: null,
+        shareTaskCancelBtn: null,
+        shareTaskConfirmBtn: null,
+        shareTaskModal: null,
+        shareTaskScopeSelect: null,
+        sharedTaskSummaryBody,
+        sharedTaskSummaryCloseBtn,
+        sharedTaskSummaryModal,
+        sharedTaskSummaryTitle,
+      },
+      on: (el: { id?: string } | null, event: string, handler: (event: unknown) => void) => {
+        if (!el?.id) return;
+        handlers.set(`${el.id}:${event}`, handler);
+      },
+      sharedTasks: {
+        createId: () => "new-id",
+        makeTask: (name: string, order: number) => ({
+          id: "new-task",
+          name,
+          order,
+          accumulatedMs: 0,
+          running: false,
+          startMs: null,
+          collapsed: false,
+          milestonesEnabled: false,
+          milestones: [],
+          hasStarted: false,
+        }),
+        ensureMilestoneIdentity: vi.fn(),
+      },
+      getCurrentUid: () => "user-a",
+      getGroupsLoading: () => false,
+      getGroupsIncomingRequests: () => [],
+      getGroupsOutgoingRequests: () => [],
+      getGroupsFriendships: () => [makeFriendship("friend-b", "Friend Bee")],
+      getGroupsSharedSummaries: () => sharedSummaries,
+      getOwnSharedSummaries: () => [],
+      getOpenFriendSharedTaskUids: () => new Set<string>(),
+      getFriendProfileCacheByUid: () => ({}),
+      getTasks: () => tasks,
+      setTasks: (value: Partial<Task>[]) => {
+        tasks.splice(0, tasks.length, ...value);
+      },
+      getWeekStarting: () => "mon",
+      getOptimalProductivityDays: () => ["mon"],
+      getOptimalProductivityStartTime: () => "09:00",
+      getOptimalProductivityEndTime: () => "17:00",
+      getCurrentPlan: () => "pro",
+      hasEntitlement: () => true,
+      getMergedFriendProfile: (_friendUid: string, baseProfile?: FriendProfile | null) =>
+        opts.mergedFriendProfile !== undefined ? (opts.mergedFriendProfile as FriendProfile) : baseProfile || ({ alias: "Friend Bee" } as FriendProfile),
+      getFriendAvatarSrc: vi.fn(() => "/friend-row-avatar.webp"),
+      getFriendAvatarSrcById: vi.fn(() => "/incoming-avatar.webp"),
+      buildFriendInitialAvatarDataUrl: vi.fn(() => "/outgoing-avatar.webp"),
+      escapeHtmlUI: (value: unknown) =>
+        String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;"),
+      render: vi.fn(),
+      save: vi.fn(),
+      showActionConfirmation: vi.fn(),
+      jumpToTaskAndHighlight: vi.fn(),
+      jumpToTaskById: vi.fn(),
+      applyAppPage: vi.fn(),
+      applyMainMode: vi.fn(),
+      closeConfirm: vi.fn(),
+      confirm: vi.fn(),
+      getDynamicColorsEnabled: () => true,
+      fillBackgroundForPct: () => "",
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value) || 0,
+      showWorkingIndicator: () => 1,
+      hideWorkingIndicator: vi.fn(),
+      setGroupsIncomingRequests: vi.fn(),
+      setGroupsOutgoingRequests: vi.fn(),
+      setGroupsFriendships: vi.fn(),
+      setGroupsSharedSummaries: vi.fn(),
+      setOwnSharedSummaries: vi.fn(),
+      getGroupsRefreshSeq: () => 0,
+      setGroupsRefreshSeq: vi.fn(),
+      setGroupsLoading: vi.fn(),
+      getGroupsLoadingDepth: () => 0,
+      setGroupsLoadingDepth: vi.fn(),
+      getActiveFriendProfileUid: () => null,
+      setActiveFriendProfileUid: vi.fn(),
+      getActiveFriendProfileName: () => "",
+      setActiveFriendProfileName: vi.fn(),
+      setFriendProfileCacheByUid: vi.fn(),
+      getFriendEmailByUid: () => ({}),
+      setFriendEmailByUid: vi.fn(),
+      getShareTaskIndex: () => null,
+      setShareTaskIndex: vi.fn(),
+      getShareTaskMode: () => "share",
+      setShareTaskMode: vi.fn(),
+      getShareTaskTaskId: () => null,
+      setShareTaskTaskId: vi.fn(),
+      showUpgradePrompt: vi.fn(),
+    };
+    createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).registerGroupsEvents();
+    return { handlers, sharedTaskSummaryModal, sharedTaskSummaryTitle, sharedTaskSummaryBody, sharedTaskSummaryCloseBtn, ctx };
+  }
+
   it("renders the shared count meta when a friend has zero shared tasks", () => {
     const { html } = renderFriendsList([]);
 
@@ -367,21 +497,31 @@ describe("groups friends list shared task counts", () => {
     expect(html).not.toContain("No tasks shared with you.");
   });
 
-  it("hides Add to my tasks for legacy shared task records without import config", () => {
+  it("renders shared task cards as keyboard-openable summary buttons", () => {
+    const { html } = renderFriendsList([makeSharedSummary()]);
+
+    expect(html).toContain('role="button"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('data-shared-task-summary-id="share-1"');
+    expect(html).toContain("Open shared task summary for Deep Work");
+  });
+
+  it("hides Import this task for legacy shared task records without import config", () => {
     const { html } = renderFriendsList([makeSharedSummary({ importConfig: null })]);
 
-    expect(html).not.toContain("Add to my tasks");
+    expect(html).not.toContain("Import this task");
     expect(html).not.toContain('data-friend-action="import-shared-task"');
   });
 
-  it("renders Add to my tasks for importable shared task records", () => {
+  it("renders Import this task for importable shared task records", () => {
     const { html } = renderFriendsList([
       makeSharedSummary({
         importConfig: makeImportConfig(),
       }),
     ]);
 
-    expect(html).toContain("Add to my tasks");
+    expect(html).toContain("Import this task");
+    expect(html).toContain('class="btn btn-accent small"');
     expect(html).toContain('data-friend-action="import-shared-task"');
     expect(html).toContain('data-share-doc-id="share-1"');
   });
@@ -397,6 +537,289 @@ describe("groups friends list shared task counts", () => {
 
     expect(html).toContain("Added");
     expect(html).toContain('disabled aria-disabled="true"');
+  });
+
+  it("opens and populates the shared task summary modal from a card click", () => {
+    const { handlers, sharedTaskSummaryModal, sharedTaskSummaryTitle, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({ importConfig: makeImportConfig(), dailyGoalMs: 60 * 60_000, todayLoggedMs: 30 * 60_000 }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === '[data-friend-action="import-shared-task"]' ? null : selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryModal.style.display).toBe("flex");
+    expect(sharedTaskSummaryTitle.textContent).toBe("Shared Task Summary");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Owner:");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Friend Bee");
+    expect(sharedTaskSummaryBody.innerHTML.indexOf("Owner:")).toBeLessThan(sharedTaskSummaryBody.innerHTML.indexOf("Status:"));
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Status:");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Goal:");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Today:");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("This Week:");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("friendSharedTaskChart");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("sharedTaskImportPrompt");
+    expect(sharedTaskSummaryBody.innerHTML).toContain(
+      "Import this task to your list, and TaskLaunch will automatically schedule it into an available time slot based on your optimal productivity preferences."
+    );
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Import this task");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Task Settings");
+    expect(sharedTaskSummaryBody.innerHTML.indexOf("sharedTaskSettingsMilestoneGroup")).toBeLessThan(
+      sharedTaskSummaryBody.innerHTML.indexOf("sharedTaskImportPrompt")
+    );
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Task type");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Recurring");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Planned start");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("09:00");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Time goal");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("1 hour per day");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Off");
+    expect(sharedTaskSummaryBody.innerHTML.indexOf("Task type")).toBeLessThan(sharedTaskSummaryBody.innerHTML.indexOf("Time goal"));
+    expect(sharedTaskSummaryBody.innerHTML.indexOf("Time goal")).toBeLessThan(sharedTaskSummaryBody.innerHTML.indexOf("Planned start"));
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Planned days");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Schedule");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Open-ended start");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Push reminders");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Time goal duration");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Checkpoint sound");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Preset intervals");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Final checkpoint action");
+  });
+
+  it("opens the shared task summary modal from Enter or Space on a focused card", () => {
+    const { handlers, sharedTaskSummaryModal } = setupGroupsEvents([makeSharedSummary()]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:keydown")?.({ key: "Enter", target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryModal.style.display).toBe("flex");
+  });
+
+  it("does not render the Owner row on compact shared task cards", () => {
+    const { html } = renderFriendsList([makeSharedSummary({ importConfig: makeImportConfig() })]);
+
+    expect(html).not.toContain("Owner:");
+  });
+
+  it("falls back to owner uid when the shared task owner has no alias", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([makeSharedSummary({ ownerUid: "owner-without-alias" })], {
+      mergedFriendProfile: { alias: "" } as FriendProfile,
+    });
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Owner:");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("owner-without-alias");
+  });
+
+  it("does not open the summary modal when clicking Import this task", () => {
+    const { handlers, sharedTaskSummaryModal, ctx } = setupGroupsEvents([makeSharedSummary({ importConfig: makeImportConfig() })]);
+    const importBtn = {
+      disabled: false,
+      getAttribute: (name: string) => (name === "data-share-doc-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === '[data-friend-action="import-shared-task"]' ? importBtn : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryModal.style.display).toBe("none");
+    expect(ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("new-task");
+  });
+
+  it("closes the shared task summary modal from close button and backdrop", () => {
+    const { handlers, sharedTaskSummaryModal, sharedTaskSummaryCloseBtn } = setupGroupsEvents([makeSharedSummary()]);
+    sharedTaskSummaryModal.style.display = "flex";
+
+    handlers.get("sharedTaskSummaryCloseBtn:click")?.({ preventDefault: vi.fn() });
+    expect(sharedTaskSummaryModal.style.display).toBe("none");
+
+    sharedTaskSummaryModal.style.display = "flex";
+    handlers.get("sharedTaskSummaryModal:click")?.({ target: sharedTaskSummaryModal });
+    expect(sharedTaskSummaryModal.style.display).toBe("none");
+    expect(sharedTaskSummaryCloseBtn.id).toBe("sharedTaskSummaryCloseBtn");
+  });
+
+  it("omits import action from the modal for legacy non-importable summaries", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([makeSharedSummary({ importConfig: null })]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Import this task");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain('data-friend-action="import-shared-task"');
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Task Settings");
+  });
+
+  it("renders once-off shared task settings from the original import snapshot", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          taskType: "once-off",
+          onceOffDay: "fri",
+          plannedStartTime: "14:30",
+          plannedStartByDay: { fri: "14:30" },
+          splitAcrossProductivityDays: null,
+          timeGoalPeriod: "day",
+          plannedStartPushRemindersEnabled: false,
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Once-off");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("14:30");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Once-off day");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Friday 14:30");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Push reminders");
+  });
+
+  it("renders disabled shared task settings as Off or None", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          plannedStartTime: null,
+          plannedStartByDay: null,
+          plannedStartOpenEnded: true,
+          splitAcrossProductivityDays: false,
+          timeGoalEnabled: false,
+          timeGoalValue: 0,
+          timeGoalMinutes: 0,
+          milestonesEnabled: false,
+          milestones: [],
+          checkpointSoundEnabled: false,
+          checkpointToastEnabled: false,
+          presetIntervalsEnabled: false,
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Planned start");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("None");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Time goal");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Off");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Open-ended start");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Checkpoint sound mode");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Preset intervals");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimelineMarker");
+  });
+
+  it("renders shared task checkpoints on a proportional timeline without raw internal fields", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          timeGoalPeriod: "week",
+          timeGoalValue: 3,
+          timeGoalUnit: "hour",
+          timeGoalMinutes: 180,
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          milestones: [
+            { id: "raw-ms-1", createdSeq: 77, hours: 0.5, description: "Halfway", alertsEnabled: true },
+            { id: "raw-ms-2", createdSeq: 78, hours: 1, description: "Finish", alertsEnabled: false },
+          ],
+          checkpointSoundEnabled: true,
+          checkpointSoundMode: "repeat",
+          checkpointToastEnabled: true,
+          checkpointToastMode: "manual",
+          presetIntervalsEnabled: true,
+          presetIntervalValue: 2,
+          presetIntervalLastMilestoneId: "raw-ms-1",
+          presetIntervalNextSeq: 99,
+          timeGoalAction: "resetLog",
+          finalCheckpointAction: "continue",
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("3 hours per week");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("On");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("sharedTaskCheckpointTimeline");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:17%"');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:33%"');
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Halfway");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("30m");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("30m Halfway | Alerts on");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Finish");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("60m");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("60m Finish | Alerts off");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">30m</span>');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">60m</span>');
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>30m</strong>Halfway");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>60m</strong>Finish");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Repeat");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Manual close");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("2 intervals");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Reset and log time");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("Continue timer");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("raw-ms-1");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("createdSeq");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("99");
+  });
+
+  it("renders Added disabled in the modal for already imported summaries", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents(
+      [makeSharedSummary({ importConfig: makeImportConfig() })],
+      { tasks: [{ id: "local-copy", color: null, sharedSourceOwnerUid: "friend-b", sharedSourceTaskId: "task-1" }] }
+    );
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Added");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('disabled aria-disabled="true"');
   });
 
   it("renders the friends title count for zero friends", () => {
@@ -1301,7 +1724,7 @@ describe("shared task info metrics", () => {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
 
-  it("formats daily and weekly goals as daily-equivalent shared card rows without Created", () => {
+  it("formats daily and weekly goals with explicit periods and logged time rows without Created", () => {
     expect(getSharedTaskGoalMetrics({ timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 })).toEqual({
       dailyGoalMs: 60 * 60_000,
       weekGoalMs: 7 * 60 * 60_000,
@@ -1321,9 +1744,10 @@ describe("shared task info metrics", () => {
       escapeHtmlUI
     );
 
-    expect(html).toContain("Goal: 01h");
-    expect(html).toContain("Today: 30m");
-    expect(html).toContain("This Week: 29%");
+    expect(html).not.toContain("Goal:");
+    const text = html.replace(/<[^>]+>/g, "");
+    expect(text).toContain("Today: 30m");
+    expect(text).toContain("This Week: 02h");
     expect(html).not.toContain("Daily avg:");
     expect(html).not.toContain("Total logged:");
     expect(html).not.toContain("Created:");
@@ -1355,7 +1779,7 @@ describe("shared task info metrics", () => {
     expect(metrics.weekGoalMs).toBe(420 * 60_000);
   });
 
-  it("caps weekly progress at 100% and shows no-goal fallbacks", () => {
+  it("caps weekly progress helper at 100% and shows no-goal fallback with logged week time", () => {
     expect(formatSharedTaskWeekPercent({ weekLoggedMs: 150, weekGoalMs: 100 })).toBe("100%");
     expect(formatSharedTaskWeekPercent({ weekLoggedMs: 50, weekGoalMs: null })).toBe("No goal");
 
@@ -1369,8 +1793,8 @@ describe("shared task info metrics", () => {
       escapeHtmlUI
     );
 
-    expect(html).toContain("Goal: No goal");
-    expect(html).toContain("This Week: No goal");
+    expect(html).not.toContain("Goal:");
+    expect(html.replace(/<[^>]+>/g, "")).toContain("This Week: 00s");
   });
 
   it("renders a weekly chart with seven rotated bars for the configured week start", () => {

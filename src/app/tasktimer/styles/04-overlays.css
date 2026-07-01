@@ -2045,6 +2045,45 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   text-transform:uppercase;
 }
 
+#editOverlay .msRow .msSliderValue{
+  cursor:pointer;
+}
+
+#addTaskOverlay .msRow .msSliderValue{
+  cursor:pointer;
+}
+
+#editOverlay .msRow .msSliderValue:focus-visible,
+#addTaskOverlay .msRow .msSliderValue:focus-visible{
+  outline:1px solid var(--checkpoint-slider-accent, #58e1ff);
+  outline-offset:3px;
+}
+
+#editOverlay .msRow .msSliderValueInput,
+#addTaskOverlay .msRow .msSliderValueInput{
+  width:min(132px, 52%);
+  min-width:76px;
+  height:24px;
+  flex:0 1 132px;
+  padding:2px 6px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:0;
+  background:#0d0f13;
+  color:rgba(245,248,244,.96);
+  font-family:var(--font-orbitron);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:uppercase;
+  outline:none;
+}
+
+#editOverlay .msRow .msSliderValueInput:focus,
+#addTaskOverlay .msRow .msSliderValueInput:focus{
+  border-color:var(--checkpoint-slider-accent, #58e1ff);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--checkpoint-slider-accent, #58e1ff) 36%, transparent);
+}
+
 #editOverlay .msRow .msSliderMeta,
 #addTaskOverlay .msRow .msSliderMeta,
 #editOverlay .msRow .msSliderBound,

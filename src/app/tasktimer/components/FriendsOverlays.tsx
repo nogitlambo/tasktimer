@@ -99,6 +99,18 @@ export default function FriendsOverlays() {
         </div>
       </div>
 
+      <div className="overlay standardModalOverlay" id="sharedTaskSummaryModal" style={{ display: "none" }}>
+        <div className="modal sharedTaskSummaryModal" role="dialog" aria-modal="true" aria-labelledby="sharedTaskSummaryTitle">
+          <h2 id="sharedTaskSummaryTitle">Shared Task Summary</h2>
+          <div id="sharedTaskSummaryBody" className="sharedTaskSummaryBody" />
+          <div className="confirmBtns sharedTaskSummaryActions">
+            <button className="btn btn-ghost" id="sharedTaskSummaryCloseBtn" type="button">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
         <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
           <div className="friendUserSummaryHeaderRow">

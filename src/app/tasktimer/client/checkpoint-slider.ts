@@ -17,6 +17,53 @@ export function sliderSecondsToCheckpointValue(sliderSeconds: number, unit: Chec
   return unit === "minute" ? safeSeconds / 60 : safeSeconds / 3600;
 }
 
+export function parseCheckpointDurationInput(input: string): number | null {
+  const text = String(input || "").trim().toLowerCase();
+  if (!text) return null;
+
+  const bareMinutes = Number(text);
+  if (/^\d+(?:\.\d+)?$/.test(text) && Number.isFinite(bareMinutes)) {
+    return Math.round(bareMinutes * 60);
+  }
+
+  let totalSeconds = 0;
+  let consumed = "";
+  const tokenPattern = /(\d+(?:\.\d+)?)\s*([hms])/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = tokenPattern.exec(text))) {
+    const value = Number(match[1]);
+    if (!Number.isFinite(value)) return null;
+    consumed += match[0];
+    if (match[2] === "h") totalSeconds += value * 3600;
+    if (match[2] === "m") totalSeconds += value * 60;
+    if (match[2] === "s") totalSeconds += value;
+  }
+
+  if (!consumed || consumed.replace(/\s+/g, "") !== text.replace(/\s+/g, "")) return null;
+  return Math.round(totalSeconds);
+}
+
+export function getNextCheckpointSliderSeconds(
+  milestones: ReadonlyArray<Pick<NonNullable<Task["milestones"]>[number], "hours">> | null | undefined,
+  unit: CheckpointSliderUnit,
+  timeGoalMinutes: number
+): number | null {
+  const safeGoalSeconds = Math.max(1, Math.floor((Number(timeGoalMinutes) || 0) * 60));
+  const maxSeconds = getCheckpointSliderMaxSeconds(timeGoalMinutes);
+  const existingMilestones = Array.isArray(milestones) ? milestones : [];
+
+  if (existingMilestones.length === 0) {
+    return clampCheckpointSliderSeconds(Math.round(safeGoalSeconds / 2), timeGoalMinutes);
+  }
+
+  const previousMilestone = existingMilestones[existingMilestones.length - 1];
+  const previousSeconds = clampCheckpointValueToTimeGoal(Number(previousMilestone?.hours) || 0, unit, timeGoalMinutes).sliderSeconds;
+  if (previousSeconds >= maxSeconds) return null;
+
+  return clampCheckpointSliderSeconds(Math.round((previousSeconds + safeGoalSeconds) / 2), timeGoalMinutes);
+}
+
 export function clampCheckpointSliderSeconds(sliderSeconds: number, timeGoalMinutes: number): number {
   const safeSeconds = Math.max(0, Math.round(Number(sliderSeconds) || 0));
   const maxSeconds = getCheckpointSliderMaxSeconds(timeGoalMinutes);
