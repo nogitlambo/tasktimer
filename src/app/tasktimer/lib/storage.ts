@@ -350,6 +350,13 @@ function normalizeTaskShape(task: Task | null | undefined): Task | null {
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    sharedSourceOwnerUid: task.sharedSourceOwnerUid == null ? null : String(task.sharedSourceOwnerUid).trim() || null,
+    sharedSourceTaskId: task.sharedSourceTaskId == null ? null : String(task.sharedSourceTaskId).trim() || null,
+    sharedSourceShareDocId: task.sharedSourceShareDocId == null ? null : String(task.sharedSourceShareDocId).trim() || null,
+    sharedSourceImportedAtMs:
+      task.sharedSourceImportedAtMs == null || !Number.isFinite(Number(task.sharedSourceImportedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs))),
   };
   if (normalizedTask.taskType === "once-off" && normalizedTask.onceOffTargetDate && hasLocalDatePassed(normalizedTask.onceOffTargetDate)) {
     normalizedTask.plannedStartDay = null;
@@ -815,6 +822,13 @@ function taskSignature(task: Task | null | undefined): string {
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    sharedSourceOwnerUid: task.sharedSourceOwnerUid == null ? null : String(task.sharedSourceOwnerUid).trim() || null,
+    sharedSourceTaskId: task.sharedSourceTaskId == null ? null : String(task.sharedSourceTaskId).trim() || null,
+    sharedSourceShareDocId: task.sharedSourceShareDocId == null ? null : String(task.sharedSourceShareDocId).trim() || null,
+    sharedSourceImportedAtMs:
+      task.sharedSourceImportedAtMs == null || !Number.isFinite(Number(task.sharedSourceImportedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs))),
   });
 }
 

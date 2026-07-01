@@ -171,6 +171,13 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     }
     syncLegacyPlannedStartFields(task);
     task.plannedStartPushRemindersEnabled = task.plannedStartPushRemindersEnabled !== false;
+    task.sharedSourceOwnerUid = task.sharedSourceOwnerUid == null ? null : String(task.sharedSourceOwnerUid).trim() || null;
+    task.sharedSourceTaskId = task.sharedSourceTaskId == null ? null : String(task.sharedSourceTaskId).trim() || null;
+    task.sharedSourceShareDocId = task.sharedSourceShareDocId == null ? null : String(task.sharedSourceShareDocId).trim() || null;
+    task.sharedSourceImportedAtMs =
+      task.sharedSourceImportedAtMs == null || !Number.isFinite(Number(task.sharedSourceImportedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs)));
     ensureMilestoneIdentity(task);
     const derivedAlerts = deriveCheckpointAlertEnabledState(task);
     task.checkpointSoundEnabled = derivedAlerts.soundEnabled;

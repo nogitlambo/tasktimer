@@ -18,6 +18,10 @@ type FeedbackAttachmentDraft = FeedbackAttachmentUploadInput & {
   id: string;
 };
 
+function getCurrentAuthEmail() {
+  return String(getFirebaseAuthClient()?.currentUser?.email || "").trim();
+}
+
 function formatAttachmentSize(sizeBytes: number) {
   if (sizeBytes < 1024) return `${sizeBytes} B`;
   if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
@@ -117,14 +121,11 @@ export default function FeedbackScreen() {
     const auth = getFirebaseAuthClient();
     if (!auth) return;
     const syncViewerFromUser = (user: { uid?: string | null; email?: string | null; displayName?: string | null } | null) => {
-      const nextEmail = user?.email || null;
+      const nextEmail = String(user?.email || "").trim();
       const nextUid = String(user?.uid || "").trim();
       setViewerUid(nextUid);
       setViewerDisplayName(String(user?.displayName || "").trim());
-      setFeedbackEmail((prev) => {
-        if (feedbackAnonymous) return prev;
-        return prev.trim() ? prev : nextEmail || "";
-      });
+      setFeedbackEmail(nextEmail);
       if (!nextUid) {
         setViewerRankThumbnailSrc(null);
         setViewerCurrentRankId(null);
@@ -151,22 +152,21 @@ export default function FeedbackScreen() {
       syncViewerFromUser(user);
     });
     return () => unsub();
-  }, [feedbackAnonymous]);
+  }, []);
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
     window.location.assign(resolveTaskTimerRouteHref(resolveStandaloneRouteBackTarget("/tasklaunch")));
   }, []);
 
-  const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
   const getFeedbackValidationMessage = useCallback(() => {
     if (feedbackAttachmentBusy) return "Please wait for pasted screenshots to finish processing.";
-    if (feedbackEmail.trim() && !isValidFeedbackEmail) return "Enter a valid email address or leave it blank.";
+    if (!feedbackAnonymous && !(getCurrentAuthEmail() || feedbackEmail.trim())) return "Your account email could not be loaded. Please try again after signing in again.";
     if (!feedbackType) return "Select a feedback type before submitting.";
     if (!feedbackTitle.trim()) return "Enter a feedback title before submitting.";
     if (!feedbackDetails.trim()) return "Enter feedback details before submitting.";
     return "";
-  }, [feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType, isValidFeedbackEmail]);
+  }, [feedbackAnonymous, feedbackAttachmentBusy, feedbackDetails, feedbackEmail, feedbackTitle, feedbackType]);
 
   const handleSubmitFeedback = useCallback(async () => {
     const validationMessage = getFeedbackValidationMessage();
@@ -280,26 +280,8 @@ export default function FeedbackScreen() {
           <div className="dashboardNeonLayout feedbackPageLayout">
             <div className="dashboardMain feedbackPageMain">
               <div className="dashboardShell feedbackPageShell">
-                <div className="dashboardTopRow feedbackPageTopRow">
-                  <div className="dashboardTitleWrap">
-                    <p className="dashboardKicker">Feedback</p>
-                  </div>
-                  <div className="feedbackPageActions">
-                    <button className="btn btn-ghost small feedbackBackBtn" type="button" onClick={handleBack}>
-                      Back
-                    </button>
-                  </div>
-                </div>
-
                 <section className="dashboardCard feedbackFormCard" aria-label="Feedback form">
-                  <div className="feedbackGuideLabel" aria-hidden="true">
-                    <span className="feedbackGuideIndex displayFont">01</span>
-                    <span className="feedbackGuideLine" />
-                    <span className="feedbackGuideName">Product Feedback</span>
-                  </div>
-
                   <div className="feedbackFormHead">
-                    <AppImg className="feedbackFormIcon" src="/Feedback.svg" alt="" aria-hidden="true" />
                     <div className="feedbackFormHeadCopy">
                       <h1 className="dashboardCardTitle feedbackFormTitle">Feedback Form</h1>
                       <p className="modalSubtext feedbackFormSubtext">
@@ -309,25 +291,44 @@ export default function FeedbackScreen() {
                   </div>
 
                   <div className="feedbackFormBody">
-                    <div className={`field feedbackFormField${feedbackAnonymous ? " isDisabled" : ""}`}>
-                      <label className={feedbackAnonymous ? "isDisabled" : undefined} htmlFor="feedbackEmailInput">
-                        {feedbackAnonymous ? "Email Address (anonymous)" : "Email Address"}
-                      </label>
-                      <input
-                        id="feedbackEmailInput"
-                        type="email"
-                        placeholder="name@example.com"
-                        autoComplete="email"
-                        value={feedbackEmail}
-                        disabled={feedbackAnonymous}
-                        onChange={(e) => setFeedbackEmail(e.target.value)}
-                      />
-                    </div>
+                    {!feedbackAnonymous ? (
+                      <div className="feedbackIdentityFields">
+                        <div className="field feedbackFormField feedbackIdentityField">
+                          <label htmlFor="feedbackEmailInput">Email Address</label>
+                          <input
+                            id="feedbackEmailInput"
+                            type="email"
+                            placeholder="Account email unavailable"
+                            autoComplete="email"
+                            value={feedbackEmail}
+                            readOnly
+                          />
+                        </div>
 
-                    <label className="chkRow feedbackFormAnonymousRow">
-                      <input type="checkbox" checked={feedbackAnonymous} onChange={(e) => setFeedbackAnonymous(e.target.checked)} />
-                      <span>Log as anonymous</span>
-                    </label>
+                        <div className="field feedbackFormField feedbackIdentityField">
+                          <label htmlFor="feedbackUidInput">User ID</label>
+                          <input
+                            id="feedbackUidInput"
+                            type="text"
+                            placeholder="User ID unavailable"
+                            value={viewerUid}
+                            readOnly
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="chkRow modalCheckboxRow feedbackFormAnonymousRow">
+                      <input
+                        id="feedbackAnonymousCheckbox"
+                        type="checkbox"
+                        checked={feedbackAnonymous}
+                        onChange={(e) => setFeedbackAnonymous(e.target.checked)}
+                      />
+                      <div className="modalCheckboxText">
+                        <label htmlFor="feedbackAnonymousCheckbox">Log as anonymous</label>
+                      </div>
+                    </div>
 
                     <div className="field feedbackFormField">
                       <label htmlFor="feedbackTypeSelect">Feedback Type</label>
@@ -410,7 +411,10 @@ export default function FeedbackScreen() {
                   ) : null}
 
                   <div className="feedbackFormActions">
-                    <button className="btn btn-accent small" id="feedbackBtn" type="button" disabled={feedbackSubmitting || feedbackAttachmentBusy} onClick={handleSubmitFeedback}>
+                    <button className="btn btn-ghost feedbackBackBtn" type="button" onClick={handleBack}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-accent" id="feedbackBtn" type="button" disabled={feedbackSubmitting || feedbackAttachmentBusy} onClick={handleSubmitFeedback}>
                       {feedbackSubmitting ? "Submitting..." : "Submit Feedback"}
                     </button>
                   </div>

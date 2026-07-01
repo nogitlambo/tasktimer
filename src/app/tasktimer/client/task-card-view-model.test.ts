@@ -58,9 +58,9 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="history"');
     expect(rendered.html).toContain('data-action="manualEntry"');
     expect(rendered.html).toContain('data-action="shareTask"');
-    expect(rendered.html).toContain('data-action="archive"');
     expect(rendered.html).toContain('data-action="exportTask"');
     expect(rendered.html).toContain('data-action="delete"');
+    expect(rendered.html).not.toContain('data-action="archive"');
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
@@ -77,7 +77,9 @@ describe("task card view model", () => {
     expect(editIndex).toBeLessThan(manualEntryIndex);
     expect(rendered.html).toContain('<span class="taskMenuTile">Add Entry</span>');
     expect(rendered.html).toContain('<span class="taskMenuTile">Share</span>');
+    expect(rendered.html).toContain('<span class="taskMenuTile">Reset</span>');
     expect(rendered.html).toContain('<span class="taskMenuTile">Delete</span>');
+    expect(rendered.html).not.toContain('<span class="taskMenuTile">Archive</span>');
     expect(rendered.html).not.toContain("taskMenuLabel");
     expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
   });
@@ -85,7 +87,7 @@ describe("task card view model", () => {
   it("disables reset until the task has logged time", () => {
     const rendered = renderCard();
 
-    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" disabled');
+    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
   });
 
   it("enables reset after the task has logged time", () => {
@@ -113,7 +115,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="start" title="Launch"');
     expect(rendered.html).not.toContain('title="Resume"');
     expect(rendered.html).not.toContain("Done until tomorrow");
-    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" disabled');
+    expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
   });
 
   it("renders running, alert, history, and shared-owner states", () => {
@@ -132,7 +134,8 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
     expect(rendered.html).toContain("historyInlineMotion isOpeningSpace");
     expect(rendered.html).toContain('data-action="unshareTask"');
-    expect(rendered.html).toContain('data-action="archive" title="Stop task to archive" type="button" disabled');
+    expect(rendered.html).toContain('data-action="reset" title="Stop task to reset" aria-label="Stop task to reset" type="button" disabled');
+    expect(rendered.html).not.toContain('data-action="archive"');
     expect(rendered.html).toContain('data-history-action="pin"');
     expect(rendered.html).toContain('data-action="history" title="Hide history chart"');
     expect(rendered.html).toContain("disabled");
@@ -197,13 +200,16 @@ describe("task card view model", () => {
     expect(css).toContain("@keyframes taskHistoryDrawerSpaceOpen");
   });
 
-  it("centers the three front task actions with the launch button matching the secondary pair", () => {
+  it("centers the front primary action and pins the flip button to the task corner", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
 
-    expect(css).toContain("grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) !important;");
-    expect(css).toContain("width: min(100%, 224px) !important;");
+    expect(css).toContain("grid-template-columns: minmax(0, 148px) !important;");
+    expect(css).toContain("width: min(100%, 148px) !important;");
     expect(css).toContain("justify-self: center !important;");
     expect(css).toContain("grid-column: 1 / 2 !important;");
+    expect(css).toContain(".task .taskFaceShellFront > .taskFlipBtn");
+    expect(css).toContain("top:10px !important;");
+    expect(css).toContain("right:10px !important;");
   });
 
   it("lays out back-face task actions as a fixed grid of labeled tiles", () => {

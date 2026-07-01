@@ -314,9 +314,14 @@ export type TaskTimerAppPageOptions = {
 export type TaskTimerGroupsContext = {
   els: TaskTimerElements;
   on: TaskTimerRuntime["on"];
+  sharedTasks: TaskTimerSharedTaskApi;
   getTasks: () => Task[];
+  setTasks: (value: Task[]) => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   getWeekStarting: () => DashboardWeekStart;
+  getOptimalProductivityStartTime: () => string;
+  getOptimalProductivityEndTime: () => string;
+  getOptimalProductivityDays: () => OptimalProductivityDays;
   getCurrentUid: () => string | null;
   getCurrentAppPage: () => AppPage;
   applyMainMode: (mode: MainMode) => void;
@@ -335,6 +340,7 @@ export type TaskTimerGroupsContext = {
   buildFriendInitialAvatarDataUrl: (labelRaw: string) => string;
   getFriendAvatarSrc: (profile?: FriendProfile | null) => string;
   jumpToTaskById: (taskId: string) => void;
+  jumpToTaskAndHighlight: (taskId: string) => void;
   getGroupsIncomingRequests: () => FriendRequest[];
   setGroupsIncomingRequests: (value: FriendRequest[]) => void;
   getGroupsOutgoingRequests: () => FriendRequest[];
@@ -366,6 +372,7 @@ export type TaskTimerGroupsContext = {
   getShareTaskTaskId: () => string | null;
   setShareTaskTaskId: (value: string | null) => void;
   getOpenFriendSharedTaskUids: () => Set<string>;
+  save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
   showActionConfirmation: TaskTimerActionConfirmation;

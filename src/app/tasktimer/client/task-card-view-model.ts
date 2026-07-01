@@ -337,13 +337,12 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 : ""
             }
             ${taskColorPillHtml}
+            <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
             <div class="row">
               <div class="taskHeadMain"><div class="name" data-action="editName" title="Open focus mode">${escapeHtml(task.name)}</div></div>
               <div class="time" data-action="focus" title="Open focus mode">${formatMainTaskElapsedHtml(elapsedMs, !!task.running)}</div>
               <div class="actions">
                 ${startStopHtml}
-                <button class="iconBtn" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" ${task.running || !hasResettableTime ? "disabled" : ""}>&#10227;</button>
-                <button class="iconBtn taskFlipBtn" type="button" data-task-flip="open" title="More actions" aria-label="More actions" aria-expanded="false">&#9776;</button>
               </div>
             </div>
             ${progressHTML}
@@ -364,7 +363,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml)}</button>
                 <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml)}</button>
                 <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml)}</button>
-                <button class="taskMenuItem" data-action="archive" title="${task.running ? "Stop task to archive" : "Archive"}" type="button" ${task.running ? "disabled" : ""}>${renderTaskBackActionTile("Archive", escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" type="button" ${task.running || !hasResettableTime ? "disabled" : ""}>${renderTaskBackActionTile("Reset", escapeHtml)}</button>
                 <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">${renderTaskBackActionTile("Export", escapeHtml)}</button>
                 <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">${renderTaskBackActionTile("Delete", escapeHtml)}</button>
               </div>

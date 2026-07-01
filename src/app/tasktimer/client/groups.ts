@@ -3,6 +3,7 @@
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   approveFriendRequest,
+  buildSharedTaskImportConfig,
   cancelOutgoingFriendRequest,
   declineFriendRequest,
   deleteFriendship,
@@ -16,11 +17,13 @@ import {
   loadSharedTaskSummariesForOwner,
   loadSharedTaskSummariesForViewer,
   sendFriendRequest,
+  type SharedTaskSummary,
   upsertSharedTaskSummary,
 } from "../lib/friendsStore";
 import { localDayKey } from "../lib/history";
 import { formatDashboardDurationShort, getDashboardWeekdayLabels, startOfCurrentWeekMs } from "../lib/historyChart";
 import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
+import { buildImportedSharedTask, hasImportedSharedTask } from "../lib/sharedTaskImport";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
@@ -1001,7 +1004,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const taskId = String(row?.taskId || "").trim();
       const taskState = taskStateById.get(taskId);
       if (!taskId || !taskState) return;
-      if (Math.floor(Number(row?.schemaVersion || 1) || 1) < 3) {
+      if (Math.floor(Number(row?.schemaVersion || 1) || 1) < 4 || !row.importConfig) {
         mismatched.add(taskId);
         return;
       }
@@ -1046,6 +1049,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           weekGoalMs: metrics.weekGoalMs,
           avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
           totalTimeLoggedMs: metrics.totalMs,
+          importConfig: buildSharedTaskImportConfig(task),
         })
       )
     );
@@ -1139,6 +1143,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           weekGoalMs: metrics.weekGoalMs,
           avgTimeLoggedThisWeekMs: metrics.avgWeekMs,
           totalTimeLoggedMs: metrics.totalMs,
+          importConfig: buildSharedTaskImportConfig(shareTask),
         })
       )
     );
@@ -1369,6 +1374,18 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     return `<div class="friendSharedTaskTitle">${colorPill}<span class="friendSharedTaskTitleText">${ctx.escapeHtmlUI(taskName)}</span></div>`;
   }
 
+  function renderFriendSharedTaskImportAction(entry: SharedTaskSummary) {
+    if (!entry.importConfig) return "";
+    const alreadyImported = hasImportedSharedTask(ctx.getTasks(), entry.ownerUid, entry.taskId);
+    const disabledAttr = ctx.getGroupsLoading() || alreadyImported ? ' disabled aria-disabled="true"' : "";
+    const label = alreadyImported ? "Added" : "Add to my tasks";
+    return `<div class="friendSharedTaskActions">
+      <button class="btn btn-ghost small" type="button" data-friend-action="import-shared-task" data-share-doc-id="${ctx.escapeHtmlUI(
+        entry.shareDocId
+      )}"${disabledAttr}>${ctx.escapeHtmlUI(label)}</button>
+    </div>`;
+  }
+
   function renderGroupsRequestsList(container: HTMLElement | null, rows: any[], opts: { incoming: boolean }) {
     const titleEl = (opts.incoming ? els.groupsIncomingRequestsTitle : els.groupsOutgoingRequestsTitle) as HTMLElement | null;
     const detailsEl = (opts.incoming ? els.groupsIncomingRequestsDetails : els.groupsOutgoingRequestsDetails) as HTMLDetailsElement | null;
@@ -1494,6 +1511,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
                   <div class="friendSharedTaskMeta">Status: <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
                   ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
+                  ${renderFriendSharedTaskImportAction(entry)}
                 </div>
                 ${renderSharedTaskWeeklyChart(entry, ctx.getWeekStarting(), ctx.escapeHtmlUI)}
               </div>
@@ -1673,6 +1691,49 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     } finally {
       renderGroupsPage();
     }
+  }
+
+  function getSharedSummaryForImport(shareDocIdRaw: string) {
+    const shareDocId = String(shareDocIdRaw || "").trim();
+    if (!shareDocId) return null;
+    return ctx.getGroupsSharedSummaries().find((entry) => String(entry.shareDocId || "").trim() === shareDocId) || null;
+  }
+
+  function importSharedTask(shareDocIdRaw: string) {
+    const summary = getSharedSummaryForImport(shareDocIdRaw);
+    if (!summary?.importConfig) {
+      ctx.showActionConfirmation("This shared task is not available to add yet.");
+      return;
+    }
+    const tasks = ctx.getTasks();
+    if (hasImportedSharedTask(tasks, summary.ownerUid, summary.taskId)) {
+      ctx.showActionConfirmation("Task already added.");
+      renderGroupsPage();
+      return;
+    }
+
+    const result = buildImportedSharedTask({
+      summary,
+      importConfig: summary.importConfig,
+      existingTasks: tasks,
+      makeTask: (name, order) => ctx.sharedTasks.makeTask(name, order),
+      createId: ctx.sharedTasks.createId,
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
+      optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
+      optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
+    });
+    ctx.sharedTasks.ensureMilestoneIdentity(result.task);
+    ctx.setTasks([...tasks, result.task]);
+    ctx.render();
+    ctx.save();
+    const message =
+      result.status === "unscheduled"
+        ? "Task added. No available schedule slot was found."
+        : result.status === "rescheduled"
+          ? "Task added at the next available schedule slot."
+          : "Task added.";
+    ctx.showActionConfirmation(message);
+    ctx.jumpToTaskAndHighlight(String(result.task.id || ""));
   }
 
   async function handleSendFriendRequest() {
@@ -1904,6 +1965,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       void handleFriendRequestAction(requestId, action);
     });
     ctx.on(els.groupsFriendsList, "click", (e: any) => {
+      const importBtn = e.target?.closest?.('[data-friend-action="import-shared-task"]') as HTMLElement | null;
+      if (importBtn) {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        if (ctx.getGroupsLoading() || (importBtn as HTMLButtonElement).disabled) return;
+        importSharedTask(String(importBtn.getAttribute("data-share-doc-id") || ""));
+        return;
+      }
       const friendUid = getFriendProfileOpenUidFromTarget(e.target);
       if (!friendUid) return;
       e?.preventDefault?.();

@@ -738,7 +738,7 @@ describe("task timer session tick", () => {
         if (selector === ".progressFill") return progressFill;
         if (selector === ".progressPctLabel") return progressPctLabel;
         if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
-        if (selector === '.actions > .iconBtn[data-action="reset"]') return resetBtn;
+        if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
         return null;
       },
     } as unknown as HTMLElement;
@@ -901,7 +901,7 @@ describe("task timer session tick", () => {
         if (selector === ".time") return timeEl;
         if (selector === ".progressFill") return progressFill;
         if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
-        if (selector === '.actions > .iconBtn[data-action="reset"]') return resetBtn;
+        if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
         return null;
       },
     } as unknown as HTMLElement;

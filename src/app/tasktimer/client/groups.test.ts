@@ -26,10 +26,12 @@ import {
   renderSharedTaskWeeklyChart,
 } from "./groups";
 import type { TaskTimerGroupsContext } from "./context";
-import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
+import type { FriendProfile, FriendRequest, Friendship, SharedTaskImportConfig, SharedTaskSummary } from "../lib/friendsStore";
+import type { Task } from "../lib/types";
 
 vi.mock("../lib/friendsStore", () => ({
   approveFriendRequest: vi.fn(),
+  buildSharedTaskImportConfig: vi.fn(() => null),
   cancelOutgoingFriendRequest: vi.fn(),
   declineFriendRequest: vi.fn(),
   deleteFriendship: vi.fn(),
@@ -213,6 +215,7 @@ describe("groups friends list shared task counts", () => {
       weekGoalMs: null,
       avgTimeLoggedThisWeekMs: 0,
       totalTimeLoggedMs: 0,
+      importConfig: null,
       sharedAt: null,
       updatedAt: null,
       schemaVersion: 1,
@@ -241,6 +244,39 @@ describe("groups friends list shared task counts", () => {
     };
   }
 
+  function makeImportConfig(overrides: Partial<SharedTaskImportConfig> = {}): SharedTaskImportConfig {
+    return {
+      name: "Deep Work",
+      color: null,
+      taskType: "recurring",
+      onceOffDay: null,
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+      plannedStartPushRemindersEnabled: true,
+      splitAcrossProductivityDays: true,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      checkpointSoundEnabled: false,
+      checkpointSoundMode: "once",
+      checkpointToastEnabled: true,
+      checkpointToastMode: "auto5s",
+      timeGoalAction: "confirmModal",
+      finalCheckpointAction: "confirmModal",
+      presetIntervalsEnabled: false,
+      presetIntervalValue: 0,
+      presetIntervalLastMilestoneId: null,
+      presetIntervalNextSeq: 1,
+      ...overrides,
+    };
+  }
+
   function renderFriendsList(
     sharedSummaries: SharedTaskSummary[],
     opts: {
@@ -249,6 +285,7 @@ describe("groups friends list shared task counts", () => {
       incomingRequests?: Array<Partial<FriendRequest>>;
       outgoingRequests?: Array<Partial<FriendRequest>>;
       ownSharedSummaries?: SharedTaskSummary[];
+      tasks?: Partial<Task>[];
     } = {}
   ) {
     const groupsFriendsList = makeElement();
@@ -291,7 +328,7 @@ describe("groups friends list shared task counts", () => {
       getFriendProfileCacheByUid: () => ({}),
       getFriendAvatarSrcById: vi.fn(() => "/incoming-avatar.webp"),
       buildFriendInitialAvatarDataUrl: vi.fn(() => "/outgoing-avatar.webp"),
-      getTasks: () => [{ id: "task-1", color: null }],
+      getTasks: () => opts.tasks ?? [{ id: "task-1", color: null }],
       getWeekStarting: () => "mon",
       hasEntitlement: () => true,
       getCurrentPlan: () => "pro",
@@ -328,6 +365,38 @@ describe("groups friends list shared task counts", () => {
     expect(html).toContain('class="friendIdentityMeta"');
     expect(html).toContain("Sharing 1 tasks");
     expect(html).not.toContain("No tasks shared with you.");
+  });
+
+  it("hides Add to my tasks for legacy shared task records without import config", () => {
+    const { html } = renderFriendsList([makeSharedSummary({ importConfig: null })]);
+
+    expect(html).not.toContain("Add to my tasks");
+    expect(html).not.toContain('data-friend-action="import-shared-task"');
+  });
+
+  it("renders Add to my tasks for importable shared task records", () => {
+    const { html } = renderFriendsList([
+      makeSharedSummary({
+        importConfig: makeImportConfig(),
+      }),
+    ]);
+
+    expect(html).toContain("Add to my tasks");
+    expect(html).toContain('data-friend-action="import-shared-task"');
+    expect(html).toContain('data-share-doc-id="share-1"');
+  });
+
+  it("disables the import button when the shared source has already been added", () => {
+    const { html } = renderFriendsList([
+      makeSharedSummary({
+        importConfig: makeImportConfig(),
+      }),
+    ], {
+      tasks: [{ id: "local-copy", color: null, sharedSourceOwnerUid: "friend-b", sharedSourceTaskId: "task-1" }],
+    });
+
+    expect(html).toContain("Added");
+    expect(html).toContain('disabled aria-disabled="true"');
   });
 
   it("renders the friends title count for zero friends", () => {

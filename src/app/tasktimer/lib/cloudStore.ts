@@ -1241,6 +1241,13 @@ function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Tas
   row.plannedStartByDay = normalizeTaskPlannedStartByDay(row.plannedStartByDay);
   row.plannedStartOpenEnded = !!row.plannedStartOpenEnded;
   row.plannedStartPushRemindersEnabled = row.plannedStartPushRemindersEnabled !== false;
+  row.sharedSourceOwnerUid = row.sharedSourceOwnerUid == null ? null : String(row.sharedSourceOwnerUid).trim() || null;
+  row.sharedSourceTaskId = row.sharedSourceTaskId == null ? null : String(row.sharedSourceTaskId).trim() || null;
+  row.sharedSourceShareDocId = row.sharedSourceShareDocId == null ? null : String(row.sharedSourceShareDocId).trim() || null;
+  row.sharedSourceImportedAtMs =
+    row.sharedSourceImportedAtMs == null || !Number.isFinite(Number(row.sharedSourceImportedAtMs))
+      ? null
+      : Math.max(0, Math.floor(Number(row.sharedSourceImportedAtMs)));
 
   syncLegacyPlannedStartFields(row as Task);
   return row as Task;
@@ -1309,6 +1316,13 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
     plannedStartByDay: normalizeTaskPlannedStartByDay(task.plannedStartByDay),
     plannedStartOpenEnded: !!task.plannedStartOpenEnded,
     plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    sharedSourceOwnerUid: task.sharedSourceOwnerUid == null ? null : String(task.sharedSourceOwnerUid).trim() || null,
+    sharedSourceTaskId: task.sharedSourceTaskId == null ? null : String(task.sharedSourceTaskId).trim() || null,
+    sharedSourceShareDocId: task.sharedSourceShareDocId == null ? null : String(task.sharedSourceShareDocId).trim() || null,
+    sharedSourceImportedAtMs:
+      task.sharedSourceImportedAtMs == null || !Number.isFinite(Number(task.sharedSourceImportedAtMs))
+        ? null
+        : Math.max(0, Math.floor(Number(task.sharedSourceImportedAtMs))),
     bgTimeGoalPushEligible: plannedStartPushDueAtMs != null,
     bgTimeGoalPushDueAtMs: plannedStartPushDueAtMs,
   };
@@ -1330,11 +1344,25 @@ function mapTaskToLegacyFirestore(task: Task): Record<string, unknown> {
 
 function mapTaskToCompatibilityFirestore(task: Task): Record<string, unknown> {
   const legacyRow = mapTaskToLegacyFirestore(task);
-  const { resumePendingSinceDayKey, taskType, onceOffDay, onceOffTargetDate, ...compatibilityRow } = legacyRow;
+  const {
+    resumePendingSinceDayKey,
+    taskType,
+    onceOffDay,
+    onceOffTargetDate,
+    sharedSourceOwnerUid,
+    sharedSourceTaskId,
+    sharedSourceShareDocId,
+    sharedSourceImportedAtMs,
+    ...compatibilityRow
+  } = legacyRow;
   void resumePendingSinceDayKey;
   void taskType;
   void onceOffDay;
   void onceOffTargetDate;
+  void sharedSourceOwnerUid;
+  void sharedSourceTaskId;
+  void sharedSourceShareDocId;
+  void sharedSourceImportedAtMs;
   return compatibilityRow;
 }
 

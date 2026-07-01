@@ -68,6 +68,30 @@ describe("firestore shared task summary rules", () => {
       '(!("taskColor" in request.resource.data) || request.resource.data.taskColor == null || request.resource.data.taskColor is string)'
     );
   });
+
+  it("allows import config snapshots for shared task imports", () => {
+    const summaryBlock = functionBlock(readRules(), "isSharedTaskSummaryV1");
+    const configBlock = functionBlock(readRules(), "isSharedTaskImportConfig");
+
+    expect(summaryBlock).toContain('"importConfig"');
+    expect(summaryBlock).toContain("isSharedTaskImportConfig(request.resource.data.importConfig)");
+    expect(configBlock).toContain('"plannedStartByDay"');
+    expect(configBlock).toContain('"timeGoalMinutes"');
+    expect(configBlock).toContain('"milestones"');
+    expect(configBlock).toContain('"presetIntervalNextSeq"');
+  });
+});
+
+describe("firestore task document rules", () => {
+  it("allows imported shared task source metadata", () => {
+    const block = functionBlock(readRules(), "isTaskDoc");
+
+    expect(block).toContain('"sharedSourceOwnerUid"');
+    expect(block).toContain('"sharedSourceTaskId"');
+    expect(block).toContain('"sharedSourceShareDocId"');
+    expect(block).toContain('"sharedSourceImportedAtMs"');
+    expect(block).toContain('(!("sharedSourceImportedAtMs" in request.resource.data) || request.resource.data.sharedSourceImportedAtMs == null || request.resource.data.sharedSourceImportedAtMs is int)');
+  });
 });
 
 describe("firestore friend request rules", () => {

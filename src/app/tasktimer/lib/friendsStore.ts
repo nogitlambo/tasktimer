@@ -16,7 +16,9 @@ import type { FirebaseError } from "firebase/app";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { getApiUrl } from "./apiClient";
+import { normalizeScheduleStoredTime, normalizeTaskPlannedStartByDay } from "./schedule-placement";
 import { normalizeTaskColor } from "./taskColors";
+import type { Task, TaskPlannedStartByDay } from "./types";
 
 export type FriendRequestStatus = "pending" | "approved" | "declined";
 
@@ -58,6 +60,36 @@ export type Friendship = {
   createdBy: string;
 };
 
+export type SharedTaskImportConfig = {
+  name: string;
+  color: string | null;
+  taskType: "recurring" | "once-off";
+  onceOffDay: Task["onceOffDay"];
+  plannedStartTime: string | null;
+  plannedStartByDay: TaskPlannedStartByDay | null;
+  plannedStartOpenEnded: boolean;
+  plannedStartPushRemindersEnabled: boolean;
+  splitAcrossProductivityDays: boolean | null;
+  timeGoalEnabled: boolean;
+  timeGoalValue: number;
+  timeGoalUnit: "minute" | "hour";
+  timeGoalPeriod: "day" | "week";
+  timeGoalMinutes: number;
+  milestonesEnabled: boolean;
+  milestoneTimeUnit: "day" | "hour" | "minute";
+  milestones: NonNullable<Task["milestones"]>;
+  checkpointSoundEnabled: boolean;
+  checkpointSoundMode: "once" | "repeat";
+  checkpointToastEnabled: boolean;
+  checkpointToastMode: "auto5s" | "auto3s" | "manual";
+  timeGoalAction: NonNullable<Task["timeGoalAction"]>;
+  finalCheckpointAction: NonNullable<Task["timeGoalAction"]>;
+  presetIntervalsEnabled: boolean;
+  presetIntervalValue: number;
+  presetIntervalLastMilestoneId: string | null;
+  presetIntervalNextSeq: number;
+};
+
 export type SharedTaskSummary = {
   shareDocId: string;
   ownerUid: string;
@@ -75,6 +107,7 @@ export type SharedTaskSummary = {
   weekGoalMs: number | null;
   avgTimeLoggedThisWeekMs: number;
   totalTimeLoggedMs: number;
+  importConfig: SharedTaskImportConfig | null;
   sharedAt: Timestamp | null;
   updatedAt: Timestamp | null;
   schemaVersion: number;
@@ -100,6 +133,7 @@ export type SharedTaskSummaryInput = {
   weekGoalMs: number | null;
   avgTimeLoggedThisWeekMs: number;
   totalTimeLoggedMs: number;
+  importConfig?: SharedTaskImportConfig | null;
 };
 
 type SendRequestResult = { ok: true; request?: FriendRequest | null } | { ok: false; message: string };
@@ -155,6 +189,138 @@ function normalizeTotalXp(value: unknown): number | null {
 function normalizeCompletedTaskCount(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : null;
+}
+
+function normalizeTaskType(value: unknown): SharedTaskImportConfig["taskType"] {
+  return value === "once-off" ? "once-off" : "recurring";
+}
+
+function normalizePlannedStartDay(value: unknown): Task["plannedStartDay"] {
+  const out = String(value || "").trim().toLowerCase();
+  return out === "mon" || out === "tue" || out === "wed" || out === "thu" || out === "fri" || out === "sat" || out === "sun"
+    ? out
+    : null;
+}
+
+function normalizeTimeGoalUnit(value: unknown): SharedTaskImportConfig["timeGoalUnit"] {
+  return value === "minute" ? "minute" : "hour";
+}
+
+function normalizeTimeGoalPeriod(value: unknown): SharedTaskImportConfig["timeGoalPeriod"] {
+  return value === "day" ? "day" : "week";
+}
+
+function normalizeMilestoneTimeUnit(value: unknown): SharedTaskImportConfig["milestoneTimeUnit"] {
+  return value === "day" || value === "minute" ? value : "hour";
+}
+
+function normalizeTimeGoalAction(value: unknown): NonNullable<Task["timeGoalAction"]> {
+  return value === "continue" || value === "resetLog" || value === "resetNoLog" || value === "confirmModal"
+    ? value
+    : "confirmModal";
+}
+
+function normalizeCheckpointToastMode(value: unknown): SharedTaskImportConfig["checkpointToastMode"] {
+  return value === "manual" || value === "auto3s" ? value : "auto5s";
+}
+
+function normalizePositiveNumber(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function normalizeSharedTaskMilestones(value: unknown): SharedTaskImportConfig["milestones"] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 50).map((milestone, index) => {
+    const row = milestone && typeof milestone === "object" ? (milestone as Record<string, unknown>) : {};
+    const createdSeq = Number(row.createdSeq);
+    return {
+      id: String(row.id || "").trim() || undefined,
+      createdSeq: Number.isFinite(createdSeq) && createdSeq > 0 ? Math.floor(createdSeq) : index + 1,
+      hours: normalizePositiveNumber(row.hours),
+      description: String(row.description || "").trim().slice(0, 240),
+      alertsEnabled: row.alertsEnabled !== false,
+    };
+  });
+}
+
+export function normalizeSharedTaskImportConfig(raw: unknown): SharedTaskImportConfig | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const name = String(row.name || "").trim().slice(0, 160);
+  if (!name) return null;
+  const byDay = normalizeTaskPlannedStartByDay(row.plannedStartByDay);
+  const firstByDayTime = byDay
+    ? Object.values(byDay)
+        .map(normalizeScheduleStoredTime)
+        .find((value): value is string => !!value) || null
+    : null;
+  const taskType = normalizeTaskType(row.taskType);
+  return {
+    name,
+    color: normalizeTaskColor(row.color) || null,
+    taskType,
+    onceOffDay: taskType === "once-off" ? normalizePlannedStartDay(row.onceOffDay) : null,
+    plannedStartTime: normalizeScheduleStoredTime(row.plannedStartTime) || firstByDayTime,
+    plannedStartByDay: byDay,
+    plannedStartOpenEnded: !!row.plannedStartOpenEnded,
+    plannedStartPushRemindersEnabled: row.plannedStartPushRemindersEnabled !== false,
+    splitAcrossProductivityDays: typeof row.splitAcrossProductivityDays === "boolean" ? row.splitAcrossProductivityDays : null,
+    timeGoalEnabled: !!row.timeGoalEnabled,
+    timeGoalValue: normalizePositiveNumber(row.timeGoalValue),
+    timeGoalUnit: normalizeTimeGoalUnit(row.timeGoalUnit),
+    timeGoalPeriod: normalizeTimeGoalPeriod(row.timeGoalPeriod),
+    timeGoalMinutes: normalizePositiveNumber(row.timeGoalMinutes),
+    milestonesEnabled: !!row.milestonesEnabled,
+    milestoneTimeUnit: normalizeMilestoneTimeUnit(row.milestoneTimeUnit),
+    milestones: normalizeSharedTaskMilestones(row.milestones),
+    checkpointSoundEnabled: !!row.checkpointSoundEnabled,
+    checkpointSoundMode: row.checkpointSoundMode === "repeat" ? "repeat" : "once",
+    checkpointToastEnabled: row.checkpointToastEnabled !== false,
+    checkpointToastMode: normalizeCheckpointToastMode(row.checkpointToastMode),
+    timeGoalAction: normalizeTimeGoalAction(row.timeGoalAction),
+    finalCheckpointAction: normalizeTimeGoalAction(row.finalCheckpointAction),
+    presetIntervalsEnabled: !!row.presetIntervalsEnabled,
+    presetIntervalValue: normalizePositiveNumber(row.presetIntervalValue),
+    presetIntervalLastMilestoneId: row.presetIntervalLastMilestoneId == null ? null : String(row.presetIntervalLastMilestoneId || "").trim() || null,
+    presetIntervalNextSeq:
+      Number.isFinite(Number(row.presetIntervalNextSeq)) && Number(row.presetIntervalNextSeq) > 0
+        ? Math.floor(Number(row.presetIntervalNextSeq))
+        : 1,
+  };
+}
+
+export function buildSharedTaskImportConfig(task: Task | null | undefined): SharedTaskImportConfig | null {
+  if (!task) return null;
+  return normalizeSharedTaskImportConfig({
+    name: String(task.name || "").trim() || "Task",
+    color: task.color,
+    taskType: task.taskType === "once-off" ? "once-off" : "recurring",
+    onceOffDay: task.onceOffDay,
+    plannedStartTime: task.plannedStartTime,
+    plannedStartByDay: task.plannedStartByDay,
+    plannedStartOpenEnded: !!task.plannedStartOpenEnded,
+    plannedStartPushRemindersEnabled: task.plannedStartPushRemindersEnabled !== false,
+    splitAcrossProductivityDays: typeof task.splitAcrossProductivityDays === "boolean" ? task.splitAcrossProductivityDays : null,
+    timeGoalEnabled: !!task.timeGoalEnabled,
+    timeGoalValue: task.timeGoalValue,
+    timeGoalUnit: task.timeGoalUnit,
+    timeGoalPeriod: task.timeGoalPeriod,
+    timeGoalMinutes: task.timeGoalMinutes,
+    milestonesEnabled: !!task.milestonesEnabled,
+    milestoneTimeUnit: task.milestoneTimeUnit,
+    milestones: task.milestones,
+    checkpointSoundEnabled: !!task.checkpointSoundEnabled,
+    checkpointSoundMode: task.checkpointSoundMode,
+    checkpointToastEnabled: task.checkpointToastEnabled !== false,
+    checkpointToastMode: task.checkpointToastMode,
+    timeGoalAction: task.timeGoalAction,
+    finalCheckpointAction: task.finalCheckpointAction || task.timeGoalAction,
+    presetIntervalsEnabled: !!task.presetIntervalsEnabled,
+    presetIntervalValue: task.presetIntervalValue,
+    presetIntervalLastMilestoneId: task.presetIntervalLastMilestoneId,
+    presetIntervalNextSeq: task.presetIntervalNextSeq,
+  });
 }
 
 async function loadOwnProfile(uid: string): Promise<FriendProfile> {
@@ -285,6 +451,7 @@ function asSharedTaskSummary(id: string, row: Record<string, unknown>): SharedTa
     weekGoalMs: row.weekGoalMs == null ? null : Math.max(0, Number(row.weekGoalMs || 0)),
     avgTimeLoggedThisWeekMs: Math.max(0, Number(row.avgTimeLoggedThisWeekMs || 0)),
     totalTimeLoggedMs: Math.max(0, Number(row.totalTimeLoggedMs || 0)),
+    importConfig: normalizeSharedTaskImportConfig(row.importConfig),
     sharedAt: (row.sharedAt as Timestamp) || null,
     updatedAt: (row.updatedAt as Timestamp) || null,
     schemaVersion: Number(row.schemaVersion || 1),
@@ -444,6 +611,7 @@ export async function upsertSharedTaskSummary(
     const weekGoalMs = summary.weekGoalMs == null ? null : Math.max(0, Math.floor(Number(summary.weekGoalMs) || 0));
     const avgTimeLoggedThisWeekMs = Math.max(0, Math.floor(Number(summary.avgTimeLoggedThisWeekMs) || 0));
     const totalTimeLoggedMs = Math.max(0, Math.floor(Number(summary.totalTimeLoggedMs) || 0));
+    const importConfig = normalizeSharedTaskImportConfig(summary.importConfig);
 
     await setDoc(ref, {
       shareDocId,
@@ -462,9 +630,10 @@ export async function upsertSharedTaskSummary(
       weekGoalMs,
       avgTimeLoggedThisWeekMs,
       totalTimeLoggedMs,
+      ...(importConfig ? { importConfig } : {}),
       sharedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      schemaVersion: 3,
+      schemaVersion: 4,
     });
     return { ok: true };
   } catch (err: unknown) {

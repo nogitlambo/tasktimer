@@ -504,6 +504,10 @@ service cloud.firestore {
         "plannedStartByDay",
         "plannedStartOpenEnded",
         "plannedStartPushRemindersEnabled",
+        "sharedSourceOwnerUid",
+        "sharedSourceTaskId",
+        "sharedSourceShareDocId",
+        "sharedSourceImportedAtMs",
         "bgTimeGoalPushEligible",
         "bgTimeGoalPushDueAtMs",
         "bgTimeGoalPushSentAtMs",
@@ -558,6 +562,10 @@ service cloud.firestore {
       && (!("plannedStartByDay" in request.resource.data) || request.resource.data.plannedStartByDay == null || request.resource.data.plannedStartByDay is map)
       && (!("plannedStartOpenEnded" in request.resource.data) || request.resource.data.plannedStartOpenEnded is bool)
       && (!("plannedStartPushRemindersEnabled" in request.resource.data) || request.resource.data.plannedStartPushRemindersEnabled is bool)
+      && (!("sharedSourceOwnerUid" in request.resource.data) || request.resource.data.sharedSourceOwnerUid == null || request.resource.data.sharedSourceOwnerUid is string)
+      && (!("sharedSourceTaskId" in request.resource.data) || request.resource.data.sharedSourceTaskId == null || request.resource.data.sharedSourceTaskId is string)
+      && (!("sharedSourceShareDocId" in request.resource.data) || request.resource.data.sharedSourceShareDocId == null || request.resource.data.sharedSourceShareDocId is string)
+      && (!("sharedSourceImportedAtMs" in request.resource.data) || request.resource.data.sharedSourceImportedAtMs == null || request.resource.data.sharedSourceImportedAtMs is int)
       && (!("bgTimeGoalPushEligible" in request.resource.data) || request.resource.data.bgTimeGoalPushEligible is bool)
       && (!("bgTimeGoalPushDueAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushDueAtMs == null || request.resource.data.bgTimeGoalPushDueAtMs is int)
       && (!("bgTimeGoalPushSentAtMs" in request.resource.data) || request.resource.data.bgTimeGoalPushSentAtMs == null || request.resource.data.bgTimeGoalPushSentAtMs is int)
@@ -879,6 +887,96 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/friendships/$(friendshipPairId(uidA, uidB)));
     }
 
+    function isSharedTaskImportConfig(value) {
+      return value is map
+      && value.keys().hasOnly([
+        "name",
+        "color",
+        "taskType",
+        "onceOffDay",
+        "plannedStartTime",
+        "plannedStartByDay",
+        "plannedStartOpenEnded",
+        "plannedStartPushRemindersEnabled",
+        "splitAcrossProductivityDays",
+        "timeGoalEnabled",
+        "timeGoalValue",
+        "timeGoalUnit",
+        "timeGoalPeriod",
+        "timeGoalMinutes",
+        "milestonesEnabled",
+        "milestoneTimeUnit",
+        "milestones",
+        "checkpointSoundEnabled",
+        "checkpointSoundMode",
+        "checkpointToastEnabled",
+        "checkpointToastMode",
+        "timeGoalAction",
+        "finalCheckpointAction",
+        "presetIntervalsEnabled",
+        "presetIntervalValue",
+        "presetIntervalLastMilestoneId",
+        "presetIntervalNextSeq"
+      ])
+      && value.keys().hasAll([
+        "name",
+        "color",
+        "taskType",
+        "plannedStartTime",
+        "plannedStartByDay",
+        "plannedStartOpenEnded",
+        "plannedStartPushRemindersEnabled",
+        "splitAcrossProductivityDays",
+        "timeGoalEnabled",
+        "timeGoalValue",
+        "timeGoalUnit",
+        "timeGoalPeriod",
+        "timeGoalMinutes",
+        "milestonesEnabled",
+        "milestoneTimeUnit",
+        "milestones",
+        "checkpointSoundEnabled",
+        "checkpointSoundMode",
+        "checkpointToastEnabled",
+        "checkpointToastMode",
+        "timeGoalAction",
+        "finalCheckpointAction",
+        "presetIntervalsEnabled",
+        "presetIntervalValue",
+        "presetIntervalLastMilestoneId",
+        "presetIntervalNextSeq"
+      ])
+      && value.name is string
+      && value.name.size() <= 160
+      && (value.color == null || value.color is string)
+      && value.taskType in ["recurring", "once-off"]
+      && (!("onceOffDay" in value) || value.onceOffDay == null || value.onceOffDay in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
+      && (value.plannedStartTime == null || value.plannedStartTime is string)
+      && (value.plannedStartByDay == null || value.plannedStartByDay is map)
+      && value.plannedStartOpenEnded is bool
+      && value.plannedStartPushRemindersEnabled is bool
+      && (value.splitAcrossProductivityDays == null || value.splitAcrossProductivityDays is bool)
+      && value.timeGoalEnabled is bool
+      && (value.timeGoalValue is int || value.timeGoalValue is float)
+      && value.timeGoalUnit in ["minute", "hour"]
+      && value.timeGoalPeriod in ["day", "week"]
+      && (value.timeGoalMinutes is int || value.timeGoalMinutes is float)
+      && value.milestonesEnabled is bool
+      && value.milestoneTimeUnit in ["day", "hour", "minute"]
+      && value.milestones is list
+      && value.milestones.size() <= 50
+      && value.checkpointSoundEnabled is bool
+      && value.checkpointSoundMode in ["once", "repeat"]
+      && value.checkpointToastEnabled is bool
+      && value.checkpointToastMode in ["auto5s", "auto3s", "manual"]
+      && value.timeGoalAction in ["continue", "resetLog", "resetNoLog", "confirmModal"]
+      && value.finalCheckpointAction in ["continue", "resetLog", "resetNoLog", "confirmModal"]
+      && value.presetIntervalsEnabled is bool
+      && (value.presetIntervalValue is int || value.presetIntervalValue is float)
+      && (value.presetIntervalLastMilestoneId == null || value.presetIntervalLastMilestoneId is string)
+      && value.presetIntervalNextSeq is int;
+    }
+
     function isSharedTaskSummaryV1(shareDocId) {
       return onlyKeys([
         "shareDocId",
@@ -897,6 +995,7 @@ service cloud.firestore {
         "weekGoalMs",
         "avgTimeLoggedThisWeekMs",
         "totalTimeLoggedMs",
+        "importConfig",
         "sharedAt",
         "updatedAt",
         "schemaVersion"
@@ -945,6 +1044,7 @@ service cloud.firestore {
       && (request.resource.data.weekGoalMs == null || request.resource.data.weekGoalMs is int)
       && request.resource.data.avgTimeLoggedThisWeekMs is int
       && request.resource.data.totalTimeLoggedMs is int
+      && (!("importConfig" in request.resource.data) || request.resource.data.importConfig == null || isSharedTaskImportConfig(request.resource.data.importConfig))
       && request.resource.data.sharedAt is timestamp
       && request.resource.data.updatedAt is timestamp
       && request.resource.data.schemaVersion is int

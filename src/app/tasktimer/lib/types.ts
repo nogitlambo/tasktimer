@@ -20,6 +20,7 @@ export type Task = {
   createdAtMs?: number;
   order: number;
   accumulatedMs: number;
+  elapsed?: number;
   resumePendingSinceDayKey?: string | null;
   running: boolean;
   startMs: number | null;
@@ -55,6 +56,10 @@ export type Task = {
   plannedStartOpenEnded?: boolean;
   plannedStartPushRemindersEnabled?: boolean;
   splitAcrossProductivityDays?: boolean;
+  sharedSourceOwnerUid?: string | null;
+  sharedSourceTaskId?: string | null;
+  sharedSourceShareDocId?: string | null;
+  sharedSourceImportedAtMs?: number | null;
 };
 
 export type TaskStatusState = "archived" | "deleted";

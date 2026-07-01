@@ -33,8 +33,10 @@ type CreateGroupsOptionsArgs = {
   on: Parameters<typeof createTaskTimerGroups>[0]["on"];
   taskCollectionBindings: {
     getTasks: () => Task[];
+    setTasks: (value: Task[]) => void;
     getHistoryByTaskId: () => HistoryByTaskId;
   };
+  sharedTasks: Parameters<typeof createTaskTimerGroups>[0]["sharedTasks"];
   appRuntimeState: MutableStore;
   preferencesState: MutableStore;
   groupsState: MutableStore;
@@ -56,6 +58,8 @@ type CreateGroupsOptionsArgs = {
   buildFriendInitialAvatarDataUrl: (labelRaw: string) => string;
   getFriendAvatarSrc: (profile?: FriendProfile | null) => string;
   jumpToTaskById: (taskId: string) => void;
+  jumpToTaskAndHighlight: (taskId: string) => void;
+  save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   hasEntitlement: Parameters<typeof createTaskTimerGroups>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerGroups>[0]["getCurrentPlan"];
   showActionConfirmation: Parameters<typeof createTaskTimerGroups>[0]["showActionConfirmation"];
@@ -774,9 +778,17 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
   return {
     els: args.els,
     on: args.on,
+    sharedTasks: args.sharedTasks,
     getTasks: args.taskCollectionBindings.getTasks,
+    setTasks: args.taskCollectionBindings.setTasks,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId as Parameters<typeof createTaskTimerGroups>[0]["getHistoryByTaskId"],
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
+    getOptimalProductivityStartTime: () => asType<string>(args.preferencesState.get("optimalProductivityStartTime")),
+    getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
+    getOptimalProductivityDays: () =>
+      asType<Parameters<typeof createTaskTimerGroups>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(
+        args.preferencesState.get("optimalProductivityDays")
+      ),
     getCurrentUid: args.getCurrentUid,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     applyMainMode: args.applyMainMode,
@@ -795,6 +807,7 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
     buildFriendInitialAvatarDataUrl: args.buildFriendInitialAvatarDataUrl,
     getFriendAvatarSrc: args.getFriendAvatarSrc as Parameters<typeof createTaskTimerGroups>[0]["getFriendAvatarSrc"],
     jumpToTaskById: args.jumpToTaskById,
+    jumpToTaskAndHighlight: args.jumpToTaskAndHighlight,
     getGroupsIncomingRequests: () => asType<FriendRequest[]>(args.groupsState.get("groupsIncomingRequests")),
     setGroupsIncomingRequests: (value) => {
       args.groupsState.set("groupsIncomingRequests", value);
@@ -856,6 +869,7 @@ export function createTaskTimerGroupsContext(args: CreateGroupsOptionsArgs): Par
       args.groupsState.set("shareTaskTaskId", value);
     },
     getOpenFriendSharedTaskUids: () => args.openFriendSharedTaskUids,
+    save: args.save,
     hasEntitlement: args.hasEntitlement,
     getCurrentPlan: args.getCurrentPlan,
     showActionConfirmation: args.showActionConfirmation,

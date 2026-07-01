@@ -20,6 +20,8 @@ type CreateTaskDeleteOptions = {
   deleteSharedTaskSummariesForTask: (ownerUid: string, taskId: string) => Promise<unknown>;
   refreshOwnSharedSummaries: () => Promise<unknown>;
   getCurrentUid: () => string | null;
+  getFocusModeTaskId: () => string | null;
+  closeFocusMode: () => void;
   showActionConfirmation: (message: string, durationMs?: number) => void;
   render: () => void;
 };
@@ -36,6 +38,28 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
 
     const confirmConfig = buildDeleteTaskConfirmOptions({
       taskName: task.name || "this task",
+      onArchive: task.running
+        ? null
+        : () => {
+            clearDeleteTaskConfirmState();
+            const taskId = String(task.id || "");
+            const shouldCloseFocusMode = String(options.getFocusModeTaskId() || "").trim() === taskId;
+            const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
+            const nextDeletedTaskMeta = {
+              ...(options.getDeletedTaskMeta() || {}),
+              [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
+            };
+            options.setTasks(nextTasks);
+            options.setDeletedTaskMeta(nextDeletedTaskMeta);
+            options.saveDeletedMeta(nextDeletedTaskMeta);
+            options.save({ deletedTaskIds: taskId ? [taskId] : [] });
+            void options.deleteSharedTaskSummariesForTask(String(options.getCurrentUid() || ""), taskId).catch(() => {});
+            void options.refreshOwnSharedSummaries().catch(() => {});
+            if (shouldCloseFocusMode) options.closeFocusMode();
+            options.render();
+            options.closeConfirm();
+            options.showActionConfirmation("Task archived.");
+          },
       onDelete: () => {
         clearDeleteTaskConfirmState();
         const deleteHistory = true;

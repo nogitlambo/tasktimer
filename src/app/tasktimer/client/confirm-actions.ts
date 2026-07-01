@@ -42,13 +42,17 @@ export function buildExitAppConfirmOptions(args: { closeConfirm: () => void; exi
 export function buildDeleteTaskConfirmOptions(args: {
   taskName: string;
   onDelete: () => void;
+  onArchive?: (() => void) | null;
   onCancel: () => void;
 }) {
   const taskName = String(args.taskName || "this task").trim() || "this task";
   const options: TaskTimerConfirmOptions = {
     okLabel: "Delete",
     cancelLabel: "Cancel",
+    altLabel: args.onArchive ? "Archive" : null,
+    altButtonClassName: args.onArchive ? "btn btn-ghost" : undefined,
     onOk: args.onDelete,
+    onAlt: args.onArchive || null,
     onCancel: args.onCancel,
   };
   return {

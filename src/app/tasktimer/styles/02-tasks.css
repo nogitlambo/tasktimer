@@ -1583,7 +1583,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShell > .checkpointMuteBtn{
   position:absolute !important;
   top:12px !important;
-  right:12px !important;
+  right:52px !important;
   left:auto !important;
   z-index:4 !important;
   animation: taskAlertPulseGlow 1.1s ease-in-out infinite;
@@ -1648,6 +1648,23 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskFlipBtn{
   border-radius:0 !important;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn{
+  position:absolute !important;
+  top:10px !important;
+  right:10px !important;
+  z-index:6 !important;
+  display:grid !important;
+  place-items:center !important;
+  width:34px !important;
+  height:30px !important;
+  min-width:0 !important;
+  min-height:30px !important;
+  padding:0 !important;
+  border-radius:0 !important;
+  background:#1a1b20 !important;
+  background-color:#1a1b20 !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions{
@@ -2276,8 +2293,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
   display: grid !important;
-  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
-  width: min(100%, 224px);
+  grid-template-columns: minmax(0, 148px);
+  width: min(100%, 148px);
   justify-content: center;
   justify-self: center;
   gap: 4px;
@@ -4116,8 +4133,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions,
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions{
   display: grid !important;
-  grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) !important;
-  width: min(100%, 224px) !important;
+  grid-template-columns: minmax(0, 148px) !important;
+  width: min(100%, 148px) !important;
   max-width: 100% !important;
   justify-content: center !important;
   justify-self: center !important;

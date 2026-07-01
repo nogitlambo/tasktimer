@@ -2571,7 +2571,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
             primaryActionBtn.disabled = false;
           }
         }
-        const resetBtn = node.querySelector('.actions > .iconBtn[data-action="reset"]') as HTMLButtonElement | null;
+        const resetBtn = node.querySelector('.taskBackActions > .taskMenuItem[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
           const hasResettableTime = elapsedMs > 0;
           const resetLabel = task.running ? "Stop task to reset" : hasResettableTime ? "Reset" : "No time to reset";
