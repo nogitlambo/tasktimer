@@ -3,7 +3,6 @@ import { normalizeOptimalProductivityDays } from "./productivityPeriod";
 import {
   buildWeeklyPlannedStartByDay,
   findFirstAvailableScheduleSlotFromProductivityWindow,
-  findScheduleOverlap,
   normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
@@ -57,15 +56,6 @@ function cloneImportedMilestones(config: SharedTaskImportConfig, createId: () =>
     description: String(milestone.description || ""),
     alertsEnabled: milestone.alertsEnabled !== false,
   }));
-}
-
-function getAnchorPlannedStartTime(config: SharedTaskImportConfig): string | null {
-  const plannedStartTime = normalizeScheduleStoredTime(config.plannedStartTime);
-  if (plannedStartTime) return plannedStartTime;
-  const byDay = config.plannedStartByDay || {};
-  return Object.values(byDay)
-    .map(normalizeScheduleStoredTime)
-    .find((value): value is string => !!value) || null;
 }
 
 function clearImportedTaskSchedule(task: Task) {
@@ -152,17 +142,15 @@ export function buildImportedSharedTask(options: BuildImportedSharedTaskOptions)
   task.sharedSourceShareDocId = String(options.summary.shareDocId || "").trim() || null;
   task.sharedSourceImportedAtMs = options.importedAtMs ?? Date.now();
 
-  const plannedStartTime = getAnchorPlannedStartTime(importConfig);
   const hasScheduleDuration = !!task.timeGoalEnabled && Number(task.timeGoalMinutes || 0) > 0;
   const days = normalizeOptimalProductivityDays(options.optimalProductivityDays) as ScheduleDay[];
-  if (!plannedStartTime || !hasScheduleDuration || days.length === 0) {
+  if (!hasScheduleDuration || days.length === 0) {
     clearImportedTaskSchedule(task);
     return { task, status: "unscheduled" };
   }
 
-  applyRecipientSchedule(task, importConfig, days, plannedStartTime, options.nowDate);
-  if (!findScheduleOverlap(existingTasks, task)) return { task, status: "scheduled" };
-
+  const productivityStartTime = normalizeScheduleStoredTime(options.optimalProductivityStartTime) || "00:00";
+  applyRecipientSchedule(task, importConfig, days, productivityStartTime, options.nowDate);
   const slot = findFirstAvailableScheduleSlotFromProductivityWindow(existingTasks, task, {
     optimalProductivityStartTime: options.optimalProductivityStartTime,
     optimalProductivityEndTime: options.optimalProductivityEndTime,
@@ -173,5 +161,8 @@ export function buildImportedSharedTask(options: BuildImportedSharedTaskOptions)
     return { task, status: "unscheduled" };
   }
   slot.days.forEach((day) => setTaskScheduledTimeForDay(task, day, slot.time));
-  return { task, status: "rescheduled" };
+  return {
+    task,
+    status: slot.source === "productivityWindow" && slot.time === productivityStartTime ? "scheduled" : "rescheduled",
+  };
 }

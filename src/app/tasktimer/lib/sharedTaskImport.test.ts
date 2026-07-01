@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SharedTaskImportConfig } from "./friendsStore";
 import { buildImportedSharedTask, hasImportedSharedTask } from "./sharedTaskImport";
-import { getScheduleTaskDurationMinutesForDay } from "./schedule-placement";
+import { getScheduleTaskDurationMinutesForDay, type ScheduleDay } from "./schedule-placement";
 import type { Task } from "./types";
 
 function makeTask(name: string, order: number): Task {
@@ -33,7 +33,7 @@ function makeTask(name: string, order: number): Task {
   };
 }
 
-function busyTask(id: string, day: "mon" | "wed", start: string, minutes: number): Task {
+function busyTask(id: string, day: ScheduleDay, start: string, minutes: number): Task {
   return {
     ...makeTask(id, Number(id.replace(/\D/g, "")) || 1),
     id,
@@ -117,6 +117,48 @@ describe("shared task import scheduling", () => {
     expect(result.task.milestones[0]?.id).toBe("new-id-1");
   });
 
+  it("ignores an original shared time outside the recipient productivity window", () => {
+    const result = build({
+      importConfig: importConfig({
+        plannedStartTime: "14:00",
+        plannedStartByDay: { mon: "14:00" },
+      }),
+      optimalProductivityStartTime: "09:00",
+      optimalProductivityEndTime: "12:00",
+    });
+
+    expect(result.status).toBe("scheduled");
+    expect(result.task.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00" });
+  });
+
+  it("uses the earliest recipient productivity slot even when the original shared time is in-window", () => {
+    const result = build({
+      importConfig: importConfig({
+        plannedStartTime: "10:00",
+        plannedStartByDay: { mon: "10:00" },
+      }),
+      optimalProductivityStartTime: "09:00",
+      optimalProductivityEndTime: "12:00",
+    });
+
+    expect(result.status).toBe("scheduled");
+    expect(result.task.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00" });
+  });
+
+  it("schedules owner-unscheduled imports when they have a valid time goal", () => {
+    const result = build({
+      importConfig: importConfig({
+        plannedStartTime: null,
+        plannedStartByDay: null,
+        plannedStartOpenEnded: true,
+      }),
+    });
+
+    expect(result.status).toBe("scheduled");
+    expect(result.task.plannedStartOpenEnded).toBe(false);
+    expect(result.task.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00" });
+  });
+
   it("moves a conflicting import to the next shared slot inside the productivity window", () => {
     const result = build({
       existingTasks: [busyTask("busy-1", "mon", "09:00", 60), busyTask("busy-2", "wed", "09:00", 60)],
@@ -157,6 +199,21 @@ describe("shared task import scheduling", () => {
     expect(result.task.plannedStartByDay).toEqual({ mon: "09:00", wed: "09:00" });
     expect(getScheduleTaskDurationMinutesForDay(result.task, "mon")).toBe(61);
     expect(getScheduleTaskDurationMinutesForDay(result.task, "wed")).toBe(60);
+  });
+
+  it("keeps weekly imports on one recipient productivity day when split is disabled", () => {
+    const result = build({
+      importConfig: importConfig({
+        timeGoalPeriod: "week",
+        timeGoalMinutes: 120,
+        timeGoalValue: 2,
+        splitAcrossProductivityDays: false,
+      }),
+    });
+
+    expect(result.task.splitAcrossProductivityDays).toBe(false);
+    expect(result.task.plannedStartByDay).toEqual({ mon: "09:00" });
+    expect(getScheduleTaskDurationMinutesForDay(result.task, "mon")).toBe(120);
   });
 
   it("places once-off imports on the first recipient productivity day", () => {
