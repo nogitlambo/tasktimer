@@ -1,5 +1,6 @@
 "use client";
 
+import AppImg from "@/components/AppImg";
 import { useState } from "react";
 
 type PrimitiveSectionProps = {
@@ -7,6 +8,7 @@ type PrimitiveSectionProps = {
   note: string;
   code: string;
   children: React.ReactNode;
+  exampleClassName?: string;
 };
 
 const TOKEN_SWATCHES = [
@@ -20,7 +22,7 @@ const TOKEN_SWATCHES = [
   { name: "--warn", value: "#ff4d4d" },
 ];
 
-function PrimitiveSection({ title, note, code, children }: PrimitiveSectionProps) {
+function PrimitiveSection({ title, note, code, children, exampleClassName = "" }: PrimitiveSectionProps) {
   return (
     <section className="primitiveSection" aria-labelledby={`primitive-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
       <div className="primitiveSectionHeader">
@@ -29,7 +31,7 @@ function PrimitiveSection({ title, note, code, children }: PrimitiveSectionProps
           <p className="modalSubtext">{note}</p>
         </div>
       </div>
-      <div className="primitiveExamplePanel">{children}</div>
+      <div className={`primitiveExamplePanel${exampleClassName ? ` ${exampleClassName}` : ""}`}>{children}</div>
       <pre className="primitiveCode" tabIndex={0}>
         <code>{code}</code>
       </pre>
@@ -177,6 +179,17 @@ export default function PrimitiveGallery() {
               &gt;
             </button>
           </div>
+        </PrimitiveSection>
+
+        <PrimitiveSection
+          title="Launch Button"
+          note="Use the interactive launch primitive when the primary action needs a tactile launcher treatment."
+          code={`<button className="primitiveLaunchButton" type="button" aria-label="Launch">\n  <AppImg className="primitiveLaunchButtonImage" src="/launch_button.png" alt="" aria-hidden="true" />\n</button>`}
+          exampleClassName="primitiveLaunchExamplePanel"
+        >
+          <button className="primitiveLaunchButton" type="button" aria-label="Launch">
+            <AppImg className="primitiveLaunchButtonImage" src="/launch_button.png" alt="" aria-hidden="true" />
+          </button>
         </PrimitiveSection>
 
         <PrimitiveSection

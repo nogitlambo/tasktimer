@@ -156,6 +156,80 @@
   align-items: center;
 }
 
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel{
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton{
+  inline-size: min(340px, 82vw);
+  aspect-ratio: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 18px 28px rgba(0,0,0,.46);
+  cursor: pointer;
+  overflow: visible;
+  transition:
+    filter .16s ease,
+    box-shadow .16s ease;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 50%;
+  background: url("/launch_button.png") center / contain no-repeat;
+  clip-path: circle(38% at 50% 50%);
+  pointer-events: none;
+  transition: transform .16s ease;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButtonImage{
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:hover,
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:focus-visible{
+  filter: brightness(1.04) saturate(1.06);
+  box-shadow: 0 8px 12px rgba(0,0,0,.42);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:hover::after,
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:focus-visible::after{
+  transform: translateY(7px) scale(.975);
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 7px;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton:active::after{
+  transform: translateY(10px) scale(.96);
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton,
+  #app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButton::after,
+  #app[aria-label="TaskLaunch Primitives"] .primitiveLaunchButtonImage{
+    transition: none;
+  }
+}
+
 #app[aria-label="TaskLaunch Primitives"] .primitiveModalInline .modal{
   width: min(420px, 100%);
 }

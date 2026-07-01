@@ -11,11 +11,15 @@ describe("PrimitiveGallery", () => {
     expect(html).toContain("Design Primitives");
     expect(html).toContain("Typography");
     expect(html).toContain("Buttons");
+    expect(html).toContain("Launch Button");
     expect(html).toContain("Modal Baseline");
     expect(html).toContain("Dropdown Menus");
     expect(html).toContain("Switches And Checks");
     expect(html).toContain('class="btn btn-accent"');
     expect(html).toContain('class="iconBtn"');
+    expect(html).toContain("primitiveLaunchButton");
+    expect(html).toContain("primitiveLaunchButtonImage");
+    expect(html).toContain("/launch_button.png");
     expect(html).toContain('class="switch on"');
     expect(html).toContain("modalSubtext");
     expect(html).toContain("modalDropdownField");
