@@ -47,11 +47,11 @@ export default function AddTaskOverlay() {
             </label>
 
             <div className="taskScheduleFields isHidden" id="addTaskScheduleFields">
-              <div className="unitButtons timerTypePills editTaskTypePills" id="addTaskTypePills" role="group" aria-label="Task type">
-                <button className="btn btn-ghost small unitBtn timerTypePill isOn" id="addTaskTypeRecurringBtn" type="button" aria-pressed="true">
+              <div className="unitButtons timerTypePills editTaskTypePills taskScreenPillGroup" id="addTaskTypePills" role="group" aria-label="Task type">
+                <button className="btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn isOn" id="addTaskTypeRecurringBtn" type="button" aria-pressed="true">
                   Recurring
                 </button>
-                <button className="btn btn-ghost small unitBtn timerTypePill" id="addTaskTypeOnceOffBtn" type="button" aria-pressed="false">
+                <button className="btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn" id="addTaskTypeOnceOffBtn" type="button" aria-pressed="false">
                   Once-Off
                 </button>
               </div>
@@ -61,20 +61,20 @@ export default function AddTaskOverlay() {
                 </div>
                 <div className="addTaskDurationRow editTaskDurationRow" id="addTaskDurationRow">
                   <input id="addTaskDurationValueInput" type="number" min={0} step={1} inputMode="numeric" defaultValue={0} />
-                  <div className="unitButtons addTaskDurationPills" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
-                    <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationUnitMinute" type="button" aria-pressed="true">
+                  <div className="unitButtons addTaskDurationPills taskScreenPillGroup" id="addTaskDurationUnitPills" role="group" aria-label="Time goal unit">
+                    <button className="btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn isOn" id="addTaskDurationUnitMinute" type="button" aria-pressed="true">
                       Min
                     </button>
-                    <button className="btn btn-ghost small unitBtn" id="addTaskDurationUnitHour" type="button" aria-pressed="false">
+                    <button className="btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn" id="addTaskDurationUnitHour" type="button" aria-pressed="false">
                       Hour
                     </button>
                   </div>
                   <span className="addTaskDurationPerLabel" id="addTaskDurationPerLabel">per</span>
-                  <div className="unitButtons addTaskDurationPills" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
-                    <button className="btn btn-ghost small unitBtn isOn" id="addTaskDurationPeriodDay" type="button" aria-pressed="true">
+                  <div className="unitButtons addTaskDurationPills taskScreenPillGroup" id="addTaskDurationPeriodPills" role="group" aria-label="Time goal period">
+                    <button className="btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn isOn" id="addTaskDurationPeriodDay" type="button" aria-pressed="true">
                       Day
                     </button>
-                    <button className="btn btn-ghost small unitBtn" id="addTaskDurationPeriodWeek" type="button" aria-pressed="false">
+                    <button className="btn btn-ghost small unitBtn taskScreenPill taskScreenHeaderBtn" id="addTaskDurationPeriodWeek" type="button" aria-pressed="false">
                       Week
                     </button>
                   </div>

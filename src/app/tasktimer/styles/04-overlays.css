@@ -730,7 +730,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-bottom: 0;
   margin-right: 0;
   font-family: var(--font-orbitron) !important;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -882,22 +882,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   aspect-ratio:1 / 1;
 }
 
-#editOverlay #editTaskDurationUnitPills .unitBtn,
-#editOverlay #editTaskDurationPeriodPills .unitBtn{
-  border-color: rgba(255,255,255,.08) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
-  font-family: var(--font-orbitron) !important;
-  box-shadow: none !important;
-}
-
-#editOverlay #editTaskDurationUnitPills .unitBtn.isOn,
-#editOverlay #editTaskDurationPeriodPills .unitBtn.isOn{
-  border-color: rgba(255,255,255,.86) !important;
-  background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
-  color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
-}
-
 #editOverlay .row3{
   gap:8px;
 }
@@ -914,7 +898,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   flex-shrink: 0;
   justify-content: flex-start;
   align-self: flex-start;
-  margin-top: 32px;
+  margin-top: 0;
 }
 
 #editOverlay,
@@ -1313,7 +1297,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   height: 34px;
   min-height: 34px;
   padding: 0 6px;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-orbitron) !important;
   font-size: 12px;
   white-space: nowrap;
   letter-spacing: 0;
@@ -1760,7 +1744,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     flex-wrap: nowrap;
     justify-content: flex-start;
     width: auto;
-    margin-top: 18px;
+    margin-top: 0;
     gap: 8px;
   }
 
@@ -2148,13 +2132,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   box-shadow:0 0 0 2px rgba(13,15,19,.72);
 }
 
-#editOverlay .msRow .checkpointDeleteBtn{
+#editOverlay .msRow .checkpointDeleteBtn,
+#addTaskOverlay .msRow [data-action="rmMs"]{
   display:flex;
   align-items:center;
   justify-content:center;
   flex:0 0 28px;
   padding:0;
   border:0;
+  border-radius:0;
   box-shadow:none;
   background: transparent;
   color: #ff5f6d;
@@ -2164,8 +2150,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #editOverlay .msRow .checkpointDeleteBtn:hover,
 #editOverlay .msRow .checkpointDeleteBtn:focus-visible,
-#editOverlay .msRow .checkpointDeleteBtn:active{
+#editOverlay .msRow .checkpointDeleteBtn:active,
+#addTaskOverlay .msRow [data-action="rmMs"]:hover,
+#addTaskOverlay .msRow [data-action="rmMs"]:focus-visible,
+#addTaskOverlay .msRow [data-action="rmMs"]:active{
   border:0;
+  border-radius:0;
   box-shadow:none;
   background: transparent;
   color: #ff7b88;
@@ -3132,10 +3122,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #addTaskOverlay .addTaskDurationRow,
 #editOverlay .editTaskDurationRow{
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  justify-content: start;
+  column-gap: 8px;
+  row-gap: 6px;
   position: relative;
   isolation: isolate;
   z-index: 3;
@@ -3148,13 +3140,21 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   min-width: 86px;
   text-align: center;
   flex: 0 0 auto;
+  grid-column: 1 / -1;
+}
+
+#addTaskOverlay #addTaskDurationValueInput:focus,
+#editOverlay #editTaskDurationValueInput:focus{
+  border-color: rgba(255,255,255,.02) !important;
+  outline: none !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.02) !important;
 }
 
 #addTaskOverlay .addTaskDurationPills,
 #editOverlay .addTaskDurationPills{
   display:flex;
-  flex-wrap:wrap;
-  gap:6px;
+  flex-wrap:nowrap;
+  gap:0;
   position: relative;
   z-index: 4;
   pointer-events: auto;
@@ -3535,7 +3535,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-bottom: 0;
   margin-right: 0;
   font-family: var(--font-orbitron) !important;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -3593,7 +3593,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   flex-shrink: 0;
   justify-content: flex-start;
   align-self: flex-start;
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 #addTaskOverlay .editTaskTypePills .timerTypePill{
@@ -3602,7 +3602,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   height: 34px;
   min-height: 34px;
   padding: 0 6px;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-orbitron) !important;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -3786,9 +3786,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #addTaskOverlay .editPlannedStartCheckboxRow{
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 0;
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+#addTaskOverlay #addTaskPlannedStartPushRemindersRow{
+  align-self: flex-start;
+  margin-left: 0;
+  font-size: 11px;
+}
+
+#addTaskOverlay #addTaskPlannedStartPushRemindersRow span{
+  font-size: 11px;
 }
 
 #addTaskOverlay .editTaskAdvancedMenu{
@@ -6658,9 +6669,24 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   accent-color: #c9ff24;
 }
 
+#editOverlay .taskScheduleToggleRow > span,
+#addTaskOverlay .taskScheduleToggleRow > span{
+  font-size: 11px;
+}
+
 #editOverlay .taskScheduleFields,
 #addTaskOverlay .taskScheduleFields{
   display:block;
+}
+
+#editOverlay .editTaskTimeGoalField,
+#addTaskOverlay .editTaskTimeGoalField{
+  padding-top: 16px;
+}
+
+#editOverlay .editPlannedStartField,
+#addTaskOverlay .editPlannedStartField{
+  padding-top: 16px;
 }
 
 #editOverlay .taskScheduleFields.isHidden,
@@ -6734,32 +6760,72 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   font-family: var(--font-readable) !important;
 }
 
-#editOverlay .editTaskTypePills .timerTypePill,
-#addTaskOverlay .editTaskTypePills .timerTypePill,
-#editOverlay .addTaskDurationPills .unitBtn.small,
-#addTaskOverlay .addTaskDurationPills .unitBtn.small{
-  border-color: transparent !important;
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup{
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 0;
+  background: rgba(18,20,24,.96);
+  box-shadow: none;
+  overflow: visible;
+}
+
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 74px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px !important;
+  border: 1px solid transparent !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.015)) !important;
   color: rgba(245,248,244,.52) !important;
-  background: rgba(255,255,255,.02) !important;
-  box-shadow: none !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -2px 4px rgba(0,0,0,.2), 0 5px 12px rgba(0,0,0,.2) !important;
+  font-family: var(--font-orbitron) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  opacity: .42;
+  text-transform: none;
+  transform: none;
+  transition: opacity .16s ease, box-shadow .16s ease, background-color .16s ease;
 }
 
-#editOverlay .editTaskTypePills .timerTypePill.isOn,
-#addTaskOverlay .editTaskTypePills .timerTypePill.isOn,
-#editOverlay .addTaskDurationPills .unitBtn.small.isOn,
-#addTaskOverlay .addTaskDurationPills .unitBtn.small.isOn{
-  border-color: rgba(255,255,255,.86) !important;
-  color: #fff !important;
-  background: linear-gradient(180deg, rgba(112,118,126,.2), rgba(68,72,78,.16)) !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.16) !important;
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn + .taskScreenHeaderBtn,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn + .taskScreenHeaderBtn{
+  border-left: 1px solid rgba(255,255,255,.06) !important;
 }
 
-#editOverlay .editTaskTypePills .timerTypePill:not(.isOn):hover,
-#addTaskOverlay .editTaskTypePills .timerTypePill:not(.isOn):hover,
-#editOverlay .addTaskDurationPills .unitBtn.small:not(.isOn):hover,
-#addTaskOverlay .addTaskDurationPills .unitBtn.small:not(.isOn):hover{
-  color: rgba(245,248,244,.68) !important;
+#editOverlay .addTaskDurationPills.taskScreenPillGroup .taskScreenHeaderBtn,
+#addTaskOverlay .addTaskDurationPills.taskScreenPillGroup .taskScreenHeaderBtn{
+  min-width: 58px;
+}
+
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn.isOn,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn.isOn{
   border-color: transparent !important;
+  color: rgba(245,248,244,.96) !important;
+  background: #1a1b20 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.22) !important;
+  opacity: 1;
+}
+
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):hover,
+#editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):focus-visible,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):hover,
+#addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):focus-visible{
+  background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.025)) !important;
+  color: rgba(245,248,244,.72) !important;
+  opacity: .72;
 }
 
 body[data-theme="lime"] .task,
@@ -6885,6 +6951,14 @@ body[data-theme="lime"] #editOverlay .timerTypePill.isOn{
 
 body[data-theme="lime"] #editOverlay .editTaskTypePills .timerTypePill.isOn{
   border-color: rgba(255,255,255,.86) !important;
+}
+
+body[data-theme="lime"] #editOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn.isOn,
+body[data-theme="lime"] #addTaskOverlay :is(.editTaskTypePills, .addTaskDurationPills).taskScreenPillGroup .taskScreenHeaderBtn.isOn{
+  border-color: transparent !important;
+  background: #1a1b20 !important;
+  color: rgba(245,248,244,.96) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.22) !important;
 }
 
 body[data-theme="lime"] #editOverlay .switch.on{

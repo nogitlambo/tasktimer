@@ -221,6 +221,10 @@ function getSharedTaskSettingMilestoneMinutes(milestone: SharedTaskImportConfig[
   return value * 60;
 }
 
+function formatSharedTaskSettingGoalTimelineLabel(goalMinutes: number): string {
+  return formatCheckpointSliderLabel(Math.max(0, Math.round((Number(goalMinutes) || 0) * 60)));
+}
+
 type SharedTaskCheckpointLabelSide = "top" | "bottom";
 
 type SharedTaskCheckpointTimelineLayout = {
@@ -1694,6 +1698,22 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const milestoneMinutes = config.milestones.map((milestone) => getSharedTaskSettingMilestoneMinutes(milestone, config.milestoneTimeUnit));
     const goalMinutes = config.timeGoalEnabled ? Math.max(0, Number(config.timeGoalMinutes) || 0) : 0;
     const maxMinutes = Math.max(goalMinutes, ...milestoneMinutes, 1);
+    const goalLeftPct = clampSharedTaskTimelinePct((goalMinutes / maxMinutes) * 100);
+    const goalTimelineLabel = formatSharedTaskSettingGoalTimelineLabel(goalMinutes);
+    const scaleMarkers = goalMinutes > 0
+      ? `<li class="sharedTaskCheckpointTimelineScaleMarker isStart" style="--checkpoint-left:0%" title="0" aria-label="Timeline start 0">
+            <span class="sharedTaskCheckpointTimelineScaleTick" aria-hidden="true"></span>
+            <span class="sharedTaskCheckpointTimelineScaleLabel">0</span>
+          </li>
+          <li class="sharedTaskCheckpointTimelineScaleMarker isGoal" style="--checkpoint-left:${formatSharedTaskTimelinePct(
+            goalLeftPct
+          )}%" title="${ctx.escapeHtmlUI(`Time goal ${goalTimelineLabel}`)}" aria-label="${ctx.escapeHtmlUI(
+            `Time goal ${goalTimelineLabel}`
+          )}">
+            <span class="sharedTaskCheckpointTimelineScaleTick" aria-hidden="true"></span>
+            <span class="sharedTaskCheckpointTimelineScaleLabel">${ctx.escapeHtmlUI(goalTimelineLabel)}</span>
+          </li>`
+      : "";
     const alternateLabels = config.milestones.length >= 3;
     const markerLeftPcts = milestoneMinutes.map((minutes) => clampSharedTaskTimelinePct((minutes / maxMinutes) * 100));
     const milestoneTimes = config.milestones.map((milestone) => formatSharedTaskSettingMilestoneTime(milestone, config.milestoneTimeUnit));
@@ -1723,7 +1743,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         .join("");
     return `<ol class="sharedTaskCheckpointTimeline${
       alternateLabels ? " isAlternatingLabels" : ""
-    }" role="list">${markers}</ol>`;
+    }" role="list">${scaleMarkers}${markers}</ol>`;
   }
 
   function renderSharedTaskSettingsSummary(config: SharedTaskImportConfig | null) {

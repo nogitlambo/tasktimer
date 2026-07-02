@@ -9,6 +9,14 @@ import {
   restoreEditScheduleFieldsFromSnapshot,
   taskHasMeaningfulScheduleConfig,
 } from "./edit-task";
+import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
+
+vi.mock("../lib/pushNotifications", () => ({
+  enableTaskTimerPushNotificationsForCurrentRuntime: vi.fn(async () => ({
+    mobileEnabled: true,
+    webEnabled: false,
+  })),
+}));
 
 function task(overrides: Partial<Task>): Task {
   return {
@@ -78,6 +86,10 @@ function createEditHarness(overrides: {
     clearTimeout: vi.fn(),
     matchMedia: vi.fn(() => ({ matches: false })),
   });
+  vi.stubGlobal("document", {
+    getElementById: vi.fn(() => null),
+    querySelectorAll: vi.fn(() => []),
+  });
   let editIndex: number | null = 0;
   const editOverlay = overlayStub();
   const sourceTask =
@@ -128,6 +140,9 @@ function createEditHarness(overrides: {
   const editTaskWeeklyBlockDaySelect = {
     value: "mon",
   } as HTMLSelectElement;
+  const editPlannedStartPushReminders = {
+    checked: false,
+  } as HTMLInputElement;
   const ctx = {
     els: {
       editName: { value: "Focus" } as HTMLInputElement,
@@ -142,7 +157,7 @@ function createEditHarness(overrides: {
       editPlannedStartMinuteSelect,
       editPlannedStartMeridiemSelect,
       editPlannedStartInput,
-      editPlannedStartPushReminders: null,
+      editPlannedStartPushReminders,
       editTaskScheduleSummary,
       editTaskScheduleSummaryText,
       editTaskSplitAcrossProductivityDaysRow,
@@ -253,6 +268,28 @@ function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditH
 }
 
 describe("edit task schedule summary", () => {
+  it("enables current-runtime push when Edit Task Remind Me is checked while global push is off", async () => {
+    vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
+    const harness = createEditHarness();
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    const toggle = harness.ctx.els.editPlannedStartPushReminders as HTMLInputElement;
+    toggle.checked = true;
+    const changeHandler = vi.mocked(harness.ctx.on).mock.calls.find(
+      ([element, eventName]) => element === toggle && eventName === "change"
+    )?.[2] as (() => Promise<void>) | undefined;
+
+    await changeHandler?.();
+
+    expect(enableTaskTimerPushNotificationsForCurrentRuntime).toHaveBeenCalledWith({
+      mobileEnabled: false,
+      webEnabled: false,
+    });
+    expect(harness.ctx.setMobilePushAlertsEnabledState).toHaveBeenCalledWith(true);
+    expect(harness.ctx.persistPushAlertsPreference).toHaveBeenCalled();
+  });
+
   it("updates the summary for a loaded recurring weekly task", () => {
     const harness = createEditHarness({
       durationValue: "1",

@@ -1013,7 +1013,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   async function enablePushAlertsForCurrentRuntime() {
-    if (!ctx.getMobilePushAlertsEnabled() && !ctx.getWebPushAlertsEnabled()) return;
     const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
       mobileEnabled: ctx.getMobilePushAlertsEnabled(),
       webEnabled: ctx.getWebPushAlertsEnabled(),

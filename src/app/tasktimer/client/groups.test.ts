@@ -823,6 +823,12 @@ describe("groups friends list shared task counts", () => {
     expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
     expect(sharedTaskSummaryBody.innerHTML).toContain("On");
     expect(sharedTaskSummaryBody.innerHTML).toContain("sharedTaskCheckpointTimeline");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('class="sharedTaskCheckpointTimelineScaleMarker isStart" style="--checkpoint-left:0%"');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('class="sharedTaskCheckpointTimelineScaleMarker isGoal" style="--checkpoint-left:100%"');
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Timeline start 0");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Time goal 3h");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineScaleLabel">0</span>');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineScaleLabel">3h</span>');
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimelineScroller");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("isAlternatingLabels");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("isLabelTop");
@@ -953,6 +959,8 @@ describe("groups friends list shared task counts", () => {
 
     expect(css).toContain("left: calc(var(--checkpoint-left) + var(--checkpoint-label-shift, 0px));");
     expect(css).toContain(".sharedTaskCheckpointTimelineScroller > .sharedTaskCheckpointTimeline");
+    expect(css).toContain(".sharedTaskCheckpointTimelineScaleMarker");
+    expect(css).toContain(".sharedTaskCheckpointTimelineScaleTick");
     expect(mobileMarkerRule).toContain("width: auto;");
     expect(css).not.toContain("left: clamp(28px, var(--checkpoint-label-left");
     expect(mobileMarkerRule).not.toContain("width: 48px;");

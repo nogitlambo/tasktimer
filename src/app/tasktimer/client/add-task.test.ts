@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskTimerAddTask } from "./add-task";
+import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 import { getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
+
+vi.mock("../lib/pushNotifications", () => ({
+  enableTaskTimerPushNotificationsForCurrentRuntime: vi.fn(async () => ({
+    mobileEnabled: true,
+    webEnabled: false,
+  })),
+}));
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
@@ -33,6 +41,8 @@ function createHarness(
   let addTaskDurationPeriod: "day" | "week" = "day";
   let addTaskOnceOffDay = "mon";
   let addTaskPlannedStartTime = overrides?.plannedStartTime || "09:00";
+  let mobilePushAlertsEnabled = false;
+  let webPushAlertsEnabled = false;
   const addTaskName = {
     value: "New Task",
     classList: { remove: vi.fn(), toggle: vi.fn() },
@@ -69,6 +79,9 @@ function createHarness(
   } as unknown as HTMLInputElement;
   const addTaskPlannedStartInput = {
     value: addTaskPlannedStartTime,
+  } as HTMLInputElement;
+  const addTaskPlannedStartPushReminders = {
+    checked: false,
   } as HTMLInputElement;
   const addTaskScheduleSummary = {
     open: false,
@@ -144,7 +157,7 @@ function createHarness(
       addTaskDurationRow: null,
       addTaskDurationPerLabel: null,
       addTaskDurationPeriodPills: null,
-      addTaskPlannedStartPushReminders: null,
+      addTaskPlannedStartPushReminders,
       addTaskPlannedStartInput,
       addTaskAdvancedMenu: null,
     },
@@ -232,6 +245,15 @@ function createHarness(
     getOptimalProductivityDays: () => overrides?.productivityDays || ["mon", "wed", "fri"],
     jumpToTaskAndHighlight: vi.fn(),
     showActionConfirmation: vi.fn(),
+    getMobilePushAlertsEnabled: () => mobilePushAlertsEnabled,
+    setMobilePushAlertsEnabledState: vi.fn((value: boolean) => {
+      mobilePushAlertsEnabled = value;
+    }),
+    getWebPushAlertsEnabled: () => webPushAlertsEnabled,
+    setWebPushAlertsEnabledState: vi.fn((value: boolean) => {
+      webPushAlertsEnabled = value;
+    }),
+    persistPushAlertsPreference: vi.fn(),
   } as unknown as Parameters<typeof createTaskTimerAddTask>[0];
 
   if (overrides?.tasks) {
@@ -267,6 +289,10 @@ function createHarness(
     setMilestones: (value: Array<{ hours: number; description: string }>) => {
       addTaskMilestones = value;
     },
+    togglePlannedStartPushReminder: async (checked = true) => {
+      addTaskPlannedStartPushReminders.checked = checked;
+      await handlers.get(addTaskPlannedStartPushReminders)?.get("change")?.();
+    },
     clickMinuteUnit: () => handlers.get(addTaskDurationUnitMinute)?.get("click")?.(),
     clickHourUnit: () => handlers.get(addTaskDurationUnitHour)?.get("click")?.(),
     clickWeeklyPeriod: () => handlers.get(addTaskDurationPeriodWeek)?.get("click")?.(),
@@ -290,6 +316,20 @@ function createHarness(
 }
 
 describe("createTaskTimerAddTask", () => {
+  it("enables current-runtime push when Add Task Remind Me is checked while global push is off", async () => {
+    vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
+    const harness = createHarness("1");
+
+    await harness.togglePlannedStartPushReminder(true);
+
+    expect(enableTaskTimerPushNotificationsForCurrentRuntime).toHaveBeenCalledWith({
+      mobileEnabled: false,
+      webEnabled: false,
+    });
+    expect(harness.ctx.setMobilePushAlertsEnabledState).toHaveBeenCalledWith(true);
+    expect(harness.ctx.persistPushAlertsPreference).toHaveBeenCalled();
+  });
+
   it("updates the schedule summary for weekly recurring planned blocks", () => {
     const harness = createHarness("1", { productivityDays: ["mon", "tue", "wed", "thu", "fri"] });
 
@@ -352,7 +392,7 @@ describe("createTaskTimerAddTask", () => {
     harness.toggleCheckpoints();
 
     expect(harness.ctx.setAddTaskMilestonesEnabledState).toHaveBeenCalledWith(true);
-    expect(harness.ctx.setAddTaskMilestonesState).toHaveBeenCalledWith([{ hours: 0, description: "" }]);
+    expect(harness.ctx.setAddTaskMilestonesState).toHaveBeenCalledWith([{ hours: 0.5, description: "" }]);
   });
 
   it("blocks adding a scheduled task with duplicate checkpoint times", () => {
