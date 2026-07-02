@@ -721,6 +721,7 @@ describe("task timer session tick", () => {
       title: "Launch",
       disabled: false,
       textContent: "Launch",
+      innerHTML: "Launch",
       setAttribute: vi.fn(),
     } as unknown as HTMLButtonElement;
     const resetBtn = {
@@ -858,10 +859,177 @@ describe("task timer session tick", () => {
     session.tick();
 
     expect(taskNode.classList.contains("taskRunning")).toBe(true);
-    expect(primaryActionBtn.className).toBe("btn btn-warn small");
+    expect(primaryActionBtn.className).toBe("btn btn-warn small taskPrimaryAction taskPrimaryActionStop");
     expect(primaryActionBtn.dataset.action).toBe("stop");
+    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionFace");
+    expect(primaryActionBtn.innerHTML).toContain("Stop");
     expect(progressFill.style.width).toBe("100%");
     expect(progressPctLabel.textContent).toBe("100%");
+
+    expect(windowStub.requestAnimationFrame).toHaveBeenCalled();
+    expect(windowStub.setTimeout).toHaveBeenCalled();
+    (globalThis as { window?: unknown }).window = previousWindow;
+  });
+
+  it("syncs a stopped task with elapsed time to the Resume primary action during live updates", () => {
+    const stoppedTask = task({
+      accumulatedMs: 45_000,
+      running: false,
+      startMs: null,
+      hasStarted: true,
+    });
+    const timeEl = { innerHTML: "" } as HTMLElement;
+    const primaryActionBtn = {
+      className: "btn btn-warn small taskPrimaryAction taskPrimaryActionStop",
+      dataset: { action: "stop" },
+      title: "Stop",
+      disabled: false,
+      textContent: "Stop",
+      innerHTML: "Stop",
+      setAttribute: vi.fn(),
+    } as unknown as HTMLButtonElement;
+    const resetBtn = {
+      disabled: true,
+      title: "",
+      setAttribute: vi.fn(),
+    } as unknown as HTMLButtonElement;
+    const progressFill = { style: { width: "", background: "" } } as HTMLElement;
+    const taskNode = {
+      dataset: { index: "0", taskId: "task-1" },
+      classList: createClassList(["task", "taskRunning"]),
+      querySelector: (selector: string) => {
+        if (selector === ".time") return timeEl;
+        if (selector === ".progressFill") return progressFill;
+        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
+        if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
+        return null;
+      },
+    } as unknown as HTMLElement;
+    const taskListEl = {
+      querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
+    } as unknown as HTMLElement;
+
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const windowStub = {
+      requestAnimationFrame: vi.fn((handler: FrameRequestCallback) => {
+        handler(0);
+        return 1;
+      }),
+      setTimeout: vi.fn(() => 1),
+    };
+    (globalThis as { window?: unknown }).window = windowStub;
+
+    const session = createTaskTimerSession({
+      els: {
+        taskList: taskListEl,
+        focusTaskName: null,
+      },
+      runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      storageKeys: {
+        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
+      },
+      sharedTasks: {
+        milestoneUnitSec: () => 3600,
+      } as unknown as TaskTimerSharedTaskApi,
+      getTasks: () => [stoppedTask],
+      getCheckpointRepeatActiveTaskId: () => null,
+      getHistoryByTaskId: () => ({}),
+      getCheckpointToastQueue: () => [],
+      getActiveCheckpointToast: () => null,
+      setActiveCheckpointToast: () => {},
+      getCheckpointAutoResetDirty: () => false,
+      setCheckpointAutoResetDirty: () => {},
+      getFocusModeTaskId: () => null,
+      getFocusModeTaskName: () => null,
+      getCurrentAppPage: () => "tasks",
+      renderDashboardLiveWidgets: () => {},
+      render: () => {},
+      save: () => {},
+      syncRewardSessionTrackerForTask: () => {},
+      syncLiveSessionForTask: () => {},
+      formatMainTaskElapsedHtml: (elapsedMs: number) => `${elapsedMs}ms`,
+      getDynamicColorsEnabled: () => false,
+      fillBackgroundForPct: () => "#00ffff",
+      getModeColor: () => "#00ffff",
+      sortMilestones: (milestones: Task["milestones"]) => milestones,
+      getCheckpointBaselineSecByTaskId: () => ({}),
+      getCheckpointFiredKeysByTaskId: () => ({}),
+      getCheckpointAlertSoundEnabled: () => false,
+      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertSoundMode: () => "once",
+      getCheckpointAlertToastMode: () => "auto5s",
+      getCheckpointRepeatStopAtMs: () => 0,
+      setCheckpointRepeatStopAtMs: () => {},
+      getCheckpointRepeatCycleTimer: () => null,
+      setCheckpointRepeatCycleTimer: () => {},
+      setCheckpointRepeatActiveTaskId: () => {},
+      getCheckpointToastAutoCloseTimer: () => null,
+      setCheckpointToastAutoCloseTimer: () => {},
+      getCheckpointToastCountdownRefreshTimer: () => null,
+      setCheckpointToastCountdownRefreshTimer: () => {},
+      getCheckpointBeepAudio: () => null,
+      setCheckpointBeepAudio: () => {},
+      getCheckpointBeepQueueCount: () => 0,
+      setCheckpointBeepQueueCount: () => {},
+      getCheckpointBeepQueueTimer: () => null,
+      setCheckpointBeepQueueTimer: () => {},
+      broadcastCheckpointAlertMute: () => {},
+      hasEntitlement: () => false,
+      on: () => {},
+      openOverlay: () => {},
+      closeOverlay: () => {},
+      navigateToAppRoute: () => {},
+      normalizedPathname: () => "/tasklaunch",
+      savePendingTaskJump: () => {},
+      jumpToTaskById: () => {},
+      escapeHtmlUI: (value: unknown) => String(value),
+      formatTime: (value: number) => String(value),
+      formatMainTaskElapsed: (elapsedMs: number) => `${elapsedMs}ms`,
+      normalizeHistoryTimestampMs: () => 0,
+      getHistoryEntryNote: () => "",
+      syncSharedTaskSummariesForTask: async () => {},
+      syncSharedTaskSummariesForTasks: async () => {},
+      startTask: () => {},
+      stopTask: () => {},
+      resetTask: () => {},
+      resetTaskStateImmediate: () => {},
+      clearFocusSessionDraft: () => {},
+      setFocusSessionDraft: () => {},
+      syncFocusSessionNotesInput: () => {},
+      syncFocusSessionNotesAccordion: () => {},
+      getFocusSessionNotesByTaskId: () => ({}),
+      setFocusSessionNotesByTaskId: () => {},
+      getFocusSessionNoteSaveTimer: () => null,
+      setFocusSessionNoteSaveTimer: () => {},
+      getDeferredFocusModeTimeGoalModals: () => [],
+      getTimeGoalModalTaskId: () => null,
+      setTimeGoalModalTaskId: () => {},
+      getLiveSessionsByTaskId: () => ({}),
+      getTaskTimeGoalAction: () => "confirmModal",
+      setDeferredFocusModeTimeGoalModals: () => {},
+      getFocusShowCheckpoints: () => false,
+      setFocusShowCheckpoints: () => {},
+      setFocusCheckpointSig: () => {},
+      getInteractionHapticsEnabled: () => false,
+      getInteractionHapticsIntensity: () => "medium",
+      getOptimalProductivityStartTime: () => "09:00",
+      getOptimalProductivityEndTime: () => "17:00",
+      getOptimalProductivityDays: () => ({ mon: true, tue: true, thu: true, fri: true, sat: false, sun: false }),
+      renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
+    } as unknown as TaskTimerSessionContext);
+
+    session.tick();
+
+    expect(taskNode.classList.contains("taskRunning")).toBe(false);
+    expect(primaryActionBtn.className).toBe("btn btn-resume small taskPrimaryAction taskPrimaryActionResume");
+    expect(primaryActionBtn.dataset.action).toBe("start");
+    expect(primaryActionBtn.title).toBe("Resume");
+    expect(primaryActionBtn.disabled).toBe(false);
+    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionFace");
+    expect(primaryActionBtn.innerHTML).toContain("Resume");
+    expect(resetBtn.disabled).toBe(false);
+    expect(resetBtn.title).toBe("Reset");
 
     expect(windowStub.requestAnimationFrame).toHaveBeenCalled();
     expect(windowStub.setTimeout).toHaveBeenCalled();
@@ -1020,11 +1188,12 @@ describe("task timer session tick", () => {
 
     session.tick();
 
-    expect(primaryActionBtn.className).toBe("btn btn-accent small");
+    expect(primaryActionBtn.className).toBe("btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch");
     expect(primaryActionBtn.dataset.action).toBe("start");
     expect(primaryActionBtn.title).toBe("Launch");
     expect(primaryActionBtn.disabled).toBe(false);
-    expect(primaryActionBtn.textContent).toBe("Launch");
+    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionWord");
+    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionAccentLetter");
     expect(resetBtn.disabled).toBe(true);
     expect(resetBtn.title).toBe("No time to reset");
 

@@ -320,6 +320,7 @@ describe("task list renderer", () => {
     expect(renderedTask?.className).not.toContain("taskCompleted");
     expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
     expect(renderedTask?.innerHTML).toContain('data-action="start" title="Launch"');
+    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionLaunch");
   });
 
   it("renders goal completion metadata with qualifying history as done", () => {

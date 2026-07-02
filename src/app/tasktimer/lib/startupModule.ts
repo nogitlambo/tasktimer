@@ -28,15 +28,15 @@ export function startupModuleToRoute(startupModule: StartupModulePreference): st
 
 export function readStartupModulePreference(storageKey = `${STORAGE_KEY}:startupModule`): StartupModulePreference {
   if (typeof window === "undefined") return "tasks";
+  const cachedPreferences = loadCachedPreferences();
+  if (cachedPreferences && typeof cachedPreferences === "object" && "startupModule" in cachedPreferences) {
+    return normalizeStartupModule((cachedPreferences as { startupModule?: unknown }).startupModule);
+  }
   try {
     const localValue = window.localStorage.getItem(storageKey);
     if (localValue) return normalizeStartupModule(localValue);
   } catch {
     // ignore localStorage failures
-  }
-  const cachedPreferences = loadCachedPreferences();
-  if (cachedPreferences && typeof cachedPreferences === "object" && "startupModule" in cachedPreferences) {
-    return normalizeStartupModule((cachedPreferences as { startupModule?: unknown }).startupModule);
   }
   return "tasks";
 }

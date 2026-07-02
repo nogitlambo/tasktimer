@@ -113,9 +113,26 @@ describe("task card view model", () => {
 
     expect(rendered.className).toBe("task");
     expect(rendered.html).toContain('data-action="start" title="Launch"');
+    expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionLaunch");
+    expect(rendered.html).toContain("taskPrimaryActionAccentLetter");
     expect(rendered.html).not.toContain('title="Resume"');
     expect(rendered.html).not.toContain("Done until tomorrow");
     expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
+  });
+
+  it("renders a stopped task with elapsed time as a yellow Resume primary action", () => {
+    const rendered = renderCard({
+      task: baseTask({ running: false }),
+      elapsedMs: 12_000,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.className).toBe("task");
+    expect(rendered.html).toContain('data-action="start" title="Resume" aria-label="Resume"');
+    expect(rendered.html).toContain("btn btn-resume small taskPrimaryAction taskPrimaryActionResume");
+    expect(rendered.html).toContain("Resume");
+    expect(rendered.html).not.toContain('data-action="stop"');
+    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
   });
 
   it("renders running, alert, history, and shared-owner states", () => {
@@ -131,6 +148,7 @@ describe("task card view model", () => {
 
     expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse taskHistoryOpeningSpace");
     expect(rendered.html).toContain('data-action="stop"');
+    expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionStop");
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
     expect(rendered.html).toContain("historyInlineMotion isOpeningSpace");
     expect(rendered.html).toContain('data-action="unshareTask"');
@@ -253,6 +271,23 @@ describe("task card view model", () => {
     );
   });
 
+  it("defines primary action colors for stopped Resume and running Stop states", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+    const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resumeFaceRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const stopFaceRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+    expect(resumeRule).toContain("--task-primary-face-start: #ffe68e;");
+    expect(resumeRule).toContain("--task-primary-face-mid: #e5b741;");
+    expect(resumeRule).toContain("--task-primary-face-end: #bc841e;");
+    expect(resumeFaceRule).toContain("radial-gradient(circle at 49% 44%, #ffe68e 0 39%, #e5b741 61%, #bc841e 100%) !important;");
+    expect(stopRule).toContain("--task-primary-face-start: #ff8f8f;");
+    expect(stopRule).toContain("--task-primary-face-mid: #f23e4f;");
+    expect(stopRule).toContain("--task-primary-face-end: #aa1727;");
+    expect(stopFaceRule).toContain("radial-gradient(circle at 49% 44%, #ff8f8f 0 39%, #f23e4f 61%, #aa1727 100%) !important;");
+  });
+
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,
@@ -263,7 +298,9 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="start"');
     expect(rendered.html).toContain("Done");
     expect(rendered.html).toContain("taskDoneIcon");
-    expect(rendered.html).toContain('aria-label="Done until tomorrow" disabled');
+    expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionDone");
+    expect(rendered.html).toContain('aria-label="Done until tomorrow"');
+    expect(rendered.html).toContain("disabled");
     expect(rendered.html).toContain('data-action="reset"');
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
     expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');

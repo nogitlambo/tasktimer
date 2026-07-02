@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   approveFriendRequest,
@@ -21,6 +22,7 @@ import {
   getFriendRequestActionCompleteStatus,
   getFriendProfileOpenUidFromTarget,
   getSharedTaskGoalMetrics,
+  getSharedTaskCheckpointTimelineLayouts,
   loadGroupsSnapshotForUid,
   renderSharedTaskMetricRows,
   renderSharedTaskWeeklyChart,
@@ -478,7 +480,7 @@ describe("groups friends list shared task counts", () => {
       showUpgradePrompt: vi.fn(),
     };
     createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext).registerGroupsEvents();
-    return { handlers, sharedTaskSummaryModal, sharedTaskSummaryTitle, sharedTaskSummaryBody, sharedTaskSummaryCloseBtn, ctx };
+    return { handlers, groupsFriendsList, sharedTaskSummaryModal, sharedTaskSummaryTitle, sharedTaskSummaryBody, sharedTaskSummaryCloseBtn, ctx };
   }
 
   it("renders the shared count meta when a friend has zero shared tasks", () => {
@@ -493,6 +495,8 @@ describe("groups friends list shared task counts", () => {
     const { html } = renderFriendsList([makeSharedSummary()]);
 
     expect(html).toContain('class="friendIdentityMeta"');
+    expect(html).toContain('<span class="friendIdentityDivider" aria-hidden="true">|</span>');
+    expect(html).toContain('<span class="friendIdentityMeta">Sharing 1 tasks</span>');
     expect(html).toContain("Sharing 1 tasks");
     expect(html).not.toContain("No tasks shared with you.");
   });
@@ -513,14 +517,14 @@ describe("groups friends list shared task counts", () => {
     expect(html).not.toContain('data-friend-action="import-shared-task"');
   });
 
-  it("renders Import this task for importable shared task records", () => {
+  it("renders Import for importable shared task records", () => {
     const { html } = renderFriendsList([
       makeSharedSummary({
         importConfig: makeImportConfig(),
       }),
     ]);
 
-    expect(html).toContain("Import this task");
+    expect(html).toContain(">Import</button>");
     expect(html).toContain('class="btn btn-accent small"');
     expect(html).toContain('data-friend-action="import-shared-task"');
     expect(html).toContain('data-share-doc-id="share-1"');
@@ -568,9 +572,7 @@ describe("groups friends list shared task counts", () => {
     );
     expect(sharedTaskSummaryBody.innerHTML).toContain("Import this task");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Task Settings");
-    expect(sharedTaskSummaryBody.innerHTML.indexOf("sharedTaskSettingsMilestoneGroup")).toBeLessThan(
-      sharedTaskSummaryBody.innerHTML.indexOf("sharedTaskImportPrompt")
-    );
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskSettingsMilestoneGroup");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Task type");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Recurring");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Planned start");
@@ -629,7 +631,7 @@ describe("groups friends list shared task counts", () => {
   });
 
   it("does not open the summary modal when clicking Import this task", () => {
-    const { handlers, sharedTaskSummaryModal, ctx } = setupGroupsEvents([makeSharedSummary({ importConfig: makeImportConfig() })]);
+    const { handlers, groupsFriendsList, sharedTaskSummaryModal, ctx } = setupGroupsEvents([makeSharedSummary({ importConfig: makeImportConfig() })]);
     const importBtn = {
       disabled: false,
       getAttribute: (name: string) => (name === "data-share-doc-id" ? "share-1" : null),
@@ -641,6 +643,17 @@ describe("groups friends list shared task counts", () => {
     handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
 
     expect(sharedTaskSummaryModal.style.display).toBe("none");
+    expect(ctx.getTasks()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sharedSourceOwnerUid: "friend-b",
+          sharedSourceTaskId: "task-1",
+        }),
+      ])
+    );
+    expect(groupsFriendsList.innerHTML).toContain("Added");
+    expect(groupsFriendsList.innerHTML).toContain('disabled aria-disabled="true"');
+    expect(ctx.showActionConfirmation).toHaveBeenCalledWith("Task added.");
     expect(ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("new-task");
   });
 
@@ -736,9 +749,37 @@ describe("groups friends list shared task counts", () => {
     expect(sharedTaskSummaryBody.innerHTML).toContain("Time goal");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Off");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskSettingsMilestoneGroup");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimeline");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("Open-ended start");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("Checkpoint sound mode");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("Preset intervals");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimelineMarker");
+  });
+
+  it("renders an empty checkpoints section when checkpoint alerts are on with no checkpoints", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          milestonesEnabled: true,
+          milestones: [],
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("On");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("sharedTaskSettingsMilestoneGroup");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("<h4>Checkpoints</h4>");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<div class="sharedTaskCheckpointTimelineEmpty">None</div>');
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimelineMarker");
   });
 
@@ -782,18 +823,25 @@ describe("groups friends list shared task counts", () => {
     expect(sharedTaskSummaryBody.innerHTML).toContain("Checkpoint alerts");
     expect(sharedTaskSummaryBody.innerHTML).toContain("On");
     expect(sharedTaskSummaryBody.innerHTML).toContain("sharedTaskCheckpointTimeline");
-    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:17%"');
-    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:33%"');
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("sharedTaskCheckpointTimelineScroller");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("isAlternatingLabels");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("isLabelTop");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("isLabelBottom");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("--checkpoint-timeline-min-width");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:0.3%;--checkpoint-label-shift:7.8px;--checkpoint-label-width:29px"');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('style="--checkpoint-left:0.6%;--checkpoint-label-shift:30.7px;--checkpoint-label-width:22px"');
     expect(sharedTaskSummaryBody.innerHTML).toContain("Halfway");
-    expect(sharedTaskSummaryBody.innerHTML).toContain("30m");
-    expect(sharedTaskSummaryBody.innerHTML).toContain("30m Halfway | Alerts on");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("30s");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("30s Halfway | Alerts on");
     expect(sharedTaskSummaryBody.innerHTML).toContain("Finish");
-    expect(sharedTaskSummaryBody.innerHTML).toContain("60m");
-    expect(sharedTaskSummaryBody.innerHTML).toContain("60m Finish | Alerts off");
-    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">30m</span>');
-    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">60m</span>');
-    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>30m</strong>Halfway");
-    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>60m</strong>Finish");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("1m");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("1m Finish | Alerts off");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">30s</span>');
+    expect(sharedTaskSummaryBody.innerHTML).toContain('<span class="sharedTaskCheckpointTimelineLabel">1m</span>');
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("30m Halfway");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("60m Finish");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>30s</strong>Halfway");
+    expect(sharedTaskSummaryBody.innerHTML).not.toContain("<strong>1m</strong>Finish");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("Repeat");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("Manual close");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("2 intervals");
@@ -802,6 +850,176 @@ describe("groups friends list shared task counts", () => {
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("raw-ms-1");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("createdSeq");
     expect(sharedTaskSummaryBody.innerHTML).not.toContain("99");
+  });
+
+  it("alternates shared task checkpoint timeline labels when three or more checkpoints are shown", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          timeGoalPeriod: "week",
+          timeGoalValue: 3,
+          timeGoalUnit: "hour",
+          timeGoalMinutes: 180,
+          milestonesEnabled: true,
+          milestoneTimeUnit: "hour",
+          milestones: [
+            { id: "raw-ms-1", createdSeq: 77, hours: 0.5, description: "Warmup", alertsEnabled: true },
+            { id: "raw-ms-2", createdSeq: 78, hours: 1.5, description: "Halfway", alertsEnabled: true },
+            { id: "raw-ms-3", createdSeq: 79, hours: 2.5, description: "Finish", alertsEnabled: false },
+          ],
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    const html = sharedTaskSummaryBody.innerHTML;
+    expect(html).toContain('class="sharedTaskCheckpointTimeline isAlternatingLabels"');
+    expect(html).not.toContain("isDenseLabels");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineConnector");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineScroller");
+    expect(html).not.toContain("--checkpoint-timeline-min-width");
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelTop" style="--checkpoint-left:16.7%;--checkpoint-label-shift:0px;--checkpoint-label-width:29px"');
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelBottom" style="--checkpoint-left:50%;--checkpoint-label-shift:0px;--checkpoint-label-width:50px"');
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelTop" style="--checkpoint-left:83.3%;--checkpoint-label-shift:0px;--checkpoint-label-width:50px"');
+    expect(html).toContain("30m Warmup | Alerts on");
+    expect(html).toContain("1h 30m Halfway | Alerts on");
+    expect(html).toContain("2h 30m Finish | Alerts off");
+
+    const firstTopIndex = html.indexOf("sharedTaskCheckpointTimelineMarker isLabelTop");
+    const bottomIndex = html.indexOf("sharedTaskCheckpointTimelineMarker isLabelBottom");
+    const secondTopIndex = html.indexOf("sharedTaskCheckpointTimelineMarker isLabelTop", firstTopIndex + 1);
+    expect(firstTopIndex).toBeGreaterThanOrEqual(0);
+    expect(bottomIndex).toBeGreaterThan(firstTopIndex);
+    expect(secondTopIndex).toBeGreaterThan(bottomIndex);
+  });
+
+  it("spaces close shared task checkpoint labels while keeping dots proportional", () => {
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          timeGoalPeriod: "week",
+          timeGoalValue: 3,
+          timeGoalUnit: "hour",
+          timeGoalMinutes: 180,
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          milestones: [
+            { id: "raw-ms-1", createdSeq: 77, hours: 1, description: "Warmup", alertsEnabled: true },
+            { id: "raw-ms-2", createdSeq: 78, hours: 2, description: "Halfway", alertsEnabled: true },
+            { id: "raw-ms-3", createdSeq: 79, hours: 3, description: "Finish", alertsEnabled: false },
+          ],
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    const html = sharedTaskSummaryBody.innerHTML;
+    expect(html).toContain('class="sharedTaskCheckpointTimeline isAlternatingLabels"');
+    expect(html).not.toContain("isDenseLabels");
+    expect(html).not.toContain("isLabelRow");
+    expect(html).not.toContain("isLabelHidden");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineScroller");
+    expect(html).not.toContain("--checkpoint-timeline-min-width");
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelTop" style="--checkpoint-left:0.6%;--checkpoint-label-shift:6px;--checkpoint-label-width:22px"');
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelBottom" style="--checkpoint-left:1.1%;--checkpoint-label-shift:1px;--checkpoint-label-width:22px"');
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelTop" style="--checkpoint-left:1.7%;--checkpoint-label-shift:22px;--checkpoint-label-width:22px"');
+    expect(html).not.toContain("--checkpoint-label-left");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineConnector");
+    expect(html).not.toContain("--checkpoint-connector");
+    expect(html).toContain("1m Warmup | Alerts on");
+    expect(html).toContain("2m Halfway | Alerts on");
+    expect(html).toContain("3m Finish | Alerts off");
+    expect(html).not.toContain("120m Halfway");
+  });
+
+  it("uses mobile-safe checkpoint label positioning CSS", () => {
+    const css = readFileSync("src/app/tasktimer/styles/08-friends.css", "utf8");
+    const mobileMarkerRule =
+      css.match(/@media \(max-width: 900px\)\{[\s\S]*?#sharedTaskSummaryModal \.sharedTaskCheckpointTimelineMarker\{[\s\S]*?\n\s*\}/)?.[0] ?? "";
+
+    expect(css).toContain("left: calc(var(--checkpoint-left) + var(--checkpoint-label-shift, 0px));");
+    expect(css).toContain(".sharedTaskCheckpointTimelineScroller > .sharedTaskCheckpointTimeline");
+    expect(mobileMarkerRule).toContain("width: auto;");
+    expect(css).not.toContain("left: clamp(28px, var(--checkpoint-label-left");
+    expect(mobileMarkerRule).not.toContain("width: 48px;");
+  });
+
+  it("switches checkpoint timeline scrolling on only when marker-proximate labels would detach", () => {
+    const normalDesktop = getSharedTaskCheckpointTimelineLayouts([16.7, 50, 83.3], [29, 50, 50], 720);
+    const closeMobile = getSharedTaskCheckpointTimelineLayouts([0.6, 1.1, 1.7], [22, 22, 22], 360);
+    const closeDesktop = getSharedTaskCheckpointTimelineLayouts([0.6, 1.1, 1.7], [22, 22, 22], 1200);
+    const twoClose = getSharedTaskCheckpointTimelineLayouts([0.3, 0.6], [29, 22], 360);
+
+    expect(normalDesktop.requiresScroll).toBe(false);
+    expect(normalDesktop.scrollWidthPx).toBe(720);
+    expect(closeMobile.requiresScroll).toBe(true);
+    expect(closeMobile.scrollWidthPx).toBeGreaterThan(360);
+    expect(closeMobile.scrollWidthPx).toBeLessThan(2400);
+    expect(closeMobile.layouts.every((layout) => Math.abs(layout.labelShiftPx) <= layout.labelWidthPx)).toBe(true);
+    expect(closeDesktop.requiresScroll).toBe(false);
+    expect(twoClose.requiresScroll).toBe(true);
+    expect(twoClose.scrollWidthPx).toBeGreaterThan(360);
+  });
+
+  it("keeps over-capacity checkpoint labels visible in single top and bottom rows", () => {
+    const denseMilestones = Array.from({ length: 16 }, (_, index) => ({
+      id: `raw-ms-${index + 1}`,
+      createdSeq: index + 1,
+      hours: index + 1,
+      description: index === 15 ? "Final" : `Checkpoint ${index + 1}`,
+      alertsEnabled: true,
+    }));
+    const { handlers, sharedTaskSummaryBody } = setupGroupsEvents([
+      makeSharedSummary({
+        importConfig: makeImportConfig({
+          timeGoalPeriod: "week",
+          timeGoalValue: 3,
+          timeGoalUnit: "hour",
+          timeGoalMinutes: 180,
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          milestones: denseMilestones,
+        }),
+      }),
+    ]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
+    };
+    const target = {
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
+    };
+
+    handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    const html = sharedTaskSummaryBody.innerHTML;
+    expect(html).toContain('class="sharedTaskCheckpointTimeline isAlternatingLabels"');
+    expect(html).not.toContain("isDenseLabels");
+    expect(html).not.toContain("isLabelRow");
+    expect(html).not.toContain("isLabelHidden");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineConnector");
+    expect(html).not.toContain("sharedTaskCheckpointTimelineScroller");
+    expect(html).not.toContain("--checkpoint-timeline-min-width");
+    expect(html).toContain('style="--checkpoint-left:8.9%;--checkpoint-label-shift:28.9px;--checkpoint-label-width:29px"');
+    expect(html).not.toContain("--checkpoint-label-shift:181.7px");
+    expect(html).toContain("3m Checkpoint 3 | Alerts on");
+    expect(html).toContain("15m Checkpoint 15 | Alerts on");
+    expect(html).toContain('class="sharedTaskCheckpointTimelineMarker isLabelBottom"');
+    expect(html).toContain("16m Final | Alerts on");
+    expect(html).toContain('<span class="sharedTaskCheckpointTimelineLabel">16m</span>');
   });
 
   it("renders Added disabled in the modal for already imported summaries", () => {

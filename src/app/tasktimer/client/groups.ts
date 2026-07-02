@@ -26,6 +26,7 @@ import { formatDashboardDurationShort, getDashboardWeekdayLabels, startOfCurrent
 import { getRankLabelById, getRankThumbnailDescriptor } from "../lib/rewards";
 import { buildImportedSharedTask, hasImportedSharedTask } from "../lib/sharedTaskImport";
 import { normalizeTaskColor } from "../lib/taskColors";
+import { checkpointValueToSliderSeconds, formatCheckpointSliderLabel, type CheckpointSliderUnit } from "./checkpoint-slider";
 import type { TaskTimerGroupsContext } from "./context";
 import { hideOverlay, showOverlay } from "./overlay-visibility";
 
@@ -209,15 +210,236 @@ function formatSharedTaskSettingMilestoneTime(
   unit: SharedTaskImportConfig["milestoneTimeUnit"]
 ): string {
   const value = Math.max(0, Number(milestone?.hours) || 0);
-  if (unit === "minute") return `${Math.round(value * 60)}m`;
   if (unit === "day") return `${value}d`;
-  return `${value}h`;
+  return formatCheckpointSliderLabel(checkpointValueToSliderSeconds(value, (unit === "minute" ? "minute" : "hour") as CheckpointSliderUnit));
 }
 
 function getSharedTaskSettingMilestoneMinutes(milestone: SharedTaskImportConfig["milestones"][number], unit: SharedTaskImportConfig["milestoneTimeUnit"]): number {
   const value = Math.max(0, Number(milestone?.hours) || 0);
   if (unit === "day") return value * 24 * 60;
+  if (unit === "minute") return value;
   return value * 60;
+}
+
+type SharedTaskCheckpointLabelSide = "top" | "bottom";
+
+type SharedTaskCheckpointTimelineLayout = {
+  markerLeftPct: number;
+  labelShiftPx: number;
+  labelWidthPx: number;
+  labelSide: SharedTaskCheckpointLabelSide;
+};
+
+type SharedTaskCheckpointTimelineLayoutResult = {
+  layouts: SharedTaskCheckpointTimelineLayout[];
+  requiresScroll: boolean;
+  scrollWidthPx: number;
+};
+
+const SHARED_TASK_CHECKPOINT_TIMELINE_MIN_WIDTH_PX = 360;
+const SHARED_TASK_CHECKPOINT_TIMELINE_MAX_WIDTH_PX = 2400;
+const SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX = 22;
+const SHARED_TASK_CHECKPOINT_LABEL_MAX_WIDTH_PX = 58;
+const SHARED_TASK_CHECKPOINT_LABEL_HORIZONTAL_PADDING_PX = 8;
+const SHARED_TASK_CHECKPOINT_LABEL_CHAR_WIDTH_PX = 7;
+const SHARED_TASK_CHECKPOINT_LABEL_GAP_PX = 4;
+const SHARED_TASK_CHECKPOINT_LABEL_SCROLL_SHIFT_RATIO = 1;
+
+function clampSharedTaskTimelinePct(value: number, min = 0, max = 100): number {
+  return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function formatSharedTaskTimelinePct(value: number): string {
+  const rounded = Math.round(clampSharedTaskTimelinePct(value) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatSharedTaskTimelinePx(value: number): string {
+  const rounded = Math.round((Number(value) || 0) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function estimateSharedTaskCheckpointLabelWidthPx(label: string): number {
+  const text = String(label || "").trim();
+  return Math.max(
+    SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX,
+    Math.min(
+      SHARED_TASK_CHECKPOINT_LABEL_MAX_WIDTH_PX,
+      Math.ceil(text.length * SHARED_TASK_CHECKPOINT_LABEL_CHAR_WIDTH_PX + SHARED_TASK_CHECKPOINT_LABEL_HORIZONTAL_PADDING_PX)
+    )
+  );
+}
+
+function spreadSharedTaskCheckpointLabelPcts(
+  items: Array<{ index: number; markerLeftPct: number; labelWidthPx: number }>,
+  timelineWidthPx: number
+): Array<{ index: number; labelShiftPx: number }> {
+  if (!items.length) return [];
+  const sortedItems = [...items].sort((a, b) => a.markerLeftPct - b.markerLeftPct || a.index - b.index);
+  const markerLeftPx = sortedItems.map((item) => (clampSharedTaskTimelinePct(item.markerLeftPct) / 100) * timelineWidthPx);
+  const labelCentersPx = sortedItems.map((item, index) =>
+    Math.max(item.labelWidthPx / 2, Math.min(timelineWidthPx - item.labelWidthPx / 2, markerLeftPx[index]))
+  );
+
+  for (let index = 1; index < labelCentersPx.length; index += 1) {
+    const previous = sortedItems[index - 1];
+    const current = sortedItems[index];
+    const minimumCenter = labelCentersPx[index - 1] + previous.labelWidthPx / 2 + SHARED_TASK_CHECKPOINT_LABEL_GAP_PX + current.labelWidthPx / 2;
+    labelCentersPx[index] = Math.max(labelCentersPx[index], minimumCenter);
+  }
+
+  const lastIndex = labelCentersPx.length - 1;
+  const lastItem = sortedItems[lastIndex];
+  if (labelCentersPx[lastIndex] > timelineWidthPx - lastItem.labelWidthPx / 2) {
+    labelCentersPx[lastIndex] = timelineWidthPx - lastItem.labelWidthPx / 2;
+    for (let index = lastIndex - 1; index >= 0; index -= 1) {
+      const current = sortedItems[index];
+      const next = sortedItems[index + 1];
+      const maximumCenter = labelCentersPx[index + 1] - current.labelWidthPx / 2 - SHARED_TASK_CHECKPOINT_LABEL_GAP_PX - next.labelWidthPx / 2;
+      labelCentersPx[index] = Math.min(labelCentersPx[index], maximumCenter);
+    }
+  }
+
+  if (labelCentersPx[0] < sortedItems[0].labelWidthPx / 2) {
+    const offset = sortedItems[0].labelWidthPx / 2 - labelCentersPx[0];
+    for (let index = 0; index < labelCentersPx.length; index += 1) {
+      labelCentersPx[index] += offset;
+    }
+  }
+
+  return sortedItems.map((item, index) => {
+    const shiftPx = labelCentersPx[index] - markerLeftPx[index];
+    return { index: item.index, labelShiftPx: shiftPx };
+  });
+}
+
+function getSharedTaskCheckpointLayoutAtWidth(
+  markers: Array<{ index: number; markerLeftPct: number; labelWidthPx: number; labelSide: SharedTaskCheckpointLabelSide }>,
+  timelineWidthPx: number
+): SharedTaskCheckpointTimelineLayout[] {
+  const labelShiftByIndex = new Map<number, number>();
+  (["top", "bottom"] as const).forEach((labelSide) => {
+    spreadSharedTaskCheckpointLabelPcts(
+      markers
+        .filter((marker) => markers.length < 3 || marker.labelSide === labelSide)
+        .map((marker) => ({ index: marker.index, markerLeftPct: marker.markerLeftPct, labelWidthPx: marker.labelWidthPx })),
+      timelineWidthPx
+    ).forEach((layout) => labelShiftByIndex.set(layout.index, layout.labelShiftPx));
+  });
+  return markers.map(
+    (marker): SharedTaskCheckpointTimelineLayout => ({
+      markerLeftPct: marker.markerLeftPct,
+      labelShiftPx: labelShiftByIndex.get(marker.index) ?? 0,
+      labelWidthPx: marker.labelWidthPx,
+      labelSide: marker.labelSide,
+    })
+  );
+}
+
+function hasSharedTaskCheckpointDetachedLabels(layouts: SharedTaskCheckpointTimelineLayout[]): boolean {
+  return layouts.some((layout) => Math.abs(layout.labelShiftPx) > layout.labelWidthPx * SHARED_TASK_CHECKPOINT_LABEL_SCROLL_SHIFT_RATIO);
+}
+
+export function getSharedTaskCheckpointTimelineLayouts(
+  markerLeftPcts: number[],
+  labelWidthsPx: number[],
+  availableWidthPx = SHARED_TASK_CHECKPOINT_TIMELINE_MIN_WIDTH_PX
+): SharedTaskCheckpointTimelineLayoutResult {
+  const normalizedMarkers = markerLeftPcts.map((markerLeftPct, index) => ({
+    index,
+    markerLeftPct: clampSharedTaskTimelinePct(markerLeftPct),
+    labelWidthPx: Math.max(SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX, Number(labelWidthsPx[index]) || SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX),
+    labelSide: (index % 2 === 0 ? "top" : "bottom") as SharedTaskCheckpointLabelSide,
+  }));
+  const availableWidth = Math.max(1, Number(availableWidthPx) || SHARED_TASK_CHECKPOINT_TIMELINE_MIN_WIDTH_PX);
+  const availableLayouts = getSharedTaskCheckpointLayoutAtWidth(normalizedMarkers, availableWidth);
+  if (!hasSharedTaskCheckpointDetachedLabels(availableLayouts)) {
+    return { layouts: availableLayouts, requiresScroll: false, scrollWidthPx: availableWidth };
+  }
+
+  const maxLayouts = getSharedTaskCheckpointLayoutAtWidth(normalizedMarkers, SHARED_TASK_CHECKPOINT_TIMELINE_MAX_WIDTH_PX);
+  if (hasSharedTaskCheckpointDetachedLabels(maxLayouts)) {
+    return { layouts: maxLayouts, requiresScroll: true, scrollWidthPx: SHARED_TASK_CHECKPOINT_TIMELINE_MAX_WIDTH_PX };
+  }
+
+  let low = availableWidth;
+  let high = SHARED_TASK_CHECKPOINT_TIMELINE_MAX_WIDTH_PX;
+  for (let index = 0; index < 24; index += 1) {
+    const mid = (low + high) / 2;
+    const midLayouts = getSharedTaskCheckpointLayoutAtWidth(normalizedMarkers, mid);
+    if (hasSharedTaskCheckpointDetachedLabels(midLayouts)) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  const scrollWidthPx = Math.min(SHARED_TASK_CHECKPOINT_TIMELINE_MAX_WIDTH_PX, Math.ceil(high));
+  const layouts = getSharedTaskCheckpointLayoutAtWidth(normalizedMarkers, scrollWidthPx);
+  return { layouts, requiresScroll: true, scrollWidthPx };
+}
+
+function getSharedTaskCheckpointTimelineBaseWidthPx(timeline: HTMLElement): number {
+  const parent = timeline.parentElement;
+  const scroller = parent?.classList?.contains("sharedTaskCheckpointTimelineScroller") ? parent : null;
+  const baseElement = (scroller?.parentElement || parent || timeline) as HTMLElement;
+  const rectWidth = baseElement.getBoundingClientRect?.().width || 0;
+  const clientWidth = baseElement.clientWidth || 0;
+  const measuredWidth = Math.max(rectWidth, clientWidth);
+  return measuredWidth > 0 ? measuredWidth : SHARED_TASK_CHECKPOINT_TIMELINE_MIN_WIDTH_PX;
+}
+
+function getSharedTaskCheckpointTimelineScrollWrapper(timeline: HTMLElement): HTMLElement | null {
+  const parent = timeline.parentElement;
+  return parent?.classList?.contains("sharedTaskCheckpointTimelineScroller") ? parent : null;
+}
+
+function setSharedTaskCheckpointTimelineScrollState(timeline: HTMLElement, requiresScroll: boolean, scrollWidthPx: number) {
+  const existingWrapper = getSharedTaskCheckpointTimelineScrollWrapper(timeline);
+  if (requiresScroll) {
+    timeline.style.setProperty("--checkpoint-timeline-min-width", `${formatSharedTaskTimelinePx(scrollWidthPx)}px`);
+    if (existingWrapper) return;
+    const parent = timeline.parentElement;
+    if (!parent || !timeline.ownerDocument) return;
+    const wrapper = timeline.ownerDocument.createElement("div");
+    wrapper.className = "sharedTaskCheckpointTimelineScroller";
+    parent.insertBefore(wrapper, timeline);
+    wrapper.appendChild(timeline);
+    return;
+  }
+  timeline.style.removeProperty("--checkpoint-timeline-min-width");
+  if (!existingWrapper?.parentElement) return;
+  existingWrapper.parentElement.insertBefore(timeline, existingWrapper);
+  existingWrapper.remove();
+}
+
+function syncSharedTaskCheckpointTimelineLayout(
+  timeline: HTMLElement,
+  availableWidthPx = getSharedTaskCheckpointTimelineBaseWidthPx(timeline)
+) {
+  const markers = Array.from(timeline.querySelectorAll<HTMLElement>(".sharedTaskCheckpointTimelineMarker"));
+  if (!markers.length) return;
+  const layout = getSharedTaskCheckpointTimelineLayouts(
+    markers.map((marker) => Number.parseFloat(marker.style.getPropertyValue("--checkpoint-left")) || 0),
+    markers.map((marker) =>
+      Math.max(
+        SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX,
+        Number.parseFloat(marker.style.getPropertyValue("--checkpoint-label-width")) ||
+          marker.querySelector<HTMLElement>(".sharedTaskCheckpointTimelineLabel")?.getBoundingClientRect?.().width ||
+          SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX
+      )
+    ),
+    availableWidthPx
+  );
+  layout.layouts.forEach((markerLayout, index) => {
+    markers[index]?.style.setProperty("--checkpoint-label-shift", `${formatSharedTaskTimelinePx(markerLayout.labelShiftPx)}px`);
+  });
+  setSharedTaskCheckpointTimelineScrollState(timeline, layout.requiresScroll, layout.scrollWidthPx);
+}
+
+function syncSharedTaskCheckpointTimelineLabels(root: ParentNode | null) {
+  root?.querySelectorAll<HTMLElement>(".sharedTaskCheckpointTimeline").forEach((timeline) => {
+    syncSharedTaskCheckpointTimelineLayout(timeline);
+  });
 }
 
 export function renderSharedTaskMetricRows(summary: SharedTaskCardSummary, escapeHtmlUI: (value: unknown) => string) {
@@ -1414,7 +1636,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (!entry.importConfig) return "";
     const alreadyImported = hasImportedSharedTask(ctx.getTasks(), entry.ownerUid, entry.taskId);
     const disabledAttr = ctx.getGroupsLoading() || alreadyImported ? ' disabled aria-disabled="true"' : "";
-    const label = alreadyImported ? "Added" : "Import this task";
+    const label = alreadyImported ? "Added" : "Import";
     return `<div class="friendSharedTaskActions">
       <button class="btn btn-accent small" type="button" data-friend-action="import-shared-task" data-share-doc-id="${ctx.escapeHtmlUI(
         entry.shareDocId
@@ -1472,13 +1694,26 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const milestoneMinutes = config.milestones.map((milestone) => getSharedTaskSettingMilestoneMinutes(milestone, config.milestoneTimeUnit));
     const goalMinutes = config.timeGoalEnabled ? Math.max(0, Number(config.timeGoalMinutes) || 0) : 0;
     const maxMinutes = Math.max(goalMinutes, ...milestoneMinutes, 1);
+    const alternateLabels = config.milestones.length >= 3;
+    const markerLeftPcts = milestoneMinutes.map((minutes) => clampSharedTaskTimelinePct((minutes / maxMinutes) * 100));
+    const milestoneTimes = config.milestones.map((milestone) => formatSharedTaskSettingMilestoneTime(milestone, config.milestoneTimeUnit));
+    const labelWidthsPx = milestoneTimes.map((time) => estimateSharedTaskCheckpointLabelWidthPx(time));
+    const timelineLayout = getSharedTaskCheckpointTimelineLayouts(markerLeftPcts, labelWidthsPx, SHARED_TASK_CHECKPOINT_TIMELINE_MIN_WIDTH_PX);
+    const { layouts } = timelineLayout;
     const markers = config.milestones
         .map((milestone, index) => {
           const description = String(milestone?.description || "").trim() || `Checkpoint ${index + 1}`;
-          const time = formatSharedTaskSettingMilestoneTime(milestone, config.milestoneTimeUnit);
+          const time = milestoneTimes[index];
           const alerts = milestone?.alertsEnabled === false ? "Alerts off" : "Alerts on";
-        const pct = Math.max(0, Math.min(100, Math.round((milestoneMinutes[index] / maxMinutes) * 100)));
-          return `<li class="sharedTaskCheckpointTimelineMarker" style="--checkpoint-left:${pct}%" title="${ctx.escapeHtmlUI(
+          const layout = layouts[index];
+          const markerClass = alternateLabels && layout
+            ? `sharedTaskCheckpointTimelineMarker ${layout.labelSide === "top" ? "isLabelTop" : "isLabelBottom"}`
+            : "sharedTaskCheckpointTimelineMarker";
+          const markerStyle =
+            `--checkpoint-left:${formatSharedTaskTimelinePct(layout?.markerLeftPct ?? markerLeftPcts[index] ?? 0)}%;` +
+            `--checkpoint-label-shift:${formatSharedTaskTimelinePx(layout?.labelShiftPx ?? 0)}px;` +
+            `--checkpoint-label-width:${formatSharedTaskTimelinePx(layout?.labelWidthPx ?? labelWidthsPx[index] ?? SHARED_TASK_CHECKPOINT_LABEL_MIN_WIDTH_PX)}px`;
+          return `<li class="${markerClass}" style="${markerStyle}" title="${ctx.escapeHtmlUI(
             `${time} ${description} | ${alerts}`
           )}" aria-label="${ctx.escapeHtmlUI(`${time} ${description} | ${alerts}`)}">
             <span class="sharedTaskCheckpointTimelineDot" aria-hidden="true"></span>
@@ -1486,7 +1721,9 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           </li>`;
         })
         .join("");
-    return `<ol class="sharedTaskCheckpointTimeline" role="list">${markers}</ol>`;
+    return `<ol class="sharedTaskCheckpointTimeline${
+      alternateLabels ? " isAlternatingLabels" : ""
+    }" role="list">${markers}</ol>`;
   }
 
   function renderSharedTaskSettingsSummary(config: SharedTaskImportConfig | null) {
@@ -1497,13 +1734,16 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       renderSharedTaskSettingRow("Planned start", formatSharedTaskSettingTime(config.plannedStartTime)),
       renderSharedTaskSettingRow("Checkpoint alerts", formatSharedTaskSettingToggle(config.milestonesEnabled)),
     ].join("");
+    const milestoneGroup = config.milestonesEnabled
+      ? `<div class="sharedTaskSettingsMilestoneGroup">
+        <h4>Checkpoints</h4>
+        ${renderSharedTaskSettingsMilestonesTimeline(config)}
+      </div>`
+      : "";
     return `<section class="sharedTaskSettingsSummary" aria-label="Task Settings">
       <h3>Task Settings</h3>
       <dl class="sharedTaskSettingsGrid">${rows}</dl>
-      <div class="sharedTaskSettingsMilestoneGroup">
-        <h4>Checkpoints</h4>
-        ${renderSharedTaskSettingsMilestonesTimeline(config)}
-      </div>
+      ${milestoneGroup}
     </section>`;
   }
 
@@ -1535,6 +1775,15 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     hideOverlay(els.sharedTaskSummaryModal as HTMLElement | null);
   }
 
+  function syncSharedTaskSummaryTimelineLabels() {
+    syncSharedTaskCheckpointTimelineLabels(els.sharedTaskSummaryBody as HTMLElement | null);
+  }
+
+  function scheduleSharedTaskSummaryTimelineLabelSync() {
+    syncSharedTaskSummaryTimelineLabels();
+    if (typeof window !== "undefined") window.requestAnimationFrame?.(() => syncSharedTaskSummaryTimelineLabels());
+  }
+
   function openSharedTaskSummaryModal(shareDocIdRaw: string) {
     const entry = getSharedSummaryByShareDocId(shareDocIdRaw);
     if (!entry || !els.sharedTaskSummaryModal) return;
@@ -1545,6 +1794,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       )}">${renderFriendSharedTaskSummaryContent(entry, { modal: true })}</div>`;
     }
     showOverlay(els.sharedTaskSummaryModal as HTMLElement | null);
+    scheduleSharedTaskSummaryTimelineLabelSync();
   }
 
   function renderGroupsRequestsList(container: HTMLElement | null, rows: any[], opts: { incoming: boolean }) {
@@ -1683,10 +1933,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 </span>
               </button>
               <div class="friendIdentityText">
-                <button class="friendIdentityBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
-                  <strong class="friendName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
-                </button>
-                ${sharedCountMetaHtml}
+                <div class="friendIdentityPrimaryLine">
+                  <button class="friendIdentityBtn friendIdentityNameBtn" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
+                    <strong class="friendName friendIdentityAlias">${ctx.escapeHtmlUI(row.alias)}</strong>
+                  </button>
+                  <span class="friendIdentityDivider" aria-hidden="true">|</span>
+                  ${sharedCountMetaHtml}
+                </div>
               </div>
             </summary>
             <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
@@ -1877,6 +2130,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     });
     ctx.sharedTasks.ensureMilestoneIdentity(result.task);
     ctx.setTasks([...tasks, result.task]);
+    renderGroupsPage();
     ctx.render();
     ctx.save();
     const message =
@@ -2114,6 +2368,12 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const shareDocId = String(importBtn.getAttribute("data-share-doc-id") || "");
       openSharedTaskSummaryModal(shareDocId);
     });
+    if (typeof window !== "undefined") {
+      ctx.on(window, "resize", () => {
+        if ((els.sharedTaskSummaryModal as HTMLElement | null)?.style.display === "none") return;
+        scheduleSharedTaskSummaryTimelineLabelSync();
+      });
+    }
     ctx.on(els.groupsIncomingRequestsList, "click", (e: any) => {
       const btn = e.target?.closest?.("[data-friend-action][data-request-id]") as HTMLElement | null;
       if (!btn) return;

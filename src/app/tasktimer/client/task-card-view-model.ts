@@ -35,6 +35,17 @@ type TaskHistoryRevealPhase = "openingSpace" | "opening" | "closing" | "closingS
 
 const TASK_HISTORY_TAB_BORDER_GAP_PX = 160;
 
+export type TaskPrimaryActionState = "launch" | "resume" | "stop" | "done";
+
+type TaskPrimaryActionModel = {
+  className: string;
+  dataAction: "start" | "stop";
+  title: string;
+  ariaLabel: string;
+  disabled: boolean;
+  innerHtml: string;
+};
+
 type RenderTaskCardOptions = {
   task: Task;
   taskId: string;
@@ -78,6 +89,41 @@ type DispatchTaskCardActionOptions = {
 function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => string) {
   const trimmedLabel = label.trim();
   return `<span class="taskMenuTile">${escapeHtml(trimmedLabel)}</span>`;
+}
+
+function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState) {
+  if (state === "launch") {
+    return '<span class="taskPrimaryActionWord" aria-hidden="true"><span>L</span><span class="taskPrimaryActionAccentLetter">A</span><span>UNCH</span></span><span class="taskPrimaryActionSrText">Launch</span>';
+  }
+  if (state === "done") {
+    return '<span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span>';
+  }
+  return state === "resume" ? "Resume" : "Stop";
+}
+
+export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: { doneTitle?: string }): TaskPrimaryActionModel {
+  const title = state === "done" ? opts?.doneTitle || "Done until tomorrow" : state === "resume" ? "Resume" : state === "stop" ? "Stop" : "Launch";
+  const stateClass = state[0].toUpperCase() + state.slice(1);
+  const baseClass =
+    state === "done" ? "btn btn-done small" : state === "resume" ? "btn btn-resume small" : state === "stop" ? "btn btn-warn small" : "btn btn-accent small";
+
+  return {
+    className: `${baseClass} taskPrimaryAction taskPrimaryAction${stateClass}`,
+    dataAction: state === "stop" ? "stop" : "start",
+    title,
+    ariaLabel: title,
+    disabled: state === "done",
+    innerHtml: `<span class="taskPrimaryActionRing" aria-hidden="true"></span><span class="taskPrimaryActionFace"><span class="taskPrimaryActionLabel">${renderTaskPrimaryActionLabelHtml(
+      state
+    )}</span></span>`,
+  };
+}
+
+export function renderTaskPrimaryActionHtml(state: TaskPrimaryActionState, opts?: { doneTitle?: string }) {
+  const model = getTaskPrimaryActionModel(state, opts);
+  return `<button class="${model.className}" data-action="${model.dataAction}" title="${model.title}" aria-label="${model.ariaLabel}" type="button" ${
+    model.disabled ? "disabled" : ""
+  }>${model.innerHtml}</button>`;
 }
 
 export function buildTaskProgressModel({
@@ -301,12 +347,14 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
       })
     : "";
   const startStopHtml = isTimeGoalCompleted
-    ? '<button class="btn btn-done small" data-action="start" title="Done until tomorrow" aria-label="Done until tomorrow" disabled><span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span></button>'
+    ? renderTaskPrimaryActionHtml("done", {
+        doneTitle: task.timeGoalPeriod === "week" ? "Done until next week" : "Done until tomorrow",
+      })
     : task.running
-    ? '<button class="btn btn-warn small" data-action="stop" title="Stop">Stop</button>'
-    : elapsedMs > 0
-      ? '<button class="btn btn-resume small" data-action="start" title="Resume">Resume</button>'
-      : '<button class="btn btn-accent small" data-action="start" title="Launch">Launch</button>';
+      ? renderTaskPrimaryActionHtml("stop")
+      : elapsedMs > 0
+        ? renderTaskPrimaryActionHtml("resume")
+        : renderTaskPrimaryActionHtml("launch");
   const hasResettableTime = elapsedMs > 0;
   const resetLabel = task.running
     ? "Stop task to reset"

@@ -396,7 +396,7 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .progressWrap{
-  padding-bottom: 28px;
+  padding-bottom: 42px;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal{
@@ -3840,7 +3840,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   }
 
 #app[aria-label="TaskLaunch App"] .appPageTasks .progressWrap{
-    padding:10px 8px 28px;
+    padding:10px 8px 42px;
   }
 }
 
@@ -4035,7 +4035,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #ope
   }
 
 #app[aria-label="TaskLaunch App"] .appPageTasks .progressWrap{
-    padding:8px 6px 26px;
+    padding:8px 6px 40px;
   }
 }
 
@@ -4352,6 +4352,320 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .btn.btn-done[data-action="start"] .taskDoneIcon{
   color: inherit !important;
   border-color: currentColor !important;
+}
+
+/* CSS recreation of the source Launch button for task primary actions. */
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction{
+  --task-primary-action-size: 88px;
+  --task-primary-face-start: #66f5ff;
+  --task-primary-face-mid: #16dce7;
+  --task-primary-face-end: #09bfc6;
+  --task-primary-label: #071013;
+  --task-primary-label-shadow: rgba(0,0,0,.48);
+  --task-primary-ring-color: #1a1b20;
+  grid-column: 1 / 2 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  inline-size: var(--task-primary-action-size) !important;
+  block-size: var(--task-primary-action-size) !important;
+  width: var(--task-primary-action-size) !important;
+  height: var(--task-primary-action-size) !important;
+  min-width: var(--task-primary-action-size) !important;
+  min-height: var(--task-primary-action-size) !important;
+  max-width: var(--task-primary-action-size) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  isolation: isolate;
+  color: var(--task-primary-label) !important;
+  background:
+    radial-gradient(circle at 50% 57%, rgba(0,0,0,.94) 0 58%, transparent 59%),
+    radial-gradient(circle at 50% 52%, var(--task-primary-ring-color) 0 66%, var(--task-primary-ring-color) 67% 78%, var(--task-primary-ring-color) 79% 100%) !important;
+  box-shadow:
+    0 15px 24px rgba(0,0,0,.46),
+    inset 0 3px 5px rgba(255,255,255,.1),
+    inset 0 -8px 12px rgba(0,0,0,.5) !important;
+  cursor: pointer;
+  transition:
+    box-shadow .16s ease !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction::before,
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction::after,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction::before,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction::after,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction::before,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction::after{
+  content: none !important;
+}
+
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction,
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction{
+  background:
+    radial-gradient(circle at 50% 57%, rgba(0,0,0,.94) 0 58%, transparent 59%),
+    radial-gradient(circle at 50% 52%, var(--task-primary-ring-color) 0 66%, var(--task-primary-ring-color) 67% 78%, var(--task-primary-ring-color) 79% 100%) !important;
+  color: var(--task-primary-label) !important;
+  box-shadow:
+    0 15px 24px rgba(0,0,0,.46),
+    inset 0 3px 5px rgba(255,255,255,.1),
+    inset 0 -8px 12px rgba(0,0,0,.5) !important;
+}
+
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"],
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"],
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-resume.taskPrimaryAction[data-action="start"],
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-resume.taskPrimaryAction[data-action="start"],
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="stop"],
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="stop"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-done.taskPrimaryAction[data-action="start"],
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-done.taskPrimaryAction[data-action="start"]{
+  background:
+    radial-gradient(circle at 50% 57%, rgba(0,0,0,.94) 0 58%, transparent 59%),
+    radial-gradient(circle at 50% 52%, var(--task-primary-ring-color) 0 66%, var(--task-primary-ring-color) 67% 78%, var(--task-primary-ring-color) 79% 100%) !important;
+  background-color: var(--task-primary-ring-color) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionFace{
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionRing{
+  inset: 6px;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 50% 56%, rgba(0,0,0,.92) 0 68%, transparent 69%),
+    linear-gradient(145deg, var(--task-primary-ring-color), var(--task-primary-ring-color) 44%, var(--task-primary-ring-color));
+  box-shadow:
+    inset 0 4px 7px rgba(255,255,255,.06),
+    inset 0 -7px 10px rgba(0,0,0,.54);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionFace{
+  inset: 14px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 24% 18%, rgba(255,255,255,.92) 0 7%, rgba(255,255,255,.42) 8% 19%, transparent 38%),
+    radial-gradient(circle at 49% 44%, var(--task-primary-face-start) 0 39%, var(--task-primary-face-mid) 61%, var(--task-primary-face-end) 100%);
+  box-shadow:
+    inset 0 3px 7px rgba(255,255,255,.7),
+    inset 0 -7px 9px rgba(0,90,96,.36),
+    inset 0 0 0 2px rgba(0,0,0,.36);
+  transition: box-shadow .16s ease;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionLabel{
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: calc(var(--task-primary-action-size) - 28px);
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: clamp(12px, calc(var(--task-primary-action-size) * .16), 14px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.2),
+    0 2px 3px var(--task-primary-label-shadow);
+  white-space: nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionWord{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionAccentLetter{
+  color: #c9ff19;
+  transform: skewX(-7deg) scaleX(1.08);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.34),
+    0 0 5px rgba(188,255,24,.58),
+    0 2px 3px rgba(0,0,0,.55);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionSrText{
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionLaunch{
+  --task-primary-ring-color: #1a1b20;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionResume{
+  --task-primary-ring-color: #1a1b20;
+  --task-primary-face-start: #ffe68e;
+  --task-primary-face-mid: #e5b741;
+  --task-primary-face-end: #bc841e;
+  --task-primary-label: #1b1203;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionResume .taskPrimaryActionFace{
+  background:
+    radial-gradient(ellipse at 24% 18%, rgba(255,255,255,.92) 0 7%, rgba(255,255,255,.42) 8% 19%, transparent 38%),
+    radial-gradient(circle at 49% 44%, #ffe68e 0 39%, #e5b741 61%, #bc841e 100%) !important;
+  box-shadow:
+    inset 0 3px 7px rgba(255,255,255,.62),
+    inset 0 -7px 9px rgba(116,75,0,.38),
+    inset 0 0 0 2px rgba(0,0,0,.36) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop{
+  --task-primary-ring-color: #1a1b20;
+  --task-primary-face-start: #ff8f8f;
+  --task-primary-face-mid: #f23e4f;
+  --task-primary-face-end: #aa1727;
+  --task-primary-label: #fff7f7;
+  --task-primary-label-shadow: rgba(70,0,0,.64);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop .taskPrimaryActionFace{
+  background:
+    radial-gradient(ellipse at 24% 18%, rgba(255,255,255,.88) 0 7%, rgba(255,255,255,.34) 8% 19%, transparent 38%),
+    radial-gradient(circle at 49% 44%, #ff8f8f 0 39%, #f23e4f 61%, #aa1727 100%) !important;
+  box-shadow:
+    inset 0 3px 7px rgba(255,255,255,.54),
+    inset 0 -7px 9px rgba(70,0,0,.42),
+    inset 0 0 0 2px rgba(0,0,0,.38) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionDone{
+  --task-primary-ring-color: #1a1b20;
+  --task-primary-face-start: #b8f7c8;
+  --task-primary-face-mid: #58d67a;
+  --task-primary-face-end: #257c3e;
+  --task-primary-label: #061409;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionDone .taskDoneIcon{
+  width: 13px;
+  height: 13px;
+  font-size: 9px;
+  color: inherit !important;
+  border-color: currentColor !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled){
+  filter: none;
+  transform: none;
+  box-shadow:
+    0 15px 24px rgba(0,0,0,.46),
+    inset 0 3px 5px rgba(255,255,255,.1),
+    inset 0 -8px 12px rgba(0,0,0,.5) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled) .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled) .taskPrimaryActionFace{
+  transform: none;
+  box-shadow:
+    inset 0 8px 12px rgba(0,0,0,.28),
+    inset 0 1px 4px rgba(255,255,255,.35),
+    inset 0 0 0 2px rgba(0,0,0,.44);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled){
+  transform: none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled) .taskPrimaryActionFace{
+  transform: none;
+  filter: none;
+  box-shadow:
+    inset 0 8px 12px rgba(0,0,0,.28),
+    inset 0 1px 4px rgba(255,255,255,.35),
+    inset 0 0 0 2px rgba(0,0,0,.44);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:disabled{
+  cursor: not-allowed;
+  opacity: .82 !important;
+  filter: saturate(.86) brightness(.9);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction,
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction,
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction:hover:not(:disabled),
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled),
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled),
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled),
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled),
+#app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction:active:not(:disabled),
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled),
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled){
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled) .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:hover:not(:disabled) .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled) .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:focus-visible:not(:disabled) .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled) .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction:active:not(:disabled) .taskPrimaryActionFace{
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:hover:not(:disabled),
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:hover:not(:disabled),
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:focus-visible:not(:disabled),
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:focus-visible:not(:disabled),
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:active:not(:disabled),
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:active:not(:disabled){
+  background:
+    radial-gradient(circle at 50% 57%, rgba(0,0,0,.94) 0 58%, transparent 59%),
+    radial-gradient(circle at 50% 52%, var(--task-primary-ring-color) 0 66%, var(--task-primary-ring-color) 67% 78%, var(--task-primary-ring-color) 79% 100%) !important;
+  background-color: var(--task-primary-ring-color) !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 15px 24px rgba(0,0,0,.46),
+    inset 0 3px 5px rgba(255,255,255,.1),
+    inset 0 -8px 12px rgba(0,0,0,.5) !important;
+}
+
+@media (max-width: 420px){
+  #app[aria-label="TaskLaunch App"] #appPageTasks.appPageOn .task .actions > .btn.taskPrimaryAction,
+  body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction,
+  body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction{
+    --task-primary-action-size: 76px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction .taskPrimaryActionFace{
+    inset: 11px;
+  }
 }
 
 /* Task back responsive ownership. */

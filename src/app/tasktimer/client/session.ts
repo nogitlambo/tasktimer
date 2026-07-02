@@ -24,7 +24,7 @@ import {
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./context";
 import { getDelegatedAction } from "./delegated-actions";
-import { buildTaskProgressModel } from "./task-card-view-model";
+import { buildTaskProgressModel, getTaskPrimaryActionModel, type TaskPrimaryActionState } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic, playTimeGoalXpCountHaptic } from "./interaction-haptics";
@@ -2544,32 +2544,23 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         updateTaskProgressFill(node, task, elapsedMs);
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
+          let primaryActionState: TaskPrimaryActionState = "launch";
+          let doneTitle: string | undefined;
           if (isTaskTimeGoalLockedForCurrentPeriod(task)) {
-            primaryActionBtn.className = "btn btn-done small";
-            primaryActionBtn.dataset.action = "start";
-            primaryActionBtn.title = task.timeGoalPeriod === "week" ? "Done until next week" : "Done until tomorrow";
-            primaryActionBtn.setAttribute("aria-label", primaryActionBtn.title);
-            primaryActionBtn.disabled = true;
-            primaryActionBtn.innerHTML = '<span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span>';
+            primaryActionState = "done";
+            doneTitle = task.timeGoalPeriod === "week" ? "Done until next week" : "Done until tomorrow";
           } else if (task.running) {
-            primaryActionBtn.className = "btn btn-warn small";
-            primaryActionBtn.dataset.action = "stop";
-            primaryActionBtn.title = "Stop";
-            primaryActionBtn.textContent = "Stop";
-            primaryActionBtn.disabled = false;
+            primaryActionState = "stop";
           } else if (elapsedMs > 0) {
-            primaryActionBtn.className = "btn btn-resume small";
-            primaryActionBtn.dataset.action = "start";
-            primaryActionBtn.title = "Resume";
-            primaryActionBtn.textContent = "Resume";
-            primaryActionBtn.disabled = false;
-          } else {
-            primaryActionBtn.className = "btn btn-accent small";
-            primaryActionBtn.dataset.action = "start";
-            primaryActionBtn.title = "Launch";
-            primaryActionBtn.textContent = "Launch";
-            primaryActionBtn.disabled = false;
+            primaryActionState = "resume";
           }
+          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState, { doneTitle });
+          primaryActionBtn.className = primaryActionModel.className;
+          primaryActionBtn.dataset.action = primaryActionModel.dataAction;
+          primaryActionBtn.title = primaryActionModel.title;
+          primaryActionBtn.setAttribute("aria-label", primaryActionModel.ariaLabel);
+          primaryActionBtn.disabled = primaryActionModel.disabled;
+          primaryActionBtn.innerHTML = primaryActionModel.innerHtml;
         }
         const resetBtn = node.querySelector('.taskBackActions > .taskMenuItem[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
