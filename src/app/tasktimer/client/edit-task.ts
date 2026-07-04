@@ -1,12 +1,10 @@
 import type { Task, TaskPlannedStartByDay } from "../lib/types";
 import {
   formatAggregateTimeGoalValidationMessage,
-  formatAddTaskDurationReadout,
   formatTaskScheduleSummary,
   getAggregateTimeGoalValidationForReplacement,
   getAddTaskDurationMaxForPeriod,
   isAggregateTimeGoalValidationWorsened,
-  normalizeTaskConfigMilestones,
   validateAggregateTimeGoalTotals,
 } from "../lib/taskConfig";
 import {
@@ -617,42 +615,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function syncEditTaskDurationReadout(task?: Task | null) {
-    if (!els.editTaskDurationReadout) return;
-    const currentTask = task || getCurrentEditTask();
-    const durationValue = String(els.editTaskDurationValueInput?.value || currentTask?.timeGoalValue || 0);
-    const durationUnit =
-      ctx.getEditTaskDurationUnit() === "minute" ? "minute" : currentTask?.timeGoalUnit === "minute" ? "minute" : "hour";
-    const durationPeriod =
-      ctx.getEditTaskDurationPeriod() === "day" ? "day" : currentTask?.timeGoalPeriod === "day" ? "day" : "week";
-    els.editTaskDurationReadout.textContent = formatAddTaskDurationReadout({
-      name: String(els.editName?.value || currentTask?.name || "").trim(),
-      durationValue,
-      durationUnit,
-      durationPeriod,
-      taskType: currentTask?.taskType === "once-off" ? "once-off" : "recurring",
-      noTimeGoal: false,
-      milestonesEnabled: !!currentTask?.milestonesEnabled,
-      milestoneTimeUnit: currentTask?.milestoneTimeUnit === "minute" ? "minute" : "hour",
-      milestones: normalizeTaskConfigMilestones(
-        (Array.isArray(currentTask?.milestones) ? currentTask.milestones : []).map((milestone, index) => ({
-          id: String(milestone?.id || ""),
-          createdSeq:
-            Number.isFinite(Number(milestone?.createdSeq)) && Number(milestone.createdSeq) > 0
-              ? Math.floor(Number(milestone.createdSeq))
-              : index + 1,
-          value: String(Number(milestone?.hours || 0)),
-          description: String(milestone?.description || ""),
-          alertsEnabled: milestone?.alertsEnabled !== false,
-        }))
-      ),
-      checkpointSoundEnabled: !!currentTask?.checkpointSoundEnabled,
-      checkpointSoundMode: currentTask?.checkpointSoundMode === "repeat" ? "repeat" : "once",
-      checkpointToastEnabled: !!currentTask?.checkpointToastEnabled,
-      checkpointToastMode: currentTask?.checkpointToastMode === "manual" ? "manual" : "auto5s",
-      presetIntervalsEnabled: false,
-      presetIntervalValue: "0",
-      timeGoalAction: "confirmModal",
-    });
+    void task;
+    return undefined;
   }
 
   function getEditTaskTimeGoalMinutesFor(value: number, unit: "minute" | "hour", period: "day" | "week") {
@@ -693,7 +657,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.setEditTaskDurationPeriod("day");
     }
     els.editTaskDurationRow?.classList.remove("isHidden", "isDisabled");
-    els.editTaskDurationReadout?.classList.remove("isHidden", "isDisabled");
     if (els.editTaskDurationValueInput) els.editTaskDurationValueInput.disabled = false;
     if (els.editTaskDurationValueInput) {
       const parsedValue = Math.max(0, Math.floor(parseFloat(els.editTaskDurationValueInput.value || "0") || 0));
@@ -1667,7 +1630,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.renderMilestoneEditor(t);
     sharedTasks.ensureMilestoneIdentity(t);
     ctx.syncEditCheckpointAlertUi(t);
-    ctx.setEditDraftSnapshot(ctx.buildEditDraftSnapshot(t));
+    ctx.setEditDraftSnapshot(buildEditDraftSnapshot(t));
     ctx.clearEditValidationState();
     ctx.syncEditSaveAvailability(t);
     showEditOverlay(sourceEl);
@@ -1794,6 +1757,30 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (!didSave) finishEditOverlayClose();
   }
 
+  function confirmDiscardEditChanges() {
+    ctx.confirm("Discard changes?", "Your unsaved changes will be lost.", {
+      okLabel: "Discard",
+      cancelLabel: "Cancel",
+      okButtonClassName: "btn btn-warn",
+      onOk: () => {
+        ctx.closeConfirm();
+        closeEdit(false);
+      },
+      onCancel: () => ctx.closeConfirm(),
+    });
+  }
+
+  function handleEditCancel(event?: Event) {
+    event?.preventDefault?.();
+    const t = getCurrentEditTask();
+    const initialSnapshot = ctx.getEditDraftSnapshot();
+    if (!t || !initialSnapshot || buildEditDraftSnapshot(t) === initialSnapshot) {
+      closeEdit(false);
+      return;
+    }
+    confirmDiscardEditChanges();
+  }
+
   function handleEditNameInput() {
     const t = getCurrentEditTask();
     if (!t) return;
@@ -1817,10 +1804,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
   }
 
   function registerEditTaskEvents() {
-    ctx.on(els.cancelEditBtn, "click", (e: any) => {
-      e?.preventDefault?.();
-      closeEdit(false);
-    });
+    ctx.on(els.cancelEditBtn, "click", handleEditCancel);
     ctx.on(els.saveEditBtn, "click", (e: any) => {
       e?.preventDefault?.();
       closeEdit(true);

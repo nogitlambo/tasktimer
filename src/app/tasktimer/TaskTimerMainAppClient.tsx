@@ -1702,57 +1702,65 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
       {selectedLeaderboardProfile ? (
         <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
-          <div className="modal leaderboardPositionModal" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
-            <div className="leaderboardPositionModalHeaderRow">
-              <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
-            </div>
-            <div className="leaderboardPositionModalHeader">
-              <div className="leaderboardPositionModalIdentity">
-                <LeaderboardAvatar profile={selectedLeaderboardProfile} />
-                <div className="leaderboardPositionModalIdentityText">
-                  <strong
-                    className="leaderboardName leaderboardPositionName"
-                  >
-                    {selectedLeaderboardLabel}
-                  </strong>
-                  {selectedLeaderboardMemberSince ? (
-                    <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
-                  ) : null}
+          <div className="modal leaderboardPositionModal isLeaderboardPositionRevealing" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
+            <span className="friendUserSummaryBorderTrace" aria-hidden="true">
+              <span className="friendUserSummaryBorderTraceEdge isTop" />
+              <span className="friendUserSummaryBorderTraceEdge isRight" />
+              <span className="friendUserSummaryBorderTraceEdge isBottom" />
+              <span className="friendUserSummaryBorderTraceEdge isLeft" />
+            </span>
+            <div className="leaderboardPositionRevealBody">
+              <div className="leaderboardPositionModalHeaderRow">
+                <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
+              </div>
+              <div className="leaderboardPositionModalHeader">
+                <div className="leaderboardPositionModalIdentity">
+                  <LeaderboardAvatar profile={selectedLeaderboardProfile} />
+                  <div className="leaderboardPositionModalIdentityText">
+                    <strong
+                      className="leaderboardName leaderboardPositionName"
+                    >
+                      {selectedLeaderboardLabel}
+                    </strong>
+                    {selectedLeaderboardMemberSince ? (
+                      <span className="leaderboardMemberSince">Member since {selectedLeaderboardMemberSince}</span>
+                    ) : null}
+                  </div>
+                  <div className="leaderboardPositionAchievementSlots" aria-label="Achievement badges">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <span
+                        className="leaderboardPositionAchievementSlot"
+                        key={`leaderboard-achievement-slot-${index}`}
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="leaderboardPositionAchievementSlots" aria-label="Achievement badges">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <span
-                      className="leaderboardPositionAchievementSlot"
-                      key={`leaderboard-achievement-slot-${index}`}
-                      aria-hidden="true"
-                    />
-                  ))}
+                <div className="leaderboardPositionRankSummary">
+                  <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
+                  <strong style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
                 </div>
               </div>
-              <div className="leaderboardPositionRankSummary">
-                <LeaderboardRankInsignia profile={selectedLeaderboardProfile} />
-                <strong style={{ "--leaderboard-rank-color": getLeaderboardRankColor() } as CSSProperties}>{getLeaderboardRankLabel(selectedLeaderboardProfile)}</strong>
+              <div className="leaderboardPositionStats" aria-label="User stats">
+                <div className="leaderboardPositionStatsTitle">User Stats</div>
+                <div>
+                  <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
+                  <span>Total XP</span>
+                </div>
+                <div>
+                  <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
+                  <span>Time Logged</span>
+                </div>
+                <div>
+                  <strong>{formatLeaderboardTaskCount(selectedLeaderboardProfile.completedTaskCount)}</strong>
+                  <span>Tasks Completed</span>
+                </div>
               </div>
-            </div>
-            <div className="leaderboardPositionStats" aria-label="User stats">
-              <div className="leaderboardPositionStatsTitle">User Stats</div>
-              <div>
-                <strong>{formatLeaderboardXp(selectedLeaderboardProfile.rewardTotalXp)}</strong>
-                <span>Total XP</span>
+              <div className="confirmBtns">
+                <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
+                  Close
+                </button>
               </div>
-              <div>
-                <strong>{formatDashboardDurationShort(selectedLeaderboardProfile.totalFocusMs)}</strong>
-                <span>Time Logged</span>
-              </div>
-              <div>
-                <strong>{formatLeaderboardTaskCount(selectedLeaderboardProfile.completedTaskCount)}</strong>
-                <span>Tasks Completed</span>
-              </div>
-            </div>
-            <div className="confirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
-                Close
-              </button>
             </div>
           </div>
         </div>

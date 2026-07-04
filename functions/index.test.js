@@ -408,7 +408,7 @@ describe("sendFriendRequestPendingNotification", () => {
     expect(state.sendEachForMulticast).not.toHaveBeenCalled();
   });
 
-  it("still sends when a legacy API-created request is marked for direct delivery", async () => {
+  it("does not resend when a request is marked for direct API delivery", async () => {
     state.devices = [
       {
         id: "native-1",
@@ -431,12 +431,8 @@ describe("sendFriendRequestPendingNotification", () => {
       },
     }));
 
-    expect(result).toEqual(expect.objectContaining({
-      ok: true,
-      status: "sent",
-      successCount: 1,
-    }));
-    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ ok: false, status: "api-delivered" });
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
   });
 
   it("ignores non-pending request states", async () => {

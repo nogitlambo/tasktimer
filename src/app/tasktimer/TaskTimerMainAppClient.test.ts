@@ -14,6 +14,12 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(overlayIndex).toBeGreaterThan(frameCloseIndex);
   });
 
+  it("renders the leaderboard user summary reveal wrapper and entrance class", () => {
+    expect(source).toContain('className="modal leaderboardPositionModal isLeaderboardPositionRevealing"');
+    expect(source).toContain('className="friendUserSummaryBorderTrace"');
+    expect(source).toContain('className="leaderboardPositionRevealBody"');
+  });
+
   it("does not let leaderboard swipe handling capture profile-open clicks", () => {
     expect(source).toContain("data-leaderboard-profile-open=");
     expect(source).toContain("if (isLeaderboardProfileOpenTarget(event.target)) return;");

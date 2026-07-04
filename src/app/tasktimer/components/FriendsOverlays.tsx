@@ -113,56 +113,64 @@ export default function FriendsOverlays() {
 
       <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
         <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
-          <div className="friendUserSummaryHeaderRow">
-            <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
-          </div>
-          <div className="friendUserSummaryHeader">
-            <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
-              <span className="friendUserSummaryAvatar" aria-hidden="true">
-                <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toon-01-cap-glasses.webp" alt="" />
-              </span>
-              <div className="friendUserSummaryIdentityText">
-                <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
-                <span className="friendUserSummaryEmail" id="friendProfileEmail" style={{ display: "none" }} />
-                <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
+          <span className="friendUserSummaryBorderTrace" aria-hidden="true">
+            <span className="friendUserSummaryBorderTraceEdge isTop" />
+            <span className="friendUserSummaryBorderTraceEdge isRight" />
+            <span className="friendUserSummaryBorderTraceEdge isBottom" />
+            <span className="friendUserSummaryBorderTraceEdge isLeft" />
+          </span>
+          <div className="friendUserSummaryRevealBody">
+            <div className="friendUserSummaryHeaderRow">
+              <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
+            </div>
+            <div className="friendUserSummaryHeader">
+              <div className="friendUserSummaryIdentity" id="friendProfileIdentityRow">
+                <span className="friendUserSummaryAvatar" aria-hidden="true">
+                  <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toon-01-cap-glasses.webp" alt="" />
+                </span>
+                <div className="friendUserSummaryIdentityText">
+                  <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+                  <span className="friendUserSummaryEmail" id="friendProfileEmail" style={{ display: "none" }} />
+                  <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
+                </div>
+                <div className="friendUserSummaryAchievementSlots" aria-label="Achievement badges">
+                  <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                  <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                  <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                  <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+                </div>
               </div>
-              <div className="friendUserSummaryAchievementSlots" aria-label="Achievement badges">
-                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
-                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
-                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
-                <span className="friendUserSummaryAchievementSlot" aria-hidden="true" />
+              <div className="friendUserSummaryRankBlock">
+                <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
+                  <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
+                  <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
+                </span>
+                <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
               </div>
             </div>
-            <div className="friendUserSummaryRankBlock">
-              <span id="friendProfileRankInsignia" className="friendUserSummaryRankInsignia" aria-hidden="true">
-                <AppImg id="friendProfileRankImage" className="friendUserSummaryRankInsigniaImg" src={undefined} alt="" style={{ display: "none" }} />
-                <span id="friendProfileRankPlaceholder" className="friendUserSummaryRankInsigniaPlaceholder" style={{ display: "none" }} />
-              </span>
-              <strong className="friendUserSummaryRankText" id="friendProfileRank">--</strong>
+            <div className="leaderboardPositionStats" aria-label="User stats">
+              <div className="leaderboardPositionStatsTitle">User Stats</div>
+              <div>
+                <strong id="friendProfileXp">0</strong>
+                <span>Total XP</span>
+              </div>
+              <div>
+                <strong id="friendProfileSharedTime">0m</strong>
+                <span>Time Logged</span>
+              </div>
+              <div>
+                <strong id="friendProfileCompletedTaskCount">0</strong>
+                <span>Tasks Completed</span>
+              </div>
             </div>
-          </div>
-          <div className="leaderboardPositionStats" aria-label="User stats">
-            <div className="leaderboardPositionStatsTitle">User Stats</div>
-            <div>
-              <strong id="friendProfileXp">0</strong>
-              <span>Total XP</span>
+            <div className="confirmBtns friendProfileCloseRow">
+              <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+                Unfriend
+              </button>
+              <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
+                Close
+              </button>
             </div>
-            <div>
-              <strong id="friendProfileSharedTime">0m</strong>
-              <span>Time Logged</span>
-            </div>
-            <div>
-              <strong id="friendProfileCompletedTaskCount">0</strong>
-              <span>Tasks Completed</span>
-            </div>
-          </div>
-          <div className="confirmBtns friendProfileCloseRow">
-            <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
-              Unfriend
-            </button>
-            <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
-              Close
-            </button>
           </div>
         </div>
       </div>

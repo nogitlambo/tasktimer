@@ -5,7 +5,6 @@ import {
   rememberRecentCustomTaskName,
 } from "../lib/addTaskNames";
 import {
-  formatAddTaskDurationReadout,
   formatAggregateTimeGoalValidationMessage,
   formatTaskScheduleSummary,
   getAddTaskDurationMaxForPeriod,
@@ -58,6 +57,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   let addTaskSplitAcrossProductivityDays = true;
   let addTaskWeeklyBlockDay: ScheduleDay = "mon";
   let addTaskOverlayHideTimer: number | null = null;
+  let addTaskDraftSnapshot = "";
 
   function clearAddTaskOverlayHideTimer() {
     if (addTaskOverlayHideTimer != null && typeof window !== "undefined") {
@@ -372,25 +372,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function syncAddTaskDurationReadout() {
-    if (!els.addTaskDurationReadout) return;
-    els.addTaskDurationReadout.textContent = formatAddTaskDurationReadout({
-      name: "",
-      durationValue: String(ctx.getAddTaskDurationValue()),
-      durationUnit: ctx.getAddTaskDurationUnit(),
-      durationPeriod: ctx.getAddTaskDurationPeriod(),
-      taskType: ctx.getAddTaskType() || undefined,
-      noTimeGoal: getAddTaskTimeGoalMinutes() <= 0,
-      milestonesEnabled: !!ctx.getAddTaskMilestonesEnabled(),
-      milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
-      milestones: ctx.getAddTaskMilestones(),
-      checkpointSoundEnabled: false,
-      checkpointSoundMode: "once",
-      checkpointToastEnabled: false,
-      checkpointToastMode: "auto5s",
-      presetIntervalsEnabled: false,
-      presetIntervalValue: "0",
-      timeGoalAction: "confirmModal",
-    });
+    return undefined;
   }
 
   function syncAddTaskDurationUi() {
@@ -417,7 +399,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       btn.setAttribute("aria-hidden", hidden ? "true" : "false");
     };
     els.addTaskDurationRow?.classList.remove("isHidden", "isDisabled");
-    els.addTaskDurationReadout?.classList.remove("isHidden", "isDisabled");
     if (els.addTaskDurationValueInput) {
       els.addTaskDurationValueInput.disabled = false;
     }
@@ -427,7 +408,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     syncPill(els.addTaskDurationUnitHour, ctx.getAddTaskDurationUnit() === "hour");
     syncPill(els.addTaskDurationPeriodDay, ctx.getAddTaskDurationPeriod() === "day", !canUseDay || onceOff);
     syncPill(els.addTaskDurationPeriodWeek, ctx.getAddTaskDurationPeriod() === "week", onceOff);
-    syncAddTaskDurationReadout();
     syncAddTaskSplitAcrossProductivityDaysUi();
     syncAddTaskScheduleSummary();
   }
@@ -886,6 +866,43 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskColorTrigger?.setAttribute("aria-expanded", String(open));
   }
 
+  function buildAddTaskDraftSnapshot() {
+    const milestones = ctx.sortMilestones((ctx.getAddTaskMilestones() || []).slice()).map((milestone) => ({
+      id: String((milestone as { id?: string }).id || ""),
+      createdSeq: Number.isFinite(+(milestone as { createdSeq?: number }).createdSeq!)
+        ? Math.floor(+(milestone as { createdSeq?: number }).createdSeq!)
+        : 0,
+      hours: Number.isFinite(+milestone.hours) ? +milestone.hours : 0,
+      description: String(milestone.description || ""),
+      alertsEnabled: milestone.alertsEnabled !== false,
+    }));
+
+    return JSON.stringify({
+      name: String(els.addTaskName?.value || "").trim(),
+      selectedColor: normalizeTaskColor(selectedColor),
+      selectedColorTouched,
+      scheduleEnabled: addTaskScheduleEnabled,
+      taskType: ctx.getAddTaskType(),
+      onceOffDay: ctx.getAddTaskOnceOffDay(),
+      plannedStartTime: String(ctx.getAddTaskPlannedStartTime() || "").trim() || "09:00",
+      plannedStartTouched: addTaskPlannedStartTouched,
+      plannedStartPushRemindersEnabled: !!els.addTaskPlannedStartPushReminders?.checked,
+      splitAcrossProductivityDays: shouldShowAddTaskSplitAcrossProductivityDays() ? addTaskSplitAcrossProductivityDays : undefined,
+      weeklyBlockDay: shouldShowAddTaskSplitAcrossProductivityDays() && !addTaskSplitAcrossProductivityDays ? addTaskWeeklyBlockDay : null,
+      timeGoalValue: Math.max(0, Number(ctx.getAddTaskDurationValue()) || 0),
+      timeGoalUnit: ctx.getAddTaskDurationUnit(),
+      timeGoalPeriod: isOnceOffTaskType() ? "day" : ctx.getAddTaskDurationPeriod(),
+      timeGoalMinutes: getAddTaskTimeGoalMinutes(),
+      milestonesEnabled: !!ctx.getAddTaskMilestonesEnabled(),
+      milestoneTimeUnit: ctx.getAddTaskMilestoneTimeUnit(),
+      milestones,
+      checkpointSoundEnabled: !!ctx.getAddTaskCheckpointSoundEnabled(),
+      checkpointSoundMode: els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
+      checkpointToastEnabled: !!ctx.getAddTaskCheckpointToastEnabled(),
+      checkpointToastMode: els.addTaskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
+    });
+  }
+
   function resetAddTaskState() {
     addTaskScheduleEnabled = false;
     ctx.setAddTaskTypeState("recurring");
@@ -939,6 +956,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (!overlay) return;
     clearAddTaskOverlayHideTimer();
     resetAddTaskState();
+    addTaskDraftSnapshot = buildAddTaskDraftSnapshot();
     renderAddTaskNameMenu("");
     setAddTaskNameMenuOpen(false);
     ctx.setSuppressAddTaskNameFocusOpenState(true);
@@ -965,8 +983,31 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       ctx.closeOverlay(overlay);
       resetAddTaskState();
       setAddTaskNameMenuOpen(false);
+      addTaskDraftSnapshot = "";
       addTaskOverlayHideTimer = null;
     }, ADD_TASK_OVERLAY_CLOSE_MS);
+  }
+
+  function confirmDiscardAddTaskChanges() {
+    ctx.confirm("Discard changes?", "Your unsaved changes will be lost.", {
+      okLabel: "Discard",
+      cancelLabel: "Cancel",
+      okButtonClassName: "btn btn-warn",
+      onOk: () => {
+        ctx.closeConfirm();
+        closeAddTaskModal();
+      },
+      onCancel: () => ctx.closeConfirm(),
+    });
+  }
+
+  function handleAddTaskCancel(event?: Event) {
+    event?.preventDefault?.();
+    if (!addTaskDraftSnapshot || buildAddTaskDraftSnapshot() === addTaskDraftSnapshot) {
+      closeAddTaskModal();
+      return;
+    }
+    confirmDiscardAddTaskChanges();
   }
 
   function createTask() {
@@ -1069,7 +1110,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function registerAddTaskEvents() {
-    ctx.on(els.addTaskCancelBtn, "click", closeAddTaskModal);
+    ctx.on(els.addTaskCancelBtn, "click", handleAddTaskCancel);
     ctx.on(els.addTaskForm, "submit", (e: Event) => {
       e.preventDefault();
       createTask();

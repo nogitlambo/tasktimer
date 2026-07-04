@@ -452,6 +452,8 @@
   border: 1px solid rgba(170, 178, 190, .32);
   border-radius: 0;
   padding: 14px 14px 12px;
+  position: relative;
+  overflow: hidden;
   opacity: 1;
   transform: scale(1);
   transform-origin: var(--friend-profile-zoom-origin-x, 50%) var(--friend-profile-zoom-origin-y, 50%);
@@ -460,10 +462,141 @@
     opacity 150ms ease;
 }
 
-#friendProfileModal.isFriendProfileZoomingIn .modal,
 #friendProfileModal.isFriendProfileZoomingOut .modal{
   opacity: 0;
   transform: scale(.9);
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryModal{
+  border-color: transparent;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryRevealBody{
+  animation: friendUserSummaryBodyReveal 220ms cubic-bezier(.22,.78,.2,1) 420ms both;
+}
+
+.friendUserSummaryBorderTrace{
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  bottom: -1px;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 0 7px rgba(201,255,36,.32));
+  opacity: 0;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTrace,
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTrace{
+  opacity: 1;
+}
+
+.friendUserSummaryBorderTraceEdge{
+  position: absolute;
+  display: block;
+  background: linear-gradient(90deg, rgba(201,255,36,.95), rgba(126,243,255,.9));
+  transform: scale(0);
+}
+
+.friendUserSummaryBorderTraceEdge.isTop,
+.friendUserSummaryBorderTraceEdge.isBottom{
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: scaleX(0);
+}
+
+.friendUserSummaryBorderTraceEdge.isTop{
+  top: 0;
+  transform-origin: left center;
+}
+
+.friendUserSummaryBorderTraceEdge.isBottom{
+  bottom: 0;
+  transform-origin: right center;
+}
+
+.friendUserSummaryBorderTraceEdge.isRight,
+.friendUserSummaryBorderTraceEdge.isLeft{
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: scaleY(0);
+  background: linear-gradient(180deg, rgba(126,243,255,.9), rgba(201,255,36,.95));
+}
+
+.friendUserSummaryBorderTraceEdge.isRight{
+  right: 0;
+  transform-origin: center top;
+}
+
+.friendUserSummaryBorderTraceEdge.isLeft{
+  left: 0;
+  transform-origin: center bottom;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTraceEdge.isTop,
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTraceEdge.isTop{
+  animation: friendUserSummaryTraceHorizontal 105ms linear both;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTraceEdge.isRight,
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTraceEdge.isRight{
+  animation: friendUserSummaryTraceVertical 105ms linear 105ms both;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTraceEdge.isBottom,
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTraceEdge.isBottom{
+  animation: friendUserSummaryTraceHorizontal 105ms linear 210ms both;
+}
+
+#friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTraceEdge.isLeft,
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTraceEdge.isLeft{
+  animation: friendUserSummaryTraceVertical 105ms linear 315ms both;
+}
+
+.friendUserSummaryRevealBody,
+.leaderboardPositionRevealBody{
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes friendUserSummaryTraceHorizontal{
+  from{ transform: scaleX(0); }
+  to{ transform: scaleX(1); }
+}
+
+@keyframes friendUserSummaryTraceVertical{
+  from{ transform: scaleY(0); }
+  to{ transform: scaleY(1); }
+}
+
+@keyframes friendUserSummaryBodyReveal{
+  0%{
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-18px);
+  }
+  100%{
+    opacity: 1;
+    clip-path: inset(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #friendProfileModal.isFriendProfileRevealing .friendUserSummaryBorderTraceEdge,
+  #leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .friendUserSummaryBorderTraceEdge,
+  #friendProfileModal.isFriendProfileRevealing .friendUserSummaryRevealBody,
+  #leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .leaderboardPositionRevealBody{
+    animation: none;
+  }
+
+  #friendProfileModal.isFriendProfileRevealing .friendUserSummaryModal,
+  #leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing{
+    border-color: rgba(170, 178, 190, .32);
+  }
 }
 
 #friendProfileModal .modalSubtext{
@@ -2941,6 +3074,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 #leaderboardPositionOverlay .leaderboardPositionModal{
   max-width: min(560px, calc(100vw - 32px));
   border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing{
+  border-color: transparent;
+}
+
+#leaderboardPositionOverlay .leaderboardPositionModal.isLeaderboardPositionRevealing .leaderboardPositionRevealBody{
+  animation: friendUserSummaryBodyReveal 220ms cubic-bezier(.22,.78,.2,1) 420ms both;
 }
 
 #leaderboardPositionOverlay{
@@ -3480,7 +3623,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     transform: none;
   }
 
-  #friendProfileModal.isFriendProfileZoomingIn .modal,
+  #friendProfileModal.isFriendProfileRevealing .modal,
   #friendProfileModal.isFriendProfileZoomingOut .modal{
     opacity: 1;
     transform: none;

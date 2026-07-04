@@ -7,7 +7,7 @@ import { buildPageMetadata, jsonLdScript, organizationJsonLd, softwareApplicatio
 export const metadata: Metadata = buildPageMetadata({
   title: "About TaskLaunch",
   description:
-    "TaskLaunch is a time tracking and productivity app for sustainable progress, stronger habits, momentum, XP, ranks, and optional productivity leaderboards.",
+    "TaskLaunch is a time tracking and productivity app built for neurodivergent minds, sustainable habits, momentum, XP, ranks, and optional productivity leaderboards.",
   path: "/about/",
 });
 
@@ -63,20 +63,20 @@ export default function AboutPage() {
         </section>
 
         <div className="privacyLandingBody">
-          <AboutSection id="realistic-productivity-tool" number={1} title="A realistic productivity tool">
+          <AboutSection id="realistic-productivity-tool" number={1} title="A REALISTIC PRODUCTIVITY TOOL">
             <p>
-              TaskLaunch is a time tracking and productivity app built around sustainable progress. It helps turn small
+              TaskLaunch is a time tracking and productivity app built for neurodivergent minds. It helps turn small
               moments of effort into stronger habits by supporting the way your focus and energy naturally shift
-              throughout the week.
+              throughout the day and week.
             </p>
             <p>
-              Instead of pushing you to perform at the same level every day, TaskLaunch helps you plan tasks around your
-              strongest focus windows. Work when your mind is more ready, reduce friction when energy is low, and build
-              a routine that feels achievable rather than forced.
+              Instead of pushing you to perform at the same level every day, you plan tasks around your strongest focus
+              windows. Work when your mind is more ready, reduce friction when energy is low, and build a routine that
+              feels achievable rather than forced.
             </p>
           </AboutSection>
 
-          <AboutSection id="stronger-habits" number={2} title="Build stronger habits">
+          <AboutSection id="stronger-habits" number={2} title="BUILD STRONGER HABITS">
             <p>
               Each completed task becomes part of a larger progress picture. TaskLaunch converts logged effort into
               real-time feedback, helping you see what you are doing well, where your patterns are forming, and how your
@@ -92,10 +92,9 @@ export default function AboutPage() {
             </p>
           </AboutSection>
 
-          <AboutSection id="momentum" number={3} title="Momentum is key">
+          <AboutSection id="no-more-streaks" number={3} title="NO MORE STREAKS">
             <p>
-              TaskLaunch changes the way momentum works. Consistency still matters, but it is not treated as something
-              that disappears the moment you miss a day.
+              Consistency still matters, but it is not treated as something that disappears the moment you miss a day.
             </p>
             <p>
               Every focused effort contributes to your momentum score. Smaller sessions still count, restarted tasks
@@ -104,15 +103,23 @@ export default function AboutPage() {
             </p>
           </AboutSection>
 
-          <AboutSection id="visible-progress" number={4} title="Progress you can see and feel">
+          <AboutSection id="progress-without-perfection" number={4} title="PROGRESS WITHOUT PERFECTION">
             <p>
               The time you log earns XP, and stronger momentum increases the rate at which XP is awarded. This gives
               your effort a visible sense of growth and helps make progress feel more rewarding.
             </p>
             <p>
-              XP supports rank progression and optional leaderboard participation, adding a social and competitive
-              element for users who enjoy extra motivation. It creates a clearer sense of achievement without adding
-              unnecessary pressure.
+              XP drives rank progression and leaderboard participation, adding a gamified and social element for users
+              who enjoy competing with others. It creates a clearer sense of achievement without adding unnecessary
+              pressure.
+            </p>
+          </AboutSection>
+
+          <AboutSection id="who-is-it-for" number={5} title="WHO IS IT FOR?">
+            <p>
+              TaskLaunch is for people who want a more practical way to stay engaged with their goals. It brings
+              structure, feedback, and motivation together in one place, helping productivity feel less like a demand
+              and more like something you can return to, build on, and carry forward.
             </p>
           </AboutSection>
         </div>

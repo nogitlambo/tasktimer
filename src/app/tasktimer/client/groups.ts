@@ -627,6 +627,7 @@ export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnaps
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
   let friendProfileCloseTimer: number | null = null;
+  let friendProfileOpenTimer: number | null = null;
 
   function canUseSocialFeatures() {
     return ctx.hasEntitlement("socialFeatures");
@@ -692,10 +693,14 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     statusEl.style.color = "rgba(188,214,230,.78)";
   }
 
-  function clearFriendProfileZoomState() {
+  function clearFriendProfileRevealState() {
     const overlay = els.friendProfileModal as HTMLElement | null;
+    if (friendProfileOpenTimer != null) {
+      window.clearTimeout(friendProfileOpenTimer);
+      friendProfileOpenTimer = null;
+    }
     if (!overlay) return;
-    overlay.classList.remove("isFriendProfileZoomingIn", "isFriendProfileZoomingOut");
+    overlay.classList.remove("isFriendProfileRevealing", "isFriendProfileZoomingOut");
     const modal = overlay.querySelector?.(".modal") as HTMLElement | null;
     modal?.style.removeProperty("--friend-profile-zoom-origin-x");
     modal?.style.removeProperty("--friend-profile-zoom-origin-y");
@@ -706,7 +711,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       window.clearTimeout(friendProfileCloseTimer);
       friendProfileCloseTimer = null;
     }
-    clearFriendProfileZoomState();
+    clearFriendProfileRevealState();
     hideOverlay(els.friendProfileModal as HTMLElement | null);
     ctx.setActiveFriendProfileUid(null);
     ctx.setActiveFriendProfileName("");
@@ -728,12 +733,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function animateFriendProfileOpen(zoomSource?: HTMLElement | null) {
     const overlay = els.friendProfileModal as HTMLElement | null;
     if (!overlay || prefersReducedFriendMotion() || typeof window.requestAnimationFrame !== "function") return;
-    clearFriendProfileZoomState();
+    clearFriendProfileRevealState();
     applyFriendProfileZoomOrigin(zoomSource);
-    overlay.classList.add("isFriendProfileZoomingIn");
-    window.requestAnimationFrame(() => {
-      overlay.classList.remove("isFriendProfileZoomingIn");
-    });
+    overlay.classList.add("isFriendProfileRevealing");
+    friendProfileOpenTimer = window.setTimeout(() => {
+      friendProfileOpenTimer = null;
+      overlay.classList.remove("isFriendProfileRevealing");
+    }, 700);
   }
 
   function closeFriendProfileModal() {
@@ -743,7 +749,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       return;
     }
     if (friendProfileCloseTimer != null) return;
-    clearFriendProfileZoomState();
+    clearFriendProfileRevealState();
     overlay.classList.add("isFriendProfileZoomingOut");
     friendProfileCloseTimer = window.setTimeout(finishFriendProfileClose, 220);
   }

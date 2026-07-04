@@ -1575,6 +1575,7 @@ describe("friend request action status", () => {
       expect(harness.setActiveFriendProfileUid).toHaveBeenCalledWith("friend-b");
       expect(harness.setActiveFriendProfileName).toHaveBeenCalledWith("Friend Bee");
       expect(harness.friendProfileModal.style.display).toBe("flex");
+      expect(harness.friendProfileModal.classList.add).toHaveBeenCalledWith("isFriendProfileRevealing");
       expect(harness.friendProfilePanel.style.setProperty).toHaveBeenCalledWith("--friend-profile-zoom-origin-x", expect.any(String));
       expect(harness.friendProfilePanel.style.setProperty).toHaveBeenCalledWith("--friend-profile-zoom-origin-y", expect.any(String));
     } finally {
@@ -1930,7 +1931,7 @@ describe("friend info modal email", () => {
       expect(harness.modal.style.display).toBe("flex");
       expect(harness.setActiveFriendProfileUid).not.toHaveBeenCalledWith(null);
 
-      const runCloseTimer = closeTimers[0];
+      const runCloseTimer = closeTimers[closeTimers.length - 1];
       expect(runCloseTimer).toBeTruthy();
       runCloseTimer?.();
 

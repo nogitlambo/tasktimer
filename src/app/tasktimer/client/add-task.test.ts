@@ -21,6 +21,20 @@ function buttonStub() {
   } as unknown as HTMLButtonElement;
 }
 
+function overlayStub() {
+  return {
+    offsetHeight: 0,
+    style: {
+      display: "none",
+    },
+    classList: {
+      add: vi.fn(),
+      remove: vi.fn(),
+      toggle: vi.fn(),
+    },
+  } as unknown as HTMLElement;
+}
+
 function createHarness(
   initialValue: string,
   overrides?: {
@@ -34,7 +48,16 @@ function createHarness(
 ) {
   const handlers = new Map<object, HandlerMap>();
   const documentStub = {};
+  vi.stubGlobal("HTMLElement", class HTMLElementStub {});
   vi.stubGlobal("document", documentStub);
+  vi.stubGlobal("window", {
+    location: { protocol: "http:" },
+    setTimeout: vi.fn((callback: () => void) => {
+      callback();
+      return 1;
+    }),
+    clearTimeout: vi.fn(),
+  });
   let addTaskMilestones: Array<{ hours: number; description: string }> = [];
   let addTaskType: "recurring" | "once-off" = overrides?.taskType || "recurring";
   let addTaskDurationUnit: "minute" | "hour" = "minute";
@@ -69,6 +92,8 @@ function createHarness(
   const addTaskDurationUnitHour = buttonStub();
   const addTaskDurationPeriodDay = buttonStub();
   const addTaskDurationPeriodWeek = buttonStub();
+  const addTaskCancelBtn = buttonStub();
+  const addTaskOverlay = overlayStub();
   const addTaskOnceOffDaySelect = {
     value: addTaskOnceOffDay,
   } as HTMLSelectElement;
@@ -117,7 +142,7 @@ function createHarness(
       addTaskName,
       addTaskMsArea: null,
       addTaskMsList: null,
-      addTaskCancelBtn: null,
+      addTaskCancelBtn,
       addTaskForm: {} as HTMLFormElement,
       addTaskTypeRecurringBtn,
       addTaskTypeOnceOffBtn,
@@ -145,9 +170,8 @@ function createHarness(
       addTaskCheckpointSoundModeSelect: null,
       addTaskCheckpointToastModeSelect: null,
       addTaskAddMsBtn: null,
-      addTaskOverlay: null,
+      addTaskOverlay,
       addTaskOnceOffDayField: null,
-      addTaskDurationReadout: null,
       addTaskScheduleSummary,
       addTaskScheduleSummaryText,
       addTaskSplitAcrossProductivityDaysRow,
@@ -212,9 +236,13 @@ function createHarness(
       addTaskMilestones = value;
     }),
     setAddTaskCheckpointSoundEnabledState: vi.fn(),
+    getAddTaskCheckpointSoundEnabled: () => false,
     setAddTaskCheckpointSoundModeState: vi.fn(),
+    getAddTaskCheckpointSoundMode: () => "once",
     setAddTaskCheckpointToastEnabledState: vi.fn(),
+    getAddTaskCheckpointToastEnabled: () => false,
     setAddTaskCheckpointToastModeState: vi.fn(),
+    getAddTaskCheckpointToastMode: () => "auto5s",
     getAddTaskCustomNames: () => [],
     setAddTaskCustomNamesState: vi.fn(),
     saveCloudTaskUi: vi.fn(),
@@ -270,13 +298,19 @@ function createHarness(
 
   return {
     addTaskDurationValueInput,
+    addTaskCancelBtn,
     addTaskMsToggle,
+    addTaskName,
+    addTaskOverlay,
     addTaskPlannedStartTimeInput,
     addTaskScheduleSummary,
     addTaskScheduleSummaryText,
     addTaskSplitAcrossProductivityDaysRow,
     addTaskWeeklyBlockDayField,
     ctx,
+    api,
+    open: () => api.openAddTaskModal(),
+    cancel: () => handlers.get(addTaskCancelBtn)?.get("click")?.({ preventDefault: vi.fn() } as unknown as Event),
     submit: () => submitHandler()?.({ preventDefault: vi.fn() } as unknown as Event),
     toggleSchedule: (checked = true) => {
       addTaskScheduleToggle.checked = checked;
@@ -316,6 +350,66 @@ function createHarness(
 }
 
 describe("createTaskTimerAddTask", () => {
+  it("closes Add Task immediately when Cancel is clicked on an unchanged draft", () => {
+    const harness = createHarness("0");
+
+    harness.open();
+    vi.mocked(harness.ctx.closeOverlay).mockClear();
+    harness.cancel();
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledWith(harness.addTaskOverlay);
+  });
+
+  it("asks before discarding dirty Add Task changes", () => {
+    const harness = createHarness("0");
+
+    harness.open();
+    vi.mocked(harness.ctx.closeOverlay).mockClear();
+    harness.addTaskName.value = "Dirty draft";
+    harness.cancel();
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Discard changes?",
+      "Your unsaved changes will be lost.",
+      expect.objectContaining({
+        okLabel: "Discard",
+        cancelLabel: "Cancel",
+        okButtonClassName: "btn btn-warn",
+      })
+    );
+    expect(harness.ctx.closeOverlay).not.toHaveBeenCalled();
+  });
+
+  it("keeps Add Task open when discard confirmation is cancelled", () => {
+    const harness = createHarness("0");
+
+    harness.open();
+    vi.mocked(harness.ctx.closeOverlay).mockClear();
+    harness.addTaskName.value = "Dirty draft";
+    harness.cancel();
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onCancel?.();
+
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expect(harness.ctx.closeOverlay).not.toHaveBeenCalled();
+  });
+
+  it("closes and resets Add Task when dirty changes are discarded", () => {
+    const harness = createHarness("0");
+
+    harness.open();
+    vi.mocked(harness.ctx.closeOverlay).mockClear();
+    harness.addTaskName.value = "Dirty draft";
+    harness.cancel();
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onOk?.();
+
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expect(harness.ctx.closeOverlay).toHaveBeenCalledWith(harness.addTaskOverlay);
+    expect(harness.addTaskName.value).toBe("");
+  });
+
   it("enables current-runtime push when Add Task Remind Me is checked while global push is off", async () => {
     vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
     const harness = createHarness("1");

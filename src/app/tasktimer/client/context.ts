@@ -559,6 +559,7 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   getEditTaskDraft: () => Task | null;
   setEditTaskDraft: (value: Task | null) => void;
   setEditDraftSnapshot: (value: string) => void;
+  getEditDraftSnapshot: () => string;
   getEditTaskDurationUnit: () => "minute" | "hour";
   setEditTaskDurationUnit: (value: "minute" | "hour") => void;
   getEditTaskDurationPeriod: () => "day" | "week";

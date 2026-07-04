@@ -31,6 +31,15 @@ export function DeleteAccountConfirmActions({ authBusy, className, onCancel, onD
 
   const deleteAccountLabel = isDeleteAccountArmed ? "Delete" : `Delete (${deleteAccountCountdown})`;
 
+  if (authBusy) {
+    return (
+      <div className={`${className} deleteAccountBusyStatus`} role="status" aria-live="polite" aria-atomic="true">
+        <span className="deleteAccountBusyRing" aria-hidden="true" />
+        <span className="deleteAccountBusyText">Deleting account...</span>
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
       <button className="btn btn-ghost" type="button" onClick={onCancel}>

@@ -973,6 +973,32 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsI
   margin-top:12px !important;
 }
 
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .deleteAccountBusyStatus{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  min-height:38px !important;
+  color:rgba(255,255,255,.92) !important;
+  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-size:13px !important;
+  line-height:1.2 !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .deleteAccountBusyRing{
+  width:18px !important;
+  height:18px !important;
+  flex:0 0 18px !important;
+  border:2px solid rgba(255,255,255,.34) !important;
+  border-top-color:var(--warn) !important;
+  border-radius:50% !important;
+  animation:deleteAccountBusyRingSpin .72s linear infinite !important;
+}
+
+body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .deleteAccountBusyText{
+  display:inline-block !important;
+}
+
 @media (max-width: 640px){
   body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsInlineConfirmBtns, .accountInlineConfirmBtns){
     display:flex !important;
@@ -1016,6 +1042,12 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   background:rgba(40,20,20,.28) !important;
   color:rgba(255,255,255,.58) !important;
   box-shadow:none !important;
+}
+
+@keyframes deleteAccountBusyRingSpin{
+  to{
+    transform:rotate(360deg);
+  }
 }
 
 @keyframes deleteAccountConfirmTitlePulse{

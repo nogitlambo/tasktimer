@@ -271,7 +271,9 @@ export default function AccountScreen() {
 
       <InlineConfirmModal
         open={account.showDeleteAccountConfirm}
-        onClose={() => account.setShowDeleteAccountConfirm(false)}
+        onClose={() => {
+          if (!account.authBusy) account.setShowDeleteAccountConfirm(false);
+        }}
         ariaLabel="Delete Account"
         title="Delete Account"
         overlayClassName="standardModalOverlay accountInlineConfirmOverlay deleteAccountConfirmOverlay"
@@ -286,7 +288,7 @@ export default function AccountScreen() {
           </svg>
         }
       >
-        <p className="accountInlineConfirmText">Permanently delete your sign-in account for this app? This action cannot be undone.</p>
+        <p className="accountInlineConfirmText">Delete your sign-in account and all related data? This action is permanent and cannot be undone.</p>
         <DeleteAccountConfirmActions
           className="footerBtns accountInlineConfirmBtns"
           authBusy={account.authBusy}

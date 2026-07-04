@@ -79,7 +79,6 @@ export default function AddTaskOverlay() {
                     </button>
                   </div>
                 </div>
-                <div className="addTaskDurationReadout" id="addTaskDurationReadout" />
                 <label
                   className="addTaskPlannedStartCheckboxRow addTaskPlannedStartInlineCheckboxRow taskWeeklySplitRow isHidden"
                   id="addTaskSplitAcrossProductivityDaysRow"

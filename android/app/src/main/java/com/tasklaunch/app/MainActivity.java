@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.view.WindowManager;
 
 import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
@@ -34,6 +35,18 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(TaskLaunchFocusDndPlugin.class);
         super.onCreate(savedInstanceState);
         deliverPushIntentToWeb(getIntent());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    public void onPause() {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        super.onPause();
     }
 
     @Override

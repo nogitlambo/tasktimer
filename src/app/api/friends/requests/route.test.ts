@@ -235,7 +235,7 @@ describe("POST /api/friends/requests", () => {
     expect(payload).toEqual({ error: "Email address is required." });
   });
 
-  it("creates a pending request for the Firestore trigger to deliver", async () => {
+  it("sends a native push notification to the receiver after creating a pending request", async () => {
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);
 
@@ -253,12 +253,77 @@ describe("POST /api/friends/requests", () => {
             senderUid: "sender-uid",
             receiverUid: "receiver-uid",
             status: "pending",
+            notificationDeliveryMode: "api",
           }),
         }),
       ])
     );
-    expect(db.writes[0].data).not.toHaveProperty("notificationDeliveryMode");
-    expect(mocks.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ["receiver-native-token"],
+        notification: {
+          title: "You have a pending friend request",
+          body: "Tap to view the request",
+        },
+        android: expect.objectContaining({
+          notification: {
+            channelId: "tasklaunch-default",
+          },
+        }),
+        data: {
+          route: "/friends",
+          requestId: "pending:sender-uid:receiver-uid",
+          type: "friendRequest",
+        },
+      })
+    );
+  });
+
+  it("does not fail the friend request when FCM rejects a receiver token", async () => {
+    const db = createFriendRequestDb();
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+    mocks.sendEachForMulticast.mockResolvedValue({
+      successCount: 0,
+      failureCount: 1,
+      responses: [
+        {
+          success: false,
+          error: {
+            code: "messaging/registration-token-not-registered",
+            message: "Requested entity was not found.",
+          },
+        },
+      ],
+    });
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+    expect(db.writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "users/receiver-uid/devices/receiver-native-device",
+          data: expect.objectContaining({
+            lastPushErrorCode: "messaging/registration-token-not-registered",
+            lastPushErrorMessage: "Requested entity was not found.",
+            lastPushErrorAtMs: expect.any(Number),
+          }),
+        }),
+      ])
+    );
+    expect(db.writes).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "users/receiver-uid/devices/receiver-native-device",
+          data: expect.objectContaining({
+            token: "DELETE_FIELD",
+          }),
+        }),
+      ])
+    );
   });
 
   it("rejects duplicate pending requests in the same direction without writing or sending push", async () => {

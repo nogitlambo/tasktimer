@@ -220,16 +220,21 @@ export function useSettingsAccountState(): {
       try {
         const result = await resumePendingDeleteFlow(authUserUid);
         if (cancelled || !result.resumed) return;
-        setShowDeleteAccountConfirm(false);
         if (result.error) {
+          setAuthBusy(false);
+          setShowDeleteAccountConfirm(true);
           setAuthError(result.error);
           setAuthStatus("");
           return;
         }
+        setAuthBusy(true);
+        setShowDeleteAccountConfirm(true);
         setAuthStatus("Re-authentication complete. Deleting account...");
         setAuthError("");
       } catch (err: unknown) {
         if (cancelled) return;
+        setAuthBusy(false);
+        setShowDeleteAccountConfirm(true);
         setAuthError(getErrorMessage(err, "Could not complete Google re-authentication for account deletion."));
         setAuthStatus("");
       }
@@ -252,14 +257,12 @@ export function useSettingsAccountState(): {
     setAuthBusy(true);
     setAuthError("");
     setAuthStatus("Deleting account...");
-    setShowDeleteAccountConfirm(false);
     try {
       await handleDeleteAccountFlow(user);
-      setAuthStatus("Account deleted.");
     } catch (err: unknown) {
+      setShowDeleteAccountConfirm(true);
       setAuthError(getErrorMessage(err, "Could not delete account."));
       setAuthStatus("");
-    } finally {
       setAuthBusy(false);
     }
   }, []);

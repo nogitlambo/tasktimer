@@ -271,21 +271,58 @@ describe("task card view model", () => {
     );
   });
 
-  it("defines primary action colors for stopped Resume and running Stop states", () => {
+  it("defines raised stopped and concave running primary action styles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
     const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
     const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const resumeFaceRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const stopFaceRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const primaryActionRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\{[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const faceRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction \.taskPrimaryActionFace\{\n  inset: 14px;[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const ringRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction \.taskPrimaryActionRing\{\n  inset: 0;[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const resumeFaceRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
+      "";
+    const stopFaceRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
+      "";
+    const stopConcaveFaceRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{\n  box-shadow:[\s\S]*?\n\}/)?.[0] ??
+      "";
+    const stopOuterBlocks = Array.from(css.matchAll(/([^{}]*\.btn\.taskPrimaryActionStop[^{}]*)\{([\s\S]*?)\n\}/g))
+      .filter(([, selector]) => !selector.includes(".taskPrimaryActionFace") && !selector.includes(".taskPrimaryActionRing"))
+      .map(([block]) => block);
 
     expect(resumeRule).toContain("--task-primary-face-start: #ffe68e;");
     expect(resumeRule).toContain("--task-primary-face-mid: #e5b741;");
     expect(resumeRule).toContain("--task-primary-face-end: #bc841e;");
-    expect(resumeFaceRule).toContain("radial-gradient(circle at 49% 44%, #ffe68e 0 39%, #e5b741 61%, #bc841e 100%) !important;");
+    expect(resumeRule).toContain("--task-primary-face-shadow-color: rgba(116,75,0,.42);");
+    expect(resumeFaceRule).toContain("#ffe68e 0 30%, #e5b741 62%, #bc841e 100%) !important;");
     expect(stopRule).toContain("--task-primary-face-start: #ff8f8f;");
     expect(stopRule).toContain("--task-primary-face-mid: #f23e4f;");
     expect(stopRule).toContain("--task-primary-face-end: #aa1727;");
-    expect(stopFaceRule).toContain("radial-gradient(circle at 49% 44%, #ff8f8f 0 39%, #f23e4f 61%, #aa1727 100%) !important;");
+    expect(stopRule).toContain("--task-primary-face-shadow-color: rgba(70,0,0,.46);");
+    expect(primaryActionRule).toContain('font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
+    expect(stopFaceRule).toContain("#ff8f8f 0 20%, #f23e4f 54%, #aa1727 100%) !important;");
+    expect(stopConcaveFaceRule).toContain("0 9px 13px rgba(0,0,0,.55) inset");
+    expect(ringRule).toContain('background: url("/task-primary-action-ring.webp") center / 100% 100% no-repeat;');
+    expect(css).not.toMatch(/\.taskPrimaryActionStop \.taskPrimaryActionRing\{/);
+    expect(stopOuterBlocks.length).toBeGreaterThan(0);
+    expect(stopOuterBlocks.every((block) => !/\n\s*(?:background|background-color|box-shadow)\s*:/.test(block))).toBe(true);
+    expect(faceRule).toContain("var(--task-primary-face-start)");
+    expect(faceRule).toContain("var(--task-primary-face-mid)");
+    expect(faceRule).toContain("var(--task-primary-face-end)");
+    expect(faceRule).toContain("0 8px 12px rgba(0,0,0,.48)");
   });
 
   it("renders completed time-goal tasks as done while preserving edit hooks", () => {

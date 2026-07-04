@@ -3229,21 +3229,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   display: block;
 }
 
-#addTaskOverlay .addTaskDurationReadout{
-  font-size: 12px;
-  color: rgba(194,224,236,.82);
-}
-
-#editOverlay .editTaskDurationReadout{
-  margin-left: 0;
-  text-align: right;
-  font-size: 12px;
-  color: rgba(194,224,236,.82);
-  min-width: 0;
-}
-
 #editOverlay #editTaskDurationRow.isHidden,
-#editOverlay #editTaskDurationReadout.isHidden,
 #editOverlay #editTimerSettingsGroup.isHidden,
 #editOverlay #editCheckpointAlertsGroup.isHidden,
 #editOverlay #msArea.isHidden{
@@ -3342,13 +3328,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   flex: 0 0 auto;
 }
 
-#addTaskOverlay .addTaskDurationRow.isDisabled,
-#addTaskOverlay .addTaskDurationReadout.isDisabled{
+#addTaskOverlay .addTaskDurationRow.isDisabled{
   opacity: .45;
 }
 
-#editOverlay .editTaskDurationRow.isDisabled,
-#editOverlay .editTaskDurationReadout.isDisabled{
+#editOverlay .editTaskDurationRow.isDisabled{
   opacity: .45;
 }
 
@@ -3583,7 +3567,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #addTaskOverlay #addTaskDurationRow.isHidden,
-#addTaskOverlay #addTaskDurationReadout.isHidden,
 #addTaskOverlay #addTaskMsArea.isHidden{
   display: none !important;
 }
@@ -6979,10 +6962,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(241,255,151,.88);
 }
 
-#editOverlay .editTaskDurationReadout{
-  color: rgba(245,248,244,.88) !important;
-}
-
 #taskManualEntryOverlay .hmManualEntryFooterBtns{
   background: transparent !important;
 }
@@ -8115,6 +8094,102 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-style: italic;
 }
 
+#onboardingOverlay .onboardingChronotypeTileGrid{
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 auto;
+  position: relative;
+  width: min(100%, 620px) !important;
+}
+
+#onboardingOverlay .onboardingChronotypeTile{
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)),
+    rgba(26, 27, 32, .58);
+  border: 1px solid rgba(170, 178, 190, .34) !important;
+  border-radius: 0 !important;
+  color: rgba(238, 242, 246, .9);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  min-height: 138px;
+  padding: 18px;
+  position: relative;
+  text-align: left;
+  transform: translate(0, 0) scale(1);
+  transition:
+    opacity 260ms ease,
+    transform 360ms cubic-bezier(.22,.78,.2,1),
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+  width: 100%;
+  z-index: 1;
+}
+
+#onboardingOverlay .onboardingChronotypeTile:hover,
+#onboardingOverlay .onboardingChronotypeTile:focus-visible{
+  border-color: var(--accent) !important;
+  color: #fff;
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
+}
+
+#onboardingOverlay .onboardingChronotypeTileNumber{
+  align-items: center;
+  border: 1px solid rgba(170, 178, 190, .42);
+  color: var(--accent);
+  display: flex;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+#onboardingOverlay .onboardingChronotypeTileText{
+  color: inherit;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isFaded{
+  opacity: 0;
+  pointer-events: none;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected{
+  background:
+    linear-gradient(180deg, rgba(201, 255, 36, .14), rgba(201, 255, 36, .05)),
+    rgba(26, 27, 32, .84);
+  border-color: var(--accent) !important;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(201, 255, 36, .22), 0 20px 42px rgba(0, 0, 0, .34);
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected:nth-child(1){
+  transform: translate(calc(50% + 7px), calc(50% + 7px)) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected:nth-child(2){
+  transform: translate(calc(-50% - 7px), calc(50% + 7px)) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected:nth-child(3){
+  transform: translate(calc(50% + 7px), calc(-50% - 7px)) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected:nth-child(4){
+  transform: translate(calc(-50% - 7px), calc(-50% - 7px)) scale(1.04);
+}
+
 @keyframes onboardingGreetingDividerReveal{
   from{
     transform: scaleX(0);
@@ -8201,6 +8276,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingUsernameField,
   #onboardingOverlay .onboardingIntroSubtext,
   #onboardingOverlay .onboardingChronotypePreview,
+  #onboardingOverlay .onboardingChronotypeTile,
   #onboardingOverlay .onboardingHoursSubtext,
   #onboardingOverlay .onboardingHoursTimeGrid,
   #onboardingOverlay .onboardingProductivityIntroText,
@@ -8209,6 +8285,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingDayPill{
     animation: none;
     opacity: 1;
+    transform: none;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected{
     transform: none;
   }
 }
@@ -8716,6 +8796,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingTimeGrid{
     grid-template-columns: 1fr;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid{
+    gap: 10px;
+    grid-template-columns: 1fr;
+    max-width: 360px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTile{
+    min-height: 104px;
+    padding: 14px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected{
+    transform: none;
   }
 
   #onboardingOverlay .onboardingUsernameRow{

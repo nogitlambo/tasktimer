@@ -52,6 +52,14 @@ function timeInputStub(value = "") {
   } as unknown as HTMLInputElement;
 }
 
+function buttonStub() {
+  return {
+    disabled: false,
+    title: "",
+    classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+  } as unknown as HTMLButtonElement;
+}
+
 function overlayStub() {
   return {
     style: {
@@ -143,8 +151,12 @@ function createEditHarness(overrides: {
   const editPlannedStartPushReminders = {
     checked: false,
   } as HTMLInputElement;
+  const cancelEditBtn = buttonStub();
+  const saveEditBtn = buttonStub();
+  let editDraftSnapshot = "";
   const ctx = {
     els: {
+      cancelEditBtn,
       editName: { value: "Focus" } as HTMLInputElement,
       editTaskScheduleToggle,
       editTaskDurationValueInput: {
@@ -166,6 +178,7 @@ function createEditHarness(overrides: {
       editTaskWeeklyBlockDaySelect,
       editOverlay,
       confirmOverlay: null,
+      saveEditBtn,
     },
     sharedTasks: {
       ensureMilestoneIdentity: vi.fn(),
@@ -182,7 +195,10 @@ function createEditHarness(overrides: {
     }),
     getEditTaskDraft: () => draft,
     setEditTaskDraft: vi.fn(),
-    setEditDraftSnapshot: vi.fn(),
+    setEditDraftSnapshot: vi.fn((value: string) => {
+      editDraftSnapshot = value;
+    }),
+    getEditDraftSnapshot: () => editDraftSnapshot,
     getEditTaskDurationUnit: () => overrides.durationUnit || "hour",
     setEditTaskDurationUnit: vi.fn(),
     getEditTaskDurationPeriod: () => overrides.durationPeriod || "day",
@@ -241,6 +257,7 @@ function createEditHarness(overrides: {
   const api = createTaskTimerEditTask(ctx);
   return {
     api,
+    cancelEditBtn,
     ctx,
     sourceTask,
     busyTask,
@@ -250,6 +267,10 @@ function createEditHarness(overrides: {
     editTaskSplitAcrossProductivityDaysRow,
     editTaskWeeklyBlockDayField,
     getEditIndex: () => editIndex,
+    cancel: () =>
+      (vi.mocked(ctx.on).mock.calls.find(([element, eventName]) => element === cancelEditBtn && eventName === "click")?.[2] as
+        | ((event?: Event) => void)
+        | undefined)?.({ preventDefault: vi.fn() } as unknown as Event),
   };
 }
 
@@ -268,6 +289,73 @@ function expectEditConflictSavedAndClosed(harness: ReturnType<typeof createEditH
 }
 
 describe("edit task schedule summary", () => {
+  it("closes Edit Task immediately when Cancel is clicked on an unchanged draft", () => {
+    const harness = createEditHarness();
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    harness.cancel();
+
+    expect(harness.ctx.confirm).not.toHaveBeenCalled();
+    expect(harness.ctx.setEditIndex).toHaveBeenCalledWith(null);
+    expect(harness.ctx.setEditTaskDraft).toHaveBeenCalledWith(null);
+    expect(harness.ctx.setEditDraftSnapshot).toHaveBeenCalledWith("");
+  });
+
+  it("asks before discarding dirty Edit Task changes", () => {
+    const harness = createEditHarness();
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    (harness.ctx.els.editName as HTMLInputElement).value = "Dirty edit";
+    harness.cancel();
+
+    expect(harness.ctx.confirm).toHaveBeenCalledWith(
+      "Discard changes?",
+      "Your unsaved changes will be lost.",
+      expect.objectContaining({
+        okLabel: "Discard",
+        cancelLabel: "Cancel",
+        okButtonClassName: "btn btn-warn",
+      })
+    );
+    expect(harness.ctx.save).not.toHaveBeenCalled();
+    expect(harness.getEditIndex()).toBe(0);
+  });
+
+  it("keeps Edit Task open when discard confirmation is cancelled", () => {
+    const harness = createEditHarness();
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    (harness.ctx.els.editName as HTMLInputElement).value = "Dirty edit";
+    harness.cancel();
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onCancel?.();
+
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expect(harness.ctx.setEditIndex).not.toHaveBeenCalledWith(null);
+    expect(harness.getEditIndex()).toBe(0);
+  });
+
+  it("closes Edit Task without saving when dirty changes are discarded", () => {
+    const harness = createEditHarness();
+
+    harness.api.registerEditTaskEvents();
+    harness.api.openEdit(0);
+    (harness.ctx.els.editName as HTMLInputElement).value = "Dirty edit";
+    harness.cancel();
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onOk?.();
+
+    expect(harness.ctx.closeConfirm).toHaveBeenCalled();
+    expect(harness.ctx.save).not.toHaveBeenCalled();
+    expect(harness.ctx.setEditIndex).toHaveBeenCalledWith(null);
+    expect(harness.ctx.setEditTaskDraft).toHaveBeenCalledWith(null);
+    expect(harness.ctx.setEditDraftSnapshot).toHaveBeenCalledWith("");
+    expect(harness.getEditIndex()).toBeNull();
+  });
+
   it("enables current-runtime push when Edit Task Remind Me is checked while global push is off", async () => {
     vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
     const harness = createEditHarness();
