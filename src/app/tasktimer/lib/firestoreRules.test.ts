@@ -27,13 +27,23 @@ describe("firestore user root rules", () => {
     expect(block).toContain('"completedTaskCount"');
     expect(block).toContain('(!("completedTaskCount" in request.resource.data) || request.resource.data.completedTaskCount is int)');
   });
+
+  it("blocks owner writes for deleted account uids", () => {
+    const rules = readRules();
+
+    expect(functionBlock(rules, "deletedAccountUidExists")).toContain("/deletedAccountUids/$(userId)");
+    expect(functionBlock(rules, "isActiveOwner")).toContain("!deletedAccountUidExists(userId)");
+    expect(rules).toContain("allow create, update: if isActiveOwner(userId) && isUserDoc();");
+    expect(rules).toContain("match /deletedAccountUids/{userId}");
+    expect(rules).toContain("allow create, update, delete: if false;");
+  });
 });
 
 describe("firestore leaderboard profile rules", () => {
   it("allows owner updates for any valid current leaderboard profile document", () => {
     const block = leaderboardProfilesRuleBlock(readRules());
 
-    expect(block).toContain("allow update: if isOwner(userId) && isLeaderboardProfileDoc(userId);");
+    expect(block).toContain("allow update: if isActiveOwner(userId) && isLeaderboardProfileDoc(userId);");
   });
 
   it("does not compare obsolete leaderboard metric fields on update", () => {
@@ -47,6 +57,14 @@ describe("firestore leaderboard profile rules", () => {
 
     expect(block).toContain('"completedTaskCount"');
     expect(block).toContain("request.resource.data.completedTaskCount is int");
+  });
+
+  it("denies known test usernames at write time", () => {
+    const rules = readRules();
+
+    expect(functionBlock(rules, "isAllowedLeaderboardProfileUsername")).toContain("codexemaillin_yixnc2");
+    expect(functionBlock(rules, "isAllowedLeaderboardProfileUsername")).toContain("codexemaillinktest");
+    expect(functionBlock(rules, "isLeaderboardProfileDoc")).toContain("isAllowedLeaderboardProfileUsername()");
   });
 });
 

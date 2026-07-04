@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
@@ -11,6 +13,10 @@ const FRIEND_REQUEST_NOTIFICATION_BODY = "Tap to view the request";
 const FRIEND_REQUEST_NOTIFICATION_ROUTE = "/friends";
 const FRIEND_REQUEST_NOTIFICATION_TYPE = "friendRequest";
 const MAX_PUSH_DEVICE_ROWS_PER_USER = 20;
+const INVALID_FCM_TOKEN_ERROR_CODES = new Set([
+  "messaging/invalid-registration-token",
+  "messaging/registration-token-not-registered",
+]);
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -64,6 +70,12 @@ function buildProfileSnapshot(data: FirebaseFirestore.DocumentData | undefined) 
 
 function asStringMap(value: Record<string, string>) {
   return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, String(entryValue || "")]));
+}
+
+function tokenLogHash(token: unknown) {
+  const normalizedToken = asString(token);
+  if (!normalizedToken) return "";
+  return createHash("sha256").update(normalizedToken).digest("hex").slice(0, 12);
 }
 
 function buildPushData(requestId: string) {
@@ -122,19 +134,29 @@ async function markFriendRequestPushDeliveryErrors(
         errorCode: asString(item.error?.code, 160),
         errorMessage: asString(item.error?.message, 240),
         deviceId: deviceRows[index]?.id || "",
+        tokenHash: tokenLogHash(deviceRows[index]?.token),
       }))
       .filter((row) => !row.success && row.deviceId)
-      .map((row) =>
-        db.collection("users").doc(uid).collection("devices").doc(row.deviceId).set(
+      .map((row) => {
+        const invalidToken = INVALID_FCM_TOKEN_ERROR_CODES.has(row.errorCode);
+        return db.collection("users").doc(uid).collection("devices").doc(row.deviceId).set(
           {
+            ...(invalidToken
+              ? {
+                  token: FieldValue.delete(),
+                  enabled: false,
+                  appActive: false,
+                }
+              : {}),
             lastPushErrorCode: row.errorCode,
             lastPushErrorMessage: row.errorMessage,
             lastPushErrorAtMs: nowMs,
+            lastPushErrorTokenHash: invalidToken ? row.tokenHash : null,
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true }
-        )
-      )
+        );
+      })
   );
 }
 

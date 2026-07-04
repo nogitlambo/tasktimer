@@ -80,15 +80,19 @@ function emptyQuery() {
 
 function createFirestoreMock() {
   const deletesByPath = new Map<string, ReturnType<typeof vi.fn>>();
+  const setsByPath = new Map<string, ReturnType<typeof vi.fn>>();
   const docFor = (collectionName: string, id: string) => {
     const path = `${collectionName}/${id}`;
     const deleteFn = vi.fn(() => Promise.resolve());
+    const setFn = vi.fn(() => Promise.resolve());
     deletesByPath.set(path, deleteFn);
+    setsByPath.set(path, setFn);
     return {
       collectionName,
       id,
       path,
       delete: deleteFn,
+      set: setFn,
       get: vi.fn(() =>
         Promise.resolve({
           exists: collectionName === "users",
@@ -118,7 +122,7 @@ function createFirestoreMock() {
     })),
     recursiveDelete: vi.fn(() => Promise.resolve()),
   };
-  return { db, deletesByPath };
+  return { db, deletesByPath, setsByPath };
 }
 
 describe("POST /api/account/delete-user-data", () => {
@@ -144,8 +148,17 @@ describe("POST /api/account/delete-user-data", () => {
 
     expect(response.status).toBe(200);
     expect(payload).toEqual({ ok: true });
+    expect(firestore.setsByPath.get("deletedAccountUids/uid-1")).toHaveBeenCalledWith(
+      {
+        uid: "uid-1",
+        schemaVersion: 1,
+        deletedAt: "SERVER_TIMESTAMP",
+      },
+      { merge: true }
+    );
     expect(firestore.deletesByPath.get("leaderboardProfiles/uid-1")).toHaveBeenCalledTimes(1);
     expect(firestore.db.collection).toHaveBeenCalledWith("leaderboardProfiles");
+    expect(firestore.db.collection).toHaveBeenCalledWith("deletedAccountUids");
     expect(firestore.db.collection).not.toHaveBeenCalledWith("leaderboardprofiles");
   });
 });

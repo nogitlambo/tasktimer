@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -23,6 +24,7 @@ import {
   readStoredCustomAvatarSrc,
 } from "./accountProfileStorage";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "./avatarCatalog";
+import { hasDeletedAccountUidTombstone } from "./accountDeletionTombstone";
 import type { DashboardWeekStart } from "./historyChart";
 import { RANK_LADDER, getNextRank, getRankForXp, getRewardStreakLength, normalizeRewardProgress, type RankDefinition, type RewardProgressV1 } from "./rewards";
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
@@ -201,10 +203,14 @@ function asLeaderboardProfile(docSnap: QueryDocumentSnapshot | null): Leaderboar
   return normalizeLeaderboardProfileRecord(docSnap.id, docSnap.data() as Record<string, unknown>);
 }
 
+function isExcludedLeaderboardUsername(value: unknown): boolean {
+  const username = String(value || "").trim().toLowerCase();
+  return EXCLUDED_LEADERBOARD_USERNAMES.has(username);
+}
+
 function isExcludedLeaderboardProfile(profile: LeaderboardProfile | null | undefined): boolean {
   if (!profile) return false;
-  const username = String(profile.username || profile.displayLabel || "").trim().toLowerCase();
-  return EXCLUDED_LEADERBOARD_USERNAMES.has(username);
+  return isExcludedLeaderboardUsername(profile.username || profile.displayLabel);
 }
 
 function visibleLeaderboardProfiles(profiles: Array<LeaderboardProfile | null | undefined>): LeaderboardProfile[] {
@@ -444,7 +450,12 @@ export async function saveLeaderboardProfile(
 ): Promise<void> {
   const ref = leaderboardDoc(uid);
   if (!ref || !uid) return;
+  if (await hasDeletedAccountUidTombstone(uid)) return;
   const identity = await loadOwnLeaderboardIdentity(uid);
+  if (isExcludedLeaderboardUsername(identity.username || identity.displayLabel)) {
+    await deleteDoc(ref);
+    return;
+  }
   await setDoc(
     ref,
     {
@@ -476,6 +487,15 @@ export async function saveLeaderboardProfile(
 export async function patchLeaderboardProfileFromUserRoot(uid: string, patch: Record<string, unknown>): Promise<void> {
   const ref = leaderboardDoc(uid);
   if (!ref || !uid) return;
+  if (await hasDeletedAccountUidTombstone(uid)) return;
+  if (
+    (Object.prototype.hasOwnProperty.call(patch, "username") && isExcludedLeaderboardUsername(patch.username)) ||
+    (Object.prototype.hasOwnProperty.call(patch, "displayName") && isExcludedLeaderboardUsername(patch.displayName))
+  ) {
+    await deleteDoc(ref);
+    dispatchLeaderboardProfileUpdated(uid);
+    return;
+  }
   const nextPatch: Record<string, unknown> = {
     uid,
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,

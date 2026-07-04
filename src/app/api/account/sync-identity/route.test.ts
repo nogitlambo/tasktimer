@@ -41,7 +41,10 @@ describe("POST /api/account/sync-identity", () => {
         commit: vi.fn(() => Promise.resolve()),
       })),
       collection: vi.fn(() => ({
-        doc: vi.fn((id: string) => ({ id })),
+        doc: vi.fn((id: string) => ({
+          id,
+          get: vi.fn(() => Promise.resolve({ exists: false })),
+        })),
       })),
     } as never);
   });
@@ -86,6 +89,31 @@ describe("POST /api/account/sync-identity", () => {
     expect(payload).toEqual({ error: "A verified email address is required." });
   });
 
+  it("rejects identity sync for a deleted account uid", async () => {
+    const batch = vi.fn(() => ({
+      set: vi.fn(),
+      delete: vi.fn(),
+      commit: vi.fn(() => Promise.resolve()),
+    }));
+    vi.mocked(getFirebaseAdminDb).mockReturnValueOnce({
+      batch,
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn((id: string) => ({
+          id,
+          get: vi.fn(() => Promise.resolve({ exists: name === "deletedAccountUids" })),
+        })),
+      })),
+    } as never);
+
+    const response = await POST(syncIdentityRequest({ displayName: "User" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost");
+    expect(payload).toEqual({ error: "This account has been deleted." });
+    expect(batch).not.toHaveBeenCalled();
+  });
+
   it("keeps CORS headers on internal errors", async () => {
     const commit = vi.fn(() => Promise.reject(new Error("commit failed")));
     vi.mocked(getFirebaseAdminDb).mockReturnValueOnce({
@@ -95,7 +123,10 @@ describe("POST /api/account/sync-identity", () => {
         commit,
       })),
       collection: vi.fn(() => ({
-        doc: vi.fn((id: string) => ({ id })),
+        doc: vi.fn((id: string) => ({
+          id,
+          get: vi.fn(() => Promise.resolve({ exists: false })),
+        })),
       })),
     } as never);
 

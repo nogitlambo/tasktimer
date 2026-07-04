@@ -280,7 +280,7 @@ describe("POST /api/friends/requests", () => {
     );
   });
 
-  it("does not fail the friend request when FCM rejects a receiver token", async () => {
+  it("does not fail the friend request and clears the receiver token when FCM rejects it as invalid", async () => {
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);
     mocks.sendEachForMulticast.mockResolvedValue({
@@ -307,19 +307,12 @@ describe("POST /api/friends/requests", () => {
         expect.objectContaining({
           path: "users/receiver-uid/devices/receiver-native-device",
           data: expect.objectContaining({
+            token: "DELETE_FIELD",
+            enabled: false,
             lastPushErrorCode: "messaging/registration-token-not-registered",
             lastPushErrorMessage: "Requested entity was not found.",
             lastPushErrorAtMs: expect.any(Number),
-          }),
-        }),
-      ])
-    );
-    expect(db.writes).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: "users/receiver-uid/devices/receiver-native-device",
-          data: expect.objectContaining({
-            token: "DELETE_FIELD",
+            lastPushErrorTokenHash: expect.stringMatching(/^[a-f0-9]{12}$/),
           }),
         }),
       ])

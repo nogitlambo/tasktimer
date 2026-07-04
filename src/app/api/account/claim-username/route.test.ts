@@ -48,7 +48,7 @@ function claimRequest(body: Record<string, unknown>, origin = "https://localhost
   });
 }
 
-function createFirestoreMock(options?: { usernameUid?: string; existingUsername?: string }) {
+function createFirestoreMock(options?: { usernameUid?: string; existingUsername?: string; deletedUid?: boolean }) {
   const txSet = vi.fn();
   const txDelete = vi.fn();
   const txGet = vi.fn((ref: { kind: string }) => {
@@ -65,7 +65,12 @@ function createFirestoreMock(options?: { usernameUid?: string; existingUsername?
   });
   const db = {
     collection: vi.fn((name: string) => ({
-      doc: vi.fn((id: string) => ({ kind: name === "usernames" ? "username" : "user", name, id })),
+      doc: vi.fn((id: string) => ({
+        kind: name === "usernames" ? "username" : "user",
+        name,
+        id,
+        get: vi.fn(() => Promise.resolve({ exists: name === "deletedAccountUids" ? !!options?.deletedUid : false })),
+      })),
     })),
     runTransaction: vi.fn((handler: (tx: { get: typeof txGet; set: typeof txSet; delete: typeof txDelete }) => unknown) =>
       handler({ get: txGet, set: txSet, delete: txDelete })
@@ -136,6 +141,19 @@ describe("POST /api/account/claim-username", () => {
       expect.objectContaining({ username: "pilot", usernameKey: "pilot" }),
       { merge: true }
     );
+  });
+
+  it("rejects username claims for a deleted account uid", async () => {
+    const firestore = createFirestoreMock({ deletedUid: true });
+    mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
+
+    const response = await POST(claimRequest({ username: "Pilot" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost");
+    expect(payload).toEqual({ error: "This account has been deleted." });
+    expect(firestore.txSet).not.toHaveBeenCalled();
   });
 
   it("keeps CORS headers on internal errors", async () => {

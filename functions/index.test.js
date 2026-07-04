@@ -311,7 +311,7 @@ describe("sendFriendRequestPendingNotification", () => {
     expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
   });
 
-  it("marks but does not clear the receiver token when a friend request push send is rejected by FCM", async () => {
+  it("marks and clears the receiver token when a friend request push send is rejected by FCM as invalid", async () => {
     state.devices = [
       {
         id: "native-1",
@@ -365,21 +365,14 @@ describe("sendFriendRequestPendingNotification", () => {
         }),
       ],
     }));
-    expect(state.writes).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: "users/receiver-1/devices/native-1",
-          data: expect.objectContaining({
-            token: "DELETE_FIELD",
-          }),
-        }),
-      ])
-    );
     expect(state.writes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           path: "users/receiver-1/devices/native-1",
           data: expect.objectContaining({
+            token: "DELETE_FIELD",
+            enabled: false,
+            appActive: false,
             lastPushErrorCode: "messaging/registration-token-not-registered",
             lastPushErrorMessage: "Requested entity was not found.",
             lastPushErrorAtMs: expect.any(Number),

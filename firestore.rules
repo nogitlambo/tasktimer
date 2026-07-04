@@ -5,6 +5,18 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    function deletedAccountUidExists(userId) {
+      return exists(/databases/$(database)/documents/deletedAccountUids/$(userId));
+    }
+
+    function isActiveOwner(userId) {
+      return isOwner(userId) && !deletedAccountUidExists(userId);
+    }
+
+    function requestUserIsActive() {
+      return request.auth != null && !deletedAccountUidExists(request.auth.uid);
+    }
+
     function onlyKeys(allowed) {
       return request.resource.data.keys().hasOnly(allowed);
     }
@@ -143,6 +155,12 @@ service cloud.firestore {
       && (!("completedTaskCount" in value) || value.completedTaskCount == null || value.completedTaskCount is int);
     }
 
+    function isAllowedLeaderboardProfileUsername() {
+      return !("username" in request.resource.data)
+      || request.resource.data.username == null
+      || !(request.resource.data.username in ["codexemaillin_yixnc2", "codexemaillinktest"]);
+    }
+
     function isLeaderboardProfileDoc(userId) {
       return onlyKeys([
         "uid",
@@ -164,6 +182,7 @@ service cloud.firestore {
         "schemaVersion"
       ])
       && request.resource.data.uid == userId
+      && isAllowedLeaderboardProfileUsername()
       && (!("username" in request.resource.data) || request.resource.data.username == null || request.resource.data.username is string)
       && request.resource.data.displayLabel is string
       && (!("avatarId" in request.resource.data) || request.resource.data.avatarId == null || request.resource.data.avatarId is string)
@@ -816,6 +835,7 @@ service cloud.firestore {
         "createdBy"
       ])
       && request.auth != null
+      && requestUserIsActive()
       && request.resource.data.pairId is string
       && request.resource.data.users is list
       && request.resource.data.users.size() == 2
@@ -861,6 +881,7 @@ service cloud.firestore {
 
     function isFriendshipSelfProfileUpdate() {
       return request.auth != null
+      && requestUserIsActive()
       && resource != null
       && request.auth.uid in resource.data.users
       && request.resource.data.pairId == resource.data.pairId
@@ -1147,12 +1168,13 @@ service cloud.firestore {
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt != null)
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
       && request.resource.data.ownerUid == request.auth.uid
+      && requestUserIsActive()
       && scheduleDocId == (request.resource.data.ownerUid + "__" + request.resource.data.taskId);
     }
 
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isUserDoc();
+      allow create, update: if isActiveOwner(userId) && isUserDoc();
       allow delete: if isOwner(userId);
     }
 
@@ -1162,67 +1184,67 @@ service cloud.firestore {
 
     match /users/{userId}/preferences/{docId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && docId == "v1" && isPreferencesV1();
+      allow create, update: if isActiveOwner(userId) && docId == "v1" && isPreferencesV1();
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/dashboard/{docId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && docId == "v1" && isDashboardV1();
+      allow create, update: if isActiveOwner(userId) && docId == "v1" && isDashboardV1();
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/taskUi/{docId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && docId == "v1" && isTaskUiV1();
+      allow create, update: if isActiveOwner(userId) && docId == "v1" && isTaskUiV1();
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/holdingSpace/{docId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && docId == "v1" && isHoldingSpaceV1(userId);
+      allow create, update: if isActiveOwner(userId) && docId == "v1" && isHoldingSpaceV1(userId);
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/accountState/{docId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && docId == "v1" && isAccountStateV1();
+      allow create, update: if isActiveOwner(userId) && docId == "v1" && isAccountStateV1();
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/devices/{deviceId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isDeviceDoc(deviceId);
+      allow create, update: if isActiveOwner(userId) && isDeviceDoc(deviceId);
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/tasks/{taskId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isTaskDoc();
+      allow create, update: if isActiveOwner(userId) && isTaskDoc();
       allow delete: if isOwner(userId);
 
       match /history/{entryId} {
         allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isHistoryDoc();
+        allow create, update: if isActiveOwner(userId) && isHistoryDoc();
         allow delete: if isOwner(userId);
       }
 
       match /activeSession/{sessionId} {
         allow read: if isOwner(userId) && sessionId == "current";
-        allow create, update: if isOwner(userId) && sessionId == "current" && isLiveSessionDoc(taskId);
+        allow create, update: if isActiveOwner(userId) && sessionId == "current" && isLiveSessionDoc(taskId);
         allow delete: if isOwner(userId) && sessionId == "current";
       }
     }
 
     match /users/{userId}/historyEntries/{entryId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isHistoryDoc() && request.resource.data.taskId is string;
+      allow create, update: if isActiveOwner(userId) && isHistoryDoc() && request.resource.data.taskId is string;
       allow delete: if isOwner(userId);
     }
 
     match /users/{userId}/deletedTasks/{taskId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && isDeletedTaskDoc();
+      allow create, update: if isActiveOwner(userId) && isDeletedTaskDoc();
       allow delete: if isOwner(userId);
     }
 
@@ -1268,6 +1290,7 @@ service cloud.firestore {
           || request.auth.uid == resource.data.friendUid
         );
       allow create, update: if request.auth != null
+        && requestUserIsActive()
         && request.auth.uid == request.resource.data.ownerUid
         && isSharedTaskSummaryV1(shareDocId);
       allow delete: if request.auth != null
@@ -1280,9 +1303,14 @@ service cloud.firestore {
 
     match /leaderboardProfiles/{userId} {
       allow read: if request.auth != null;
-      allow create: if isOwner(userId) && isLeaderboardProfileDoc(userId);
-      allow update: if isOwner(userId) && isLeaderboardProfileDoc(userId);
+      allow create: if isActiveOwner(userId) && isLeaderboardProfileDoc(userId);
+      allow update: if isActiveOwner(userId) && isLeaderboardProfileDoc(userId);
       allow delete: if isOwner(userId);
+    }
+
+    match /deletedAccountUids/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
     }
 
     match /userEmailLookup/{emailKey} {

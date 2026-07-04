@@ -1,6 +1,6 @@
 # TaskTimer Firebase Schema
 
-Last verified: 2026-03-14
+Last verified: 2026-07-04
 
 ## Scope
 
@@ -36,6 +36,7 @@ It does not use the default Firestore database.
 9. `scheduled_time_goal_pushes`
 10. `shared_task_reminder_state`
 11. `leaderboardProfiles`
+12. `deletedAccountUids`
 
 ---
 
@@ -65,7 +66,8 @@ Allowed fields (`isUserDoc`):
 
 Access:
 
-- Read/write/delete only by owner (`request.auth.uid == userId`)
+- Read/delete only by owner (`request.auth.uid == userId`)
+- Create/update only by active owner (`request.auth.uid == userId` and no `deletedAccountUids/{userId}` tombstone exists)
 
 Subcollections:
 
@@ -221,7 +223,8 @@ Allowed fields (`isLeaderboardProfileDoc`):
 Access:
 
 - Read by authenticated users
-- Create/update/delete only by the owner (`request.auth.uid == userId`)
+- Create/update only by the active owner (`request.auth.uid == userId` and no `deletedAccountUids/{userId}` tombstone exists)
+- Delete only by the owner (`request.auth.uid == userId`)
 
 Runtime usage:
 
@@ -234,6 +237,34 @@ Notes:
 - `rewardTotalXp` is the primary global ranking field.
 - `weeklyXpGain` powers the “Rising this week” leaderboard panel.
 - `totalFocusMs` and `streakDays` are derived from finalized history plus any active live session.
+- Deleted-account UIDs are denied at the rules layer so late client writes cannot recreate public leaderboard rows.
+- Known internal test usernames are denied at the leaderboard write layer and filtered from reads.
+
+---
+
+### `deletedAccountUids/{userId}`
+
+Doc ID:
+
+- `userId = Firebase Auth UID` for an account that has completed the cloud-data deletion route
+
+Allowed fields in the current server write path:
+
+- `uid: string`
+- `deletedAt: timestamp`
+- `schemaVersion: int`
+
+Access:
+
+- Readable only by the same authenticated UID so stale clients can detect their own tombstone
+- Client create/update/delete is denied
+- Server/admin account deletion writes this tombstone before deleting user-owned data
+
+Runtime usage:
+
+- Firestore rules deny new writes under `users/{userId}` and `leaderboardProfiles/{userId}` when this document exists
+- Client leaderboard sync checks the tombstone before writing, avoiding noisy permission-denied writes from stale sessions
+- Account identity and username API routes check this collection before server/admin writes that would recreate lookup/profile records.
 
 ---
 

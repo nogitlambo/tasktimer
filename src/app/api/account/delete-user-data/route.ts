@@ -8,6 +8,7 @@ import {
   verifyFirebaseRequestUser,
 } from "../../shared/auth";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
+import { DELETED_ACCOUNT_UIDS_COLLECTION } from "../deletedAccountUid";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -110,12 +111,22 @@ export async function POST(req: Request) {
     const userRef = db.collection("users").doc(uid);
     const subscriptionRef = db.collection("userSubscriptions").doc(uid);
     const leaderboardProfileRef = db.collection("leaderboardProfiles").doc(uid);
+    const deletedAccountUidRef = db.collection(DELETED_ACCOUNT_UIDS_COLLECTION).doc(uid);
     const userSnap = await userRef.get();
     const usernameKey = asString(userSnap.exists ? userSnap.get("usernameKey") : "");
     const userEmail = asString(userSnap.exists ? userSnap.get("email") : "") || asString(email);
     const emailKey = userEmail ? emailLookupDocKey(userEmail) : "";
     const authoredFeedbackSnap = await db.collection("feedback_items").where("ownerUid", "==", uid).get();
     const authoredFeedbackIds = new Set(authoredFeedbackSnap.docs.map((docSnap) => docSnap.id));
+
+    await deletedAccountUidRef.set(
+      {
+        uid,
+        schemaVersion: 1,
+        deletedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     await Promise.all([
       db.recursiveDelete(userRef),

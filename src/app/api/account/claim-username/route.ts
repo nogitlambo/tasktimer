@@ -6,6 +6,7 @@ import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { normalizeUsername, validateUsername } from "@/lib/username";
+import { isDeletedAccountUid } from "../deletedAccountUid";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -35,6 +36,9 @@ export async function POST(req: Request) {
 
     const usernameKey = normalizeUsername(rawUsername);
     const db = getFirebaseAdminDb();
+    if (await isDeletedAccountUid(db, uid)) {
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted." }, { status: 410 }));
+    }
     const userRef = db.collection("users").doc(uid);
     const usernameRef = db.collection("usernames").doc(usernameKey);
 

@@ -5,6 +5,7 @@ const firestoreMocks = vi.hoisted(() => {
   const getDoc = vi.fn();
   return {
     collection: vi.fn((_db, path: string) => ({ path })),
+    deleteDoc: vi.fn(() => Promise.resolve()),
     doc: vi.fn((_db, path: string, id: string) => ({ path, id })),
     getDoc,
     getDocs,
@@ -745,7 +746,9 @@ describe("saveLeaderboardProfile", () => {
   it("persists the weekly focus metric used by leaderboard profile rules", async () => {
     firestoreMocks.getDoc.mockReset();
     firestoreMocks.setDoc.mockClear();
-    firestoreMocks.getDoc.mockResolvedValueOnce({ exists: () => false, get: vi.fn() });
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() });
 
     await saveLeaderboardProfile("uid-1", {
       rewardCurrentRankId: "initiate",
@@ -769,6 +772,52 @@ describe("saveLeaderboardProfile", () => {
       }),
       { merge: true }
     );
+  });
+
+  it("does not recreate a leaderboard profile for a deleted account uid", async () => {
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.deleteDoc.mockClear();
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc.mockResolvedValueOnce({ exists: () => true, get: vi.fn() });
+
+    await saveLeaderboardProfile("deleted-uid", {
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      completedTaskCount: 7,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 20,
+    });
+
+    expect(firestoreMocks.doc).toHaveBeenCalledWith(expect.anything(), "deletedAccountUids", "deleted-uid");
+    expect(firestoreMocks.deleteDoc).not.toHaveBeenCalled();
+    expect(firestoreMocks.setDoc).not.toHaveBeenCalled();
+  });
+
+  it("removes denylisted test usernames instead of writing public leaderboard profiles", async () => {
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.deleteDoc.mockClear();
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({
+        exists: () => true,
+        get: (field: string) => (field === "username" ? "codexemaillinktest" : null),
+      });
+
+    await saveLeaderboardProfile("codex-uid", {
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      completedTaskCount: 7,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 20,
+    });
+
+    expect(firestoreMocks.deleteDoc).toHaveBeenCalledWith(expect.objectContaining({ path: "leaderboardProfiles", id: "codex-uid" }));
+    expect(firestoreMocks.setDoc).not.toHaveBeenCalled();
   });
 });
 

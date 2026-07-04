@@ -5,6 +5,7 @@ import { createApiAuthErrorResponse, verifyFirebaseRequestUser } from "../../sha
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { createReportableLogId, writeReportableLog } from "../../shared/reportableLog";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { isDeletedAccountUid } from "../deletedAccountUid";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
     const displayName = asString(body.displayName, 120) || null;
     const prevEmail = normalizeEmail(body.prevEmail);
     const db = getFirebaseAdminDb();
+    if (await isDeletedAccountUid(db, uid)) {
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: "This account has been deleted." }, { status: 410 }));
+    }
 
     const batch = db.batch();
     const currentLookupRef = db.collection("userEmailLookup").doc(emailLookupDocKey(authEmail));

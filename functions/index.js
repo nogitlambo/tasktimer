@@ -249,6 +249,12 @@ async function cleanupInvalidDeviceTokens(uid, deviceRows, response, opts = {}) 
             .set(
               {
                 token: FieldValue.delete(),
+                enabled: false,
+                appActive: false,
+                lastPushErrorCode: asString(row.errorCode).slice(0, 160),
+                lastPushErrorMessage: asString(row.errorMessage).slice(0, 240),
+                lastPushErrorAtMs: nowMs,
+                lastPushErrorTokenHash: asString(row.tokenHash).slice(0, 40),
                 updatedAt: FieldValue.serverTimestamp(),
               },
               {merge: true}
@@ -1112,7 +1118,7 @@ async function sendFriendRequestPendingNotification(event) {
     webBody: FRIEND_REQUEST_NOTIFICATION_BODY,
     allowWeb: true,
     skipIfForeground: false,
-    cleanupInvalidTokens: false,
+    cleanupInvalidTokens: true,
   });
 
   logger.info("Friend request push notification processed", {
