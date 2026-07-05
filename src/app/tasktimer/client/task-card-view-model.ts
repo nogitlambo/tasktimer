@@ -93,7 +93,7 @@ function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => 
 
 function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState) {
   if (state === "launch") {
-    return '<span class="taskPrimaryActionWord" aria-hidden="true"><span>L</span><span class="taskPrimaryActionAccentLetter">A</span><span>UNCH</span></span><span class="taskPrimaryActionSrText">Launch</span>';
+    return "LAUNCH";
   }
   if (state === "done") {
     return '<span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span>';

@@ -114,7 +114,9 @@ describe("task card view model", () => {
     expect(rendered.className).toBe("task");
     expect(rendered.html).toContain('data-action="start" title="Launch"');
     expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionLaunch");
-    expect(rendered.html).toContain("taskPrimaryActionAccentLetter");
+    expect(rendered.html).toContain(">LAUNCH</span>");
+    expect(rendered.html).not.toContain("taskPrimaryActionWord");
+    expect(rendered.html).not.toContain("taskPrimaryActionAccentLetter");
     expect(rendered.html).not.toContain('title="Resume"');
     expect(rendered.html).not.toContain("Done until tomorrow");
     expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');

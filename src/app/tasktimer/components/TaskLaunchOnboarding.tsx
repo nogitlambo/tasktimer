@@ -42,22 +42,35 @@ type TaskLaunchOnboardingProps = {
   preferences: UserPreferencesV1 | null;
 };
 
-type StepKey = "username" | "greeting" | "chronotypeChoice" | "intro" | "days" | "hours" | "push" | "weekStart";
+type StepKey =
+  | "username"
+  | "greeting"
+  | "chronotypeChoice"
+  | "chronotypeSelection"
+  | "chronotypeResult"
+  | "days"
+  | "hours"
+  | "push"
+  | "weekStart";
 type OnboardingTimeField = "start" | "end";
 
-export const ONBOARDING_CHRONOTYPE_INTRO =
-  "TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and energy are strongest, instead of forcing productivity when it does not fit.";
 export const ONBOARDING_GREETING_SUBTEXT = "Let's set up your profile around how you work best. A few quick questions will help personalise your experience.";
 
-export const ONBOARDING_CHRONOTYPE_CHOICE_PROMPT = "Which one of the below types best describes you?";
+export const ONBOARDING_CHRONOTYPE_CHOICE_PROMPT = "Know your chronotype";
+export const ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT = [
+  "Your chronotype reflects the times of day when your energy and focus are usually at their strongest.",
+  "TaskLaunch uses this rhythm to schedule tasks more intelligently, placing them when you are most likely to feel focused, energised, and ready to start.",
+] as const;
+export const ONBOARDING_CHRONOTYPE_SELECTION_PROMPT = "Which best describes you?";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
   { key: "greeting", title: "Greeting" },
   { key: "chronotypeChoice", title: ONBOARDING_CHRONOTYPE_CHOICE_PROMPT },
-  { key: "intro", title: "A realistic productivity tool" },
-  { key: "days", title: "Productivity Days" },
+  { key: "chronotypeSelection", title: ONBOARDING_CHRONOTYPE_SELECTION_PROMPT },
+  { key: "chronotypeResult", title: "Chronotype Result" },
   { key: "hours", title: "Productivity Hours" },
+  { key: "days", title: "Productivity Days" },
   { key: "weekStart", title: "Week Start" },
   { key: "push", title: "Notifications" },
 ];
@@ -66,21 +79,65 @@ export const ONBOARDING_CHRONOTYPE_OPTIONS = [
   {
     id: "early-riser",
     label: "1",
-    description: "Early riser and tend to function at my best between early to late morning, but fade by mid to late afternoon.",
+    animal: "lion",
+    imageSrc: "/onboarding/chronotype_lion.webp",
+    thumbnailSrc: "/onboarding/chronotype_lion_thumbnail.webp",
+    accentColor: "#ffad33",
+    resultCopy: [
+      "Your chronotype is similar to that of a lion.",
+      "It may surprise you that only ~15% of people fall into this category.",
+      "Most productive - 9:00 AM to 2:00 PM",
+    ],
+    productivityStartTime: "09:00",
+    productivityEndTime: "14:00",
+    description: "Early riser, and tend to function best between early morning to early afternoon.",
   },
   {
     id: "sun-aligned",
     label: "2",
+    animal: "bear",
+    imageSrc: "/onboarding/chronotype_bear.webp",
+    thumbnailSrc: "/onboarding/chronotype_bear_thumbnail.webp",
+    accentColor: "#4db8ff",
+    resultCopy: [
+      "Your chronotype is similar to that of a bear.",
+      "This is the most common chronotype, with ~55% of people in this category.",
+      "Most productive - 10:00 AM to 3:00 PM",
+    ],
+    productivityStartTime: "10:00",
+    productivityEndTime: "15:00",
     description: "Sleep-wake patterns align closely with the sun. Most productive from mid-morning to late afternoon.",
   },
   {
     id: "light-sleeper",
     label: "4",
+    animal: "dolphin",
+    imageSrc: "/onboarding/chronotype_dolphin.webp",
+    thumbnailSrc: "/onboarding/chronotype_dolphin_thumbnail.webp",
+    accentColor: "#35d7dc",
+    resultCopy: [
+      "Your chronotype is similar to that of a dolphin.",
+      "Dolphin chronotypes are less common, accounting for ~10-15% of people.",
+      "Most productive - 3:00 PM to 9:00 PM",
+    ],
+    productivityStartTime: "15:00",
+    productivityEndTime: "21:00",
     description: "Light sleeper, prone to insomnia, and most productive from midday to early evening.",
   },
   {
     id: "night-owl",
     label: "3",
+    animal: "wolf",
+    imageSrc: "/onboarding/chronotype_wolf.webp",
+    thumbnailSrc: "/onboarding/chronotype_wolf_thumbnail.webp",
+    accentColor: "#b58cff",
+    resultCopy: [
+      "Your chronotype is similar to that of a wolf.",
+      "Wolf chronotypes account for ~15-30% of people.",
+      "Most productive - 5:00 PM to 11:00 PM",
+    ],
+    productivityStartTime: "17:00",
+    productivityEndTime: "23:00",
     description: "Classic night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
   },
 ] as const;
@@ -149,7 +206,7 @@ export function canContinueOnboardingStep(
   selectedChronotypeChoiceId = ""
 ) {
   if (step === "days") return selectedDays.length > 0;
-  if (step === "chronotypeChoice") {
+  if (step === "chronotypeSelection") {
     return ONBOARDING_CHRONOTYPE_OPTIONS.some((option) => option.id === selectedChronotypeChoiceId);
   }
   return true;
@@ -159,10 +216,38 @@ export function toggleOnboardingChronotypeChoice(currentId: string, nextId: Onbo
   return currentId === nextId ? "" : nextId;
 }
 
+export function resolveOnboardingChronotypeResult(choiceId: string) {
+  return ONBOARDING_CHRONOTYPE_OPTIONS.find((option) => option.id === choiceId) || null;
+}
+
+export function onboardingChronotypeResultTitle(choiceId: string) {
+  const result = resolveOnboardingChronotypeResult(choiceId);
+  return result ? `Your chronotype is ${result.animal}` : "Your chronotype is your selected type";
+}
+
+export function seedOnboardingChronotypeHours(input: {
+  selectedChronotypeChoiceId: string;
+  currentStartTime: string;
+  currentEndTime: string;
+  hoursTouched: boolean;
+}) {
+  const result = resolveOnboardingChronotypeResult(input.selectedChronotypeChoiceId);
+  if (!result || input.hoursTouched) {
+    return {
+      startTime: input.currentStartTime,
+      endTime: input.currentEndTime,
+    };
+  }
+  return {
+    startTime: result.productivityStartTime,
+    endTime: result.productivityEndTime,
+  };
+}
+
 function stepIntro(step: StepKey, isNativeRuntime: boolean) {
   if (step === "username") return "Confirm the username people will see in TaskLaunch social surfaces.";
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
-  if (step === "intro") return ONBOARDING_CHRONOTYPE_INTRO;
+  if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
   if (step === "days") return "Choose the days that count toward your productivity streaks, rewards, and dashboard insights.";
   if (step === "hours") return "Set the time block when you are usually at your best.";
   if (step === "weekStart") return "Choose which day your week starts on.";
@@ -174,10 +259,12 @@ function alertUsernameError(message: string) {
   if (typeof window !== "undefined") window.alert(message);
 }
 
-export function onboardingTitle(step: StepKey, username: string) {
+export function onboardingTitle(step: StepKey, username: string, selectedChronotypeChoiceId = "") {
   if (step === "username") return "Welcome";
   if (step === "greeting") return `Good to meet you, ${username}!`;
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
+  if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
+  if (step === "chronotypeResult") return onboardingChronotypeResultTitle(selectedChronotypeChoiceId);
   return ONBOARDING_STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
 }
 
@@ -225,27 +312,31 @@ export function isOnboardingFinishDisabled(busy: boolean) {
   return busy;
 }
 
-export function onboardingCompletedProgressPercent(stepIndex: number, totalSteps: number) {
-  const total = Math.max(0, Math.floor(Number(totalSteps) || 0));
-  if (total <= 0) return 0;
-  const completed = Math.max(0, Math.min(total, Math.floor(Number(stepIndex) || 0)));
-  return Math.round((completed / total) * 100);
-}
-
-export function shouldShowOnboardingProgressRing(stepIndex: number) {
-  return Math.floor(Number(stepIndex) || 0) >= 2;
-}
-
 export function shouldShowOnboardingStepImage(step: StepKey) {
-  return step !== "username" && step !== "greeting" && step !== "chronotypeChoice" && step !== "weekStart";
+  return (
+    step !== "username" &&
+    step !== "greeting" &&
+    step !== "chronotypeChoice" &&
+    step !== "chronotypeSelection" &&
+    step !== "chronotypeResult" &&
+    step !== "push" &&
+    step !== "weekStart"
+  );
 }
 
 export function shouldShowOnboardingStepSubtext(step: StepKey) {
-  return step !== "days" && step !== "greeting" && step !== "chronotypeChoice" && step !== "weekStart";
+  return (
+    step !== "days" &&
+    step !== "greeting" &&
+    step !== "chronotypeChoice" &&
+    step !== "chronotypeSelection" &&
+    step !== "chronotypeResult" &&
+    step !== "weekStart"
+  );
 }
 
-type OnboardingProgressStyle = CSSProperties & {
-  "--onboarding-progress": string;
+type OnboardingChronotypeAccentStyle = CSSProperties & {
+  "--onboarding-chronotype-accent": string;
 };
 
 export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardingProps) {
@@ -262,6 +353,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [productivityDays, setProductivityDays] = useState<DashboardWeekStart[]>([]);
   const [startTime, setStartTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_START_TIME);
   const [endTime, setEndTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_END_TIME);
+  const [hoursTouched, setHoursTouched] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushTouched, setPushTouched] = useState(false);
   const [weekStartDropdownOpen, setWeekStartDropdownOpen] = useState(false);
@@ -283,9 +375,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const usernameConfirmed = !!usernameConfirmedAtMs && normalizeUsername(usernameDraft) === normalizeUsername(username);
   const selectedDays = useMemo(() => normalizeOnboardingProductivityDays(productivityDays), [productivityDays]);
   const selectedWeekStartOption = WEEK_START_OPTIONS.find((option) => option.value === weekStarting) ?? WEEK_START_OPTIONS[0];
-  const onboardingHeadingText = onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there");
-  const onboardingProgressPercent = onboardingCompletedProgressPercent(stepIndex, ONBOARDING_STEPS.length);
-  const showProgressRing = shouldShowOnboardingProgressRing(stepIndex);
+  const selectedChronotypeResult = resolveOnboardingChronotypeResult(selectedChronotypeChoiceId);
+  const onboardingHeadingText = onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there", selectedChronotypeChoiceId);
   const showStepImage = shouldShowOnboardingStepImage(activeStep);
   const showStepSubtext = shouldShowOnboardingStepSubtext(activeStep);
   const selectedAvatar = AVATAR_CATALOG.find((avatar) => avatar.id === selectedAvatarId) || AVATAR_CATALOG[0] || null;
@@ -330,6 +421,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setProductivityDays(normalizeOnboardingProductivityDays(preferenceDraft.optimalProductivityDays));
       setStartTime(preferenceDraft.optimalProductivityStartTime);
       setEndTime(preferenceDraft.optimalProductivityEndTime);
+      setHoursTouched(false);
       setPushEnabled(isNativeRuntime ? !!preferences?.mobilePushAlertsEnabled : !!preferences?.webPushAlertsEnabled);
       setPushTouched(false);
       setStepIndex(0);
@@ -539,7 +631,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const saveCurrentStep = useCallback(async () => {
     if (activeStep === "username") return confirmUsername();
     if (!canContinueOnboardingStep(activeStep, selectedDays, selectedChronotypeChoiceId)) {
-      setError(activeStep === "chronotypeChoice" ? "Select the type that best describes you before continuing." : "Select at least one productivity day before continuing.");
+      setError(activeStep === "chronotypeSelection" ? "Select the type that best describes you before continuing." : "Select at least one productivity day before continuing.");
       return false;
     }
     const preferencePayload = onboardingStepPreferencePayload({
@@ -610,6 +702,21 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     setError("");
   };
 
+  const selectChronotypeChoice = (nextOptionId: OnboardingChronotypeChoiceId) => {
+    const nextId = toggleOnboardingChronotypeChoice(selectedChronotypeChoiceId, nextOptionId);
+    const nextHours = seedOnboardingChronotypeHours({
+      selectedChronotypeChoiceId: nextId,
+      currentStartTime: startTime,
+      currentEndTime: endTime,
+      hoursTouched,
+    });
+    setSelectedChronotypeChoiceId(nextId);
+    setStartTime(nextHours.startTime);
+    setEndTime(nextHours.endTime);
+    setStatus("");
+    setError("");
+  };
+
   const openClockTimePicker = (field: OnboardingTimeField) => {
     const input = field === "start" ? startTimeInputRef.current : endTimeInputRef.current;
     if (!input) return;
@@ -642,24 +749,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const isGreetingStep = activeStep === "greeting";
   const isChronotypeChoiceStep = activeStep === "chronotypeChoice";
+  const isChronotypeSelectionStep = activeStep === "chronotypeSelection";
+  const isChronotypeResultStep = activeStep === "chronotypeResult";
 
   return (
     <div className="overlay" id="onboardingOverlay" style={{ display: "flex" }}>
       <div className="modal" role="dialog" aria-modal="true" aria-label="TaskLaunch onboarding">
-        <div className="onboardingStepMeta" aria-label="Onboarding progress">
-          <span className="onboardingProgressLabel">{onboardingProgressPercent}% Complete</span>
-          {showProgressRing ? (
-            <span
-              className="onboardingProgressRing"
-              role="progressbar"
-              aria-label="Onboarding progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={onboardingProgressPercent}
-              style={{ "--onboarding-progress": `${onboardingProgressPercent}%` } as OnboardingProgressStyle}
-            />
-          ) : null}
-        </div>
         {activeStep !== "username" && !isGreetingStep ? (
           <button className="onboardingSkipLink" type="button" onClick={() => void closeWithState("dismissed")} disabled={busy}>
             Skip
@@ -668,21 +763,78 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         {showStepImage ? (
           <AppImg
             className={`onboardingChronotypePreview${activeStep === "days" ? " onboardingProductivityDaysPreview" : ""}`}
-            src={activeStep === "days" ? "/onboarding/onboarding_productivity_days.webp" : "/onboarding/01_onboarding-chronotypes.webp"}
-            alt={activeStep === "days" ? "Productivity days preview" : "Chronotype alignment preview"}
-            width={activeStep === "days" ? 1967 : 1597}
-            height={activeStep === "days" ? 799 : 985}
+            src={
+              activeStep === "days"
+                ? "/onboarding/onboarding_productivity_days.webp"
+                : selectedChronotypeResult?.thumbnailSrc || "/onboarding/chronotypes.webp"
+            }
+            alt={
+              activeStep === "days"
+                ? "Productivity days preview"
+                : selectedChronotypeResult
+                  ? `${selectedChronotypeResult.animal} chronotype`
+                  : "Chronotype alignment preview"
+            }
+            width={activeStep === "days" ? 1967 : 512}
+            height={activeStep === "days" ? 799 : 512}
           />
         ) : null}
-        <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
-          {onboardingHeadingText}
-        </h2>
+        {isChronotypeResultStep && selectedChronotypeResult ? (
+          <>
+            <AppImg
+              className="onboardingChronotypePreview onboardingChronotypeResultImage"
+              src={selectedChronotypeResult.thumbnailSrc}
+              alt={`${selectedChronotypeResult.animal} chronotype`}
+              width={512}
+              height={512}
+            />
+            <h2
+              className="onboardingGreetingTitle onboardingChronotypeResultTitle"
+              key={`onboarding-heading-${activeStep}`}
+              aria-label={`Your chronotype is ${selectedChronotypeResult.animal}`}
+            >
+              <span className="onboardingChronotypeResultTitleBase">Your chronotype is</span>
+              <span className="onboardingChronotypeResultDots" aria-hidden="true">
+                <span className="onboardingChronotypeResultDot">.</span>
+                <span className="onboardingChronotypeResultDot">.</span>
+                <span className="onboardingChronotypeResultDot">.</span>
+              </span>
+              <span
+                className="onboardingChronotypeAccent onboardingChronotypeResultAnimal"
+                style={
+                  {
+                    "--onboarding-chronotype-accent": selectedChronotypeResult.accentColor,
+                  } as OnboardingChronotypeAccentStyle
+                }
+                aria-hidden="true"
+              >
+                {selectedChronotypeResult.animal}
+              </span>
+            </h2>
+            <div
+              className="onboardingGreetingDivider onboardingDaysDivider onboardingChronotypeResultDivider"
+              key={`onboarding-divider-${activeStep}`}
+              aria-hidden="true"
+            />
+          </>
+        ) : (
+          <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
+            {onboardingHeadingText}
+          </h2>
+        )}
         {isGreetingStep ? (
-          <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
-            {ONBOARDING_GREETING_SUBTEXT}
-          </p>
+          <>
+            <div
+              className="onboardingGreetingDivider onboardingGreetingStepDivider"
+              key={`onboarding-divider-${activeStep}`}
+              aria-hidden="true"
+            />
+            <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
+              {ONBOARDING_GREETING_SUBTEXT}
+            </p>
+          </>
         ) : null}
-        {!isGreetingStep && activeStep !== "days" ? (
+        {!isGreetingStep && !isChronotypeResultStep && activeStep !== "days" ? (
           <div
             className="onboardingGreetingDivider onboardingDaysDivider"
             key={`onboarding-divider-${activeStep}`}
@@ -693,22 +845,26 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           <p
             className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
               activeStep === "push" ? " onboardingNotificationsSubtext" : ""
-            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${activeStep === "intro" ? " onboardingIntroSubtext" : ""}${
+            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
               activeStep === "username" ? " onboardingUsernameSubtext" : ""
             }`}
             key={`onboarding-subtext-${activeStep}`}
           >
             {activeStep === "username" ? (
               "Please choose an avatar and set a username for your profile:"
-            ) : activeStep === "intro" ? (
-              <>
-                TaskLaunch is a time tracking app built to turn even the smallest effort into lasting habits. Plan tasks around the days and times your focus and
-                energy are strongest, instead of forcing productivity when it does not fit.
-              </>
             ) : (
               stepIntro(activeStep, isNativeRuntime)
             )}
           </p>
+        ) : null}
+        {isChronotypeChoiceStep ? (
+          <div className="onboardingChronotypeChoiceSubtext">
+            {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
+              <p className="modalSubtext onboardingChronotypeChoiceSubtextLine" key={line}>
+                {line}
+              </p>
+            ))}
+          </div>
         ) : null}
 
         {activeStep === "username" ? (
@@ -772,30 +928,45 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           </div>
         ) : null}
 
-        {isChronotypeChoiceStep ? (
-          <div className={`onboardingChronotypeTileGrid${selectedChronotypeChoiceId ? " hasSelection" : ""}`} role="radiogroup" aria-label={ONBOARDING_CHRONOTYPE_CHOICE_PROMPT}>
-            {ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => {
+        {isChronotypeSelectionStep ? (
+          <div
+            className={`onboardingChronotypeTileGrid${selectedChronotypeChoiceId ? " hasSelection" : ""}`}
+            role="radiogroup"
+            aria-label={ONBOARDING_CHRONOTYPE_SELECTION_PROMPT}
+          >
+            {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => {
               const selected = option.id === selectedChronotypeChoiceId;
               const faded = !!selectedChronotypeChoiceId && !selected;
               return (
-                <button
-                  className={`onboardingChronotypeTile${selected ? " isSelected" : ""}${faded ? " isFaded" : ""}`}
-                  type="button"
-                  key={option.id}
-                  role="radio"
-                  aria-checked={selected}
-                  aria-describedby={error ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}
-                  onClick={() => {
-                    setSelectedChronotypeChoiceId((current) => toggleOnboardingChronotypeChoice(current, option.id));
-                    setStatus("");
-                    setError("");
-                  }}
-                >
-                  <span className="onboardingChronotypeTileNumber">{option.label}</span>
-                  <span className="onboardingChronotypeTileText">{option.description}</span>
-                </button>
+                <div className={`onboardingChronotypeTileReveal onboardingChronotypeTileReveal${optionIndex}`} key={option.id}>
+                  <button
+                    className={`onboardingChronotypeTile${selected ? " isSelected" : ""}${faded ? " isFaded" : ""}`}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-describedby={error ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}
+                    onClick={() => {
+                      selectChronotypeChoice(option.id);
+                    }}
+                  >
+                    <span className="onboardingChronotypeTileImageFrame" aria-hidden="true">
+                      <AppImg className="onboardingChronotypeTileImage" src={option.imageSrc} alt="" width={128} height={128} />
+                    </span>
+                    <span className="onboardingChronotypeTileText">{option.description}</span>
+                  </button>
+                </div>
               );
             })}
+          </div>
+        ) : null}
+
+        {activeStep === "chronotypeResult" ? (
+          <div className="onboardingChronotypeResultCopy">
+            {(selectedChronotypeResult?.resultCopy.slice(1) || []).map((line) => (
+              <p className="modalSubtext onboardingChronotypeResultText" key={line}>
+                {line}
+              </p>
+            ))}
           </div>
         ) : null}
 
@@ -870,6 +1041,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 value={startTime}
                 onChange={(event) => {
                   setStartTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_START_TIME));
+                  setHoursTouched(true);
                   setStatus("");
                   setError("");
                 }}
@@ -893,6 +1065,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 value={endTime}
                 onChange={(event) => {
                   setEndTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_END_TIME));
+                  setHoursTouched(true);
                   setStatus("");
                   setError("");
                 }}
@@ -967,7 +1140,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {activeStep !== "username" && activeStep !== "push" && !isGreetingStep && status ? <p className="modalSubtext onboardingStatusText">{status}</p> : null}
         {activeStep !== "username" && !isGreetingStep && error ? (
-          <p className="confirmText onboardingErrorText" id={isChronotypeChoiceStep ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}>
+          <p className="confirmText onboardingErrorText" id={isChronotypeSelectionStep ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}>
             {error}
           </p>
         ) : null}
@@ -990,7 +1163,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleNext()}
-              disabled={busy || (isChronotypeChoiceStep && !selectedChronotypeChoiceId)}
+              disabled={busy || (isChronotypeSelectionStep && !selectedChronotypeChoiceId)}
             >
               {isGreetingStep ? "Let's Go!" : "Continue"}
             </button>

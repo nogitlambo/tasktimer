@@ -1192,8 +1192,9 @@ describe("task timer session tick", () => {
     expect(primaryActionBtn.dataset.action).toBe("start");
     expect(primaryActionBtn.title).toBe("Launch");
     expect(primaryActionBtn.disabled).toBe(false);
-    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionWord");
-    expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionAccentLetter");
+    expect(primaryActionBtn.innerHTML).toContain(">LAUNCH</span>");
+    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionWord");
+    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionAccentLetter");
     expect(resetBtn.disabled).toBe(true);
     expect(resetBtn.title).toBe("No time to reset");
 

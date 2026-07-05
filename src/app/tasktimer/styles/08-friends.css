@@ -4310,7 +4310,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
   color:#fff;
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(20px, 1.62vw, 26px);
+  font-size:clamp(16px, 1.32vw, 21px);
   font-weight:800;
   letter-spacing:0;
   line-height:1.15;
@@ -5362,7 +5362,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
-    font-size:clamp(15px, 4.7vw, 20px);
+    font-size:clamp(13px, 3.9vw, 16px);
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
