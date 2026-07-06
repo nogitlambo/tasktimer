@@ -64,7 +64,7 @@ export function createTaskTimerRewardSessionBridge(options: CreateTaskTimerRewar
     },
     finalizeLiveSession(
       task: Task,
-      opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
+      opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean; historyCapBoundaryMs?: number | null }
     ) {
       return options.getRewardsHistoryApi()?.finalizeLiveSession(task, opts) ?? 0;
     },

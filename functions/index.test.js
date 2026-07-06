@@ -696,7 +696,7 @@ describe("sendScheduledTaskNotification", () => {
         native: true,
         provider: "fcm",
         platform: "android",
-        appActive: false,
+        appActive: true,
         appStateUpdatedAtMs: dueAtMs,
       },
     ];
@@ -747,6 +747,148 @@ describe("sendScheduledTaskNotification", () => {
         notificationKind: "missedScheduledTask",
         eventType: "missedScheduledTask",
       })
+    );
+  });
+
+  it("skips and reschedules a planned-start push when canonical history already has time for that day", async () => {
+    const dueAtMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.historyEntries = [
+      {
+        id: "history-1",
+        taskId: "task-1",
+        ts: new Date(2026, 4, 29, 8, 30, 0).getTime(),
+        name: "Task 1",
+        ms: 5 * 60_000,
+      },
+    ];
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: true,
+        appStateUpdatedAtMs: dueAtMs,
+      },
+    ];
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "plannedStartReminder",
+        baseEventType: "plannedStartReminder",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, dueAtMs);
+
+    expect(result.status).toBe("skipped");
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+      }),
+      { merge: true }
+    );
+  });
+
+  it("still sends a planned-start push when canonical history is from another day or has no positive time", async () => {
+    const dueAtMs = new Date(2026, 4, 29, 9, 0, 0).getTime();
+    state.tasks["users/user-1/tasks/task-1"] = {
+      id: "task-1",
+      name: "Task 1",
+      plannedStartDay: "fri",
+      plannedStartTime: "09:00",
+      plannedStartPushRemindersEnabled: true,
+    };
+    state.historyEntries = [
+      {
+        id: "history-previous-day",
+        taskId: "task-1",
+        ts: new Date(2026, 4, 28, 18, 0, 0).getTime(),
+        name: "Task 1",
+        ms: 20 * 60_000,
+      },
+      {
+        id: "history-zero-today",
+        taskId: "task-1",
+        ts: new Date(2026, 4, 29, 8, 30, 0).getTime(),
+        name: "Task 1",
+        ms: 0,
+      },
+    ];
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: true,
+        appStateUpdatedAtMs: dueAtMs,
+      },
+    ];
+    state.sendEachForMulticast = vi.fn(async () => ({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    }));
+    const ref = {
+      path: "scheduled_time_goal_pushes/task-1",
+      set: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+    };
+    const docSnap = {
+      id: "task-1",
+      ref,
+      data: () => ({
+        ownerUid: "user-1",
+        taskId: "task-1",
+        taskName: "Task 1",
+        dueAtMs,
+        eventType: "plannedStartReminder",
+        baseEventType: "plannedStartReminder",
+        plannedStartDay: "fri",
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      }),
+    };
+
+    const result = await __testing.processDuePlannedStartTask(docSnap, dueAtMs);
+
+    expect(result.status).toBe("sent");
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(ref.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dueAtMs: new Date(2026, 5, 5, 9, 0, 0).getTime(),
+        notificationKind: "plannedStart",
+        eventType: "plannedStartReminder",
+      }),
+      { merge: true }
     );
   });
 

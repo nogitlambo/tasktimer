@@ -895,7 +895,20 @@ async function activateTaskFromPush(uid, taskId, nowMs) {
   return {ok: true};
 }
 
-async function hasLoggedTimeToday(uid, taskId, dayStartMs, dayEndMs) {
+function historyDocHasPositiveTimeForDay(docSnap, dayStartMs, dayEndMs) {
+  const data = docSnap.data?.() || {};
+  const ts = asInt(data.ts ?? docSnap.get?.("ts"), null);
+  return ts != null && ts >= dayStartMs && ts < dayEndMs && asInt(data.ms ?? docSnap.get?.("ms"), 0) > 0;
+}
+
+async function hasLoggedTimeForDay(uid, taskId, dayStartMs, dayEndMs) {
+  const canonicalHistorySnap = await db.collection("users").doc(uid).collection("historyEntries")
+    .where("taskId", "==", taskId)
+    .get();
+  if (canonicalHistorySnap.docs.some((docSnap) => historyDocHasPositiveTimeForDay(docSnap, dayStartMs, dayEndMs))) {
+    return true;
+  }
+
   const historySnap = await db.collection("users").doc(uid).collection("tasks").doc(taskId)
     .collection("history")
     .where("ts", ">=", dayStartMs)
@@ -1352,6 +1365,10 @@ async function processDuePlannedStartTask(docSnap, nowMs) {
     await reschedulePlannedStart(nextLocalDayStartMs(scheduledOccurrenceMs));
     return {status: "skipped"};
   }
+  if (await hasLoggedTimeForDay(uid, taskId, startOfLocalDayMs(scheduledOccurrenceMs), nextLocalDayStartMs(scheduledOccurrenceMs))) {
+    await reschedulePlannedStart(nextLocalDayStartMs(scheduledOccurrenceMs));
+    return {status: "skipped"};
+  }
   const nextDueAtMs = computeNextPlannedStartDueAtMsFromSchedule(taskPlannedStartDay, taskPlannedStartTime, taskPlannedStartByDay, nowMs);
   if (taskRunning) {
     await reschedulePlannedStart(nowMs);
@@ -1465,7 +1482,7 @@ async function processDueUnscheduledGapTasks(uid, docSnaps, nowMs) {
       deferredDueAtByTaskId.set(id, dayEndMs);
       continue;
     }
-    if (await hasLoggedTimeToday(uid, id, dayStartMs, dayEndMs)) {
+    if (await hasLoggedTimeForDay(uid, id, dayStartMs, dayEndMs)) {
       deferredDueAtByTaskId.set(id, dayEndMs);
       continue;
     }

@@ -56,10 +56,10 @@ type OnboardingTimeField = "start" | "end";
 
 export const ONBOARDING_GREETING_SUBTEXT = "Let's set up your profile around how you work best. A few quick questions will help personalise your experience.";
 
-export const ONBOARDING_CHRONOTYPE_CHOICE_PROMPT = "Know your chronotype";
+export const ONBOARDING_CHRONOTYPE_CHOICE_PROMPT = "Do you know your chronotype?";
 export const ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT = [
-  "Your chronotype reflects the times of day when your energy and focus are usually at their strongest.",
-  "TaskLaunch uses this rhythm to schedule tasks more intelligently, placing them when you are most likely to feel focused, energised, and ready to start.",
+  "Your chronotype reflects the times of day when your energy and focus are at peak levels.",
+  "There are four commonly recognised chronotypes, each represented by an animal with its own natural pattern of energy, focus, and rest.",
 ] as const;
 export const ONBOARDING_CHRONOTYPE_SELECTION_PROMPT = "Which best describes you?";
 
@@ -225,6 +225,26 @@ export function onboardingChronotypeResultTitle(choiceId: string) {
   return result ? `Your chronotype is ${result.animal}` : "Your chronotype is your selected type";
 }
 
+type OnboardingChronotypeResult = NonNullable<ReturnType<typeof resolveOnboardingChronotypeResult>>;
+
+function titleCaseOnboardingChronotypeAnimal(value: string) {
+  return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : "Selected";
+}
+
+export function formatOnboardingChronotypeProductivityCopy(result: OnboardingChronotypeResult) {
+  const animal = titleCaseOnboardingChronotypeAnimal(result.animal);
+  const startLabel = formatOnboardingClockTimeLabel(result.productivityStartTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME);
+  const endLabel = formatOnboardingClockTimeLabel(result.productivityEndTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME);
+  return `${animal} chronotypes are most productive between ${startLabel} and ${endLabel}.`;
+}
+
+export function onboardingChronotypeResultCopy(choiceId: string) {
+  const result = resolveOnboardingChronotypeResult(choiceId);
+  if (!result) return [];
+  const informationalCopy = result.resultCopy.slice(1).filter((line) => !line.startsWith("Most productive"));
+  return [...informationalCopy, formatOnboardingChronotypeProductivityCopy(result)];
+}
+
 export function seedOnboardingChronotypeHours(input: {
   selectedChronotypeChoiceId: string;
   currentStartTime: string;
@@ -316,7 +336,6 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
   return (
     step !== "username" &&
     step !== "greeting" &&
-    step !== "chronotypeChoice" &&
     step !== "chronotypeSelection" &&
     step !== "chronotypeResult" &&
     step !== "push" &&
@@ -754,118 +773,132 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   return (
     <div className="overlay" id="onboardingOverlay" style={{ display: "flex" }}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label="TaskLaunch onboarding">
+      <div
+        className={`modal${isChronotypeSelectionStep ? " onboardingChronotypeSelectionModal" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="TaskLaunch onboarding"
+      >
         {activeStep !== "username" && !isGreetingStep ? (
           <button className="onboardingSkipLink" type="button" onClick={() => void closeWithState("dismissed")} disabled={busy}>
             Skip
           </button>
         ) : null}
-        {showStepImage ? (
-          <AppImg
-            className={`onboardingChronotypePreview${activeStep === "days" ? " onboardingProductivityDaysPreview" : ""}`}
-            src={
-              activeStep === "days"
-                ? "/onboarding/onboarding_productivity_days.webp"
-                : selectedChronotypeResult?.thumbnailSrc || "/onboarding/chronotypes.webp"
-            }
-            alt={
-              activeStep === "days"
-                ? "Productivity days preview"
-                : selectedChronotypeResult
-                  ? `${selectedChronotypeResult.animal} chronotype`
-                  : "Chronotype alignment preview"
-            }
-            width={activeStep === "days" ? 1967 : 512}
-            height={activeStep === "days" ? 799 : 512}
-          />
-        ) : null}
-        {isChronotypeResultStep && selectedChronotypeResult ? (
-          <>
+        <div className={`onboardingContent${isChronotypeSelectionStep ? " onboardingContentChronotypeSelection" : ""}`}>
+          {showStepImage && activeStep === "chronotypeChoice" ? (
+            <div className="onboardingChronotypeChoicePreview" aria-label="Chronotype animals">
+              {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => (
+                <AppImg
+                  className={`onboardingChronotypeChoicePreviewImage onboardingChronotypeChoicePreviewImage${optionIndex}`}
+                  src={option.thumbnailSrc}
+                  alt={`${option.animal} chronotype`}
+                  width={512}
+                  height={512}
+                  key={option.id}
+                />
+              ))}
+            </div>
+          ) : showStepImage ? (
             <AppImg
-              className="onboardingChronotypePreview onboardingChronotypeResultImage"
-              src={selectedChronotypeResult.thumbnailSrc}
-              alt={`${selectedChronotypeResult.animal} chronotype`}
-              width={512}
-              height={512}
+              className={`onboardingChronotypePreview${activeStep === "days" ? " onboardingProductivityDaysPreview" : ""}`}
+              src={
+                activeStep === "days"
+                  ? "/onboarding/onboarding_productivity_days.webp"
+                  : selectedChronotypeResult?.thumbnailSrc || "/onboarding/chronotypes.webp"
+              }
+              alt={
+                activeStep === "days"
+                  ? "Productivity days preview"
+                  : selectedChronotypeResult
+                    ? `${selectedChronotypeResult.animal} chronotype`
+                    : "Chronotype alignment preview"
+              }
+              width={activeStep === "days" ? 1967 : 512}
+              height={activeStep === "days" ? 799 : 512}
             />
-            <h2
-              className="onboardingGreetingTitle onboardingChronotypeResultTitle"
-              key={`onboarding-heading-${activeStep}`}
-              aria-label={`Your chronotype is ${selectedChronotypeResult.animal}`}
-            >
-              <span className="onboardingChronotypeResultTitleBase">Your chronotype is</span>
-              <span className="onboardingChronotypeResultDots" aria-hidden="true">
-                <span className="onboardingChronotypeResultDot">.</span>
-                <span className="onboardingChronotypeResultDot">.</span>
-                <span className="onboardingChronotypeResultDot">.</span>
-              </span>
-              <span
-                className="onboardingChronotypeAccent onboardingChronotypeResultAnimal"
-                style={
-                  {
-                    "--onboarding-chronotype-accent": selectedChronotypeResult.accentColor,
-                  } as OnboardingChronotypeAccentStyle
-                }
-                aria-hidden="true"
+          ) : null}
+          {isChronotypeResultStep && selectedChronotypeResult ? (
+            <>
+              <AppImg
+                className="onboardingChronotypePreview onboardingChronotypeResultImage"
+                src={selectedChronotypeResult.thumbnailSrc}
+                alt={`${selectedChronotypeResult.animal} chronotype`}
+                width={512}
+                height={512}
+              />
+              <h2
+                className="onboardingGreetingTitle onboardingChronotypeResultTitle"
+                key={`onboarding-heading-${activeStep}`}
+                aria-label={`Your chronotype is ${selectedChronotypeResult.animal}`}
               >
-                {selectedChronotypeResult.animal}
-              </span>
+                <span className="onboardingChronotypeResultTitleBase">Your chronotype is</span>
+                <span className="onboardingChronotypeResultDots" aria-hidden="true">
+                  <span className="onboardingChronotypeResultDot">.</span>
+                  <span className="onboardingChronotypeResultDot">.</span>
+                  <span className="onboardingChronotypeResultDot">.</span>
+                </span>
+                <span
+                  className="onboardingChronotypeAccent onboardingChronotypeResultAnimal"
+                  style={
+                    {
+                      "--onboarding-chronotype-accent": selectedChronotypeResult.accentColor,
+                    } as OnboardingChronotypeAccentStyle
+                  }
+                  aria-hidden="true"
+                >
+                  {selectedChronotypeResult.animal}
+                </span>
+              </h2>
+            </>
+          ) : (
+            <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
+              {onboardingHeadingText}
             </h2>
-            <div
-              className="onboardingGreetingDivider onboardingDaysDivider onboardingChronotypeResultDivider"
-              key={`onboarding-divider-${activeStep}`}
-              aria-hidden="true"
-            />
-          </>
-        ) : (
-          <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
-            {onboardingHeadingText}
-          </h2>
-        )}
-        {isGreetingStep ? (
-          <>
-            <div
-              className="onboardingGreetingDivider onboardingGreetingStepDivider"
-              key={`onboarding-divider-${activeStep}`}
-              aria-hidden="true"
-            />
-            <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
-              {ONBOARDING_GREETING_SUBTEXT}
-            </p>
-          </>
-        ) : null}
-        {!isGreetingStep && !isChronotypeResultStep && activeStep !== "days" ? (
-          <div
-            className="onboardingGreetingDivider onboardingDaysDivider"
-            key={`onboarding-divider-${activeStep}`}
-            aria-hidden="true"
-          />
-        ) : null}
-        {showStepSubtext ? (
-          <p
-            className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
-              activeStep === "push" ? " onboardingNotificationsSubtext" : ""
-            }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
-              activeStep === "username" ? " onboardingUsernameSubtext" : ""
-            }`}
-            key={`onboarding-subtext-${activeStep}`}
-          >
-            {activeStep === "username" ? (
-              "Please choose an avatar and set a username for your profile:"
-            ) : (
-              stepIntro(activeStep, isNativeRuntime)
-            )}
-          </p>
-        ) : null}
-        {isChronotypeChoiceStep ? (
-          <div className="onboardingChronotypeChoiceSubtext">
-            {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
-              <p className="modalSubtext onboardingChronotypeChoiceSubtextLine" key={line}>
-                {line}
+          )}
+          {isGreetingStep ? (
+            <>
+              <div
+                className="onboardingGreetingDivider onboardingGreetingStepDivider"
+                key={`onboarding-divider-${activeStep}`}
+                aria-hidden="true"
+              />
+              <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
+                {ONBOARDING_GREETING_SUBTEXT}
               </p>
-            ))}
-          </div>
-        ) : null}
+            </>
+          ) : null}
+          {!isGreetingStep && !isChronotypeResultStep && activeStep !== "days" ? (
+            <div
+              className="onboardingGreetingDivider onboardingDaysDivider"
+              key={`onboarding-divider-${activeStep}`}
+              aria-hidden="true"
+            />
+          ) : null}
+          {showStepSubtext ? (
+            <p
+              className={`modalSubtext${activeStep === "hours" ? " onboardingHoursSubtext" : ""}${
+                activeStep === "push" ? " onboardingNotificationsSubtext" : ""
+              }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
+                activeStep === "username" ? " onboardingUsernameSubtext" : ""
+              }`}
+              key={`onboarding-subtext-${activeStep}`}
+            >
+              {activeStep === "username" ? (
+                "Please choose an avatar and set a username for your profile:"
+              ) : (
+                stepIntro(activeStep, isNativeRuntime)
+              )}
+            </p>
+          ) : null}
+          {isChronotypeChoiceStep ? (
+            <div className="onboardingChronotypeChoiceSubtext">
+              {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
+                <p className="modalSubtext onboardingChronotypeChoiceSubtextLine" key={line}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : null}
 
         {activeStep === "username" ? (
           <div className="field modalDropdownField onboardingField onboardingUsernameField">
@@ -957,16 +990,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 </div>
               );
             })}
-          </div>
-        ) : null}
-
-        {activeStep === "chronotypeResult" ? (
-          <div className="onboardingChronotypeResultCopy">
-            {(selectedChronotypeResult?.resultCopy.slice(1) || []).map((line) => (
-              <p className="modalSubtext onboardingChronotypeResultText" key={line}>
-                {line}
-              </p>
-            ))}
           </div>
         ) : null}
 
@@ -1138,12 +1161,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           </div>
         ) : null}
 
-        {activeStep !== "username" && activeStep !== "push" && !isGreetingStep && status ? <p className="modalSubtext onboardingStatusText">{status}</p> : null}
-        {activeStep !== "username" && !isGreetingStep && error ? (
-          <p className="confirmText onboardingErrorText" id={isChronotypeSelectionStep ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}>
-            {error}
-          </p>
-        ) : null}
+          {activeStep !== "username" && activeStep !== "push" && !isGreetingStep && status ? <p className="modalSubtext onboardingStatusText">{status}</p> : null}
+          {activeStep !== "username" && !isGreetingStep && error ? (
+            <p className="confirmText onboardingErrorText" id={isChronotypeSelectionStep ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}>
+              {error}
+            </p>
+          ) : null}
+        </div>
 
         <div className="confirmBtns onboardingActions">
           {stepIndex > 0 ? (

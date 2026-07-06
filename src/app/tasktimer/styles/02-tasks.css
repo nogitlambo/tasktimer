@@ -4432,6 +4432,8 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-resume.taskPrimaryAction[data-action="start"],
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="stop"],
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="stop"],
+body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="reset"],
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-warn.taskPrimaryAction[data-action="reset"],
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-done.taskPrimaryAction[data-action="start"],
 body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-done.taskPrimaryAction[data-action="start"]{
   background:
@@ -4543,6 +4545,16 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   --task-primary-face-shadow-color: rgba(70,0,0,.46);
 }
 
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionReset{
+  --task-primary-ring-color: #c8ccd0;
+  --task-primary-face-start: #ff8f8f;
+  --task-primary-face-mid: #f23e4f;
+  --task-primary-face-end: #aa1727;
+  --task-primary-label: #fff7f7;
+  --task-primary-label-shadow: rgba(70,0,0,.64);
+  --task-primary-face-shadow-color: rgba(70,0,0,.46);
+}
+
 #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionDone{
   --task-primary-ring-color: #c8ccd0;
   --task-primary-face-start: #b8f7c8;
@@ -4564,14 +4576,16 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
     radial-gradient(circle at 49% 42%, #ffe68e 0 30%, #e5b741 62%, #bc841e 100%) !important;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop .taskPrimaryActionFace{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionReset .taskPrimaryActionFace{
   background:
     radial-gradient(ellipse at 34% 82%, rgba(255,255,255,.32) 0 10%, rgba(255,255,255,.14) 11% 24%, transparent 44%),
     radial-gradient(circle at 50% 35%, rgba(0,0,0,.64) 0 16%, transparent 42%),
     radial-gradient(circle at 51% 54%, #ff8f8f 0 20%, #f23e4f 54%, #aa1727 100%) !important;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop .taskPrimaryActionFace{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionStop .taskPrimaryActionFace,
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryActionReset .taskPrimaryActionFace{
   box-shadow:
     0 1px 2px rgba(255,255,255,.12),
     0 9px 13px rgba(0,0,0,.55) inset,

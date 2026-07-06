@@ -29,6 +29,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     startTask: (index) => calls.push(`start:${index}`),
     stopTask: (index) => calls.push(`stop:${index}`),
     resetTask: (index) => calls.push(`reset:${index}`),
+    resetCompletedTaskImmediate: (index) => calls.push(`reset-completed:${index}`),
     archiveTask: (index) => calls.push(`archive:${index}`),
     deleteTask: (index) => calls.push(`delete:${index}`),
     openEdit: (index) => calls.push(`edit:${index}`),
@@ -98,6 +99,17 @@ describe("task card action effects", () => {
     expect(harness.calls).toEqual(["timeout"]);
     harness.timers.shift()?.();
     expect(harness.calls).toEqual(["timeout", "manual:task-1"]);
+  });
+
+  it("routes primary completed reset without using the confirmed reset action", () => {
+    const harness = createHarness();
+    const sourceElement = {
+      closest: (selector: string) => (selector === ".taskPrimaryActionReset" ? ({} as HTMLElement) : null),
+    } as unknown as HTMLElement;
+
+    expect(harness.effects.handleAction({ action: "reset", taskIndex: 3, taskId: "task-1", sourceElement })).toBe(true);
+
+    expect(harness.calls).toEqual(["reset-completed:3"]);
   });
 
   it("passes the source task card when opening focus mode from card text actions", () => {

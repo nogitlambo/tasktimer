@@ -521,7 +521,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     elapsedMs: number,
     noteOverride?: string,
     completionDifficultyRaw?: CompletionDifficulty,
-    opts?: { deferTimeGoalXp?: boolean; attachments?: SessionNoteAttachment[]; preserveFocusSessionDraft?: boolean }
+    opts?: { deferTimeGoalXp?: boolean; attachments?: SessionNoteAttachment[]; preserveFocusSessionDraft?: boolean; historyCapBoundaryMs?: number | null }
   ) {
     const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs || 0) || 0));
     if (!task || !task.id || safeElapsedMs <= 0) return;
@@ -564,6 +564,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       momentumEntitled: true,
       sessionSegments: getRewardSessionSegmentsForTask(task, completedAtMs, awardElapsedMs),
       completedSessionsDelta: historyResult.isNewEntry ? 1 : 0,
+      historyCapBoundaryMs: opts?.historyCapBoundaryMs,
     });
     const rewardProgress = opts?.deferTimeGoalXp === true
       ? addPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId, nextAward, completedAtMs)
@@ -627,7 +628,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
 
   function finalizeLiveSession(
     task: Task,
-    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean; historyCapBoundaryMs?: number | null }
   ) {
     const taskId = String(task?.id || "").trim();
     if (!taskId) return 0;
@@ -642,6 +643,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
         deferTimeGoalXp: opts?.deferTimeGoalXp === true,
         attachments: opts?.attachments ?? liveSession?.attachments,
         preserveFocusSessionDraft: opts?.preserveFocusSessionDraft === true,
+        historyCapBoundaryMs: opts?.historyCapBoundaryMs,
       });
     }
     clearRewardSessionTracker(taskId);

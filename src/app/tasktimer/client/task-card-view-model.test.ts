@@ -296,10 +296,10 @@ describe("task card view model", () => {
       css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
       "";
     const stopFaceRule =
-      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace(?:,[\s\S]*?)?\{[\s\S]*?\n\}/)?.[0] ??
       "";
     const stopConcaveFaceRule =
-      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace\{\n  box-shadow:[\s\S]*?\n\}/)?.[0] ??
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace(?:,[\s\S]*?)?\{\n  box-shadow:[\s\S]*?\n\}/)?.[0] ??
       "";
     const stopOuterBlocks = Array.from(css.matchAll(/([^{}]*\.btn\.taskPrimaryActionStop[^{}]*)\{([\s\S]*?)\n\}/g))
       .filter(([, selector]) => !selector.includes(".taskPrimaryActionFace") && !selector.includes(".taskPrimaryActionRing"))
@@ -327,19 +327,21 @@ describe("task card view model", () => {
     expect(faceRule).toContain("0 8px 12px rgba(0,0,0,.48)");
   });
 
-  it("renders completed time-goal tasks as done while preserving edit hooks", () => {
+  it("renders completed time-goal tasks with a primary reset action while preserving edit hooks", () => {
     const rendered = renderCard({
       isTimeGoalCompleted: true,
       elapsedMs: 60_000,
     });
 
     expect(rendered.className).toBe("task taskCompleted");
-    expect(rendered.html).toContain('data-action="start"');
-    expect(rendered.html).toContain("Done");
-    expect(rendered.html).toContain("taskDoneIcon");
-    expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionDone");
-    expect(rendered.html).toContain('aria-label="Done until tomorrow"');
-    expect(rendered.html).toContain("disabled");
+    expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
+    expect(rendered.html).toContain("btn btn-warn small taskPrimaryAction taskPrimaryActionReset");
+    expect(rendered.html).toContain("Reset");
+    expect(rendered.html).not.toContain("Done");
+    expect(rendered.html).not.toContain("taskDoneIcon");
+    expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionDone");
+    expect(rendered.html).not.toContain('aria-label="Done until tomorrow"');
+    expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" type="button" disabled');
     expect(rendered.html).toContain('data-action="reset"');
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
     expect(rendered.html).not.toContain('data-action="reset" title="Reset" aria-label="Reset" disabled');

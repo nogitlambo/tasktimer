@@ -7924,6 +7924,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 0 !important;
 }
 
+#onboardingOverlay .modal.onboardingChronotypeSelectionModal{
+  padding-right: clamp(14px, 3vw, 32px) !important;
+  padding-left: clamp(14px, 3vw, 32px) !important;
+}
+
 #onboardingOverlay{
   align-items: stretch !important;
   justify-content: center !important;
@@ -7932,6 +7937,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .modal > :not(.onboardingSkipLink){
   width: min(100%, 520px);
+}
+
+#onboardingOverlay .modal > .onboardingContent{
+  width: min(100%, 650px);
+}
+
+#onboardingOverlay .modal > .onboardingContentChronotypeSelection{
+  width: min(100%, 668px);
 }
 
 #onboardingOverlay .modal h2,
@@ -7981,6 +7994,48 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     drop-shadow(0 0 18px rgba(201, 255, 36, .08));
   -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
   mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreview{
+  --chronotype-choice-gap: clamp(4px, 1.5vw, 12px);
+  display: grid;
+  gap: var(--chronotype-choice-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 auto 14px;
+  max-height: min(30dvh, 300px);
+  width: min(100%, 520px);
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreviewImage{
+  aspect-ratio: 1 / 1;
+  display: block;
+  height: auto;
+  min-width: 0;
+  object-fit: contain;
+  transform: translateX(var(--chronotype-choice-start-offset, 0)) scale(.96);
+  width: 100%;
+  animation: onboardingChronotypeChoiceImageSpread 660ms cubic-bezier(.18,.84,.26,1) 720ms both;
+  will-change: transform;
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreviewImage0{
+  --chronotype-choice-start-offset: calc(150% + (var(--chronotype-choice-gap) * 1.5));
+  z-index: 4;
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreviewImage1{
+  --chronotype-choice-start-offset: calc(50% + (var(--chronotype-choice-gap) * .5));
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreviewImage2{
+  --chronotype-choice-start-offset: calc(-50% - (var(--chronotype-choice-gap) * .5));
+  z-index: 2;
+}
+
+#onboardingOverlay .onboardingChronotypeChoicePreviewImage3{
+  --chronotype-choice-start-offset: calc(-150% - (var(--chronotype-choice-gap) * 1.5));
+  z-index: 1;
 }
 
 #onboardingOverlay .onboardingChronotypePreview.onboardingChronotypeResultImage{
@@ -8046,9 +8101,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingIntroSubtext,
 #onboardingOverlay .onboardingChronotypeChoiceSubtext,
 #onboardingOverlay .onboardingChronotypeChoiceSubtextLine,
+#onboardingOverlay .onboardingChronotypeChoicePreview,
 #onboardingOverlay .onboardingChronotypePreview,
-#onboardingOverlay .onboardingChronotypeResultCopy,
-#onboardingOverlay .onboardingChronotypeResultText,
 #onboardingOverlay .onboardingHoursSubtext,
 #onboardingOverlay .onboardingHoursTimeGrid,
 #onboardingOverlay .onboardingProductivityIntroText,
@@ -8076,32 +8130,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 0;
 }
 
-#onboardingOverlay .onboardingChronotypeResultCopy{
-  display: grid;
-  gap: 10px;
-  margin: 0 auto;
-  max-width: 460px;
-}
-
-#onboardingOverlay .onboardingChronotypeResultText{
-  color: rgba(238, 242, 246, .82) !important;
-  margin: 0;
-}
-
-#onboardingOverlay .onboardingChronotypeResultText:first-child{
-  color: #fff !important;
-}
-
-#onboardingOverlay .onboardingChronotypeResultDivider{
-  animation: onboardingGreetingDividerReveal 500ms ease-out both;
-}
-
 #onboardingOverlay .onboardingChronotypeResultTitle{
   align-items: baseline;
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   gap: .24em;
   justify-content: center;
+  margin-right: auto;
+  margin-left: auto;
   overflow: hidden;
+  text-align: center;
   width: min(100%, 520px);
   animation: onboardingGreetingTitleReveal 420ms ease-out 420ms both;
 }
@@ -8112,7 +8150,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   min-width: 1.05em;
   overflow: hidden;
   width: 1.05em;
-  animation: onboardingChronotypeResultDotsExit 1ms linear 2420ms both;
+  animation: onboardingChronotypeResultDotsExit 1ms linear 1420ms both;
 }
 
 #onboardingOverlay .onboardingChronotypeResultDot{
@@ -8136,15 +8174,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   overflow: hidden;
   transform: translateX(34px);
   white-space: nowrap;
-  animation: onboardingChronotypeResultAnimalReveal 520ms cubic-bezier(.16,.84,.24,1) 2420ms both;
+  animation: onboardingChronotypeResultAnimalReveal 520ms cubic-bezier(.16,.84,.24,1) 1420ms both;
 }
 
 #onboardingOverlay .onboardingChronotypeResultImage{
-  animation: onboardingChronotypeResultImageReveal 560ms cubic-bezier(.18,.84,.26,1) 2780ms both;
-}
-
-#onboardingOverlay .onboardingChronotypeResultCopy{
-  animation: onboardingChronotypeResultCopyReveal 520ms cubic-bezier(.18,.84,.26,1) 3100ms both;
+  animation: onboardingChronotypeResultImageReveal 520ms cubic-bezier(.18,.84,.26,1) 2020ms both;
 }
 
 #onboardingOverlay .onboardingUsernameSubtext{
@@ -8168,13 +8202,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(146px, 1fr));
   margin: 0 auto;
   position: relative;
-  width: min(100%, 620px) !important;
+  width: min(100%, 668px) !important;
 }
 
 #onboardingOverlay .onboardingChronotypeTileReveal{
   animation: onboardingChronotypeTileReveal 260ms cubic-bezier(.22,.78,.2,1) both;
+  display: flex;
+  min-height: 0;
   width: 100%;
 }
 
@@ -8204,10 +8241,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: rgba(238, 242, 246, .9);
   cursor: pointer;
   display: grid;
-  gap: 14px;
-  grid-template-columns: 96px minmax(0, 1fr);
-  min-height: 138px;
-  padding: 18px;
+  gap: 16px;
+  grid-template-columns: 88px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  padding: 8px;
   position: relative;
   text-align: left;
   transform: translate(0, 0) scale(1);
@@ -8232,10 +8270,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingChronotypeTileImageFrame{
   align-items: center;
   display: flex;
-  height: 96px;
+  height: 88px;
   justify-content: center;
   overflow: hidden;
-  width: 96px;
+  width: 88px;
 }
 
 #onboardingOverlay .onboardingChronotypeTileImage{
@@ -8409,24 +8447,30 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 @keyframes onboardingChronotypeResultImageReveal{
-  from{
+  0%{
     opacity: 0;
-    transform: translateY(8px) scale(.92);
+    transform: translateY(calc(-100dvh - 24px)) scale(.9);
   }
-  to{
+  72%{
+    opacity: 1;
+    transform: translateY(10px) scaleX(1.04) scaleY(.94);
+  }
+  86%{
+    opacity: 1;
+    transform: translateY(-4px) scaleX(.99) scaleY(1.015);
+  }
+  100%{
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-@keyframes onboardingChronotypeResultCopyReveal{
+@keyframes onboardingChronotypeChoiceImageSpread{
   from{
-    opacity: 0;
-    transform: translateY(-18px);
+    transform: translateX(var(--chronotype-choice-start-offset, 0)) scale(.96);
   }
   to{
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0) scale(1);
   }
 }
 
@@ -8473,9 +8517,9 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingIntroSubtext,
   #onboardingOverlay .onboardingChronotypeChoiceSubtext,
   #onboardingOverlay .onboardingChronotypeChoiceSubtextLine,
+  #onboardingOverlay .onboardingChronotypeChoicePreview,
+  #onboardingOverlay .onboardingChronotypeChoicePreviewImage,
   #onboardingOverlay .onboardingChronotypePreview,
-  #onboardingOverlay .onboardingChronotypeResultCopy,
-  #onboardingOverlay .onboardingChronotypeResultText,
   #onboardingOverlay .onboardingChronotypeResultTitle,
   #onboardingOverlay .onboardingChronotypeResultDots,
   #onboardingOverlay .onboardingChronotypeResultDot,
@@ -9000,12 +9044,38 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 @media (max-width: 520px){
   #onboardingOverlay .modal{
-    justify-content: center;
-    padding: 48px 14px 28px !important;
+    justify-content: flex-start;
+    padding: 48px 14px 0 !important;
+  }
+
+  #onboardingOverlay .modal.onboardingChronotypeSelectionModal{
+    padding-right: 14px !important;
+    padding-left: 14px !important;
   }
 
   #onboardingOverlay .modal > :not(.onboardingSkipLink){
     width: 100%;
+  }
+
+  #onboardingOverlay .onboardingContent{
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+    padding-bottom: 16px;
+    width: 100%;
+  }
+
+  #onboardingOverlay .onboardingActions{
+    position: sticky;
+    z-index: 3;
+    bottom: 0;
+    flex: 0 0 auto;
+    margin-top: 0;
+    padding: 12px 0 calc(14px + var(--safe-bottom));
+    background: #0d0f13;
+    box-shadow: 0 -16px 24px rgba(13, 15, 19, .92);
   }
 
   #onboardingOverlay .onboardingTimeGrid{
@@ -9015,6 +9085,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingChronotypeTileGrid{
     gap: 10px;
     grid-template-columns: 1fr;
+    grid-template-rows: none;
     max-width: 360px;
   }
 
@@ -9032,7 +9103,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     gap: 12px;
     grid-template-columns: 86px minmax(0, 1fr);
     min-height: 124px;
-    padding: 14px;
+    padding: 8px;
   }
 
   #onboardingOverlay .onboardingChronotypeTileImageFrame{
@@ -9074,6 +9145,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 @media (max-height: 640px){
   #onboardingOverlay .modal{
+    justify-content: flex-start;
+  }
+
+  #onboardingOverlay .onboardingContent{
     justify-content: flex-start;
   }
 }

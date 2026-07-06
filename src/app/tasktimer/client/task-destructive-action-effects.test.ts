@@ -162,6 +162,7 @@ describe("task destructive action effects", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -207,6 +208,42 @@ describe("task destructive action effects", () => {
 
     expect(harness.confirmCalls[0]?.title).toBe("Reset Task");
     expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
+  });
+
+  it("immediately resets a completed primary task without confirmation and keeps a reset boundary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+    const completedAtMs = Date.now() - 60_000;
+    const harness = createHarness({
+      tasks: [
+        createTask({
+          accumulatedMs: 0,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+        }),
+      ],
+      history: { "task-1": [{ ts: completedAtMs, name: "Task 1", ms: 60 * 60 * 1000 }] },
+    });
+
+    harness.adapter.resetCompletedTaskImmediate(0);
+
+    expect(harness.confirmCalls).toHaveLength(0);
+    expect(harness.calls).toContain("resetImmediate:task-1:");
+    expect(harness.calls).toContain('save:{"forceCloudFlush":true}');
+    expect(harness.calls).toContain("syncShared:task-1");
+    expect(harness.calls).toContain("render");
+    expect(harness.tasks[0]).toMatchObject({
+      accumulatedMs: 0,
+      timeGoalCompletedDayKey: "2026-05-05",
+      timeGoalCompletedAtMs: Date.now(),
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
   });
 
   it("allows reset for stale completion metadata without qualifying history", () => {

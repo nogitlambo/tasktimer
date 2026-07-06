@@ -474,7 +474,7 @@ export type TaskTimerTasksContext = {
   clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   finalizeLiveSession: (
     task: Task,
-    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean }
+    opts?: { elapsedMs?: number; completedAtMs?: number; note?: string; attachments?: SessionNoteAttachment[]; completionDifficulty?: CompletionDifficulty; deferTimeGoalXp?: boolean; preserveFocusSessionDraft?: boolean; historyCapBoundaryMs?: number | null }
   ) => number;
   applyPendingTimeGoalXpForTask: (taskId: string | null | undefined) => unknown;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
@@ -820,7 +820,7 @@ export type TaskTimerSessionContext = {
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   resetTask: (index: number) => void;
-  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number }) => void;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number; historyCapBoundaryMs?: number | null }) => void;
 };
 
 export type TaskTimerDashboardContext = {
@@ -1046,7 +1046,7 @@ export type TaskTimerHistoryManagerContext = {
   sortMilestones: (milestones: Task["milestones"]) => Task["milestones"];
   sessionColorForTaskMs: (task: Task, elapsedMs: number) => string;
   historyEntryColorForTaskMs: (task: Task, elapsedMs: number) => string;
-  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number }) => void;
+  resetTaskStateImmediate: (task: Task, opts?: { logHistory?: boolean; sessionNote?: string; completionDifficulty?: CompletionDifficulty; completedAtMs?: number; historyCapBoundaryMs?: number | null }) => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
   saveHistoryAndWait: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => Promise<void>;

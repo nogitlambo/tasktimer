@@ -273,6 +273,48 @@ describe("time goal completion flow guard", () => {
     ).toBe(false);
   });
 
+  it("does not auto-stop a reset-completed rerun from pre-reset history alone", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const resetAtMs = nowValue - 30_000;
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+    const entry = timeGoalTask({
+      timeGoalCompletedDayKey: completedToday,
+      timeGoalCompletedAtMs: resetAtMs,
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(
+      shouldAutoStopDailyTimeGoalTask(entry, {
+        elapsedMs: 1_000,
+        historyByTaskId: { "task-1": [{ ts: resetAtMs - 1_000, name: "Focus", ms: 60_000 }] },
+        liveSession: liveSession(),
+        nowMs: nowValue,
+      })
+    ).toBe(false);
+  });
+
+  it("auto-stops a reset-completed rerun after the new run reaches its goal", () => {
+    const nowValue = new Date(2026, 4, 7, 10, 0, 0).getTime();
+    const resetAtMs = nowValue - 90_000;
+    const completedToday = getTimeGoalCompletionDayKey(nowValue);
+    const entry = timeGoalTask({
+      timeGoalCompletedDayKey: completedToday,
+      timeGoalCompletedAtMs: resetAtMs,
+      timeGoalCompletedReason: "reset",
+      timeGoalCompletedElapsedMs: 60_000,
+    });
+
+    expect(
+      shouldAutoStopDailyTimeGoalTask(entry, {
+        elapsedMs: 60_000,
+        historyByTaskId: { "task-1": [{ ts: resetAtMs - 1_000, name: "Focus", ms: 60_000 }] },
+        liveSession: liveSession(),
+        nowMs: nowValue,
+      })
+    ).toBe(true);
+  });
+
   it("keeps completion available for an active running live session over its goal", () => {
     expect(
       shouldKeepTimeGoalCompletionFlowForTask(timeGoalTask(), {

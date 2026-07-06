@@ -1,5 +1,6 @@
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import { awardCompletedSessionXp } from "../lib/rewards";
+import { isTaskTimeGoalStartLockedForPeriod, markTaskTimeGoalResetCompleted } from "../lib/timeGoalCompletion";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
 
@@ -145,6 +146,22 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     options.addConfirmOverlayClass(RESET_TASK_CONFIRM_CLASS);
   }
 
+  function resetCompletedTaskImmediate(index: number) {
+    const task = options.getTasks()[index];
+    if (!task || task.running) return;
+    if (!isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting())) return;
+    const taskId = String(task.id || "").trim();
+    const completedElapsedMs = Math.max(
+      0,
+      Math.floor(Number(task.timeGoalCompletedElapsedMs ?? options.getTaskElapsedMs(task) ?? 0) || 0)
+    );
+    markTaskTimeGoalResetCompleted(task, Date.now(), completedElapsedMs, options.getWeekStarting());
+    options.resetTaskStateImmediate(task, { logHistory: false });
+    options.save({ forceCloudFlush: true });
+    if (taskId) void options.syncSharedTaskSummariesForTasks([taskId]).catch(() => {});
+    options.render();
+  }
+
   function renderAfterReset() {
     options.render();
     options.renderDashboardWidgets();
@@ -201,6 +218,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
 
   return {
     resetTask,
+    resetCompletedTaskImmediate,
     resetAll,
   };
 }

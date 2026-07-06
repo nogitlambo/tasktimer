@@ -9,11 +9,13 @@ import {
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
+  formatOnboardingChronotypeProductivityCopy,
   formatOnboardingClockTimeLabel,
   isOnboardingUsernameTakenError,
   isOnboardingFinishDisabled,
   normalizeOnboardingProductivityDays,
   onboardingAvatarProfilePatch,
+  onboardingChronotypeResultCopy,
   resolveOnboardingAvatarId,
   shouldShowOnboardingStepImage,
   shouldShowOnboardingStepSubtext,
@@ -55,8 +57,8 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingTitle("chronotypeChoice", "Avery")).toBe(ONBOARDING_CHRONOTYPE_CHOICE_PROMPT);
     expect(onboardingTitle("chronotypeSelection", "Avery")).toBe(ONBOARDING_CHRONOTYPE_SELECTION_PROMPT);
     expect(ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT).toEqual([
-      "Your chronotype reflects the times of day when your energy and focus are usually at their strongest.",
-      "TaskLaunch uses this rhythm to schedule tasks more intelligently, placing them when you are most likely to feel focused, energised, and ready to start.",
+      "Your chronotype reflects the times of day when your energy and focus are at peak levels.",
+      "There are four commonly recognised chronotypes, each represented by an animal with its own natural pattern of energy, focus, and rest.",
     ]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.label)).toEqual(["1", "2", "4", "3"]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.description)).toEqual([
@@ -72,26 +74,25 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingTitle("chronotypeResult", "Avery", "sun-aligned")).toBe("Your chronotype is bear");
     expect(onboardingTitle("chronotypeResult", "Avery", "night-owl")).toBe("Your chronotype is wolf");
     expect(onboardingTitle("chronotypeResult", "Avery", "light-sleeper")).toBe("Your chronotype is dolphin");
-    expect(resolveOnboardingChronotypeResult("early-riser")?.resultCopy).toEqual([
-      "Your chronotype is similar to that of a lion.",
+    expect(onboardingChronotypeResultCopy("early-riser")).toEqual([
       "It may surprise you that only ~15% of people fall into this category.",
-      "Most productive - 9:00 AM to 2:00 PM",
+      "Lion chronotypes are most productive between 9:00 AM and 2:00 PM.",
     ]);
-    expect(resolveOnboardingChronotypeResult("sun-aligned")?.resultCopy).toEqual([
-      "Your chronotype is similar to that of a bear.",
+    expect(onboardingChronotypeResultCopy("sun-aligned")).toEqual([
       "This is the most common chronotype, with ~55% of people in this category.",
-      "Most productive - 10:00 AM to 3:00 PM",
+      "Bear chronotypes are most productive between 10:00 AM and 3:00 PM.",
     ]);
-    expect(resolveOnboardingChronotypeResult("night-owl")?.resultCopy).toEqual([
-      "Your chronotype is similar to that of a wolf.",
+    expect(onboardingChronotypeResultCopy("night-owl")).toEqual([
       "Wolf chronotypes account for ~15-30% of people.",
-      "Most productive - 5:00 PM to 11:00 PM",
+      "Wolf chronotypes are most productive between 5:00 PM and 11:00 PM.",
     ]);
-    expect(resolveOnboardingChronotypeResult("light-sleeper")?.resultCopy).toEqual([
-      "Your chronotype is similar to that of a dolphin.",
+    expect(onboardingChronotypeResultCopy("light-sleeper")).toEqual([
       "Dolphin chronotypes are less common, accounting for ~10-15% of people.",
-      "Most productive - 3:00 PM to 9:00 PM",
+      "Dolphin chronotypes are most productive between 3:00 PM and 9:00 PM.",
     ]);
+    expect(formatOnboardingChronotypeProductivityCopy(resolveOnboardingChronotypeResult("early-riser")!)).toBe(
+      "Lion chronotypes are most productive between 9:00 AM and 2:00 PM."
+    );
   });
 
   it("keeps the productivity-days title after the chronotype result step", () => {
@@ -103,7 +104,7 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("hides image and subtext content on full-custom steps", () => {
-    expect(shouldShowOnboardingStepImage("chronotypeChoice")).toBe(false);
+    expect(shouldShowOnboardingStepImage("chronotypeChoice")).toBe(true);
     expect(shouldShowOnboardingStepSubtext("chronotypeChoice")).toBe(false);
     expect(shouldShowOnboardingStepImage("chronotypeSelection")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeSelection")).toBe(false);

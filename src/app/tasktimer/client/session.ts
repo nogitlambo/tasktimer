@@ -7,6 +7,7 @@ import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   hasTaskGoalHistoryEntryForPeriod,
   getTaskTimeGoalCompletionResolution,
+  getTaskTimeGoalResetBoundaryMs,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
   isTaskTimeGoalStartLockedByHistoryForPeriod,
@@ -301,6 +302,7 @@ function getTimeGoalPeriodHistoryMs(
   if (!taskId) return 0;
   const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
   if (!entries.length) return 0;
+  const resetBoundaryMs = getTaskTimeGoalResetBoundaryMs(task, nowValue, weekStarting);
   if (task?.timeGoalPeriod === "week") {
     const normalizedWeekStart = normalizeDashboardWeekStart(weekStarting);
     const weekStartMs = startOfCurrentWeekMs(nowValue, normalizedWeekStart);
@@ -308,6 +310,7 @@ function getTimeGoalPeriodHistoryMs(
     return entries.reduce((sum, entry) => {
       const ts = normalizeHistoryTimestampMs(entry?.ts);
       if (ts < weekStartMs || ts >= weekEndMs) return sum;
+      if (resetBoundaryMs != null && ts <= resetBoundaryMs) return sum;
       return sum + Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
     }, 0);
   }
@@ -315,6 +318,7 @@ function getTimeGoalPeriodHistoryMs(
   return entries.reduce((sum, entry) => {
     const ts = normalizeHistoryTimestampMs(entry?.ts);
     if (ts <= 0 || localDayKey(ts) !== dayKey) return sum;
+    if (resetBoundaryMs != null && ts <= resetBoundaryMs) return sum;
     return sum + Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
   }, 0);
 }
@@ -1269,6 +1273,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       weekStarting: ctx.getWeekStarting(),
       optimalProductivityDays: ctx.getOptimalProductivityDays(),
       momentumEntitled: true,
+      historyCapBoundaryMs: getTaskTimeGoalResetBoundaryMs(task, nowMs(), ctx.getWeekStarting()),
     });
     return {
       fromXp: pendingAward.previous.totalXp,
@@ -1471,12 +1476,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
+    const resetBoundaryMs = getTaskTimeGoalResetBoundaryMs(task, nowMs(), ctx.getWeekStarting());
     markTaskTimeGoalCompletedForResolution(task, nowMs(), getTaskElapsedMs(task), {
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
     });
     acknowledgeTimeGoalCompletion(task);
-    ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote });
+    ctx.resetTaskStateImmediate(task, { logHistory: opts.logHistory, sessionNote, historyCapBoundaryMs: resetBoundaryMs });
     clearTaskTimeGoalFlow(taskId);
     stopTimeGoalCompleteConfetti();
     ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
@@ -1529,6 +1535,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const sessionNote = captureResetActionSessionNote(taskId);
     if (sessionNote) setFocusSessionDraft(taskId, sessionNote);
+    const resetBoundaryMs = getTaskTimeGoalResetBoundaryMs(task, completedAtMs, ctx.getWeekStarting());
     markTaskTimeGoalCompletedForResolution(task, completedAtMs, safeElapsedMs, {
       historyByTaskId: ctx.getHistoryByTaskId(),
       weekStarting: ctx.getWeekStarting(),
@@ -1536,7 +1543,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     task.accumulatedMs = safeElapsedMs;
     task.running = false;
     task.startMs = null;
-    ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote, completedAtMs });
+    ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote, completedAtMs, historyCapBoundaryMs: resetBoundaryMs });
     ctx.save();
     ctx.render();
     suppressCheckpointToastsForTask(taskId);
@@ -2542,19 +2549,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
         updateTaskProgressFill(node, task, elapsedMs);
-        const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') as HTMLButtonElement | null;
+        const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
           let primaryActionState: TaskPrimaryActionState = "launch";
-          let doneTitle: string | undefined;
           if (isTaskTimeGoalLockedForCurrentPeriod(task)) {
-            primaryActionState = "done";
-            doneTitle = task.timeGoalPeriod === "week" ? "Done until next week" : "Done until tomorrow";
+            primaryActionState = "reset";
           } else if (task.running) {
             primaryActionState = "stop";
           } else if (elapsedMs > 0) {
             primaryActionState = "resume";
           }
-          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState, { doneTitle });
+          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState);
           primaryActionBtn.className = primaryActionModel.className;
           primaryActionBtn.dataset.action = primaryActionModel.dataAction;
           primaryActionBtn.title = primaryActionModel.title;

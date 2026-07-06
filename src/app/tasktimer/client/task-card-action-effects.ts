@@ -10,6 +10,7 @@ type TaskCardActionEffectsOptions = {
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   resetTask: (index: number) => void;
+  resetCompletedTaskImmediate: (index: number) => void;
   archiveTask: (index: number) => void;
   deleteTask: (index: number) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
@@ -73,7 +74,13 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
       handlers: {
         start: () => options.startTask(taskIndex),
         stop: () => options.stopTask(taskIndex),
-        reset: () => options.resetTask(taskIndex),
+        reset: () => {
+          if (sourceElement?.closest?.(".taskPrimaryActionReset")) {
+            options.resetCompletedTaskImmediate(taskIndex);
+            return;
+          }
+          options.resetTask(taskIndex);
+        },
         archive: () => options.archiveTask(taskIndex),
         delete: () => options.deleteTask(taskIndex),
         edit: () => options.openEdit(taskIndex, sourceElement || null),

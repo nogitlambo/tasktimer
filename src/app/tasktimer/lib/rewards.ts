@@ -71,6 +71,7 @@ export type CompletedSessionXpContext = {
   momentumEntitled?: boolean;
   sessionSegments?: RewardSessionSegment[];
   completedSessionsDelta?: number;
+  historyCapBoundaryMs?: number | null;
 };
 
 export type RewardSessionSegment = {
@@ -376,14 +377,19 @@ function getTaskDailySessionXpCapMs(tasks: Task[], taskId: string | null): numbe
   return DEFAULT_DAILY_SESSION_XP_CAP_MS;
 }
 
-function getTaskLoggedMsForDay(historyByTaskId: HistoryByTaskId, taskId: string | null, dayKey: string): number {
+function getTaskLoggedMsForDay(historyByTaskId: HistoryByTaskId, taskId: string | null, dayKey: string, boundaryMsRaw?: number | null): number {
   const normalizedTaskId = String(taskId || "").trim();
   if (!normalizedTaskId) return 0;
+  const boundaryMs =
+    boundaryMsRaw != null && Number.isFinite(Number(boundaryMsRaw))
+      ? Math.max(0, Math.floor(Number(boundaryMsRaw)))
+      : null;
   const entries = Array.isArray(historyByTaskId?.[normalizedTaskId]) ? historyByTaskId[normalizedTaskId] : [];
   return entries.reduce((sum, entry) => {
     const ts = Math.max(0, Math.floor(Number(entry?.ts || 0) || 0));
     const ms = Math.max(0, Math.floor(Number(entry?.ms || 0) || 0));
     if (!ts || ms <= 0 || localDayKey(ts) !== dayKey) return sum;
+    if (boundaryMs != null && ts <= boundaryMs) return sum;
     return sum + ms;
   }, 0);
 }
@@ -393,7 +399,7 @@ function getDailyCappedSessionEligibleMs(context: CompletedSessionXpContext, awa
   if (!(rawEligibleMs > 0)) return 0;
   const dayKey = localDayKey(awardedAt);
   const capMs = getTaskDailySessionXpCapMs(context.tasks, taskId);
-  const loggedAfterMs = getTaskLoggedMsForDay(context.historyByTaskId || {}, taskId, dayKey);
+  const loggedAfterMs = getTaskLoggedMsForDay(context.historyByTaskId || {}, taskId, dayKey, context.historyCapBoundaryMs);
   const loggedBeforeMs = Math.max(0, loggedAfterMs - Math.max(0, Math.floor(Number(context.elapsedMs || 0) || 0)));
   const remainingMs = Math.max(0, capMs - loggedBeforeMs);
   return Math.min(rawEligibleMs, remainingMs);

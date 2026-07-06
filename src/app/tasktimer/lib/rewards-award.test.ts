@@ -9,6 +9,7 @@ import {
   RANK_LADDER,
   normalizeRewardProgress,
 } from "./rewards";
+import { computeMomentumSnapshot } from "./momentum";
 import type { Task } from "./types";
 
 const MINUTE_MS = 60 * 1000;
@@ -302,6 +303,62 @@ describe("awardCompletedSessionXp", () => {
     expect(result.next.completedSessions).toBe(1);
   });
 
+  it("awards daily-goal session XP again after a reset boundary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const firstCompletedAt = Date.now() - 2 * MINUTE_MS;
+    const resetAt = Date.now() - MINUTE_MS;
+    const secondCompletedAt = Date.now();
+    const dailyGoalTask = task({ timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 30 });
+    const first = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: firstCompletedAt,
+      elapsedMs: 30 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: firstCompletedAt, name: "Focus", ms: 30 * MINUTE_MS }],
+      },
+      tasks: [dailyGoalTask],
+      weekStarting: "mon",
+      momentumEntitled: false,
+    }).next;
+
+    const result = awardCompletedSessionXp(first, {
+      taskId: "task-1",
+      awardedAt: secondCompletedAt,
+      elapsedMs: 30 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [
+          { ts: firstCompletedAt, name: "Focus", ms: 30 * MINUTE_MS },
+          { ts: secondCompletedAt, name: "Focus", ms: 30 * MINUTE_MS },
+        ],
+      },
+      tasks: [dailyGoalTask],
+      weekStarting: "mon",
+      momentumEntitled: false,
+      historyCapBoundaryMs: resetAt,
+      sessionSegments: [
+        {
+          startMs: secondCompletedAt - 30 * MINUTE_MS,
+          endMs: secondCompletedAt,
+          multiplier: 1.5,
+        },
+      ],
+    });
+
+    expect(first.totalXpPrecise).toBe(15);
+    expect(result.amount).toBe(22.5);
+    expect(result.next.totalXpPrecise).toBe(37.5);
+    expect(result.next.completedSessions).toBe(2);
+    expect(result.next.awardLedger.at(-1)).toMatchObject({
+      reason: "session",
+      eligibleMs: 30 * MINUTE_MS,
+      baseXp: 15,
+      multiplier: 1.5,
+      xp: 22.5,
+    });
+  });
+
   it("applies Momentum multipliers without an advancedInsights entitlement", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
@@ -314,25 +371,33 @@ describe("awardCompletedSessionXp", () => {
         ms: 5 * MINUTE_MS,
       })),
     };
+    const tasks = [task({ running: true, startMs: awardedAt - MIN_REWARD_ELIGIBLE_SESSION_MS })];
+    const expectedMultiplier = computeMomentumSnapshot({
+      tasks,
+      historyByTaskId,
+      weekStarting: "mon",
+      nowValue: awardedAt,
+    }).multiplier;
+    const expectedXp = expectedMultiplier;
 
     const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
       taskId: "task-1",
       awardedAt,
       elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
       historyByTaskId,
-      tasks: [task({ running: true, startMs: awardedAt - MIN_REWARD_ELIGIBLE_SESSION_MS })],
+      tasks,
       weekStarting: "mon",
       momentumEntitled: false,
     });
 
-    expect(result.amount).toBe(1.5);
-    expect(result.next.totalXpPrecise).toBe(1.5);
+    expect(result.amount).toBe(expectedXp);
+    expect(result.next.totalXpPrecise).toBe(expectedXp);
     expect(result.next.totalXp).toBe(1);
     expect(result.next.awardLedger[0]).toMatchObject({
       reason: "session",
       baseXp: 1,
-      multiplier: 1.5,
-      xp: 1.5,
+      multiplier: expectedMultiplier,
+      xp: expectedXp,
     });
   });
 

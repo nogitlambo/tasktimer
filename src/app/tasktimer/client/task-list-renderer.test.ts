@@ -272,7 +272,7 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
   });
 
-  it("renders current-period goal completion metadata without history as done", () => {
+  it("renders current-period goal completion metadata without history as resettable", () => {
     const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
@@ -293,8 +293,9 @@ describe("task list renderer", () => {
 
     const renderedTask = harness.taskListEl.children[0];
     expect(renderedTask?.className).toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain("Done until tomorrow");
-    expect(renderedTask?.innerHTML).toContain('data-action="start"');
+    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
+    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
+    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
   });
 
   it("renders current-period reset completion metadata as launchable", () => {
@@ -323,7 +324,7 @@ describe("task list renderer", () => {
     expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionLaunch");
   });
 
-  it("renders goal completion metadata with qualifying history as done", () => {
+  it("renders goal completion metadata with qualifying history as resettable", () => {
     const nowValue = Date.now();
     const harness = createHarness({
       tasks: [
@@ -347,6 +348,8 @@ describe("task list renderer", () => {
 
     const renderedTask = harness.taskListEl.children[0];
     expect(renderedTask?.className).toContain("taskCompleted");
-    expect(renderedTask?.innerHTML).toContain("Done until tomorrow");
+    expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
+    expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
+    expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
   });
 });

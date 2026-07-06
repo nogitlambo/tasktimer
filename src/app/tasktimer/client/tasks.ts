@@ -263,6 +263,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     startTask,
     stopTask,
     resetTask: taskDestructiveActionEffects.resetTask,
+    resetCompletedTaskImmediate: taskDestructiveActionEffects.resetCompletedTaskImmediate,
     archiveTask,
     deleteTask: ctx.deleteTask,
     openEdit: ctx.openEdit,
