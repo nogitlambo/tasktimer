@@ -8638,6 +8638,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   line-height: 1.35;
 }
 
+#onboardingOverlay .onboardingChronotypeTileTextLead{
+  color: var(--onboarding-chronotype-accent, var(--accent));
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 15.12px;
+  font-weight: 900;
+}
+
 #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isFaded{
   opacity: 0;
   pointer-events: none;

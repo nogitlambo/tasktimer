@@ -127,7 +127,7 @@ export const ONBOARDING_CHRONOTYPE_OPTIONS = [
     ],
     productivityStartTime: "10:00",
     productivityEndTime: "15:00",
-    description: "Sleep-wake patterns align closely with the sun. Most productive from mid-morning to late afternoon.",
+    description: "Wakes up with the sun. Most productive from mid-morning to late afternoon.",
   },
   {
     id: "light-sleeper",
@@ -332,6 +332,14 @@ export function onboardingChronotypeResultCopy(choiceId: string) {
 
 export function onboardingChronotypeResultSummary(choiceId: string) {
   return ONBOARDING_CHRONOTYPE_SUMMARIES.find((summary) => summary.choiceId === choiceId) || null;
+}
+
+function splitOnboardingChronotypeTileText(value: string) {
+  const [firstWord = "", secondWord = "", ...remainingWords] = value.trim().split(/\s+/);
+  return {
+    lead: [firstWord, secondWord].filter(Boolean).join(" "),
+    rest: remainingWords.join(" "),
+  };
 }
 
 export function seedOnboardingChronotypeHours(input: {
@@ -1179,6 +1187,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => {
               const selected = option.id === selectedChronotypeChoiceId;
               const faded = !!selectedChronotypeChoiceId && !selected;
+              const descriptionParts = splitOnboardingChronotypeTileText(option.description);
               return (
                 <div className={`onboardingChronotypeTileReveal onboardingChronotypeTileReveal${optionIndex}`} key={option.id}>
                   <button
@@ -1187,6 +1196,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                     role="radio"
                     aria-checked={selected}
                     aria-describedby={error ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}
+                    style={{ "--onboarding-chronotype-accent": option.accentColor } as OnboardingCustomPropertyStyle}
                     onClick={() => {
                       selectChronotypeChoice(option.id);
                     }}
@@ -1194,7 +1204,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                     <span className="onboardingChronotypeTileImageFrame" aria-hidden="true">
                       <AppImg className="onboardingChronotypeTileImage" src={option.imageSrc} alt="" width={128} height={128} />
                     </span>
-                    <span className="onboardingChronotypeTileText">{option.description}</span>
+                    <span className="onboardingChronotypeTileText">
+                      <span className="onboardingChronotypeTileTextLead">{descriptionParts.lead}</span>
+                      {descriptionParts.rest ? ` ${descriptionParts.rest}` : ""}
+                    </span>
                   </button>
                 </div>
               );
