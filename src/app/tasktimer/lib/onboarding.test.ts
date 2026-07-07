@@ -110,6 +110,20 @@ describe("TaskTimer onboarding gating", () => {
     ).toBe(true);
   });
 
+  it("does not auto-open when only week start is missing", () => {
+    expect(
+      shouldAutoOpenTaskTimerOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: null,
+        preferencePresence: {
+          ...completePresence,
+          weekStarting: false,
+        },
+      })
+    ).toBe(false);
+  });
+
   it("does not auto-open for a complete profile", () => {
     expect(
       shouldAutoOpenTaskTimerOnboarding({

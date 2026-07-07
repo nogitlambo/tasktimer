@@ -7907,7 +7907,23 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .modal{
   align-items: center;
-  background: #0d0f13 !important;
+  background:
+    radial-gradient(
+      circle at 50% 8%,
+      color-mix(in srgb, var(--onboarding-background-accent, rgba(170, 178, 190, .46)) 28%, transparent) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 88% 72%,
+      color-mix(in srgb, var(--onboarding-background-accent, rgba(170, 178, 190, .46)) 18%, transparent) 0%,
+      transparent 42%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--onboarding-background-accent, rgba(170, 178, 190, .46)) 10%, var(--onboarding-background-base, var(--bg, #0d0f13))) 0%,
+      var(--onboarding-background-base, var(--bg, #0d0f13)) 44%,
+      color-mix(in srgb, var(--onboarding-background-accent, rgba(170, 178, 190, .46)) 8%, var(--onboarding-background-base, var(--bg, #0d0f13))) 100%
+    ) !important;
   border: 0 !important;
   box-shadow: none !important;
   display: flex;
@@ -7929,6 +7945,42 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   padding-left: clamp(14px, 3vw, 32px) !important;
 }
 
+#onboardingOverlay .modal.onboardingChronotypeResultSummaryModal{
+  --onboarding-chronotype-result-reveal-delay: 1580ms;
+}
+
+#onboardingOverlay .modal.onboardingChronotypeResultSummaryModal::before{
+  animation: onboardingChronotypeResultBackgroundReveal 420ms ease-out var(--onboarding-chronotype-result-reveal-delay) both;
+  background:
+    radial-gradient(
+      circle at 50% 8%,
+      color-mix(in srgb, var(--onboarding-background-reveal-accent, rgba(170, 178, 190, .46)) 28%, transparent) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 88% 72%,
+      color-mix(in srgb, var(--onboarding-background-reveal-accent, rgba(170, 178, 190, .46)) 18%, transparent) 0%,
+      transparent 42%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--onboarding-background-reveal-accent, rgba(170, 178, 190, .46)) 10%, var(--onboarding-background-base, var(--bg, #0d0f13))) 0%,
+      transparent 44%,
+      color-mix(in srgb, var(--onboarding-background-reveal-accent, rgba(170, 178, 190, .46)) 8%, transparent) 100%
+    );
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+#onboardingOverlay .modal.onboardingChronotypeResultSummaryModal > *{
+  position: relative;
+  z-index: 1;
+}
+
 #onboardingOverlay{
   align-items: stretch !important;
   justify-content: center !important;
@@ -7947,6 +7999,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: min(100%, 668px);
 }
 
+#onboardingOverlay .modal > .onboardingContentChronotypeResultSummary{
+  width: min(100%, 668px);
+}
+
 #onboardingOverlay .modal h2,
 #onboardingOverlay .modal :where(.modalSubtext, .confirmText, .modalDropdownHelp),
 #onboardingOverlay .onboardingField label,
@@ -7955,9 +8011,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingSkipLink{
-  position: absolute;
-  top: clamp(16px, 4vh, 32px);
-  right: clamp(16px, 4vw, 40px);
+  align-self: auto !important;
+  justify-self: auto !important;
+  left: auto !important;
+  margin: 0 !important;
+  position: fixed !important;
+  right: clamp(16px, 4vw, 40px) !important;
+  top: clamp(16px, 4vh, 32px) !important;
+  transform: none !important;
+  width: auto !important;
+  z-index: 3;
   border: 0 !important;
   background: transparent !important;
   color: rgba(170, 178, 190, .86) !important;
@@ -8046,10 +8109,43 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingHoursSubtext{
   color: #fff !important;
+  white-space: pre-line;
 }
 
-#onboardingOverlay .onboardingGreetingTitle{
+#onboardingOverlay .onboardingHoursHeadingSummary{
+  --onboarding-chronotype-summary-reveal-delay: 0ms;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  margin: 0 auto;
+  max-width: 520px;
+  width: min(100%, 520px);
+}
+
+#onboardingOverlay .onboardingHoursHeadingText{
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 0;
+}
+
+#onboardingOverlay .onboardingHoursHeadingLabel{
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  letter-spacing: 0;
+  margin: 0;
+  text-align: center;
+}
+
+#onboardingOverlay .onboardingHoursHeadingLabel{
+  color: #fff;
+  font-size: clamp(17px, 2.4vw, 28px);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+#onboardingOverlay .onboardingGreetingTitle:not(.onboardingChronotypeResultTitle){
   animation: onboardingGreetingTitleReveal 500ms ease-out 200ms both;
+  font-size: clamp(17px, 2.4vw, 28px);
   min-height: 1.2em;
 }
 
@@ -8089,6 +8185,24 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: 148px !important;
 }
 
+#onboardingOverlay .onboardingHoursDivider{
+  --onboarding-hours-divider-accent: #ffd400;
+  background: linear-gradient(90deg, transparent, var(--onboarding-hours-divider-accent), transparent);
+  margin: 10px auto 24px;
+}
+
+#onboardingOverlay .onboardingHoursDivider[data-chronotype-summary="bear"]{
+  --onboarding-hours-divider-accent: #1594ff;
+}
+
+#onboardingOverlay .onboardingHoursDivider[data-chronotype-summary="dolphin"]{
+  --onboarding-hours-divider-accent: #35d7dc;
+}
+
+#onboardingOverlay .onboardingHoursDivider[data-chronotype-summary="wolf"]{
+  --onboarding-hours-divider-accent: #b58cff;
+}
+
 @media (min-width: 981px){
   #onboardingOverlay .onboardingGreetingDivider,
   #onboardingOverlay .onboardingDaysDivider{
@@ -8103,6 +8217,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingChronotypeChoiceSubtextLine,
 #onboardingOverlay .onboardingChronotypeChoicePreview,
 #onboardingOverlay .onboardingChronotypePreview,
+#onboardingOverlay .onboardingHoursHeadingSummary,
 #onboardingOverlay .onboardingHoursSubtext,
 #onboardingOverlay .onboardingHoursTimeGrid,
 #onboardingOverlay .onboardingProductivityIntroText,
@@ -8112,6 +8227,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingUsernameField{
   animation: onboardingUsernameFieldReveal 400ms ease-out 1000ms both;
+}
+
+#onboardingOverlay .onboardingContentChronotypeHours .onboardingHoursHeadingSummary{
+  animation: onboardingGreetingTitleReveal 500ms ease-out 200ms both;
 }
 
 #onboardingOverlay .onboardingIntroSubtext{
@@ -8179,6 +8298,235 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingChronotypeResultImage{
   animation: onboardingChronotypeResultImageReveal 520ms cubic-bezier(.18,.84,.26,1) 2020ms both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultIntroWithSummary .onboardingChronotypeResultImage{
+  display: none;
+}
+
+#onboardingOverlay .onboardingChronotypeResultIntroWithSummary .onboardingChronotypeResultAnimal{
+  animation: none;
+  display: none;
+}
+
+#onboardingOverlay .onboardingContentChronotypeResultSummary{
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  position: relative;
+}
+
+#onboardingOverlay .onboardingChronotypeResultIntro{
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingChronotypeResultIntroWithSummary{
+  inset: 0;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+  animation: onboardingChronotypeResultIntroExit 360ms ease-out 1420ms both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummary{
+  --onboarding-chronotype-summary-accent: #ffd400;
+  --onboarding-chronotype-summary-accent-soft: rgba(255, 212, 0, .6);
+  --onboarding-chronotype-summary-emblem-shadow: rgba(255, 173, 51, .16);
+  --onboarding-chronotype-summary-reveal-delay: var(--onboarding-chronotype-result-reveal-delay, 1580ms);
+  --onboarding-chronotype-summary-divider-split-distance: clamp(42px, 5.8vw, 76px);
+  color: #fff;
+  display: grid;
+  gap: clamp(8px, 1.4vh, 14px);
+  opacity: 1;
+  padding: 0;
+  visibility: visible;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummary[data-chronotype-summary="bear"]{
+  --onboarding-chronotype-summary-accent: #1594ff;
+  --onboarding-chronotype-summary-accent-soft: rgba(21, 148, 255, .6);
+  --onboarding-chronotype-summary-emblem-shadow: rgba(21, 148, 255, .18);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummary[data-chronotype-summary="dolphin"]{
+  --onboarding-chronotype-summary-accent: #35d7dc;
+  --onboarding-chronotype-summary-accent-soft: rgba(53, 215, 220, .6);
+  --onboarding-chronotype-summary-emblem-shadow: rgba(53, 215, 220, .18);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummary[data-chronotype-summary="wolf"]{
+  --onboarding-chronotype-summary-accent: #b58cff;
+  --onboarding-chronotype-summary-accent-soft: rgba(181, 140, 255, .6);
+  --onboarding-chronotype-summary-emblem-shadow: rgba(181, 140, 255, .18);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryHero{
+  align-items: center;
+  display: grid;
+  gap: clamp(16px, 4vw, 56px);
+  grid-template-columns: minmax(0, 1.08fr) minmax(180px, .92fr);
+  min-width: 0;
+  visibility: visible;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryHeading{
+  display: grid;
+  gap: 0;
+  justify-items: start;
+  min-width: 0;
+  opacity: 0;
+  transform: translateY(14px);
+  visibility: hidden;
+  animation: onboardingChronotypeResultSummaryHeadingReveal 360ms ease-out var(--onboarding-chronotype-summary-reveal-delay) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryPercent{
+  color: #fff;
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(54px, 8.4vw, 110px);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: .86;
+  margin: 0;
+  text-align: left;
+  text-shadow: 0 2px 8px rgba(255, 255, 255, .2);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryType{
+  color: #fff;
+  display: grid;
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(20px, 2.8vw, 36px);
+  font-weight: 800;
+  line-height: 1.02;
+  margin: 0;
+  text-align: left;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryType span:first-child{
+  font-size: clamp(16px, 2.1vw, 26px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryType strong{
+  color: var(--onboarding-chronotype-summary-accent);
+  font-size: clamp(42px, 5.9vw, 72px);
+  font-weight: 900;
+  line-height: .98;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryEmblem{
+  aspect-ratio: 1 / 1;
+  display: block;
+  filter: drop-shadow(0 0 20px var(--onboarding-chronotype-summary-emblem-shadow));
+  height: auto;
+  justify-self: center;
+  object-fit: contain;
+  opacity: 0;
+  transform: translateY(calc(-100dvh - 24px)) scale(.9);
+  visibility: hidden;
+  width: min(100%, 250px);
+  animation: onboardingChronotypeResultSummaryEmblemReveal 520ms cubic-bezier(.18,.84,.26,1) calc(var(--onboarding-chronotype-summary-reveal-delay) + 360ms) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryDivider{
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--onboarding-chronotype-summary-accent) 6%,
+    var(--onboarding-chronotype-summary-accent) 94%,
+    transparent 100%
+  );
+  height: 1px;
+  min-height: 1px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryBodyReveal{
+  display: grid;
+  gap: clamp(8px, 1.4vh, 14px);
+  min-width: 0;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryDividerTop{
+  opacity: 0;
+  transform: translateY(var(--onboarding-chronotype-summary-divider-split-distance)) scaleX(.38);
+  transform-origin: center;
+  animation: onboardingChronotypeResultSummaryDividerSplitTop 520ms cubic-bezier(.18,.84,.26,1) calc(var(--onboarding-chronotype-summary-reveal-delay) + 880ms) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryDividerBottom{
+  opacity: 0;
+  transform: translateY(calc(var(--onboarding-chronotype-summary-divider-split-distance) * -1)) scaleX(.38);
+  transform-origin: center;
+  animation: onboardingChronotypeResultSummaryDividerSplitBottom 520ms cubic-bezier(.18,.84,.26,1) calc(var(--onboarding-chronotype-summary-reveal-delay) + 880ms) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryBody{
+  color: rgba(255, 255, 255, .9);
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(17px, 2.2vw, 28px);
+  font-weight: 700;
+  line-height: 1.32;
+  margin: 0 auto;
+  max-width: 620px;
+  opacity: 0;
+  text-align: center;
+  transform: translateY(6px);
+  visibility: hidden;
+  animation: onboardingChronotypeResultSummaryBodyReveal 420ms ease-out calc(var(--onboarding-chronotype-summary-reveal-delay) + 1020ms) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStats{
+  display: grid;
+  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0;
+  opacity: 0;
+  transform: translateY(18px);
+  visibility: hidden;
+  animation: onboardingChronotypeResultSummaryStatsReveal 420ms ease-out calc(var(--onboarding-chronotype-summary-reveal-delay) + 1400ms) both;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStat{
+  display: grid;
+  gap: clamp(2px, .5vh, 5px);
+  justify-items: center;
+  min-width: 0;
+  padding: 0 clamp(8px, 1.8vw, 24px);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStat + .onboardingChronotypeResultSummaryStat{
+  border-left: 1px solid var(--onboarding-chronotype-summary-accent-soft);
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStat dt{
+  color: #fff;
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(15px, 2vw, 26px);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStat dd{
+  color: #fff;
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#onboardingOverlay .onboardingChronotypeResultSummaryStat dd.isAccent{
+  color: var(--onboarding-chronotype-summary-accent);
 }
 
 #onboardingOverlay .onboardingUsernameSubtext{
@@ -8465,6 +8813,120 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
+@keyframes onboardingChronotypeResultIntroExit{
+  from{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+  }
+  to{
+    opacity: 0;
+    transform: translateY(-20px) scale(.98);
+    visibility: hidden;
+  }
+}
+
+@keyframes onboardingChronotypeResultBackgroundReveal{
+  from{
+    opacity: 0;
+  }
+  to{
+    opacity: 1;
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryHeadingReveal{
+  from{
+    opacity: 0;
+    transform: translateY(14px);
+    visibility: hidden;
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryEmblemReveal{
+  0%{
+    opacity: 0;
+    transform: translateY(calc(-100dvh - 24px)) scale(.9);
+    visibility: hidden;
+  }
+  72%{
+    opacity: 1;
+    transform: translateY(10px) scaleX(1.04) scaleY(.94);
+    visibility: visible;
+  }
+  86%{
+    opacity: 1;
+    transform: translateY(-4px) scaleX(.99) scaleY(1.015);
+    visibility: visible;
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryDividerSplitTop{
+  0%{
+    opacity: 0;
+    transform: translateY(var(--onboarding-chronotype-summary-divider-split-distance)) scaleX(.38);
+  }
+  1%{
+    opacity: 1;
+    transform: translateY(var(--onboarding-chronotype-summary-divider-split-distance)) scaleX(.38);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0) scaleX(1);
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryDividerSplitBottom{
+  0%{
+    opacity: 0;
+    transform: translateY(calc(var(--onboarding-chronotype-summary-divider-split-distance) * -1)) scaleX(.38);
+  }
+  1%{
+    opacity: 1;
+    transform: translateY(calc(var(--onboarding-chronotype-summary-divider-split-distance) * -1)) scaleX(.38);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0) scaleX(1);
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryBodyReveal{
+  from{
+    opacity: 0;
+    transform: translateY(6px);
+    visibility: hidden;
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+
+@keyframes onboardingChronotypeResultSummaryStatsReveal{
+  from{
+    opacity: 0;
+    transform: translateY(18px);
+    visibility: hidden;
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+
 @keyframes onboardingChronotypeChoiceImageSpread{
   from{
     transform: translateX(var(--chronotype-choice-start-offset, 0)) scale(.96);
@@ -8484,6 +8946,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     opacity: 1;
     transform: translateY(0) scale(1);
     visibility: visible;
+  }
+}
+
+@keyframes onboardingChronotypeMobileSelectedSettle{
+  from{
+    opacity: .92;
+    transform: translateY(var(--onboarding-chronotype-mobile-start-y, 0)) scale(.985);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -8524,8 +8997,18 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingChronotypeResultDots,
   #onboardingOverlay .onboardingChronotypeResultDot,
   #onboardingOverlay .onboardingChronotypeResultAnimal,
+  #onboardingOverlay .onboardingChronotypeResultIntroWithSummary,
+  #onboardingOverlay .onboardingChronotypeResultSummary,
+  #onboardingOverlay .onboardingChronotypeResultSummaryHero,
+  #onboardingOverlay .onboardingChronotypeResultSummaryHeading,
+  #onboardingOverlay .onboardingChronotypeResultSummaryEmblem,
+  #onboardingOverlay .onboardingChronotypeResultSummaryBodyReveal,
+  #onboardingOverlay .onboardingChronotypeResultSummaryDivider,
+  #onboardingOverlay .onboardingChronotypeResultSummaryBody,
+  #onboardingOverlay .onboardingChronotypeResultSummaryStats,
   #onboardingOverlay .onboardingChronotypeTileReveal,
   #onboardingOverlay .onboardingChronotypeTile,
+  #onboardingOverlay .onboardingHoursHeadingSummary,
   #onboardingOverlay .onboardingHoursSubtext,
   #onboardingOverlay .onboardingHoursTimeGrid,
   #onboardingOverlay .onboardingProductivityIntroText,
@@ -8543,6 +9026,28 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingChronotypeResultAnimal{
     max-width: none;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultIntroWithSummary{
+    display: none;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummary{
+    visibility: visible;
+  }
+
+  #onboardingOverlay .modal.onboardingChronotypeResultSummaryModal::before{
+    animation: none;
+    opacity: 1;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryHero,
+  #onboardingOverlay .onboardingChronotypeResultSummaryHeading,
+  #onboardingOverlay .onboardingChronotypeResultSummaryEmblem,
+  #onboardingOverlay .onboardingChronotypeResultSummaryDivider,
+  #onboardingOverlay .onboardingChronotypeResultSummaryBody,
+  #onboardingOverlay .onboardingChronotypeResultSummaryStats{
+    visibility: visible;
   }
 
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected{
@@ -8614,9 +9119,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingClockButton{
   align-items: center;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)),
-    rgba(26, 27, 32, .58);
+  background: transparent;
   border: 1px solid #1a1b20;
   border-radius: 0;
   color: rgba(238, 242, 246, .94);
@@ -8643,6 +9146,30 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   letter-spacing: 0;
   line-height: 1;
   text-align: center;
+}
+
+#onboardingOverlay .onboardingHoursTimeGrid{
+  --onboarding-hours-clock-accent: #ffd400;
+}
+
+#onboardingOverlay .onboardingHoursTimeGrid[data-chronotype-summary="bear"]{
+  --onboarding-hours-clock-accent: #1594ff;
+}
+
+#onboardingOverlay .onboardingHoursTimeGrid[data-chronotype-summary="dolphin"]{
+  --onboarding-hours-clock-accent: #35d7dc;
+}
+
+#onboardingOverlay .onboardingHoursTimeGrid[data-chronotype-summary="wolf"]{
+  --onboarding-hours-clock-accent: #b58cff;
+}
+
+#onboardingOverlay .onboardingContentChronotypeHours .onboardingClockValue{
+  color: var(--onboarding-hours-clock-accent);
+  font-family: Orbitron, var(--font-geist-mono), monospace;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 900;
+  line-height: .98;
 }
 
 #onboardingOverlay .onboardingClockNativeInput:not(.isFallbackVisible){
@@ -8865,20 +9392,24 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   display: grid;
   gap: 8px;
   justify-content: center;
+  margin-right: auto;
+  margin-left: auto;
+  width: max-content;
 }
 
-#onboardingOverlay .onboardingDayPillRow:first-child{
-  grid-template-columns: repeat(5, 54px);
+#onboardingOverlay .onboardingDayPillWeekRow{
+  grid-template-columns: repeat(7, 54px);
 }
 
-#onboardingOverlay .onboardingDayPillRow:last-child{
-  grid-template-columns: repeat(3, 54px);
+#onboardingOverlay .onboardingDayPillAllRow{
+  grid-template-columns: 54px;
 }
 
 #onboardingOverlay .onboardingDayPill{
   animation: onboardingDayPillReveal 160ms ease-out both;
-  width: 54px;
   height: 34px;
+  min-width: 0;
+  width: 100%;
   border: 1px solid rgba(170, 178, 190, .44) !important;
   border-radius: 0 !important;
   background: rgba(170, 178, 190, .10);
@@ -9042,6 +9573,32 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin-right: auto;
 }
 
+#onboardingOverlay .modal .confirmBtns.onboardingActions [data-onboarding-back-action="true"]{
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: rgba(170, 178, 190, .78) !important;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+#onboardingOverlay .modal .confirmBtns.onboardingActions [data-onboarding-back-action="true"]:hover:not(:disabled),
+#onboardingOverlay .modal .confirmBtns.onboardingActions [data-onboarding-back-action="true"]:focus-visible,
+#onboardingOverlay .modal .confirmBtns.onboardingActions [data-onboarding-back-action="true"]:active{
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: rgba(238, 242, 246, .88) !important;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 520px){
   #onboardingOverlay .modal{
     justify-content: flex-start;
@@ -9067,22 +9624,149 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     width: 100%;
   }
 
+  #onboardingOverlay .onboardingContentChronotypeResultSummary{
+    display: grid;
+    justify-content: stretch;
+    min-height: 0;
+    place-items: center;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummary{
+    gap: 8px;
+    padding: 0 0 76px;
+    width: 100%;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryBodyReveal{
+    gap: 8px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryHero{
+    gap: 10px;
+    grid-template-columns: 1fr;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryHeading{
+    justify-items: center;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryPercent,
+  #onboardingOverlay .onboardingChronotypeResultSummaryType{
+    text-align: center;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryPercent{
+    font-size: clamp(42px, 14vw, 64px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryType{
+    font-size: clamp(15px, 4.8vw, 22px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryType span:first-child{
+    font-size: clamp(13px, 4vw, 18px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryType strong{
+    font-size: clamp(34px, 10vw, 48px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryEmblem{
+    width: min(34vw, 116px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryBody{
+    font-size: clamp(13px, 3.8vw, 17px);
+    line-height: 1.24;
+    max-width: 300px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryStats{
+    grid-template-columns: 1fr;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryStat{
+    border-left: 0;
+    gap: 2px;
+    padding: 7px 0;
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryStat + .onboardingChronotypeResultSummaryStat{
+    border-top: 1px solid var(--onboarding-chronotype-summary-accent-soft);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryStat dt{
+    font-size: clamp(12px, 3.8vw, 16px);
+  }
+
+  #onboardingOverlay .onboardingChronotypeResultSummaryStat dd{
+    font-size: clamp(22px, 6.4vw, 30px);
+  }
+
+  #onboardingOverlay .onboardingHoursHeadingSummary{
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 100%;
+    padding: 0;
+  }
+
+  #onboardingOverlay .onboardingHoursHeadingLabel{
+    font-size: clamp(14px, 4.2vw, 18px);
+  }
+
+  #onboardingOverlay .onboardingGreetingTitle:not(.onboardingChronotypeResultTitle){
+    font-size: clamp(14px, 4.2vw, 18px);
+  }
+
   #onboardingOverlay .onboardingActions{
+    align-items: center;
+    flex-direction: column-reverse;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    justify-content: center !important;
     position: sticky;
     z-index: 3;
     bottom: 0;
     flex: 0 0 auto;
     margin-top: 0;
     padding: 12px 0 calc(14px + var(--safe-bottom));
-    background: #0d0f13;
-    box-shadow: 0 -16px 24px rgba(13, 15, 19, .92);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #onboardingOverlay .onboardingActions [data-onboarding-next-action="true"]{
+    justify-content: center;
+    min-height: 44px;
+    width: 100%;
+  }
+
+  #onboardingOverlay .onboardingActions [data-onboarding-back-action="true"]{
+    min-height: 30px;
+    min-width: 84px;
+    padding: 6px 12px;
+    width: auto;
   }
 
   #onboardingOverlay .onboardingTimeGrid{
     grid-template-columns: 1fr;
   }
 
+  #onboardingOverlay .onboardingHoursTimeGrid{
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #onboardingOverlay .onboardingContentChronotypeHours .onboardingClockButton{
+    min-height: 64px;
+    padding: 10px 8px;
+  }
+
+  #onboardingOverlay .onboardingContentChronotypeHours .onboardingClockValue{
+    font-size: clamp(22px, 6.4vw, 30px);
+  }
+
   #onboardingOverlay .onboardingChronotypeTileGrid{
+    --onboarding-chronotype-mobile-card-height: 124px;
+    --onboarding-chronotype-mobile-gap: 10px;
     gap: 10px;
     grid-template-columns: 1fr;
     grid-template-rows: none;
@@ -9096,6 +9780,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal{
     grid-area: 1 / 1;
+    transition:
+      opacity 320ms ease,
+      transform 520ms cubic-bezier(.16, 1, .3, 1);
+    will-change: opacity, transform;
     width: min(100%, calc(100vw - 28px), 360px);
   }
 
@@ -9104,6 +9792,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     grid-template-columns: 86px minmax(0, 1fr);
     min-height: 124px;
     padding: 8px;
+    transition:
+      opacity 320ms ease,
+      transform 520ms cubic-bezier(.16, 1, .3, 1),
+      border-color 180ms ease,
+      background 180ms ease,
+      color 180ms ease;
+    will-change: opacity, transform;
   }
 
   #onboardingOverlay .onboardingChronotypeTileImageFrame{
@@ -9111,12 +9806,35 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     width: 86px;
   }
 
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isFaded{
+    filter: blur(.6px);
+    opacity: 0;
+    transform: scale(.965);
+  }
+
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal0 .onboardingChronotypeTile.isSelected,
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal1 .onboardingChronotypeTile.isSelected,
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal2 .onboardingChronotypeTile.isSelected,
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal3 .onboardingChronotypeTile.isSelected{
-    transform: none;
+    animation: onboardingChronotypeMobileSelectedSettle 520ms cubic-bezier(.16, 1, .3, 1) both;
+    transform: translateY(0) scale(1);
     width: 100%;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal0 .onboardingChronotypeTile.isSelected{
+    --onboarding-chronotype-mobile-start-y: calc((var(--onboarding-chronotype-mobile-card-height) + var(--onboarding-chronotype-mobile-gap)) * -1.5);
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal1 .onboardingChronotypeTile.isSelected{
+    --onboarding-chronotype-mobile-start-y: calc((var(--onboarding-chronotype-mobile-card-height) + var(--onboarding-chronotype-mobile-gap)) * -.5);
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal2 .onboardingChronotypeTile.isSelected{
+    --onboarding-chronotype-mobile-start-y: calc((var(--onboarding-chronotype-mobile-card-height) + var(--onboarding-chronotype-mobile-gap)) * .5);
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal3 .onboardingChronotypeTile.isSelected{
+    --onboarding-chronotype-mobile-start-y: calc((var(--onboarding-chronotype-mobile-card-height) + var(--onboarding-chronotype-mobile-gap)) * 1.5);
   }
 
   #onboardingOverlay .onboardingUsernameRow{
@@ -9128,18 +9846,38 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     max-width: 300px;
   }
 
-  #onboardingOverlay .onboardingDayPillRow:first-child{
-    grid-template-columns: repeat(5, 44px);
+  #onboardingOverlay .onboardingDayPillRow{
+    gap: 4px;
   }
 
-  #onboardingOverlay .onboardingDayPillRow:last-child{
-    grid-template-columns: repeat(3, 44px);
+  #onboardingOverlay .onboardingDayPillWeekRow{
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    max-width: 100%;
+    width: min(100%, 332px);
+  }
+
+  #onboardingOverlay .onboardingDayPillAllRow{
+    grid-template-columns: 44px;
   }
 
   #onboardingOverlay .onboardingDayPill{
-    width: 44px;
     height: 32px;
+    font-size: 10px;
     padding: 7px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal0 .onboardingChronotypeTile.isSelected,
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal1 .onboardingChronotypeTile.isSelected,
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal2 .onboardingChronotypeTile.isSelected,
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal3 .onboardingChronotypeTile.isSelected{
+    animation: none;
+    transform: none;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isFaded{
+    filter: none;
   }
 }
 

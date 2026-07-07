@@ -4,8 +4,15 @@ import {
   ONBOARDING_CHRONOTYPE_CHOICE_PROMPT,
   ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT,
   ONBOARDING_CHRONOTYPE_OPTIONS,
+  ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE,
   ONBOARDING_CHRONOTYPE_SELECTION_PROMPT,
+  ONBOARDING_DAYS_BACKGROUND_ACCENT,
   ONBOARDING_GREETING_SUBTEXT,
+  ONBOARDING_NEUTRAL_BACKGROUND_ACCENT,
+  ONBOARDING_BEAR_CHRONOTYPE_SUMMARY,
+  ONBOARDING_DOLPHIN_CHRONOTYPE_SUMMARY,
+  ONBOARDING_LION_CHRONOTYPE_SUMMARY,
+  ONBOARDING_WOLF_CHRONOTYPE_SUMMARY,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
@@ -14,11 +21,16 @@ import {
   isOnboardingUsernameTakenError,
   isOnboardingFinishDisabled,
   normalizeOnboardingProductivityDays,
+  onboardingBackgroundAccentForStep,
   onboardingAvatarProfilePatch,
+  onboardingContinueBlockedMessage,
   onboardingChronotypeResultCopy,
+  onboardingChronotypeResultSummary,
+  onboardingProductivityHoursSubtext,
   resolveOnboardingAvatarId,
   shouldShowOnboardingStepImage,
   shouldShowOnboardingStepSubtext,
+  shouldResetChronotypeChoiceForNavigation,
   onboardingStepPreferencePayload,
   onboardingTitle,
   resolveOnboardingChronotypeResult,
@@ -34,16 +46,15 @@ describe("TaskLaunchOnboarding finish action", () => {
 });
 
 describe("TaskLaunchOnboarding steps", () => {
-  it("places productivity hours before productivity days", () => {
+  it("keeps productivity hours inside the chronotype result step", () => {
     expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual([
       "username",
       "greeting",
       "chronotypeChoice",
       "chronotypeSelection",
       "chronotypeResult",
-      "hours",
       "days",
-      "weekStart",
+      "firstTask",
       "push",
     ]);
   });
@@ -57,8 +68,8 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingTitle("chronotypeChoice", "Avery")).toBe(ONBOARDING_CHRONOTYPE_CHOICE_PROMPT);
     expect(onboardingTitle("chronotypeSelection", "Avery")).toBe(ONBOARDING_CHRONOTYPE_SELECTION_PROMPT);
     expect(ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT).toEqual([
-      "Your chronotype reflects the times of day when your energy and focus are at peak levels.",
-      "There are four commonly recognised chronotypes, each represented by an animal with its own natural pattern of energy, focus, and rest.",
+      "Your chronotype reflects your natural daily rhythm, including when your focus and energy are at peak levels.",
+      "TaskLaunch applies that rhythm to guide smarter task planning and place tasks where they fit best.",
     ]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.label)).toEqual(["1", "2", "4", "3"]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.description)).toEqual([
@@ -95,8 +106,64 @@ describe("TaskLaunchOnboarding steps", () => {
     );
   });
 
+  it("resolves chronotype result summaries that use the styled summary step", () => {
+    expect(onboardingChronotypeResultSummary("early-riser")).toEqual(ONBOARDING_LION_CHRONOTYPE_SUMMARY);
+    expect(onboardingChronotypeResultSummary("early-riser")).toMatchObject({
+      animal: "lion",
+      animalLabel: "Lion",
+      emblemSrc: "/onboarding/lion.webp",
+      percentage: "15%",
+      headingCopy: "of people are Lion chronotypes.",
+      bodyCopy: "Lions prefer to wake up early. They are disciplined starters and are often most productive in the first half of the day.",
+      stats: [
+        { label: "Most Productive", value: "9 AM - 2 PM", accent: true },
+      ],
+    });
+    expect(onboardingChronotypeResultSummary("sun-aligned")).toEqual(ONBOARDING_BEAR_CHRONOTYPE_SUMMARY);
+    expect(onboardingChronotypeResultSummary("sun-aligned")).toMatchObject({
+      animal: "bear",
+      animalLabel: "Bear",
+      emblemSrc: "/onboarding/bear.webp",
+      percentage: "55%",
+      headingCopy: "of people are Bear chronotypes.",
+      bodyCopy:
+        "Bears tend to follow a steady daytime rhythm. They feel best with a balanced routine and are often most productive from late morning into the afternoon.",
+      stats: [
+        { label: "Most Productive", value: "10 AM - 3 PM", accent: true },
+      ],
+    });
+    expect(onboardingChronotypeResultSummary("light-sleeper")).toEqual(ONBOARDING_DOLPHIN_CHRONOTYPE_SUMMARY);
+    expect(onboardingChronotypeResultSummary("light-sleeper")).toMatchObject({
+      animal: "dolphin",
+      animalLabel: "Dolphin",
+      emblemSrc: "/onboarding/dolphin.webp",
+      percentage: "10-15%",
+      headingCopy: "of people are Dolphin chronotypes.",
+      bodyCopy:
+        "Dolphins are light sleepers with a more sensitive rhythm. They often do best with flexible routines and can find their strongest focus from afternoon into evening.",
+      stats: [
+        { label: "Most Productive", value: "3 PM - 9 PM", accent: true },
+      ],
+    });
+    expect(onboardingChronotypeResultSummary("night-owl")).toEqual(ONBOARDING_WOLF_CHRONOTYPE_SUMMARY);
+    expect(onboardingChronotypeResultSummary("night-owl")).toMatchObject({
+      animal: "wolf",
+      animalLabel: "Wolf",
+      emblemSrc: "/onboarding/wolf.webp",
+      percentage: "15-30%",
+      headingCopy: "of people are Wolf chronotypes.",
+      bodyCopy:
+        "Wolves naturally lean later in the day. They may struggle with early starts and often reach their strongest focus in the evening.",
+      stats: [
+        { label: "Most Productive", value: "5 PM - 11 PM", accent: true },
+      ],
+    });
+    expect(onboardingChronotypeResultSummary("missing")).toBeNull();
+  });
+
   it("keeps the productivity-days title after the chronotype result step", () => {
     expect(onboardingTitle("days", "Avery")).toBe("Productivity Days");
+    expect(onboardingTitle("firstTask", "Avery")).toBe("Let's create your first task");
   });
 
   it("uses the notifications title for the final onboarding step", () => {
@@ -110,18 +177,22 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(shouldShowOnboardingStepSubtext("chronotypeSelection")).toBe(false);
     expect(shouldShowOnboardingStepImage("chronotypeResult")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeResult")).toBe(false);
-    expect(shouldShowOnboardingStepImage("weekStart")).toBe(false);
-    expect(shouldShowOnboardingStepSubtext("weekStart")).toBe(false);
+    expect(shouldShowOnboardingStepImage("firstTask")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("firstTask")).toBe(false);
     expect(shouldShowOnboardingStepImage("push")).toBe(false);
-    expect(shouldShowOnboardingStepImage("hours")).toBe(true);
-    expect(shouldShowOnboardingStepSubtext("hours")).toBe(true);
+  });
+
+  it("keeps the neutral background accent until the chronotype result reveal", () => {
+    expect(onboardingBackgroundAccentForStep("chronotypeSelection", "#ffad33")).toBe(ONBOARDING_NEUTRAL_BACKGROUND_ACCENT);
+    expect(onboardingBackgroundAccentForStep("chronotypeResult", "#ffad33")).toBe(ONBOARDING_NEUTRAL_BACKGROUND_ACCENT);
+    expect(onboardingBackgroundAccentForStep("chronotypeResult", "#ffad33", true)).toBe("#ffad33");
+    expect(onboardingBackgroundAccentForStep("days", "#ffad33", true)).toBe(ONBOARDING_DAYS_BACKGROUND_ACCENT);
   });
 
   it("does not create a preference payload for visual-only steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "greeting",
-        weekStarting: "mon",
         selectedDays: ["mon", "tue", "wed", "thu", "fri"],
         startTime: "09:00",
         endTime: "17:00",
@@ -132,7 +203,6 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "chronotypeChoice",
-        weekStarting: "mon",
         selectedDays: ["mon", "tue", "wed", "thu", "fri"],
         startTime: "09:00",
         endTime: "17:00",
@@ -143,7 +213,6 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "chronotypeSelection",
-        weekStarting: "mon",
         selectedDays: ["mon", "tue", "wed", "thu", "fri"],
         startTime: "09:00",
         endTime: "17:00",
@@ -154,7 +223,16 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "chronotypeResult",
-        weekStarting: "mon",
+        selectedDays: ["mon", "tue", "wed", "thu", "fri"],
+        startTime: "09:00",
+        endTime: "17:00",
+        pushEnabled: false,
+        pushTouched: false,
+      })
+    ).toBeNull();
+    expect(
+      onboardingStepPreferencePayload({
+        step: "firstTask",
         selectedDays: ["mon", "tue", "wed", "thu", "fri"],
         startTime: "09:00",
         endTime: "17:00",
@@ -168,7 +246,6 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "days",
-        weekStarting: "sun",
         selectedDays: ["mon", "wed"],
         startTime: "09:00",
         endTime: "17:00",
@@ -182,7 +259,6 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "push",
-        weekStarting: "sun",
         selectedDays: ["mon"],
         startTime: "09:00",
         endTime: "17:00",
@@ -193,7 +269,6 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "push",
-        weekStarting: "sun",
         selectedDays: ["mon"],
         startTime: "09:00",
         endTime: "17:00",
@@ -203,25 +278,10 @@ describe("TaskLaunchOnboarding steps", () => {
     ).toEqual({ pushNotificationsEnabled: true });
   });
 
-  it("saves week start on the week-start step", () => {
-    expect(
-      onboardingStepPreferencePayload({
-        step: "weekStart",
-        weekStarting: "sun",
-        selectedDays: ["mon"],
-        startTime: "09:00",
-        endTime: "17:00",
-        pushEnabled: false,
-        pushTouched: false,
-      })
-    ).toEqual({ weekStarting: "sun" });
-  });
-
   it("saves productivity hours on the productivity hours step", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "hours",
-        weekStarting: "sun",
         selectedDays: ["mon"],
         startTime: "09:00",
         endTime: "17:00",
@@ -245,6 +305,9 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(canContinueOnboardingStep("chronotypeSelection", [], "")).toBe(false);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "missing")).toBe(false);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "early-riser")).toBe(true);
+    expect(onboardingContinueBlockedMessage("chronotypeSelection")).toBe(ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE);
+    expect(onboardingContinueBlockedMessage("chronotypeSelection")).toBe("Please select one option");
+    expect(onboardingContinueBlockedMessage("days")).toBe("Select at least one productivity day before continuing.");
   });
 
   it("toggles chronotype choice selection when the selected tile is clicked again", () => {
@@ -252,6 +315,14 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(toggleOnboardingChronotypeChoice("early-riser", "early-riser")).toBe("");
     expect(toggleOnboardingChronotypeChoice("early-riser", "night-owl")).toBe("night-owl");
     expect(canContinueOnboardingStep("chronotypeSelection", [], toggleOnboardingChronotypeChoice("early-riser", "early-riser"))).toBe(false);
+  });
+
+  it("clears chronotype choice when backing out of or returning to the selection step", () => {
+    expect(shouldResetChronotypeChoiceForNavigation("chronotypeSelection", "chronotypeChoice")).toBe(true);
+    expect(shouldResetChronotypeChoiceForNavigation("chronotypeResult", "chronotypeSelection")).toBe(true);
+    expect(shouldResetChronotypeChoiceForNavigation("chronotypeChoice", "chronotypeSelection")).toBe(true);
+    expect(shouldResetChronotypeChoiceForNavigation("chronotypeSelection", "chronotypeResult")).toBe(false);
+    expect(shouldResetChronotypeChoiceForNavigation("chronotypeResult", "days")).toBe(false);
   });
 
   it("resolves chronotype metadata and conservative productivity hour defaults", () => {
@@ -311,6 +382,15 @@ describe("TaskLaunchOnboarding steps", () => {
         hoursTouched: true,
       })
     ).toEqual({ startTime: "08:30", endTime: "14:30" });
+  });
+
+  it("describes productivity hours scheduling before manual fine-tuning", () => {
+    expect(onboardingProductivityHoursSubtext()).toBe(
+      [
+        "When you create scheduled tasks, TaskLaunch will automatically try to fit it within your productivity hours.",
+        "Continue with the suggested window, or fine-tune it below to better match your personal rhythm if you need.",
+      ].join("\n\n")
+    );
   });
 
   it("formats productivity hour values as clock labels", () => {

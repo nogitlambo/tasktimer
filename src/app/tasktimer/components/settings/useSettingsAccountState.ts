@@ -12,7 +12,6 @@ import {
   getErrorMessage,
   handleDeleteAccountFlow,
   loadClaimedUsername,
-  resumePendingDeleteFlow,
   saveUserDocPatch,
   updateAliasFlow,
 } from "./settingsAccountService";
@@ -212,38 +211,6 @@ export function useSettingsAccountState(): {
     if (authUserAliasEditing) return;
     setAuthUserAliasDraft(authUserAlias);
   }, [authUserAlias, authUserAliasEditing]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !authUserUid) return;
-    let cancelled = false;
-    const resumePendingDelete = async () => {
-      try {
-        const result = await resumePendingDeleteFlow(authUserUid);
-        if (cancelled || !result.resumed) return;
-        if (result.error) {
-          setAuthBusy(false);
-          setShowDeleteAccountConfirm(true);
-          setAuthError(result.error);
-          setAuthStatus("");
-          return;
-        }
-        setAuthBusy(true);
-        setShowDeleteAccountConfirm(true);
-        setAuthStatus("Re-authentication complete. Deleting account...");
-        setAuthError("");
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setAuthBusy(false);
-        setShowDeleteAccountConfirm(true);
-        setAuthError(getErrorMessage(err, "Could not complete Google re-authentication for account deletion."));
-        setAuthStatus("");
-      }
-    };
-    void resumePendingDelete();
-    return () => {
-      cancelled = true;
-    };
-  }, [authUserUid]);
 
   const onDeleteAccount = useCallback(async () => {
     const auth = getFirebaseAuthClient();

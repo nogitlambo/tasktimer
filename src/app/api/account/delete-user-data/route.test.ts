@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  deleteAuthUser: vi.fn(() => Promise.resolve()),
   enforceUidRateLimit: vi.fn(),
+  getFirebaseAdminAuth: vi.fn(),
   getFirebaseAdminDb: vi.fn(),
   getFirebaseAdminStorageBucket: vi.fn(),
   increment: vi.fn((value: number) => ({ increment: value })),
@@ -17,6 +19,7 @@ vi.mock("firebase-admin/firestore", () => ({
 }));
 
 vi.mock("@/lib/firebaseAdmin", () => ({
+  getFirebaseAdminAuth: mocks.getFirebaseAdminAuth,
   getFirebaseAdminDb: mocks.getFirebaseAdminDb,
   getFirebaseAdminStorageBucket: mocks.getFirebaseAdminStorageBucket,
 }));
@@ -137,6 +140,9 @@ describe("POST /api/account/delete-user-data", () => {
     mocks.getFirebaseAdminStorageBucket.mockReturnValue({
       deleteFiles: vi.fn(() => Promise.resolve()),
     });
+    mocks.getFirebaseAdminAuth.mockReturnValue({
+      deleteUser: mocks.deleteAuthUser,
+    });
   });
 
   it("deletes the canonical leaderboard profile document for the authenticated uid", async () => {
@@ -160,5 +166,19 @@ describe("POST /api/account/delete-user-data", () => {
     expect(firestore.db.collection).toHaveBeenCalledWith("leaderboardProfiles");
     expect(firestore.db.collection).toHaveBeenCalledWith("deletedAccountUids");
     expect(firestore.db.collection).not.toHaveBeenCalledWith("leaderboardprofiles");
+    expect(mocks.deleteAuthUser).toHaveBeenCalledWith("uid-1");
+  });
+
+  it("returns success when the auth user was already deleted", async () => {
+    const firestore = createFirestoreMock();
+    mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
+    mocks.deleteAuthUser.mockRejectedValueOnce({ code: "auth/user-not-found" });
+
+    const response = await POST(deleteUserDataRequest({ uid: "uid-1" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true });
+    expect(mocks.deleteAuthUser).toHaveBeenCalledWith("uid-1");
   });
 });

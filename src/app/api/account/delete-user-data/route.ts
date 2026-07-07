@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue, type DocumentData, type Firestore, type Query } from "firebase-admin/firestore";
 
-import { getFirebaseAdminDb, getFirebaseAdminStorageBucket } from "@/lib/firebaseAdmin";
+import { getFirebaseAdminAuth, getFirebaseAdminDb, getFirebaseAdminStorageBucket } from "@/lib/firebaseAdmin";
 import {
   createApiAuthErrorResponse,
   createApiInternalErrorResponse,
@@ -94,6 +94,24 @@ async function deleteHoldingSpaceStorageFiles(uid: string) {
   });
 }
 
+function isAuthUserNotFoundError(error: unknown) {
+  return (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    String((error as { code?: unknown }).code || "") === "auth/user-not-found"
+  );
+}
+
+async function deleteFirebaseAuthUser(uid: string) {
+  try {
+    await getFirebaseAdminAuth().deleteUser(uid);
+  } catch (error: unknown) {
+    if (isAuthUserNotFoundError(error)) return;
+    throw error;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -149,6 +167,7 @@ export async function POST(req: Request) {
       (usernameKey ? db.collection("usernames").doc(usernameKey).delete() : Promise.resolve()),
       (emailKey ? db.collection("userEmailLookup").doc(emailKey).delete() : Promise.resolve()),
     ]);
+    await deleteFirebaseAuthUser(uid);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -263,7 +263,6 @@ export function hasIncompleteTaskTimerOnboardingPreferences(
 ): boolean {
   if (!preferencePresence) return false;
   return (
-    !preferencePresence.weekStarting ||
     !preferencePresence.optimalProductivityStartTime ||
     !preferencePresence.optimalProductivityEndTime ||
     !preferencePresence.optimalProductivityDays
