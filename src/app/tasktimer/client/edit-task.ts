@@ -539,6 +539,32 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return "09:00";
   }
 
+  function isNativeOrFilePushRuntime() {
+    if (typeof window === "undefined") return false;
+    if (window.location.protocol === "file:") return true;
+    try {
+      const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+      return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }
+
+  function arePushAlertsEnabledForCurrentRuntime() {
+    return isNativeOrFilePushRuntime() ? ctx.getMobilePushAlertsEnabled() : ctx.getWebPushAlertsEnabled();
+  }
+
+  function syncEditPushReminderAvailability() {
+    const enabled = arePushAlertsEnabledForCurrentRuntime();
+    if (els.editPlannedStartPushReminders) {
+      els.editPlannedStartPushReminders.disabled = !enabled;
+      els.editPlannedStartPushReminders.setAttribute("aria-disabled", String(!enabled));
+      els.editPlannedStartPushReminders.title = enabled ? "" : "Enable push notifications in Settings to use reminders.";
+    }
+    els.editPlannedStartPushRemindersRow?.classList.toggle("isDisabled", !enabled);
+    els.editPlannedStartPushRemindersRow?.setAttribute("aria-disabled", String(!enabled));
+  }
+
   function syncEditPlannedStartSelectors(task?: Task | null) {
     const currentTask = task || getCurrentEditTask();
     const pushRemindersEnabled = currentTask?.plannedStartPushRemindersEnabled !== false;
@@ -558,7 +584,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     if (els.editPlannedStartPushReminders) {
       els.editPlannedStartPushReminders.checked = pushRemindersEnabled;
     }
-    els.editPlannedStartPushRemindersRow?.classList.remove("isDisabled");
+    syncEditPushReminderAvailability();
     syncEditTaskScheduleSummary(currentTask);
   }
 
@@ -975,7 +1001,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     return normalizeTaskColor(task?.color) || "#58e1ff";
   }
 
-  async function enablePushAlertsForCurrentRuntime() {
+  async function enablePushAlertsForCheckpointAlerts() {
     const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
       mobileEnabled: ctx.getMobilePushAlertsEnabled(),
       webEnabled: ctx.getWebPushAlertsEnabled(),
@@ -1036,7 +1062,7 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       ctx.on(bell, "click", async () => {
         const enablingAlerts = m.alertsEnabled === false;
         if (enablingAlerts) {
-          await enablePushAlertsForCurrentRuntime();
+          await enablePushAlertsForCheckpointAlerts();
         }
         m.alertsEnabled = enablingAlerts;
         t.milestones = ms;
@@ -1966,8 +1992,8 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     ctx.on(els.editPlannedStartPushReminders, "change", async () => {
       const t = getCurrentEditTask();
       if (!t) return;
-      if (els.editPlannedStartPushReminders?.checked) {
-        await enablePushAlertsForCurrentRuntime();
+      if (!arePushAlertsEnabledForCurrentRuntime() && els.editPlannedStartPushReminders) {
+        els.editPlannedStartPushReminders.checked = t.plannedStartPushRemindersEnabled !== false;
       }
       t.plannedStartPushRemindersEnabled = !!els.editPlannedStartPushReminders?.checked;
       syncEditPlannedStartSelectors(t);

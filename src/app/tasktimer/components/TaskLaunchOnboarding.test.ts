@@ -19,9 +19,12 @@ import {
   formatOnboardingChronotypeProductivityCopy,
   formatOnboardingClockTimeLabel,
   isOnboardingUsernameTakenError,
+  isOnboardingContinueDisabled,
+  isOnboardingContinueReservedHidden,
   isOnboardingFinishDisabled,
   normalizeOnboardingProductivityDays,
   onboardingBackgroundAccentForStep,
+  onboardingBackNavigation,
   onboardingAvatarProfilePatch,
   onboardingContinueBlockedMessage,
   onboardingChronotypeResultCopy,
@@ -35,6 +38,7 @@ import {
   onboardingTitle,
   resolveOnboardingChronotypeResult,
   seedOnboardingChronotypeHours,
+  toggleAllOnboardingProductivityDays,
   toggleOnboardingChronotypeChoice,
 } from "./TaskLaunchOnboarding";
 
@@ -73,10 +77,10 @@ describe("TaskLaunchOnboarding steps", () => {
     ]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.label)).toEqual(["1", "2", "4", "3"]);
     expect(ONBOARDING_CHRONOTYPE_OPTIONS.map((option) => option.description)).toEqual([
-      "Early riser, and tend to function best between early morning to early afternoon.",
-      "Sleep-wake patterns align closely with the sun. Most productive from mid-morning to late afternoon.",
+      "Rises early, tends to function best between early morning to early afternoon.",
+      "Wakes up with the sun. Most productive from mid-morning to late afternoon.",
       "Light sleeper, prone to insomnia, and most productive from midday to early evening.",
-      "Classic night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
+      "Night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
     ]);
   });
 
@@ -300,11 +304,28 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(canContinueOnboardingStep("days", ["mon"])).toBe(true);
   });
 
+  it("toggles all onboarding productivity days on and off", () => {
+    expect(toggleAllOnboardingProductivityDays(["mon", "wed"])).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
+    expect(toggleAllOnboardingProductivityDays(["sun", "mon", "tue", "wed", "thu", "fri", "sat"])).toEqual([]);
+    expect(toggleAllOnboardingProductivityDays([])).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
+  });
+
   it("blocks continuing from the chronotype selection step until a tile is selected", () => {
     expect(canContinueOnboardingStep("chronotypeChoice", [], "")).toBe(true);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "")).toBe(false);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "missing")).toBe(false);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "early-riser")).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "chronotypeChoice", [], "")).toBe(false);
+    expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "")).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "missing")).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "early-riser")).toBe(false);
+    expect(isOnboardingContinueDisabled(false, "days", [], "")).toBe(false);
+    expect(isOnboardingContinueDisabled(true, "chronotypeSelection", [], "early-riser")).toBe(true);
+    expect(isOnboardingContinueReservedHidden("chronotypeChoice", "")).toBe(false);
+    expect(isOnboardingContinueReservedHidden("chronotypeSelection", "")).toBe(true);
+    expect(isOnboardingContinueReservedHidden("chronotypeSelection", "missing")).toBe(true);
+    expect(isOnboardingContinueReservedHidden("chronotypeSelection", "early-riser")).toBe(false);
+    expect(isOnboardingContinueReservedHidden("days", "")).toBe(false);
     expect(onboardingContinueBlockedMessage("chronotypeSelection")).toBe(ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE);
     expect(onboardingContinueBlockedMessage("chronotypeSelection")).toBe("Please select one option");
     expect(onboardingContinueBlockedMessage("days")).toBe("Select at least one productivity day before continuing.");
@@ -323,6 +344,37 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(shouldResetChronotypeChoiceForNavigation("chronotypeChoice", "chronotypeSelection")).toBe(true);
     expect(shouldResetChronotypeChoiceForNavigation("chronotypeSelection", "chronotypeResult")).toBe(false);
     expect(shouldResetChronotypeChoiceForNavigation("chronotypeResult", "days")).toBe(false);
+  });
+
+  it("deselects the selected chronotype in place when backing on the selection step", () => {
+    const selectionStepIndex = ONBOARDING_STEPS.findIndex((step) => step.key === "chronotypeSelection");
+    const choiceStepIndex = ONBOARDING_STEPS.findIndex((step) => step.key === "chronotypeChoice");
+
+    expect(
+      onboardingBackNavigation({
+        activeStep: "chronotypeSelection",
+        chronotypeResultPhase: "summary",
+        selectedChronotypeChoiceId: "early-riser",
+        stepIndex: selectionStepIndex,
+      })
+    ).toEqual({
+      nextStepIndex: selectionStepIndex,
+      nextChronotypeResultPhase: "summary",
+      resetChronotypeChoice: true,
+    });
+
+    expect(
+      onboardingBackNavigation({
+        activeStep: "chronotypeSelection",
+        chronotypeResultPhase: "summary",
+        selectedChronotypeChoiceId: "",
+        stepIndex: selectionStepIndex,
+      })
+    ).toEqual({
+      nextStepIndex: choiceStepIndex,
+      nextChronotypeResultPhase: "summary",
+      resetChronotypeChoice: true,
+    });
   });
 
   it("resolves chronotype metadata and conservative productivity hour defaults", () => {
@@ -388,7 +440,7 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(onboardingProductivityHoursSubtext()).toBe(
       [
         "When you create scheduled tasks, TaskLaunch will automatically try to fit it within your productivity hours.",
-        "Continue with the suggested window, or fine-tune it below to better match your personal rhythm if you need.",
+        "You can adjust these hours now, or from Settings/Preferences later.",
       ].join("\n\n")
     );
   });

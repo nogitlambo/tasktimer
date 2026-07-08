@@ -13,12 +13,17 @@ import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./ta
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+const TASK_PRIMARY_ACTION_PRESS_CLASS = "isTaskPrimaryActionPressed";
+const TASK_PRIMARY_ACTION_PRESS_MS = 140;
+
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
   const { sharedTasks } = ctx;
   let resetTaskStateImmediateForManualEntry:
     | ((task: Task, opts?: { logHistory?: boolean }) => void)
     | null = null;
+  let pressedTaskPrimaryActionEl: HTMLElement | null = null;
+  let taskPrimaryActionPressTimer: number | null = null;
   const taskManualEntry = createTaskManualEntryInteraction({
     elements: {
       overlay: els.taskManualEntryOverlay,
@@ -286,6 +291,54 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     setTimeoutRef: (handler, timeout) => window.setTimeout(handler, timeout),
   });
 
+  function clearTaskPrimaryActionPressTimer() {
+    if (!taskPrimaryActionPressTimer) return;
+    window.clearTimeout(taskPrimaryActionPressTimer);
+    taskPrimaryActionPressTimer = null;
+  }
+
+  function getTaskPrimaryActionPressTarget(eventTarget: EventTarget | null | undefined) {
+    const target = findDelegatedElement(eventTarget || null, ".taskPrimaryAction") as HTMLButtonElement | null;
+    if (!target || target.disabled) return null;
+    return target;
+  }
+
+  function releaseTaskPrimaryActionPress(delayMs = TASK_PRIMARY_ACTION_PRESS_MS) {
+    const target = pressedTaskPrimaryActionEl;
+    if (!target) return;
+    clearTaskPrimaryActionPressTimer();
+    taskPrimaryActionPressTimer = window.setTimeout(() => {
+      target.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
+      if (pressedTaskPrimaryActionEl === target) pressedTaskPrimaryActionEl = null;
+      taskPrimaryActionPressTimer = null;
+    }, delayMs);
+  }
+
+  function pressTaskPrimaryAction(target: HTMLElement) {
+    if (pressedTaskPrimaryActionEl && pressedTaskPrimaryActionEl !== target) {
+      pressedTaskPrimaryActionEl.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
+    }
+    clearTaskPrimaryActionPressTimer();
+    pressedTaskPrimaryActionEl = target;
+    target.classList.add(TASK_PRIMARY_ACTION_PRESS_CLASS);
+  }
+
+  function handleTaskPrimaryActionPressStart(event: any) {
+    const target = getTaskPrimaryActionPressTarget(event?.target);
+    if (!target) return;
+    pressTaskPrimaryAction(target);
+  }
+
+  function handleTaskPrimaryActionKeyDown(event: any) {
+    if (event?.key !== " " && event?.key !== "Enter") return;
+    if (event?.repeat) return;
+    handleTaskPrimaryActionPressStart(event);
+  }
+
+  function handleTaskPrimaryActionPressEnd() {
+    releaseTaskPrimaryActionPress();
+  }
+
   function handleTaskListClick(e: any) {
     const taskEl = e.target?.closest?.(".task");
     if (!taskEl) return;
@@ -316,6 +369,13 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   }
 
   function registerTaskEvents() {
+    ctx.on(els.taskList, "pointerdown", handleTaskPrimaryActionPressStart);
+    ctx.on(els.taskList, "pointerup", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "pointercancel", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "pointerleave", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "keydown", handleTaskPrimaryActionKeyDown);
+    ctx.on(els.taskList, "keyup", handleTaskPrimaryActionPressEnd);
+    ctx.on(els.taskList, "focusout", handleTaskPrimaryActionPressEnd);
     ctx.on(els.taskList, "click", handleTaskListClick);
     ctx.on(els.resetAllBtn, "click", (e: any) => {
       e?.preventDefault?.();

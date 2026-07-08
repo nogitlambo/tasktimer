@@ -1,15 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskTimerAddTask } from "./add-task";
-import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 import { getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
-
-vi.mock("../lib/pushNotifications", () => ({
-  enableTaskTimerPushNotificationsForCurrentRuntime: vi.fn(async () => ({
-    mobileEnabled: true,
-    webEnabled: false,
-  })),
-}));
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
@@ -107,7 +99,14 @@ function createHarness(
   } as HTMLInputElement;
   const addTaskPlannedStartPushReminders = {
     checked: false,
-  } as HTMLInputElement;
+    disabled: false,
+    setAttribute: vi.fn(),
+    title: "",
+  } as unknown as HTMLInputElement;
+  const addTaskPlannedStartPushRemindersRow = {
+    classList: { toggle: vi.fn() },
+    setAttribute: vi.fn(),
+  } as unknown as HTMLElement;
   const addTaskScheduleSummary = {
     open: false,
     classList: { toggle: vi.fn() },
@@ -182,6 +181,7 @@ function createHarness(
       addTaskDurationPerLabel: null,
       addTaskDurationPeriodPills: null,
       addTaskPlannedStartPushReminders,
+      addTaskPlannedStartPushRemindersRow,
       addTaskPlannedStartInput,
       addTaskAdvancedMenu: null,
     },
@@ -305,6 +305,8 @@ function createHarness(
     addTaskPlannedStartTimeInput,
     addTaskScheduleSummary,
     addTaskScheduleSummaryText,
+    addTaskPlannedStartPushReminders,
+    addTaskPlannedStartPushRemindersRow,
     addTaskSplitAcrossProductivityDaysRow,
     addTaskWeeklyBlockDayField,
     ctx,
@@ -410,18 +412,17 @@ describe("createTaskTimerAddTask", () => {
     expect(harness.addTaskName.value).toBe("");
   });
 
-  it("enables current-runtime push when Add Task Remind Me is checked while global push is off", async () => {
-    vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
+  it("greys out Add Task Remind Me when current-runtime push is off", async () => {
     const harness = createHarness("1");
 
+    harness.open();
     await harness.togglePlannedStartPushReminder(true);
 
-    expect(enableTaskTimerPushNotificationsForCurrentRuntime).toHaveBeenCalledWith({
-      mobileEnabled: false,
-      webEnabled: false,
-    });
-    expect(harness.ctx.setMobilePushAlertsEnabledState).toHaveBeenCalledWith(true);
-    expect(harness.ctx.persistPushAlertsPreference).toHaveBeenCalled();
+    expect(harness.addTaskPlannedStartPushReminders.disabled).toBe(true);
+    expect(harness.addTaskPlannedStartPushReminders.checked).toBe(false);
+    expect(harness.addTaskPlannedStartPushReminders.setAttribute).toHaveBeenCalledWith("aria-disabled", "true");
+    expect(harness.addTaskPlannedStartPushRemindersRow.classList.toggle).toHaveBeenCalledWith("isDisabled", true);
+    expect(harness.ctx.persistPushAlertsPreference).not.toHaveBeenCalled();
   });
 
   it("updates the schedule summary for weekly recurring planned blocks", () => {

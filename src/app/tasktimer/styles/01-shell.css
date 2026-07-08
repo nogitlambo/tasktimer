@@ -1206,6 +1206,45 @@ body.isInitialAuthHydrating{
   color: rgba(223, 234, 245, 0.86);
 }
 
+@keyframes leaderboardLoadingDots{
+  0%,
+  20%{
+    content: "...";
+  }
+  40%{
+    content: "";
+  }
+  60%{
+    content: ".";
+  }
+  80%{
+    content: "..";
+  }
+  100%{
+    content: "...";
+  }
+}
+
+#app[aria-label="TaskLaunch App"] .leaderboardLoadingText{
+  font-family: var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 15.12px !important;
+  letter-spacing: .04em;
+}
+
+#app[aria-label="TaskLaunch App"] .leaderboardLoadingText::after{
+  content: "...";
+  display: inline-block;
+  width: 1.35em;
+  text-align: left;
+  animation: leaderboardLoadingDots 1.2s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] .leaderboardLoadingText::after{
+    animation: none;
+  }
+}
+
 @media (max-width: 980px){
 #app[aria-label="TaskLaunch App"] .appShellHeader{
     display:none;

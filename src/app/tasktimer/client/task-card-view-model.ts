@@ -92,16 +92,14 @@ function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => 
 }
 
 function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState) {
-  if (state === "launch") {
-    return "LAUNCH";
-  }
-  if (state === "done") {
-    return '<span class="taskDoneIcon" aria-hidden="true">&#10003;</span><span>Done</span>';
-  }
-  if (state === "reset") {
-    return "Reset";
-  }
-  return state === "resume" ? "Resume" : "Stop";
+  const labels: Record<TaskPrimaryActionState, string> = {
+    launch: "Launch",
+    resume: "Resume",
+    stop: "Stop",
+    reset: "Reset",
+    done: "Reset",
+  };
+  return `<span class="taskPrimaryActionText"><span class="taskPrimaryActionPrimary">${labels[state]}</span></span>`;
 }
 
 export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: { doneTitle?: string }): TaskPrimaryActionModel {

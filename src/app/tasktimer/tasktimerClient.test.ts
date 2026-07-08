@@ -16,4 +16,10 @@ describe("tasktimerClient leaderboard friend profile bridge", () => {
     expect(source).toContain("openFriendProfileFromLeaderboardListener");
     expect(source).toContain("window.removeEventListener(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT");
   });
+
+  it("does not reset leaderboard initial auth text to the workspace message while hiding the overlay", () => {
+    expect(source).toContain('const isLeaderboardPage = appRuntimeState.get("currentAppPage") === "leaderboard";');
+    expect(source).toContain("(!isOn && !normalizedMessage && isLeaderboardPage)");
+    expect(source).toContain('textEl.classList.toggle("leaderboardLoadingText", isLeaderboardLoadingMessage);');
+  });
 });

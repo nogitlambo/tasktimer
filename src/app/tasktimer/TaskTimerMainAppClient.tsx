@@ -151,6 +151,9 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
   currentUserWeeklyRank: null,
 };
 
+const LEADERBOARD_LOADING_TEXT = "Loading leaderboard standings";
+const LEADERBOARD_LOADING_MIN_MS = 2_000;
+
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
 type LeaderboardView = "global" | "weekly" | "rivals";
 type LeaderboardTransitionDirection = "next" | "previous";
@@ -164,6 +167,10 @@ function isLeaderboardViewToggleTarget(target: EventTarget | null) {
 
 function isLeaderboardProfileOpenTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest("[data-leaderboard-profile-open]"));
+}
+
+function isLeaderboardAwardsInfoTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && Boolean(target.closest(".leaderboardWeeklyAwardsInfoBtn"));
 }
 
 function formatLeaderboardXp(xpRaw: number): string {
@@ -560,6 +567,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
+  const [weeklyAwardsInfoOpen, setWeeklyAwardsInfoOpen] = useState(false);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
   const [exitingLeaderboardView, setExitingLeaderboardView] = useState<LeaderboardView | null>(null);
   const [leaderboardTransitionDirection, setLeaderboardTransitionDirection] = useState<LeaderboardTransitionDirection>("next");
@@ -569,7 +577,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     LeaderboardProfile,
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
   > | null>(null);
-  const leaderboardStateRef = useRef<LeaderboardLoadState>("error");
+  const leaderboardLoadSeqRef = useRef(0);
   const leaderboardSwipeRef = useRef<MobileLeaderboardSwipeState>(getResetMobileLeaderboardSwipeState());
   const suppressLeaderboardSwipeClickRef = useRef(false);
   const displayedXpRef = useRef(displayedXp);
@@ -612,10 +620,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }, 3600);
     return () => window.clearTimeout(clearTimer);
   }, [desktopInsigniaUpgrade]);
-
-  useEffect(() => {
-    leaderboardStateRef.current = leaderboardState;
-  }, [leaderboardState]);
 
   useEffect(() => {
     void bootstrapFirebaseWebAppCheck();
@@ -931,11 +935,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     let activeUid = String(auth.currentUser?.uid || "").trim();
     let refreshTimer: number | null = null;
 
-    const loadForUid = async (uid: string, options?: { preserveReadyState?: boolean }) => {
-      const preserveReadyState = options?.preserveReadyState === true;
-      if (!preserveReadyState || leaderboardStateRef.current !== "ready") {
-        setLeaderboardState("loading");
-      }
+    const loadForUid = async (uid: string) => {
+      const loadSeq = leaderboardLoadSeqRef.current + 1;
+      leaderboardLoadSeqRef.current = loadSeq;
+      const loadingStartedAt = Date.now();
+      const waitForMinimumLoadingDuration = async () => {
+        const remainingMs = LEADERBOARD_LOADING_MIN_MS - (Date.now() - loadingStartedAt);
+        if (remainingMs > 0) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, remainingMs);
+          });
+        }
+      };
+      setLeaderboardState("loading");
       setLeaderboardError(null);
       try {
         const cachedPreferences = workspaceRepository.loadCachedPreferences();
@@ -949,11 +961,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           { dispatchUpdatedEvent: false }
         ).catch(() => {});
         const nextData = await loadLeaderboardScreenData(uid);
-        if (cancelled || activeUid !== uid) return;
+        await waitForMinimumLoadingDuration();
+        if (cancelled || activeUid !== uid || leaderboardLoadSeqRef.current !== loadSeq) return;
         setLeaderboardData(nextData);
         setLeaderboardState("ready");
       } catch {
-        if (cancelled || activeUid !== uid) return;
+        await waitForMinimumLoadingDuration();
+        if (cancelled || activeUid !== uid || leaderboardLoadSeqRef.current !== loadSeq) return;
         setLeaderboardData(EMPTY_LEADERBOARD_SCREEN_DATA);
         setLeaderboardState("error");
         setLeaderboardError("Could not load leaderboard data.");
@@ -982,7 +996,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (refreshTimer != null) window.clearInterval(refreshTimer);
       refreshTimer = window.setInterval(() => {
         if (!activeUid || document.visibilityState !== "visible") return;
-        void loadForUid(activeUid, { preserveReadyState: true });
+        void loadForUid(activeUid);
         void loadFriendUidsForUid(activeUid);
       }, 60_000);
     };
@@ -992,6 +1006,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       activeUid = isAnonymous ? "" : String(user?.uid || "").trim();
       setIsAuthenticated(!!user && !isAnonymous);
       if (!activeUid || isAnonymous) {
+        leaderboardLoadSeqRef.current += 1;
         setLeaderboardData(EMPTY_LEADERBOARD_SCREEN_DATA);
         setLeaderboardFriendUidSet(new Set());
         setLeaderboardState("signedOut");
@@ -1008,7 +1023,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (event.type === "visibilitychange" && document.visibilityState !== "visible") return;
       const detailUid = String((event as CustomEvent<{ uid?: string }>).detail?.uid || "").trim();
       if (detailUid && detailUid !== activeUid) return;
-      void loadForUid(activeUid, { preserveReadyState: true });
+      void loadForUid(activeUid);
       void loadFriendUidsForUid(activeUid);
     };
 
@@ -1112,6 +1127,16 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     setSelectedLeaderboardProfile(null);
   };
 
+  const closeWeeklyAwardsInfoModal = () => {
+    setWeeklyAwardsInfoOpen(false);
+  };
+
+  const renderLeaderboardLoadingText = () => (
+    <span className="leaderboardLoadingText" aria-label={`${LEADERBOARD_LOADING_TEXT}...`}>
+      {LEADERBOARD_LOADING_TEXT}
+    </span>
+  );
+
   const openWeeklyLeaderboardProfile = (profile: LeaderboardProfile) => {
     setSelectedLeaderboardProfile(profile);
   };
@@ -1181,6 +1206,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     resetLeaderboardSwipe();
     if (isLeaderboardViewToggleTarget(event.target)) return;
     if (isLeaderboardProfileOpenTarget(event.target)) return;
+    if (isLeaderboardAwardsInfoTarget(event.target)) return;
     if (!canStartLeaderboardSwipePointer({
       button: event.button,
       pointerType: event.pointerType,
@@ -1219,6 +1245,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     resetLeaderboardSwipe();
     if (isLeaderboardViewToggleTarget(event.target)) return;
     if (isLeaderboardProfileOpenTarget(event.target)) return;
+    if (isLeaderboardAwardsInfoTarget(event.target)) return;
     if (!shouldUseLeaderboardTouchFallback() || event.touches.length !== 1 || !isMobileLeaderboardSwipeViewport()) return;
 
     const touch = event.touches[0];
@@ -1263,6 +1290,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       suppressLeaderboardSwipeClickRef.current = false;
       return;
     }
+    if (target?.closest(".leaderboardWeeklyAwardsInfoBtn")) {
+      suppressLeaderboardSwipeClickRef.current = false;
+      return;
+    }
 
     suppressLeaderboardSwipeClickRef.current = false;
     event.preventDefault();
@@ -1292,6 +1323,17 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           aria-hidden={isExiting || undefined}
           inert={isExiting ? true : undefined}
         >
+          <button
+            className="iconBtn leaderboardWeeklyAwardsInfoBtn"
+            type="button"
+            aria-label="Weekly awards information"
+            onClick={(event) => {
+              event.stopPropagation();
+              setWeeklyAwardsInfoOpen(true);
+            }}
+          >
+            ?
+          </button>
           <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. Time remaining ${weeklyPeriodRemainingLabel}.`}>
             <div className="leaderboardWeeklyPeriodOverlay" aria-label={`Week ends in ${weeklyPeriodRemainingLabel}.`}>
               <span className="leaderboardWeeklyPeriodTitle">Week ends in:</span>
@@ -1313,11 +1355,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
                 <span className="leaderboardGlobalPodiumAvatarSlot">
                   {row.isPlaceholder ? null : (
-                    <>
+                    <span className="leaderboardGlobalPodiumAvatarDrop">
                       <LeaderboardAvatar profile={row.profile} />
                       <LeaderboardRankInsignia profile={row.profile} />
                       <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
-                    </>
+                    </span>
                   )}
                 </span>
                 <span className="leaderboardGlobalPodiumText">
@@ -1342,7 +1384,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           ) : (
             leaderboardState === "ready" ? null : (
               <div className="leaderboardPanelText">
-                {leaderboardState === "loading" ? "Loading weekly leaderboard." : leaderboardError || "Could not load the leaderboard."}
+                {leaderboardState === "loading" ? renderLeaderboardLoadingText() : leaderboardError || "Could not load the leaderboard."}
               </div>
             )
           )}
@@ -1367,7 +1409,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           ) : (
             leaderboardState === "ready" ? null : (
               <div className="leaderboardPanelText">
-                {leaderboardState === "loading" ? "Loading rivals." : leaderboardError || "Could not load the leaderboard."}
+                {leaderboardState === "loading" ? renderLeaderboardLoadingText() : leaderboardError || "Could not load the leaderboard."}
               </div>
             )
           )}
@@ -1408,11 +1450,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
                   <span className="leaderboardGlobalPodiumAvatarSlot">
                     {row.isPlaceholder ? null : (
-                      <>
+                      <span className="leaderboardGlobalPodiumAvatarDrop">
                         <LeaderboardAvatar profile={row.profile} />
                         <LeaderboardRankInsignia profile={row.profile} />
                         <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
-                      </>
+                      </span>
                     )}
                   </span>
                   <span className="leaderboardGlobalPodiumText">
@@ -1438,7 +1480,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         ) : (
           leaderboardState === "ready" ? null : (
             <div className="leaderboardPanelText">
-              {leaderboardState === "loading" ? "Loading leaderboard standings." : leaderboardError || "Could not load the leaderboard."}
+              {leaderboardState === "loading" ? renderLeaderboardLoadingText() : leaderboardError || "Could not load the leaderboard."}
             </div>
           )
         )}
@@ -1761,6 +1803,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {weeklyAwardsInfoOpen ? (
+        <div className="overlay standardModalOverlay" id="weeklyAwardsInfoOverlay" style={{ display: "flex" }} onClick={closeWeeklyAwardsInfoModal}>
+          <div className="modal" role="dialog" aria-modal="true" aria-label="Weekly awards information" onClick={(event) => event.stopPropagation()}>
+            <p className="modalSubtext">Weekly awards coming soon</p>
+            <div className="confirmBtns">
+              <button className="btn btn-ghost" type="button" onClick={closeWeeklyAwardsInfoModal}>
+                Close
+              </button>
             </div>
           </div>
         </div>

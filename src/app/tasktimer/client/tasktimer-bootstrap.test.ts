@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { bootstrapTaskTimerRuntime, runInitialTaskTimerHydration } from "./tasktimer-bootstrap";
+import {
+  bootstrapTaskTimerRuntime,
+  getInitialAuthHydrationMessage,
+  runInitialTaskTimerHydration,
+  shouldShowInitialAuthHydrationOverlay,
+} from "./tasktimer-bootstrap";
 
 function createBootstrapOptions(overrides: Partial<Parameters<typeof bootstrapTaskTimerRuntime>[0]> = {}) {
   return {
@@ -75,6 +80,13 @@ function createInitialHydrationOptions(overrides: Partial<Parameters<typeof runI
 }
 
 describe("runInitialTaskTimerHydration", () => {
+  it("uses leaderboard-specific initial auth hydration copy on the leaderboard page", () => {
+    expect(getInitialAuthHydrationMessage("leaderboard")).toBe("Loading leaderboard standings...");
+    expect(getInitialAuthHydrationMessage("dashboard")).toBe("Loading your workspace into this session...");
+    expect(shouldShowInitialAuthHydrationOverlay("leaderboard")).toBe(false);
+    expect(shouldShowInitialAuthHydrationOverlay("dashboard")).toBe(true);
+  });
+
   it("renders cached signed-in workspace before refreshing cloud state", async () => {
     const options = createInitialHydrationOptions({
       hasCachedWorkspace: vi.fn(() => true),
@@ -99,6 +111,21 @@ describe("runInitialTaskTimerHydration", () => {
     await Promise.resolve();
 
     expect(options.startInitialAuthHydration).toHaveBeenCalledWith("Loading your workspace into this session...");
+    expect(options.finishBootstrapUi).toHaveBeenCalledTimes(1);
+    expect(options.finishInitialAuthHydration).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips the bordered initial loading overlay for leaderboard hydration without a signed-in cache", async () => {
+    const options = createInitialHydrationOptions({
+      currentAppPage: "leaderboard",
+      hasCachedWorkspace: vi.fn(() => false),
+    });
+
+    runInitialTaskTimerHydration(options);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(options.startInitialAuthHydration).not.toHaveBeenCalled();
     expect(options.finishBootstrapUi).toHaveBeenCalledTimes(1);
     expect(options.finishInitialAuthHydration).toHaveBeenCalledTimes(1);
   });

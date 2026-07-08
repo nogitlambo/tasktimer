@@ -738,7 +738,7 @@ describe("task timer session tick", () => {
         if (selector === ".time") return timeEl;
         if (selector === ".progressFill") return progressFill;
         if (selector === ".progressPctLabel") return progressPctLabel;
-        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
+        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') return primaryActionBtn;
         if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
         return null;
       },
@@ -862,7 +862,8 @@ describe("task timer session tick", () => {
     expect(primaryActionBtn.className).toBe("btn btn-warn small taskPrimaryAction taskPrimaryActionStop");
     expect(primaryActionBtn.dataset.action).toBe("stop");
     expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionFace");
-    expect(primaryActionBtn.innerHTML).toContain("Stop");
+    expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Stop</span>');
+    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionSecondary");
     expect(progressFill.style.width).toBe("100%");
     expect(progressPctLabel.textContent).toBe("100%");
 
@@ -900,7 +901,7 @@ describe("task timer session tick", () => {
       querySelector: (selector: string) => {
         if (selector === ".time") return timeEl;
         if (selector === ".progressFill") return progressFill;
-        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
+        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') return primaryActionBtn;
         if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
         return null;
       },
@@ -1027,7 +1028,8 @@ describe("task timer session tick", () => {
     expect(primaryActionBtn.title).toBe("Resume");
     expect(primaryActionBtn.disabled).toBe(false);
     expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionFace");
-    expect(primaryActionBtn.innerHTML).toContain("Resume");
+    expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
+    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionSecondary");
     expect(resetBtn.disabled).toBe(false);
     expect(resetBtn.title).toBe("Reset");
 
@@ -1068,7 +1070,7 @@ describe("task timer session tick", () => {
       querySelector: (selector: string) => {
         if (selector === ".time") return timeEl;
         if (selector === ".progressFill") return progressFill;
-        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"]') return primaryActionBtn;
+        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') return primaryActionBtn;
         if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
         return null;
       },
@@ -1192,9 +1194,8 @@ describe("task timer session tick", () => {
     expect(primaryActionBtn.dataset.action).toBe("start");
     expect(primaryActionBtn.title).toBe("Launch");
     expect(primaryActionBtn.disabled).toBe(false);
-    expect(primaryActionBtn.innerHTML).toContain(">LAUNCH</span>");
-    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionWord");
-    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionAccentLetter");
+    expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Launch</span>');
+    expect(primaryActionBtn.innerHTML).not.toContain("taskPrimaryActionSecondary");
     expect(resetBtn.disabled).toBe(true);
     expect(resetBtn.title).toBe("No time to reset");
 

@@ -7,6 +7,8 @@ type SetupOptions = {
   saveError?: Error | null;
   cloudDocData?: Record<string, unknown> | null;
   nativeRuntime?: boolean;
+  nativePermission?: "prompt" | "prompt-with-rationale" | "granted" | "denied";
+  nativeRequestPermissionResult?: "prompt" | "prompt-with-rationale" | "granted" | "denied";
   deviceDocs?: Array<{ id: string; data: Record<string, unknown> }>;
 };
 
@@ -99,14 +101,15 @@ async function setupPushModule(options: SetupOptions = {}) {
       getPlatform: () => options.nativeRuntime === true ? "android" : "web",
     },
   }));
+  const pushNotificationsMock = {
+    addListener: vi.fn(async () => ({ remove: vi.fn() })),
+    checkPermissions: vi.fn(async () => ({ receive: options.nativePermission ?? "granted" })),
+    createChannel: vi.fn(),
+    register: vi.fn(),
+    requestPermissions: vi.fn(async () => ({ receive: options.nativeRequestPermissionResult ?? "granted" })),
+  };
   vi.doMock("@capacitor/push-notifications", () => ({
-    PushNotifications: {
-      addListener: vi.fn(),
-      checkPermissions: vi.fn(),
-      createChannel: vi.fn(),
-      register: vi.fn(),
-      requestPermissions: vi.fn(),
-    },
+    PushNotifications: pushNotificationsMock,
   }));
 
   vi.stubGlobal("window", {
@@ -163,6 +166,7 @@ async function setupPushModule(options: SetupOptions = {}) {
     getDoc,
     getDocs,
     getToken,
+    pushNotifications: pushNotificationsMock,
     recordNonFatal,
     register,
     addDocumentListener,
@@ -244,6 +248,50 @@ describe("pushNotifications web registration", () => {
         stage: "permission-denied",
       })
     );
+  });
+
+  it("does not leave native mobile push enabled when permission is denied", async () => {
+    const { mod, pushNotifications, setDoc } = await setupPushModule({
+      nativeRuntime: true,
+      nativePermission: "prompt",
+      nativeRequestPermissionResult: "denied",
+    });
+
+    const result = await mod.syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: false });
+
+    expect(result).toEqual({ mobileEnabled: false, webEnabled: false });
+    expect(pushNotifications.requestPermissions).toHaveBeenCalled();
+    expect(pushNotifications.register).not.toHaveBeenCalled();
+    expect(setDoc.mock.calls).toEqual(
+      expect.arrayContaining([
+        [
+          expect.objectContaining({ path: "users/user-1/devices/device-1" }),
+          expect.objectContaining({
+            enabled: false,
+            token: "DELETE_FIELD",
+          }),
+          { merge: true },
+        ],
+      ])
+    );
+  });
+
+  it("can enable native mobile push on a later attempt when denied permission becomes promptable", async () => {
+    const { mod, pushNotifications } = await setupPushModule({
+      nativeRuntime: true,
+      nativePermission: "prompt",
+      nativeRequestPermissionResult: "denied",
+    });
+
+    await mod.syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: false });
+    pushNotifications.checkPermissions.mockResolvedValue({ receive: "denied" });
+    pushNotifications.requestPermissions.mockResolvedValue({ receive: "granted" });
+
+    const result = await mod.syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: false });
+
+    expect(result).toEqual({ mobileEnabled: true, webEnabled: false });
+    expect(pushNotifications.requestPermissions).toHaveBeenCalledTimes(2);
+    expect(pushNotifications.register).toHaveBeenCalledTimes(1);
   });
 
   it("clears stale native device registrations when mobile push is disabled", async () => {

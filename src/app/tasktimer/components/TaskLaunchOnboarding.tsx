@@ -90,6 +90,40 @@ export function shouldResetChronotypeChoiceForNavigation(currentStep: StepKey, n
   return currentStep === "chronotypeSelection" && nextIndex >= 0 && currentIndex >= 0 && nextIndex < currentIndex;
 }
 
+export function onboardingBackNavigation(input: {
+  activeStep: StepKey;
+  chronotypeResultPhase: ChronotypeResultPhase;
+  selectedChronotypeChoiceId?: string;
+  stepIndex: number;
+}) {
+  if (input.activeStep === "chronotypeResult" && input.chronotypeResultPhase === "hours") {
+    return {
+      nextStepIndex: input.stepIndex,
+      nextChronotypeResultPhase: "summary" as ChronotypeResultPhase,
+      resetChronotypeChoice: false,
+    };
+  }
+
+  if (
+    input.activeStep === "chronotypeSelection" &&
+    ONBOARDING_CHRONOTYPE_OPTIONS.some((option) => option.id === input.selectedChronotypeChoiceId)
+  ) {
+    return {
+      nextStepIndex: input.stepIndex,
+      nextChronotypeResultPhase: "summary" as ChronotypeResultPhase,
+      resetChronotypeChoice: true,
+    };
+  }
+
+  const nextStepIndex = Math.max(0, input.stepIndex - 1);
+  const nextStep = ONBOARDING_STEPS[nextStepIndex]?.key || input.activeStep;
+  return {
+    nextStepIndex,
+    nextChronotypeResultPhase: "summary" as ChronotypeResultPhase,
+    resetChronotypeChoice: shouldResetChronotypeChoiceForNavigation(input.activeStep, nextStep),
+  };
+}
+
 export function onboardingBackgroundAccentForStep(step: StepKey, selectedChronotypeAccentColor = "", useChronotypeAccent = false) {
   if (step === "days") return ONBOARDING_DAYS_BACKGROUND_ACCENT;
   if (step === "chronotypeResult" && useChronotypeAccent && selectedChronotypeAccentColor) return selectedChronotypeAccentColor;
@@ -111,7 +145,7 @@ export const ONBOARDING_CHRONOTYPE_OPTIONS = [
     ],
     productivityStartTime: "09:00",
     productivityEndTime: "14:00",
-    description: "Early riser, and tend to function best between early morning to early afternoon.",
+    description: "Rises early, tends to function best between early morning to early afternoon.",
   },
   {
     id: "sun-aligned",
@@ -159,7 +193,7 @@ export const ONBOARDING_CHRONOTYPE_OPTIONS = [
     ],
     productivityStartTime: "17:00",
     productivityEndTime: "23:00",
-    description: "Classic night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
+    description: "Night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
   },
 ] as const;
 
@@ -235,7 +269,8 @@ const ONBOARDING_CHRONOTYPE_SUMMARIES = [
   ONBOARDING_WOLF_CHRONOTYPE_SUMMARY,
 ] as const;
 
-const PRODUCTIVITY_DAY_PILLS: ReadonlyArray<DashboardWeekStart> = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const PRODUCTIVITY_WEEKDAY_PILLS: ReadonlyArray<DashboardWeekStart> = ["mon", "tue", "wed", "thu", "fri"];
+const PRODUCTIVITY_WEEKEND_PILLS: ReadonlyArray<DashboardWeekStart> = ["sat", "sun"];
 
 const PRODUCTIVITY_DAY_LABELS = new Map(
   OPTIMAL_PRODUCTIVITY_DAY_LABELS.map((day) => [normalizeDashboardWeekStart(day.value), day.label.slice(0, 3).toUpperCase()] as const)
@@ -291,6 +326,21 @@ export function canContinueOnboardingStep(
   return true;
 }
 
+export function isOnboardingContinueDisabled(
+  busy: boolean,
+  step: StepKey,
+  selectedDays: ReadonlyArray<DashboardWeekStart>,
+  selectedChronotypeChoiceId = ""
+) {
+  if (busy) return true;
+  if (step === "chronotypeSelection") return !canContinueOnboardingStep(step, selectedDays, selectedChronotypeChoiceId);
+  return false;
+}
+
+export function isOnboardingContinueReservedHidden(step: StepKey, selectedChronotypeChoiceId = "") {
+  return step === "chronotypeSelection" && !ONBOARDING_CHRONOTYPE_OPTIONS.some((option) => option.id === selectedChronotypeChoiceId);
+}
+
 export function onboardingContinueBlockedMessage(step: StepKey) {
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE;
   if (step === "days") return "Select at least one productivity day before continuing.";
@@ -299,6 +349,11 @@ export function onboardingContinueBlockedMessage(step: StepKey) {
 
 export function toggleOnboardingChronotypeChoice(currentId: string, nextId: OnboardingChronotypeChoiceId) {
   return currentId === nextId ? "" : nextId;
+}
+
+export function toggleAllOnboardingProductivityDays(currentDays: unknown) {
+  const normalized = normalizeOnboardingProductivityDays(currentDays);
+  return normalized.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? [] : Array.from(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
 }
 
 export function resolveOnboardingChronotypeResult(choiceId: string) {
@@ -361,11 +416,13 @@ export function seedOnboardingChronotypeHours(input: {
   };
 }
 
+const ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES = [
+  "When you create scheduled tasks, TaskLaunch will automatically try to fit it within your productivity hours.",
+  "You can adjust these hours now, or from Settings/Preferences later.",
+] as const;
+
 export function onboardingProductivityHoursSubtext() {
-  return [
-    "When you create scheduled tasks, TaskLaunch will automatically try to fit it within your productivity hours.",
-    "Continue with the suggested window, or fine-tune it below to better match your personal rhythm if you need.",
-  ].join("\n\n");
+  return ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES.join("\n\n");
 }
 
 function stepIntro(step: StepKey, isNativeRuntime: boolean) {
@@ -502,10 +559,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const selectedChronotypeSummary = onboardingChronotypeResultSummary(selectedChronotypeChoiceId);
   const selectedChronotypeMostProductiveStat =
     selectedChronotypeSummary?.stats.find((stat) => stat.label === "Most Productive") ?? selectedChronotypeSummary?.stats[0] ?? null;
-  const onboardingHeadingText = onboardingTitle(activeStep, username || normalizeUsername(usernameDraft) || "there", selectedChronotypeChoiceId);
+  const onboardingGreetingName = username || normalizeUsername(usernameDraft) || "there";
+  const onboardingHeadingText = onboardingTitle(activeStep, onboardingGreetingName, selectedChronotypeChoiceId);
   const showStepImage = shouldShowOnboardingStepImage(activeStep);
   const showStepSubtext = shouldShowOnboardingStepSubtext(activeStep) || (activeStep === "chronotypeResult" && chronotypeResultPhase === "hours");
   const selectedAvatar = AVATAR_CATALOG.find((avatar) => avatar.id === selectedAvatarId) || AVATAR_CATALOG[0] || null;
+  const productivityHoursIntroSubtext = ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES[0];
+  const productivityHoursFineTuneSubtext = ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES[1];
 
   useEffect(() => {
     openRef.current = open;
@@ -819,21 +879,20 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   }, [activeStep, chronotypeResultPhase, saveCurrentStep, stepIndex]);
 
   const handleBack = useCallback(() => {
-    if (activeStep === "chronotypeResult" && chronotypeResultPhase === "hours") {
-      setChronotypeResultPhase("summary");
-      setStatus("");
-      setError("");
-      return;
-    }
-    const nextIndex = Math.max(0, stepIndex - 1);
-    const nextStep = ONBOARDING_STEPS[nextIndex]?.key || activeStep;
-    if (shouldResetChronotypeChoiceForNavigation(activeStep, nextStep)) {
+    const backNavigation = onboardingBackNavigation({
+      activeStep,
+      chronotypeResultPhase,
+      selectedChronotypeChoiceId,
+      stepIndex,
+    });
+    if (backNavigation.resetChronotypeChoice) {
       setSelectedChronotypeChoiceId("");
     }
-    setStepIndex(nextIndex);
+    setStepIndex(backNavigation.nextStepIndex);
+    setChronotypeResultPhase(backNavigation.nextChronotypeResultPhase);
     setStatus("");
     setError("");
-  }, [activeStep, chronotypeResultPhase, stepIndex]);
+  }, [activeStep, chronotypeResultPhase, selectedChronotypeChoiceId, stepIndex]);
 
   const handleFinish = useCallback(async () => {
     if (!usernameConfirmed) {
@@ -858,7 +917,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   };
 
   const selectAllProductivityDays = () => {
-    setProductivityDays(Array.from(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS));
+    setProductivityDays((current) => toggleAllOnboardingProductivityDays(current));
     setStatus("");
     setError("");
   };
@@ -903,7 +962,15 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isChronotypeResultStep = activeStep === "chronotypeResult";
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
+  const selectedChronotypeChoiceIndex = ONBOARDING_CHRONOTYPE_OPTIONS.findIndex((option) => option.id === selectedChronotypeChoiceId);
   const onboardingActionsDisabled = busy;
+  const onboardingContinueDisabled = isOnboardingContinueDisabled(
+    onboardingActionsDisabled,
+    activeStep,
+    selectedDays,
+    selectedChronotypeChoiceId
+  );
+  const onboardingContinueReservedHidden = isOnboardingContinueReservedHidden(activeStep, selectedChronotypeChoiceId);
   const onboardingBackgroundAccent = onboardingBackgroundAccentForStep(activeStep, selectedChronotypeResult?.accentColor, isChronotypeHoursPhase);
   const onboardingModalStyle = {
     "--onboarding-background-accent": onboardingBackgroundAccent,
@@ -924,7 +991,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         aria-modal="true"
         aria-label="TaskLaunch onboarding"
       >
-        {activeStep !== "username" && !isGreetingStep ? (
+        {activeStep !== "username" && !isGreetingStep && !isChronotypeSelectionStep ? (
           <button className="onboardingSkipLink" type="button" onClick={() => void closeWithState("dismissed")} disabled={onboardingActionsDisabled}>
             Skip
           </button>
@@ -1012,11 +1079,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 >
                   <div className="onboardingChronotypeResultSummaryHero">
                     <div className="onboardingChronotypeResultSummaryHeading">
-                      <p className="onboardingChronotypeResultSummaryPercent">{selectedChronotypeSummary.percentage}</p>
+                      <p className="onboardingChronotypeResultSummaryPercent onboardingChronotypeResultSummaryHeadingRest">
+                        {selectedChronotypeSummary.percentage}
+                      </p>
                       <p className="onboardingChronotypeResultSummaryType">
-                        <span>{selectedChronotypeSummary.headingLead}</span>
-                        <strong>{selectedChronotypeSummary.animalLabel}</strong>
-                        <span>{selectedChronotypeSummary.headingSuffix}</span>
+                        <span className="onboardingChronotypeResultSummaryHeadingRest">{selectedChronotypeSummary.headingLead}</span>
+                        <strong className="onboardingChronotypeResultSummaryAnimalName">{selectedChronotypeSummary.animalLabel}</strong>
+                        <span className="onboardingChronotypeResultSummaryHeadingRest">{selectedChronotypeSummary.headingSuffix}</span>
                       </p>
                     </div>
                     <AppImg
@@ -1066,7 +1135,21 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             </section>
           ) : (
             <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
-              {onboardingHeadingText}
+              {isGreetingStep ? (
+                <>
+                  <span className="onboardingGreetingStepLead">Hi,</span>
+                  <span className="onboardingGreetingStepAlias">{onboardingGreetingName}</span>
+                </>
+              ) : isChronotypeChoiceStep ? (
+                <>
+                  Do you know your{" "}
+                  <span className="onboardingChronotypePromptWord">
+                    <strong><em>chronotype</em></strong>?
+                  </span>
+                </>
+              ) : (
+                onboardingHeadingText
+              )}
             </h2>
           )}
           {isGreetingStep ? (
@@ -1101,7 +1184,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               {activeStep === "username" ? (
                 "Please choose an avatar and set a username for your profile:"
               ) : isChronotypeHoursPhase ? (
-                onboardingProductivityHoursSubtext()
+                productivityHoursIntroSubtext
               ) : (
                 stepIntro(activeStep, isNativeRuntime)
               )}
@@ -1180,7 +1263,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {isChronotypeSelectionStep ? (
           <div
-            className={`onboardingChronotypeTileGrid${selectedChronotypeChoiceId ? " hasSelection" : ""}`}
+            className={`onboardingChronotypeTileGrid${
+              selectedChronotypeChoiceId && selectedChronotypeChoiceIndex >= 0 ? ` hasSelection selectedIndex${selectedChronotypeChoiceIndex}` : ""
+            }`}
             role="radiogroup"
             aria-label={ONBOARDING_CHRONOTYPE_SELECTION_PROMPT}
           >
@@ -1231,8 +1316,26 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               </div>
               <div className="onboardingDayGrid" role="group" aria-labelledby="onboardingProductivityDaysLabel">
                 <div className="onboardingDayPillRow onboardingDayPillWeekRow">
-                  {PRODUCTIVITY_DAY_PILLS.map((value, dayIndex) => {
+                  {PRODUCTIVITY_WEEKDAY_PILLS.map((value, dayIndex) => {
                     const checked = selectedDays.includes(value);
+                    return (
+                      <button
+                        className={`onboardingDayPill onboardingDayPillReveal${dayIndex}${checked ? " isSelected" : ""}`}
+                        type="button"
+                        key={value}
+                        aria-pressed={checked}
+                        aria-label={`${PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()} productivity day`}
+                        onClick={() => toggleProductivityDay(value)}
+                      >
+                        {PRODUCTIVITY_DAY_LABELS.get(value) || value.toUpperCase()}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="onboardingDayPillRow onboardingDayPillWeekendRow">
+                  {PRODUCTIVITY_WEEKEND_PILLS.map((value, weekendDayIndex) => {
+                    const checked = selectedDays.includes(value);
+                    const dayIndex = PRODUCTIVITY_WEEKDAY_PILLS.length + weekendDayIndex;
                     return (
                       <button
                         className={`onboardingDayPill onboardingDayPillReveal${dayIndex}${checked ? " isSelected" : ""}`}
@@ -1252,7 +1355,11 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                     className={`onboardingDayPill onboardingDayPillReveal7${selectedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? " isSelected" : ""}`}
                     type="button"
                     aria-pressed={selectedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length}
-                    aria-label="Select all productivity days"
+                    aria-label={
+                      selectedDays.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length
+                        ? "Deselect all productivity days"
+                        : "Select all productivity days"
+                    }
                     onClick={selectAllProductivityDays}
                   >
                     ALL
@@ -1264,56 +1371,59 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         ) : null}
 
         {isChronotypeHoursPhase ? (
-          <div className="onboardingTimeGrid onboardingHoursTimeGrid" data-chronotype-summary={selectedChronotypeSummary?.animal}>
-            <div className="field modalDropdownField onboardingField">
-              <label htmlFor="onboardingStartTimeInput">Start</label>
-              <button
-                className="onboardingClockButton"
-                type="button"
-                aria-label={`Choose start time, current ${formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}`}
-                onClick={() => openClockTimePicker("start")}
-              >
-                <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}</span>
-              </button>
-              <input
-                id="onboardingStartTimeInput"
-                ref={startTimeInputRef}
-                className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "start" ? " isFallbackVisible" : ""}`}
-                type="time"
-                value={startTime}
-                onChange={(event) => {
-                  setStartTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_START_TIME));
-                  setHoursTouched(true);
-                  setStatus("");
-                  setError("");
-                }}
-              />
+          <>
+            <div className="onboardingTimeGrid onboardingHoursTimeGrid" data-chronotype-summary={selectedChronotypeSummary?.animal}>
+              <div className="field modalDropdownField onboardingField">
+                <label htmlFor="onboardingStartTimeInput">Start</label>
+                <button
+                  className="onboardingClockButton"
+                  type="button"
+                  aria-label={`Choose start time, current ${formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}`}
+                  onClick={() => openClockTimePicker("start")}
+                >
+                  <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(startTime, TASKTIMER_ONBOARDING_DEFAULT_START_TIME)}</span>
+                </button>
+                <input
+                  id="onboardingStartTimeInput"
+                  ref={startTimeInputRef}
+                  className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "start" ? " isFallbackVisible" : ""}`}
+                  type="time"
+                  value={startTime}
+                  onChange={(event) => {
+                    setStartTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_START_TIME));
+                    setHoursTouched(true);
+                    setStatus("");
+                    setError("");
+                  }}
+                />
+              </div>
+              <div className="field modalDropdownField onboardingField">
+                <label htmlFor="onboardingEndTimeInput">End</label>
+                <button
+                  className="onboardingClockButton"
+                  type="button"
+                  aria-label={`Choose end time, current ${formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}`}
+                  onClick={() => openClockTimePicker("end")}
+                >
+                  <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}</span>
+                </button>
+                <input
+                  id="onboardingEndTimeInput"
+                  ref={endTimeInputRef}
+                  className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "end" ? " isFallbackVisible" : ""}`}
+                  type="time"
+                  value={endTime}
+                  onChange={(event) => {
+                    setEndTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_END_TIME));
+                    setHoursTouched(true);
+                    setStatus("");
+                    setError("");
+                  }}
+                />
+              </div>
             </div>
-            <div className="field modalDropdownField onboardingField">
-              <label htmlFor="onboardingEndTimeInput">End</label>
-              <button
-                className="onboardingClockButton"
-                type="button"
-                aria-label={`Choose end time, current ${formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}`}
-                onClick={() => openClockTimePicker("end")}
-              >
-                <span className="onboardingClockValue">{formatOnboardingClockTimeLabel(endTime, TASKTIMER_ONBOARDING_DEFAULT_END_TIME)}</span>
-              </button>
-              <input
-                id="onboardingEndTimeInput"
-                ref={endTimeInputRef}
-                className={`onboardingTextInput onboardingClockNativeInput${visibleTimeFallback === "end" ? " isFallbackVisible" : ""}`}
-                type="time"
-                value={endTime}
-                onChange={(event) => {
-                  setEndTime(normalizeTimeOfDay(event.target.value, TASKTIMER_ONBOARDING_DEFAULT_END_TIME));
-                  setHoursTouched(true);
-                  setStatus("");
-                  setError("");
-                }}
-              />
-            </div>
-          </div>
+            <p className="modalSubtext onboardingHoursSubtext">{productivityHoursFineTuneSubtext}</p>
+          </>
         ) : null}
 
         {activeStep === "push" ? (
@@ -1357,11 +1467,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           ) : null}
           {stepIndex < ONBOARDING_STEPS.length - 1 ? (
             <button
-              className="btn btn-accent"
+              className={`btn btn-accent${onboardingContinueReservedHidden ? " onboardingReservedHiddenAction" : ""}`}
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleNext()}
-              disabled={onboardingActionsDisabled}
+              disabled={onboardingContinueDisabled}
+              aria-hidden={onboardingContinueReservedHidden || undefined}
             >
               {isGreetingStep ? "Let's Go!" : "Continue"}
             </button>

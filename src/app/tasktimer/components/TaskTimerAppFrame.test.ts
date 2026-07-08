@@ -36,7 +36,7 @@ import {
 
 const TaskTimerAppFrameForTest = TaskTimerAppFrame as ComponentType<Omit<ComponentProps<typeof TaskTimerAppFrame>, "children">>;
 
-function renderTaskTimerAppFrameMarkup() {
+function renderTaskTimerAppFrameMarkup(overrides: Partial<ComponentProps<typeof TaskTimerAppFrame>> = {}) {
   return renderToStaticMarkup(
     createElement(
       TaskTimerAppFrameForTest,
@@ -51,6 +51,7 @@ function renderTaskTimerAppFrameMarkup() {
           progressLabel: "60/240 XP",
           xpToNext: 180,
         },
+        ...overrides,
       },
       createElement("div")
     )
@@ -88,6 +89,15 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect(html).toContain('class="taskLaunchMobileMenuSwipeHandle"');
     expect(html).toContain('class="taskLaunchMobileMenuList"');
     expect(html).toContain('class="menuItem taskLaunchMobileMenuItem"');
+  });
+
+  it("does not server-render the bordered initial auth overlay as visible on leaderboard pages", () => {
+    const html = renderTaskTimerAppFrameMarkup({ activePage: "leaderboard" });
+
+    expect(html).toContain('id="initialAuthBusyOverlay"');
+    expect(html).toContain('class="initialAuthBusyOverlay"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('class="initialAuthBusyOverlay isOn"');
   });
 });
 

@@ -114,15 +114,15 @@ describe("task card view model", () => {
     expect(rendered.className).toBe("task");
     expect(rendered.html).toContain('data-action="start" title="Launch"');
     expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionLaunch");
-    expect(rendered.html).toContain(">LAUNCH</span>");
-    expect(rendered.html).not.toContain("taskPrimaryActionWord");
-    expect(rendered.html).not.toContain("taskPrimaryActionAccentLetter");
+    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Launch</span>');
+    expect(rendered.html).not.toContain("taskPrimaryActionGlyph");
+    expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
     expect(rendered.html).not.toContain('title="Resume"');
     expect(rendered.html).not.toContain("Done until tomorrow");
     expect(rendered.html).toContain('data-action="reset" title="No time to reset" aria-label="No time to reset" type="button" disabled');
   });
 
-  it("renders a stopped task with elapsed time as a yellow Resume primary action", () => {
+  it("renders a stopped task with elapsed time as a Resume primary action", () => {
     const rendered = renderCard({
       task: baseTask({ running: false }),
       elapsedMs: 12_000,
@@ -132,7 +132,8 @@ describe("task card view model", () => {
     expect(rendered.className).toBe("task");
     expect(rendered.html).toContain('data-action="start" title="Resume" aria-label="Resume"');
     expect(rendered.html).toContain("btn btn-resume small taskPrimaryAction taskPrimaryActionResume");
-    expect(rendered.html).toContain("Resume");
+    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
+    expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
     expect(rendered.html).not.toContain('data-action="stop"');
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
   });
@@ -273,10 +274,13 @@ describe("task card view model", () => {
     );
   });
 
-  it("defines raised stopped and concave running primary action styles", () => {
+  it("defines mock-style static recess and interactive inner button styles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+    const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionLaunch\{[\s\S]*?\n\}/)?.[0] ?? "";
     const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
     const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resetRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionReset\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const doneRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionDone\{[\s\S]*?\n\}/)?.[0] ?? "";
     const primaryActionRule =
       css.match(
         /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\{[\s\S]*?\n\}/
@@ -284,7 +288,7 @@ describe("task card view model", () => {
       "";
     const faceRule =
       css.match(
-        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction \.taskPrimaryActionFace\{\n  inset: 14px;[\s\S]*?\n\}/
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction \.taskPrimaryActionFace\{\n  inset: 15px;[\s\S]*?\n\}/
       )?.[0] ??
       "";
     const ringRule =
@@ -292,39 +296,70 @@ describe("task card view model", () => {
         /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction \.taskPrimaryActionRing\{\n  inset: 0;[\s\S]*?\n\}/
       )?.[0] ??
       "";
-    const resumeFaceRule =
-      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
+    const hoverRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction:hover:not\(:disabled\),[\s\S]*?\.taskPrimaryAction:focus-visible:not\(:disabled\)\{[\s\S]*?\n\}/)?.[0] ??
       "";
-    const stopFaceRule =
-      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace(?:,[\s\S]*?)?\{[\s\S]*?\n\}/)?.[0] ??
+    const hoverFaceRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction:hover:not\(:disabled\) \.taskPrimaryActionFace,[\s\S]*?\.taskPrimaryAction:focus-visible:not\(:disabled\) \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
       "";
-    const stopConcaveFaceRule =
-      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop \.taskPrimaryActionFace(?:,[\s\S]*?)?\{\n  box-shadow:[\s\S]*?\n\}/)?.[0] ??
+    const pressedRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction:active:not\(:disabled\),[\s\S]*?\.taskPrimaryAction\.isTaskPrimaryActionPressed:not\(:disabled\)\{[\s\S]*?\n\}/)?.[0] ??
       "";
-    const stopOuterBlocks = Array.from(css.matchAll(/([^{}]*\.btn\.taskPrimaryActionStop[^{}]*)\{([\s\S]*?)\n\}/g))
-      .filter(([, selector]) => !selector.includes(".taskPrimaryActionFace") && !selector.includes(".taskPrimaryActionRing"))
-      .map(([block]) => block);
+    const pressedFaceRule =
+      css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction:active:not\(:disabled\) \.taskPrimaryActionFace,[\s\S]*?\.taskPrimaryAction\.isTaskPrimaryActionPressed:not\(:disabled\) \.taskPrimaryActionFace\{[\s\S]*?\n\}/)?.[0] ??
+      "";
 
-    expect(resumeRule).toContain("--task-primary-face-start: #ffe68e;");
-    expect(resumeRule).toContain("--task-primary-face-mid: #e5b741;");
-    expect(resumeRule).toContain("--task-primary-face-end: #bc841e;");
-    expect(resumeRule).toContain("--task-primary-face-shadow-color: rgba(116,75,0,.42);");
-    expect(resumeFaceRule).toContain("#ffe68e 0 30%, #e5b741 62%, #bc841e 100%) !important;");
-    expect(stopRule).toContain("--task-primary-face-start: #ff8f8f;");
-    expect(stopRule).toContain("--task-primary-face-mid: #f23e4f;");
-    expect(stopRule).toContain("--task-primary-face-end: #aa1727;");
-    expect(stopRule).toContain("--task-primary-face-shadow-color: rgba(70,0,0,.46);");
+    expect(primaryActionRule).toContain("--task-primary-action-size: 96px;");
+    expect(primaryActionRule).toContain("--task-primary-accent: #9dfcff;");
+    expect(primaryActionRule).toContain("background: #090a0d !important;");
+    expect(primaryActionRule).not.toContain("transform .14s cubic-bezier(.2,.8,.2,1)");
     expect(primaryActionRule).toContain('font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
-    expect(stopFaceRule).toContain("#ff8f8f 0 20%, #f23e4f 54%, #aa1727 100%) !important;");
-    expect(stopConcaveFaceRule).toContain("0 9px 13px rgba(0,0,0,.55) inset");
     expect(ringRule).toContain('background: url("/task-primary-action-ring.webp") center / 100% 100% no-repeat;');
-    expect(css).not.toMatch(/\.taskPrimaryActionStop \.taskPrimaryActionRing\{/);
-    expect(stopOuterBlocks.length).toBeGreaterThan(0);
-    expect(stopOuterBlocks.every((block) => !/\n\s*(?:background|background-color|box-shadow)\s*:/.test(block))).toBe(true);
-    expect(faceRule).toContain("var(--task-primary-face-start)");
-    expect(faceRule).toContain("var(--task-primary-face-mid)");
-    expect(faceRule).toContain("var(--task-primary-face-end)");
-    expect(faceRule).toContain("0 8px 12px rgba(0,0,0,.48)");
+    expect(ringRule).toContain("filter: brightness(.74) contrast(1.12) saturate(.72);");
+    expect(ringRule).not.toContain("transition: transform");
+    expect(faceRule).toContain("repeating-radial-gradient");
+    expect(faceRule).toContain("linear-gradient(180deg, var(--task-primary-face-top) 0%, var(--task-primary-face-mid) 48%, var(--task-primary-face-bottom) 100%) !important;");
+    expect(faceRule).toContain("transform .14s cubic-bezier(.2,.8,.2,1)");
+    expect(faceRule).toContain("inset 0 -10px 14px rgba(0,0,0,.52)");
+    expect(faceRule).not.toContain("rgba(255,255,255,.18)");
+    expect(faceRule).not.toContain("color-mix(in srgb, var(--task-primary-accent)");
+    expect(css).not.toContain(".taskPrimaryActionGlyph");
+    expect(css).toContain(".taskPrimaryActionPrimary");
+    expect(css).toContain('font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
+    expect(css).toContain("color: var(--task-primary-label);");
+    expect(css).not.toContain(".taskPrimaryActionSecondary");
+    expect(launchRule).toContain("--task-primary-accent: #9dfcff;");
+    expect(launchRule).toContain("--task-primary-label: #d7feff;");
+    expect(launchRule).toContain("--task-primary-face-top: #193438;");
+    expect(launchRule).toContain("--task-primary-face-mid: #122226;");
+    expect(launchRule).toContain("--task-primary-face-bottom: #090d10;");
+    expect(resumeRule).toContain("--task-primary-accent: #ffd66b;");
+    expect(resumeRule).toContain("--task-primary-label: #ffe9a8;");
+    expect(resumeRule).toContain("--task-primary-face-top: #3a3018;");
+    expect(resumeRule).toContain("--task-primary-face-mid: #241d10;");
+    expect(resumeRule).toContain("--task-primary-face-bottom: #100c07;");
+    expect(stopRule).toContain("--task-primary-accent: #ff7070;");
+    expect(stopRule).toContain("--task-primary-label: #ffc7c7;");
+    expect(stopRule).toContain("--task-primary-face-top: #3b1a1d;");
+    expect(stopRule).toContain("--task-primary-face-mid: #251013;");
+    expect(stopRule).toContain("--task-primary-face-bottom: #100708;");
+    expect(resetRule).toContain("--task-primary-accent: #c89cff;");
+    expect(resetRule).toContain("--task-primary-label: #ead9ff;");
+    expect(resetRule).toContain("--task-primary-face-top: #2d2440;");
+    expect(resetRule).toContain("--task-primary-face-mid: #1d172a;");
+    expect(resetRule).toContain("--task-primary-face-bottom: #0d0a13;");
+    expect(doneRule).toContain("--task-primary-accent: #77f0a0;");
+    expect(doneRule).toContain("--task-primary-label: #c8ffd9;");
+    expect(doneRule).toContain("--task-primary-face-top: #1a3827;");
+    expect(doneRule).toContain("--task-primary-face-mid: #112519;");
+    expect(doneRule).toContain("--task-primary-face-bottom: #07100b;");
+    expect(hoverRule).toContain("transform: none !important;");
+    expect(hoverFaceRule).toContain("transform: none !important;");
+    expect(hoverFaceRule).not.toContain("translateY(-1px)");
+    expect(pressedRule).not.toContain("transform:");
+    expect(pressedFaceRule).toContain("transform: translateY(3px) scale(.975);");
+    expect(css).not.toMatch(/\.taskPrimaryAction\.isTaskPrimaryActionPressed:not\(:disabled\) \.taskPrimaryActionRing\{/);
+    expect(css).not.toMatch(/\.taskPrimaryAction[\s\S]*?\{\n(?:[\s\S]*?\n)?\s*transition: none !important;\n\s*transform: none !important;/);
   });
 
   it("renders completed time-goal tasks with a primary reset action while preserving edit hooks", () => {
@@ -336,8 +371,9 @@ describe("task card view model", () => {
     expect(rendered.className).toBe("task taskCompleted");
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
     expect(rendered.html).toContain("btn btn-warn small taskPrimaryAction taskPrimaryActionReset");
-    expect(rendered.html).toContain("Reset");
-    expect(rendered.html).not.toContain("Done");
+    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Reset</span>');
+    expect(rendered.html).not.toContain("taskPrimaryActionSecondary");
+    expect(rendered.html).not.toContain('<span class="taskPrimaryActionPrimary">Done</span>');
     expect(rendered.html).not.toContain("taskDoneIcon");
     expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionDone");
     expect(rendered.html).not.toContain('aria-label="Done until tomorrow"');

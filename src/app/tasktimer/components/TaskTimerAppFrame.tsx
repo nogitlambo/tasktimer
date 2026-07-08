@@ -72,6 +72,8 @@ export type DesktopInsigniaUpgradePayload = {
   nextRankId: string;
 };
 
+const DEFAULT_INITIAL_AUTH_BUSY_TEXT = "Loading your workspace into this session...";
+const LEADERBOARD_INITIAL_AUTH_BUSY_TEXT = "Loading leaderboard standings";
 const DESKTOP_INSIGNIA_UPGRADE_START_DELAY_MS = 600;
 const DESKTOP_INSIGNIA_UPGRADE_ACTIVE_DURATION_MS = 3400;
 const MOBILE_MENU_SWIPE_CLOSE_START_ZONE_PX = 78;
@@ -186,6 +188,9 @@ export default function TaskTimerAppFrame({
 }: TaskTimerAppFrameProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isLeaderboardPage = activePage === "leaderboard";
+  const initialAuthBusyText = isLeaderboardPage ? LEADERBOARD_INITIAL_AUTH_BUSY_TEXT : DEFAULT_INITIAL_AUTH_BUSY_TEXT;
+  const initialAuthBusyHeading = isLeaderboardPage ? "Loading leaderboard standings" : "Loading your workspace";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuDragY, setMobileMenuDragY] = useState(0);
   const [isMobileMenuDragging, setIsMobileMenuDragging] = useState(false);
@@ -655,10 +660,21 @@ export default function TaskTimerAppFrame({
         onConfirm={() => void handleMobileSignOut()}
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
-      <div className="initialAuthBusyOverlay isOn" id="initialAuthBusyOverlay" aria-hidden="false" tabIndex={-1}>
+      <div
+        className={`initialAuthBusyOverlay${isLeaderboardPage ? "" : " isOn"}`}
+        id="initialAuthBusyOverlay"
+        aria-hidden={isLeaderboardPage ? "true" : "false"}
+        tabIndex={-1}
+      >
         <div className="initialAuthBusyPanel" role="status" aria-live="polite" aria-atomic="true">
-          <h2 className="sr-only">Loading your workspace</h2>
-          <p className="modalSubtext confirmText" id="initialAuthBusyText">Loading your workspace into this session...</p>
+          <h2 className="sr-only">{initialAuthBusyHeading}</h2>
+          <p
+            className={`modalSubtext confirmText${isLeaderboardPage ? " leaderboardLoadingText" : ""}`}
+            id="initialAuthBusyText"
+            aria-label={isLeaderboardPage ? `${initialAuthBusyText}...` : undefined}
+          >
+            {initialAuthBusyText}
+          </p>
         </div>
       </div>
       <div className="cloudSyncNoticeHost" id="cloudSyncNoticeHost" aria-live="polite" aria-atomic="true" />

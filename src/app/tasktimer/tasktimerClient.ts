@@ -748,13 +748,29 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   renderDashboardWidgetsWithBusy = renderDashboardWidgetsWithBusyBound;
   renderDashboardLiveWidgetsWithMemo = renderDashboardLiveWidgetsWithMemoBound;
 
+  const leaderboardInitialAuthBusyText = "Loading leaderboard standings";
+
   function setInitialAuthBusyVisible(isOn: boolean, message?: string) {
     const overlayEl = els.initialAuthBusyOverlay as HTMLElement | null;
     const textEl = els.initialAuthBusyText as HTMLElement | null;
-    if (textEl && typeof message === "string" && message.trim()) {
-      textEl.textContent = message.trim();
-    } else if (textEl && !isOn) {
-      textEl.textContent = "Loading your workspace into this session...";
+    const normalizedMessage = typeof message === "string" ? message.trim() : "";
+    const isLeaderboardPage = appRuntimeState.get("currentAppPage") === "leaderboard";
+    const isLeaderboardLoadingMessage =
+      normalizedMessage === leaderboardInitialAuthBusyText ||
+      normalizedMessage === `${leaderboardInitialAuthBusyText}...` ||
+      (!isOn && !normalizedMessage && isLeaderboardPage);
+    if (textEl) {
+      textEl.classList.toggle("leaderboardLoadingText", isLeaderboardLoadingMessage);
+      if (isLeaderboardLoadingMessage) {
+        textEl.textContent = leaderboardInitialAuthBusyText;
+        textEl.setAttribute("aria-label", `${leaderboardInitialAuthBusyText}...`);
+      } else if (normalizedMessage) {
+        textEl.textContent = normalizedMessage;
+        textEl.removeAttribute("aria-label");
+      } else if (!isOn) {
+        textEl.textContent = "Loading your workspace into this session...";
+        textEl.removeAttribute("aria-label");
+      }
     }
     document.body.classList.toggle("isInitialAuthHydrating", !!isOn);
     if (!overlayEl) return;

@@ -2022,6 +2022,20 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   gap:10px;
 }
 
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardPanelText{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px;
+  text-align:center;
+  font-family:var(--font-orbitron), Orbitron, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:15.12px;
+  line-height:1.2;
+  box-sizing:border-box;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSideItem,
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardMiniRow{
@@ -2381,6 +2395,22 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyBoard::after{
   content:none;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyAwardsInfoBtn{
+  position:absolute;
+  top:14px;
+  right:16px;
+  z-index:25;
+  width:34px;
+  min-width:34px;
+  height:34px;
+  min-height:34px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyIntro{
@@ -4553,6 +4583,33 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   animation:leaderboardPodiumFloat 4.8s ease-in-out infinite;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarDrop{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  transform-origin:center bottom;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardCardEnter .leaderboardGlobalPodiumAvatarDrop,
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardGlobalPodiumAvatarDrop{
+  animation:leaderboardPodiumAvatarDrop 3s cubic-bezier(.16,.82,.22,1) both;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarDrop{
+  animation-delay:0ms;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarDrop{
+  animation-delay:140ms;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarDrop{
+  animation-delay:280ms;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumThruster{
   position:absolute;
   left:50%;
@@ -4574,6 +4631,15 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
     drop-shadow(0 0 15px rgba(255,151,34,.62))
     drop-shadow(0 0 24px rgba(255,80,20,.34));
   animation:leaderboardPodiumThruster .72s ease-in-out infinite;
+  animation-delay:var(--leaderboard-podium-thruster-phase-delay, 0ms);
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardCardEnter .leaderboardGlobalPodiumThruster,
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardGlobalPodiumThruster{
+  animation:
+    leaderboardPodiumThruster .72s ease-in-out infinite,
+    leaderboardPodiumThrusterEntryGlow 3s cubic-bezier(.16,.82,.22,1) both;
+  animation-delay:var(--leaderboard-podium-thruster-phase-delay, 0ms), 0ms;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumThruster::before,
@@ -4626,7 +4692,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumThruster{
-  animation-delay:-.28s;
+  --leaderboard-podium-thruster-phase-delay:-.28s;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarSlot{
@@ -4642,7 +4708,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumThruster{
-  animation-delay:-.52s;
+  --leaderboard-podium-thruster-phase-delay:-.52s;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarSlot{
@@ -4658,7 +4724,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumThruster{
-  animation-delay:-.76s;
+  --leaderboard-podium-thruster-phase-delay:-.76s;
 }
 
 @keyframes leaderboardPodiumFloat{
@@ -4668,6 +4734,22 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 
   50%{
     transform:translateX(-50%) translateY(-9px);
+  }
+}
+
+@keyframes leaderboardPodiumAvatarDrop{
+  0%{
+    opacity:0;
+    transform:translateY(calc(-100vh - var(--global-podium-avatar-size)));
+  }
+
+  12%{
+    opacity:1;
+  }
+
+  100%{
+    opacity:1;
+    transform:translateY(0);
   }
 }
 
@@ -4685,6 +4767,44 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   72%{
     opacity:.97;
     transform:translateX(-50%) skewX(-.18deg) scaleX(1.01) scaleY(1);
+  }
+}
+
+@keyframes leaderboardPodiumThrusterEntryGlow{
+  0%{
+    height:calc(var(--global-podium-avatar-size) * .82);
+    filter:
+      blur(.08px)
+      drop-shadow(0 0 12px rgba(255,255,235,.98))
+      drop-shadow(0 0 28px rgba(255,183,58,.84))
+      drop-shadow(0 0 46px rgba(255,90,20,.58));
+  }
+
+  58%{
+    height:calc(var(--global-podium-avatar-size) * .74);
+    filter:
+      blur(.08px)
+      drop-shadow(0 0 11px rgba(255,255,235,.96))
+      drop-shadow(0 0 24px rgba(255,183,58,.78))
+      drop-shadow(0 0 38px rgba(255,90,20,.5));
+  }
+
+  82%{
+    height:calc(var(--global-podium-avatar-size) * .56);
+    filter:
+      blur(.1px)
+      drop-shadow(0 0 8px rgba(255,248,207,.88))
+      drop-shadow(0 0 17px rgba(255,151,34,.66))
+      drop-shadow(0 0 26px rgba(255,80,20,.38));
+  }
+
+  100%{
+    height:calc(var(--global-podium-avatar-size) * .483);
+    filter:
+      blur(.12px)
+      drop-shadow(0 0 7px rgba(255,248,207,.82))
+      drop-shadow(0 0 15px rgba(255,151,34,.62))
+      drop-shadow(0 0 24px rgba(255,80,20,.34));
   }
 }
 
@@ -4745,6 +4865,12 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 
 @media (prefers-reduced-motion: reduce){
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
+    animation:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarDrop{
+    opacity:1;
+    transform:none;
     animation:none;
   }
 
@@ -5441,6 +5567,11 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard{
     padding:8px;
     background:transparent;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyAwardsInfoBtn{
+    top:16px;
+    right:16px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyStage{

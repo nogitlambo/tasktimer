@@ -483,12 +483,13 @@ describe("groups friends list shared task counts", () => {
     return { handlers, groupsFriendsList, sharedTaskSummaryModal, sharedTaskSummaryTitle, sharedTaskSummaryBody, sharedTaskSummaryCloseBtn, ctx };
   }
 
-  it("renders the shared count meta when a friend has zero shared tasks", () => {
+  it("renders the shared count meta without an empty status when a friend has zero shared tasks", () => {
     const { html } = renderFriendsList([]);
 
     expect(html).toContain('class="friendIdentityMeta"');
     expect(html).toContain("Sharing 0 tasks");
-    expect(html).toContain("No tasks shared with you.");
+    expect(html).not.toContain("No tasks shared with you.");
+    expect(html).not.toContain("isEmptyStatus");
   });
 
   it("keeps the shared count meta when a friend has shared tasks", () => {

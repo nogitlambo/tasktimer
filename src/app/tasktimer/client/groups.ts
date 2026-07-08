@@ -1968,7 +1968,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                 </div>
               </div>
             </summary>
-            <div class="friendSharedTasksList">${summaryHtml || `<div class="settingsDetailNote isEmptyStatus">No tasks shared with you.</div>`}</div>
+            <div class="friendSharedTasksList">${summaryHtml}</div>
           </details>
         </div>`;
       })

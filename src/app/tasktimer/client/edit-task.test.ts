@@ -9,7 +9,6 @@ import {
   restoreEditScheduleFieldsFromSnapshot,
   taskHasMeaningfulScheduleConfig,
 } from "./edit-task";
-import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 
 vi.mock("../lib/pushNotifications", () => ({
   enableTaskTimerPushNotificationsForCurrentRuntime: vi.fn(async () => ({
@@ -84,9 +83,12 @@ function createEditHarness(overrides: {
   durationPeriod?: "day" | "week";
   productivityDays?: string[];
   plannedStartSelectors?: { hour: string; minute: string; meridiem: "AM" | "PM" };
+  mobilePushAlertsEnabled?: boolean;
+  webPushAlertsEnabled?: boolean;
 } = {}) {
   vi.stubGlobal("HTMLElement", class HTMLElementStub {});
   vi.stubGlobal("window", {
+    location: { protocol: "http:" },
     setTimeout: vi.fn((callback: () => void) => {
       callback();
       return 1;
@@ -150,7 +152,14 @@ function createEditHarness(overrides: {
   } as HTMLSelectElement;
   const editPlannedStartPushReminders = {
     checked: false,
-  } as HTMLInputElement;
+    disabled: false,
+    setAttribute: vi.fn(),
+    title: "",
+  } as unknown as HTMLInputElement;
+  const editPlannedStartPushRemindersRow = {
+    classList: { toggle: vi.fn() },
+    setAttribute: vi.fn(),
+  } as unknown as HTMLElement;
   const cancelEditBtn = buttonStub();
   const saveEditBtn = buttonStub();
   let editDraftSnapshot = "";
@@ -170,6 +179,7 @@ function createEditHarness(overrides: {
       editPlannedStartMeridiemSelect,
       editPlannedStartInput,
       editPlannedStartPushReminders,
+      editPlannedStartPushRemindersRow,
       editTaskScheduleSummary,
       editTaskScheduleSummaryText,
       editTaskSplitAcrossProductivityDaysRow,
@@ -243,9 +253,9 @@ function createEditHarness(overrides: {
     setElapsedPadOriginal: vi.fn(),
     getCheckpointAlertSoundEnabled: () => false,
     getCheckpointAlertToastEnabled: () => false,
-    getMobilePushAlertsEnabled: () => false,
+    getMobilePushAlertsEnabled: () => !!overrides.mobilePushAlertsEnabled,
     setMobilePushAlertsEnabledState: vi.fn(),
-    getWebPushAlertsEnabled: () => false,
+    getWebPushAlertsEnabled: () => !!overrides.webPushAlertsEnabled,
     setWebPushAlertsEnabledState: vi.fn(),
     persistPushAlertsPreference: vi.fn(),
     getElapsedMs: () => 0,
@@ -264,6 +274,8 @@ function createEditHarness(overrides: {
     editOverlay,
     editTaskScheduleSummary,
     editTaskScheduleSummaryText,
+    editPlannedStartPushReminders,
+    editPlannedStartPushRemindersRow,
     editTaskSplitAcrossProductivityDaysRow,
     editTaskWeeklyBlockDayField,
     getEditIndex: () => editIndex,
@@ -356,13 +368,12 @@ describe("edit task schedule summary", () => {
     expect(harness.getEditIndex()).toBeNull();
   });
 
-  it("enables current-runtime push when Edit Task Remind Me is checked while global push is off", async () => {
-    vi.mocked(enableTaskTimerPushNotificationsForCurrentRuntime).mockClear();
+  it("greys out Edit Task Remind Me when current-runtime push is off", async () => {
     const harness = createEditHarness();
 
     harness.api.registerEditTaskEvents();
     harness.api.openEdit(0);
-    const toggle = harness.ctx.els.editPlannedStartPushReminders as HTMLInputElement;
+    const toggle = harness.editPlannedStartPushReminders;
     toggle.checked = true;
     const changeHandler = vi.mocked(harness.ctx.on).mock.calls.find(
       ([element, eventName]) => element === toggle && eventName === "change"
@@ -370,12 +381,10 @@ describe("edit task schedule summary", () => {
 
     await changeHandler?.();
 
-    expect(enableTaskTimerPushNotificationsForCurrentRuntime).toHaveBeenCalledWith({
-      mobileEnabled: false,
-      webEnabled: false,
-    });
-    expect(harness.ctx.setMobilePushAlertsEnabledState).toHaveBeenCalledWith(true);
-    expect(harness.ctx.persistPushAlertsPreference).toHaveBeenCalled();
+    expect(toggle.disabled).toBe(true);
+    expect(toggle.setAttribute).toHaveBeenCalledWith("aria-disabled", "true");
+    expect(harness.editPlannedStartPushRemindersRow.classList.toggle).toHaveBeenCalledWith("isDisabled", true);
+    expect(harness.ctx.persistPushAlertsPreference).not.toHaveBeenCalled();
   });
 
   it("updates the summary for a loaded recurring weekly task", () => {

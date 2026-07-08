@@ -44,6 +44,17 @@ type InitialHydrationOptions = {
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
 };
 
+const DEFAULT_INITIAL_AUTH_HYDRATION_MESSAGE = "Loading your workspace into this session...";
+const LEADERBOARD_INITIAL_AUTH_HYDRATION_MESSAGE = "Loading leaderboard standings...";
+
+export function getInitialAuthHydrationMessage(currentAppPage: string) {
+  return currentAppPage === "leaderboard" ? LEADERBOARD_INITIAL_AUTH_HYDRATION_MESSAGE : DEFAULT_INITIAL_AUTH_HYDRATION_MESSAGE;
+}
+
+export function shouldShowInitialAuthHydrationOverlay(currentAppPage: string) {
+  return currentAppPage !== "leaderboard";
+}
+
 export function bootstrapTaskTimerRuntime(options: BootstrapOptions) {
   options.hydrateUiStateFromCaches();
   options.subscribeToCheckpointAlertMuteSignals();
@@ -102,7 +113,9 @@ export function runInitialTaskTimerHydration(options: InitialHydrationOptions) {
       });
       return;
     }
-    options.startInitialAuthHydration("Loading your workspace into this session...");
+    if (shouldShowInitialAuthHydrationOverlay(options.currentAppPage)) {
+      options.startInitialAuthHydration(getInitialAuthHydrationMessage(options.currentAppPage));
+    }
     void options
       .rehydrateFromCloudAndRender()
       .catch(() => {

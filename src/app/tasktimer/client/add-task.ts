@@ -27,7 +27,6 @@ import {
   setTaskScheduledTimeForDay,
   type ScheduleDay,
 } from "../lib/schedule-placement";
-import { enableTaskTimerPushNotificationsForCurrentRuntime } from "../lib/pushNotifications";
 import { normalizeOptimalProductivityDays } from "../lib/productivityPeriod";
 import type { Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
@@ -134,17 +133,31 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     els.addTaskMsList?.querySelectorAll?.(".msRow.isInvalid")?.forEach((el) => el.classList.remove("isInvalid"));
   }
 
-  async function enablePushAlertsForCurrentRuntime() {
-    const appliedEnabled = await enableTaskTimerPushNotificationsForCurrentRuntime({
-      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
-      webEnabled: ctx.getWebPushAlertsEnabled(),
-    }).catch(() => ({
-      mobileEnabled: ctx.getMobilePushAlertsEnabled(),
-      webEnabled: ctx.getWebPushAlertsEnabled(),
-    }));
-    ctx.setMobilePushAlertsEnabledState(appliedEnabled.mobileEnabled);
-    ctx.setWebPushAlertsEnabledState(appliedEnabled.webEnabled);
-    ctx.persistPushAlertsPreference();
+  function isNativeOrFilePushRuntime() {
+    if (typeof window === "undefined") return false;
+    if (window.location.protocol === "file:") return true;
+    try {
+      const cap = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+      return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }
+
+  function arePushAlertsEnabledForCurrentRuntime() {
+    return isNativeOrFilePushRuntime() ? ctx.getMobilePushAlertsEnabled() : ctx.getWebPushAlertsEnabled();
+  }
+
+  function syncAddTaskPushReminderUi() {
+    const enabled = arePushAlertsEnabledForCurrentRuntime();
+    if (els.addTaskPlannedStartPushReminders) {
+      if (!enabled) els.addTaskPlannedStartPushReminders.checked = false;
+      els.addTaskPlannedStartPushReminders.disabled = !enabled;
+      els.addTaskPlannedStartPushReminders.setAttribute("aria-disabled", String(!enabled));
+      els.addTaskPlannedStartPushReminders.title = enabled ? "" : "Enable push notifications in Settings to use reminders.";
+    }
+    els.addTaskPlannedStartPushRemindersRow?.classList.toggle("isDisabled", !enabled);
+    els.addTaskPlannedStartPushRemindersRow?.setAttribute("aria-disabled", String(!enabled));
   }
 
   function syncAddTaskNamePlaceholder(showHelperText: boolean) {
@@ -946,6 +959,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     clearAddTaskValidationState();
     syncAddTaskScheduleToggleUi();
     syncAddTaskTypeUi();
+    syncAddTaskPushReminderUi();
     syncAddTaskPlannedStartUi();
     syncAddTaskColorPalette();
     syncAddTaskTimeGoalUi();
@@ -1075,7 +1089,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     newTask.presetIntervalsEnabled = false;
     newTask.presetIntervalValue = 0;
     newTask.timeGoalAction = "confirmModal";
-    newTask.plannedStartPushRemindersEnabled = !!els.addTaskPlannedStartPushReminders?.checked;
+    newTask.plannedStartPushRemindersEnabled = arePushAlertsEnabledForCurrentRuntime() && !!els.addTaskPlannedStartPushReminders?.checked;
 
     if (isOnceOffTaskType()) {
       const onceOffDay = ctx.getAddTaskOnceOffDay() as ScheduleDay;
@@ -1269,8 +1283,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskScheduleSummary();
     });
     ctx.on(els.addTaskPlannedStartPushReminders, "change", () => {
-      if (!els.addTaskPlannedStartPushReminders?.checked) return;
-      void enablePushAlertsForCurrentRuntime();
+      if (!arePushAlertsEnabledForCurrentRuntime() && els.addTaskPlannedStartPushReminders) {
+        els.addTaskPlannedStartPushReminders.checked = false;
+      }
+      syncAddTaskPushReminderUi();
     });
     ctx.on(els.addTaskColorTrigger, "click", (event: Event) => {
       event.preventDefault?.();

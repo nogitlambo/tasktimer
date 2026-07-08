@@ -528,7 +528,7 @@ async function refreshNativePushRegistrationAfterRemoteInvalidation(user: User |
 
 async function registerForPush() {
   let permission = await PushNotifications.checkPermissions();
-  if (permission.receive === "prompt") {
+  if (permission.receive !== "granted") {
     permission = await PushNotifications.requestPermissions();
   }
   if (permission.receive !== "granted") {

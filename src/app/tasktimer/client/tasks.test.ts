@@ -6,9 +6,17 @@ import { createTaskTimerTasks } from "./tasks";
 type TestEvent = {
   preventDefault?: () => void;
   stopPropagation?: () => void;
-  target?: {
-    closest?: (selector: string) => { dataset?: Record<string, string>; getAttribute?: (name: string) => string | null } | null;
-  };
+  key?: string;
+  repeat?: boolean;
+  target?: TestTarget;
+};
+
+type TestTarget = {
+  disabled?: boolean;
+  dataset?: Record<string, string>;
+  classList?: { add: (token: string) => void; remove: (token: string) => void; contains?: (token: string) => boolean };
+  getAttribute?: (name: string) => string | null;
+  closest?: (selector: string) => TestTarget | null;
 };
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -47,7 +55,7 @@ function elementStub(tagName = "div") {
   return node;
 }
 
-function createHarness(overrides: { tasks?: Task[] } = {}) {
+function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}) {
   const calls: string[] = [];
   const handlers = new Map<object, Map<string, (event: TestEvent) => void>>();
   let tasks = overrides.tasks || [task()];
@@ -61,13 +69,16 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
   vi.stubGlobal("window", {
     location: { protocol: "https:" },
     matchMedia: () => ({ matches: false }),
-    clearTimeout: vi.fn(),
+    clearTimeout: (timer: ReturnType<typeof setTimeout>) => {
+      if (overrides.deferTimers) clearTimeout(timer);
+    },
     dispatchEvent: vi.fn(),
     requestAnimationFrame: (handler: () => void) => {
       handler();
       return 1;
     },
     setTimeout: (handler: () => void) => {
+      if (overrides.deferTimers) return setTimeout(handler, 140);
       handler();
       return 1;
     },
@@ -270,9 +281,32 @@ function createHarness(overrides: { tasks?: Task[] } = {}) {
       });
       return taskEl;
     },
+    dispatchTaskListEvent: (type: string, event: TestEvent) => handlers.get(taskList)?.get(type)?.(event),
+    taskList,
+    handlers,
     ctx,
     getTasks: () => tasks,
   };
+}
+
+function createPrimaryActionTarget({ disabled = false, action = "start" }: { disabled?: boolean; action?: string } = {}) {
+  const classes = new Set<string>();
+  const classList = {
+    add: vi.fn((token: string) => classes.add(token)),
+    remove: vi.fn((token: string) => classes.delete(token)),
+    contains: (token: string) => classes.has(token),
+  };
+  const button: TestTarget = {
+    disabled,
+    dataset: { action },
+    classList,
+    getAttribute: (name: string) => (name === "data-action" ? action : null),
+    closest: (selector: string) => {
+      if (selector === ".taskPrimaryAction" || selector === "[data-action]") return button;
+      return null;
+    },
+  };
+  return { button, classList };
 }
 
 describe("createTaskTimerTasks", () => {
@@ -309,6 +343,59 @@ describe("createTaskTimerTasks", () => {
 
     expect(harness.ctx.setTaskFlipped).not.toHaveBeenCalled();
     expect(harness.getTasks()[0]?.running).toBe(true);
+  });
+
+  it("shows and rebounds the primary action press state without blocking start", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, classList } = createPrimaryActionTarget();
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+
+      expect(classList.add).toHaveBeenCalledWith("isTaskPrimaryActionPressed");
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(true);
+
+      harness.clickStart();
+      expect(harness.getTasks()[0]?.running).toBe(true);
+
+      harness.dispatchTaskListEvent("pointerup", { target: button });
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(true);
+
+      vi.advanceTimersByTime(140);
+
+      expect(classList.remove).toHaveBeenCalledWith("isTaskPrimaryActionPressed");
+      expect(classList.contains("isTaskPrimaryActionPressed")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ignores disabled primary actions for press feedback", () => {
+    const harness = createHarness();
+    const { button, classList } = createPrimaryActionTarget({ disabled: true });
+
+    harness.dispatchTaskListEvent("pointerdown", { target: button });
+
+    expect(classList.add).not.toHaveBeenCalled();
+  });
+
+  it("supports keyboard primary action press feedback", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({ deferTimers: true });
+      const { button, classList } = createPrimaryActionTarget();
+
+      harness.dispatchTaskListEvent("keydown", { target: button, key: "Enter" });
+      expect(classList.add).toHaveBeenCalledWith("isTaskPrimaryActionPressed");
+
+      harness.dispatchTaskListEvent("keyup", { target: button, key: "Enter" });
+      vi.advanceTimersByTime(140);
+
+      expect(classList.remove).toHaveBeenCalledWith("isTaskPrimaryActionPressed");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("updates task card flip state only from explicit flip controls", () => {
