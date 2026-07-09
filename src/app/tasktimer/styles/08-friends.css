@@ -1105,6 +1105,8 @@
 }
 
 #sharedTaskSummaryModal .modal{
+  border: 0 !important;
+  outline: 0 !important;
   width: min(92vw, 720px);
 }
 
@@ -1115,6 +1117,12 @@
 #sharedTaskSummaryModal .sharedTaskSummaryCard{
   margin: 0;
   cursor: default;
+  border-color: rgba(188, 214, 230, 0.18);
+  background: #0d0f13;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    0 2px 8px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.05);
 }
 
 #sharedTaskSummaryModal .sharedTaskSummaryCard:hover,
@@ -1318,12 +1326,12 @@
 }
 
 #sharedTaskSummaryModal .sharedTaskCheckpointTimelineScaleMarker.isGoal .sharedTaskCheckpointTimelineScaleTick{
-  background: rgba(201, 255, 36, 0.64);
-  box-shadow: 0 0 0 1px rgba(201, 255, 36, 0.12);
+  background: rgba(188, 214, 230, 0.44);
+  box-shadow: none;
 }
 
 #sharedTaskSummaryModal .sharedTaskCheckpointTimelineScaleMarker.isGoal .sharedTaskCheckpointTimelineScaleLabel{
-  color: rgba(201, 255, 36, 0.82);
+  color: rgba(188, 214, 230, 0.72);
   transform: translateX(-100%);
   text-align: right;
 }
@@ -1348,10 +1356,10 @@
   height: 11px;
   margin: 0;
   transform: translateX(-50%);
-  border: 1px solid #c9ff24;
+  border: 1px solid rgba(188, 214, 230, 0.44);
   border-radius: 999px;
   background: #0d0f13;
-  box-shadow: 0 0 0 2px rgba(201, 255, 36, 0.14);
+  box-shadow: none;
 }
 
 #sharedTaskSummaryModal .sharedTaskCheckpointTimelineLabel{
@@ -1871,7 +1879,11 @@
 
 #sharedTaskSummaryModal .sharedTaskImportPromptAction .friendSharedTaskActions,
 #sharedTaskSummaryModal .sharedTaskImportPromptAction .friendSharedTaskActions .btn{
-    width: 100%;
+    width: auto;
+  }
+
+#sharedTaskSummaryModal .sharedTaskImportPromptAction .friendSharedTaskActions{
+    justify-content: center;
   }
 
 #sharedTaskSummaryModal .sharedTaskCheckpointTimelineMarker{
@@ -4599,7 +4611,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot1 .leaderboardGlobalPodiumAvatarDrop{
-  animation-delay:0ms;
+  animation-delay:280ms;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot2 .leaderboardGlobalPodiumAvatarDrop{
@@ -4607,7 +4619,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumHotspot3 .leaderboardGlobalPodiumAvatarDrop{
-  animation-delay:280ms;
+  animation-delay:0ms;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumThruster{

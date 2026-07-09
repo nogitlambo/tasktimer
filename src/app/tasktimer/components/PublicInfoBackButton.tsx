@@ -28,7 +28,7 @@ function readAuthenticatedState() {
   });
 }
 
-export default function PublicInfoBackButton() {
+export default function PublicInfoBackButton({ className = "landingV2HeaderBack displayFont" }: { className?: string }) {
   const router = useRouter();
 
   const handleBack = async () => {
@@ -39,7 +39,7 @@ export default function PublicInfoBackButton() {
     <button
       type="button"
       onClick={handleBack}
-      className="landingV2HeaderBack displayFont"
+      className={className}
     >
       Back
     </button>

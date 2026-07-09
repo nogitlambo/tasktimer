@@ -3882,15 +3882,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .modal{
   --history-entry-note-shell-pad-x: 22px;
-  --history-entry-note-surface: #17191d;
+  --history-entry-note-surface: #0d0f13;
   background: var(--history-entry-note-surface);
-  border: 1px solid rgba(255,255,255,.12);
+  border: 0 !important;
+  outline: 0 !important;
   border-radius: 0;
   clip-path: none;
   position: relative;
   left: auto;
   top: auto;
-  width: min(760px, calc(100vw - 36px));
+  width: min(92vw, 720px);
   min-width: min(520px, calc(100vw - 36px));
   min-height: min(420px, calc(100vh - 36px));
   max-height: calc(100vh - 36px);
@@ -3901,7 +3902,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   overflow: hidden;
   pointer-events: auto;
   box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.03),
     0 18px 34px rgba(0,0,0,.34),
     0 30px 68px rgba(0,0,0,.42);
 }
@@ -3917,9 +3917,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay .historyEntryNoteHeader{
     display: grid;
     gap: 6px;
-    margin-bottom: 18px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 8px;
+    padding-bottom: 0;
+    border-bottom: 0;
   }
 
 #historyEntryNoteOverlay{
@@ -3932,22 +3932,23 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .historyEntryNoteHeader h2{
     margin: 0;
-    font-family: var(--font-readable);
-    font-size: 18px;
-    font-weight: 700;
+    color: rgba(238, 242, 246, .95);
+    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 800;
     line-height: 1.1;
-    letter-spacing: .06em;
+    letter-spacing: 0;
     text-transform: uppercase;
   }
 
 #historyEntryNoteOverlay #historyEntryNoteMeta.modalSubtext{
     margin: 0;
-    font-family: var(--font-orbitron);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
+    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: rgba(174,184,194,.78) !important;
+    color: rgba(188, 214, 230, .72) !important;
   }
 
 #historyEntryNoteOverlay .historyEntryNoteTime{
@@ -3956,7 +3957,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .historyEntryNoteBody{
     display: grid;
-    gap: 18px;
+    gap: 12px;
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
@@ -3979,79 +3980,64 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryLayout{
-    display:grid;
-    gap:18px;
-    width:100%;
-  }
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHero{
-    display:grid;
-    gap:14px;
-    position: relative;
-    margin-inline: calc(-1 * var(--history-entry-note-shell-pad-x));
-    padding:14px var(--history-entry-note-shell-pad-x) 12px;
-    border:0;
-    box-shadow:none;
-  }
+#historyEntryNoteOverlay .historyEntrySummarySharedCard{
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(188, 214, 230, 0.18);
+  background: #0d0f13;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.42),
+    0 2px 8px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHero::before{
-    display:none;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryAggregateCard{
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(260px, 1.1fr);
+  gap: 14px;
+  align-items: stretch;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroTop{
-    display:grid;
-    gap:6px;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryAggregateInfo{
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroHeading{
-    display:grid;
-    gap:4px;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryAggregateTitle{
+  min-width: 0;
+  color: rgba(238, 242, 246, .95);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroEyebrow{
-    font-family: var(--font-orbitron);
-    font-size:10px;
-    font-weight:700;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color: #c9ff24;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryMeta{
+  color: rgba(188, 214, 230, .88);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroDate{
-    font-size:12px;
-    font-weight:700;
-    color: rgba(234,248,255,.86);
-    text-align:left;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryMetaLabel{
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+}
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroLabel{
-    font-family: var(--font-orbitron);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: rgba(174,184,194,.9);
-  }
-
-#historyEntryNoteOverlay .historyEntrySummaryHeroValue{
-    font-family: var(--font-orbitron);
-    font-size: 38px;
-    line-height: 1;
-    font-weight: 700;
-    color: rgba(247,251,255,.98);
-    letter-spacing: -.03em;
-  }
-
-#historyEntryNoteOverlay .historyEntrySummaryHeroStats{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap:12px;
-  }
-
-#historyEntryNoteOverlay .historyEntrySummaryHeroStats .historyEntrySummaryValue{
-    font-family: var(--font-orbitron);
-    font-size: 18px;
-  }
+#historyEntryNoteOverlay .historyEntrySummaryAggregateMetrics{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: start;
+}
 
 #historyEntryNoteOverlay .historyEntrySummaryValueWrap{
     display:flex;
@@ -4085,12 +4071,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySessions{
-    display:grid;
-    gap:0;
-  }
+  display: grid;
+  gap: 12px;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionsSingle{
-  gap:0;
+  gap: 0;
 }
 
 #historyEntryNoteOverlay .historyEntryNoteEditor{
@@ -4193,39 +4179,49 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle{
-    margin: 0;
-    font-family: var(--font-orbitron);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: rgba(247,251,255,.98);
-  }
+  margin: 0;
+  color: rgba(188, 214, 230, .68);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle-overview{
     margin-bottom: -2px;
   }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionCard{
-    display:grid;
-    gap:8px;
-    padding:0;
-    border:0;
-    background: transparent;
-  }
+  display: grid;
+  gap: 0;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionCard + .historyEntrySummarySessionCard{
-    margin-top:18px;
-    padding-top:18px;
-    border-top:1px solid rgba(255,255,255,.08);
-  }
+  margin-top: 0;
+}
+
+#historyEntryNoteOverlay .historyEntrySummarySessionLayout{
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(220px, 1.1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+#historyEntryNoteOverlay .historyEntrySummarySessionInfo{
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionHead{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:12px;
-  }
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionHeadMain{
   min-width: 0;
@@ -4243,13 +4239,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryDeleteBtn{
-  min-width: 44px;
-  width: 44px;
-  min-height: 44px;
+  min-width: 32px;
+  width: 32px;
+  min-height: 32px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 2px;
+  padding: 0;
   border-color: transparent !important;
   box-shadow: none !important;
   background: transparent !important;
@@ -4275,87 +4271,94 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionDate{
-    width: 100%;
-    font-size:12px;
-    color: rgba(228,243,252,.82);
-    text-align:left;
-    padding-bottom: 16px;
-  }
+  width: 100%;
+  color: rgba(188, 214, 230, .88);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  padding-bottom: 0;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionDate:has(+ .historyEntrySummarySessionTime){
-    padding-bottom: 2px;
-  }
+  padding-bottom: 0;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionTime{
-    width: 100%;
-    font-size:12px;
-    color: rgba(228,243,252,.82);
-    text-align:left;
-    padding-bottom: 16px;
-  }
+  width: 100%;
+  color: rgba(188, 214, 230, .88);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  padding-bottom: 0;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
-    font-family: var(--font-orbitron);
-    font-size: 24px;
-    line-height: 1;
-    font-weight: 700;
-    color: rgba(247,251,255,.96);
-    letter-spacing: -.03em;
-    margin-top: 0;
-  }
+  margin-top: 4px;
+  color: rgba(247,251,255,.96);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
 
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed.isProgressColored{
     color: var(--history-entry-summary-elapsed-color, rgba(247,251,255,.96));
   }
 
 #historyEntryNoteOverlay .historyEntrySummaryGrid{
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    align-items: start;
-  }
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: start;
+}
 
 #historyEntryNoteOverlay .historyEntrySummaryField{
-    min-width: 0;
-    display: grid;
-    gap: 6px;
-    align-content: start;
-    justify-items: start;
-    padding-top: 12px;
-  }
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  justify-items: start;
+  padding: 8px 9px;
+  border: 1px solid rgba(188, 214, 230, .12);
+  background: rgba(13, 15, 19, .58);
+}
 
 #historyEntryNoteOverlay .historyEntrySummaryLabel{
-  font-family: var(--font-orbitron);
+  color: rgba(188, 214, 230, .68);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
   text-transform: uppercase;
-  color: rgba(174,184,194,.9);
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryValue{
-    min-width: 0;
-    color: rgba(247,251,255,.96);
-    font-size: 14px;
-    line-height: 1.55;
-    font-weight: 400;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
+  min-width: 0;
+  color: rgba(238, 242, 246, .95);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 400;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteRow{
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
-    padding-top: 12px;
-    border-top: 1px dashed rgba(255,255,255,.08);
-  }
+  min-width: 0;
+  display: grid;
+  align-items: stretch;
+}
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteBlock{
   min-width: 0;
   display: grid;
   gap: 6px;
+  min-height: 100%;
+  padding: 8px 9px;
+  border: 1px solid rgba(188, 214, 230, .12);
+  background: rgba(13, 15, 19, .58);
   cursor: text;
 }
 
@@ -4365,17 +4368,17 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteText{
-    min-width: 0;
-    width: 100%;
-    min-height: 22px;
-    padding: 0;
-    border: 0;
-    outline: 0;
-    resize: vertical;
-    background: transparent;
-    color: rgba(247,251,255,.96);
-    font-size: 12px;
-    line-height: 1.55;
+  min-width: 0;
+  width: 100%;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  background: transparent;
+  color: rgba(238, 242, 246, .95);
+  font-size: 12px;
+  line-height: 1.45;
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   white-space: pre-wrap;
   word-break: break-word;
@@ -4433,7 +4436,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummaryNoteBlock .sessionNoteAttachments{
+  background: transparent;
+  border: 0;
   display: block;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
@@ -4457,12 +4463,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   justify-content: flex-end;
 }
 
-#historyEntryNoteOverlay .historyEntrySummaryDivider{
-  height: 2px;
-  background: rgba(255,255,255,.18);
-  width: 100%;
-}
-
 @media (max-width: 640px){
 #historyEntryNoteOverlay{
     align-items: flex-start;
@@ -4484,18 +4484,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
       padding: 12px;
     }
 
-#historyEntryNoteOverlay .historyEntrySummaryHero{
-      padding:12px var(--history-entry-note-shell-pad-x) 10px;
-    }
-
-#historyEntryNoteOverlay .historyEntrySummaryHeroTop,
-  #historyEntryNoteOverlay .historyEntrySummarySessionHead{
+#historyEntryNoteOverlay .historyEntrySummaryAggregateCard,
+  #historyEntryNoteOverlay .historyEntrySummarySessionLayout{
       grid-template-columns: minmax(0, 1fr);
-      display:grid;
+      gap: 10px;
     }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionCard{
       position: relative;
+      padding: 10px;
+    }
+
+#historyEntryNoteOverlay .historyEntrySummarySessionHead{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
     }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
@@ -4513,20 +4515,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
       align-items: center;
     }
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroValue{
-      font-size:30px;
-    }
-
 #historyEntryNoteOverlay .historyEntrySummarySessionElapsed{
-      font-size:22px;
+      font-size:16px;
     }
 
-#historyEntryNoteOverlay .historyEntrySummaryHeroStats{
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-#historyEntryNoteOverlay .historyEntrySummaryGrid{
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+#historyEntryNoteOverlay .historyEntrySummaryAggregateMetrics,
+  #historyEntryNoteOverlay .historyEntrySummaryGrid{
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
     }
 
@@ -4537,7 +4532,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay .historyEntrySummaryLabel{
       font-size: 9px;
       letter-spacing: 0;
-      white-space: nowrap;
+      white-space: normal;
     }
 
 #historyEntryNoteOverlay .historyEntrySummaryValue{
@@ -7952,8 +7947,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .modal.onboardingChronotypeSelectionModal{
-  padding-right: clamp(14px, 3vw, 32px) !important;
-  padding-left: clamp(14px, 3vw, 32px) !important;
+  padding-right: clamp(14px, 4vw, 40px) !important;
+  padding-left: clamp(14px, 4vw, 40px) !important;
 }
 
 #onboardingOverlay .modal.onboardingChronotypeResultSummaryModal{
@@ -8007,7 +8002,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .modal > .onboardingContentChronotypeSelection{
-  width: min(100%, 668px);
+  width: min(100%, 760px);
 }
 
 #onboardingOverlay .modal > .onboardingContentChronotypeResultSummary{
@@ -8133,6 +8128,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   white-space: pre-line;
 }
 
+#onboardingOverlay .onboardingHoursSubtext:not(.onboardingHoursFineTuneSubtext){
+  margin-bottom: 14px;
+}
+
+#onboardingOverlay .onboardingHoursFineTuneSubtext{
+  font-size: 11px;
+  font-style: italic;
+  margin-bottom: 32px;
+}
+
 #onboardingOverlay .onboardingHoursHeadingSummary{
   --onboarding-chronotype-summary-reveal-delay: 0ms;
   align-items: center;
@@ -8177,8 +8182,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingGreetingStepLead,
+#onboardingOverlay .onboardingGreetingStepSublead{
+  display: inline-block;
+}
+
 #onboardingOverlay .onboardingGreetingStepAlias{
   display: block;
+}
+
+#onboardingOverlay .onboardingGreetingStepSublead{
+  font-size: 18px;
+  margin-left: 8px;
 }
 
 #onboardingOverlay .onboardingGreetingStepAlias{
@@ -8250,6 +8264,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     max-width: 520px;
     width: min(100%, 520px) !important;
   }
+
 }
 
 #onboardingOverlay .onboardingUsernameSubtext,
@@ -8682,10 +8697,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingChronotypeTileImageFrame{
   align-items: center;
   display: flex;
-  height: 88px;
+  height: 104px;
   justify-content: center;
   overflow: hidden;
-  width: 88px;
+  width: 104px;
 }
 
 #onboardingOverlay .onboardingChronotypeTileImage{
@@ -8766,6 +8781,441 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal3 .onboardingChronotypeTile.isSelected{
   transform: translate(calc(-50% - 7px), calc(-50% - 7px)) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeSelectionHeader{
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin: 0 auto clamp(18px, 2.6vh, 28px);
+  text-align: center;
+  width: min(100%, 760px);
+}
+
+#onboardingOverlay .onboardingChronotypeSelectionTitle{
+  animation: onboardingGreetingTitleReveal 500ms ease-out 200ms both;
+  color: #f8fbff;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.14;
+  margin: 0;
+  max-width: 650px;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, .22),
+    0 0 24px rgba(39, 191, 255, .12);
+}
+
+#onboardingOverlay .onboardingChronotypeSelectionTitleAccent{
+  color: #c9ff24;
+  display: inline-block;
+  font-size: 36px;
+  text-shadow:
+    0 0 12px rgba(201, 255, 36, .42),
+    0 0 28px rgba(201, 255, 36, .22);
+}
+
+@media (min-width: 981px){
+  #onboardingOverlay .onboardingChronotypeSelectionTitleAccent{
+    display: block;
+  }
+}
+
+#onboardingOverlay .onboardingChronotypeSelectionDivider{
+  animation: onboardingGreetingDividerReveal 500ms ease-out both;
+  margin: 2px auto 0;
+  max-width: 100%;
+  width: 100% !important;
+}
+
+#onboardingOverlay .onboardingChronotypeSelectionSubtitle{
+  animation: onboardingIntroSubtextReveal 500ms ease-out 500ms both;
+  color: rgba(221, 230, 240, .78);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.32;
+  margin: 0;
+  max-width: 600px;
+  padding-bottom: 32px;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid{
+  --onboarding-chronotype-card-height: 176px;
+  --onboarding-chronotype-card-gap: 12px;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(var(--onboarding-chronotype-card-height), 1fr));
+  max-height: calc((var(--onboarding-chronotype-card-height) * 2) + var(--onboarding-chronotype-card-gap));
+  transition: max-height 360ms cubic-bezier(.22,.78,.2,1);
+  width: min(100%, 760px) !important;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection{
+  max-height: calc((var(--onboarding-chronotype-card-height) * 2) + var(--onboarding-chronotype-card-gap));
+  overflow: visible;
+  transition-delay: 820ms;
+}
+
+#onboardingOverlay .onboardingChronotypeTile{
+  --accent: var(--onboarding-chronotype-accent, #c9ff24);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .018) 46%, rgba(255, 255, 255, .045)),
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 17%, transparent) 0%, transparent 34%),
+    rgba(9, 17, 21, .66);
+  border: 1px solid rgba(196, 210, 224, .28) !important;
+  border-radius: 0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -1px 0 rgba(255, 255, 255, .04),
+    0 18px 42px rgba(0, 0, 0, .36),
+    0 0 24px color-mix(in srgb, var(--accent) 12%, transparent);
+  color: rgba(248, 251, 255, .94);
+  gap: 18px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  min-height: var(--onboarding-chronotype-card-height);
+  overflow: hidden;
+  padding: 16px 18px;
+  transition:
+    opacity 260ms ease,
+    transform 360ms cubic-bezier(.22,.78,.2,1),
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
+}
+
+#onboardingOverlay .onboardingChronotypeTile::before{
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .2), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .12), transparent 26%);
+  border-radius: 0;
+  content: "";
+  inset: 1px;
+  opacity: .48;
+  pointer-events: none;
+  position: absolute;
+}
+
+#onboardingOverlay .onboardingChronotypeTile:hover,
+#onboardingOverlay .onboardingChronotypeTile:focus-visible{
+  border-color: var(--accent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    0 20px 46px rgba(0, 0, 0, .4),
+    0 0 30px color-mix(in srgb, var(--accent) 26%, transparent);
+  color: #fff;
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  outline-offset: 3px;
+}
+
+#onboardingOverlay .onboardingChronotypeClock{
+  align-items: center;
+  display: flex;
+  height: 118px;
+  justify-content: center;
+  position: relative;
+  width: 118px;
+}
+
+#onboardingOverlay .onboardingChronotypeClock::before,
+#onboardingOverlay .onboardingChronotypeClock::after{
+  border: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  border-radius: 0;
+  content: "";
+  inset: 10px;
+  opacity: .55;
+  position: absolute;
+}
+
+#onboardingOverlay .onboardingChronotypeClock::after{
+  border-color: transparent;
+  border-left-color: color-mix(in srgb, var(--accent) 68%, transparent);
+  border-right-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  inset: 0;
+  opacity: .42;
+  transform: rotate(22deg);
+}
+
+#onboardingOverlay .onboardingChronotypeClockMarker{
+  color: var(--accent);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  position: absolute;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 42%, transparent);
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMarker12{
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+#onboardingOverlay .onboardingChronotypeClockMarker3{
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#onboardingOverlay .onboardingChronotypeClockMarker6{
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#onboardingOverlay .onboardingChronotypeClockMarker9{
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#onboardingOverlay .onboardingChronotypeClockFace{
+  background:
+    radial-gradient(circle at 50% 72%, rgba(255, 174, 60, .96) 0 9%, transparent 10%),
+    linear-gradient(180deg, #2e1c72 0%, #7d3a98 48%, #fd8c54 76%, #321143 100%);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, rgba(255, 255, 255, .22));
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 26px rgba(255, 255, 255, .12),
+    0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
+  height: 86px;
+  overflow: hidden;
+  position: relative;
+  width: 86px;
+  z-index: 2;
+}
+
+#onboardingOverlay .onboardingChronotypeClockTicks{
+  background:
+    repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .75) 0deg 1.2deg, transparent 1.2deg 30deg);
+  border-radius: 0;
+  inset: 7px;
+  -webkit-mask-image: radial-gradient(circle, transparent 0 43%, #000 44% 47%, transparent 48%);
+  mask-image: radial-gradient(circle, transparent 0 43%, #000 44% 47%, transparent 48%);
+  opacity: .78;
+  position: absolute;
+  z-index: 5;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMoon{
+  background: #fff6ff;
+  border-radius: 0;
+  box-shadow:
+    0 0 18px rgba(255, 226, 255, .68),
+    -7px 8px 18px rgba(255, 145, 224, .25);
+  height: 32px;
+  left: 27px;
+  position: absolute;
+  top: 18px;
+  width: 32px;
+  z-index: 4;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMoon::after{
+  background: #2e1c72;
+  border-radius: 0;
+  content: "";
+  height: 34px;
+  left: 12px;
+  position: absolute;
+  top: -4px;
+  width: 34px;
+}
+
+#onboardingOverlay .onboardingChronotypeClockSun{
+  background: #fff06a;
+  border-radius: 0;
+  box-shadow:
+    0 0 20px rgba(255, 240, 106, .82),
+    0 0 46px rgba(255, 202, 72, .42);
+  height: 26px;
+  left: 50%;
+  opacity: 0;
+  position: absolute;
+  top: 32px;
+  transform: translateX(-50%);
+  width: 26px;
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMountains{
+  bottom: 0;
+  clip-path: polygon(0 100%, 0 68%, 17% 54%, 29% 68%, 45% 39%, 62% 68%, 78% 49%, 100% 72%, 100% 100%);
+  height: 42px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 4;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMountainsBack{
+  background: linear-gradient(180deg, rgba(105, 182, 209, .72), rgba(25, 61, 93, .96));
+  bottom: 15px;
+  opacity: .75;
+  transform: scaleX(1.08);
+  z-index: 2;
+}
+
+#onboardingOverlay .onboardingChronotypeClockMountainsFront{
+  background: linear-gradient(180deg, rgba(38, 45, 94, .95), rgba(7, 12, 32, .98));
+}
+
+#onboardingOverlay .onboardingChronotypeClockWater,
+#onboardingOverlay .onboardingChronotypeClockCity{
+  display: none;
+}
+
+#onboardingOverlay .onboardingChronotypeClock-sun .onboardingChronotypeClockFace{
+  background:
+    radial-gradient(circle at 50% 43%, rgba(255, 245, 103, .95) 0 12%, transparent 13%),
+    radial-gradient(circle at 50% 44%, rgba(255, 238, 94, .3) 0 34%, transparent 35%),
+    linear-gradient(180deg, #0865bd 0%, #27bfff 48%, #c6f0ff 73%, #113a61 100%);
+}
+
+#onboardingOverlay .onboardingChronotypeClock-sun .onboardingChronotypeClockSun,
+#onboardingOverlay .onboardingChronotypeClock-teal .onboardingChronotypeClockSun{
+  opacity: 1;
+}
+
+#onboardingOverlay .onboardingChronotypeClock-sun .onboardingChronotypeClockMoon,
+#onboardingOverlay .onboardingChronotypeClock-teal .onboardingChronotypeClockMoon{
+  display: none;
+}
+
+#onboardingOverlay .onboardingChronotypeClock-teal .onboardingChronotypeClockFace{
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 245, 126, .92) 0 11%, transparent 12%),
+    linear-gradient(180deg, #087d88 0%, #14e7d3 48%, #9bf6d7 70%, #0b4559 100%);
+}
+
+#onboardingOverlay .onboardingChronotypeClock-teal .onboardingChronotypeClockWater{
+  background:
+    linear-gradient(180deg, rgba(141, 255, 230, .5), rgba(16, 77, 108, .9)),
+    repeating-linear-gradient(170deg, rgba(255, 255, 255, .22) 0 1px, transparent 1px 8px);
+  bottom: 0;
+  display: block;
+  height: 34px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeClock-late .onboardingChronotypeClockFace{
+  background:
+    radial-gradient(circle at 54% 76%, rgba(255, 119, 72, .95) 0 9%, transparent 10%),
+    linear-gradient(180deg, #201061 0%, #552278 48%, #f06a71 76%, #170922 100%);
+}
+
+#onboardingOverlay .onboardingChronotypeClock-late .onboardingChronotypeClockCity{
+  background:
+    linear-gradient(90deg, transparent 0 68%, rgba(8, 8, 28, .96) 68% 73%, transparent 73% 76%, rgba(8, 8, 28, .96) 76% 83%, transparent 83% 86%, rgba(8, 8, 28, .96) 86% 94%, transparent 94%),
+    linear-gradient(180deg, transparent 0 56%, rgba(8, 8, 28, .96) 56% 100%);
+  bottom: 0;
+  display: block;
+  height: 62px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 5;
+}
+
+#onboardingOverlay .onboardingChronotypeTileBody{
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
+#onboardingOverlay .onboardingChronotypeTileTitle{
+  color: var(--accent);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 15.12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.08;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+#onboardingOverlay .onboardingChronotypeTileDescription{
+  color: rgba(248, 251, 255, .9);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.28;
+  max-width: 480px;
+}
+
+#onboardingOverlay .onboardingChronotypeSelectedBadge{
+  background: #c9ff24;
+  border-radius: 0;
+  box-shadow:
+    0 0 18px rgba(201, 255, 36, .6),
+    0 0 36px rgba(201, 255, 36, .28);
+  height: 22px;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 22px;
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeSelectedBadge::before{
+  border-bottom: 2px solid #07100b;
+  border-right: 2px solid #07100b;
+  content: "";
+  height: 8px;
+  left: 8px;
+  position: absolute;
+  top: 5px;
+  transform: rotate(45deg);
+  width: 4px;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTile.isSelected,
+#onboardingOverlay .onboardingChronotypeTile.selected{
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), rgba(255, 255, 255, .035) 44%, color-mix(in srgb, var(--accent) 6%, transparent)),
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 28%, transparent) 0%, transparent 38%),
+    rgba(18, 26, 19, .72);
+  border-color: var(--accent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .25),
+    0 20px 50px rgba(0, 0, 0, .42),
+    0 0 0 1px color-mix(in srgb, var(--accent) 44%, transparent),
+    0 0 34px color-mix(in srgb, var(--accent) 34%, transparent);
+  color: #fff;
+  transition-delay: 0ms, 820ms, 0ms, 0ms, 0ms, 0ms;
+  width: 100%;
+  z-index: 3;
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal0 .onboardingChronotypeTile.isSelected{
+  transform: translate(calc(50% + (var(--onboarding-chronotype-card-gap) / 2)), calc(50% + (var(--onboarding-chronotype-card-gap) / 2))) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal1 .onboardingChronotypeTile.isSelected{
+  transform: translate(calc(-50% - (var(--onboarding-chronotype-card-gap) / 2)), calc(50% + (var(--onboarding-chronotype-card-gap) / 2))) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal2 .onboardingChronotypeTile.isSelected{
+  transform: translate(calc(50% + (var(--onboarding-chronotype-card-gap) / 2)), calc(-50% - (var(--onboarding-chronotype-card-gap) / 2))) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileGrid.hasSelection .onboardingChronotypeTileReveal3 .onboardingChronotypeTile.isSelected{
+  transform: translate(calc(-50% - (var(--onboarding-chronotype-card-gap) / 2)), calc(-50% - (var(--onboarding-chronotype-card-gap) / 2))) scale(1.04);
+}
+
+#onboardingOverlay .onboardingChronotypeTileText,
+#onboardingOverlay .onboardingChronotypeTileTextLead{
+  display: none;
 }
 
 @keyframes onboardingGreetingDividerReveal{
@@ -9270,6 +9720,22 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   --onboarding-hours-clock-accent: #ffd400;
 }
 
+#onboardingOverlay .onboardingHoursTimeGrid .onboardingField{
+  padding-top: 8px;
+  position: relative;
+}
+
+#onboardingOverlay .onboardingHoursTimeGrid .onboardingField > label{
+  left: 50%;
+  line-height: 1;
+  margin: 0 !important;
+  pointer-events: none;
+  position: absolute;
+  top: 8px;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
 #onboardingOverlay .onboardingHoursTimeGrid[data-chronotype-summary="bear"]{
   --onboarding-hours-clock-accent: #1594ff;
 }
@@ -9483,7 +9949,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingProductivityDaysHelp{
   color: rgba(238, 242, 246, .74);
-  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 13px;
   line-height: 1.45;
   margin: 8px auto 0;
@@ -9518,12 +9984,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingDayPillWeekRow{
-  grid-template-columns: repeat(5, 56px);
+  grid-template-columns: repeat(5, 58px);
   padding-top: 12px;
 }
 
 #onboardingOverlay .onboardingDayPillWeekendRow{
-  grid-template-columns: repeat(2, 56px);
+  grid-template-columns: repeat(2, 58px);
 }
 
 #onboardingOverlay .onboardingDayPillAllRow{
@@ -9534,21 +10000,34 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingDayPill{
   animation: onboardingDayPillReveal 160ms ease-out both;
   align-items: center;
-  background: rgba(170, 178, 190, .10);
-  border: 1px solid rgba(170, 178, 190, .44) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .072), rgba(255, 255, 255, .018) 48%, rgba(255, 255, 255, .044)),
+    rgba(13, 15, 19, .64);
+  border: 1px solid rgba(196, 210, 224, .28) !important;
   border-radius: 0 !important;
-  color: rgba(238, 242, 246, .82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .16),
+    inset 0 -1px 0 rgba(255, 255, 255, .035),
+    0 10px 24px rgba(0, 0, 0, .28);
+  color: rgba(248, 251, 255, .9);
   display: inline-flex;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 11px;
-  height: 30px;
+  font-weight: 800;
+  height: 42px;
   justify-content: center;
   letter-spacing: 0;
   min-width: 0;
-  padding: 7px 10px;
+  overflow: hidden;
+  padding: 0 14px;
   position: relative;
   text-align: center;
+  text-shadow: 0 0 10px rgba(255, 255, 255, .12);
+  text-transform: uppercase;
   transition:
+    background 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
     color 160ms ease,
@@ -9558,57 +10037,39 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill,
 #onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill{
-  align-items: flex-end;
-  background:
-    linear-gradient(180deg, rgba(255, 249, 232, .28), rgba(117, 78, 39, .08)),
-    radial-gradient(circle at 22% 24%, rgba(255, 255, 255, .18) 0 1px, transparent 1.8px),
-    radial-gradient(circle at 78% 64%, rgba(74, 47, 24, .13) 0 1px, transparent 2px),
-    linear-gradient(135deg, #d6b083 0%, #c79864 48%, #b9864f 100%);
-  border-color: rgba(79, 52, 29, .62) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .34),
-    inset 0 -10px 18px rgba(82, 52, 25, .12),
-    0 8px 18px rgba(0, 0, 0, .22);
-  color: #24170c;
-  font-size: 10px;
-  font-weight: 900;
-  height: 70px;
-  justify-content: center;
-  overflow: visible;
-  padding: 26px 6px 12px;
-  text-shadow: 0 1px 0 rgba(255, 239, 207, .42);
+  height: 42px;
+  padding: 0 8px;
 }
 
-#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill::before,
-#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill::before{
-  background:
-    linear-gradient(90deg, #050607 0 3px, #4d4f54 3px 5px, #050607 5px 8px),
-    linear-gradient(180deg, #0b0c0f, #2c2f35);
-  border: 1px solid rgba(255, 255, 255, .18);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, .64),
-    0 2px 3px rgba(0, 0, 0, .38);
+#onboardingOverlay .onboardingDayPill::before{
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
   content: "";
-  height: 22px;
-  left: 50%;
+  height: 8px;
+  opacity: 0;
   position: absolute;
-  top: -11px;
-  transform: translateX(-50%);
-  width: 10px;
+  right: 7px;
+  top: 7px;
+  transform: rotate(45deg);
+  transition: opacity 140ms ease;
+  width: 5px;
+  z-index: 1;
 }
 
-#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill::after,
-#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill::after{
-  background: rgba(255, 236, 199, .88);
-  border: 1px solid rgba(76, 48, 24, .38);
-  box-shadow: inset 0 1px 2px rgba(69, 42, 19, .3);
+#onboardingOverlay .onboardingDayPill::after{
+  background:
+    linear-gradient(180deg, transparent 0, rgba(196, 210, 224, .76) 0 100%, transparent 100%) 4px 0 / 2px 8px no-repeat,
+    linear-gradient(180deg, transparent 0, rgba(196, 210, 224, .76) 0 100%, transparent 100%) calc(100% - 6px) 0 / 2px 8px no-repeat;
   content: "";
   height: 8px;
   left: 50%;
+  opacity: .88;
+  pointer-events: none;
   position: absolute;
-  top: 10px;
+  top: -4px;
   transform: translateX(-50%);
-  width: 8px;
+  width: 24px;
+  z-index: 1;
 }
 
 #onboardingOverlay .onboardingDayPillReveal0{
@@ -9651,53 +10112,59 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-#onboardingOverlay .onboardingDayPill:hover,
-#onboardingOverlay .onboardingDayPill:focus-visible{
+#onboardingOverlay .onboardingDayPill:not(.isSelected):hover,
+#onboardingOverlay .onboardingDayPill:not(.isSelected):focus-visible{
   border-color: var(--accent) !important;
   color: var(--accent);
-  outline: none;
+  outline: 1px solid color-mix(in srgb, var(--accent) 68%, transparent);
+  outline-offset: 2px;
+  transform: translateY(-1px);
 }
 
-#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill:hover,
-#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill:focus-visible,
-#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill:hover,
-#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill:focus-visible{
+#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill:not(.isSelected):hover,
+#onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill:not(.isSelected):focus-visible,
+#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill:not(.isSelected):hover,
+#onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill:not(.isSelected):focus-visible{
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .34),
-    inset 0 -10px 18px rgba(82, 52, 25, .12),
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 10px 22px rgba(0, 0, 0, .26);
-  color: #050607;
-  transform: translateY(-2px);
+    inset 0 1px 0 rgba(255, 255, 255, .2),
+    0 0 0 1px rgba(201, 255, 36, .22),
+    0 12px 28px rgba(0, 0, 0, .34),
+    0 0 24px rgba(201, 255, 36, .14);
 }
 
 #onboardingOverlay .onboardingDayPill.isSelected{
+  background:
+    linear-gradient(135deg, rgba(201, 255, 36, .17), rgba(255, 255, 255, .028) 44%, rgba(201, 255, 36, .08)),
+    rgba(16, 24, 18, .76);
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px rgba(201, 255, 36, .26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    0 12px 28px rgba(0, 0, 0, .34),
+    0 0 28px rgba(201, 255, 36, .2);
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 900;
+}
+
+#onboardingOverlay .onboardingDayPill.isSelected:active,
+#onboardingOverlay .onboardingDayPill.isSelected:focus,
+#onboardingOverlay .onboardingDayPill.isSelected:focus-visible{
+  outline: none;
+  transform: none;
+}
+
+#onboardingOverlay .onboardingDayPill.isSelected::before{
+  opacity: 1;
 }
 
 #onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill.isSelected,
 #onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill.isSelected{
-  background:
-    linear-gradient(180deg, rgba(201, 255, 36, .2), rgba(201, 255, 36, .04) 16%, transparent 30%),
-    linear-gradient(180deg, rgba(255, 249, 232, .28), rgba(117, 78, 39, .08)),
-    radial-gradient(circle at 22% 24%, rgba(255, 255, 255, .18) 0 1px, transparent 1.8px),
-    radial-gradient(circle at 78% 64%, rgba(74, 47, 24, .13) 0 1px, transparent 2px),
-    linear-gradient(135deg, #d6b083 0%, #c79864 48%, #b9864f 100%);
-  box-shadow:
-    inset 0 4px 0 var(--accent),
-    inset 0 1px 0 rgba(255, 255, 255, .34),
-    inset 0 -10px 18px rgba(82, 52, 25, .12),
-    0 0 0 1px rgba(201, 255, 36, .34),
-    0 12px 24px rgba(0, 0, 0, .3);
-  color: #050607;
-  font-weight: 900;
+  color: var(--accent);
 }
 
 #onboardingOverlay .onboardingDayPillAllRow .onboardingDayPill.isSelected{
-  background: rgba(201, 255, 36, .12);
+  background:
+    linear-gradient(135deg, rgba(201, 255, 36, .17), rgba(255, 255, 255, .028) 44%, rgba(201, 255, 36, .08)),
+    rgba(16, 24, 18, .76);
 }
 
 #onboardingOverlay .modalCheckboxRow{
@@ -9843,6 +10310,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .modal > :not(.onboardingSkipLink){
     width: 100%;
+  }
+
+  #onboardingOverlay .onboardingGreetingDivider,
+  #onboardingOverlay .onboardingDaysDivider{
+    max-width: 100%;
+    width: 100% !important;
   }
 
   #onboardingOverlay .onboardingContent{
@@ -10000,22 +10473,26 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
   #onboardingOverlay .onboardingChronotypeTileGrid{
-    --onboarding-chronotype-mobile-card-height: 124px;
-    --onboarding-chronotype-mobile-gap: 10px;
-    gap: 10px;
+    --onboarding-chronotype-card-height: var(--onboarding-chronotype-mobile-card-height);
+    --onboarding-chronotype-card-gap: var(--onboarding-chronotype-mobile-gap);
+    --onboarding-chronotype-mobile-card-height: 112px;
+    --onboarding-chronotype-mobile-gap: 12px;
+    gap: var(--onboarding-chronotype-mobile-gap);
     grid-template-columns: 1fr;
     grid-template-rows: none;
+    max-height: calc((var(--onboarding-chronotype-mobile-card-height) * 4) + (var(--onboarding-chronotype-mobile-gap) * 3));
     max-width: 360px;
   }
 
   #onboardingOverlay .onboardingChronotypeTileGrid.hasSelection{
+    max-height: calc((var(--onboarding-chronotype-mobile-card-height) * 4) + (var(--onboarding-chronotype-mobile-gap) * 3));
     min-height: 0;
   }
 
   #onboardingOverlay .onboardingChronotypeTile{
     gap: 12px;
     grid-template-columns: 86px minmax(0, 1fr);
-    min-height: 124px;
+    min-height: var(--onboarding-chronotype-mobile-card-height);
     padding: 8px;
     transition:
       opacity 320ms ease,
@@ -10066,6 +10543,122 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     transform: translateY(calc((var(--onboarding-chronotype-mobile-card-height) + var(--onboarding-chronotype-mobile-gap)) * -1.5)) scale(1.04);
   }
 
+  #onboardingOverlay .onboardingChronotypeSelectionHeader{
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeSelectionTitle{
+    font-size: 18px;
+    line-height: 1.12;
+  }
+
+  #onboardingOverlay .onboardingChronotypeSelectionDivider{
+    margin-top: 1px;
+    max-width: 100%;
+    width: 100% !important;
+  }
+
+  #onboardingOverlay .onboardingChronotypeSelectionSubtitle{
+    max-width: 320px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileGrid{
+    gap: 12px;
+    max-width: 370px;
+    width: min(100%, 370px) !important;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTile{
+    border-radius: 0 !important;
+    gap: 9px;
+    grid-template-columns: 78px minmax(0, 1fr);
+    min-height: 112px;
+    padding: 10px 12px 10px 10px;
+    transition:
+      opacity 260ms ease,
+      transform 360ms cubic-bezier(.22,.78,.2,1),
+      border-color 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClock{
+    height: 72px;
+    width: 72px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClock::before{
+    inset: 6px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockFace{
+    height: 54px;
+    width: 54px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockMarker{
+    font-size: 9px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockMoon{
+    height: 21px;
+    left: 16px;
+    top: 12px;
+    width: 21px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockMoon::after{
+    height: 23px;
+    left: 8px;
+    top: -3px;
+    width: 23px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockSun{
+    height: 17px;
+    top: 20px;
+    width: 17px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockMountains{
+    height: 28px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeClockMountainsBack{
+    bottom: 10px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileBody{
+    gap: 4px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileTitle{
+    font-size: 15.12px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeTileDescription{
+    font-size: clamp(9px, 2.9vw, 11px);
+    line-height: 1.22;
+  }
+
+  #onboardingOverlay .onboardingChronotypeSelectedBadge{
+    height: 22px;
+    right: 8px;
+    top: 8px;
+    width: 22px;
+  }
+
+  #onboardingOverlay .onboardingChronotypeSelectedBadge::before{
+    border-bottom-width: 2px;
+    border-right-width: 2px;
+    height: 8px;
+    left: 8px;
+    top: 5px;
+    width: 4px;
+  }
+
   #onboardingOverlay .onboardingUsernameRow{
     flex-direction: column;
     gap: 12px;
@@ -10097,13 +10690,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingDayPill{
     font-size: 10px;
-    padding: 7px 6px;
+    height: 40px;
+    padding: 0 8px;
   }
 
   #onboardingOverlay .onboardingDayPillWeekRow .onboardingDayPill,
   #onboardingOverlay .onboardingDayPillWeekendRow .onboardingDayPill{
-    height: 64px;
-    padding: 24px 6px 10px;
+    height: 40px;
+    padding: 0 6px;
   }
 }
 

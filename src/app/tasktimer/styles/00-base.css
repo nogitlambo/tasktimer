@@ -1222,7 +1222,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   background: transparent !important;
   box-shadow:none !important;
   color: rgba(235,245,255,.92);
-  font-size:12px;
+  font-size:9px;
   line-height:1;
   cursor:pointer;
   vertical-align:middle;
@@ -1429,7 +1429,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
     border:none !important;
     background: transparent !important;
     box-shadow:none !important;
-    font-size:12px;
+    font-size:9px;
     line-height:1;
     font-weight:700;
     letter-spacing:.06em;

@@ -85,8 +85,27 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
         steps: [
           "Open Tasks.",
           "Use Add Task and enter a clear task name.",
+          "Choose Schedule this task only if you want it placed on the Schedule view.",
           "Start the task when you begin working.",
           "Stop the task when the session ends so elapsed time and XP can be recorded.",
+        ],
+      },
+      {
+        title: "Edit task setup",
+        steps: [
+          "Open the task action menu.",
+          "Choose Edit.",
+          "Update the task name, milestone, checkpoint alerts, schedule details, or color.",
+          "Save and confirm the task card still shows the expected setup.",
+        ],
+      },
+      {
+        title: "Add missed work time",
+        steps: [
+          "Open the task action menu.",
+          "Choose Manual Entry.",
+          "Enter the date, start time, elapsed time, and optional session note.",
+          "Save the entry, then open History if you want to confirm it was recorded.",
         ],
       },
       {
@@ -95,6 +114,15 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Open the task action menu.",
           "Choose History to expand inline history.",
           "Select View Summary for a session summary or pin the chart if you want it to reopen later.",
+        ],
+      },
+      {
+        title: "Share or export a task",
+        steps: [
+          "Open the task action menu.",
+          "Choose Share Task when you want a friend to see the selected task summary.",
+          "Choose Export Task when you need a file copy of the task data.",
+          "Review the confirmation text before applying the action.",
         ],
       },
     ],
@@ -120,10 +148,30 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
       {
         title: "Place a task on the schedule",
         steps: [
-          "Open Tasks and switch to Schedule.",
-          "Choose the task you want to place.",
-          "Move it to the intended day and time block.",
-          "Check the preview for overlaps before committing the placement.",
+          "Open Tasks.",
+          "Choose Schedule from the Tasks and Schedule switch.",
+          "Drag the scheduled task to the intended day and time block.",
+          "Use the preview position to check timing before you release the task.",
+          "If a conflict appears, choose whether to change the placement or keep the current plan.",
+        ],
+      },
+      {
+        title: "Create a scheduled task",
+        steps: [
+          "Open Tasks.",
+          "Use Add Task.",
+          "Turn on Schedule this task.",
+          "Choose the planned start, duration, and recurrence options.",
+          "Save the task and open Schedule to confirm the block appears where expected.",
+        ],
+      },
+      {
+        title: "Sort Tasks by schedule",
+        steps: [
+          "Open Tasks.",
+          "Open the task ordering menu.",
+          "Choose Schedule/Time.",
+          "Use the ordered task list to start the next scheduled item.",
         ],
       },
     ],
@@ -153,6 +201,15 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Review today and weekly progress.",
           "Check the task completion and activity cards for gaps.",
           "Return to Tasks and choose the next useful session.",
+        ],
+      },
+      {
+        title: "Read momentum and activity",
+        steps: [
+          "Open Dashboard after you have logged work sessions.",
+          "Use Momentum to see whether recent sessions are building consistency.",
+          "Use Activity Overview to spot days or times that are underrepresented.",
+          "Use the result as planning input, not as a score to chase.",
         ],
       },
     ],
@@ -193,6 +250,24 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Confirm only when the selected rows are exactly what you intend to remove.",
         ],
       },
+      {
+        title: "Sort and inspect history",
+        steps: [
+          "Open History Manager.",
+          "Use the Date/Time header to move between newest and oldest sessions.",
+          "Use the Elapsed header to find unusually short or long sessions.",
+          "Open a row summary when you need notes, timing, or session context.",
+        ],
+      },
+      {
+        title: "Analyse selected columns",
+        steps: [
+          "Open inline history from a task or History Manager where analysis is available.",
+          "Lock-select at least two columns.",
+          "Choose Analyse.",
+          "Review the comparison, then clear locks when you are done.",
+        ],
+      },
     ],
     tips: [
       "Sort Date/Time and Elapsed columns when auditing unusual history entries.",
@@ -220,6 +295,25 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Search or enter the username for the person you want to add.",
           "Send a request and wait for acceptance.",
           "Use the Friends screen to review incoming requests and current friends.",
+        ],
+      },
+      {
+        title: "Review a friend profile",
+        steps: [
+          "Open Friends.",
+          "Select a friend card or profile action.",
+          "Review their public profile, rank context, and shared task summaries.",
+          "Close the profile to return to Friends.",
+        ],
+      },
+      {
+        title: "Share task progress with a friend",
+        steps: [
+          "Open Tasks.",
+          "Open the task action menu for the task you want to share.",
+          "Choose Share Task.",
+          "Select the friend or sharing option shown in the modal.",
+          "Confirm only after checking what will be shared.",
         ],
       },
     ],
@@ -250,6 +344,24 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Use weekly and rival tabs to compare short-term progress.",
         ],
       },
+      {
+        title: "Switch leaderboard views",
+        steps: [
+          "Open Leaderboards.",
+          "Choose Global for all-time XP context.",
+          "Choose Weekly for the current weekly period.",
+          "Choose Rivals to compare against users near your rank.",
+        ],
+      },
+      {
+        title: "Open a leaderboard profile",
+        steps: [
+          "Open Leaderboards.",
+          "Select a visible user row, avatar, or profile target.",
+          "Review the public profile details.",
+          "Close the profile modal when finished.",
+        ],
+      },
     ],
     tips: [
       "Weekly views are better for fresh motivation; global views are long-term context.",
@@ -276,6 +388,24 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Open Account from the profile menu or mobile top bar avatar.",
           "Choose the avatar or username control you want to change.",
           "Save the change and wait for the profile sync notice.",
+        ],
+      },
+      {
+        title: "Sign out",
+        steps: [
+          "Open Account or the profile menu.",
+          "Choose Sign Out.",
+          "Confirm the sign-out prompt.",
+          "Wait for the app to clear the local workspace cache and land on Login.",
+        ],
+      },
+      {
+        title: "Delete account",
+        steps: [
+          "Open Account.",
+          "Read the always-visible Delete Account warning.",
+          "Expand the disclosure control to reveal the Delete Account button.",
+          "Follow the confirmation steps only if you intend to permanently delete the account.",
         ],
       },
     ],
@@ -315,6 +445,24 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Use History Manager, export/import, or reset tools according to the maintenance task you need.",
         ],
       },
+      {
+        title: "Change appearance",
+        steps: [
+          "Open Settings.",
+          "Choose Appearance.",
+          "Adjust display or menu button preferences.",
+          "Return to the app and confirm the updated appearance is readable.",
+        ],
+      },
+      {
+        title: "Configure alerts and notifications",
+        steps: [
+          "Open Settings.",
+          "Choose Sounds and Alerts or Notifications.",
+          "Turn on only the alerts you want to receive.",
+          "For mobile push alerts, allow the system permission prompt if the device asks.",
+        ],
+      },
     ],
     tips: [
       "Settings choices are meant to reduce friction; revisit them when your workflow changes.",
@@ -343,6 +491,16 @@ export const USER_GUIDE_MODULES: UserGuideModule[] = [
           "Add a short title and detailed reproduction steps or context.",
           "Paste screenshots into the details field when they clarify the issue.",
           "Submit after the form validation message is clear.",
+        ],
+      },
+      {
+        title: "Attach a screenshot",
+        steps: [
+          "Copy a PNG screenshot from your device.",
+          "Open Feedback.",
+          "Click inside the details field.",
+          "Paste the screenshot and wait for the attachment preview or status message.",
+          "Submit the feedback after the image and written context are both present.",
         ],
       },
     ],

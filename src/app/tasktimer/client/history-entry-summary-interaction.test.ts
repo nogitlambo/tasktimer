@@ -246,6 +246,11 @@ describe("createHistoryEntrySummaryInteraction", () => {
       { taskId: "task-1", ts: 2000, ms: 30000, name: "Focus", note: "B" },
     ]);
 
+    expect(h.body.innerHTML).toContain("historyEntrySummaryAggregateCard historyEntrySummarySharedCard");
+    expect(h.body.innerHTML).toContain("historyEntrySummaryAggregateTitle");
+    expect(h.body.innerHTML).toContain("Total Time");
+    expect(h.body.innerHTML).toContain("Sessions");
+    expect(h.body.innerHTML).toContain("2 sessions");
     expect(h.body.innerHTML).not.toContain('data-history-summary-action="trigger-xp-award"');
     expect(h.body.innerHTML.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(3);
     expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
@@ -275,6 +280,10 @@ describe("createHistoryEntrySummaryInteraction", () => {
       { taskId: "task-1", ts: 2000, ms: 30000, name: "Focus", note: "B" },
     ]);
 
+    expect(h.body.innerHTML).toContain("historyEntrySummarySessionCard historyEntrySummarySharedCard");
+    expect(h.body.innerHTML).toContain('data-history-summary-action="edit-note"');
+    expect(h.body.innerHTML).toContain('data-history-summary-action="delete-session"');
+    expect(h.body.innerHTML).toContain('data-history-summary-task-id="task-1"');
     expect(h.overlay.dataset.historyEntryEditable).toBe("false");
     expect(h.editBtn.style.display).toBe("none");
   });

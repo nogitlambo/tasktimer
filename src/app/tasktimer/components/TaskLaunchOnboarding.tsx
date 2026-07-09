@@ -90,6 +90,10 @@ export function shouldResetChronotypeChoiceForNavigation(currentStep: StepKey, n
   return currentStep === "chronotypeSelection" && nextIndex >= 0 && currentIndex >= 0 && nextIndex < currentIndex;
 }
 
+export function chronotypeChoiceAfterNavigation(currentStep: StepKey, nextStep: StepKey, currentChoiceId: OnboardingChronotypeChoiceId | "" = "") {
+  return shouldResetChronotypeChoiceForNavigation(currentStep, nextStep) ? "" : currentChoiceId;
+}
+
 export function onboardingBackNavigation(input: {
   activeStep: StepKey;
   chronotypeResultPhase: ChronotypeResultPhase;
@@ -135,65 +139,77 @@ export const ONBOARDING_CHRONOTYPE_OPTIONS = [
     id: "early-riser",
     label: "1",
     animal: "lion",
+    title: "Rises early",
+    peakWindow: "6 AM – 2 PM",
+    iconVariant: "early",
     imageSrc: "/onboarding/chronotype_lion.webp",
     thumbnailSrc: "/onboarding/chronotype_lion_thumbnail.webp",
-    accentColor: "#ffad33",
+    accentColor: "#ffb000",
     resultCopy: [
       "Your chronotype is similar to that of a lion.",
       "It may surprise you that only ~15% of people fall into this category.",
-      "Most productive - 9:00 AM to 2:00 PM",
+      "Most productive - 6:00 AM to 2:00 PM",
     ],
-    productivityStartTime: "09:00",
+    productivityStartTime: "06:00",
     productivityEndTime: "14:00",
-    description: "Rises early, tends to function best between early morning to early afternoon.",
+    description: "Best focus from early morning to early afternoon.",
   },
   {
     id: "sun-aligned",
     label: "2",
     animal: "bear",
+    title: "Wakes up with the sun",
+    peakWindow: "9 AM – 5 PM",
+    iconVariant: "sun",
     imageSrc: "/onboarding/chronotype_bear.webp",
     thumbnailSrc: "/onboarding/chronotype_bear_thumbnail.webp",
-    accentColor: "#4db8ff",
+    accentColor: "#27bfff",
     resultCopy: [
       "Your chronotype is similar to that of a bear.",
       "This is the most common chronotype, with ~55% of people in this category.",
-      "Most productive - 10:00 AM to 3:00 PM",
+      "Most productive - 9:00 AM to 5:00 PM",
     ],
-    productivityStartTime: "10:00",
-    productivityEndTime: "15:00",
-    description: "Wakes up with the sun. Most productive from mid-morning to late afternoon.",
+    productivityStartTime: "09:00",
+    productivityEndTime: "17:00",
+    description: "Most productive from mid-morning to late afternoon.",
   },
   {
     id: "light-sleeper",
     label: "4",
     animal: "dolphin",
+    title: "Light sleeper",
+    peakWindow: "12 PM – 7 PM",
+    iconVariant: "teal",
     imageSrc: "/onboarding/chronotype_dolphin.webp",
     thumbnailSrc: "/onboarding/chronotype_dolphin_thumbnail.webp",
-    accentColor: "#35d7dc",
+    accentColor: "#14e7d3",
     resultCopy: [
       "Your chronotype is similar to that of a dolphin.",
       "Dolphin chronotypes are less common, accounting for ~10-15% of people.",
-      "Most productive - 3:00 PM to 9:00 PM",
+      "Most productive - 12:00 PM to 7:00 PM",
     ],
-    productivityStartTime: "15:00",
-    productivityEndTime: "21:00",
-    description: "Light sleeper, prone to insomnia, and most productive from midday to early evening.",
+    productivityStartTime: "12:00",
+    productivityEndTime: "19:00",
+    description: "Energy builds later, with strongest focus from midday to early evening.",
   },
   {
     id: "night-owl",
     label: "3",
     animal: "wolf",
+    title: "Up late",
+    peakWindow: "4 PM – 11 PM",
+    iconVariant: "late",
     imageSrc: "/onboarding/chronotype_wolf.webp",
     thumbnailSrc: "/onboarding/chronotype_wolf_thumbnail.webp",
-    accentColor: "#b58cff",
+    accentColor: "#c45cff",
     resultCopy: [
       "Your chronotype is similar to that of a wolf.",
       "Wolf chronotypes account for ~15-30% of people.",
-      "Most productive - 5:00 PM to 11:00 PM",
+      "Most productive - 4:00 PM to 11:00 PM",
     ],
-    productivityStartTime: "17:00",
+    productivityStartTime: "16:00",
     productivityEndTime: "23:00",
-    description: "Night owl who struggles to wake up early and doesn't reach peak productivity until the evening.",
+    description: "Starts slower and reaches peak focus later in the day.",
   },
 ] as const;
 
@@ -210,7 +226,7 @@ export const ONBOARDING_LION_CHRONOTYPE_SUMMARY = {
   headingSuffix: "chronotypes.",
   bodyCopy: "Lions prefer to wake up early. They are disciplined starters and are often most productive in the first half of the day.",
   stats: [
-    { label: "Most Productive", value: "9 AM - 2 PM", accent: true },
+    { label: "Most Productive", value: "6 AM - 2 PM", accent: true },
   ],
 } as const;
 
@@ -226,7 +242,7 @@ export const ONBOARDING_BEAR_CHRONOTYPE_SUMMARY = {
   bodyCopy:
     "Bears tend to follow a steady daytime rhythm. They feel best with a balanced routine and are often most productive from late morning into the afternoon.",
   stats: [
-    { label: "Most Productive", value: "10 AM - 3 PM", accent: true },
+    { label: "Most Productive", value: "9 AM - 5 PM", accent: true },
   ],
 } as const;
 
@@ -242,7 +258,7 @@ export const ONBOARDING_DOLPHIN_CHRONOTYPE_SUMMARY = {
   bodyCopy:
     "Dolphins are light sleepers with a more sensitive rhythm. They often do best with flexible routines and can find their strongest focus from afternoon into evening.",
   stats: [
-    { label: "Most Productive", value: "3 PM - 9 PM", accent: true },
+    { label: "Most Productive", value: "12 PM - 7 PM", accent: true },
   ],
 } as const;
 
@@ -258,7 +274,7 @@ export const ONBOARDING_WOLF_CHRONOTYPE_SUMMARY = {
   bodyCopy:
     "Wolves naturally lean later in the day. They may struggle with early starts and often reach their strongest focus in the evening.",
   stats: [
-    { label: "Most Productive", value: "5 PM - 11 PM", accent: true },
+    { label: "Most Productive", value: "4 PM - 11 PM", accent: true },
   ],
 } as const;
 
@@ -356,6 +372,13 @@ export function toggleAllOnboardingProductivityDays(currentDays: unknown) {
   return normalized.length === DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS.length ? [] : Array.from(DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
 }
 
+export function toggleOnboardingProductivityDay(currentDays: unknown, day: DashboardWeekStart) {
+  const normalized = normalizeOnboardingProductivityDays(currentDays);
+  const hasDay = normalized.includes(day);
+  const next = hasDay ? normalized.filter((value) => value !== day) : normalized.concat(day);
+  return normalizeOnboardingProductivityDays(next);
+}
+
 export function resolveOnboardingChronotypeResult(choiceId: string) {
   return ONBOARDING_CHRONOTYPE_OPTIONS.find((option) => option.id === choiceId) || null;
 }
@@ -389,14 +412,6 @@ export function onboardingChronotypeResultSummary(choiceId: string) {
   return ONBOARDING_CHRONOTYPE_SUMMARIES.find((summary) => summary.choiceId === choiceId) || null;
 }
 
-function splitOnboardingChronotypeTileText(value: string) {
-  const [firstWord = "", secondWord = "", ...remainingWords] = value.trim().split(/\s+/);
-  return {
-    lead: [firstWord, secondWord].filter(Boolean).join(" "),
-    rest: remainingWords.join(" "),
-  };
-}
-
 export function seedOnboardingChronotypeHours(input: {
   selectedChronotypeChoiceId: string;
   currentStartTime: string;
@@ -418,7 +433,7 @@ export function seedOnboardingChronotypeHours(input: {
 
 const ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES = [
   "When you create scheduled tasks, TaskLaunch will automatically try to fit it within your productivity hours.",
-  "You can adjust these hours now, or from Settings/Preferences later.",
+  "Tap to adjust these hours now, or from the Settings/Preferences menu later.",
 ] as const;
 
 export function onboardingProductivityHoursSubtext() {
@@ -440,7 +455,7 @@ function alertUsernameError(message: string) {
 
 export function onboardingTitle(step: StepKey, username: string, selectedChronotypeChoiceId = "") {
   if (step === "username") return "Welcome";
-  if (step === "greeting") return `Good to meet you, ${username}!`;
+  if (step === "greeting") return `Great to meet you, ${username}!`;
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
   if (step === "chronotypeResult") return onboardingChronotypeResultTitle(selectedChronotypeChoiceId);
@@ -508,6 +523,7 @@ export function shouldShowOnboardingStepSubtext(step: StepKey) {
 }
 
 type OnboardingCustomPropertyStyle = CSSProperties & {
+  "--accent"?: string;
   "--onboarding-background-accent"?: string;
   "--onboarding-background-base"?: string;
   "--onboarding-background-reveal-accent"?: string;
@@ -863,7 +879,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     const nextStep = ONBOARDING_STEPS[nextIndex]?.key || activeStep;
     const advanceToNextStep = () => {
       if (shouldResetChronotypeChoiceForNavigation(activeStep, nextStep)) {
-        setSelectedChronotypeChoiceId("");
+        setSelectedChronotypeChoiceId(chronotypeChoiceAfterNavigation(activeStep, nextStep, selectedChronotypeChoiceId));
       }
       setStepIndex(nextIndex);
       setChronotypeResultPhase("summary");
@@ -876,7 +892,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       return;
     }
     advanceToNextStep();
-  }, [activeStep, chronotypeResultPhase, saveCurrentStep, stepIndex]);
+  }, [activeStep, chronotypeResultPhase, saveCurrentStep, selectedChronotypeChoiceId, stepIndex]);
 
   const handleBack = useCallback(() => {
     const backNavigation = onboardingBackNavigation({
@@ -906,12 +922,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   }, [closeWithState, saveCurrentStep, usernameConfirmed]);
 
   const toggleProductivityDay = (day: DashboardWeekStart) => {
-    setProductivityDays((current) => {
-      const normalized = normalizeOnboardingProductivityDays(current);
-      const hasDay = normalized.includes(day);
-      const next = hasDay ? normalized.filter((value) => value !== day) : normalized.concat(day);
-      return normalizeOnboardingProductivityDays(next);
-    });
+    setProductivityDays((current) => toggleOnboardingProductivityDay(current, day));
     setStatus("");
     setError("");
   };
@@ -1133,11 +1144,27 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 <p className="onboardingHoursHeadingLabel">Optimal Productivity Hours</p>
               </div>
             </section>
+          ) : isChronotypeSelectionStep ? (
+            <div className="onboardingChronotypeSelectionHeader" key={`onboarding-heading-${activeStep}`}>
+              <h2 className="onboardingChronotypeSelectionTitle">
+                <span>When do you feel most </span>
+                <span className="onboardingChronotypeSelectionTitleAccent">switched on?</span>
+              </h2>
+              <div
+                className="onboardingGreetingDivider onboardingDaysDivider onboardingChronotypeSelectionDivider"
+                key={`onboarding-divider-${activeStep}`}
+                aria-hidden="true"
+              />
+              <p className="onboardingChronotypeSelectionSubtitle">
+                Choose the rhythm that best describes you.
+              </p>
+            </div>
           ) : (
             <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
               {isGreetingStep ? (
                 <>
-                  <span className="onboardingGreetingStepLead">Hi,</span>
+                  <span className="onboardingGreetingStepLead">Great</span>
+                  <span className="onboardingGreetingStepSublead">to meet you,</span>
                   <span className="onboardingGreetingStepAlias">{onboardingGreetingName}</span>
                 </>
               ) : isChronotypeChoiceStep ? (
@@ -1164,7 +1191,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               </p>
             </>
           ) : null}
-          {!isGreetingStep && (!isChronotypeResultStep || isChronotypeHoursPhase) && activeStep !== "days" ? (
+          {!isGreetingStep && !isChronotypeSelectionStep && (!isChronotypeResultStep || isChronotypeHoursPhase) && activeStep !== "days" ? (
             <div
               className={`onboardingGreetingDivider onboardingDaysDivider${isChronotypeHoursPhase ? " onboardingHoursDivider" : ""}`}
               data-chronotype-summary={isChronotypeHoursPhase ? selectedChronotypeSummary?.animal : undefined}
@@ -1272,16 +1299,15 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => {
               const selected = option.id === selectedChronotypeChoiceId;
               const faded = !!selectedChronotypeChoiceId && !selected;
-              const descriptionParts = splitOnboardingChronotypeTileText(option.description);
               return (
                 <div className={`onboardingChronotypeTileReveal onboardingChronotypeTileReveal${optionIndex}`} key={option.id}>
                   <button
-                    className={`onboardingChronotypeTile${selected ? " isSelected" : ""}${faded ? " isFaded" : ""}`}
+                    className={`onboardingChronotypeTile${selected ? " isSelected selected" : ""}${faded ? " isFaded" : ""}`}
                     type="button"
                     role="radio"
                     aria-checked={selected}
                     aria-describedby={error ? ONBOARDING_CHRONOTYPE_ERROR_ID : undefined}
-                    style={{ "--onboarding-chronotype-accent": option.accentColor } as OnboardingCustomPropertyStyle}
+                    style={{ "--accent": option.accentColor, "--onboarding-chronotype-accent": option.accentColor } as OnboardingCustomPropertyStyle}
                     onClick={() => {
                       selectChronotypeChoice(option.id);
                     }}
@@ -1289,10 +1315,11 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                     <span className="onboardingChronotypeTileImageFrame" aria-hidden="true">
                       <AppImg className="onboardingChronotypeTileImage" src={option.imageSrc} alt="" width={128} height={128} />
                     </span>
-                    <span className="onboardingChronotypeTileText">
-                      <span className="onboardingChronotypeTileTextLead">{descriptionParts.lead}</span>
-                      {descriptionParts.rest ? ` ${descriptionParts.rest}` : ""}
+                    <span className="onboardingChronotypeTileBody">
+                      <span className="onboardingChronotypeTileTitle">{option.title}</span>
+                      <span className="onboardingChronotypeTileDescription">{option.description}</span>
                     </span>
+                    {selected ? <span className="onboardingChronotypeSelectedBadge" aria-hidden="true" /> : null}
                   </button>
                 </div>
               );
@@ -1372,6 +1399,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
         {isChronotypeHoursPhase ? (
           <>
+            <p className="modalSubtext onboardingHoursSubtext onboardingHoursFineTuneSubtext">{productivityHoursFineTuneSubtext}</p>
             <div className="onboardingTimeGrid onboardingHoursTimeGrid" data-chronotype-summary={selectedChronotypeSummary?.animal}>
               <div className="field modalDropdownField onboardingField">
                 <label htmlFor="onboardingStartTimeInput">Start</label>
@@ -1422,7 +1450,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 />
               </div>
             </div>
-            <p className="modalSubtext onboardingHoursSubtext">{productivityHoursFineTuneSubtext}</p>
           </>
         ) : null}
 

@@ -365,18 +365,17 @@ export function renderHistoryEntrySummaryHtml(
       </div>
     </div>`;
   };
-  const heroHtml = payload.aggregate
-    ? `<section class="historyEntrySummaryHero" aria-label="${escapeHtml(payload.titleText)} activity summary">
-        <div class="historyEntrySummaryHeroTop">
-          <div class="historyEntrySummaryHeroHeading">
-            <div class="historyEntrySummaryHeroEyebrow">Activity Summary</div>
-            <div class="historyEntrySummaryHeroDate">${escapeHtml(payload.aggregate.dateSpanText)}</div>
-          </div>
+  const aggregateHtml = payload.aggregate
+    ? `<section class="historyEntrySummaryAggregateCard historyEntrySummarySharedCard" aria-label="${escapeHtml(payload.titleText)} activity summary">
+        <div class="historyEntrySummaryAggregateInfo">
+          <div class="historyEntrySummarySectionTitle">Activity Summary</div>
+          <div class="historyEntrySummaryAggregateTitle">${escapeHtml(payload.titleText)}</div>
+          <div class="historyEntrySummaryMeta"><span class="historyEntrySummaryMetaLabel">Date Span:</span> ${escapeHtml(payload.aggregate.dateSpanText)}</div>
         </div>
-        <div class="historyEntrySummaryHeroLabel">Total Time Logged</div>
-        <div class="historyEntrySummaryHeroValue">${escapeHtml(payload.aggregate.totalElapsedText)}</div>
-        <div class="historyEntrySummaryHeroStats">
-          ${[renderXpField("Total XP", payload.aggregate.xpText)].join("")}
+        <div class="historyEntrySummaryAggregateMetrics">
+          ${renderField("Total Time", payload.aggregate.totalElapsedText)}
+          ${renderField("Sessions", payload.aggregate.sessionCountText)}
+          ${renderXpField("Total XP", payload.aggregate.xpText)}
         </div>
       </section>`
     : "";
@@ -388,27 +387,31 @@ export function renderHistoryEntrySummaryHtml(
         session.taskId && session.ts > 0 && session.name
           ? `<button class="iconBtn historyEntrySummaryDeleteBtn" type="button" aria-label="Delete session entry" title="Delete session entry" data-history-summary-action="delete-session" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}"><img class="historyEntrySummaryDeleteIcon" src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" /></button>`
           : "";
-      return `<section class="historyEntrySummarySessionCard" aria-label="Session ${escapeHtml(index + 1)}">
-        <div class="historyEntrySummarySessionHead">
-          <div class="historyEntrySummarySessionHeadMain">
-            ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
-            <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
-            ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}
-            <div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>
+      return `<section class="historyEntrySummarySessionCard historyEntrySummarySharedCard" aria-label="Session ${escapeHtml(index + 1)}">
+        <div class="historyEntrySummarySessionLayout">
+          <div class="historyEntrySummarySessionInfo">
+            <div class="historyEntrySummarySessionHead">
+              <div class="historyEntrySummarySessionHeadMain">
+                ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
+                <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
+                ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}
+                <div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>
+              </div>
+              ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
+            </div>
+            <div class="historyEntrySummaryGrid">
+              ${renderField("Time goal", session.timeGoalText)}
+              ${renderXpField("XP earned", session.xpText)}
+            </div>
           </div>
-          ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
-        </div>
-        <div class="historyEntrySummaryGrid">
-          ${renderField("Time goal", session.timeGoalText)}
-          ${renderXpField("XP earned", session.xpText)}
-        </div>
-        <div class="historyEntrySummaryNoteRow">
-          <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">
-            <div class="historyEntrySummaryLabel">Session note</div>
-            ${richNoteToolbarHtml(editorId)}
-            <div class="sessionNoteEditorGrid">
-              <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="${editorId}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">${session.hasNote ? session.noteText : ""}</div>
-              ${renderAttachmentList(session, editorId)}
+          <div class="historyEntrySummaryNoteRow">
+            <div class="historyEntrySummaryNoteBlock" role="button" tabindex="0" title="Click to edit session note" data-history-summary-action="edit-note" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">
+              <div class="historyEntrySummaryLabel">Session note</div>
+              ${richNoteToolbarHtml(editorId)}
+              <div class="sessionNoteEditorGrid">
+                <div class="historyEntrySummaryNoteText historyEntrySummaryNoteInput richNoteEditor" id="${editorId}" role="textbox" aria-multiline="true" contenteditable="false" aria-label="Session note" data-placeholder="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-rich-note-editor="true" data-history-summary-note-input="true" data-empty-note-placeholder-desktop="${escapeHtml(DESKTOP_EMPTY_NOTE_PLACEHOLDER)}" data-empty-note-placeholder-mobile="${escapeHtml(MOBILE_EMPTY_NOTE_PLACEHOLDER)}" data-history-summary-task-id="${escapeHtml(session.taskId)}" data-history-summary-ts="${escapeHtml(session.ts)}" data-history-summary-ms="${escapeHtml(session.ms)}" data-history-summary-name="${escapeHtml(session.name)}">${session.hasNote ? session.noteText : ""}</div>
+                ${renderAttachmentList(session, editorId)}
+              </div>
             </div>
           </div>
         </div>
@@ -417,8 +420,7 @@ export function renderHistoryEntrySummaryHtml(
     .join("");
 
   return `<div class="historyEntrySummaryLayout">
-    ${heroHtml}
-    ${payload.aggregate ? '<div class="historyEntrySummaryDivider" aria-hidden="true"></div>' : ""}
+    ${aggregateHtml}
     <div class="historyEntrySummarySessions${payload.aggregate ? "" : " historyEntrySummarySessionsSingle"}">${sessionsHtml}</div>
   </div>`;
 }

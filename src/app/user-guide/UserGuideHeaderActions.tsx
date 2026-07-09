@@ -27,16 +27,11 @@ export default function UserGuideHeaderActions() {
 
   if (isAuthenticated === null) return null;
 
-  if (isAuthenticated) return <PublicInfoBackButton />;
+  if (isAuthenticated) return <PublicInfoBackButton className="btn btn-ghost small" />;
 
   return (
-    <>
-      <Link href="/" className="landingV2HeaderBack displayFont">
-        Home
-      </Link>
-      <Link href="/login" className="landingV2HeaderBack displayFont">
+    <Link href="/login" className="btn btn-ghost small">
         Sign In
-      </Link>
-    </>
+    </Link>
   );
 }

@@ -3,7 +3,7 @@ import AppImg from "@/components/AppImg";
 export default function HistoryEntryNoteOverlay() {
   return (
     <div className="overlay" id="historyEntryNoteOverlay">
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Session Summary">
+      <div className="modal historyEntrySummaryModal" role="dialog" aria-modal="true" aria-label="Session Summary">
         <div className="historyEntryNoteHeader">
           <h2 id="historyEntryNoteTitle">Task</h2>
           <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
@@ -50,7 +50,7 @@ export default function HistoryEntryNoteOverlay() {
             <div className="sessionNoteAttachments" id="historyEntryNoteAttachments" aria-live="polite" />
           </div>
         </div>
-        <div className="confirmBtns">
+        <div className="confirmBtns historyEntrySummaryActions">
           <button className="btn btn-ghost" id="historyEntryNoteCancelBtn" type="button" style={{ display: "none" }}>
             Cancel
           </button>
@@ -60,7 +60,7 @@ export default function HistoryEntryNoteOverlay() {
           <button className="btn btn-accent historyEntryNoteSaveAndCloseBtn" id="historyEntryNoteSaveAndCloseBtn" type="button" style={{ display: "none" }}>
             Save &amp; Close
           </button>
-          <button className="btn btn-accent closePopup" type="button">
+          <button className="btn btn-ghost closePopup" type="button">
             Close
           </button>
         </div>
