@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import NativeAppUpdateGate from "./NativeAppUpdateGate";
 import { Orbitron } from "next/font/google";
 import TelemetryBootstrap from "./TelemetryBootstrap";
 import ThemeBootstrap from "./ThemeBootstrap";
@@ -74,6 +75,7 @@ export default function RootLayout({
         className="antialiased"
       >
         <ThemeBootstrap />
+        <NativeAppUpdateGate />
         <TelemetryBootstrap />
         {children}
       </body>

@@ -31,6 +31,7 @@ public class MainActivity extends BridgeActivity {
             () -> SystemClock.elapsedRealtime() - splashStartedAtMs < SPLASH_MIN_VISIBLE_MS
         );
         registerPlugin(FirebaseAuthenticationPlugin.class);
+        registerPlugin(TaskLaunchAppUpdatePlugin.class);
         registerPlugin(TaskLaunchTimerNotificationPlugin.class);
         registerPlugin(TaskLaunchFocusDndPlugin.class);
         super.onCreate(savedInstanceState);
