@@ -69,9 +69,6 @@ async function restoreApiDir() {
 
 async function restorePrimitivesDir() {
   if (!existsSync(stagedPrimitivesDir)) return;
-  if (existsSync(primitivesDir)) {
-    throw new Error(`Cannot restore primitives route because ${primitivesDir} already exists.`);
-  }
   await cp(stagedPrimitivesDir, primitivesDir, { recursive: true, force: true });
   await rm(stagedPrimitivesDir, { recursive: true, force: true });
 }
@@ -95,6 +92,8 @@ async function stagePrimitivesDir() {
   }
   await cp(primitivesDir, stagedPrimitivesDir, { recursive: true, force: true });
   await rm(primitivesDir, { recursive: true, force: true });
+  await mkdir(primitivesDir, { recursive: true });
+  await cp(path.join(stagedPrimitivesDir, "primitives.css"), path.join(primitivesDir, "primitives.css"));
   return true;
 }
 
