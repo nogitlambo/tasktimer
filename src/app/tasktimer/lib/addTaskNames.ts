@@ -1,12 +1,8 @@
 export const ADD_TASK_PRESET_NAMES = [
-  "Exercise",
-  "Marketing",
-  "Meditation",
-  "Reading",
-  "Running",
-  "Study",
-  "Walking",
-  "Workout",
+  "Brush teeth",
+  "Tidy small area",
+  "Movement break",
+  "Plan next day",
 ];
 
 function normalizeTaskNameKey(s: string): string {
