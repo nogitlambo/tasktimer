@@ -68,8 +68,6 @@ function importConfig(overrides: Partial<SharedTaskImportConfig> = {}): SharedTa
     milestones: [{ id: "owner-ms-1", createdSeq: 1, hours: 0.5, description: "Halfway", alertsEnabled: true }],
     checkpointSoundEnabled: true,
     checkpointSoundMode: "once",
-    checkpointToastEnabled: true,
-    checkpointToastMode: "auto5s",
     timeGoalAction: "confirmModal",
     finalCheckpointAction: "confirmModal",
     presetIntervalsEnabled: false,

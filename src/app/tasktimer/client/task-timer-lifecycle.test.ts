@@ -114,7 +114,7 @@ describe("task timer lifecycle", () => {
       "open-reward:task-1:123",
       "upsert-live:task-1:0:0:force",
       "show-native:task-1:123:0",
-      "clear-checkpoint:task-1",
+      "reset-checkpoint:task-1",
       "save:force",
       "sync-shared:task-1",
       "render",
@@ -190,6 +190,7 @@ describe("task timer lifecycle", () => {
 
     expect(harness.calls).toContain("upsert-live:task-1:300000:300000:force");
     expect(harness.calls).toContain("show-native:task-1:123:300000");
+    expect(harness.calls).toContain("reset-checkpoint:task-1");
   });
 
   it("resumes from legacy elapsed time when accumulated time is missing", () => {

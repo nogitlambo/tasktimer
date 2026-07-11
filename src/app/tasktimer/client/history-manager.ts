@@ -124,8 +124,6 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       color: row?.color || null,
       checkpointSoundEnabled: false,
       checkpointSoundMode: "once",
-      checkpointToastEnabled: true,
-      checkpointToastMode: "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: false,
       presetIntervalValue: 0,

@@ -423,7 +423,6 @@ export default function FeedbackScreen() {
               </div>
             </div>
           </div>
-          <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
         </div>
       </div>
     </div>

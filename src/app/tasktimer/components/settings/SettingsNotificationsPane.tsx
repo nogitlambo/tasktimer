@@ -45,24 +45,14 @@ export function SettingsNotificationsPane({ active, exiting = false }: { active:
             </div>
             <div className="settingsInlineSectionHead">
               <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/toast.webp" alt="" aria-hidden="true" />
-              <div className="settingsInlineSectionTitle">Checkpoint Toasts</div>
+              <div className="settingsInlineSectionTitle">Checkpoint Flash</div>
             </div>
-            <div className="toggleRow" id="taskCheckpointToastToggleRow">
+            <div className="toggleRow" id="taskCheckpointFlashToggleRow">
               <div className="settingsPreferenceControlCopy">
-                <span className="settingsPreferenceControlLabel">Checkpoint Toast</span>
-                <span className="settingsPreferenceControlHelp">Show an in-app checkpoint message while you are using TaskLaunch.</span>
+                <span className="settingsPreferenceControlLabel">Checkpoint Flash</span>
+                <span className="settingsPreferenceControlHelp">Flash the active task card border for 5 seconds when a checkpoint is reached.</span>
               </div>
-              <button className="switch on" id="taskCheckpointToastToggle" type="button" role="switch" aria-checked="true" />
-            </div>
-            <div className="field checkpointAlertSoundModeField" id="taskCheckpointToastModeField">
-              <label className="settingsPreferenceControlCopy" htmlFor="taskCheckpointToastModeSelect">
-                <span className="settingsPreferenceControlLabel">Toast Behaviour</span>
-                <span className="settingsPreferenceControlHelp">Choose whether checkpoint messages disappear automatically or wait for manual dismissal.</span>
-              </label>
-              <SettingsDownwardSelect id="taskCheckpointToastModeSelect" defaultValue="auto5s">
-                <option value="auto5s">Auto dismiss after 5 seconds</option>
-                <option value="manual">Dismiss manually</option>
-              </SettingsDownwardSelect>
+              <button className="switch on" id="taskCheckpointFlashToggle" type="button" role="switch" aria-checked="true" />
             </div>
           </div>
         </section>
@@ -141,6 +131,14 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
                 <option value="once">Once</option>
                 <option value="repeat">Repeat until dismissed</option>
               </SettingsDownwardSelect>
+            </div>
+            <div className="settingsPermissionRow isHidden" id="taskCheckpointAlarmPermissionRow">
+              <span className="settingsPreferenceControlHelp" id="taskCheckpointAlarmPermissionStatus" aria-live="polite">
+                Background alarm access is required on Android.
+              </span>
+              <button className="btn btn-ghost small" id="taskCheckpointAlarmPermissionBtn" type="button">
+                Open Android Settings
+              </button>
             </div>
           </div>
         </section>

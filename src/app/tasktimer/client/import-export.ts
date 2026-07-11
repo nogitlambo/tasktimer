@@ -109,8 +109,6 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
       })),
       checkpointSoundEnabled: !!task.checkpointSoundEnabled,
       checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
-      checkpointToastEnabled: !!task.checkpointToastEnabled,
-      checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: !!task.presetIntervalsEnabled,
       presetIntervalValue: ctx.getPresetIntervalValueNum(task),
@@ -214,9 +212,6 @@ export function createTaskTimerImportExport(ctx: TaskTimerImportExportContext) {
     nextTask.hasStarted = !!rawTask.hasStarted || nextTask.accumulatedMs > 0;
     nextTask.checkpointSoundEnabled = !!rawTask.checkpointSoundEnabled;
     nextTask.checkpointSoundMode = rawTask.checkpointSoundMode === "repeat" ? "repeat" : "once";
-    nextTask.checkpointToastEnabled =
-      rawTask.checkpointToastEnabled == null ? nextTask.checkpointToastEnabled !== false : !!rawTask.checkpointToastEnabled;
-    nextTask.checkpointToastMode = rawTask.checkpointToastMode === "manual" ? "manual" : "auto5s";
     nextTask.timeGoalAction = "confirmModal";
     nextTask.timeGoalEnabled = !!rawTask.timeGoalEnabled;
     nextTask.timeGoalValue = normalizeNonNegativeNumber(rawTask.timeGoalValue);

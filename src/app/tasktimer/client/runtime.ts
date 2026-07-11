@@ -41,8 +41,6 @@ export type TaskTimerRuntime = ReturnType<typeof createTaskTimerRuntime>;
 type DestroyTaskTimerRuntimeOptions = {
   runtime: TaskTimerRuntime;
   deferredCloudRefreshTimer: number | null;
-  checkpointToastAutoCloseTimer: number | null;
-  checkpointToastCountdownRefreshTimer: number | null;
   checkpointBeepQueueTimer: number | null;
   checkpointRepeatCycleTimer: number | null;
   unsubscribeCachedPreferences: () => void;
@@ -52,8 +50,6 @@ export function destroyTaskTimerRuntime(opts: DestroyTaskTimerRuntimeOptions) {
   const {
     runtime,
     deferredCloudRefreshTimer,
-    checkpointToastAutoCloseTimer,
-    checkpointToastCountdownRefreshTimer,
     checkpointBeepQueueTimer,
     checkpointRepeatCycleTimer,
     unsubscribeCachedPreferences,
@@ -63,8 +59,6 @@ export function destroyTaskTimerRuntime(opts: DestroyTaskTimerRuntimeOptions) {
   if (runtime.tickTimeout != null) window.clearTimeout(runtime.tickTimeout);
   if (runtime.tickRaf != null) window.cancelAnimationFrame(runtime.tickRaf);
   if (deferredCloudRefreshTimer != null) window.clearTimeout(deferredCloudRefreshTimer);
-  if (checkpointToastAutoCloseTimer != null) window.clearTimeout(checkpointToastAutoCloseTimer);
-  if (checkpointToastCountdownRefreshTimer != null) window.clearTimeout(checkpointToastCountdownRefreshTimer);
   if (checkpointBeepQueueTimer != null) window.clearTimeout(checkpointBeepQueueTimer);
   if (checkpointRepeatCycleTimer != null) window.clearTimeout(checkpointRepeatCycleTimer);
   if (runtime.removeCapBackListener) {

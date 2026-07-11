@@ -5,6 +5,7 @@ async function setupNativeTimerNotificationModule(options: { native?: boolean; p
   vi.unstubAllGlobals();
   const showRunningTimer = vi.fn(async () => ({ notificationId: 1 }));
   const clearRunningTimer = vi.fn(async () => {});
+  const cancelCheckpointAlarms = vi.fn(async () => {});
   vi.doMock("@capacitor/core", () => ({
     Capacitor: {
       isNativePlatform: () => options.native === true,
@@ -13,11 +14,12 @@ async function setupNativeTimerNotificationModule(options: { native?: boolean; p
     registerPlugin: vi.fn(() => ({
       showRunningTimer,
       clearRunningTimer,
+      cancelCheckpointAlarms,
     })),
   }));
   vi.stubGlobal("window", {});
   const mod = await import("./nativeTimerNotification");
-  return { mod, showRunningTimer, clearRunningTimer };
+  return { mod, showRunningTimer, clearRunningTimer, cancelCheckpointAlarms };
 }
 
 describe("native timer notification bridge", () => {
@@ -26,7 +28,7 @@ describe("native timer notification bridge", () => {
   });
 
   it("shows and clears running timer notifications on native Android", async () => {
-    const { mod, showRunningTimer, clearRunningTimer } = await setupNativeTimerNotificationModule({
+    const { mod, showRunningTimer, clearRunningTimer, cancelCheckpointAlarms } = await setupNativeTimerNotificationModule({
       native: true,
       platform: "android",
     });
@@ -48,6 +50,7 @@ describe("native timer notification bridge", () => {
       sourceNotificationId: 42,
     });
     expect(clearRunningTimer).toHaveBeenCalledWith({ taskId: "task-1" });
+    expect(cancelCheckpointAlarms).toHaveBeenCalledWith({ taskId: "task-1" });
   });
 
   it("no-ops outside native Android", async () => {

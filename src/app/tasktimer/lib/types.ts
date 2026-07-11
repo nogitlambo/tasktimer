@@ -32,8 +32,6 @@ export type Task = {
   color?: string | null;
   checkpointSoundEnabled?: boolean;
   checkpointSoundMode?: "once" | "repeat";
-  checkpointToastEnabled?: boolean;
-  checkpointToastMode?: "auto5s" | "auto3s" | "manual";
   timeGoalAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
   finalCheckpointAction?: "continue" | "resetLog" | "resetNoLog" | "confirmModal";
   presetIntervalsEnabled?: boolean;

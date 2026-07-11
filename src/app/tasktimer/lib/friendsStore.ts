@@ -80,8 +80,6 @@ export type SharedTaskImportConfig = {
   milestones: NonNullable<Task["milestones"]>;
   checkpointSoundEnabled: boolean;
   checkpointSoundMode: "once" | "repeat";
-  checkpointToastEnabled: boolean;
-  checkpointToastMode: "auto5s" | "auto3s" | "manual";
   timeGoalAction: NonNullable<Task["timeGoalAction"]>;
   finalCheckpointAction: NonNullable<Task["timeGoalAction"]>;
   presetIntervalsEnabled: boolean;
@@ -220,10 +218,6 @@ function normalizeTimeGoalAction(value: unknown): NonNullable<Task["timeGoalActi
     : "confirmModal";
 }
 
-function normalizeCheckpointToastMode(value: unknown): SharedTaskImportConfig["checkpointToastMode"] {
-  return value === "manual" || value === "auto3s" ? value : "auto5s";
-}
-
 function normalizePositiveNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -276,8 +270,6 @@ export function normalizeSharedTaskImportConfig(raw: unknown): SharedTaskImportC
     milestones: normalizeSharedTaskMilestones(row.milestones),
     checkpointSoundEnabled: !!row.checkpointSoundEnabled,
     checkpointSoundMode: row.checkpointSoundMode === "repeat" ? "repeat" : "once",
-    checkpointToastEnabled: row.checkpointToastEnabled !== false,
-    checkpointToastMode: normalizeCheckpointToastMode(row.checkpointToastMode),
     timeGoalAction: normalizeTimeGoalAction(row.timeGoalAction),
     finalCheckpointAction: normalizeTimeGoalAction(row.finalCheckpointAction),
     presetIntervalsEnabled: !!row.presetIntervalsEnabled,
@@ -312,8 +304,6 @@ export function buildSharedTaskImportConfig(task: Task | null | undefined): Shar
     milestones: task.milestones,
     checkpointSoundEnabled: !!task.checkpointSoundEnabled,
     checkpointSoundMode: task.checkpointSoundMode,
-    checkpointToastEnabled: task.checkpointToastEnabled !== false,
-    checkpointToastMode: task.checkpointToastMode,
     timeGoalAction: task.timeGoalAction,
     finalCheckpointAction: task.finalCheckpointAction || task.timeGoalAction,
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,

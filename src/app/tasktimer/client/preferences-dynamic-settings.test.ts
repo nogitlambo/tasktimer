@@ -202,9 +202,8 @@ function createHarness() {
     interactionHapticsEnabled: boolean;
     interactionHapticsIntensity: InteractionHapticsIntensity;
     checkpointAlertSoundEnabled: boolean;
-    checkpointAlertToastEnabled: boolean;
+    checkpointAlertFlashEnabled: boolean;
     checkpointAlertSoundMode: "once" | "repeat";
-    checkpointAlertToastMode: "auto5s" | "manual";
     optimalProductivityStartTime: string;
     optimalProductivityEndTime: string;
     optimalProductivityDays: DashboardWeekStart[];
@@ -225,9 +224,8 @@ function createHarness() {
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
-    checkpointAlertToastEnabled: true,
+    checkpointAlertFlashEnabled: true,
     checkpointAlertSoundMode: "once" as const,
-    checkpointAlertToastMode: "auto5s" as const,
     optimalProductivityStartTime: "00:00",
     optimalProductivityEndTime: "23:59",
     optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as DashboardWeekStart[],
@@ -322,17 +320,13 @@ function createHarness() {
     setCheckpointAlertSoundEnabledState: (value) => {
       state.checkpointAlertSoundEnabled = value;
     },
-    getCheckpointAlertToastEnabled: () => state.checkpointAlertToastEnabled,
-    setCheckpointAlertToastEnabledState: (value) => {
-      state.checkpointAlertToastEnabled = value;
+    getCheckpointAlertFlashEnabled: () => state.checkpointAlertFlashEnabled,
+    setCheckpointAlertFlashEnabledState: (value: boolean) => {
+      state.checkpointAlertFlashEnabled = value;
     },
     getCheckpointAlertSoundMode: () => state.checkpointAlertSoundMode,
     setCheckpointAlertSoundModeState: (value) => {
       state.checkpointAlertSoundMode = value;
-    },
-    getCheckpointAlertToastMode: () => state.checkpointAlertToastMode,
-    setCheckpointAlertToastModeState: (value) => {
-      state.checkpointAlertToastMode = value;
     },
     getOptimalProductivityStartTime: () => state.optimalProductivityStartTime,
     setOptimalProductivityStartTimeState: (value) => {

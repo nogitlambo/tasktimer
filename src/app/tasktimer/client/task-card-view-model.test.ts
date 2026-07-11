@@ -29,7 +29,7 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     milestoneUnitSuffix: "h",
     timeGoalSec: 0,
     checkpointRepeatActiveTaskId: null,
-    activeCheckpointToastTaskId: null,
+    checkpointFlashActive: false,
     historyRevealPhase: null,
     showHistory: false,
     isHistoryPinned: false,
@@ -172,7 +172,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
   });
 
-  it("renders a hidden checkpoint rewind action only for eligible Resume buttons", () => {
+  it("automatically renders a visible checkpoint rewind action for eligible Resume buttons", () => {
     const rendered = renderCard({
       task: baseTask({
         running: false,
@@ -183,33 +183,31 @@ describe("task card view model", () => {
       elapsedMs: 20 * 60 * 1000,
       sortedMilestones: [{ hours: 15, description: "" }],
       milestoneUnitSec: 60,
-      isTimeGoalCompleted: false,
-    });
-
-    expect(rendered.html).toContain("taskCheckpointRewindGroup");
-    expect(rendered.html).toContain('data-action="rewindCheckpoint"');
-    expect(rendered.html).toContain('aria-hidden="true" tabindex="-1"');
-    expect(rendered.html).toContain('data-action="start" title="Resume"');
-  });
-
-  it("renders an open checkpoint rewind action when requested by task state", () => {
-    const rendered = renderCard({
-      task: baseTask({
-        running: false,
-        milestonesEnabled: true,
-        milestoneTimeUnit: "minute",
-        milestones: [{ hours: 15, description: "" }],
-      }),
-      elapsedMs: 20 * 60 * 1000,
-      sortedMilestones: [{ hours: 15, description: "" }],
-      milestoneUnitSec: 60,
-      checkpointRewindOpen: true,
       isTimeGoalCompleted: false,
     });
 
     expect(rendered.html).toContain("taskCheckpointRewindGroup isCheckpointRewindOpen");
     expect(rendered.html).toContain('data-action="rewindCheckpoint"');
     expect(rendered.html).not.toContain('aria-hidden="true" tabindex="-1"');
+    expect(rendered.html).toContain('data-action="start" title="Resume"');
+  });
+
+  it("does not render checkpoint rewind at exactly the first checkpoint", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [{ hours: 15, description: "" }],
+      }),
+      elapsedMs: 15 * 60 * 1000,
+      sortedMilestones: [{ hours: 15, description: "" }],
+      milestoneUnitSec: 60,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).not.toContain("taskCheckpointRewindGroup");
+    expect(rendered.html).not.toContain('data-action="rewindCheckpoint"');
   });
 
   it("renders running, alert, history, and shared-owner states", () => {
@@ -217,13 +215,14 @@ describe("task card view model", () => {
       task: baseTask({ running: true, collapsed: true }),
       elapsedMs: 12_000,
       checkpointRepeatActiveTaskId: "task-1",
+      checkpointFlashActive: true,
       historyRevealPhase: "openingSpace",
       showHistory: true,
       isHistoryPinned: true,
       isSharedByOwner: true,
     });
 
-    expect(rendered.className).toBe("task taskRunning collapsed taskAlertPulse taskHistoryOpeningSpace");
+    expect(rendered.className).toBe("task taskRunning collapsed taskCheckpointFlash taskHistoryOpeningSpace");
     expect(rendered.html).toContain('data-action="stop"');
     expect(rendered.html).toContain("taskPrimaryAction taskPrimaryActionStop");
     expect(rendered.html).toContain('data-action="muteCheckpointAlert"');
@@ -544,6 +543,79 @@ describe("task card view model", () => {
     expect(rendered.html).toContain(">30m<");
     expect(rendered.html).toContain(">1h 20m<");
     expect(rendered.html).toContain(">1h 45m<");
+  });
+
+  it("alternates checkpoint labels below and above the progress bar", () => {
+    const rendered = renderCard({
+      sortedMilestones: [
+        { hours: 0.5, description: "" },
+        { hours: 1, description: "" },
+        { hours: 1.5, description: "" },
+        { hours: 1.75, description: "" },
+      ],
+      timeGoalSec: 2 * 3600,
+    });
+
+    const checkpointLabelClasses = Array.from(rendered.html.matchAll(/<div class="mkTime ([^"]*)"[^>]*>(30m|1h|1h 30m|1h 45m)<\/div>/g)).map(
+      (match) => match[1]
+    );
+
+    expect(checkpointLabelClasses).toHaveLength(4);
+    expect(checkpointLabelClasses[0]).not.toContain("mkTimeTop");
+    expect(checkpointLabelClasses[1]).toContain("mkTimeTop");
+    expect(checkpointLabelClasses[2]).not.toContain("mkTimeTop");
+    expect(checkpointLabelClasses[3]).toContain("mkTimeTop");
+  });
+
+  it("hides checkpoint labels containing seconds while retaining their markers", () => {
+    const rendered = renderCard({
+      sortedMilestones: [
+        { hours: 5 / 60, description: "" },
+        { hours: 5.5 / 60, description: "" },
+        { hours: 8 / 60, description: "" },
+      ],
+      timeGoalSec: 10 * 60,
+    });
+
+    expect(rendered.html).toContain(">5m<");
+    expect(rendered.html).not.toContain(">5m 30s<");
+    expect(rendered.html).toMatch(/class="mkTime mkTimeTop [^"]*"[^>]*>8m<\/div>/);
+    expect(rendered.html.match(/class="mkFlag mkPend"/g)).toHaveLength(3);
+  });
+
+  it("marks reached checkpoints for green tick styling while leaving pending checkpoints as dots", () => {
+    const rendered = renderCard({
+      elapsedMs: 6 * 60 * 1000,
+      sortedMilestones: [
+        { hours: 5 / 60, description: "" },
+        { hours: 8 / 60, description: "" },
+      ],
+      timeGoalSec: 10 * 60,
+    });
+    const css = readFileSync(new URL("../styles/02-tasks.css", import.meta.url), "utf8");
+    const reachedCheckpointRule =
+      css.match(/\.mkFlag\.mkAch:not\(\.mkGoal\)\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+    expect(rendered.html.match(/class="mkFlag mkAch"/g)).toHaveLength(1);
+    expect(rendered.html.match(/class="mkFlag mkPend"/g)).toHaveLength(1);
+    expect(reachedCheckpointRule).toContain("border-left: 2px solid #7dff72;");
+    expect(reachedCheckpointRule).toContain("border-bottom: 2px solid #7dff72;");
+    expect(reachedCheckpointRule).toContain("rotate(-45deg)");
+  });
+
+  it("keeps baseline and goal labels below the progress bar", () => {
+    const rendered = renderCard({
+      sortedMilestones: [
+        { hours: 0.5, description: "" },
+        { hours: 1, description: "" },
+      ],
+      timeGoalSec: 2 * 3600,
+    });
+
+    expect(rendered.html).toMatch(/class="mkTime mkAch mkEdgeL"[^>]*>0m<\/div>/);
+    expect(rendered.html).toMatch(/class="mkTime mkGoalTime [^"]*"[^>]*>2h<\/div>/);
+    expect(rendered.html).not.toMatch(/class="mkTime mkTimeTop mkAch mkEdgeL"[^>]*>0m<\/div>/);
+    expect(rendered.html).not.toMatch(/class="mkTime mkGoalTime mkTimeTop/);
   });
 
   it("renders a centered percentage label only for progress-enabled task cards", () => {

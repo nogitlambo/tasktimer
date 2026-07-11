@@ -251,8 +251,6 @@ export function restoreEditScheduleFieldsFromSnapshot(task: Task, snapshot: Task
   task.milestones = Array.isArray(snapshot.milestones) ? snapshot.milestones.map((milestone) => ({ ...milestone })) : [];
   task.checkpointSoundEnabled = !!snapshot.checkpointSoundEnabled;
   task.checkpointSoundMode = snapshot.checkpointSoundMode === "repeat" ? "repeat" : "once";
-  task.checkpointToastEnabled = !!snapshot.checkpointToastEnabled;
-  task.checkpointToastMode = snapshot.checkpointToastMode === "manual" ? "manual" : "auto5s";
   task.plannedStartDay = snapshot.plannedStartDay || null;
   task.plannedStartTime = snapshot.plannedStartTime || null;
   task.plannedStartByDay = snapshot.plannedStartByDay ? { ...snapshot.plannedStartByDay } : null;
@@ -275,8 +273,6 @@ export function clearTaskScheduleConfig(task: Task) {
   task.milestones = [];
   task.checkpointSoundEnabled = false;
   task.checkpointSoundMode = "once";
-  task.checkpointToastEnabled = false;
-  task.checkpointToastMode = "auto5s";
   task.presetIntervalsEnabled = false;
   task.presetIntervalValue = 0;
   task.presetIntervalLastMilestoneId = null;
@@ -729,10 +725,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       els.editCheckpointSoundModeSelect.disabled =
         checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointSoundEnabled;
     }
-    if (els.editCheckpointToastModeSelect) {
-      els.editCheckpointToastModeSelect.disabled =
-        checkpointControlsDisabled || !currentTask?.milestonesEnabled || !currentTask?.checkpointToastEnabled;
-    }
     if (currentTask) {
       syncEditCheckpointAlertUi(currentTask);
     } else {
@@ -1156,7 +1148,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const hasEnabledMilestoneAlerts = checkpointingEnabledForSave && hasAnyMilestoneAlertsEnabled(t);
     t.checkpointSoundEnabled = hasEnabledMilestoneAlerts;
     t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-    t.checkpointToastEnabled = hasEnabledMilestoneAlerts;
     t.presetIntervalsEnabled = false;
     t.presetIntervalValue = 0;
     t.timeGoalAction = "confirmModal";
@@ -1364,19 +1355,12 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     const checkpointingEnabled = !!t.milestonesEnabled && hasActiveTimeGoal;
     const derivedAlertState = sharedTasks.deriveCheckpointAlertEnabledState(t);
     t.checkpointSoundEnabled = checkpointingEnabled && derivedAlertState.soundEnabled;
-    t.checkpointToastEnabled = checkpointingEnabled && derivedAlertState.toastEnabled;
     if (els.editCheckpointSoundModeSelect) {
       els.editCheckpointSoundModeSelect.value = t.checkpointSoundMode === "repeat" ? "repeat" : "once";
       els.editCheckpointSoundModeSelect.disabled =
         !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled;
     }
-    if (els.editCheckpointToastModeSelect) {
-      els.editCheckpointToastModeSelect.value = t.checkpointToastMode === "manual" ? "manual" : "auto5s";
-      els.editCheckpointToastModeSelect.disabled =
-        !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled;
-    }
     els.editCheckpointSoundModeField?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertSoundEnabled() || !t.checkpointSoundEnabled);
-    els.editCheckpointToastModeField?.classList.toggle("isDisabled", !checkpointingEnabled || !ctx.getCheckpointAlertToastEnabled() || !t.checkpointToastEnabled);
     els.editTimerSettingsGroup?.classList.toggle("isHidden", !hasActiveTimeGoal);
   }
 
@@ -1459,8 +1443,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       milestones,
       checkpointSoundEnabled: hasEnabledMilestoneAlerts,
       checkpointSoundMode: els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
-      checkpointToastEnabled: hasEnabledMilestoneAlerts,
-      checkpointToastMode: els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: false,
       presetIntervalValue: 0,
@@ -2062,13 +2044,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
       const t = getCurrentEditTask();
       if (!t) return;
       t.checkpointSoundMode = els.editCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-      ctx.syncEditCheckpointAlertUi(t);
-      ctx.syncEditSaveAvailability(t);
-    });
-    ctx.on(els.editCheckpointToastModeSelect, "change", () => {
-      const t = getCurrentEditTask();
-      if (!t) return;
-      t.checkpointToastMode = els.editCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
       ctx.syncEditCheckpointAlertUi(t);
       ctx.syncEditSaveAvailability(t);
     });

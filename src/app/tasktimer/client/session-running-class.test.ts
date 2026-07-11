@@ -91,8 +91,6 @@ function createFocusElementStub(options: { clientWidth?: number; clientHeight?: 
 }
 
 function createCompletionHarness(options?: {
-  activeToastTaskId?: string | null;
-  queuedToastTaskIds?: string[];
   withCheckpoint?: boolean;
   focusModeTaskId?: string | null;
   timeGoalModalTaskId?: string | null;
@@ -104,7 +102,9 @@ function createCompletionHarness(options?: {
   interactionHapticsIntensity?: "max" | "medium" | "low";
   reducedMotion?: boolean;
   checkpointAlertSoundEnabled?: boolean;
+  checkpointAlertFlashEnabled?: boolean;
   checkpointAlertSoundMode?: "once" | "repeat";
+  liveTaskDom?: boolean;
 }) {
   const completedTask = task({
     id: "task-1",
@@ -114,31 +114,11 @@ function createCompletionHarness(options?: {
     milestonesEnabled: !!options?.withCheckpoint,
     milestoneTimeUnit: "minute",
     milestones: options?.withCheckpoint ? [{ hours: 0.5, description: "Halfway" }] : [],
-    checkpointToastEnabled: true,
     timeGoalEnabled: true,
     timeGoalMinutes: 1,
     timeGoalPeriod: "day",
     ...options?.taskOverrides,
   });
-  const checkpointToastQueue = (options?.queuedToastTaskIds || []).map((taskId, index) => ({
-    id: `queued-${index}`,
-    title: "Queued",
-    text: "Queued",
-    autoCloseMs: 5000,
-    autoCloseAtMs: null,
-    taskId,
-  }));
-  let activeCheckpointToast = options?.activeToastTaskId
-    ? {
-        id: "active-toast",
-        title: "Active",
-        text: "Active",
-        autoCloseMs: 5000,
-        autoCloseAtMs: Date.now() + 5000,
-        taskId: options.activeToastTaskId,
-      }
-    : null;
-  let checkpointToastAutoCloseTimer: number | null = options?.activeToastTaskId ? 7 : null;
   let timeGoalModalTaskId: string | null = options?.timeGoalModalTaskId ?? null;
   let timeGoalModalFrozenElapsedMs = timeGoalModalTaskId ? 60_000 : 0;
   let focusModeTaskId: string | null = options?.focusModeTaskId ?? null;
@@ -150,13 +130,22 @@ function createCompletionHarness(options?: {
   let checkpointRepeatStopAtMs = 0;
   let checkpointRepeatCycleTimer: number | null = null;
   let checkpointRepeatActiveTaskId: string | null = null;
+  const checkpointFlashUntilMsByTaskId: Record<string, number> = {};
   const checkpointBaselineSecByTaskId: Record<string, number> = { "task-1": 0 };
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
   const clearTimeout = vi.fn();
   const openOverlay = vi.fn();
   const closeOverlay = vi.fn();
   const render = vi.fn();
-  const toastHost = createFocusElementStub();
+  const liveTaskNode = {
+    classList: createClassList(["task", "taskRunning"]),
+    dataset: { index: "0", taskId: "task-1" },
+    offsetWidth: 320,
+    querySelector: vi.fn(() => null),
+  };
+  const taskList = options?.liveTaskDom
+    ? { querySelectorAll: vi.fn(() => [liveTaskNode]) }
+    : null;
   const focusModeScreen = createFocusElementStub();
   focusModeScreen.style = { ...focusModeScreen.style, display: "block" };
   const timeGoalCompleteOverlay = {
@@ -222,10 +211,9 @@ function createCompletionHarness(options?: {
 
   const session = createTaskTimerSession({
     els: {
-      taskList: null,
+      taskList: taskList as unknown as HTMLElement | null,
       focusTaskName: null,
       focusModeScreen: focusModeScreen as unknown as HTMLElement,
-      checkpointToastHost: toastHost as unknown as HTMLElement,
       timeGoalCompleteOverlay: timeGoalCompleteOverlay as unknown as HTMLElement,
       timeGoalCompleteTitle: createFocusElementStub() as unknown as HTMLElement,
       timeGoalCompleteText: timeGoalCompleteText as unknown as HTMLElement,
@@ -246,15 +234,7 @@ function createCompletionHarness(options?: {
     sharedTasks: { milestoneUnitSec: () => 60 } as unknown as TaskTimerSharedTaskApi,
     getTasks: () => [completedTask],
     getHistoryByTaskId: () => ({}),
-    getCheckpointToastQueue: () => checkpointToastQueue,
-    getActiveCheckpointToast: () => activeCheckpointToast,
-    setActiveCheckpointToast: (value: typeof activeCheckpointToast) => {
-      activeCheckpointToast = value;
-    },
-    getCheckpointToastAutoCloseTimer: () => checkpointToastAutoCloseTimer,
-    setCheckpointToastAutoCloseTimer: (value: number | null) => {
-      checkpointToastAutoCloseTimer = value;
-    },
+    getCheckpointFlashUntilMsByTaskId: () => checkpointFlashUntilMsByTaskId,
     getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
     getCheckpointFiredKeysByTaskId: () => checkpointFiredKeysByTaskId,
     getCheckpointAutoResetDirty: () => false,
@@ -279,9 +259,8 @@ function createCompletionHarness(options?: {
     getModeColor: () => "#00ffff",
     sortMilestones: (milestones: Task["milestones"]) => milestones,
     getCheckpointAlertSoundEnabled: () => !!options?.checkpointAlertSoundEnabled,
-    getCheckpointAlertToastEnabled: () => true,
+    getCheckpointAlertFlashEnabled: () => options?.checkpointAlertFlashEnabled !== false,
     getCheckpointAlertSoundMode: () => options?.checkpointAlertSoundMode || "once",
-    getCheckpointAlertToastMode: () => "auto5s",
     getCheckpointRepeatStopAtMs: () => checkpointRepeatStopAtMs,
     setCheckpointRepeatStopAtMs: (value: number) => {
       checkpointRepeatStopAtMs = value;
@@ -294,8 +273,6 @@ function createCompletionHarness(options?: {
       checkpointRepeatActiveTaskId = value;
     },
     getCheckpointRepeatActiveTaskId: () => checkpointRepeatActiveTaskId,
-    getCheckpointToastCountdownRefreshTimer: () => null,
-    setCheckpointToastCountdownRefreshTimer: () => {},
     getCheckpointBeepAudio: () => checkpointBeepAudio,
     setCheckpointBeepAudio: (value: HTMLAudioElement | null) => {
       checkpointBeepAudio = value;
@@ -371,7 +348,10 @@ function createCompletionHarness(options?: {
   return {
     session,
     completedTask,
-    checkpointToastQueue,
+    liveTaskNode,
+    checkpointFlashUntilMsByTaskId,
+    checkpointBaselineSecByTaskId,
+    checkpointFiredKeysByTaskId,
     clearTimeout,
     openOverlay,
     timeGoalCompleteOverlay,
@@ -385,8 +365,7 @@ function createCompletionHarness(options?: {
       (globalThis as { document?: unknown }).document = previousDocument;
       (globalThis as { Audio?: unknown }).Audio = previousAudio;
     },
-    getActiveCheckpointToast: () => activeCheckpointToast,
-    getCheckpointToastAutoCloseTimer: () => checkpointToastAutoCloseTimer,
+    isCheckpointFlashing: (taskId: string) => Number(checkpointFlashUntilMsByTaskId[taskId] || 0) > Date.now(),
     getFocusModeTaskId: () => focusModeTaskId,
     getFocusModeTaskName: () => focusModeTaskName,
     getFocusShowCheckpoints: () => focusShowCheckpoints,
@@ -418,7 +397,6 @@ describe("task timer session tick", () => {
       checkpointAlertSoundEnabled: true,
       taskOverrides: {
         checkpointSoundEnabled: true,
-        checkpointToastEnabled: false,
         timeGoalEnabled: false,
         timeGoalMinutes: 0,
       },
@@ -446,6 +424,30 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("fires checkpoint alerts on a later run despite retained completion metadata", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      taskOverrides: {
+        checkpointSoundEnabled: true,
+        timeGoalMinutes: 10,
+        timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(Date.now()),
+        timeGoalCompletedAtMs: Date.now() - 60_000,
+        timeGoalCompletedReason: "reset",
+        timeGoalCompletedElapsedMs: 60_000,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.isCheckpointFlashing("task-1")).toBe(true);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("queues one once-only checkpoint beep pattern per reached checkpoint", () => {
     const harness = createCompletionHarness({
       checkpointAlertSoundEnabled: true,
@@ -457,7 +459,6 @@ describe("task timer session tick", () => {
           { hours: 0.5, description: "Halfway" },
         ],
         checkpointSoundEnabled: true,
-        checkpointToastEnabled: false,
         timeGoalEnabled: false,
         timeGoalMinutes: 0,
       },
@@ -479,6 +480,37 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("uses cumulative elapsed as the new baseline after checkpoint tracking is re-armed", () => {
+    const harness = createCompletionHarness({
+      checkpointAlertSoundEnabled: true,
+      taskOverrides: {
+        accumulatedMs: 40 * 60_000,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [
+          { hours: 30, description: "Passed" },
+          { hours: 60, description: "Future" },
+        ],
+        checkpointSoundEnabled: true,
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+    delete harness.checkpointBaselineSecByTaskId["task-1"];
+    harness.checkpointFiredKeysByTaskId["task-1"] = new Set();
+
+    try {
+      harness.session.tick();
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+
+      harness.completedTask.accumulatedMs = 61 * 60_000;
+      harness.session.tick();
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("keeps repeat checkpoint alerts to one beep per repeat cycle", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
@@ -486,7 +518,6 @@ describe("task timer session tick", () => {
       checkpointAlertSoundMode: "repeat",
       taskOverrides: {
         checkpointSoundEnabled: true,
-        checkpointToastEnabled: false,
         timeGoalEnabled: false,
         timeGoalMinutes: 0,
       },
@@ -496,24 +527,54 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(1);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
       expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
     } finally {
       harness.restoreWindow();
     }
   });
 
-  it("suppresses checkpoint toasts for the task when completion opens", () => {
-    const harness = createCompletionHarness({ withCheckpoint: true });
+  it("starts a 5-second checkpoint flash when a checkpoint is reached", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      taskOverrides: {
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
 
     try {
       harness.session.tick();
 
-      expect(harness.openOverlay).toHaveBeenCalled();
-      expect(harness.completedTask.running).toBe(false);
-      expect(harness.getActiveCheckpointToast()).toBeNull();
-      expect(harness.checkpointToastQueue).toEqual([]);
-      expect(harness.getCheckpointToastAutoCloseTimer()).toBeNull();
+      expect(harness.isCheckpointFlashing("task-1")).toBe(true);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+
+      runLastScheduledTimeout(harness);
+      expect(harness.isCheckpointFlashing("task-1")).toBe(false);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("applies and clears the checkpoint flash class on the live task card", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      liveTaskDom: true,
+      taskOverrides: {
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.liveTaskNode.classList.contains("taskCheckpointFlash")).toBe(true);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+
+      runLastScheduledTimeout(harness);
+      expect(harness.liveTaskNode.classList.contains("taskCheckpointFlash")).toBe(false);
     } finally {
       harness.restoreWindow();
     }
@@ -535,20 +596,21 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("does not clear checkpoint toasts for unrelated tasks when completion opens", () => {
+  it("does not start checkpoint flash when flash alerts are disabled", () => {
     const harness = createCompletionHarness({
-      activeToastTaskId: "task-2",
-      queuedToastTaskIds: ["task-2"],
+      withCheckpoint: true,
+      checkpointAlertFlashEnabled: false,
+      taskOverrides: {
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
     });
 
     try {
       harness.session.tick();
 
-      expect(harness.openOverlay).toHaveBeenCalled();
-      expect(harness.getActiveCheckpointToast()?.taskId).toBe("task-2");
-      expect(harness.checkpointToastQueue.map((toast) => toast.taskId)).toEqual(["task-2"]);
-      expect(harness.getCheckpointToastAutoCloseTimer()).toBe(7);
-      expect(harness.clearTimeout).not.toHaveBeenCalled();
+      expect(harness.isCheckpointFlashing("task-1")).toBe(false);
+      expect(harness.checkpointFlashUntilMsByTaskId).toEqual({});
     } finally {
       harness.restoreWindow();
     }
@@ -895,9 +957,7 @@ describe("task timer session tick", () => {
       getTasks: () => [activeTask],
       getCheckpointRepeatActiveTaskId: () => null,
       getHistoryByTaskId: () => ({}),
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getFocusModeTaskId: () => null,
@@ -916,18 +976,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,
@@ -1058,9 +1113,7 @@ describe("task timer session tick", () => {
       getTasks: () => [stoppedTask],
       getCheckpointRepeatActiveTaskId: () => null,
       getHistoryByTaskId: () => ({}),
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getFocusModeTaskId: () => null,
@@ -1079,18 +1132,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,
@@ -1227,9 +1275,7 @@ describe("task timer session tick", () => {
       getTasks: () => [staleCompletedTask],
       getCheckpointRepeatActiveTaskId: () => null,
       getHistoryByTaskId: () => ({}),
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getFocusModeTaskId: () => null,
@@ -1248,18 +1294,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,
@@ -1367,9 +1408,7 @@ describe("task timer session tick", () => {
       getFocusModeTaskName: () => "Focus",
       getHistoryByTaskId: () => ({}),
       getCheckpointRepeatActiveTaskId: () => null,
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getCurrentAppPage: () => "tasks",
@@ -1386,18 +1425,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,
@@ -1503,9 +1537,7 @@ describe("task timer session tick", () => {
       getFocusModeTaskName: () => "Focus",
       getHistoryByTaskId: () => ({}),
       getCheckpointRepeatActiveTaskId: () => null,
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getCurrentAppPage: () => "tasks",
@@ -1522,18 +1554,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,
@@ -1648,9 +1675,7 @@ describe("task timer session tick", () => {
       getFocusModeTaskName: () => "Focus",
       getHistoryByTaskId: () => ({}),
       getCheckpointRepeatActiveTaskId: () => null,
-      getCheckpointToastQueue: () => [],
-      getActiveCheckpointToast: () => null,
-      setActiveCheckpointToast: () => {},
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
       getCheckpointAutoResetDirty: () => false,
       setCheckpointAutoResetDirty: () => {},
       getCurrentAppPage: () => "tasks",
@@ -1667,18 +1692,13 @@ describe("task timer session tick", () => {
       getCheckpointBaselineSecByTaskId: () => ({}),
       getCheckpointFiredKeysByTaskId: () => ({}),
       getCheckpointAlertSoundEnabled: () => false,
-      getCheckpointAlertToastEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
       getCheckpointAlertSoundMode: () => "once",
-      getCheckpointAlertToastMode: () => "auto5s",
       getCheckpointRepeatStopAtMs: () => 0,
       setCheckpointRepeatStopAtMs: () => {},
       getCheckpointRepeatCycleTimer: () => null,
       setCheckpointRepeatCycleTimer: () => {},
       setCheckpointRepeatActiveTaskId: () => {},
-      getCheckpointToastAutoCloseTimer: () => null,
-      setCheckpointToastAutoCloseTimer: () => {},
-      getCheckpointToastCountdownRefreshTimer: () => null,
-      setCheckpointToastCountdownRefreshTimer: () => {},
       getCheckpointBeepAudio: () => null,
       setCheckpointBeepAudio: () => {},
       getCheckpointBeepQueueCount: () => 0,

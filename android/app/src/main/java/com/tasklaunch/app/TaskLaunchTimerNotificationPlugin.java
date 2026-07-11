@@ -3,14 +3,18 @@ package com.tasklaunch.app;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.getcapacitor.JSObject;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -105,6 +109,61 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
         if (notificationManager != null) {
             notificationManager.cancel(runningNotificationId(taskId));
         }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getAlarmPermissionStatus(PluginCall call) {
+        AlarmManager alarmManager = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+        boolean exactAlarmGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            (alarmManager != null && alarmManager.canScheduleExactAlarms());
+        JSObject result = new JSObject();
+        result.put("exactAlarmGranted", exactAlarmGranted);
+        result.put("notificationsGranted", NotificationManagerCompat.from(getContext()).areNotificationsEnabled());
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void openAlarmPermissionSettings(PluginCall call) {
+        try {
+            Intent intent;
+            AlarmManager alarmManager = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+            boolean needsExactAlarm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                (alarmManager == null || !alarmManager.canScheduleExactAlarms());
+            if (needsExactAlarm) {
+                intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:" + getContext().getPackageName()));
+            } else {
+                intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Unable to open alarm settings.", error);
+        }
+    }
+
+    @PluginMethod
+    public void syncCheckpointAlarms(PluginCall call) {
+        JSArray alarms = call.getArray("alarms", new JSArray());
+        try {
+            TaskLaunchCheckpointAlarmManager.sync(getContext(), alarms.toString());
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Unable to schedule checkpoint alarms.", error);
+        }
+    }
+
+    @PluginMethod
+    public void cancelCheckpointAlarms(PluginCall call) {
+        TaskLaunchCheckpointAlarmManager.cancelForTask(getContext(), valueOrEmpty(call.getString("taskId")));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void dismissCheckpointAlarm(PluginCall call) {
+        TaskLaunchCheckpointAlarmService.stop(getContext(), valueOrEmpty(call.getString("taskId")));
         call.resolve();
     }
 

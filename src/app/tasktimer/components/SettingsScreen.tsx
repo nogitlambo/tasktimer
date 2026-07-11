@@ -95,7 +95,6 @@ export default function SettingsScreen({ initialPane = null }: { initialPane?: S
           </div>
         </div>
       </div>
-      <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
     </div>
   );
 }

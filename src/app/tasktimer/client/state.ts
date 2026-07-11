@@ -18,7 +18,7 @@ type TaskTimerStorageKeys = {
   INTERACTION_HAPTICS_KEY: string;
   INTERACTION_HAPTICS_INTENSITY_KEY: string;
   CHECKPOINT_ALERT_SOUND_KEY: string;
-  CHECKPOINT_ALERT_TOAST_KEY: string;
+  CHECKPOINT_ALERT_FLASH_KEY: string;
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
   OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
@@ -50,7 +50,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     INTERACTION_HAPTICS_KEY: `${storageKey}:interactionHapticsEnabled`,
     INTERACTION_HAPTICS_INTENSITY_KEY: `${storageKey}:interactionHapticsIntensity`,
     CHECKPOINT_ALERT_SOUND_KEY: `${storageKey}:checkpointAlertSoundEnabled`,
-    CHECKPOINT_ALERT_TOAST_KEY: `${storageKey}:checkpointAlertToastEnabled`,
+    CHECKPOINT_ALERT_FLASH_KEY: `${storageKey}:checkpointAlertFlashEnabled`,
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: `${storageKey}:optimalProductivityStartTime`,
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: `${storageKey}:optimalProductivityEndTime`,
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: `${storageKey}:optimalProductivityDays`,
@@ -91,9 +91,8 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max",
     checkpointAlertSoundEnabled: true,
-    checkpointAlertToastEnabled: true,
+    checkpointAlertFlashEnabled: true,
     checkpointAlertSoundMode: "once",
-    checkpointAlertToastMode: "auto5s",
     optimalProductivityStartTime: "00:00",
     optimalProductivityEndTime: "23:59",
     optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
@@ -119,8 +118,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     addTaskMilestones: [],
     addTaskCheckpointSoundEnabled: false,
     addTaskCheckpointSoundMode: "once",
-    addTaskCheckpointToastEnabled: false,
-    addTaskCheckpointToastMode: "auto5s",
     timeGoalModalTaskId: null,
     timeGoalModalFrozenElapsedMs: 0,
     timeGoalReminderAtMsByTaskId: {},
@@ -152,8 +149,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     currentTileColumnCount: 1,
     suppressNavStackPush: false,
     lastNativeBackHandledAtMs: 0,
-    checkpointToastQueue: [],
-    activeCheckpointToast: null,
+    checkpointFlashUntilMsByTaskId: {},
     checkpointBeepAudio: null,
     checkpointBeepQueueCount: 0,
     checkpointRepeatStopAtMs: 0,

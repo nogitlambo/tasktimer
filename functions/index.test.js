@@ -261,6 +261,79 @@ describe("sendFriendRequestPendingNotification", () => {
     );
   });
 
+  it("sends to a registered receiver device when the receiver has no push preference document yet", async () => {
+    state.prefExists = false;
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      requestId: "pending:sender-1:receiver-1",
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        senderUid: "sender-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      requestId: "pending:sender-1:receiver-1",
+      status: "sent",
+      successCount: 1,
+    }));
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({ tokens: ["native-token"] })
+    );
+  });
+
+  it("does not send when receiver push preferences explicitly disable registered devices", async () => {
+    state.prefs = {
+      mobilePushAlertsEnabled: false,
+      webPushAlertsEnabled: false,
+    };
+    state.devices = [
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      requestId: "pending:sender-1:receiver-1",
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        senderUid: "sender-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      requestId: "pending:sender-1:receiver-1",
+      status: "no-devices",
+    }));
+    expect(state.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
   it("sends when a previously declined request returns to pending", async () => {
     state.devices = [
       {

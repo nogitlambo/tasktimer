@@ -213,7 +213,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       openHistoryTaskIds,
       historyViewByTaskId,
       timeGoalReminderAtMsByTaskId,
-      checkpointToastQueue,
       checkpointFiredKeysByTaskId,
       checkpointBaselineSecByTaskId,
       openFriendSharedTaskUids,
@@ -253,8 +252,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     destroyTaskTimerRuntime({
       runtime,
       deferredCloudRefreshTimer: cloudSyncState.get("deferredCloudRefreshTimer"),
-      checkpointToastAutoCloseTimer: sessionRuntimeState.get("checkpointToastAutoCloseTimer"),
-      checkpointToastCountdownRefreshTimer: sessionRuntimeState.get("checkpointToastCountdownRefreshTimer"),
       checkpointBeepQueueTimer: sessionRuntimeState.get("checkpointBeepQueueTimer"),
       checkpointRepeatCycleTimer: sessionRuntimeState.get("checkpointRepeatCycleTimer"),
       unsubscribeCachedPreferences,
@@ -934,10 +931,9 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       refreshGroupsData,
       deleteTask: (index) => deleteTask(index),
       checkpointRepeatActiveTaskId: () => sessionApi?.checkpointRepeatActiveTaskId() || null,
-      activeCheckpointToastTaskId: () => sessionApi?.activeCheckpointToastTaskId() || null,
+      isCheckpointFlashActive: (taskId) => sessionApi?.isCheckpointFlashActive(taskId) || false,
       stopCheckpointRepeatAlert: () => sessionApi?.stopCheckpointRepeatAlert(),
       broadcastCheckpointAlertMute: (taskId) => broadcastTaskTimerCheckpointAlertMute(taskId),
-      enqueueCheckpointToast: (title, text, opts) => sessionApi?.enqueueCheckpointToast(title, text, opts as any),
       syncSharedTaskSummariesForTask: (taskId) => syncSharedTaskSummariesForTask(taskId),
       syncSharedTaskSummariesForTasks: (taskIds) => syncSharedTaskSummariesForTasks(taskIds),
       hasEntitlement,
@@ -966,7 +962,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       addTaskStateBindings,
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
-      getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
       persistPushAlertsPreference: () => {
         if (preferencesApi) {
           preferencesApi.saveMobilePushAlertsSetting();
@@ -1037,19 +1032,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setTimeGoalCompleteDurationPeriod: (value) => {
         sessionRuntimeState.set("timeGoalCompleteDurationPeriod", value);
       },
-      getCheckpointToastQueue: () => checkpointToastQueue,
-      getActiveCheckpointToast: () => sessionRuntimeState.get("activeCheckpointToast"),
-      setActiveCheckpointToast: (value) => {
-        sessionRuntimeState.set("activeCheckpointToast", value as TaskTimerMutableState["activeCheckpointToast"]);
-      },
-      getCheckpointToastAutoCloseTimer: () => sessionRuntimeState.get("checkpointToastAutoCloseTimer"),
-      setCheckpointToastAutoCloseTimer: (value) => {
-        sessionRuntimeState.set("checkpointToastAutoCloseTimer", value);
-      },
-      getCheckpointToastCountdownRefreshTimer: () => sessionRuntimeState.get("checkpointToastCountdownRefreshTimer"),
-      setCheckpointToastCountdownRefreshTimer: (value) => {
-        sessionRuntimeState.set("checkpointToastCountdownRefreshTimer", value);
-      },
+      getCheckpointFlashUntilMsByTaskId: () => sessionRuntimeState.get("checkpointFlashUntilMsByTaskId"),
       getCheckpointBeepAudio: () => sessionRuntimeState.get("checkpointBeepAudio"),
       setCheckpointBeepAudio: (value) => {
         sessionRuntimeState.set("checkpointBeepAudio", value);
@@ -1509,7 +1492,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTasks: taskCollectionBindings.getTasks,
     ...editStateBindings,
     getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
-    getCheckpointAlertToastEnabled: () => preferencesState.get("checkpointAlertToastEnabled"),
     getMobilePushAlertsEnabled: () => preferencesState.get("mobilePushAlertsEnabled"),
     setMobilePushAlertsEnabledState: (value) => {
       preferencesState.set("mobilePushAlertsEnabled", value);

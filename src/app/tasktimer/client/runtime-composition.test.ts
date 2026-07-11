@@ -108,6 +108,7 @@ describe("createTaskTimerRuntimeComposition", () => {
     expect(composition.storageKeys.NAV_STACK_KEY).toBe("taskticker_tasks_v1:navStack");
     expect(composition.derivedKeys).toEqual({
       TIME_GOAL_PENDING_FLOW_KEY: "taskticker_tasks_v1:timeGoalPendingFlow",
+      TIME_GOAL_COMPLETION_ACK_KEY: "taskticker_tasks_v1:timeGoalCompletionAck",
       PENDING_PUSH_TASK_ID_KEY: "taskticker_tasks_v1:pendingPushTaskId",
       PENDING_PUSH_ACTION_KEY: "taskticker_tasks_v1:pendingPushAction",
       REWARD_SESSION_TRACKERS_KEY: "taskticker_tasks_v1:rewardSessionTrackers",
@@ -135,9 +136,8 @@ describe("createTaskTimerRuntimeComposition", () => {
       interactionHapticsEnabled: true,
       interactionHapticsIntensity: "max",
       checkpointAlertSoundEnabled: true,
-      checkpointAlertToastEnabled: true,
+      checkpointAlertFlashEnabled: true,
       checkpointAlertSoundMode: "once",
-      checkpointAlertToastMode: "auto5s",
       optimalProductivityStartTime: "00:00",
       optimalProductivityEndTime: "23:59",
       optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],

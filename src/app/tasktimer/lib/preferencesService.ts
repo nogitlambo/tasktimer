@@ -53,9 +53,8 @@ type PreferencesStateSnapshot = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
-  checkpointAlertToastEnabled: boolean;
+  checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
-  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   optimalProductivityDays: OptimalProductivityDays;
@@ -172,9 +171,8 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       interactionHapticsEnabled: state.interactionHapticsEnabled,
       interactionHapticsIntensity: normalizeInteractionHapticsIntensity(state.interactionHapticsIntensity),
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
-      checkpointAlertToastEnabled: state.checkpointAlertToastEnabled,
+      checkpointAlertFlashEnabled: state.checkpointAlertFlashEnabled,
       checkpointAlertSoundMode: state.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
-      checkpointAlertToastMode: state.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
       optimalProductivityStartTime: normalizeTimeOfDay(
         state.optimalProductivityStartTime,
         DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
@@ -364,13 +362,12 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return normalizeInteractionHapticsIntensity(cloudValue || localValue);
   }
 
-  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertToastEnabled" | "checkpointAlertSoundMode" | "checkpointAlertToastMode"> {
+  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertFlashEnabled" | "checkpointAlertSoundMode"> {
     const prefs = getStoredOrCachedPreferences();
     return {
       checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled !== false,
-      checkpointAlertToastEnabled: prefs.checkpointAlertToastEnabled !== false,
+      checkpointAlertFlashEnabled: prefs.checkpointAlertFlashEnabled !== false,
       checkpointAlertSoundMode: prefs.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
-      checkpointAlertToastMode: prefs.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
     };
   }
 

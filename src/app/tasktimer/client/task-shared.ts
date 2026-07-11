@@ -43,7 +43,7 @@ export type TaskTimerSharedTaskApi = {
   makeTask: (name: string, order?: number) => Task;
   normalizeLoadedTask: (task: Task) => void;
   ensureMilestoneIdentity: (task: Task) => void;
-  deriveCheckpointAlertEnabledState: (task: Task | null | undefined) => { soundEnabled: boolean; toastEnabled: boolean };
+  deriveCheckpointAlertEnabledState: (task: Task | null | undefined) => { soundEnabled: boolean };
   getPresetIntervalValueNum: (task: Task | null | undefined) => number;
   getPresetIntervalNextSeqNum: (task: Task | null | undefined) => number;
   milestoneUnitSec: (task: Task | null | undefined) => number;
@@ -92,8 +92,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       hasStarted: false,
       checkpointSoundEnabled: false,
       checkpointSoundMode: "once",
-      checkpointToastEnabled: true,
-      checkpointToastMode: "auto5s",
       timeGoalAction: "confirmModal",
       presetIntervalsEnabled: false,
       presetIntervalValue: 0,
@@ -130,8 +128,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     }
     task.checkpointSoundEnabled = !!task.checkpointSoundEnabled;
     task.checkpointSoundMode = task.checkpointSoundMode === "repeat" ? "repeat" : "once";
-    task.checkpointToastEnabled = !!task.checkpointToastEnabled;
-    task.checkpointToastMode = task.checkpointToastMode === "manual" ? "manual" : "auto5s";
     task.resumePendingSinceDayKey =
       typeof task.resumePendingSinceDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.resumePendingSinceDayKey)
         ? task.resumePendingSinceDayKey
@@ -181,7 +177,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
     ensureMilestoneIdentity(task);
     const derivedAlerts = deriveCheckpointAlertEnabledState(task);
     task.checkpointSoundEnabled = derivedAlerts.soundEnabled;
-    task.checkpointToastEnabled = derivedAlerts.toastEnabled;
   }
 
   function ensureMilestoneIdentity(task: Task) {
@@ -221,7 +216,6 @@ export function createTaskTimerSharedTask(ctx: TaskTimerSharedTaskContext): Task
       task.milestones.some((milestone) => milestone?.alertsEnabled !== false);
     return {
       soundEnabled: hasEnabledMilestone,
-      toastEnabled: hasEnabledMilestone,
     };
   }
 

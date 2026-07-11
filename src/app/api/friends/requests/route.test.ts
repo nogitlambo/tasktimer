@@ -291,6 +291,42 @@ describe("POST /api/friends/requests", () => {
     );
   });
 
+  it("sends to a registered receiver device when the receiver has no push preference document yet", async () => {
+    const db = createFriendRequestDb({
+      "users/receiver-uid/preferences/v1": null,
+    });
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(mocks.sendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ["receiver-native-token"],
+      })
+    );
+  });
+
+  it("does not send when receiver push preferences explicitly disable registered devices", async () => {
+    const db = createFriendRequestDb({
+      "users/receiver-uid/preferences/v1": {
+        mobilePushAlertsEnabled: false,
+        webPushAlertsEnabled: false,
+      },
+    });
+    mocks.getFirebaseAdminDb.mockReturnValue(db);
+
+    const response = await POST(friendRequest({ receiverEmail: "receiver@example.com" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ ok: true, requestId: "pending:sender-uid:receiver-uid" });
+    expect(mocks.sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
   it("does not fail the friend request and clears the receiver token when FCM rejects it as invalid", async () => {
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);

@@ -76,9 +76,8 @@ export type UserPreferencesV1 = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
-  checkpointAlertToastEnabled: boolean;
+  checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
-  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   optimalProductivityDays: DashboardWeekStart[];
@@ -1278,8 +1277,6 @@ function mapTaskToFirestore(task: Task): Record<string, unknown> {
       : [],
     checkpointSoundEnabled: !!task.checkpointSoundEnabled,
     checkpointSoundMode: task.checkpointSoundMode === "repeat" ? "repeat" : "once",
-    checkpointToastEnabled: !!task.checkpointToastEnabled,
-    checkpointToastMode: task.checkpointToastMode === "manual" ? "manual" : "auto5s",
     timeGoalAction: "confirmModal",
     presetIntervalsEnabled: !!task.presetIntervalsEnabled,
     presetIntervalValue: Number.isFinite(Number(task.presetIntervalValue)) ? Math.max(0, Number(task.presetIntervalValue)) : 0,
@@ -1608,9 +1605,8 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
         interactionHapticsIntensity: normalizeInteractionHapticsIntensity(prefSnap.get("interactionHapticsIntensity")),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
-        checkpointAlertToastEnabled: asBool(prefSnap.get("checkpointAlertToastEnabled"), true),
+        checkpointAlertFlashEnabled: asBool(prefSnap.get("checkpointAlertFlashEnabled"), true),
         checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
-        checkpointAlertToastMode: prefSnap.get("checkpointAlertToastMode") === "manual" ? "manual" : "auto5s",
         optimalProductivityStartTime: normalizeTimeOfDay(
           prefSnap.get("optimalProductivityStartTime"),
           DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
@@ -2267,9 +2263,8 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     interactionHapticsEnabled: asBool(data.interactionHapticsEnabled, true),
     interactionHapticsIntensity: normalizeInteractionHapticsIntensity(data.interactionHapticsIntensity),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
-    checkpointAlertToastEnabled: asBool(data.checkpointAlertToastEnabled, true),
+    checkpointAlertFlashEnabled: asBool(data.checkpointAlertFlashEnabled, true),
     checkpointAlertSoundMode: data.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
-    checkpointAlertToastMode: data.checkpointAlertToastMode === "manual" ? "manual" : "auto5s",
     optimalProductivityStartTime: normalizeTimeOfDay(
       data.optimalProductivityStartTime,
       DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME

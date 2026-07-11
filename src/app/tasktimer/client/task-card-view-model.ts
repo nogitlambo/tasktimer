@@ -15,6 +15,8 @@ type TaskProgressMarkerModel =
       edgeClass: string;
       reached: boolean;
       wrapClass: string;
+      labelPositionClass: "" | "mkTimeTop";
+      showLabel: boolean;
       label: string;
       description: string;
     }
@@ -55,7 +57,7 @@ type RenderTaskCardOptions = {
   milestoneUnitSuffix: string;
   timeGoalSec: number;
   checkpointRepeatActiveTaskId: string | null | undefined;
-  activeCheckpointToastTaskId: string | null | undefined;
+  checkpointFlashActive: boolean;
   historyRevealPhase: TaskHistoryRevealPhase;
   showHistory: boolean;
   isHistoryPinned: boolean;
@@ -70,7 +72,6 @@ type RenderTaskCardOptions = {
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: string) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
-  checkpointRewindOpen?: boolean;
 };
 
 type RenderedTaskCard = {
@@ -170,22 +171,18 @@ function renderTaskPrimaryActionWithRewindHtml({
   elapsedMs,
   sortedMilestones,
   milestoneUnitSec,
-  checkpointRewindOpen,
 }: {
   state: TaskPrimaryActionState;
   elapsedMs: number;
   sortedMilestones: Milestone[];
   milestoneUnitSec: number;
-  checkpointRewindOpen?: boolean;
 }) {
   if (state !== "resume") return renderTaskPrimaryActionHtml(state);
   const targetMs = getPreviousRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec });
   if (targetMs == null) return renderTaskPrimaryActionHtml(state);
-  const openClass = checkpointRewindOpen ? " isCheckpointRewindOpen" : "";
-  const hiddenAttrs = checkpointRewindOpen ? "" : ' aria-hidden="true" tabindex="-1"';
   return `
-                  <div class="taskCheckpointRewindGroup${openClass}">
-                    <button class="btn btn-ghost small taskCheckpointRewindBtn" data-action="rewindCheckpoint" title="Back to previous checkpoint" aria-label="Back to previous checkpoint" type="button"${hiddenAttrs}>&#8592;</button>
+                  <div class="taskCheckpointRewindGroup isCheckpointRewindOpen">
+                    <button class="btn btn-ghost small taskCheckpointRewindBtn" data-action="rewindCheckpoint" title="Back to previous checkpoint" aria-label="Back to previous checkpoint" type="button">&#8592;</button>
                     ${renderTaskPrimaryActionHtml(state)}
                   </div>`;
 }
@@ -219,9 +216,11 @@ export function buildTaskProgressModel({
     },
   ];
 
+  let visibleMilestoneLabelIndex = 0;
   safeMilestones.forEach((milestone) => {
     const value = +milestone.hours || 0;
     const secTarget = value * milestoneUnitSec;
+    const showLabel = Math.round(secTarget) % 60 === 0;
     const left = Math.max(0, Math.min((secTarget / maxSec) * 100, 100));
     const reached = safeElapsedSec >= secTarget;
     const edgeClass = left <= 1 ? "mkEdgeL" : left >= 99 ? "mkEdgeR" : "";
@@ -233,9 +232,12 @@ export function buildTaskProgressModel({
       edgeClass,
       reached,
       wrapClass: edgeClass && label.length > 8 ? "mkWrap8" : "",
+      labelPositionClass: showLabel && visibleMilestoneLabelIndex % 2 === 1 ? "mkTimeTop" : "",
+      showLabel,
       label,
       description: "",
     });
+    if (showLabel) visibleMilestoneLabelIndex += 1;
   });
 
   if (hasTimeGoal) {
@@ -283,7 +285,11 @@ export function renderTaskProgressHtml(
       const markerClass = marker.reached ? "mkAch" : "mkPend";
       return `
             <div class="mkFlag ${markerClass}" style="left:${marker.leftPos}%"></div>
-            <div class="mkTime ${markerClass} ${marker.edgeClass} ${marker.wrapClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>
+            ${
+              marker.showLabel
+                ? `<div class="mkTime ${marker.labelPositionClass} ${markerClass} ${marker.edgeClass} ${marker.wrapClass}" style="left:${marker.leftPos}%">${escapeHtml(marker.label)}</div>`
+                : ""
+            }
             `;
     })
     .join("");
@@ -358,7 +364,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     milestoneUnitSec,
     timeGoalSec,
     checkpointRepeatActiveTaskId,
-    activeCheckpointToastTaskId,
+    checkpointFlashActive,
     historyRevealPhase,
     showHistory,
     isHistoryPinned,
@@ -373,17 +379,15 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     fillBackgroundForPct,
     escapeHtml,
     formatMainTaskElapsedHtml,
-    checkpointRewindOpen,
   } = options;
   const elapsedSec = elapsedMs / 1000;
-  const hasActiveToastForTask = !!activeCheckpointToastTaskId && String(activeCheckpointToastTaskId) === taskId;
   const hasCheckpointRepeatForTask = !!checkpointRepeatActiveTaskId && String(checkpointRepeatActiveTaskId) === taskId;
   const className =
     "task" +
     (task.running ? " taskRunning" : "") +
     (isTimeGoalCompleted ? " taskCompleted" : "") +
     (task.collapsed ? " collapsed" : "") +
-    (hasCheckpointRepeatForTask || hasActiveToastForTask ? " taskAlertPulse" : "") +
+    (checkpointFlashActive ? " taskCheckpointFlash" : "") +
     (historyRevealPhase === "openingSpace" ? " taskHistoryOpeningSpace" : "") +
     (historyRevealPhase === "opening" ? " taskHistoryOpening" : "") +
     (historyRevealPhase === "closing" ? " taskHistoryClosing" : "") +
@@ -424,7 +428,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     elapsedMs,
     sortedMilestones,
     milestoneUnitSec,
-    checkpointRewindOpen,
   });
   const hasResettableTime = elapsedMs > 0;
   const resetLabel = task.running

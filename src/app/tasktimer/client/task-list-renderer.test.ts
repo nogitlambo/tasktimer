@@ -101,7 +101,7 @@ function createHarness(
     milestoneUnitSec: () => 3600,
     milestoneUnitSuffix: () => "h",
     checkpointRepeatActiveTaskId: () => null,
-    activeCheckpointToastTaskId: () => null,
+    isCheckpointFlashActive: () => false,
     canUseAdvancedHistory: () => true,
     canUseSocialFeatures: () => true,
     hasFriends: () => true,

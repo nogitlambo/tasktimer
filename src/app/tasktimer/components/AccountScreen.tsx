@@ -267,8 +267,6 @@ export default function AccountScreen() {
           </div>
         </div>
       </div>
-      <div className="checkpointToastHost" id="checkpointToastHost" aria-live="polite" aria-atomic="false" />
-
       <InlineConfirmModal
         open={account.showDeleteAccountConfirm}
         onClose={() => {

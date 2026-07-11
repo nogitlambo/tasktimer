@@ -24,11 +24,16 @@ import {
 } from "../lib/schedule-placement";
 import { normalizeTaskColor } from "../lib/taskColors";
 import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./context";
-import { getDelegatedAction } from "./delegated-actions";
 import { buildTaskProgressModel, getTaskPrimaryActionModel, type TaskPrimaryActionState } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
 import { playTaskCompleteConfettiHaptic, playTimeGoalXpCountHaptic } from "./interaction-haptics";
+import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
+import {
+  dismissNativeCheckpointAlarm,
+  isNativeAndroidCheckpointAlarmRuntime,
+  syncNativeCheckpointAlarms,
+} from "../lib/nativeTimerNotification";
 import { startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti, TIME_GOAL_XP_CALCULATING_TEXT } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
@@ -100,20 +105,6 @@ export function showSessionNoteAttachmentUploadError(container: HTMLElement | nu
 export function resolveRichNoteFileInputHost(editor: HTMLElement | null | undefined, documentRef: Pick<Document, "body">) {
   return (editor?.closest?.(".overlay") as HTMLElement | null) || documentRef.body;
 }
-
-type CheckpointToast = {
-  id: string;
-  title: string;
-  text: string;
-  checkpointTimeText: string | null;
-  checkpointDescText: string | null;
-  taskName: string | null;
-  counterText: string | null;
-  autoCloseMs: number | null;
-  autoCloseAtMs: number | null;
-  taskId: string | null;
-  muteRepeatOnManualDismiss: boolean;
-};
 
 type TimeGoalAwardPreview = { fromXp: number; toXp: number; awardedXp: number };
 
@@ -533,9 +524,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const { els, runtime } = ctx;
   const { sharedTasks } = ctx;
   const getDeferredQueue = () => ctx.getDeferredFocusModeTimeGoalModals();
-  const getToastQueue = () => ctx.getCheckpointToastQueue() as CheckpointToast[];
-  const getActiveToast = () => ctx.getActiveCheckpointToast() as CheckpointToast | null;
-  const setActiveToast = (value: CheckpointToast | null) => ctx.setActiveCheckpointToast(value as unknown);
+  const checkpointFlashTimersByTaskId: Record<string, number> = {};
   let timeGoalCompleteAudio: HTMLAudioElement | null = null;
   let timeGoalXpCountAudio: HTMLAudioElement | null = null;
   let activeFocusTransitionClone: HTMLElement | null = null;
@@ -1300,7 +1289,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
-    suppressCheckpointToastsForTask(taskId);
     acknowledgeTimeGoalCompletion(task);
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
@@ -1557,7 +1545,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.resetTaskStateImmediate(task, { logHistory: true, sessionNote, completedAtMs, historyCapBoundaryMs: resetBoundaryMs });
     ctx.save();
     ctx.render();
-    suppressCheckpointToastsForTask(taskId);
     if (opts?.deferModal || shouldDeferTimeGoalModalForBlockingOverlay()) {
       queueDeferredFocusModeTimeGoalModal(task, safeElapsedMs, { reminder: !!opts?.reminder, awardPreview });
     } else {
@@ -2186,13 +2173,58 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function dismissNonFocusTaskAlertsForFocusTask(focusTaskIdRaw: string | null | undefined) {
     const focusTaskId = String(focusTaskIdRaw || "").trim();
     if (!focusTaskId) return;
-    getToastQueue().length = 0;
     if (ctx.getCheckpointRepeatActiveTaskId() && String(ctx.getCheckpointRepeatActiveTaskId() || "").trim() !== focusTaskId) {
       stopCheckpointRepeatAlert();
     }
-    if (getActiveToast() && String(getActiveToast()?.taskId || "").trim() !== focusTaskId) {
-      dismissCheckpointToast({ manual: false });
+  }
+
+  function isCheckpointFlashActive(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return false;
+    const untilMs = Number(ctx.getCheckpointFlashUntilMsByTaskId()[taskId] || 0);
+    return untilMs > Date.now();
+  }
+
+  function syncCheckpointFlashDom(taskId: string, active: boolean, restart = false) {
+    const taskList = els.taskList as HTMLElement | null;
+    if (!taskList) return false;
+    const taskEl = Array.from(taskList.querySelectorAll<HTMLElement>(".task")).find(
+      (node) => String(node.dataset.taskId || "") === taskId
+    );
+    if (!taskEl) return false;
+    if (active && restart) {
+      taskEl.classList.remove("taskCheckpointFlash");
+      void taskEl.offsetWidth;
     }
+    taskEl.classList.toggle("taskCheckpointFlash", active);
+    return true;
+  }
+
+  function clearCheckpointFlash(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    if (checkpointFlashTimersByTaskId[taskId] != null) {
+      window.clearTimeout(checkpointFlashTimersByTaskId[taskId]);
+      delete checkpointFlashTimersByTaskId[taskId];
+    }
+    delete ctx.getCheckpointFlashUntilMsByTaskId()[taskId];
+    if (!runtime.destroyed && !syncCheckpointFlashDom(taskId, false)) ctx.render();
+  }
+
+  function startCheckpointFlash(taskIdRaw: string | null | undefined) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || !ctx.getCheckpointAlertFlashEnabled()) return;
+    if (checkpointFlashTimersByTaskId[taskId] != null) {
+      window.clearTimeout(checkpointFlashTimersByTaskId[taskId]);
+    }
+    ctx.getCheckpointFlashUntilMsByTaskId()[taskId] = Date.now() + 5000;
+    checkpointFlashTimersByTaskId[taskId] = window.setTimeout(() => clearCheckpointFlash(taskId), 5000);
+    if (!runtime.destroyed && !syncCheckpointFlashDom(taskId, true, true)) ctx.render();
+  }
+
+  function formatCheckpointAlertText(task: Task, milestone: { hours: number; description: string }) {
+    const targetMs = Math.max(0, (+milestone.hours || 0) * sharedTasks.milestoneUnitSec(task) * 1000);
+    return ctx.formatTime(targetMs);
   }
 
   function ensureCheckpointBeepAudio() {
@@ -2248,6 +2280,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function stopCheckpointRepeatAlert() {
+    void dismissNativeCheckpointAlarm(ctx.getCheckpointRepeatActiveTaskId()).catch(() => {});
     ctx.setCheckpointRepeatStopAtMs(0);
     ctx.setCheckpointRepeatActiveTaskId(null);
     if (ctx.getCheckpointRepeatCycleTimer() != null) {
@@ -2322,146 +2355,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     scheduleCheckpointRepeatCycle();
   }
 
-  function renderCheckpointToast() {
-    const host = els.checkpointToastHost as HTMLElement | null;
-    const active = getActiveToast();
-    if (!host) return;
-    host.classList.toggle("isActive", !!active);
-    if (!active) {
-      host.innerHTML = "";
-      return;
-    }
-    host.innerHTML = `
-      <div class="checkpointToast" data-toast-id="${ctx.escapeHtmlUI(active.id)}" role="status">
-        ${active.taskName ? `<p class="checkpointToastTaskName">${ctx.escapeHtmlUI(active.taskName)}</p>` : ""}
-        <p class="checkpointToastTitle">${ctx.escapeHtmlUI(String(active.title || "CHECKPOINT REACHED!").toUpperCase())}</p>
-        <div class="checkpointToastSummary">
-          <p class="checkpointToastText">${ctx.escapeHtmlUI(String(active.checkpointTimeText || active.text || ""))}</p>
-          ${active.checkpointDescText ? `<p class="checkpointToastDesc">${ctx.escapeHtmlUI(active.checkpointDescText)}</p>` : ""}
-        </div>
-        <div class="checkpointToastActions">
-          <button class="btn btn-ghost small checkpointToastClose" type="button" data-action="closeCheckpointToast">Dismiss</button>
-          <button class="btn btn-ghost small checkpointToastJump" type="button" data-action="jumpToCheckpointTask">Dismiss and Jump to Task</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function showNextCheckpointToast() {
-    const queue = getToastQueue();
-    if (getActiveToast() || queue.length === 0) return;
-    const next = queue.shift() || null;
-    setActiveToast(
-      next
-        ? { ...next, autoCloseAtMs: (next.autoCloseMs || 0) > 0 ? Date.now() + (next.autoCloseMs as number) : null }
-        : null
-    );
-    renderCheckpointToast();
-    if (!runtime.destroyed) ctx.render();
-    if (ctx.getCheckpointToastAutoCloseTimer() != null) {
-      window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
-    }
-    const active = getActiveToast();
-    if ((active?.autoCloseMs || 0) > 0) {
-      ctx.setCheckpointToastAutoCloseTimer(
-        window.setTimeout(() => {
-          dismissCheckpointToast({ manual: false });
-        }, active!.autoCloseMs as number)
-      );
-    } else {
-      ctx.setCheckpointToastAutoCloseTimer(null);
-    }
-  }
-
-  function dismissCheckpointToast(opts?: { manual?: boolean }) {
-    const manual = !!opts?.manual;
-    const active = getActiveToast();
-    if (
-      manual &&
-      active?.muteRepeatOnManualDismiss &&
-      active.taskId &&
-      ctx.getCheckpointRepeatActiveTaskId() &&
-      String(active.taskId) === String(ctx.getCheckpointRepeatActiveTaskId())
-    ) {
-      ctx.broadcastCheckpointAlertMute(String(active.taskId));
-      stopCheckpointRepeatAlert();
-    }
-    if (ctx.getCheckpointToastAutoCloseTimer() != null) {
-      window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
-      ctx.setCheckpointToastAutoCloseTimer(null);
-    }
-    setActiveToast(null);
-    renderCheckpointToast();
-    if (!runtime.destroyed) ctx.render();
-    if (getToastQueue().length) window.setTimeout(showNextCheckpointToast, 50);
-  }
-
-  function suppressCheckpointToastsForTask(taskIdRaw: string | null | undefined) {
-    const taskId = String(taskIdRaw || "").trim();
-    if (!taskId) return;
-    const queue = getToastQueue();
-    for (let i = queue.length - 1; i >= 0; i -= 1) {
-      if (String(queue[i]?.taskId || "").trim() === taskId) queue.splice(i, 1);
-    }
-    const active = getActiveToast();
-    if (String(active?.taskId || "").trim() !== taskId) return;
-    if (ctx.getCheckpointToastAutoCloseTimer() != null) {
-      window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
-      ctx.setCheckpointToastAutoCloseTimer(null);
-    }
-    setActiveToast(null);
-    renderCheckpointToast();
-  }
-
-  function dismissCheckpointToastAndJumpToTask() {
-    const taskId = String(getActiveToast()?.taskId || "").trim();
-    dismissCheckpointToast({ manual: true });
-    if (!taskId) return;
-    const path = ctx.normalizedPathname();
-    const onMainTaskTimerRoute = /\/tasklaunch$/.test(path) || /\/tasklaunch\/index\.html$/i.test(path);
-    if (onMainTaskTimerRoute) {
-      ctx.jumpToTaskById(taskId);
-      return;
-    }
-    ctx.savePendingTaskJump(taskId);
-    ctx.navigateToAppRoute("/tasklaunch");
-  }
-
-  function enqueueCheckpointToast(title: string, text: string, opts?: Omit<CheckpointToast, "id" | "title" | "text" | "autoCloseAtMs">) {
-    const queue = getToastQueue();
-    queue.length = 0;
-    if (ctx.getCheckpointToastAutoCloseTimer() != null) {
-      window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
-      ctx.setCheckpointToastAutoCloseTimer(null);
-    }
-    setActiveToast(null);
-    queue.push({
-      id: `${Date.now()}-${Math.random()}`,
-      title,
-      text,
-      checkpointTimeText: opts?.checkpointTimeText ?? null,
-      checkpointDescText: opts?.checkpointDescText ?? null,
-      taskName: opts?.taskName ?? null,
-      counterText: opts?.counterText ?? null,
-      autoCloseMs: opts?.autoCloseMs ?? 5000,
-      autoCloseAtMs: null,
-      taskId: opts?.taskId ?? null,
-      muteRepeatOnManualDismiss: !!opts?.muteRepeatOnManualDismiss,
-    });
-    showNextCheckpointToast();
-  }
-
-  function formatCheckpointAlertText(task: Task, milestone: { hours: number; description: string }) {
-    const targetMs = Math.max(0, (+milestone.hours || 0) * sharedTasks.milestoneUnitSec(task) * 1000);
-    return ctx.formatTime(targetMs);
-  }
-
   function processCheckpointAlertsForTask(task: Task, elapsedSecNow: number) {
     const taskId = String(task.id || "");
-    if (isTaskTimeGoalCompletedForCurrentPeriod(task)) {
-      if (taskId) clearCheckpointBaseline(taskId);
-      return;
-    }
     if (!taskId || !task.running) {
       if (taskId) clearCheckpointBaseline(taskId);
       return;
@@ -2480,8 +2375,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     }
     const fired = getCheckpointFiredSet(taskId);
     const msSorted = hasMilestones ? ctx.sortMilestones((task.milestones || []).slice()) : [];
-    const validMilestones = msSorted.filter((m) => Math.max(0, Math.round((+m.hours || 0) * sharedTasks.milestoneUnitSec(task))) > 0);
-    const totalCheckpoints = validMilestones.length;
     const completionPriority = getCheckpointAlertCompletionPriority({
       prevBaselineSec: prevBaseline,
       elapsedWholeSec,
@@ -2503,23 +2396,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (fired.has(key)) return;
       fired.add(key);
       if (suppressCheckpointAlertSideEffects) return;
-      const text = formatCheckpointAlertText(task, m);
-      const checkpointIndex = Math.max(1, validMilestones.findIndex((vm) => checkpointKeyForTask(vm, task) === key) + 1);
-      const checkpointTimeText = ctx.formatTime(targetSec * 1000);
-      if (ctx.getCheckpointAlertToastEnabled() && task.checkpointToastEnabled) {
-        const toastMode = ctx.getCheckpointAlertToastMode();
-        enqueueCheckpointToast(`Checkpoint ${checkpointIndex}/${Math.max(1, totalCheckpoints)} Reached!`, text, {
-          autoCloseMs: toastMode === "manual" ? null : 5000,
-          taskId,
-          taskName: task.name || "",
-          counterText: ctx.formatMainTaskElapsed(getElapsedMs(task)),
-          checkpointTimeText,
-          checkpointDescText: String(m.description || "").trim() || null,
-          muteRepeatOnManualDismiss:
-            ctx.getCheckpointAlertSoundEnabled() && !!task.checkpointSoundEnabled && ctx.getCheckpointAlertSoundMode() === "repeat",
-        });
-      }
-      if (ctx.getCheckpointAlertSoundEnabled() && task.checkpointSoundEnabled) beepCount += 1;
+      startCheckpointFlash(taskId);
+      if (
+        ctx.getCheckpointAlertSoundEnabled() &&
+        task.checkpointSoundEnabled &&
+        !isNativeAndroidCheckpointAlarmRuntime()
+      ) beepCount += 1;
     });
     baselineByTaskId[taskId] = elapsedWholeSec;
     if (beepCount > 0) {
@@ -2559,6 +2441,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function tick() {
     if (runtime.destroyed) return;
     const tasks = ctx.getTasks();
+    void syncNativeCheckpointAlarms(buildNativeCheckpointSchedule({
+      tasks,
+      soundEnabled: ctx.getCheckpointAlertSoundEnabled(),
+      soundMode: ctx.getCheckpointAlertSoundMode(),
+      nowMs: nowMs(),
+    })).catch(() => {});
     const resumePendingResetResult = reconcileResumePendingTasks(tasks, nowMs());
     if (resumePendingResetResult.changedTaskIds.length) {
       ctx.save();
@@ -2589,12 +2477,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
             primaryActionState = "resume";
           }
           const primaryActionModel = getTaskPrimaryActionModel(primaryActionState);
+          const shouldRefreshPrimaryActionMarkup =
+            primaryActionBtn.dataset.action !== primaryActionModel.dataAction ||
+            primaryActionBtn.className !== primaryActionModel.className ||
+            !primaryActionBtn.querySelector(".taskPrimaryActionRing") ||
+            !primaryActionBtn.querySelector(".taskPrimaryActionLabel");
           primaryActionBtn.className = primaryActionModel.className;
           primaryActionBtn.dataset.action = primaryActionModel.dataAction;
           primaryActionBtn.title = primaryActionModel.title;
           primaryActionBtn.setAttribute("aria-label", primaryActionModel.ariaLabel);
           primaryActionBtn.disabled = primaryActionModel.disabled;
-          primaryActionBtn.innerHTML = primaryActionModel.innerHtml;
+          if (shouldRefreshPrimaryActionMarkup) primaryActionBtn.innerHTML = primaryActionModel.innerHtml;
         }
         const resetBtn = node.querySelector('.taskBackActions > .taskMenuItem[data-action="reset"]') as HTMLButtonElement | null;
         if (resetBtn) {
@@ -2633,7 +2526,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       if (focusTask) updateFocusDial(focusTask);
       else if (els.focusTaskName && ctx.getFocusModeTaskName()) els.focusTaskName.textContent = ctx.getFocusModeTaskName();
     }
-    if (getActiveToast()) renderCheckpointToast();
     // Live dashboard updates should be limited to time-sensitive widgets while a task is running.
     if (ctx.getCurrentAppPage() === "dashboard" && tasks.some((task) => !!task.running)) {
       ctx.renderDashboardLiveWidgets();
@@ -2797,28 +2689,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         }, 0);
       });
     }
-    ctx.on(els.checkpointToastHost, "click", (e: any) => {
-      const delegatedAction = getDelegatedAction(e.target, "data-action");
-      if (!delegatedAction) return;
-      const actionHandlers: Record<string, () => void> = {
-        closeCheckpointToast: () => dismissCheckpointToast({ manual: true }),
-        jumpToCheckpointTask: () => dismissCheckpointToastAndJumpToTask(),
-      };
-      actionHandlers[delegatedAction.action]?.();
-    });
   }
 
   function destroySessionRuntime() {
     if (ctx.getFocusSessionNoteSaveTimer() != null) window.clearTimeout(ctx.getFocusSessionNoteSaveTimer() as number);
-    if (ctx.getCheckpointToastAutoCloseTimer() != null) window.clearTimeout(ctx.getCheckpointToastAutoCloseTimer() as number);
     if (ctx.getCheckpointRepeatCycleTimer() != null) window.clearTimeout(ctx.getCheckpointRepeatCycleTimer() as number);
     if (ctx.getCheckpointBeepQueueTimer() != null) window.clearTimeout(ctx.getCheckpointBeepQueueTimer() as number);
+    Object.values(checkpointFlashTimersByTaskId).forEach((timer) => window.clearTimeout(timer));
+    Object.keys(checkpointFlashTimersByTaskId).forEach((taskId) => delete checkpointFlashTimersByTaskId[taskId]);
+    Object.keys(ctx.getCheckpointFlashUntilMsByTaskId()).forEach((taskId) => delete ctx.getCheckpointFlashUntilMsByTaskId()[taskId]);
     stopCheckpointRepeatAlert();
     stopTimeGoalXpCountAudio();
-    setActiveToast(null);
-    getToastQueue().length = 0;
     ctx.setFocusSessionNoteSaveTimer(null);
-    ctx.setCheckpointToastAutoCloseTimer(null);
     ctx.setCheckpointRepeatCycleTimer(null);
     ctx.setCheckpointBeepQueueTimer(null);
   }
@@ -2843,9 +2725,8 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     resetCheckpointAlertTracking,
     clearCheckpointBaseline,
     checkpointRepeatActiveTaskId: () => ctx.getCheckpointRepeatActiveTaskId(),
-    activeCheckpointToastTaskId: () => String(getActiveToast()?.taskId || "").trim() || null,
+    isCheckpointFlashActive,
     stopCheckpointRepeatAlert,
-    enqueueCheckpointToast,
     registerSessionEvents,
     destroySessionRuntime,
   };

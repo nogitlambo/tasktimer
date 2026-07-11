@@ -2547,8 +2547,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #editOverlay #editFinalCheckpointActionField,
-#editOverlay #editCheckpointSoundModeField,
-#editOverlay #editCheckpointToastModeField{
+#editOverlay #editCheckpointSoundModeField{
   margin-top:8px;
 }
 
@@ -6548,8 +6547,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #addTaskOverlay #addTaskFinalCheckpointActionSelect,
-#addTaskOverlay #addTaskCheckpointSoundModeSelect,
-#addTaskOverlay #addTaskCheckpointToastModeSelect{
+#addTaskOverlay #addTaskCheckpointSoundModeSelect{
   display:block;
   width:100%;
   max-width:none;

@@ -23,8 +23,6 @@ function task(overrides: Partial<Task> = {}): Task {
     color: "#8bd450",
     checkpointSoundEnabled: true,
     checkpointSoundMode: "repeat",
-    checkpointToastEnabled: true,
-    checkpointToastMode: "manual",
     timeGoalAction: "confirmModal",
     finalCheckpointAction: "confirmModal",
     presetIntervalsEnabled: true,

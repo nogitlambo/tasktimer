@@ -122,11 +122,6 @@ export function buildImportedSharedTask(options: BuildImportedSharedTaskOptions)
   task.milestones = cloneImportedMilestones(importConfig, options.createId);
   task.checkpointSoundEnabled = !!importConfig.checkpointSoundEnabled;
   task.checkpointSoundMode = importConfig.checkpointSoundMode === "repeat" ? "repeat" : "once";
-  task.checkpointToastEnabled = !!importConfig.checkpointToastEnabled;
-  task.checkpointToastMode =
-    importConfig.checkpointToastMode === "manual" || importConfig.checkpointToastMode === "auto3s"
-      ? importConfig.checkpointToastMode
-      : "auto5s";
   task.timeGoalAction = importConfig.timeGoalAction || "confirmModal";
   task.finalCheckpointAction = importConfig.finalCheckpointAction || task.timeGoalAction;
   task.presetIntervalsEnabled = !!importConfig.presetIntervalsEnabled;
@@ -160,7 +155,7 @@ export function buildImportedSharedTask(options: BuildImportedSharedTaskOptions)
     clearImportedTaskSchedule(task);
     return { task, status: "unscheduled" };
   }
-  slot.days.forEach((day) => setTaskScheduledTimeForDay(task, day, slot.time));
+  slot.days.forEach((day) => setTaskScheduledTimeForDay(task, day, slot.time, options.nowDate));
   return {
     task,
     status: slot.source === "productivityWindow" && slot.time === productivityStartTime ? "scheduled" : "rescheduled",

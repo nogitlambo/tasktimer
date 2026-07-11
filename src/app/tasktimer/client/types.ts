@@ -97,9 +97,8 @@ export type TaskTimerMutableState = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
-  checkpointAlertToastEnabled: boolean;
+  checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
-  checkpointAlertToastMode: "auto5s" | "manual";
   optimalProductivityStartTime: string;
   optimalProductivityEndTime: string;
   optimalProductivityDays: OptimalProductivityDays;
@@ -125,8 +124,6 @@ export type TaskTimerMutableState = {
   addTaskMilestones: Task["milestones"];
   addTaskCheckpointSoundEnabled: boolean;
   addTaskCheckpointSoundMode: "once" | "repeat";
-  addTaskCheckpointToastEnabled: boolean;
-  addTaskCheckpointToastMode: "auto5s" | "manual";
   timeGoalModalTaskId: string | null;
   timeGoalModalFrozenElapsedMs: number;
   timeGoalReminderAtMsByTaskId: Record<string, number>;
@@ -163,32 +160,7 @@ export type TaskTimerMutableState = {
   currentTileColumnCount: number;
   suppressNavStackPush: boolean;
   lastNativeBackHandledAtMs: number;
-  checkpointToastQueue: Array<{
-    id: string;
-    title: string;
-    text: string;
-    checkpointTimeText?: string | null;
-    checkpointDescText?: string | null;
-    taskName?: string | null;
-    counterText?: string | null;
-    autoCloseMs: number | null;
-    autoCloseAtMs?: number | null;
-    taskId?: string | null;
-    muteRepeatOnManualDismiss?: boolean;
-  }>;
-  activeCheckpointToast: {
-    id: string;
-    title: string;
-    text: string;
-    checkpointTimeText?: string | null;
-    checkpointDescText?: string | null;
-    taskName?: string | null;
-    counterText?: string | null;
-    autoCloseMs: number | null;
-    autoCloseAtMs?: number | null;
-    taskId?: string | null;
-    muteRepeatOnManualDismiss?: boolean;
-  } | null;
+  checkpointFlashUntilMsByTaskId: Record<string, number>;
   checkpointBeepAudio: HTMLAudioElement | null;
   checkpointBeepQueueCount: number;
   checkpointRepeatStopAtMs: number;

@@ -522,7 +522,7 @@ function selectPreferredFriendRequestDeviceRows(deviceRows) {
 async function loadUserPushPreferences(uid) {
   const prefSnap = await db.collection("users").doc(uid).collection("preferences").doc("v1").get();
   if (!prefSnap.exists) {
-    return {mobilePushAlertsEnabled: false, webPushAlertsEnabled: false};
+    return {mobilePushAlertsEnabled: true, webPushAlertsEnabled: true};
   }
   const mobilePushAlertsEnabled = prefSnap.get("mobilePushAlertsEnabled") === true;
   const webPushAlertsEnabled =

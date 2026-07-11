@@ -575,9 +575,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskCheckpointSoundModeSelect) {
       els.addTaskCheckpointSoundModeSelect.disabled = !checkpointsEnabled || !ctx.getCheckpointAlertSoundEnabled() || !derivedAlertState.soundEnabled;
     }
-    if (els.addTaskCheckpointToastModeSelect) {
-      els.addTaskCheckpointToastModeSelect.disabled = !checkpointsEnabled || !ctx.getCheckpointAlertToastEnabled() || !derivedAlertState.toastEnabled;
-    }
     if (els.addTaskAddMsBtn) {
       const blocked = !hasActiveTimeGoal;
       els.addTaskAddMsBtn.disabled = blocked;
@@ -911,8 +908,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       milestones,
       checkpointSoundEnabled: !!ctx.getAddTaskCheckpointSoundEnabled(),
       checkpointSoundMode: els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once",
-      checkpointToastEnabled: !!ctx.getAddTaskCheckpointToastEnabled(),
-      checkpointToastMode: els.addTaskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s",
     });
   }
 
@@ -930,8 +925,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     ctx.setAddTaskMilestonesState([]);
     ctx.setAddTaskCheckpointSoundEnabledState(false);
     ctx.setAddTaskCheckpointSoundModeState("once");
-    ctx.setAddTaskCheckpointToastEnabledState(false);
-    ctx.setAddTaskCheckpointToastModeState("auto5s");
     addTaskSplitAcrossProductivityDays = true;
     addTaskWeeklyBlockDay = getAddTaskDefaultWeeklyBlockDay();
     selectedColor = getNextAutoTaskColor(ctx.getTasks());
@@ -945,7 +938,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     if (els.addTaskPlannedStartPushReminders) els.addTaskPlannedStartPushReminders.checked = false;
     if (els.addTaskPlannedStartInput) els.addTaskPlannedStartInput.value = "09:00";
     if (els.addTaskCheckpointSoundModeSelect) els.addTaskCheckpointSoundModeSelect.value = "once";
-    if (els.addTaskCheckpointToastModeSelect) els.addTaskCheckpointToastModeSelect.value = "auto5s";
     if (els.addTaskMsToggle) els.addTaskMsToggle.checked = false;
     if (els.addTaskSplitAcrossProductivityDays) els.addTaskSplitAcrossProductivityDays.checked = true;
     if (els.addTaskWeeklyBlockDaySelect) els.addTaskWeeklyBlockDaySelect.value = addTaskWeeklyBlockDay;
@@ -1084,8 +1076,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     }));
     newTask.checkpointSoundEnabled = checkpointingEnabled && derivedAlertState.soundEnabled;
     newTask.checkpointSoundMode = els.addTaskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once";
-    newTask.checkpointToastEnabled = checkpointingEnabled && derivedAlertState.toastEnabled;
-    newTask.checkpointToastMode = els.addTaskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s";
     newTask.presetIntervalsEnabled = false;
     newTask.presetIntervalValue = 0;
     newTask.timeGoalAction = "confirmModal";
@@ -1340,7 +1330,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       syncAddTaskMilestonesUi();
     });
     ctx.on(els.addTaskCheckpointSoundModeSelect, "change", clearAddTaskValidationState);
-    ctx.on(els.addTaskCheckpointToastModeSelect, "change", clearAddTaskValidationState);
     ctx.on(els.addTaskAddMsBtn, "click", () => {
       if (!ctx.getAddTaskMilestonesEnabled() || getAddTaskTimeGoalMinutes() <= 0) {
         syncAddTaskCheckpointAlertUi();

@@ -2817,22 +2817,19 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   display:none;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointToastModeField{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap:16px;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField > label,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointToastModeField > label{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField > label{
   margin-bottom:0;
   min-width:0;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField > .settingsDownwardSelect,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointToastModeField > .settingsDownwardSelect{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane #taskCheckpointSoundModeField > .settingsDownwardSelect{
   flex:0 1 260px;
   width:auto;
   max-width:58%;
@@ -6263,3 +6260,15 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   flex-wrap:wrap !important;
 }
 
+.settingsPermissionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.settingsPermissionRow.isHidden,
+.settingsPermissionRow .isHidden {
+  display: none;
+}

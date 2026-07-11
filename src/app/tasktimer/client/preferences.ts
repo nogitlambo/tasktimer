@@ -24,6 +24,12 @@ import {
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import { bindToggleRow } from "./control-helpers";
 import { isInteractionHapticsRuntimeAvailable } from "./interaction-haptics";
+import { PushNotifications } from "@capacitor/push-notifications";
+import {
+  getNativeCheckpointAlarmPermissionStatus,
+  isNativeAndroidCheckpointAlarmRuntime,
+  openNativeCheckpointAlarmPermissionSettings,
+} from "../lib/nativeTimerNotification";
 import {
   getFocusDndEnabled,
   getNativeFocusDndStatus,
@@ -37,7 +43,6 @@ type PreferenceEventDeps = {
 };
 
 const CHECKPOINT_ALERT_SOUND_MODE_KEY = "taskticker_tasks_v1:checkpointAlertSoundMode";
-const CHECKPOINT_ALERT_TOAST_MODE_KEY = "taskticker_tasks_v1:checkpointAlertToastMode";
 const TASKTIMER_SETTINGS_PREFERENCES_ACTIVE_EVENT = "tasktimer:settings-preferences-active";
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_DAYS_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-days-change";
 const TASKTIMER_SETTINGS_OPTIMAL_PRODUCTIVITY_PERIOD_CHANGE_EVENT = "tasktimer:settings-optimal-productivity-period-change";
@@ -76,6 +81,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   const { els } = ctx;
   let focusDndSyncSeq = 0;
   let focusDndAccessRequestSeq = 0;
+  let checkpointAlarmPermissionSyncSeq = 0;
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
     repository: {
@@ -162,9 +168,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       interactionHapticsEnabled: ctx.getInteractionHapticsEnabled(),
       interactionHapticsIntensity: ctx.getInteractionHapticsIntensity(),
       checkpointAlertSoundEnabled: ctx.getCheckpointAlertSoundEnabled(),
-      checkpointAlertToastEnabled: ctx.getCheckpointAlertToastEnabled(),
+      checkpointAlertFlashEnabled: ctx.getCheckpointAlertFlashEnabled(),
       checkpointAlertSoundMode: ctx.getCheckpointAlertSoundMode(),
-      checkpointAlertToastMode: ctx.getCheckpointAlertToastMode(),
       optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
       optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
       optimalProductivityDays: ctx.getOptimalProductivityDays(),
@@ -398,17 +403,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.taskInteractionHapticsToggle as HTMLElement | null, ctx.getInteractionHapticsEnabled());
     syncInteractionHapticsIntensityUi();
     ctx.toggleSwitchElement(els.taskCheckpointSoundToggle as HTMLElement | null, ctx.getCheckpointAlertSoundEnabled());
-    ctx.toggleSwitchElement(els.taskCheckpointToastToggle as HTMLElement | null, ctx.getCheckpointAlertToastEnabled());
+    ctx.toggleSwitchElement(els.taskCheckpointFlashToggle as HTMLElement | null, ctx.getCheckpointAlertFlashEnabled());
     if (els.taskCheckpointSoundModeSelect) {
       els.taskCheckpointSoundModeSelect.value = ctx.getCheckpointAlertSoundMode();
       els.taskCheckpointSoundModeSelect.disabled = !ctx.getCheckpointAlertSoundEnabled();
     }
-    if (els.taskCheckpointToastModeSelect) {
-      els.taskCheckpointToastModeSelect.value = ctx.getCheckpointAlertToastMode();
-      els.taskCheckpointToastModeSelect.disabled = !ctx.getCheckpointAlertToastEnabled();
-    }
     els.taskCheckpointSoundModeField?.classList.toggle("isHidden", !ctx.getCheckpointAlertSoundEnabled());
-    els.taskCheckpointToastModeField?.classList.toggle("isHidden", !ctx.getCheckpointAlertToastEnabled());
+    void syncCheckpointAlarmPermissionUi();
     if (els.taskWeekStartingSelect) {
       els.taskWeekStartingSelect.value = weekStarting;
     }
@@ -465,10 +466,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskCheckpointSoundToggle.setAttribute("aria-disabled", "false");
       els.taskCheckpointSoundToggle.title = "";
     }
-    if (els.taskCheckpointToastToggle) {
-      (els.taskCheckpointToastToggle as HTMLButtonElement).disabled = false;
-      els.taskCheckpointToastToggle.setAttribute("aria-disabled", "false");
-      els.taskCheckpointToastToggle.title = "";
+    if (els.taskCheckpointFlashToggle) {
+      (els.taskCheckpointFlashToggle as HTMLButtonElement).disabled = false;
+      els.taskCheckpointFlashToggle.setAttribute("aria-disabled", "false");
+      els.taskCheckpointFlashToggle.title = "";
     }
     const currentEditTask = ctx.getCurrentEditTask();
     if (currentEditTask) ctx.syncEditCheckpointAlertUi(currentEditTask);
@@ -711,22 +712,42 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setMobilePushAlertsEnabledState(preferenceService.loadMobilePushAlertsEnabled());
     ctx.setWebPushAlertsEnabledState(preferenceService.loadWebPushAlertsEnabled());
     ctx.setCheckpointAlertSoundEnabledState(prefs.checkpointAlertSoundEnabled !== false);
-    ctx.setCheckpointAlertToastEnabledState(prefs.checkpointAlertToastEnabled !== false);
+    ctx.setCheckpointAlertFlashEnabledState(prefs.checkpointAlertFlashEnabled !== false);
     ctx.setCheckpointAlertSoundModeState(prefs.checkpointAlertSoundMode === "repeat" ? "repeat" : "once");
-    ctx.setCheckpointAlertToastModeState(prefs.checkpointAlertToastMode === "manual" ? "manual" : "auto5s");
+  }
+
+  async function syncCheckpointAlarmPermissionUi() {
+    const sequence = ++checkpointAlarmPermissionSyncSeq;
+    const nativeAndroid = isNativeAndroidCheckpointAlarmRuntime();
+    els.taskCheckpointAlarmPermissionRow?.classList.toggle("isHidden", !nativeAndroid || !ctx.getCheckpointAlertSoundEnabled());
+    if (!nativeAndroid || !ctx.getCheckpointAlertSoundEnabled()) return;
+    const status = await getNativeCheckpointAlarmPermissionStatus().catch(() => null);
+    if (sequence !== checkpointAlarmPermissionSyncSeq || !status) return;
+    const ready = status.exactAlarmGranted && status.notificationsGranted;
+    if (els.taskCheckpointAlarmPermissionStatus) {
+      els.taskCheckpointAlarmPermissionStatus.textContent = ready
+        ? "Background checkpoint alarms are enabled."
+        : "Allow notifications and exact alarms for reliable background checkpoint sounds.";
+    }
+    els.taskCheckpointAlarmPermissionBtn?.classList.toggle("isHidden", ready);
+  }
+
+  async function requestCheckpointAlarmPermissions() {
+    if (!isNativeAndroidCheckpointAlarmRuntime()) return;
+    await PushNotifications.requestPermissions().catch(() => null);
+    const status = await getNativeCheckpointAlarmPermissionStatus().catch(() => null);
+    if (status && (!status.exactAlarmGranted || !status.notificationsGranted)) {
+      await openNativeCheckpointAlarmPermissionSettings().catch(() => {});
+    }
+    await syncCheckpointAlarmPermissionUi();
   }
 
   function saveCheckpointAlertBehaviourSettings() {
     ctx.setCheckpointAlertSoundModeState(els.taskCheckpointSoundModeSelect?.value === "repeat" ? "repeat" : "once");
-    ctx.setCheckpointAlertToastModeState(els.taskCheckpointToastModeSelect?.value === "manual" ? "manual" : "auto5s");
     try {
       localStorage.setItem(
         CHECKPOINT_ALERT_SOUND_MODE_KEY,
         ctx.getCheckpointAlertSoundMode()
-      );
-      localStorage.setItem(
-        CHECKPOINT_ALERT_TOAST_MODE_KEY,
-        ctx.getCheckpointAlertToastMode()
       );
     } catch {
       // ignore localStorage write failures
@@ -1228,17 +1249,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         const nextValue = !ctx.getCheckpointAlertSoundEnabled();
         ctx.setCheckpointAlertSoundEnabledState(nextValue);
         if (!nextValue) ctx.stopCheckpointRepeatAlert();
+        if (nextValue) void requestCheckpointAlarmPermissions();
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
       },
     });
     bindToggleRow({
       on: ctx.on,
-      control: els.taskCheckpointToastToggle,
-      row: els.taskCheckpointToastToggleRow,
-      ignoreSelector: "#taskCheckpointToastToggle",
+      control: els.taskCheckpointFlashToggle,
+      row: els.taskCheckpointFlashToggleRow,
+      ignoreSelector: "#taskCheckpointFlashToggle",
       handleToggle: () => {
-        ctx.setCheckpointAlertToastEnabledState(!ctx.getCheckpointAlertToastEnabled());
+        ctx.setCheckpointAlertFlashEnabledState(!ctx.getCheckpointAlertFlashEnabled());
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
       },
@@ -1248,10 +1270,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       persistPreferencesToCloud();
       syncTaskSettingsUi();
     });
-    ctx.on(els.taskCheckpointToastModeSelect, "change", () => {
-      saveCheckpointAlertBehaviourSettings();
-      persistPreferencesToCloud();
-      syncTaskSettingsUi();
+    ctx.on(els.taskCheckpointAlarmPermissionBtn, "click", () => {
+      void openNativeCheckpointAlarmPermissionSettings().then(syncCheckpointAlarmPermissionUi).catch(() => {});
     });
     [
       els.taskInteractionHapticsIntensityMax,

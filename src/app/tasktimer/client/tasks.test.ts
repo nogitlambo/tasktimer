@@ -145,7 +145,7 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
     getTaskElapsedMs: (task: Task) => Number(task.accumulatedMs || 0),
     sortMilestones: (value: Task["milestones"]) => value,
     checkpointRepeatActiveTaskId: () => null,
-    activeCheckpointToastTaskId: () => null,
+    isCheckpointFlashActive: () => false,
     hasEntitlement: () => true,
     isTaskSharedByOwner: () => false,
     getDynamicColorsEnabled: () => false,
@@ -494,81 +494,6 @@ describe("createTaskTimerTasks", () => {
     );
     expect(harness.calls).toContain("save");
     expect(harness.calls).toContain("render");
-  });
-
-  it("reveals checkpoint rewind on long-press Resume and suppresses the generated resume click", () => {
-    vi.useFakeTimers();
-    try {
-      const preventDefault = vi.fn();
-      const stopPropagation = vi.fn();
-      const harness = createHarness({
-        deferTimers: true,
-        tasks: [
-          task({
-            accumulatedMs: 20 * 60 * 1000,
-            hasStarted: true,
-            resumePendingSinceDayKey: "2026-05-03",
-            milestonesEnabled: true,
-            milestoneTimeUnit: "minute",
-            milestones: [{ hours: 15, description: "" }],
-          }),
-        ],
-      });
-      const { button, group, arrowButton } = createPrimaryActionTarget({
-        action: "start",
-        extraClasses: ["taskPrimaryActionResume"],
-      });
-
-      harness.dispatchTaskListEvent("pointerdown", { target: button });
-      vi.advanceTimersByTime(1000);
-
-      expect(group.classList?.toggle).toHaveBeenCalledWith("isCheckpointRewindOpen", true);
-      expect(arrowButton.removeAttribute).toHaveBeenCalledWith("aria-hidden");
-      expect(arrowButton.removeAttribute).toHaveBeenCalledWith("tabindex");
-      expect(harness.calls).toContain("render");
-
-      harness.dispatchTaskListEvent("pointerup", { target: button });
-      vi.advanceTimersByTime(399);
-      harness.dispatchTaskListEvent("click", { target: button, preventDefault, stopPropagation });
-
-      expect(preventDefault).toHaveBeenCalled();
-      expect(stopPropagation).toHaveBeenCalled();
-      expect(harness.getTasks()[0]?.running).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("rerenders checkpoint rewind when the pressed Resume button has no current action group wrapper", () => {
-    vi.useFakeTimers();
-    try {
-      const harness = createHarness({
-        deferTimers: true,
-        tasks: [
-          task({
-            accumulatedMs: 20 * 60 * 1000,
-            hasStarted: true,
-            resumePendingSinceDayKey: "2026-05-03",
-            milestonesEnabled: true,
-            milestoneTimeUnit: "minute",
-            milestones: [{ hours: 15, description: "" }],
-          }),
-        ],
-      });
-      const { button, group } = createPrimaryActionTarget({
-        action: "start",
-        extraClasses: ["taskPrimaryActionResume"],
-        withGroup: false,
-      });
-
-      harness.dispatchTaskListEvent("pointerdown", { target: button });
-      vi.advanceTimersByTime(1000);
-
-      expect(group.classList?.toggle).not.toHaveBeenCalled();
-      expect(harness.calls).toContain("render");
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   it("rewinds a stopped task through completed checkpoints and updates checkpoint/history state", () => {

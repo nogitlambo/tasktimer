@@ -33,7 +33,7 @@ type TaskListRendererOptions = {
   milestoneUnitSec: (task: Task) => number;
   milestoneUnitSuffix: (task: Task) => string;
   checkpointRepeatActiveTaskId: () => string | null;
-  activeCheckpointToastTaskId: () => string | null;
+  isCheckpointFlashActive: (taskId: string) => boolean;
   canUseAdvancedHistory: () => boolean;
   canUseSocialFeatures: () => boolean;
   hasFriends: () => boolean;
@@ -43,7 +43,6 @@ type TaskListRendererOptions = {
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: unknown) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
-  isCheckpointRewindOpen?: (taskId: string) => boolean;
 };
 
 function normalizeTaskNameForSort(task: Task | null | undefined) {
@@ -201,7 +200,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         milestoneUnitSuffix: options.milestoneUnitSuffix(task),
         timeGoalSec,
         checkpointRepeatActiveTaskId: options.checkpointRepeatActiveTaskId(),
-        activeCheckpointToastTaskId: options.activeCheckpointToastTaskId(),
+        checkpointFlashActive: options.isCheckpointFlashActive(taskId),
         historyRevealPhase,
         showHistory,
         isHistoryPinned,
@@ -220,7 +219,6 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         fillBackgroundForPct: options.fillBackgroundForPct,
         escapeHtml: options.escapeHtml,
         formatMainTaskElapsedHtml: options.formatMainTaskElapsedHtml,
-        checkpointRewindOpen: options.isCheckpointRewindOpen?.(taskId) === true,
       });
       taskEl.className = renderedCard.className;
       taskEl.innerHTML = renderedCard.html;

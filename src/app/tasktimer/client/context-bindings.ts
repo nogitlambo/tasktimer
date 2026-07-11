@@ -51,8 +51,6 @@ type AddTaskState = {
   addTaskMilestones: Task["milestones"];
   addTaskCheckpointSoundEnabled: boolean;
   addTaskCheckpointSoundMode: "once" | "repeat";
-  addTaskCheckpointToastEnabled: boolean;
-  addTaskCheckpointToastMode: "auto5s" | "manual";
   suppressAddTaskNameFocusOpen: boolean;
 };
 
@@ -202,14 +200,6 @@ export function createTaskTimerAddTaskStateBindings(addTaskState: TaskTimerMutab
     getAddTaskCheckpointSoundMode: () => addTaskState.get("addTaskCheckpointSoundMode"),
     setAddTaskCheckpointSoundModeState: (value: "once" | "repeat") => {
       addTaskState.set("addTaskCheckpointSoundMode", value);
-    },
-    getAddTaskCheckpointToastEnabled: () => addTaskState.get("addTaskCheckpointToastEnabled"),
-    setAddTaskCheckpointToastEnabledState: (value: boolean) => {
-      addTaskState.set("addTaskCheckpointToastEnabled", value);
-    },
-    getAddTaskCheckpointToastMode: () => addTaskState.get("addTaskCheckpointToastMode"),
-    setAddTaskCheckpointToastModeState: (value: "auto5s" | "manual") => {
-      addTaskState.set("addTaskCheckpointToastMode", value);
     },
     getSuppressAddTaskNameFocusOpen: () => addTaskState.get("suppressAddTaskNameFocusOpen"),
     setSuppressAddTaskNameFocusOpenState: (value: boolean) => {

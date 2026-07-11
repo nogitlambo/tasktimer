@@ -678,7 +678,7 @@ export function syncLegacyPlannedStartFields(task: Task, byDayRaw?: TaskPlannedS
   task.plannedStartTime = null;
 }
 
-export function setTaskScheduledTimeForDay(task: Task, day: ScheduleDay, rawTime: unknown) {
+export function setTaskScheduledTimeForDay(task: Task, day: ScheduleDay, rawTime: unknown, nowDate = new Date()) {
   const nextTime = normalizeScheduleStoredTime(rawTime);
   const nextByDay = { ...(getTaskPlannedStartByDay(task) || {}) };
   if (nextTime) nextByDay[day] = nextTime;
@@ -686,7 +686,7 @@ export function setTaskScheduledTimeForDay(task: Task, day: ScheduleDay, rawTime
   syncLegacyPlannedStartFields(task, Object.keys(nextByDay).length > 0 ? nextByDay : null);
   if (task.taskType === "once-off") {
     task.onceOffDay = day;
-    task.onceOffTargetDate = resolveNextScheduleDayDate(day);
+    task.onceOffTargetDate = resolveNextScheduleDayDate(day, nowDate);
     task.plannedStartOpenEnded = false;
   }
 }

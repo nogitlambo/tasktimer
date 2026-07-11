@@ -117,7 +117,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       startedAtMs: startMs,
       elapsedBeforeStartMs: previousElapsedMs,
     }).catch(() => {});
-    options.clearCheckpointBaseline(task.id);
+    options.resetCheckpointAlertTracking(task.id);
     persistTaskTimerCommand(taskId);
     void trackEvent("task_started", {
       source_page: options.getCurrentAppPage(),

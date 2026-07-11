@@ -11,10 +11,30 @@ type TaskLaunchTimerNotificationPlugin = {
     sourceNotificationId?: number;
   }) => Promise<{ notificationId?: number } | void>;
   clearRunningTimer: (input: { taskId: string }) => Promise<void>;
+  getAlarmPermissionStatus: () => Promise<{ exactAlarmGranted?: boolean; notificationsGranted?: boolean }>;
+  openAlarmPermissionSettings: () => Promise<void>;
+  syncCheckpointAlarms: (input: { alarms: NativeCheckpointAlarm[] }) => Promise<void>;
+  cancelCheckpointAlarms: (input: { taskId: string }) => Promise<void>;
+  dismissCheckpointAlarm: (input?: { taskId?: string }) => Promise<void>;
+};
+
+export type NativeCheckpointAlarm = {
+  taskId: string;
+  taskName: string;
+  checkpointKey: string;
+  checkpointLabel: string;
+  triggerAtMs: number;
+  soundMode: "once" | "repeat";
 };
 
 const TaskLaunchTimerNotification = registerPlugin<TaskLaunchTimerNotificationPlugin>("TaskLaunchTimerNotification");
 const pendingSourceNotificationIdsByTaskId = new Map<string, number>();
+let lastCheckpointAlarmSignature = "";
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") lastCheckpointAlarmSignature = "";
+  });
+}
 
 function isAndroidNativeRuntime() {
   if (typeof window === "undefined") return false;
@@ -67,5 +87,58 @@ export async function clearNativeRunningTimerNotification(taskId: string | null 
   if (!normalizedTaskId) return;
   pendingSourceNotificationIdsByTaskId.delete(normalizedTaskId);
   if (!isAndroidNativeRuntime()) return;
-  await TaskLaunchTimerNotification.clearRunningTimer({ taskId: normalizedTaskId });
+  await Promise.all([
+    TaskLaunchTimerNotification.clearRunningTimer({ taskId: normalizedTaskId }),
+    TaskLaunchTimerNotification.cancelCheckpointAlarms({ taskId: normalizedTaskId }),
+  ]);
+  lastCheckpointAlarmSignature = "";
+}
+
+export function isNativeAndroidCheckpointAlarmRuntime() {
+  return isAndroidNativeRuntime();
+}
+
+export async function getNativeCheckpointAlarmPermissionStatus() {
+  if (!isAndroidNativeRuntime()) return { supported: false, exactAlarmGranted: false, notificationsGranted: false };
+  const status = await TaskLaunchTimerNotification.getAlarmPermissionStatus();
+  return {
+    supported: true,
+    exactAlarmGranted: status?.exactAlarmGranted === true,
+    notificationsGranted: status?.notificationsGranted === true,
+  };
+}
+
+export async function openNativeCheckpointAlarmPermissionSettings() {
+  if (!isAndroidNativeRuntime()) return;
+  await TaskLaunchTimerNotification.openAlarmPermissionSettings();
+}
+
+export async function syncNativeCheckpointAlarms(alarms: NativeCheckpointAlarm[]) {
+  if (!isAndroidNativeRuntime()) return;
+  const normalized = alarms
+    .filter((alarm) => normalizeTaskId(alarm.taskId) && Number(alarm.triggerAtMs) > Date.now())
+    .map((alarm) => ({
+      ...alarm,
+      taskId: normalizeTaskId(alarm.taskId),
+      taskName: String(alarm.taskName || "Task").trim() || "Task",
+      checkpointKey: String(alarm.checkpointKey || "").trim(),
+      checkpointLabel: String(alarm.checkpointLabel || "Checkpoint").trim() || "Checkpoint",
+      triggerAtMs: Math.floor(Number(alarm.triggerAtMs)),
+      soundMode: alarm.soundMode === "repeat" ? "repeat" as const : "once" as const,
+    }))
+    .sort((a, b) => a.triggerAtMs - b.triggerAtMs || a.checkpointKey.localeCompare(b.checkpointKey));
+  const signature = JSON.stringify(normalized);
+  if (signature === lastCheckpointAlarmSignature) return;
+  lastCheckpointAlarmSignature = signature;
+  try {
+    await TaskLaunchTimerNotification.syncCheckpointAlarms({ alarms: normalized });
+  } catch (error) {
+    lastCheckpointAlarmSignature = "";
+    throw error;
+  }
+}
+
+export async function dismissNativeCheckpointAlarm(taskId?: string | null) {
+  if (!isAndroidNativeRuntime()) return;
+  await TaskLaunchTimerNotification.dismissCheckpointAlarm({ taskId: normalizeTaskId(taskId) || undefined });
 }
