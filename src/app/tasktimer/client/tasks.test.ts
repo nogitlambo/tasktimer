@@ -14,8 +14,16 @@ type TestEvent = {
 type TestTarget = {
   disabled?: boolean;
   dataset?: Record<string, string>;
-  classList?: { add: (token: string) => void; remove: (token: string) => void; contains?: (token: string) => boolean };
+  classList?: {
+    add: (token: string) => void;
+    remove: (token: string) => void;
+    toggle?: (token: string, force?: boolean) => boolean;
+    contains?: (token: string) => boolean;
+  };
   getAttribute?: (name: string) => string | null;
+  setAttribute?: (name: string, value: string) => void;
+  removeAttribute?: (name: string) => void;
+  querySelector?: (selector: string) => TestTarget | null;
   closest?: (selector: string) => TestTarget | null;
 };
 
@@ -59,6 +67,8 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
   const calls: string[] = [];
   const handlers = new Map<object, Map<string, (event: TestEvent) => void>>();
   let tasks = overrides.tasks || [task()];
+  const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
+  const checkpointBaselineSecByTaskId: Record<string, number> = {};
   let confirmOk: (() => void) | null = null;
   const taskList = elementStub("section");
 
@@ -77,8 +87,8 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
       handler();
       return 1;
     },
-    setTimeout: (handler: () => void) => {
-      if (overrides.deferTimers) return setTimeout(handler, 140);
+    setTimeout: (handler: () => void, timeout = 0) => {
+      if (overrides.deferTimers) return setTimeout(handler, timeout);
       handler();
       return 1;
     },
@@ -104,8 +114,8 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
       openAddTaskBtn: null,
     },
     sharedTasks: {
-      milestoneUnitSec: () => 3600,
-      milestoneUnitSuffix: () => "h",
+      milestoneUnitSec: (entry: Task) => (entry?.milestoneTimeUnit === "minute" ? 60 : 3600),
+      milestoneUnitSuffix: (entry: Task) => (entry?.milestoneTimeUnit === "minute" ? "m" : "h"),
     },
     on: vi.fn((target: object | null | undefined, type: string, handler: (event: TestEvent) => void) => {
       if (!target) return;
@@ -183,13 +193,15 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
     clearCheckpointBaseline: vi.fn(),
     resetCheckpointAlertTracking: vi.fn(),
     setCheckpointAutoResetDirty: vi.fn(),
+    getCheckpointFiredKeysByTaskId: () => checkpointFiredKeysByTaskId,
+    getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
     clearFocusSessionDraft: vi.fn(),
     syncFocusSessionNotesInput: vi.fn(),
     syncFocusSessionNotesAccordion: vi.fn(),
     getAutoFocusOnTaskLaunchEnabled: () => false,
     saveHistory: vi.fn(),
     setHistoryByTaskId: vi.fn(),
-    getHistoryByTaskId: () => ({}),
+    getHistoryByTaskId: vi.fn(() => ({})),
     getRewardProgress: () => ({ totalXp: 0, weekly: {}, byTask: {}, lastAwardAt: null }),
     getWeekStarting: () => "2026-05-11",
     currentUid: () => "user-1",
@@ -286,15 +298,61 @@ function createHarness(overrides: { tasks?: Task[]; deferTimers?: boolean } = {}
     handlers,
     ctx,
     getTasks: () => tasks,
+    checkpointFiredKeysByTaskId,
+    checkpointBaselineSecByTaskId,
   };
 }
 
-function createPrimaryActionTarget({ disabled = false, action = "start" }: { disabled?: boolean; action?: string } = {}) {
+function createPrimaryActionTarget({
+  disabled = false,
+  action = "start",
+  extraClasses = [],
+  taskIndex = "0",
+  taskId = "task-1",
+  withGroup = true,
+}: {
+  disabled?: boolean;
+  action?: string;
+  extraClasses?: string[];
+  taskIndex?: string;
+  taskId?: string;
+  withGroup?: boolean;
+} = {}) {
   const classes = new Set<string>();
+  extraClasses.forEach((className) => classes.add(className));
   const classList = {
     add: vi.fn((token: string) => classes.add(token)),
     remove: vi.fn((token: string) => classes.delete(token)),
+    toggle: vi.fn((token: string, force?: boolean) => {
+      const shouldHave = force == null ? !classes.has(token) : !!force;
+      if (shouldHave) classes.add(token);
+      else classes.delete(token);
+      return shouldHave;
+    }),
     contains: (token: string) => classes.has(token),
+  };
+  const arrowButton: TestTarget = {
+    dataset: { action: "rewindCheckpoint" },
+    getAttribute: (name: string) => (name === "data-action" ? "rewindCheckpoint" : null),
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+  };
+  const group: TestTarget = {
+    classList: {
+      add: vi.fn((token: string) => classes.add(token)),
+      remove: vi.fn((token: string) => classes.delete(token)),
+      toggle: vi.fn((token: string, force?: boolean) => {
+        const shouldHave = force == null ? !classes.has(token) : !!force;
+        if (shouldHave) classes.add(token);
+        else classes.delete(token);
+        return shouldHave;
+      }),
+      contains: (token: string) => classes.has(token),
+    },
+    querySelector: (selector: string) => (selector === '[data-action="rewindCheckpoint"]' ? arrowButton : null),
+  };
+  const taskEl: TestTarget = {
+    dataset: { index: taskIndex, taskId },
   };
   const button: TestTarget = {
     disabled,
@@ -303,10 +361,19 @@ function createPrimaryActionTarget({ disabled = false, action = "start" }: { dis
     getAttribute: (name: string) => (name === "data-action" ? action : null),
     closest: (selector: string) => {
       if (selector === ".taskPrimaryAction" || selector === "[data-action]") return button;
+      if (selector === ".task") return taskEl;
+      if (selector === ".taskCheckpointRewindGroup") return withGroup ? group : null;
       return null;
     },
   };
-  return { button, classList };
+  arrowButton.closest = (selector: string) => {
+    if (selector === ".task") return taskEl;
+    if (selector === "[data-action]") return arrowButton;
+    if (selector === "[data-task-flip]") return null;
+    if (selector === ".taskPrimaryAction") return null;
+    return null;
+  };
+  return { button, classList, group, arrowButton };
 }
 
 describe("createTaskTimerTasks", () => {
@@ -425,6 +492,127 @@ describe("createTaskTimerTasks", () => {
       harness.getTasks()[0],
       expect.objectContaining({ elapsedMs: 60_000, resumedFromMs: 60_000, forceCloudFlush: true, reason: "start" })
     );
+    expect(harness.calls).toContain("save");
+    expect(harness.calls).toContain("render");
+  });
+
+  it("reveals checkpoint rewind on long-press Resume and suppresses the generated resume click", () => {
+    vi.useFakeTimers();
+    try {
+      const preventDefault = vi.fn();
+      const stopPropagation = vi.fn();
+      const harness = createHarness({
+        deferTimers: true,
+        tasks: [
+          task({
+            accumulatedMs: 20 * 60 * 1000,
+            hasStarted: true,
+            resumePendingSinceDayKey: "2026-05-03",
+            milestonesEnabled: true,
+            milestoneTimeUnit: "minute",
+            milestones: [{ hours: 15, description: "" }],
+          }),
+        ],
+      });
+      const { button, group, arrowButton } = createPrimaryActionTarget({
+        action: "start",
+        extraClasses: ["taskPrimaryActionResume"],
+      });
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(1000);
+
+      expect(group.classList?.toggle).toHaveBeenCalledWith("isCheckpointRewindOpen", true);
+      expect(arrowButton.removeAttribute).toHaveBeenCalledWith("aria-hidden");
+      expect(arrowButton.removeAttribute).toHaveBeenCalledWith("tabindex");
+      expect(harness.calls).toContain("render");
+
+      harness.dispatchTaskListEvent("pointerup", { target: button });
+      vi.advanceTimersByTime(399);
+      harness.dispatchTaskListEvent("click", { target: button, preventDefault, stopPropagation });
+
+      expect(preventDefault).toHaveBeenCalled();
+      expect(stopPropagation).toHaveBeenCalled();
+      expect(harness.getTasks()[0]?.running).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rerenders checkpoint rewind when the pressed Resume button has no current action group wrapper", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness({
+        deferTimers: true,
+        tasks: [
+          task({
+            accumulatedMs: 20 * 60 * 1000,
+            hasStarted: true,
+            resumePendingSinceDayKey: "2026-05-03",
+            milestonesEnabled: true,
+            milestoneTimeUnit: "minute",
+            milestones: [{ hours: 15, description: "" }],
+          }),
+        ],
+      });
+      const { button, group } = createPrimaryActionTarget({
+        action: "start",
+        extraClasses: ["taskPrimaryActionResume"],
+        withGroup: false,
+      });
+
+      harness.dispatchTaskListEvent("pointerdown", { target: button });
+      vi.advanceTimersByTime(1000);
+
+      expect(group.classList?.toggle).not.toHaveBeenCalled();
+      expect(harness.calls).toContain("render");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rewinds a stopped task through completed checkpoints and updates checkpoint/history state", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          accumulatedMs: 50 * 60 * 1000,
+          hasStarted: true,
+          resumePendingSinceDayKey: "2026-05-03",
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          milestones: [
+            { hours: 15, description: "" },
+            { hours: 30, description: "" },
+            { hours: 45, description: "" },
+          ],
+        }),
+      ],
+    });
+    harness.checkpointFiredKeysByTaskId["task-1"] = new Set(["900", "1800", "2700"]);
+    const history = {
+      "task-1": [
+        { ts: Date.parse("2026-05-03T09:00:00Z"), name: "Focus", ms: 50 * 60 * 1000 },
+      ],
+    };
+    vi.mocked(harness.ctx.getHistoryByTaskId).mockReturnValue(history);
+    const { arrowButton } = createPrimaryActionTarget({ action: "start" });
+
+    harness.dispatchTaskListEvent("click", { target: arrowButton, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 45 * 60 * 1000, elapsed: 45 * 60 * 1000 });
+    expect(harness.checkpointBaselineSecByTaskId["task-1"]).toBe(2700);
+    expect(Array.from(harness.checkpointFiredKeysByTaskId["task-1"] || [])).toEqual(["900", "1800", "2700"]);
+    expect(harness.ctx.setHistoryByTaskId).toHaveBeenCalledWith({
+      "task-1": [{ ts: Date.parse("2026-05-03T09:00:00Z"), name: "Focus", ms: 45 * 60 * 1000 }],
+    });
+
+    vi.mocked(harness.ctx.getHistoryByTaskId).mockReturnValue({
+      "task-1": [{ ts: Date.parse("2026-05-03T09:00:00Z"), name: "Focus", ms: 45 * 60 * 1000 }],
+    });
+    harness.dispatchTaskListEvent("click", { target: arrowButton, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 30 * 60 * 1000, elapsed: 30 * 60 * 1000 });
+    expect(harness.checkpointBaselineSecByTaskId["task-1"]).toBe(1800);
+    expect(Array.from(harness.checkpointFiredKeysByTaskId["task-1"] || [])).toEqual(["900", "1800"]);
     expect(harness.calls).toContain("save");
     expect(harness.calls).toContain("render");
   });

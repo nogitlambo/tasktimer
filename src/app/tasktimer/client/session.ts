@@ -139,6 +139,16 @@ const FOCUS_MODE_START_AUDIO_SRC = "/focus-mode-start.mp3";
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
 const TIME_GOAL_XP_COUNT_AUDIO_SRC = "/xp_increase.mp3";
 const TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
+const CHECKPOINT_BEEP_AUDIO_SRC = "/checkpoint_tone.wav";
+const CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS = 120;
+const CHECKPOINT_ONCE_BEEP_BETWEEN_PAIRS_MS = 180;
+const CHECKPOINT_ONCE_BEEP_BETWEEN_PATTERNS_MS = 180;
+const CHECKPOINT_ONCE_BEEP_PATTERN_DELAYS_MS = [
+  CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS,
+  CHECKPOINT_ONCE_BEEP_BETWEEN_PAIRS_MS,
+  CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS,
+  CHECKPOINT_ONCE_BEEP_BETWEEN_PATTERNS_MS,
+];
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -532,6 +542,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let activeFocusTransitionTimer: number | null = null;
   let focusTransitionSourceTaskId: string | null = null;
   let focusTransitionSourceRect: DOMRect | null = null;
+  let checkpointBeepQueueDelayAfterBeepMs: number[] = [];
   const focusModeStartPlayer = createClickAudioPlayer(FOCUS_MODE_START_AUDIO_SRC);
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
   const timeGoalXpCountDonePlayer = createClickAudioPlayer(TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC);
@@ -2187,8 +2198,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function ensureCheckpointBeepAudio() {
     const existing = ctx.getCheckpointBeepAudio();
     if (existing) return existing;
+    if (typeof Audio === "undefined") return null;
     try {
-      const audio = new Audio("/checkpoint_alert.mp3");
+      const audio = new Audio(CHECKPOINT_BEEP_AUDIO_SRC);
       audio.preload = "auto";
       ctx.setCheckpointBeepAudio(audio);
       return audio;
@@ -2247,6 +2259,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       ctx.setCheckpointBeepQueueTimer(null);
     }
     ctx.setCheckpointBeepQueueCount(0);
+    checkpointBeepQueueDelayAfterBeepMs = [];
     if (ctx.getCheckpointBeepAudio()) {
       try {
         ctx.getCheckpointBeepAudio()?.pause();
@@ -2262,18 +2275,34 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getCheckpointBeepQueueCount() <= 0) {
       ctx.setCheckpointBeepQueueCount(0);
       ctx.setCheckpointBeepQueueTimer(null);
+      checkpointBeepQueueDelayAfterBeepMs = [];
       return;
     }
     playCheckpointBeep();
     ctx.setCheckpointBeepQueueCount(ctx.getCheckpointBeepQueueCount() - 1);
-    if (ctx.getCheckpointBeepQueueCount() > 0) ctx.setCheckpointBeepQueueTimer(window.setTimeout(flushCheckpointBeepQueue, 150));
-    else ctx.setCheckpointBeepQueueTimer(null);
+    const nextDelayMs = checkpointBeepQueueDelayAfterBeepMs.shift() ?? 0;
+    if (ctx.getCheckpointBeepQueueCount() > 0) ctx.setCheckpointBeepQueueTimer(window.setTimeout(flushCheckpointBeepQueue, nextDelayMs));
+    else {
+      checkpointBeepQueueDelayAfterBeepMs = [];
+      ctx.setCheckpointBeepQueueTimer(null);
+    }
   }
 
-  function enqueueCheckpointBeeps(count: number) {
-    if (!Number.isFinite(count) || count <= 0) return;
-    ctx.setCheckpointBeepQueueCount(ctx.getCheckpointBeepQueueCount() + Math.floor(count));
+  function enqueueCheckpointBeepDelays(delayAfterBeepMs: number[]) {
+    if (!delayAfterBeepMs.length) return;
+    ctx.setCheckpointBeepQueueCount(ctx.getCheckpointBeepQueueCount() + delayAfterBeepMs.length);
+    checkpointBeepQueueDelayAfterBeepMs.push(...delayAfterBeepMs);
     if (ctx.getCheckpointBeepQueueTimer() == null) flushCheckpointBeepQueue();
+  }
+
+  function enqueueCheckpointSingleBeep() {
+    enqueueCheckpointBeepDelays([0]);
+  }
+
+  function enqueueCheckpointOncePatterns(count: number) {
+    const patternCount = Math.max(0, Math.floor(Number(count) || 0));
+    if (patternCount <= 0) return;
+    enqueueCheckpointBeepDelays(Array.from({ length: patternCount }, () => CHECKPOINT_ONCE_BEEP_PATTERN_DELAYS_MS).flat());
   }
 
   function scheduleCheckpointRepeatCycle() {
@@ -2281,7 +2310,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       stopCheckpointRepeatAlert();
       return;
     }
-    enqueueCheckpointBeeps(1);
+    enqueueCheckpointSingleBeep();
     ctx.setCheckpointRepeatCycleTimer(window.setTimeout(scheduleCheckpointRepeatCycle, 2000));
   }
 
@@ -2495,7 +2524,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     baselineByTaskId[taskId] = elapsedWholeSec;
     if (beepCount > 0) {
       if (ctx.getCheckpointAlertSoundMode() === "repeat") startCheckpointRepeatAlert(taskId);
-      else enqueueCheckpointBeeps(beepCount);
+      else enqueueCheckpointOncePatterns(beepCount);
     }
     if (shouldOpenTimeGoalModal) {
       if (shouldDeferTimeGoalModalInFocusMode(taskId)) {

@@ -1702,20 +1702,27 @@ export async function saveTask(uid: string, task: Task, context?: ScheduledTimeG
   const taskRow = mapTaskToFirestore(task);
   const buildSavePayload = async (row: Record<string, unknown>) => {
     const existing = await getDoc(ref);
+    const supportsBackgroundPushBookkeeping =
+      Object.prototype.hasOwnProperty.call(row, "bgTimeGoalPushEligible") ||
+      Object.prototype.hasOwnProperty.call(row, "bgTimeGoalPushDueAtMs");
     const nextDueAtMs = normalizeNullableInt(row.bgTimeGoalPushDueAtMs);
     const nextEligible = !!row.bgTimeGoalPushEligible && nextDueAtMs != null;
     const existingDueAtMs = existing.exists() ? normalizeNullableInt(existing.get("bgTimeGoalPushDueAtMs")) : null;
     const preserveSendBookkeeping = nextEligible && nextDueAtMs === existingDueAtMs;
     return {
       ...row,
-      bgTimeGoalPushSentAtMs:
-        preserveSendBookkeeping && existing.exists()
-          ? normalizeNullableInt(existing.get("bgTimeGoalPushSentAtMs"))
-          : null,
-      bgTimeGoalPushSentDueAtMs:
-        preserveSendBookkeeping && existing.exists()
-          ? normalizeNullableInt(existing.get("bgTimeGoalPushSentDueAtMs"))
-          : null,
+      ...(supportsBackgroundPushBookkeeping
+        ? {
+            bgTimeGoalPushSentAtMs:
+              preserveSendBookkeeping && existing.exists()
+                ? normalizeNullableInt(existing.get("bgTimeGoalPushSentAtMs"))
+                : null,
+            bgTimeGoalPushSentDueAtMs:
+              preserveSendBookkeeping && existing.exists()
+                ? normalizeNullableInt(existing.get("bgTimeGoalPushSentDueAtMs"))
+                : null,
+          }
+        : {}),
       createdAt: existing.exists() && isTimestampLike(existing.get("createdAt")) ? existing.get("createdAt") : serverTimestamp(),
       updatedAt: serverTimestamp(),
       schemaVersion: 1,

@@ -678,6 +678,18 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  #leaderboardPositionOverlay .leaderboardPositionModal{
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  #friendProfileModal .modal::-webkit-scrollbar,
+  #leaderboardPositionOverlay .leaderboardPositionModal::-webkit-scrollbar{
+    display: none;
   }
 }
 

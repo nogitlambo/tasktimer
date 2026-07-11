@@ -31,60 +31,70 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
     const tasks = options.getTasks();
     const task = tasks[index];
     if (!task) return;
+    const taskId = String(task.id || "");
+    const historyByTaskId = options.getHistoryByTaskId();
+    const hasTaskHistory = !!(taskId && Array.isArray(historyByTaskId?.[taskId]) && historyByTaskId[taskId].length > 0);
 
     const clearDeleteTaskConfirmState = () => {
       options.getConfirmOverlay()?.classList.remove("isDeleteTaskConfirm");
     };
 
+    const archiveTask = () => {
+      clearDeleteTaskConfirmState();
+      const shouldCloseFocusMode = String(options.getFocusModeTaskId() || "").trim() === taskId;
+      const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
+      const nextDeletedTaskMeta = {
+        ...(options.getDeletedTaskMeta() || {}),
+        [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
+      };
+      options.setTasks(nextTasks);
+      options.setDeletedTaskMeta(nextDeletedTaskMeta);
+      options.saveDeletedMeta(nextDeletedTaskMeta);
+      options.save({ deletedTaskIds: taskId ? [taskId] : [] });
+      void options.deleteSharedTaskSummariesForTask(String(options.getCurrentUid() || ""), taskId).catch(() => {});
+      void options.refreshOwnSharedSummaries().catch(() => {});
+      if (shouldCloseFocusMode) options.closeFocusMode();
+      options.render();
+      options.closeConfirm();
+      options.showActionConfirmation("Task archived.");
+    };
+
+    if (hasTaskHistory) {
+      if (task.running) return;
+      options.confirm("Archive Task", `Archive "${task.name || "this task"}"?`, {
+        okLabel: "Archive",
+        cancelLabel: "Cancel",
+        overlayClassName: "isArchiveTaskConfirm",
+        onOk: archiveTask,
+        onCancel: () => options.closeConfirm(),
+      });
+      return;
+    }
+
     const confirmConfig = buildDeleteTaskConfirmOptions({
       taskName: task.name || "this task",
-      onArchive: task.running
-        ? null
-        : () => {
-            clearDeleteTaskConfirmState();
-            const taskId = String(task.id || "");
-            const shouldCloseFocusMode = String(options.getFocusModeTaskId() || "").trim() === taskId;
-            const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
-            const nextDeletedTaskMeta = {
-              ...(options.getDeletedTaskMeta() || {}),
-              [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
-            };
-            options.setTasks(nextTasks);
-            options.setDeletedTaskMeta(nextDeletedTaskMeta);
-            options.saveDeletedMeta(nextDeletedTaskMeta);
-            options.save({ deletedTaskIds: taskId ? [taskId] : [] });
-            void options.deleteSharedTaskSummariesForTask(String(options.getCurrentUid() || ""), taskId).catch(() => {});
-            void options.refreshOwnSharedSummaries().catch(() => {});
-            if (shouldCloseFocusMode) options.closeFocusMode();
-            options.render();
-            options.closeConfirm();
-            options.showActionConfirmation("Task archived.");
-          },
       onDelete: () => {
         clearDeleteTaskConfirmState();
-        const deleteHistory = true;
-        const taskId = String(task.id || "");
-        const historyByTaskId = options.getHistoryByTaskId();
+        const nextHistoryByTaskId = options.getHistoryByTaskId();
         const deletedTaskMeta = options.getDeletedTaskMeta();
-        const hasTaskHistory = !!(taskId && Array.isArray(historyByTaskId?.[taskId]) && historyByTaskId[taskId].length > 0);
+        const hasNonEmptyHistory = !!(taskId && Array.isArray(nextHistoryByTaskId?.[taskId]) && nextHistoryByTaskId[taskId].length > 0);
         const hasDeletedTaskMeta = !!(taskId && deletedTaskMeta && deletedTaskMeta[taskId]);
+        if (hasNonEmptyHistory) {
+          options.closeConfirm();
+          return;
+        }
 
         const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
         options.setTasks(nextTasks);
 
-        if (deleteHistory) {
-          if (taskId && historyByTaskId && taskId in historyByTaskId) delete historyByTaskId[taskId];
-          if (hasTaskHistory) options.saveHistory(historyByTaskId, { allowDestructiveReplace: true });
+        if (taskId && nextHistoryByTaskId && taskId in nextHistoryByTaskId) {
+          delete nextHistoryByTaskId[taskId];
+          options.saveHistory(nextHistoryByTaskId, { allowDestructiveReplace: true });
+        }
 
-          if (hasDeletedTaskMeta) {
-            delete deletedTaskMeta[taskId];
-            options.saveDeletedMeta(deletedTaskMeta);
-          }
-        } else {
-          const nextDeletedTaskMeta = deletedTaskMeta || ({} as DeletedTaskMeta);
-          nextDeletedTaskMeta[taskId] = buildTaskStatusMeta(task, "deleted", nowMs());
-          options.setDeletedTaskMeta(nextDeletedTaskMeta);
-          options.saveDeletedMeta(nextDeletedTaskMeta);
+        if (hasDeletedTaskMeta) {
+          delete deletedTaskMeta[taskId];
+          options.saveDeletedMeta(deletedTaskMeta);
         }
 
         options.save({ deletedTaskIds: taskId ? [taskId] : [] });

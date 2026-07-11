@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeletedTaskMeta, Task } from "../lib/types";
 import type { TaskTimerConfirmOptions } from "./context";
 import { createTaskTimerTaskDelete } from "./task-delete";
@@ -7,6 +7,10 @@ import { playDeleteAlertAudio } from "./delete-alert-audio";
 vi.mock("./delete-alert-audio", () => ({
   playDeleteAlertAudio: vi.fn(),
 }));
+
+beforeEach(() => {
+  vi.mocked(playDeleteAlertAudio).mockClear();
+});
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -23,9 +27,9 @@ function task(overrides: Partial<Task> = {}): Task {
   } as Task;
 }
 
-function createHarness(options: { tasks?: Task[]; focusModeTaskId?: string | null } = {}) {
+function createHarness(options: { tasks?: Task[]; focusModeTaskId?: string | null; historyByTaskId?: Record<string, unknown[]> } = {}) {
   let tasks = options.tasks || [task({ id: "task-1", name: "Focus" }), task({ id: "task-2", name: "Plan" })];
-  let historyByTaskId: Record<string, unknown[]> = {
+  let historyByTaskId: Record<string, unknown[]> = options.historyByTaskId || {
     "task-1": [{ ms: 1000 }],
     "task-2": [{ ms: 2000 }],
   };
@@ -94,20 +98,20 @@ function createHarness(options: { tasks?: Task[]; focusModeTaskId?: string | nul
 }
 
 describe("createTaskTimerTaskDelete", () => {
-  it("removes the confirmed task through the task state setter", () => {
-    const harness = createHarness();
+  it("deletes a no-history task through the task state setter", () => {
+    const harness = createHarness({ historyByTaskId: { "task-1": [], "task-2": [{ ms: 2000 }] } });
 
     harness.api(0);
     const onOk = harness.confirmOptions[0]?.onOk;
     expect(onOk).toBeTypeOf("function");
-    expect(harness.confirmOptions[0]?.altLabel).toBe("Archive");
+    expect(harness.confirmOptions[0]?.altLabel).toBeNull();
     onOk?.();
 
     expect(harness.tasks.map((entry) => entry.id)).toEqual(["task-2"]);
     expect(harness.historyByTaskId).toEqual({ "task-2": [{ ms: 2000 }] });
     expect(harness.deletedTaskMeta).toEqual({});
     expect(harness.calls).toEqual([
-      'confirm:Delete "Focus"?:History entries associated with this task will also be permanently deleted (your awarded XP will be preserved). To keep history entries and just remove the task, choose Archive.',
+      'confirm:Delete "Focus"?:Delete this task? This action cannot be undone.',
       "setTasks:task-2",
       "saveHistory:task-2",
       "saveDeletedMeta:",
@@ -123,15 +127,15 @@ describe("createTaskTimerTaskDelete", () => {
     expect(playDeleteAlertAudio).toHaveBeenCalledTimes(1);
   });
 
-  it("archives the task from the delete confirmation alternate action", () => {
+  it("archives a history-bearing task instead of offering permanent delete", () => {
     const harness = createHarness({ focusModeTaskId: "task-1" });
 
     harness.api(0);
-    const onAlt = harness.confirmOptions[0]?.onAlt;
-    expect(onAlt).toBeTypeOf("function");
-    expect(harness.confirmOptions[0]?.altLabel).toBe("Archive");
-    expect(harness.confirmOptions[0]?.altButtonClassName).toBe("btn btn-ghost");
-    onAlt?.();
+    const onOk = harness.confirmOptions[0]?.onOk;
+    expect(onOk).toBeTypeOf("function");
+    expect(harness.confirmOptions[0]?.okLabel).toBe("Archive");
+    expect(harness.confirmOptions[0]?.altLabel).toBeUndefined();
+    onOk?.();
 
     expect(harness.tasks.map((entry) => entry.id)).toEqual(["task-2"]);
     expect(harness.historyByTaskId).toEqual({
@@ -144,7 +148,7 @@ describe("createTaskTimerTaskDelete", () => {
       state: "archived",
     });
     expect(harness.calls).toEqual([
-      'confirm:Delete "Focus"?:History entries associated with this task will also be permanently deleted (your awarded XP will be preserved). To keep history entries and just remove the task, choose Archive.',
+      'confirm:Archive Task:Archive "Focus"?',
       "setTasks:task-2",
       "setDeletedTaskMeta",
       "saveDeletedMeta:task-1",
@@ -156,15 +160,40 @@ describe("createTaskTimerTaskDelete", () => {
       "closeConfirm",
       "toast:Task archived.",
     ]);
-    expect(harness.confirmOverlay.classList.remove).toHaveBeenCalledWith("isDeleteTaskConfirm");
+    expect(harness.confirmOverlay.classList.add).not.toHaveBeenCalledWith("isDeleteTaskConfirm");
   });
 
-  it("hides the archive option for running tasks", () => {
+  it("does not delete or archive a running task with history through a stale delete action", () => {
     const harness = createHarness({ tasks: [task({ id: "task-1", name: "Focus", running: true }), task({ id: "task-2", name: "Plan" })] });
 
     harness.api(0);
 
-    expect(harness.confirmOptions[0]?.altLabel).toBeNull();
-    expect(harness.confirmOptions[0]?.onAlt).toBeNull();
+    expect(harness.confirmOptions).toEqual([]);
+    expect(harness.tasks.map((entry) => entry.id)).toEqual(["task-1", "task-2"]);
+    expect(harness.historyByTaskId).toEqual({
+      "task-1": [{ ms: 1000 }],
+      "task-2": [{ ms: 2000 }],
+    });
+    expect(harness.calls).toEqual([]);
+    expect(harness.confirmOverlay.classList.add).not.toHaveBeenCalled();
+    expect(playDeleteAlertAudio).not.toHaveBeenCalled();
+  });
+
+  it("closes without deleting if history appears after the delete confirmation opens", () => {
+    const harness = createHarness({ historyByTaskId: { "task-1": [], "task-2": [{ ms: 2000 }] } });
+
+    harness.api(0);
+    harness.historyByTaskId["task-1"] = [{ ms: 1000 }];
+    harness.confirmOptions[0]?.onOk?.();
+
+    expect(harness.tasks.map((entry) => entry.id)).toEqual(["task-1", "task-2"]);
+    expect(harness.historyByTaskId).toEqual({
+      "task-1": [{ ms: 1000 }],
+      "task-2": [{ ms: 2000 }],
+    });
+    expect(harness.calls).toEqual([
+      'confirm:Delete "Focus"?:Delete this task? This action cannot be undone.',
+      "closeConfirm",
+    ]);
   });
 });

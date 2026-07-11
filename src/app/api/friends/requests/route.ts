@@ -119,6 +119,15 @@ function filterDeviceRowsByPushPreferences(
   return deviceRows.filter((row) => (row.native ? prefs.mobilePushAlertsEnabled : prefs.webPushAlertsEnabled));
 }
 
+function selectPreferredFriendRequestDeviceRows(deviceRows: ReturnType<typeof extractPushDeviceRows>) {
+  return [...deviceRows]
+    .sort((a, b) => {
+      if (a.native !== b.native) return a.native ? -1 : 1;
+      return a.id.localeCompare(b.id);
+    })
+    .slice(0, 1);
+}
+
 async function markFriendRequestPushDeliveryErrors(
   db: FirebaseFirestore.Firestore,
   uid: string,
@@ -165,7 +174,9 @@ async function sendFriendRequestPushNotification(db: FirebaseFirestore.Firestore
     db.collection("users").doc(receiverUid).collection("devices").get(),
     loadUserPushPreferences(db, receiverUid),
   ]);
-  const deviceRows = filterDeviceRowsByPushPreferences(extractPushDeviceRows(devicesSnap), prefs).slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
+  const deviceRows = selectPreferredFriendRequestDeviceRows(
+    filterDeviceRowsByPushPreferences(extractPushDeviceRows(devicesSnap), prefs)
+  ).slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
   const nativeRows = deviceRows.filter((row) => row.native);
   const webRows = deviceRows.filter((row) => !row.native);
   const messaging = getFirebaseAdminMessaging();

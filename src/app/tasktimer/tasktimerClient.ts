@@ -845,6 +845,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       setCheckpointAutoResetDirty: (value) => {
         sessionRuntimeState.set("checkpointAutoResetDirty", value);
       },
+      getCheckpointFiredKeysByTaskId: () => checkpointFiredKeysByTaskId,
+      getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
       render: () => render(),
       renderHistory,
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,

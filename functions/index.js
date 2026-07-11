@@ -508,6 +508,17 @@ function splitDeviceRows(deviceRows) {
   return {nativeRows, webRows};
 }
 
+function selectPreferredFriendRequestDeviceRows(deviceRows) {
+  return [...deviceRows]
+    .sort((a, b) => {
+      if (a.native !== b.native) return a.native ? -1 : 1;
+      const updatedDelta = asInt(b.appStateUpdatedAtMs, 0) - asInt(a.appStateUpdatedAtMs, 0);
+      if (updatedDelta !== 0) return updatedDelta;
+      return asString(a.id).localeCompare(asString(b.id));
+    })
+    .slice(0, 1);
+}
+
 async function loadUserPushPreferences(uid) {
   const prefSnap = await db.collection("users").doc(uid).collection("preferences").doc("v1").get();
   if (!prefSnap.exists) {
@@ -984,11 +995,15 @@ async function sendScheduledTaskNotification({
   allowWeb = true,
   skipIfForeground = false,
   cleanupInvalidTokens = true,
+  selectDeviceRows = null,
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const prefs = await loadUserPushPreferences(uid);
-  const deviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs)
-    .slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
+  const eligibleDeviceRows = filterDeviceRowsByPushPreferences(extractAndroidDeviceRows(devicesSnap), prefs);
+  const selectedDeviceRows = typeof selectDeviceRows === "function"
+    ? selectDeviceRows(eligibleDeviceRows)
+    : eligibleDeviceRows;
+  const deviceRows = selectedDeviceRows.slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
   const {nativeRows, webRows} = splitDeviceRows(deviceRows);
   const hasForegroundNativeDevice = hasFreshForegroundNativeDevice(deviceRows, nowMs);
   const pushData = buildScheduledPushData(route, payloadData);
@@ -1132,6 +1147,7 @@ async function sendFriendRequestPendingNotification(event) {
     allowWeb: true,
     skipIfForeground: false,
     cleanupInvalidTokens: true,
+    selectDeviceRows: selectPreferredFriendRequestDeviceRows,
   });
 
   logger.info("Friend request push notification processed", {

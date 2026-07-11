@@ -28,6 +28,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
     startTask: (index) => calls.push(`start:${index}`),
     stopTask: (index) => calls.push(`stop:${index}`),
+    rewindCheckpoint: (index) => calls.push(`rewind:${index}`),
     resetTask: (index) => calls.push(`reset:${index}`),
     resetCompletedTaskImmediate: (index) => calls.push(`reset-completed:${index}`),
     archiveTask: (index) => calls.push(`archive:${index}`),
@@ -77,8 +78,9 @@ describe("task card action effects", () => {
     expect(harness.effects.handleAction({ action: "history", taskIndex: 2, taskId: "task-1" })).toBe(true);
     expect(harness.effects.handleAction({ action: "collapse", taskIndex: 2, taskId: "task-1" })).toBe(true);
     expect(harness.effects.handleAction({ action: "archive", taskIndex: 2, taskId: "task-1" })).toBe(true);
+    expect(harness.effects.handleAction({ action: "rewindCheckpoint", taskIndex: 2, taskId: "task-1" })).toBe(true);
 
-    expect(harness.calls).toEqual(["start:2", "history:2", "collapse:2", "archive:2"]);
+    expect(harness.calls).toEqual(["start:2", "history:2", "collapse:2", "archive:2", "rewind:2"]);
   });
 
   it("gates locked actions before side effects run", () => {

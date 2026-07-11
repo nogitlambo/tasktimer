@@ -201,18 +201,8 @@ describe("sendFriendRequestPendingNotification", () => {
     resetState();
   });
 
-  it("sends a friend request push to all eligible recipient devices when a request becomes pending", async () => {
+  it("sends one friend request push when a request becomes pending, preferring native over web", async () => {
     state.devices = [
-      {
-        id: "native-1",
-        token: "native-token",
-        enabled: true,
-        native: true,
-        provider: "fcm",
-        platform: "android",
-        appActive: false,
-        appStateUpdatedAtMs: Date.now(),
-      },
       {
         id: "web-1",
         token: "web-token",
@@ -220,6 +210,16 @@ describe("sendFriendRequestPendingNotification", () => {
         native: false,
         provider: "fcm",
         platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+      {
+        id: "native-1",
+        token: "native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
         appActive: false,
         appStateUpdatedAtMs: Date.now(),
       },
@@ -239,9 +239,9 @@ describe("sendFriendRequestPendingNotification", () => {
       ok: true,
       requestId: "pending:sender-1:receiver-1",
       status: "sent",
-      successCount: 2,
+      successCount: 1,
     }));
-    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(2);
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
     expect(state.sendEachForMulticast).toHaveBeenCalledWith(
       expect.objectContaining({
         tokens: ["native-token"],
@@ -256,27 +256,8 @@ describe("sendFriendRequestPendingNotification", () => {
         },
       })
     );
-    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tokens: ["web-token"],
-        notification: {
-          title: "You have a pending friend request",
-          body: "Tap to view the request",
-        },
-        webpush: expect.objectContaining({
-          fcmOptions: { link: "/friends" },
-          data: {
-            route: "/friends",
-            requestId: "pending:sender-1:receiver-1",
-            type: "friendRequest",
-          },
-        }),
-        data: {
-          route: "/friends",
-          requestId: "pending:sender-1:receiver-1",
-          type: "friendRequest",
-        },
-      })
+    expect(state.sendEachForMulticast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ tokens: ["web-token"] })
     );
   });
 

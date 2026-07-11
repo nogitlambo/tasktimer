@@ -10,11 +10,19 @@ import { completeManualEntryDailyGoalIfReached } from "./manual-entry-time-goal"
 import { getRichNoteEditorValue } from "./rich-session-notes";
 import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
+import {
+  getPreviousCheckpointRewindTargetMs,
+  pruneCheckpointFiredKeysAfterTarget,
+  updateLatestSameDayHistoryElapsed,
+} from "./checkpoint-rewind";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const TASK_PRIMARY_ACTION_PRESS_CLASS = "isTaskPrimaryActionPressed";
 const TASK_PRIMARY_ACTION_PRESS_MS = 140;
+const TASK_CHECKPOINT_REWIND_HOLD_MS = 1000;
+const TASK_CHECKPOINT_REWIND_SUPPRESS_CLICK_CLEAR_MS = 400;
+const TASK_CHECKPOINT_REWIND_OPEN_CLASS = "isCheckpointRewindOpen";
 
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
@@ -24,6 +32,11 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     | null = null;
   let pressedTaskPrimaryActionEl: HTMLElement | null = null;
   let taskPrimaryActionPressTimer: number | null = null;
+  let taskCheckpointRewindHoldTimer: number | null = null;
+  let taskCheckpointRewindHoldTarget: HTMLElement | null = null;
+  let suppressNextResumeClickTaskId: string | null = null;
+  let suppressNextResumeClickClearTimer: number | null = null;
+  const checkpointRewindOpenTaskIds = new Set<string>();
   const taskManualEntry = createTaskManualEntryInteraction({
     elements: {
       overlay: els.taskManualEntryOverlay,
@@ -125,6 +138,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     fillBackgroundForPct: ctx.fillBackgroundForPct,
     escapeHtml: ctx.escapeHtmlUI,
     formatMainTaskElapsedHtml: ctx.formatMainTaskElapsedHtml,
+    isCheckpointRewindOpen: (taskId) => checkpointRewindOpenTaskIds.has(taskId),
   });
 
   function renderTasksPage() {
@@ -267,6 +281,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     showUpgradePrompt: ctx.showUpgradePrompt,
     startTask,
     stopTask,
+    rewindCheckpoint,
     resetTask: taskDestructiveActionEffects.resetTask,
     resetCompletedTaskImmediate: taskDestructiveActionEffects.resetCompletedTaskImmediate,
     archiveTask,
@@ -297,6 +312,150 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     taskPrimaryActionPressTimer = null;
   }
 
+  function clearTaskCheckpointRewindHoldTimer() {
+    if (!taskCheckpointRewindHoldTimer) return;
+    window.clearTimeout(taskCheckpointRewindHoldTimer);
+    taskCheckpointRewindHoldTimer = null;
+    taskCheckpointRewindHoldTarget = null;
+  }
+
+  function clearSuppressNextResumeClickTimer() {
+    if (!suppressNextResumeClickClearTimer) return;
+    window.clearTimeout(suppressNextResumeClickClearTimer);
+    suppressNextResumeClickClearTimer = null;
+  }
+
+  function scheduleSuppressNextResumeClickClear() {
+    if (!suppressNextResumeClickTaskId) return;
+    clearSuppressNextResumeClickTimer();
+    suppressNextResumeClickClearTimer = window.setTimeout(() => {
+    suppressNextResumeClickTaskId = null;
+    suppressNextResumeClickClearTimer = null;
+    }, TASK_CHECKPOINT_REWIND_SUPPRESS_CLICK_CLEAR_MS);
+  }
+
+  function getTaskElementForTarget(target: HTMLElement | null | undefined) {
+    return target?.closest?.(".task") as HTMLElement | null;
+  }
+
+  function getTaskIndexFromTaskElement(taskEl: HTMLElement | null) {
+    const index = Number.parseInt(String(taskEl?.dataset?.index || ""), 10);
+    return Number.isFinite(index) ? index : -1;
+  }
+
+  function getTaskIdFromTaskElement(taskEl: HTMLElement | null) {
+    return String(taskEl?.dataset?.taskId || "").trim();
+  }
+
+  function isResumePrimaryAction(target: HTMLElement | null | undefined) {
+    return !!target?.classList?.contains?.("taskPrimaryActionResume");
+  }
+
+  function getPreviousCheckpointRewindTargetForIndex(index: number) {
+    const task = ctx.getTasks()[index];
+    if (!task || task.running) return null;
+    return getPreviousCheckpointRewindTargetMs(
+      task,
+      ctx.getElapsedMs(task),
+      ctx.sortMilestones,
+      sharedTasks.milestoneUnitSec
+    );
+  }
+
+  function setCheckpointRewindButtonVisible(group: HTMLElement | null, visible: boolean) {
+    if (!group) return;
+    group.classList.toggle(TASK_CHECKPOINT_REWIND_OPEN_CLASS, visible);
+    const button = group.querySelector?.('[data-action="rewindCheckpoint"]') as HTMLElement | null;
+    if (!button) return;
+    if (visible) {
+      button.removeAttribute("aria-hidden");
+      button.removeAttribute("tabindex");
+      return;
+    }
+    button.setAttribute("aria-hidden", "true");
+    button.setAttribute("tabindex", "-1");
+  }
+
+  function revealCheckpointRewindForTarget(target: HTMLElement) {
+    const taskEl = getTaskElementForTarget(target);
+    const index = getTaskIndexFromTaskElement(taskEl);
+    const taskId = getTaskIdFromTaskElement(taskEl);
+    if (!taskId || getPreviousCheckpointRewindTargetForIndex(index) == null) return;
+    checkpointRewindOpenTaskIds.add(taskId);
+    suppressNextResumeClickTaskId = taskId;
+    setCheckpointRewindButtonVisible(target.closest?.(".taskCheckpointRewindGroup") as HTMLElement | null, true);
+    ctx.render();
+  }
+
+  function startTaskCheckpointRewindHold(target: HTMLElement) {
+    clearTaskCheckpointRewindHoldTimer();
+    if (!isResumePrimaryAction(target)) return;
+    const taskEl = getTaskElementForTarget(target);
+    const index = getTaskIndexFromTaskElement(taskEl);
+    if (getPreviousCheckpointRewindTargetForIndex(index) == null) return;
+    taskCheckpointRewindHoldTarget = target;
+    taskCheckpointRewindHoldTimer = window.setTimeout(() => {
+      const heldTarget = taskCheckpointRewindHoldTarget;
+      taskCheckpointRewindHoldTimer = null;
+      taskCheckpointRewindHoldTarget = null;
+      if (heldTarget) revealCheckpointRewindForTarget(heldTarget);
+    }, TASK_CHECKPOINT_REWIND_HOLD_MS);
+  }
+
+  function closeCheckpointRewindForTask(taskId: string | null | undefined) {
+    const id = String(taskId || "").trim();
+    if (!id) return;
+    checkpointRewindOpenTaskIds.delete(id);
+  }
+
+  function syncCheckpointRewindOpenState(taskId: string, task: Task) {
+    const target = getPreviousCheckpointRewindTargetMs(
+      task,
+      ctx.getElapsedMs(task),
+      ctx.sortMilestones,
+      sharedTasks.milestoneUnitSec
+    );
+    if (target == null) closeCheckpointRewindForTask(taskId);
+  }
+
+  function updateLatestSameDayHistoryForCheckpointRewind(task: Task, targetMs: number) {
+    const nextHistory = updateLatestSameDayHistoryElapsed(ctx.getHistoryByTaskId(), task, targetMs);
+    if (!nextHistory) return;
+    ctx.setHistoryByTaskId(nextHistory);
+    ctx.saveHistory(nextHistory, { allowDestructiveReplace: true });
+  }
+
+  function rewindCheckpoint(index: number) {
+    const task = ctx.getTasks()[index];
+    if (!task || task.running) return;
+    const taskId = String(task.id || "").trim();
+    const targetMs = getPreviousCheckpointRewindTargetForIndex(index);
+    if (!taskId || targetMs == null) {
+      closeCheckpointRewindForTask(taskId);
+      ctx.render();
+      return;
+    }
+    task.accumulatedMs = targetMs;
+    task.elapsed = targetMs;
+    task.startMs = null;
+    task.running = false;
+    task.hasStarted = true;
+    pruneCheckpointFiredKeysAfterTarget(
+      task,
+      targetMs,
+      ctx.getCheckpointFiredKeysByTaskId(),
+      ctx.sortMilestones,
+      sharedTasks.milestoneUnitSec
+    );
+    ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(targetMs / 1000);
+    updateLatestSameDayHistoryForCheckpointRewind(task, targetMs);
+    syncCheckpointRewindOpenState(taskId, task);
+    ctx.save({ forceCloudFlush: true });
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    ctx.render();
+    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
+  }
+
   function getTaskPrimaryActionPressTarget(eventTarget: EventTarget | null | undefined) {
     const target = findDelegatedElement(eventTarget || null, ".taskPrimaryAction") as HTMLButtonElement | null;
     if (!target || target.disabled) return null;
@@ -306,6 +465,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   function releaseTaskPrimaryActionPress(delayMs = TASK_PRIMARY_ACTION_PRESS_MS) {
     const target = pressedTaskPrimaryActionEl;
     if (!target) return;
+    clearTaskCheckpointRewindHoldTimer();
     clearTaskPrimaryActionPressTimer();
     taskPrimaryActionPressTimer = window.setTimeout(() => {
       target.classList.remove(TASK_PRIMARY_ACTION_PRESS_CLASS);
@@ -321,6 +481,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     clearTaskPrimaryActionPressTimer();
     pressedTaskPrimaryActionEl = target;
     target.classList.add(TASK_PRIMARY_ACTION_PRESS_CLASS);
+    startTaskCheckpointRewindHold(target);
   }
 
   function handleTaskPrimaryActionPressStart(event: any) {
@@ -337,6 +498,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
 
   function handleTaskPrimaryActionPressEnd() {
     releaseTaskPrimaryActionPress();
+    scheduleSuppressNextResumeClickClear();
   }
 
   function handleTaskListClick(e: any) {
@@ -360,6 +522,19 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
       return;
     }
     const { action, element } = delegatedAction;
+    if (
+      action === "start" &&
+      taskId &&
+      suppressNextResumeClickTaskId === taskId &&
+      (element as HTMLElement | null)?.classList?.contains?.("taskPrimaryActionResume")
+    ) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      clearSuppressNextResumeClickTimer();
+      suppressNextResumeClickTaskId = null;
+      return;
+    }
+    if (action === "start") closeCheckpointRewindForTask(taskId);
     taskCardActionEffects.handleAction({
       action,
       taskIndex: i,

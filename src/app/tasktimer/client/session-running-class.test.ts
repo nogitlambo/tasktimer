@@ -103,6 +103,8 @@ function createCompletionHarness(options?: {
   interactionHapticsEnabled?: boolean;
   interactionHapticsIntensity?: "max" | "medium" | "low";
   reducedMotion?: boolean;
+  checkpointAlertSoundEnabled?: boolean;
+  checkpointAlertSoundMode?: "once" | "repeat";
 }) {
   const completedTask = task({
     id: "task-1",
@@ -142,6 +144,12 @@ function createCompletionHarness(options?: {
   let focusModeTaskId: string | null = options?.focusModeTaskId ?? null;
   let focusModeTaskName = focusModeTaskId ? "Focus" : "";
   let focusShowCheckpoints = true;
+  let checkpointBeepAudio: HTMLAudioElement | null = null;
+  let checkpointBeepQueueCount = 0;
+  let checkpointBeepQueueTimer: number | null = null;
+  let checkpointRepeatStopAtMs = 0;
+  let checkpointRepeatCycleTimer: number | null = null;
+  let checkpointRepeatActiveTaskId: string | null = null;
   const checkpointBaselineSecByTaskId: Record<string, number> = { "task-1": 0 };
   const checkpointFiredKeysByTaskId: Record<string, Set<string>> = {};
   const clearTimeout = vi.fn();
@@ -164,9 +172,10 @@ function createCompletionHarness(options?: {
   const previousAudio = (globalThis as { Audio?: unknown }).Audio;
   const audioPlay = vi.fn();
   const audioPause = vi.fn();
-  const audioInstances: Array<{ currentTime: number; loop: boolean; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn> }> = [];
-  (globalThis as { Audio?: unknown }).Audio = vi.fn(function AudioStub() {
+  const audioInstances: Array<{ src: string; currentTime: number; loop: boolean; pause: ReturnType<typeof vi.fn>; play: ReturnType<typeof vi.fn> }> = [];
+  (globalThis as { Audio?: unknown }).Audio = vi.fn(function AudioStub(src?: string) {
     const audio = {
+      src: src || "",
       currentTime: 0,
       loop: false,
       readyState: 4,
@@ -182,7 +191,11 @@ function createCompletionHarness(options?: {
   });
   const windowStub = {
     requestAnimationFrame: vi.fn(() => 1),
-    setTimeout: vi.fn(() => 1),
+    setTimeout: vi.fn((handler: () => void, timeout?: number) => {
+      void handler;
+      void timeout;
+      return 1;
+    }),
     clearTimeout,
     localStorage: {
       setItem: vi.fn(),
@@ -265,24 +278,36 @@ function createCompletionHarness(options?: {
     fillBackgroundForPct: () => "#00ffff",
     getModeColor: () => "#00ffff",
     sortMilestones: (milestones: Task["milestones"]) => milestones,
-    getCheckpointAlertSoundEnabled: () => false,
+    getCheckpointAlertSoundEnabled: () => !!options?.checkpointAlertSoundEnabled,
     getCheckpointAlertToastEnabled: () => true,
-    getCheckpointAlertSoundMode: () => "once",
+    getCheckpointAlertSoundMode: () => options?.checkpointAlertSoundMode || "once",
     getCheckpointAlertToastMode: () => "auto5s",
-    getCheckpointRepeatStopAtMs: () => 0,
-    setCheckpointRepeatStopAtMs: () => {},
-    getCheckpointRepeatCycleTimer: () => null,
-    setCheckpointRepeatCycleTimer: () => {},
-    setCheckpointRepeatActiveTaskId: () => {},
-    getCheckpointRepeatActiveTaskId: () => null,
+    getCheckpointRepeatStopAtMs: () => checkpointRepeatStopAtMs,
+    setCheckpointRepeatStopAtMs: (value: number) => {
+      checkpointRepeatStopAtMs = value;
+    },
+    getCheckpointRepeatCycleTimer: () => checkpointRepeatCycleTimer,
+    setCheckpointRepeatCycleTimer: (value: number | null) => {
+      checkpointRepeatCycleTimer = value;
+    },
+    setCheckpointRepeatActiveTaskId: (value: string | null) => {
+      checkpointRepeatActiveTaskId = value;
+    },
+    getCheckpointRepeatActiveTaskId: () => checkpointRepeatActiveTaskId,
     getCheckpointToastCountdownRefreshTimer: () => null,
     setCheckpointToastCountdownRefreshTimer: () => {},
-    getCheckpointBeepAudio: () => null,
-    setCheckpointBeepAudio: () => {},
-    getCheckpointBeepQueueCount: () => 0,
-    setCheckpointBeepQueueCount: () => {},
-    getCheckpointBeepQueueTimer: () => null,
-    setCheckpointBeepQueueTimer: () => {},
+    getCheckpointBeepAudio: () => checkpointBeepAudio,
+    setCheckpointBeepAudio: (value: HTMLAudioElement | null) => {
+      checkpointBeepAudio = value;
+    },
+    getCheckpointBeepQueueCount: () => checkpointBeepQueueCount,
+    setCheckpointBeepQueueCount: (value: number) => {
+      checkpointBeepQueueCount = value;
+    },
+    getCheckpointBeepQueueTimer: () => checkpointBeepQueueTimer,
+    setCheckpointBeepQueueTimer: (value: number | null) => {
+      checkpointBeepQueueTimer = value;
+    },
     broadcastCheckpointAlertMute: () => {},
     hasEntitlement: () => false,
     on: (target: unknown, eventName: string, handler: (event?: Event) => unknown) => {
@@ -379,7 +404,105 @@ function createCompletionHarness(options?: {
   };
 }
 
+function runLastScheduledTimeout(harness: ReturnType<typeof createCompletionHarness>) {
+  const calls = harness.windowStub.setTimeout.mock.calls;
+  const callback = calls[calls.length - 1]?.[0];
+  if (typeof callback !== "function") throw new Error("No scheduled timeout callback found");
+  callback();
+}
+
 describe("task timer session tick", () => {
+  it("plays the once-only checkpoint alert as two quick beep pairs", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      taskOverrides: {
+        checkpointSoundEnabled: true,
+        checkpointToastEnabled: false,
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.audioInstances[0]?.src).toBe("/checkpoint_tone.wav");
+      expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 120);
+
+      runLastScheduledTimeout(harness);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
+      expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 180);
+
+      runLastScheduledTimeout(harness);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(3);
+      expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 120);
+
+      runLastScheduledTimeout(harness);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(4);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("queues one once-only checkpoint beep pattern per reached checkpoint", () => {
+    const harness = createCompletionHarness({
+      checkpointAlertSoundEnabled: true,
+      taskOverrides: {
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [
+          { hours: 0.25, description: "Quarter" },
+          { hours: 0.5, description: "Halfway" },
+        ],
+        checkpointSoundEnabled: true,
+        checkpointToastEnabled: false,
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+
+    try {
+      harness.session.tick();
+      const scheduledDelays = [harness.windowStub.setTimeout.mock.calls.at(-1)?.[1]];
+
+      for (let index = 0; index < 7; index += 1) {
+        runLastScheduledTimeout(harness);
+        scheduledDelays.push(harness.windowStub.setTimeout.mock.calls.at(-1)?.[1]);
+      }
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(8);
+      expect(scheduledDelays.slice(0, 7)).toEqual([120, 180, 120, 180, 120, 180, 120]);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("keeps repeat checkpoint alerts to one beep per repeat cycle", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      checkpointAlertSoundMode: "repeat",
+      taskOverrides: {
+        checkpointSoundEnabled: true,
+        checkpointToastEnabled: false,
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(1);
+      expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("suppresses checkpoint toasts for the task when completion opens", () => {
     const harness = createCompletionHarness({ withCheckpoint: true });
 

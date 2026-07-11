@@ -38,6 +38,7 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     hasFriends: true,
     isSharedByOwner: false,
     isTimeGoalCompleted: false,
+    hasTaskHistory: false,
     dynamicColorsEnabled: false,
     modeColor: "#00ffff",
     fillBackgroundForPct: (pct) => `pct-${pct}`,
@@ -48,6 +49,10 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
 }
 
 describe("task card view model", () => {
+  function expectTaskMenuLabel(html: string, label: string) {
+    expect(html).toContain(`<span class="taskMenuTileLabel">${label}</span>`);
+  }
+
   it("renders the stable task card action hooks", () => {
     const rendered = renderCard();
 
@@ -68,20 +73,49 @@ describe("task card view model", () => {
     const rendered = renderCard();
 
     const editIndex = rendered.html.indexOf(
-      '<button class="taskMenuItem" data-action="edit" title="Edit" type="button"><span class="taskMenuTile">Edit</span></button>'
+      '<button class="taskMenuItem" data-action="edit" title="Edit" type="button">'
     );
     const manualEntryIndex = rendered.html.indexOf('data-action="manualEntry"');
 
     expect(editIndex).toBeGreaterThan(-1);
     expect(manualEntryIndex).toBeGreaterThan(-1);
     expect(editIndex).toBeLessThan(manualEntryIndex);
-    expect(rendered.html).toContain('<span class="taskMenuTile">Add Entry</span>');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Share</span>');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Reset</span>');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Delete</span>');
-    expect(rendered.html).not.toContain('<span class="taskMenuTile">Archive</span>');
+    expectTaskMenuLabel(rendered.html, "Edit");
+    expectTaskMenuLabel(rendered.html, "Add Entry");
+    expectTaskMenuLabel(rendered.html, "Share");
+    expectTaskMenuLabel(rendered.html, "Reset");
+    expectTaskMenuLabel(rendered.html, "Export");
+    expectTaskMenuLabel(rendered.html, "Delete");
+    expect(rendered.html).toContain('src="/icons/icons_default/settings.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/notes.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/share.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/history.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/export.webp"');
+    expect(rendered.html).not.toContain('<span class="taskMenuTileLabel">Archive</span>');
+    expect(rendered.html).not.toContain('src="/icons/icons_default/archive.webp"');
     expect(rendered.html).not.toContain("taskMenuLabel");
     expect(rendered.html).not.toContain('<button class="iconBtn" data-action="edit" title="Edit">');
+  });
+
+  it("renders Archive instead of Delete when the task has history entries", () => {
+    const rendered = renderCard({ hasTaskHistory: true });
+
+    expect(rendered.html).toContain('data-action="archive" title="Archive" aria-label="Archive" type="button"');
+    expectTaskMenuLabel(rendered.html, "Archive");
+    expect(rendered.html).toContain('src="/icons/icons_default/archive.webp"');
+    expect(rendered.html).not.toContain('data-action="delete" title="Delete"');
+    expect(rendered.html).not.toContain('<span class="taskMenuTileLabel">Delete</span>');
+  });
+
+  it("disables Archive for a running task with history entries", () => {
+    const rendered = renderCard({
+      task: baseTask({ running: true }),
+      hasTaskHistory: true,
+    });
+
+    expect(rendered.html).toContain('data-action="archive" title="Stop task to archive" aria-label="Stop task to archive" type="button" disabled');
+    expectTaskMenuLabel(rendered.html, "Archive");
+    expect(rendered.html).toContain('src="/icons/icons_default/archive.webp"');
   });
 
   it("disables reset until the task has logged time", () => {
@@ -138,6 +172,46 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="reset" title="Reset" aria-label="Reset"');
   });
 
+  it("renders a hidden checkpoint rewind action only for eligible Resume buttons", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [{ hours: 15, description: "" }],
+      }),
+      elapsedMs: 20 * 60 * 1000,
+      sortedMilestones: [{ hours: 15, description: "" }],
+      milestoneUnitSec: 60,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).toContain("taskCheckpointRewindGroup");
+    expect(rendered.html).toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).toContain('aria-hidden="true" tabindex="-1"');
+    expect(rendered.html).toContain('data-action="start" title="Resume"');
+  });
+
+  it("renders an open checkpoint rewind action when requested by task state", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [{ hours: 15, description: "" }],
+      }),
+      elapsedMs: 20 * 60 * 1000,
+      sortedMilestones: [{ hours: 15, description: "" }],
+      milestoneUnitSec: 60,
+      checkpointRewindOpen: true,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).toContain("taskCheckpointRewindGroup isCheckpointRewindOpen");
+    expect(rendered.html).toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).not.toContain('aria-hidden="true" tabindex="-1"');
+  });
+
   it("renders running, alert, history, and shared-owner states", () => {
     const rendered = renderCard({
       task: baseTask({ running: true, collapsed: true }),
@@ -170,10 +244,10 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain('data-action="manualEntry"');
     expect(rendered.html).toContain('data-plan-locked="advancedHistory"');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Add Entry (Pro)</span>');
+    expectTaskMenuLabel(rendered.html, "Add Entry (Pro)");
     expect(rendered.html).toContain('data-action="shareTask"');
     expect(rendered.html).toContain('data-plan-locked="socialFeatures"');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Share (Pro)</span>');
+    expectTaskMenuLabel(rendered.html, "Share (Pro)");
   });
 
   it("disables sharing when there are no friends", () => {
@@ -182,7 +256,7 @@ describe("task card view model", () => {
     });
 
     expect(rendered.html).toContain('data-action="shareTask" title="Add friends to share tasks" type="button" disabled');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Share</span>');
+    expectTaskMenuLabel(rendered.html, "Share");
   });
 
   it("renders Unshare with the full label for shared-owner tasks", () => {
@@ -191,7 +265,7 @@ describe("task card view model", () => {
     });
 
     expect(rendered.html).toContain('data-action="unshareTask"');
-    expect(rendered.html).toContain('<span class="taskMenuTile">Unshare</span>');
+    expectTaskMenuLabel(rendered.html, "Unshare");
   });
 
   it("renders a history-tab border footprint for shell border alignment", () => {
@@ -276,14 +350,29 @@ describe("task card view model", () => {
 
   it("defines mock-style static recess and interactive inner button styles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
-    const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionLaunch\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
-    const resetRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionReset\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resumeRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionResume,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionResume\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const stopRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionStop,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionStop\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const resetRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionReset,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionReset\{[\s\S]*?\n\}/)?.[0] ?? "";
     const doneRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryActionDone\{[\s\S]*?\n\}/)?.[0] ?? "";
     const primaryActionRule =
       css.match(
         /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\{[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const rewindGroupRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.taskCheckpointRewindGroup,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.taskCheckpointRewindGroup\{[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const rewindButtonRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.taskCheckpointRewindBtn\{[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const rewindOpenRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.taskCheckpointRewindGroup\.isCheckpointRewindOpen \.taskCheckpointRewindBtn\{[\s\S]*?\n\}/
       )?.[0] ??
       "";
     const faceRule =
@@ -310,12 +399,40 @@ describe("task card view model", () => {
       "";
 
     expect(primaryActionRule).toContain("--task-primary-action-size: 96px;");
-    expect(primaryActionRule).toContain("--task-primary-accent: #9dfcff;");
+    expect(primaryActionRule).toContain("--task-primary-accent: #aeb6c0;");
+    expect(primaryActionRule).toContain("--task-primary-ring: #1d1e21;");
     expect(primaryActionRule).toContain("background: #090a0d !important;");
     expect(primaryActionRule).not.toContain("transform .14s cubic-bezier(.2,.8,.2,1)");
     expect(primaryActionRule).toContain('font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
-    expect(ringRule).toContain('background: url("/task-primary-action-ring.webp") center / 100% 100% no-repeat;');
-    expect(ringRule).toContain("filter: brightness(.74) contrast(1.12) saturate(.72);");
+    expect(rewindGroupRule).toContain("--task-primary-action-size: 96px;");
+    expect(rewindGroupRule).toContain("--task-checkpoint-rewind-gap: 6px;");
+    expect(rewindGroupRule).toContain("--task-checkpoint-rewind-size: calc(var(--task-primary-action-size) / 2);");
+    expect(rewindGroupRule).toContain("width: var(--task-primary-action-size);");
+    expect(rewindGroupRule).toContain("height: var(--task-primary-action-size);");
+    expect(rewindGroupRule).not.toContain("width: 148px;");
+    expect(rewindButtonRule).toContain("width: var(--task-checkpoint-rewind-size) !important;");
+    expect(rewindButtonRule).toContain("height: var(--task-checkpoint-rewind-size) !important;");
+    expect(rewindButtonRule).not.toContain("width: 42px !important;");
+    expect(rewindOpenRule).toContain("left: calc(50% - (var(--task-primary-action-size) / 2) - var(--task-checkpoint-rewind-gap) - var(--task-checkpoint-rewind-size));");
+    expect(css).toMatch(
+      /@media \(max-width: 420px\)\{[\s\S]*?\.taskCheckpointRewindGroup[\s\S]*?--task-primary-action-size: 82px;/
+    );
+    expect(css).not.toContain("width: 38px !important;");
+    expect(css).toContain('.actions > .btn.small:not(.taskPrimaryAction),');
+    expect(css).toContain('.actions .btn[data-action="start"]:not(.taskPrimaryAction),');
+    expect(css).toContain('.actions .btn[data-action="stop"]:not(.taskPrimaryAction),');
+    expect(css).toContain('.actions .btn.btn-resume[data-action="start"]:not(.taskPrimaryAction)::after');
+    expect(css).toContain(".actions .btn:not(.taskPrimaryAction):not(.taskCheckpointRewindBtn),");
+    expect(css).not.toContain('.actions .btn[data-action="start"],');
+    expect(css).not.toContain('.actions .btn[data-action="stop"],');
+    expect(css).not.toContain('.actions .btn.btn-resume[data-action="start"]::after');
+    expect(ringRule).toContain("linear-gradient(");
+    expect(ringRule).toContain("var(--task-primary-ring-top) 0%");
+    expect(ringRule).toContain("var(--task-primary-ring) 54%");
+    expect(ringRule).toContain("var(--task-primary-ring-bottom) 100%");
+    expect(ringRule).toContain("0 0 18px var(--task-primary-ring-soft)");
+    expect(ringRule).toContain("filter: brightness(.96) contrast(1.08) saturate(1.08);");
+    expect(ringRule).not.toContain("color-mix(");
     expect(ringRule).not.toContain("transition: transform");
     expect(faceRule).toContain("repeating-radial-gradient");
     expect(faceRule).toContain("linear-gradient(180deg, var(--task-primary-face-top) 0%, var(--task-primary-face-mid) 48%, var(--task-primary-face-bottom) 100%) !important;");
@@ -328,26 +445,45 @@ describe("task card view model", () => {
     expect(css).toContain('font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;');
     expect(css).toContain("color: var(--task-primary-label);");
     expect(css).not.toContain(".taskPrimaryActionSecondary");
-    expect(launchRule).toContain("--task-primary-accent: #9dfcff;");
-    expect(launchRule).toContain("--task-primary-label: #d7feff;");
-    expect(launchRule).toContain("--task-primary-face-top: #193438;");
-    expect(launchRule).toContain("--task-primary-face-mid: #122226;");
-    expect(launchRule).toContain("--task-primary-face-bottom: #090d10;");
-    expect(resumeRule).toContain("--task-primary-accent: #ffd66b;");
-    expect(resumeRule).toContain("--task-primary-label: #ffe9a8;");
-    expect(resumeRule).toContain("--task-primary-face-top: #3a3018;");
-    expect(resumeRule).toContain("--task-primary-face-mid: #241d10;");
-    expect(resumeRule).toContain("--task-primary-face-bottom: #100c07;");
-    expect(stopRule).toContain("--task-primary-accent: #ff7070;");
-    expect(stopRule).toContain("--task-primary-label: #ffc7c7;");
-    expect(stopRule).toContain("--task-primary-face-top: #3b1a1d;");
-    expect(stopRule).toContain("--task-primary-face-mid: #251013;");
-    expect(stopRule).toContain("--task-primary-face-bottom: #100708;");
-    expect(resetRule).toContain("--task-primary-accent: #c89cff;");
-    expect(resetRule).toContain("--task-primary-label: #ead9ff;");
-    expect(resetRule).toContain("--task-primary-face-top: #2d2440;");
-    expect(resetRule).toContain("--task-primary-face-mid: #1d172a;");
-    expect(resetRule).toContain("--task-primary-face-bottom: #0d0a13;");
+    expect(launchRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionLaunch");
+    expect(launchRule).toContain('body[data-app-page="tasks"]');
+    expect(launchRule).toContain('body[data-app-page="schedule"]');
+    expect(launchRule).toContain("--task-primary-accent: #aeb6c0;");
+    expect(launchRule).toContain("--task-primary-ring-top: #26272b;");
+    expect(launchRule).toContain("--task-primary-ring: #1d1e21;");
+    expect(launchRule).toContain("--task-primary-ring-bottom: #0e1417;");
+    expect(launchRule).toContain("--task-primary-ring-soft: rgba(38,39,43,.34);");
+    expect(launchRule).toContain("--task-primary-label: #e7ebef;");
+    expect(launchRule).toContain("--task-primary-face-top: #2f343b;");
+    expect(launchRule).toContain("--task-primary-face-mid: #1e2228;");
+    expect(launchRule).toContain("--task-primary-face-bottom: #0c0f13;");
+    expect(resumeRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionResume");
+    expect(resumeRule).toContain('body[data-app-page="tasks"]');
+    expect(resumeRule).toContain('body[data-app-page="schedule"]');
+    expect(resumeRule).toContain("--task-primary-accent: #ff7070;");
+    expect(resumeRule).toContain("--task-primary-ring: #ff3b3b;");
+    expect(resumeRule).toContain("--task-primary-label: #ffc7c7;");
+    expect(resumeRule).toContain("--task-primary-face-top: #3b1a1d;");
+    expect(resumeRule).toContain("--task-primary-face-mid: #251013;");
+    expect(resumeRule).toContain("--task-primary-face-bottom: #100708;");
+    expect(stopRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionStop");
+    expect(stopRule).toContain('body[data-app-page="tasks"]');
+    expect(stopRule).toContain('body[data-app-page="schedule"]');
+    expect(stopRule).toContain("--task-primary-accent: #9dfcff;");
+    expect(stopRule).toContain("--task-primary-ring: #00e5ff;");
+    expect(stopRule).toContain("--task-primary-label: #d7feff;");
+    expect(stopRule).toContain("--task-primary-face-top: #193438;");
+    expect(stopRule).toContain("--task-primary-face-mid: #122226;");
+    expect(stopRule).toContain("--task-primary-face-bottom: #090d10;");
+    expect(resetRule).toContain(".btn.taskPrimaryAction.taskPrimaryActionReset");
+    expect(resetRule).toContain('body[data-app-page="tasks"]');
+    expect(resetRule).toContain('body[data-app-page="schedule"]');
+    expect(resetRule).toContain("--task-primary-accent: #ffd66b;");
+    expect(resetRule).toContain("--task-primary-ring: #ffd23f;");
+    expect(resetRule).toContain("--task-primary-label: #ffe9a8;");
+    expect(resetRule).toContain("--task-primary-face-top: #3a3018;");
+    expect(resetRule).toContain("--task-primary-face-mid: #241d10;");
+    expect(resetRule).toContain("--task-primary-face-bottom: #100c07;");
     expect(doneRule).toContain("--task-primary-accent: #77f0a0;");
     expect(doneRule).toContain("--task-primary-label: #c8ffd9;");
     expect(doneRule).toContain("--task-primary-face-top: #1a3827;");

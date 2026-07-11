@@ -313,6 +313,8 @@ type CreateTasksOptionsArgs = {
   >;
   checkpointAutoResetDirty: () => boolean;
   setCheckpointAutoResetDirty: (value: boolean) => void;
+  getCheckpointFiredKeysByTaskId: () => Record<string, Set<string>>;
+  getCheckpointBaselineSecByTaskId: () => Record<string, number>;
   render: () => void;
   renderHistory: (taskId: string) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
@@ -1256,6 +1258,8 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     ...args.editStateBindings,
     getCheckpointAutoResetDirty: args.checkpointAutoResetDirty,
     setCheckpointAutoResetDirty: args.setCheckpointAutoResetDirty,
+    getCheckpointFiredKeysByTaskId: args.getCheckpointFiredKeysByTaskId,
+    getCheckpointBaselineSecByTaskId: args.getCheckpointBaselineSecByTaskId,
     render: args.render,
     renderHistory: args.renderHistory,
     renderDashboardWidgets: args.renderDashboardWidgets,

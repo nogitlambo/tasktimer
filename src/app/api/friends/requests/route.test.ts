@@ -100,7 +100,7 @@ function createFriendRequestDb(docOverrides: Record<string, Record<string, unkno
     },
     "users/receiver-uid/preferences/v1": {
       mobilePushAlertsEnabled: true,
-      webPushAlertsEnabled: false,
+      webPushAlertsEnabled: true,
     },
     "users/receiver-uid/devices/receiver-native-device": {
       id: "receiver-native-device",
@@ -114,6 +114,14 @@ function createFriendRequestDb(docOverrides: Record<string, Record<string, unkno
   };
   const collectionDocs: Record<string, Array<Record<string, unknown> & { id: string }>> = {
     "users/receiver-uid/devices": [
+      {
+        id: "receiver-web-device",
+        token: "receiver-web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+      },
       {
         id: "receiver-native-device",
         token: "receiver-native-token",
@@ -235,7 +243,7 @@ describe("POST /api/friends/requests", () => {
     expect(payload).toEqual({ error: "Email address is required." });
   });
 
-  it("sends a native push notification to the receiver after creating a pending request", async () => {
+  it("sends one push notification to the receiver after creating a pending request, preferring native over web", async () => {
     const db = createFriendRequestDb();
     mocks.getFirebaseAdminDb.mockReturnValue(db);
 
@@ -277,6 +285,9 @@ describe("POST /api/friends/requests", () => {
           type: "friendRequest",
         },
       })
+    );
+    expect(mocks.sendEachForMulticast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ tokens: ["receiver-web-token"] })
     );
   });
 

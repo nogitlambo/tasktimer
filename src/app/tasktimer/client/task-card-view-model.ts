@@ -64,11 +64,13 @@ type RenderTaskCardOptions = {
   hasFriends: boolean;
   isSharedByOwner: boolean;
   isTimeGoalCompleted: boolean;
+  hasTaskHistory: boolean;
   dynamicColorsEnabled: boolean;
   modeColor: string;
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: string) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  checkpointRewindOpen?: boolean;
 };
 
 type RenderedTaskCard = {
@@ -86,9 +88,12 @@ type DispatchTaskCardActionOptions = {
   handlers: Partial<TaskCardActionHandlers>;
 };
 
-function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => string) {
+function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => string, iconSrc?: string) {
   const trimmedLabel = label.trim();
-  return `<span class="taskMenuTile">${escapeHtml(trimmedLabel)}</span>`;
+  const iconHtml = iconSrc
+    ? `<img class="taskMenuTileIcon" src="${escapeHtml(iconSrc)}" alt="" aria-hidden="true" />`
+    : "";
+  return `<span class="taskMenuTile">${iconHtml}<span class="taskMenuTileLabel">${escapeHtml(trimmedLabel)}</span></span>`;
 }
 
 function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState) {
@@ -132,6 +137,57 @@ export function renderTaskPrimaryActionHtml(state: TaskPrimaryActionState, opts?
   return `<button class="${model.className}" data-action="${model.dataAction}" title="${model.title}" aria-label="${model.ariaLabel}" type="button" ${
     model.disabled ? "disabled" : ""
   }>${model.innerHtml}</button>`;
+}
+
+function getPreviousRenderedCheckpointTargetMs({
+  elapsedMs,
+  sortedMilestones,
+  milestoneUnitSec,
+}: {
+  elapsedMs: number;
+  sortedMilestones: Milestone[];
+  milestoneUnitSec: number;
+}) {
+  const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs) || 0));
+  const unitSec = Math.max(0, Number(milestoneUnitSec) || 0);
+  if (!(safeElapsedMs > 0) || !(unitSec > 0) || !Array.isArray(sortedMilestones) || !sortedMilestones.length) return null;
+  const targetMsValues = Array.from(
+    new Set(
+      sortedMilestones
+        .map((milestone) => Math.max(0, Math.round((Number(milestone?.hours) || 0) * unitSec)) * 1000)
+        .filter((value) => value > 0)
+    )
+  ).sort((a, b) => a - b);
+  for (let index = targetMsValues.length - 1; index >= 0; index -= 1) {
+    const targetMs = targetMsValues[index]!;
+    if (targetMs < safeElapsedMs) return targetMs;
+  }
+  return null;
+}
+
+function renderTaskPrimaryActionWithRewindHtml({
+  state,
+  elapsedMs,
+  sortedMilestones,
+  milestoneUnitSec,
+  checkpointRewindOpen,
+}: {
+  state: TaskPrimaryActionState;
+  elapsedMs: number;
+  sortedMilestones: Milestone[];
+  milestoneUnitSec: number;
+  checkpointRewindOpen?: boolean;
+}) {
+  if (state !== "resume") return renderTaskPrimaryActionHtml(state);
+  const targetMs = getPreviousRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec });
+  if (targetMs == null) return renderTaskPrimaryActionHtml(state);
+  const openClass = checkpointRewindOpen ? " isCheckpointRewindOpen" : "";
+  const hiddenAttrs = checkpointRewindOpen ? "" : ' aria-hidden="true" tabindex="-1"';
+  return `
+                  <div class="taskCheckpointRewindGroup${openClass}">
+                    <button class="btn btn-ghost small taskCheckpointRewindBtn" data-action="rewindCheckpoint" title="Back to previous checkpoint" aria-label="Back to previous checkpoint" type="button"${hiddenAttrs}>&#8592;</button>
+                    ${renderTaskPrimaryActionHtml(state)}
+                  </div>`;
 }
 
 export function buildTaskProgressModel({
@@ -311,11 +367,13 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     hasFriends,
     isSharedByOwner,
     isTimeGoalCompleted,
+    hasTaskHistory,
     dynamicColorsEnabled,
     modeColor,
     fillBackgroundForPct,
     escapeHtml,
     formatMainTaskElapsedHtml,
+    checkpointRewindOpen,
   } = options;
   const elapsedSec = elapsedMs / 1000;
   const hasActiveToastForTask = !!activeCheckpointToastTaskId && String(activeCheckpointToastTaskId) === taskId;
@@ -354,13 +412,20 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
         escapeHtml,
       })
     : "";
-  const startStopHtml = isTimeGoalCompleted
-    ? renderTaskPrimaryActionHtml("reset")
+  const primaryActionState: TaskPrimaryActionState = isTimeGoalCompleted
+    ? "reset"
     : task.running
-      ? renderTaskPrimaryActionHtml("stop")
+      ? "stop"
       : elapsedMs > 0
-        ? renderTaskPrimaryActionHtml("resume")
-        : renderTaskPrimaryActionHtml("launch");
+        ? "resume"
+        : "launch";
+  const startStopHtml = renderTaskPrimaryActionWithRewindHtml({
+    state: primaryActionState,
+    elapsedMs,
+    sortedMilestones,
+    milestoneUnitSec,
+    checkpointRewindOpen,
+  });
   const hasResettableTime = elapsedMs > 0;
   const resetLabel = task.running
     ? "Stop task to reset"
@@ -379,6 +444,11 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     : "Pro feature: Sharing";
   const manualEntryLabel = canUseAdvancedHistory ? "Add Entry" : "Add Entry (Pro)";
   const manualEntryTitle = canUseAdvancedHistory ? "Add Entry" : "Pro feature: Manual history entry";
+  const destructiveAction = hasTaskHistory ? "archive" : "delete";
+  const destructiveLabel = hasTaskHistory ? "Archive" : "Delete";
+  const destructiveTitle = hasTaskHistory && task.running ? "Stop task to archive" : destructiveLabel;
+  const destructiveDisabled = hasTaskHistory && task.running;
+  const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : undefined;
   return {
     className,
     html: `
@@ -414,12 +484,12 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
                 <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
               </div>
               <div class="taskBackActions">
-                <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml)}</button>
-                <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml)}</button>
-                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml)}</button>
-                <button class="taskMenuItem" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" type="button" ${task.running || !hasResettableTime ? "disabled" : ""}>${renderTaskBackActionTile("Reset", escapeHtml)}</button>
-                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">${renderTaskBackActionTile("Export", escapeHtml)}</button>
-                <button class="taskMenuItem taskMenuItemDelete" data-action="delete" title="Delete" type="button">${renderTaskBackActionTile("Delete", escapeHtml)}</button>
+                <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml, "/icons/icons_default/settings.webp")}</button>
+                <button class="taskMenuItem" data-action="manualEntry" title="${manualEntryTitle}" type="button" ${canUseAdvancedHistory ? "" : 'data-plan-locked="advancedHistory"'}>${renderTaskBackActionTile(manualEntryLabel, escapeHtml, "/icons/icons_default/notes.webp")}</button>
+                <button class="taskMenuItem" data-action="${shareAction}" title="${shareTitle}" type="button" ${shareDisabled ? "disabled" : ""} ${canUseSocialFeatures ? "" : 'data-plan-locked="socialFeatures"'}>${renderTaskBackActionTile(shareLabel, escapeHtml, "/icons/icons_default/share.webp")}</button>
+                <button class="taskMenuItem" data-action="reset" title="${resetLabel}" aria-label="${resetLabel}" type="button" ${task.running || !hasResettableTime ? "disabled" : ""}>${renderTaskBackActionTile("Reset", escapeHtml, "/icons/icons_default/history.webp")}</button>
+                <button class="taskMenuItem" data-action="exportTask" title="Export" type="button">${renderTaskBackActionTile("Export", escapeHtml, "/icons/icons_default/export.webp")}</button>
+                <button class="taskMenuItem taskMenuItemDelete" data-action="${destructiveAction}" title="${destructiveTitle}" aria-label="${destructiveTitle}" type="button" ${destructiveDisabled ? "disabled" : ""}>${renderTaskBackActionTile(destructiveLabel, escapeHtml, destructiveIconSrc)}</button>
               </div>
             </div>
             </div>

@@ -9,6 +9,7 @@ type TaskCardActionEffectsOptions = {
   showUpgradePrompt: (featureName: string, plan?: "pro") => void;
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
+  rewindCheckpoint: (index: number) => void;
   resetTask: (index: number) => void;
   resetCompletedTaskImmediate: (index: number) => void;
   archiveTask: (index: number) => void;
@@ -74,6 +75,7 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
       handlers: {
         start: () => options.startTask(taskIndex),
         stop: () => options.stopTask(taskIndex),
+        rewindCheckpoint: () => options.rewindCheckpoint(taskIndex),
         reset: () => {
           if (sourceElement?.closest?.(".taskPrimaryActionReset")) {
             options.resetCompletedTaskImmediate(taskIndex);

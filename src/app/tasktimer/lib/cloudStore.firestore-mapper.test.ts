@@ -106,6 +106,38 @@ describe("saveTask Firestore planned start payloads", () => {
     }));
   });
 
+  it("does not re-add background push fields to the legacy task fallback payload", async () => {
+    firestoreMocks.setDoc.mockImplementation(async (ref?: { path?: string }, row?: Record<string, unknown>) => {
+      if (ref?.path !== "users/user-1/tasks/task-1") return undefined;
+      const hasBackgroundPushField = Object.keys(row || {}).some((key) => key.startsWith("bgTimeGoalPush"));
+      if (!hasBackgroundPushField) return undefined;
+      const error = new Error("Missing or insufficient permissions.") as Error & { code?: string };
+      error.code = "permission-denied";
+      throw error;
+    });
+
+    await saveTask(
+      "user-1",
+      task({
+        plannedStartTime: "09:00",
+        plannedStartPushRemindersEnabled: true,
+      })
+    );
+
+    const taskWrites = (firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>]>)
+      .filter(([ref]) => ref.path === "users/user-1/tasks/task-1")
+      .map(([, row]) => row);
+
+    expect(taskWrites).toHaveLength(2);
+    expect(taskWrites[0]).toEqual(expect.objectContaining({
+      bgTimeGoalPushEligible: true,
+    }));
+    expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushEligible");
+    expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushDueAtMs");
+    expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushSentAtMs");
+    expect(taskWrites[1]).not.toHaveProperty("bgTimeGoalPushSentDueAtMs");
+  });
+
   it("maps legacy elapsed cloud task time into accumulated time", async () => {
     firestoreMocks.getDocs.mockImplementation(async (ref?: { path?: string }) => {
       if (ref?.path === "users/user-1/tasks") {

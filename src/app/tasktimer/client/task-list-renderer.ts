@@ -43,6 +43,7 @@ type TaskListRendererOptions = {
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: unknown) => string;
   formatMainTaskElapsedHtml: (elapsedMs: number, running: boolean) => string;
+  isCheckpointRewindOpen?: (taskId: string) => boolean;
 };
 
 function normalizeTaskNameForSort(task: Task | null | undefined) {
@@ -149,6 +150,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     const openHistoryTaskIds = options.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = options.getPinnedHistoryTaskIds();
     const historyViewByTaskId = options.getHistoryViewByTaskId();
+    const historyByTaskId = options.getHistoryByTaskId();
     const activeTaskIds = new Set(tasks.map((task) => String(task.id || "")));
 
     options.syncTaskFlipStatesForVisibleTasks(activeTaskIds);
@@ -188,6 +190,8 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const historyRevealPhase = historyState?.revealPhase || (openHistoryTaskIds.has(taskId) ? "open" : null);
       const showHistory = openHistoryTaskIds.has(taskId) || historyRevealPhase === "closing" || historyRevealPhase === "closingSpace";
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
+      const taskHistory = taskId ? historyByTaskId?.[taskId] : null;
+      const hasTaskHistory = Array.isArray(taskHistory) && taskHistory.length > 0;
       const renderedCard = renderTaskCardHtml({
         task,
         taskId,
@@ -210,11 +214,13 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
           Date.now(),
           options.getWeekStarting?.() || "mon"
         ),
+        hasTaskHistory,
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         modeColor: options.getModeColor("mode1"),
         fillBackgroundForPct: options.fillBackgroundForPct,
         escapeHtml: options.escapeHtml,
         formatMainTaskElapsedHtml: options.formatMainTaskElapsedHtml,
+        checkpointRewindOpen: options.isCheckpointRewindOpen?.(taskId) === true,
       });
       taskEl.className = renderedCard.className;
       taskEl.innerHTML = renderedCard.html;
