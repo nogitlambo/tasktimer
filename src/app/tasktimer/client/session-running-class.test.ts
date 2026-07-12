@@ -11,6 +11,16 @@ vi.mock("./interaction-haptics", () => ({
   playTimeGoalXpCountHaptic: vi.fn(),
 }));
 
+const nativeRuntime = vi.hoisted(() => ({
+  androidCheckpointAlarmRuntime: false,
+}));
+
+vi.mock("../lib/nativeTimerNotification", () => ({
+  dismissNativeCheckpointAlarm: vi.fn(async () => {}),
+  isNativeAndroidCheckpointAlarmRuntime: () => nativeRuntime.androidCheckpointAlarmRuntime,
+  syncNativeCheckpointAlarms: vi.fn(async () => {}),
+}));
+
 import { playTimeGoalXpCountHaptic } from "./interaction-haptics";
 import { createTaskTimerSession } from "./session";
 
@@ -105,7 +115,9 @@ function createCompletionHarness(options?: {
   checkpointAlertFlashEnabled?: boolean;
   checkpointAlertSoundMode?: "once" | "repeat";
   liveTaskDom?: boolean;
+  nativeAndroidCheckpointAlarmRuntime?: boolean;
 }) {
+  nativeRuntime.androidCheckpointAlarmRuntime = !!options?.nativeAndroidCheckpointAlarmRuntime;
   const completedTask = task({
     id: "task-1",
     name: "Focus",
@@ -375,6 +387,7 @@ function createCompletionHarness(options?: {
     audioInstances,
     windowStub,
     restoreWindow: () => {
+      nativeRuntime.androidCheckpointAlarmRuntime = false;
       (globalThis as { window?: unknown }).window = previousWindow;
       (globalThis as { document?: unknown }).document = previousDocument;
       (globalThis as { Audio?: unknown }).Audio = previousAudio;
@@ -447,6 +460,48 @@ describe("task timer session tick", () => {
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
       expect(harness.isCheckpointFlashing("task-1")).toBe(true);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("plays a due checkpoint alert before opening the same-tick completion modal", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      taskOverrides: {
+        checkpointSoundEnabled: true,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.completedTask.running).toBe(false);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("plays the foreground checkpoint alert in the native Android runtime", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      nativeAndroidCheckpointAlarmRuntime: true,
+      taskOverrides: {
+        checkpointSoundEnabled: true,
+        timeGoalEnabled: false,
+        timeGoalMinutes: 0,
+      },
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.audioInstances[0]?.src).toBe("/checkpoint.mp3");
     } finally {
       harness.restoreWindow();
     }

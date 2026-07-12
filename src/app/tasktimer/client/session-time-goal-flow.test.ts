@@ -126,7 +126,7 @@ describe("time goal completion flow guard", () => {
     });
   });
 
-  it("suppresses same-tick checkpoint alerts when elapsed crosses the time goal", () => {
+  it("does not suppress same-tick checkpoint alerts when elapsed crosses the time goal", () => {
     expect(
       getCheckpointAlertCompletionPriority({
         prevBaselineSec: 59,
@@ -135,9 +135,9 @@ describe("time goal completion flow guard", () => {
         taskId: "task-1",
       })
     ).toEqual({
-      shouldOpenTimeGoalModal: true,
+      shouldOpenTimeGoalModal: false,
       reminder: false,
-      suppressCheckpointAlertSideEffects: true,
+      suppressCheckpointAlertSideEffects: false,
     });
   });
 

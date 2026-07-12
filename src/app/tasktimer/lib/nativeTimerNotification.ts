@@ -30,6 +30,7 @@ export type NativeCheckpointAlarm = {
 const TaskLaunchTimerNotification = registerPlugin<TaskLaunchTimerNotificationPlugin>("TaskLaunchTimerNotification");
 const pendingSourceNotificationIdsByTaskId = new Map<string, number>();
 let lastCheckpointAlarmSignature = "";
+const NATIVE_CHECKPOINT_DUE_GRACE_MS = 10_000;
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") lastCheckpointAlarmSignature = "";
@@ -116,7 +117,7 @@ export async function openNativeCheckpointAlarmPermissionSettings() {
 export async function syncNativeCheckpointAlarms(alarms: NativeCheckpointAlarm[]) {
   if (!isAndroidNativeRuntime()) return;
   const normalized = alarms
-    .filter((alarm) => normalizeTaskId(alarm.taskId) && Number(alarm.triggerAtMs) > Date.now())
+    .filter((alarm) => normalizeTaskId(alarm.taskId) && Number(alarm.triggerAtMs) + NATIVE_CHECKPOINT_DUE_GRACE_MS > Date.now())
     .map((alarm) => ({
       ...alarm,
       taskId: normalizeTaskId(alarm.taskId),

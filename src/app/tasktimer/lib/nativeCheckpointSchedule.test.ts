@@ -29,6 +29,14 @@ describe("buildNativeCheckpointSchedule", () => {
       ]);
   });
 
+  it("keeps recently due checkpoint alarms during the native delivery grace window", () => {
+    expect(buildNativeCheckpointSchedule({ tasks: [task()], soundEnabled: true, soundMode: "once", nowMs: 1_300_500 }))
+      .toEqual([
+        expect.objectContaining({ checkpointKey: "600", triggerAtMs: 1_300_000 }),
+        expect.objectContaining({ checkpointKey: "1200", triggerAtMs: 1_900_000 }),
+      ]);
+  });
+
   it("excludes disabled, elapsed, and goal-boundary checkpoints", () => {
     const value = task({
       accumulatedMs: 12 * 60_000,

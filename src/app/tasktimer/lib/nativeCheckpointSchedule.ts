@@ -1,6 +1,8 @@
 import type { Task } from "./types";
 import type { NativeCheckpointAlarm } from "./nativeTimerNotification";
 
+const NATIVE_CHECKPOINT_DUE_GRACE_MS = 10_000;
+
 function milestoneUnitSeconds(task: Task) {
   if (task.milestoneTimeUnit === "day") return 86400;
   if (task.milestoneTimeUnit === "minute") return 60;
@@ -37,7 +39,7 @@ export function buildNativeCheckpointSchedule(input: {
       if (!targetSeconds || targetSeconds >= goalSeconds) return;
       const remainingMsAtStart = targetSeconds * 1000 - accumulatedMs;
       const triggerAtMs = startMs + remainingMsAtStart;
-      if (triggerAtMs <= nowMs) return;
+      if (triggerAtMs + NATIVE_CHECKPOINT_DUE_GRACE_MS <= nowMs) return;
       alarms.push({
         taskId,
         taskName: String(task.name || "Task").trim() || "Task",

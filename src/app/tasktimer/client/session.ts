@@ -31,7 +31,6 @@ import { playTaskCompleteConfettiHaptic, playTimeGoalXpCountHaptic } from "./int
 import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
 import {
   dismissNativeCheckpointAlarm,
-  isNativeAndroidCheckpointAlarmRuntime,
   syncNativeCheckpointAlarms,
 } from "../lib/nativeTimerNotification";
 import { startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti, TIME_GOAL_XP_CALCULATING_TEXT } from "./time-goal-confetti";
@@ -411,7 +410,7 @@ export function getCheckpointAlertCompletionPriority(
   const elapsedWholeSec = Math.floor(Math.max(0, Number(opts.elapsedWholeSec) || 0));
   const timeGoalSec = Math.round(Math.max(0, Number(opts.timeGoalSec) || 0));
   if (didElapsedReachTimeGoalFromBaseline(opts.prevBaselineSec, elapsedWholeSec, timeGoalSec)) {
-    return { shouldOpenTimeGoalModal: true, reminder: false, suppressCheckpointAlertSideEffects: true };
+    return { shouldOpenTimeGoalModal: false, reminder: false, suppressCheckpointAlertSideEffects: false };
   }
 
   const reminderAtMs = Number(opts.reminderAtMs || 0);
@@ -2391,8 +2390,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       startCheckpointFlash(taskId);
       if (
         ctx.getCheckpointAlertSoundEnabled() &&
-        task.checkpointSoundEnabled &&
-        !isNativeAndroidCheckpointAlarmRuntime()
+        task.checkpointSoundEnabled
       ) beepCount += 1;
     });
     baselineByTaskId[taskId] = elapsedWholeSec;
@@ -2455,9 +2453,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
-        if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
         updateTaskProgressFill(node, task, elapsedMs);
+        processCheckpointAlertsForTask(task, elapsedMs / 1000);
+        processedCheckpointTaskIds.add(String(task.id || ""));
+        if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
           let primaryActionState: TaskPrimaryActionState = "launch";
@@ -2493,20 +2493,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           ctx.syncRewardSessionTrackerForTask(task, nowMs());
           ctx.syncLiveSessionForTask(task, nowMs());
         }
-        processCheckpointAlertsForTask(task, elapsedMs / 1000);
-        processedCheckpointTaskIds.add(String(task.id || ""));
       });
     }
     tasks.forEach((task) => {
       const taskId = String(task.id || "");
       if (!taskId || processedCheckpointTaskIds.has(taskId)) return;
       const elapsedMs = getElapsedMs(task);
-      if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
       if (task.running) {
         ctx.syncRewardSessionTrackerForTask(task, nowMs());
         ctx.syncLiveSessionForTask(task, nowMs());
       }
       processCheckpointAlertsForTask(task, elapsedMs / 1000);
+      if (autoStopDailyTimeGoalTaskIfReached(task, elapsedMs)) return;
     });
     if (ctx.getCheckpointAutoResetDirty()) {
       ctx.setCheckpointAutoResetDirty(false);
