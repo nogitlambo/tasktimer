@@ -166,6 +166,55 @@ function getPreviousRenderedCheckpointTargetMs({
   return null;
 }
 
+function getRenderedCheckpointTargetMsValues({
+  sortedMilestones,
+  milestoneUnitSec,
+}: {
+  sortedMilestones: Milestone[];
+  milestoneUnitSec: number;
+}) {
+  const unitSec = Math.max(0, Number(milestoneUnitSec) || 0);
+  if (!(unitSec > 0) || !Array.isArray(sortedMilestones) || !sortedMilestones.length) return [];
+  return Array.from(
+    new Set(
+      sortedMilestones
+        .map((milestone) => Math.max(0, Math.round((Number(milestone?.hours) || 0) * unitSec)) * 1000)
+        .filter((value) => value > 0)
+    )
+  ).sort((a, b) => a - b);
+}
+
+function getNextRenderedCheckpointTargetMs({
+  elapsedMs,
+  sortedMilestones,
+  milestoneUnitSec,
+}: {
+  elapsedMs: number;
+  sortedMilestones: Milestone[];
+  milestoneUnitSec: number;
+}) {
+  const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs) || 0));
+  const targetMsValues = getRenderedCheckpointTargetMsValues({ sortedMilestones, milestoneUnitSec });
+  for (let index = 0; index < targetMsValues.length; index += 1) {
+    const targetMs = targetMsValues[index]!;
+    if (targetMs > safeElapsedMs) return targetMs;
+  }
+  return null;
+}
+
+function isElapsedAtRenderedCheckpoint({
+  elapsedMs,
+  sortedMilestones,
+  milestoneUnitSec,
+}: {
+  elapsedMs: number;
+  sortedMilestones: Milestone[];
+  milestoneUnitSec: number;
+}) {
+  const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs) || 0));
+  return getRenderedCheckpointTargetMsValues({ sortedMilestones, milestoneUnitSec }).includes(safeElapsedMs);
+}
+
 function renderTaskPrimaryActionWithRewindHtml({
   state,
   elapsedMs,
@@ -178,12 +227,24 @@ function renderTaskPrimaryActionWithRewindHtml({
   milestoneUnitSec: number;
 }) {
   if (state !== "resume") return renderTaskPrimaryActionHtml(state);
-  const targetMs = getPreviousRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec });
-  if (targetMs == null) return renderTaskPrimaryActionHtml(state);
+  const previousTargetMs = getPreviousRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec });
+  const nextTargetMs = isElapsedAtRenderedCheckpoint({ elapsedMs, sortedMilestones, milestoneUnitSec })
+    ? getNextRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec })
+    : null;
+  if (previousTargetMs == null && nextTargetMs == null) return renderTaskPrimaryActionHtml(state);
+  const previousButtonHtml =
+    previousTargetMs == null
+      ? ""
+      : `<button class="btn btn-ghost small taskCheckpointRewindBtn taskCheckpointRewindBackBtn" data-action="rewindCheckpoint" title="Back to previous checkpoint" aria-label="Back to previous checkpoint" type="button">&#8592;</button>`;
+  const nextButtonHtml =
+    nextTargetMs == null
+      ? ""
+      : `<button class="btn btn-ghost small taskCheckpointRewindBtn taskCheckpointRewindForwardBtn" data-action="fastForwardCheckpoint" title="Forward to next checkpoint" aria-label="Forward to next checkpoint" type="button">&#8594;</button>`;
   return `
                   <div class="taskCheckpointRewindGroup isCheckpointRewindOpen">
-                    <button class="btn btn-ghost small taskCheckpointRewindBtn" data-action="rewindCheckpoint" title="Back to previous checkpoint" aria-label="Back to previous checkpoint" type="button">&#8592;</button>
+                    ${previousButtonHtml}
                     ${renderTaskPrimaryActionHtml(state)}
+                    ${nextButtonHtml}
                   </div>`;
 }
 
@@ -451,7 +512,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
   const destructiveLabel = hasTaskHistory ? "Archive" : "Delete";
   const destructiveTitle = hasTaskHistory && task.running ? "Stop task to archive" : destructiveLabel;
   const destructiveDisabled = hasTaskHistory && task.running;
-  const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : undefined;
+  const destructiveIconSrc = hasTaskHistory ? "/icons/icons_default/archive.webp" : "/icons/icons_default/trash.webp";
   return {
     className,
     html: `

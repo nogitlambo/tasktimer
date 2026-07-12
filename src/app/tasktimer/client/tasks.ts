@@ -11,7 +11,9 @@ import { getRichNoteEditorValue } from "./rich-session-notes";
 import { getTaskTimerTileColumnCount } from "./task-tile-columns";
 import { createTaskTimerLifecycle, createTaskTimerLifecycleCommands } from "./task-timer-lifecycle";
 import {
+  getNextCheckpointFastForwardTargetMs,
   getPreviousCheckpointRewindTargetMs,
+  markCheckpointFiredKeysThroughTarget,
   pruneCheckpointFiredKeysAfterTarget,
   updateLatestSameDayHistoryElapsed,
 } from "./checkpoint-rewind";
@@ -273,6 +275,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     startTask,
     stopTask,
     rewindCheckpoint,
+    fastForwardCheckpoint,
     resetTask: taskDestructiveActionEffects.resetTask,
     resetCompletedTaskImmediate: taskDestructiveActionEffects.resetCompletedTaskImmediate,
     archiveTask,
@@ -327,6 +330,17 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     );
   }
 
+  function getNextCheckpointFastForwardTargetForIndex(index: number) {
+    const task = ctx.getTasks()[index];
+    if (!task || task.running) return null;
+    return getNextCheckpointFastForwardTargetMs(
+      task,
+      ctx.getElapsedMs(task),
+      ctx.sortMilestones,
+      sharedTasks.milestoneUnitSec
+    );
+  }
+
   function updateLatestSameDayHistoryForCheckpointRewind(task: Task, targetMs: number) {
     const nextHistory = updateLatestSameDayHistoryElapsed(ctx.getHistoryByTaskId(), task, targetMs);
     if (!nextHistory) return;
@@ -349,6 +363,35 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     task.running = false;
     task.hasStarted = true;
     pruneCheckpointFiredKeysAfterTarget(
+      task,
+      targetMs,
+      ctx.getCheckpointFiredKeysByTaskId(),
+      ctx.sortMilestones,
+      sharedTasks.milestoneUnitSec
+    );
+    ctx.getCheckpointBaselineSecByTaskId()[taskId] = Math.floor(targetMs / 1000);
+    updateLatestSameDayHistoryForCheckpointRewind(task, targetMs);
+    ctx.save({ forceCloudFlush: true });
+    void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+    ctx.render();
+    if (ctx.getCurrentAppPage() === "dashboard") ctx.renderDashboardWidgets();
+  }
+
+  function fastForwardCheckpoint(index: number) {
+    const task = ctx.getTasks()[index];
+    if (!task || task.running) return;
+    const taskId = String(task.id || "").trim();
+    const targetMs = getNextCheckpointFastForwardTargetForIndex(index);
+    if (!taskId || targetMs == null) {
+      ctx.render();
+      return;
+    }
+    task.accumulatedMs = targetMs;
+    task.elapsed = targetMs;
+    task.startMs = null;
+    task.running = false;
+    task.hasStarted = true;
+    markCheckpointFiredKeysThroughTarget(
       task,
       targetMs,
       ctx.getCheckpointFiredKeysByTaskId(),

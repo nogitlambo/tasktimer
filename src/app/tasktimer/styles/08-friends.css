@@ -387,6 +387,14 @@
   color: #c9ff24 !important;
 }
 
+.friendSharedTaskSettingsHint{
+  margin-top: 4px;
+  color: #c9ff24;
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .friendSharedTaskCard.isJumpCard{
   cursor: pointer;
 }
@@ -1164,12 +1172,12 @@
 
 #sharedTaskSummaryModal .sharedTaskImportPrompt{
   display: grid;
-  grid-template-columns: 1fr;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 75%) minmax(0, 25%);
+  align-items: center;
   gap: 12px;
   margin-top: 16px;
   padding: 12px;
-  border: 0;
+  border: 1px solid rgba(188, 214, 230, 0.16);
   background: transparent;
 }
 
@@ -1179,11 +1187,12 @@
   font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
   font-size: 12px;
   line-height: 1.45;
-  text-align: center;
+  text-align: left;
 }
 
 #sharedTaskSummaryModal .sharedTaskImportPromptAction{
   display: flex;
+  align-items: center;
   justify-content: center;
   min-width: 0;
 }

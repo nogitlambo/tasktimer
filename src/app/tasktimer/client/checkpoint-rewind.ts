@@ -32,6 +32,21 @@ export function getPreviousCheckpointRewindTargetMs(
   return null;
 }
 
+export function getNextCheckpointFastForwardTargetMs(
+  task: Task | null | undefined,
+  elapsedMs: number,
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"],
+  milestoneUnitSec: (task: Task) => number
+): number | null {
+  const safeElapsedMs = Math.max(0, Math.floor(Number(elapsedMs) || 0));
+  const targets = getCheckpointTargetSeconds(task, sortMilestones, milestoneUnitSec);
+  for (let index = 0; index < targets.length; index += 1) {
+    const targetMs = targets[index]! * 1000;
+    if (targetMs > safeElapsedMs) return targetMs;
+  }
+  return null;
+}
+
 export function pruneCheckpointFiredKeysAfterTarget(
   task: Task | null | undefined,
   targetMs: number,
@@ -50,6 +65,24 @@ export function pruneCheckpointFiredKeysAfterTarget(
     if (!validTargets.has(String(checkpointSec)) || checkpointSec > targetSec) fired.delete(key);
   }
   if (fired.size === 0) delete firedKeysByTaskId[taskId];
+}
+
+export function markCheckpointFiredKeysThroughTarget(
+  task: Task | null | undefined,
+  targetMs: number,
+  firedKeysByTaskId: Record<string, Set<string>>,
+  sortMilestones: (milestones: Task["milestones"]) => Task["milestones"],
+  milestoneUnitSec: (task: Task) => number
+) {
+  const taskId = String(task?.id || "").trim();
+  if (!taskId) return;
+  const targetSec = Math.max(0, Math.floor(Number(targetMs) || 0) / 1000);
+  const validTargets = getCheckpointTargetSeconds(task, sortMilestones, milestoneUnitSec);
+  const fired = firedKeysByTaskId[taskId] || new Set<string>();
+  validTargets.forEach((checkpointSec) => {
+    if (checkpointSec <= targetSec) fired.add(String(checkpointSec));
+  });
+  if (fired.size > 0) firedKeysByTaskId[taskId] = fired;
 }
 
 export function updateLatestSameDayHistoryElapsed(

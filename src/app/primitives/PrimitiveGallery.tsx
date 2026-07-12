@@ -193,6 +193,15 @@ export default function PrimitiveGallery() {
         </PrimitiveSection>
 
         <PrimitiveSection
+          title="Android splash"
+          note="Use the production TaskLaunch logo asset when previewing Android splash screen treatments."
+          code={`<AppImg className="primitiveAndroidSplashLogo" src="/logo/tasklaunch-logo.webp" alt="TaskLaunch logo" />`}
+          exampleClassName="primitiveAndroidSplashPanel"
+        >
+          <AppImg className="primitiveAndroidSplashLogo" src="/logo/tasklaunch-logo.webp" alt="TaskLaunch logo" />
+        </PrimitiveSection>
+
+        <PrimitiveSection
           title="Modal Baseline"
           note="Standard modals use the shared overlay/modal structure, modal helper text, and confirm action primitives."
           code={`<div className="overlay standardModalOverlay" style={{ display: "flex" }}>\n  <div className="modal" role="dialog" aria-modal="true" aria-label="Modal preview">\n    <h2>Modal Preview</h2>\n    <p className="modalSubtext">Standard modal helper text.</p>\n    <div className="confirmBtns">...</div>\n  </div>\n</div>`}

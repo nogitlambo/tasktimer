@@ -1541,7 +1541,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:4px;
+  gap:0;
   width:100%;
   height:100%;
   border:1px solid rgba(255,255,255,.12);
@@ -1560,7 +1560,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   width:24px;
   height:24px;
   object-fit:contain;
-  opacity:.92;
+  filter:brightness(0) invert(1);
+  opacity:1;
   pointer-events:none;
 }
 
@@ -1568,6 +1569,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   display:block;
   min-width:0;
   max-width:100%;
+  padding-top:4px;
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-align:center;
   overflow-wrap:anywhere;
@@ -1594,6 +1596,10 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete .taskMenuTile{
   color:#ff4d4d;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete[data-action="archive"] .taskMenuTile{
+  color:#fff;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskMenuItemDelete:hover,
@@ -3978,6 +3984,19 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   z-index: 4;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isFlipped .taskFaceShellBack::before{
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) top / 100% 1px no-repeat,
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) left / 1px 100% no-repeat,
+    linear-gradient(var(--task-card-outline-color), var(--task-card-outline-color)) right / 1px 100% no-repeat;
+  pointer-events: none;
+  z-index: 4;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront::after,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isFlipped .taskFaceShellBack::after{
   content: "" !important;
@@ -4013,8 +4032,28 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   --task-card-outline-color: rgba(98, 228, 255, .82);
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash{
+  --task-checkpoint-flash-color: rgba(98, 228, 255, .92);
+  --task-checkpoint-flash-dim-color: rgba(98, 228, 255, .16);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash::after{
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--task-checkpoint-flash-color);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--task-checkpoint-flash-color) 58%, transparent),
+    0 0 18px color-mix(in srgb, var(--task-checkpoint-flash-color) 44%, transparent);
+  pointer-events: none;
+  z-index: 18;
+  animation: taskCheckpointOuterBorderFlash 1s steps(1, end) 5;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash .taskFaceShellFront::before,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash .taskFaceShellFront::after,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash.isFlipped .taskFaceShellBack::before,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash.isFlipped .taskFaceShellBack::after{
   animation: taskCheckpointBorderFlash 1s steps(1, end) 5;
   filter: drop-shadow(0 0 8px var(--task-card-outline-color));
@@ -4028,6 +4067,41 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   50%, 100%{
     opacity:.16;
     filter:none;
+  }
+}
+
+@keyframes taskCheckpointOuterBorderFlash{
+  0%, 49%{
+    border-color:var(--task-checkpoint-flash-color);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--task-checkpoint-flash-color) 58%, transparent),
+      0 0 18px color-mix(in srgb, var(--task-checkpoint-flash-color) 44%, transparent);
+  }
+  50%, 100%{
+    border-color:var(--task-checkpoint-flash-dim-color);
+    box-shadow:none;
+  }
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash .historyInline{
+  border-color: var(--task-checkpoint-flash-color) !important;
+  animation: taskCheckpointHistoryBorderFlash 1s steps(1, end) 5;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.taskCheckpointFlash .historyInline::before{
+  background: var(--task-checkpoint-flash-color);
+  animation: taskCheckpointBorderFlash 1s steps(1, end) 5;
+  filter: drop-shadow(0 0 8px var(--task-checkpoint-flash-color));
+}
+
+@keyframes taskCheckpointHistoryBorderFlash{
+  0%, 49%{
+    border-color:var(--task-checkpoint-flash-color);
+    box-shadow:0 0 16px color-mix(in srgb, var(--task-checkpoint-flash-color) 34%, transparent);
+  }
+  50%, 100%{
+    border-color:var(--task-checkpoint-flash-dim-color);
+    box-shadow:none;
   }
 }
 
@@ -4530,8 +4604,15 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
     color .14s ease;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskCheckpointRewindGroup.isCheckpointRewindOpen .taskCheckpointRewindBtn{
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskCheckpointRewindGroup.isCheckpointRewindOpen .taskCheckpointRewindBackBtn{
   left: calc(50% - (var(--task-primary-action-size) / 2) - var(--task-checkpoint-rewind-gap) - var(--task-checkpoint-rewind-size));
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%) scale(1);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskCheckpointRewindGroup.isCheckpointRewindOpen .taskCheckpointRewindForwardBtn{
+  left: calc(50% + (var(--task-primary-action-size) / 2) + var(--task-checkpoint-rewind-gap));
   opacity: 1;
   pointer-events: auto;
   transform: translate(0, -50%) scale(1);

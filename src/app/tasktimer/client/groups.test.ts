@@ -516,20 +516,20 @@ describe("groups friends list shared task counts", () => {
     expect(html).not.toContain('data-friend-action="import-shared-task"');
   });
 
-  it("renders Import for importable shared task records", () => {
+  it("renders a task settings hint for importable shared task records", () => {
     const { html } = renderFriendsList([
       makeSharedSummary({
         importConfig: makeImportConfig(),
       }),
     ]);
 
-    expect(html).toContain(">Import</button>");
-    expect(html).toContain('class="btn btn-accent small"');
-    expect(html).toContain('data-friend-action="import-shared-task"');
-    expect(html).toContain('data-share-doc-id="share-1"');
+    expect(html).toContain("Click/Tap to open task settings");
+    expect(html).toContain('class="friendSharedTaskSettingsHint"');
+    expect(html).not.toContain('data-friend-action="import-shared-task"');
+    expect(html).not.toContain('data-share-doc-id="share-1"');
   });
 
-  it("disables the import button when the shared source has already been added", () => {
+  it("keeps the card task settings hint when the shared source has already been added", () => {
     const { html } = renderFriendsList([
       makeSharedSummary({
         importConfig: makeImportConfig(),
@@ -538,8 +538,9 @@ describe("groups friends list shared task counts", () => {
       tasks: [{ id: "local-copy", color: null, sharedSourceOwnerUid: "friend-b", sharedSourceTaskId: "task-1" }],
     });
 
-    expect(html).toContain("Added");
-    expect(html).toContain('disabled aria-disabled="true"');
+    expect(html).toContain("Click/Tap to open task settings");
+    expect(html).not.toContain("Added");
+    expect(html).not.toContain('disabled aria-disabled="true"');
   });
 
   it("opens and populates the shared task summary modal from a card click", () => {
@@ -629,31 +630,20 @@ describe("groups friends list shared task counts", () => {
     expect(sharedTaskSummaryBody.innerHTML).toContain("owner-without-alias");
   });
 
-  it("does not open the summary modal when clicking Import this task", () => {
-    const { handlers, groupsFriendsList, sharedTaskSummaryModal, ctx } = setupGroupsEvents([makeSharedSummary({ importConfig: makeImportConfig() })]);
-    const importBtn = {
-      disabled: false,
-      getAttribute: (name: string) => (name === "data-share-doc-id" ? "share-1" : null),
+  it("opens the summary modal from the card task settings hint", () => {
+    const { handlers, sharedTaskSummaryModal, sharedTaskSummaryBody } = setupGroupsEvents([makeSharedSummary({ importConfig: makeImportConfig() })]);
+    const card = {
+      getAttribute: (name: string) => (name === "data-shared-task-summary-id" ? "share-1" : null),
     };
     const target = {
-      closest: (selector: string) => (selector === '[data-friend-action="import-shared-task"]' ? importBtn : null),
+      closest: (selector: string) => (selector === "[data-shared-task-summary-id]" ? card : null),
     };
 
     handlers.get("groupsFriendsList:click")?.({ target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
 
-    expect(sharedTaskSummaryModal.style.display).toBe("none");
-    expect(ctx.getTasks()).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sharedSourceOwnerUid: "friend-b",
-          sharedSourceTaskId: "task-1",
-        }),
-      ])
-    );
-    expect(groupsFriendsList.innerHTML).toContain("Added");
-    expect(groupsFriendsList.innerHTML).toContain('disabled aria-disabled="true"');
-    expect(ctx.showActionConfirmation).toHaveBeenCalledWith("Task added.");
-    expect(ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("new-task");
+    expect(sharedTaskSummaryModal.style.display).toBe("flex");
+    expect(sharedTaskSummaryBody.innerHTML).toContain("Task Settings");
+    expect(sharedTaskSummaryBody.innerHTML).toContain('data-friend-action="import-shared-task"');
   });
 
   it("closes the shared task summary modal from close button and backdrop", () => {
@@ -960,6 +950,23 @@ describe("groups friends list shared task counts", () => {
     expect(mobileMarkerRule).toContain("width: auto;");
     expect(css).not.toContain("left: clamp(28px, var(--checkpoint-label-left");
     expect(mobileMarkerRule).not.toContain("width: 48px;");
+  });
+
+  it("uses a fixed 75/25 layout for the shared task import prompt", () => {
+    const css = readFileSync("src/app/tasktimer/styles/08-friends.css", "utf8");
+    const promptRule =
+      css.match(/#sharedTaskSummaryModal \.sharedTaskImportPrompt\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const promptTextRule =
+      css.match(/#sharedTaskSummaryModal \.sharedTaskImportPromptText\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const promptActionRule =
+      css.match(/#sharedTaskSummaryModal \.sharedTaskImportPromptAction\{[\s\S]*?\n\}/)?.[0] ?? "";
+
+    expect(promptRule).toContain("grid-template-columns: minmax(0, 75%) minmax(0, 25%);");
+    expect(promptRule).toContain("align-items: center;");
+    expect(promptRule).toContain("border: 1px solid rgba(188, 214, 230, 0.16);");
+    expect(promptTextRule).toContain("text-align: left;");
+    expect(promptActionRule).toContain("align-items: center;");
+    expect(promptActionRule).toContain("justify-content: center;");
   });
 
   it("switches checkpoint timeline scrolling on only when marker-proximate labels would detach", () => {

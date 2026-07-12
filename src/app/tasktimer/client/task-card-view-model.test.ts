@@ -91,6 +91,7 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('src="/icons/icons_default/share.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/history.webp"');
     expect(rendered.html).toContain('src="/icons/icons_default/export.webp"');
+    expect(rendered.html).toContain('src="/icons/icons_default/trash.webp"');
     expect(rendered.html).not.toContain('<span class="taskMenuTileLabel">Archive</span>');
     expect(rendered.html).not.toContain('src="/icons/icons_default/archive.webp"');
     expect(rendered.html).not.toContain("taskMenuLabel");
@@ -188,8 +189,61 @@ describe("task card view model", () => {
 
     expect(rendered.html).toContain("taskCheckpointRewindGroup isCheckpointRewindOpen");
     expect(rendered.html).toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).not.toContain('data-action="fastForwardCheckpoint"');
     expect(rendered.html).not.toContain('aria-hidden="true" tabindex="-1"');
     expect(rendered.html).toContain('data-action="start" title="Resume"');
+  });
+
+  it("renders both checkpoint arrows after rewinding to an intermediate checkpoint", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [
+          { hours: 15, description: "" },
+          { hours: 30, description: "" },
+          { hours: 45, description: "" },
+        ],
+      }),
+      elapsedMs: 30 * 60 * 1000,
+      sortedMilestones: [
+        { hours: 15, description: "" },
+        { hours: 30, description: "" },
+        { hours: 45, description: "" },
+      ],
+      milestoneUnitSec: 60,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).toContain('data-action="fastForwardCheckpoint"');
+    expect(rendered.html).toContain('title="Forward to next checkpoint"');
+  });
+
+  it("renders only the forward checkpoint arrow at the first checkpoint when a later checkpoint exists", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [
+          { hours: 15, description: "" },
+          { hours: 30, description: "" },
+        ],
+      }),
+      elapsedMs: 15 * 60 * 1000,
+      sortedMilestones: [
+        { hours: 15, description: "" },
+        { hours: 30, description: "" },
+      ],
+      milestoneUnitSec: 60,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).toContain("taskCheckpointRewindGroup isCheckpointRewindOpen");
+    expect(rendered.html).not.toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).toContain('data-action="fastForwardCheckpoint"');
   });
 
   it("does not render checkpoint rewind at exactly the first checkpoint", () => {
@@ -208,6 +262,31 @@ describe("task card view model", () => {
 
     expect(rendered.html).not.toContain("taskCheckpointRewindGroup");
     expect(rendered.html).not.toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).not.toContain('data-action="fastForwardCheckpoint"');
+  });
+
+  it("does not render checkpoint forward at the final checkpoint", () => {
+    const rendered = renderCard({
+      task: baseTask({
+        running: false,
+        milestonesEnabled: true,
+        milestoneTimeUnit: "minute",
+        milestones: [
+          { hours: 15, description: "" },
+          { hours: 30, description: "" },
+        ],
+      }),
+      elapsedMs: 30 * 60 * 1000,
+      sortedMilestones: [
+        { hours: 15, description: "" },
+        { hours: 30, description: "" },
+      ],
+      milestoneUnitSec: 60,
+      isTimeGoalCompleted: false,
+    });
+
+    expect(rendered.html).toContain('data-action="rewindCheckpoint"');
+    expect(rendered.html).not.toContain('data-action="fastForwardCheckpoint"');
   });
 
   it("renders running, alert, history, and shared-owner states", () => {
@@ -289,6 +368,11 @@ describe("task card view model", () => {
     expect(css).toContain("center bottom / var(--task-card-tab-border-gap) 22px no-repeat");
     expect(css).toContain("border: 1px solid var(--task-card-bottom-border-color, rgba(255,255,255,.12)) !important;");
     expect(css).toContain("border-top: 0 !important;");
+    expect(css).toContain(".task.taskCheckpointFlash::after");
+    expect(css).toContain("animation: taskCheckpointOuterBorderFlash 1s steps(1, end) 5;");
+    expect(css).toContain(".task.taskCheckpointFlash .historyInline");
+    expect(css).toContain("animation: taskCheckpointHistoryBorderFlash 1s steps(1, end) 5;");
+    expect(css).toContain(".task.isFlipped .taskFaceShellBack::before");
     expect(css).toContain(".task.taskHistoryOpeningSpace");
     expect(css).toContain(".task.taskHistoryOpening");
     expect(css).toContain("@keyframes taskHistoryDrawerSpaceOpen");
@@ -371,7 +455,12 @@ describe("task card view model", () => {
       "";
     const rewindOpenRule =
       css.match(
-        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.taskCheckpointRewindGroup\.isCheckpointRewindOpen \.taskCheckpointRewindBtn\{[\s\S]*?\n\}/
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.taskCheckpointRewindGroup\.isCheckpointRewindOpen \.taskCheckpointRewindBackBtn\{[\s\S]*?\n\}/
+      )?.[0] ??
+      "";
+    const forwardOpenRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions \.taskCheckpointRewindGroup\.isCheckpointRewindOpen \.taskCheckpointRewindForwardBtn\{[\s\S]*?\n\}/
       )?.[0] ??
       "";
     const faceRule =
@@ -413,6 +502,7 @@ describe("task card view model", () => {
     expect(rewindButtonRule).toContain("height: var(--task-checkpoint-rewind-size) !important;");
     expect(rewindButtonRule).not.toContain("width: 42px !important;");
     expect(rewindOpenRule).toContain("left: calc(50% - (var(--task-primary-action-size) / 2) - var(--task-checkpoint-rewind-gap) - var(--task-checkpoint-rewind-size));");
+    expect(forwardOpenRule).toContain("left: calc(50% + (var(--task-primary-action-size) / 2) + var(--task-checkpoint-rewind-gap));");
     expect(css).toMatch(
       /@media \(max-width: 420px\)\{[\s\S]*?\.taskCheckpointRewindGroup[\s\S]*?--task-primary-action-size: 82px;/
     );
@@ -639,17 +729,17 @@ describe("task card view model", () => {
     const calls: string[] = [];
 
     const handled = dispatchTaskCardAction({
-      action: "start",
+      action: "fastForwardCheckpoint",
       canUseAdvancedHistory: true,
       canUseSocialFeatures: true,
       showUpgradePrompt: (featureName) => calls.push(`upgrade:${featureName}`),
       handlers: {
-        start: () => calls.push("start"),
+        fastForwardCheckpoint: () => calls.push("forward"),
       },
     });
 
     expect(handled).toBe(true);
-    expect(calls).toEqual(["start"]);
+    expect(calls).toEqual(["forward"]);
   });
 
   it("gates locked task card actions before invoking handlers", () => {

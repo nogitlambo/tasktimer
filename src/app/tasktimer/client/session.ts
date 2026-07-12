@@ -130,16 +130,7 @@ const FOCUS_MODE_START_AUDIO_SRC = "/focus-mode-start.mp3";
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
 const TIME_GOAL_XP_COUNT_AUDIO_SRC = "/xp_increase.mp3";
 const TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
-const CHECKPOINT_BEEP_AUDIO_SRC = "/checkpoint_tone.wav";
-const CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS = 120;
-const CHECKPOINT_ONCE_BEEP_BETWEEN_PAIRS_MS = 180;
-const CHECKPOINT_ONCE_BEEP_BETWEEN_PATTERNS_MS = 180;
-const CHECKPOINT_ONCE_BEEP_PATTERN_DELAYS_MS = [
-  CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS,
-  CHECKPOINT_ONCE_BEEP_BETWEEN_PAIRS_MS,
-  CHECKPOINT_ONCE_BEEP_PAIR_GAP_MS,
-  CHECKPOINT_ONCE_BEEP_BETWEEN_PATTERNS_MS,
-];
+const CHECKPOINT_BEEP_AUDIO_SRC = "/checkpoint.mp3";
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -2271,6 +2262,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const audio = ensureCheckpointBeepAudio();
     if (!audio) return;
     try {
+      if ("paused" in audio && !audio.paused) return;
       audio.currentTime = 0;
       const p = audio.play();
       if (p && typeof (p as any).catch === "function") (p as any).catch(() => {});
@@ -2335,7 +2327,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function enqueueCheckpointOncePatterns(count: number) {
     const patternCount = Math.max(0, Math.floor(Number(count) || 0));
     if (patternCount <= 0) return;
-    enqueueCheckpointBeepDelays(Array.from({ length: patternCount }, () => CHECKPOINT_ONCE_BEEP_PATTERN_DELAYS_MS).flat());
+    enqueueCheckpointSingleBeep();
   }
 
   function scheduleCheckpointRepeatCycle() {

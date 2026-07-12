@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { HistoryByTaskId, Task } from "../lib/types";
 import {
+  getNextCheckpointFastForwardTargetMs,
   getPreviousCheckpointRewindTargetMs,
+  markCheckpointFiredKeysThroughTarget,
   pruneCheckpointFiredKeysAfterTarget,
   updateLatestSameDayHistoryElapsed,
 } from "./checkpoint-rewind";
@@ -56,10 +58,31 @@ describe("checkpoint rewind helpers", () => {
     expect(getPreviousCheckpointRewindTargetMs(entry, third ?? 0, sortMilestones, milestoneUnitSec)).toBeNull();
   });
 
+  it("targets the next configured checkpoint between checkpoints", () => {
+    expect(getNextCheckpointFastForwardTargetMs(task(), 20 * 60 * 1000, sortMilestones, milestoneUnitSec)).toBe(30 * 60 * 1000);
+  });
+
+  it("targets the next configured checkpoint from a checkpoint boundary", () => {
+    expect(getNextCheckpointFastForwardTargetMs(task(), 30 * 60 * 1000, sortMilestones, milestoneUnitSec)).toBe(45 * 60 * 1000);
+  });
+
+  it("does not target a checkpoint at or after the final checkpoint", () => {
+    expect(getNextCheckpointFastForwardTargetMs(task(), 45 * 60 * 1000, sortMilestones, milestoneUnitSec)).toBeNull();
+    expect(getNextCheckpointFastForwardTargetMs(task(), 50 * 60 * 1000, sortMilestones, milestoneUnitSec)).toBeNull();
+  });
+
   it("prunes fired checkpoint keys after the selected target", () => {
     const firedByTaskId = { "task-1": new Set(["900", "1800", "2700"]) };
 
     pruneCheckpointFiredKeysAfterTarget(task(), 30 * 60 * 1000, firedByTaskId, sortMilestones, milestoneUnitSec);
+
+    expect(Array.from(firedByTaskId["task-1"] || [])).toEqual(["900", "1800"]);
+  });
+
+  it("marks fired checkpoint keys through the selected target", () => {
+    const firedByTaskId = { "task-1": new Set(["900"]) };
+
+    markCheckpointFiredKeysThroughTarget(task(), 30 * 60 * 1000, firedByTaskId, sortMilestones, milestoneUnitSec);
 
     expect(Array.from(firedByTaskId["task-1"] || [])).toEqual(["900", "1800"]);
   });

@@ -10,6 +10,7 @@ type TaskCardActionEffectsOptions = {
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
   rewindCheckpoint: (index: number) => void;
+  fastForwardCheckpoint: (index: number) => void;
   resetTask: (index: number) => void;
   resetCompletedTaskImmediate: (index: number) => void;
   archiveTask: (index: number) => void;
@@ -76,6 +77,7 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
         start: () => options.startTask(taskIndex),
         stop: () => options.stopTask(taskIndex),
         rewindCheckpoint: () => options.rewindCheckpoint(taskIndex),
+        fastForwardCheckpoint: () => options.fastForwardCheckpoint(taskIndex),
         reset: () => {
           if (sourceElement?.closest?.(".taskPrimaryActionReset")) {
             options.resetCompletedTaskImmediate(taskIndex);

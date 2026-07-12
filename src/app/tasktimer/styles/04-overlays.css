@@ -4616,7 +4616,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
-  color: rgba(226,246,255,.9);
+  color: #a8a7a7;
   line-height: 1.45;
 }
 
@@ -6957,8 +6957,7 @@ body[data-theme="lime"] #editOverlay .switch.on::after{
 }
 
 body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel,
-body[data-theme="lime"] #timeGoalCompleteOverlay .confirmText,
-body[data-theme="lime"] #confirmOverlay.isTaskAlreadyRunningConfirm .confirmText{
+body[data-theme="lime"] #timeGoalCompleteOverlay .confirmText{
   color: rgba(243,255,198,.92);
 }
 

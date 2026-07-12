@@ -337,6 +337,12 @@ function createPrimaryActionTarget({
     setAttribute: vi.fn(),
     removeAttribute: vi.fn(),
   };
+  const forwardButton: TestTarget = {
+    dataset: { action: "fastForwardCheckpoint" },
+    getAttribute: (name: string) => (name === "data-action" ? "fastForwardCheckpoint" : null),
+    setAttribute: vi.fn(),
+    removeAttribute: vi.fn(),
+  };
   const group: TestTarget = {
     classList: {
       add: vi.fn((token: string) => classes.add(token)),
@@ -349,7 +355,12 @@ function createPrimaryActionTarget({
       }),
       contains: (token: string) => classes.has(token),
     },
-    querySelector: (selector: string) => (selector === '[data-action="rewindCheckpoint"]' ? arrowButton : null),
+    querySelector: (selector: string) =>
+      selector === '[data-action="rewindCheckpoint"]'
+        ? arrowButton
+        : selector === '[data-action="fastForwardCheckpoint"]'
+          ? forwardButton
+          : null,
   };
   const taskEl: TestTarget = {
     dataset: { index: taskIndex, taskId },
@@ -373,7 +384,14 @@ function createPrimaryActionTarget({
     if (selector === ".taskPrimaryAction") return null;
     return null;
   };
-  return { button, classList, group, arrowButton };
+  forwardButton.closest = (selector: string) => {
+    if (selector === ".task") return taskEl;
+    if (selector === "[data-action]") return forwardButton;
+    if (selector === "[data-task-flip]") return null;
+    if (selector === ".taskPrimaryAction") return null;
+    return null;
+  };
+  return { button, classList, group, arrowButton, forwardButton };
 }
 
 describe("createTaskTimerTasks", () => {
@@ -538,6 +556,44 @@ describe("createTaskTimerTasks", () => {
     expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 30 * 60 * 1000, elapsed: 30 * 60 * 1000 });
     expect(harness.checkpointBaselineSecByTaskId["task-1"]).toBe(1800);
     expect(Array.from(harness.checkpointFiredKeysByTaskId["task-1"] || [])).toEqual(["900", "1800"]);
+    expect(harness.calls).toContain("save");
+    expect(harness.calls).toContain("render");
+  });
+
+  it("fast-forwards a stopped task to the next checkpoint and updates checkpoint/history state", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          accumulatedMs: 30 * 60 * 1000,
+          hasStarted: true,
+          resumePendingSinceDayKey: "2026-05-03",
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          milestones: [
+            { hours: 15, description: "" },
+            { hours: 30, description: "" },
+            { hours: 45, description: "" },
+          ],
+        }),
+      ],
+    });
+    harness.checkpointFiredKeysByTaskId["task-1"] = new Set(["900", "1800"]);
+    const history = {
+      "task-1": [
+        { ts: Date.parse("2026-05-03T09:00:00Z"), name: "Focus", ms: 30 * 60 * 1000 },
+      ],
+    };
+    vi.mocked(harness.ctx.getHistoryByTaskId).mockReturnValue(history);
+    const { forwardButton } = createPrimaryActionTarget({ action: "start" });
+
+    harness.dispatchTaskListEvent("click", { target: forwardButton, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+    expect(harness.getTasks()[0]).toMatchObject({ accumulatedMs: 45 * 60 * 1000, elapsed: 45 * 60 * 1000 });
+    expect(harness.checkpointBaselineSecByTaskId["task-1"]).toBe(2700);
+    expect(Array.from(harness.checkpointFiredKeysByTaskId["task-1"] || [])).toEqual(["900", "1800", "2700"]);
+    expect(harness.ctx.setHistoryByTaskId).toHaveBeenCalledWith({
+      "task-1": [{ ts: Date.parse("2026-05-03T09:00:00Z"), name: "Focus", ms: 45 * 60 * 1000 }],
+    });
     expect(harness.calls).toContain("save");
     expect(harness.calls).toContain("render");
   });

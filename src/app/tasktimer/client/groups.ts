@@ -1654,6 +1654,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     </div>`;
   }
 
+  function renderFriendSharedTaskSettingsHint(entry: SharedTaskSummary) {
+    if (!entry.importConfig) return "";
+    return `<div class="friendSharedTaskSettingsHint">Click/Tap to open task settings</div>`;
+  }
+
   function renderSharedTaskImportPrompt(entry: SharedTaskSummary) {
     const action = renderFriendSharedTaskImportAction(entry);
     if (!action) return "";
@@ -1776,7 +1781,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   function renderFriendSharedTaskSummaryContent(entry: SharedTaskSummary, opts?: { modal?: boolean }) {
     const { timerState, timerStateClass } = getFriendSharedTaskTimerState(entry);
     const modalClass = opts?.modal ? " isModalSummary" : "";
-    const importAction = opts?.modal ? "" : renderFriendSharedTaskImportAction(entry);
+    const settingsHint = opts?.modal ? "" : renderFriendSharedTaskSettingsHint(entry);
     const importPrompt = opts?.modal ? renderSharedTaskImportPrompt(entry) : "";
     const settingsSummary = opts?.modal ? renderSharedTaskSettingsSummary(entry.importConfig) : "";
     return `<div class="friendSharedTaskCardLayout${modalClass}">
@@ -1785,7 +1790,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         ${renderSharedTaskOwnerMeta(entry, opts)}
         <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Status:</span> <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
         ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
-        ${importAction}
+        ${settingsHint}
       </div>
       ${renderSharedTaskWeeklyChart(entry, ctx.getWeekStarting(), ctx.escapeHtmlUI)}
     </div>${settingsSummary}${importPrompt}`;
