@@ -136,6 +136,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       interactionHapticsEnabled: true,
       interactionHapticsIntensity: "max",
       checkpointAlertSoundEnabled: true,
+      checkpointAlertVibrationEnabled: true,
       checkpointAlertFlashEnabled: true,
       checkpointAlertSoundMode: "once",
       optimalProductivityStartTime: "00:00",

@@ -384,6 +384,18 @@ function createRenderHarness(
   };
 }
 
+function getActivityBarGroups(container: ElementStub | undefined) {
+  return (container?.children || []).filter((child) => child.getAttribute("class") === "dashboardActivityBarGroup");
+}
+
+function getActivityBarFront(group: ElementStub | undefined) {
+  return (group?.children || []).find((child) => child.getAttribute("class") === "dashboardActivityBar") || null;
+}
+
+function getActivityBarPart(group: ElementStub | undefined, className: string) {
+  return (group?.children || []).find((child) => child.getAttribute("class") === className) || null;
+}
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -396,15 +408,20 @@ describe("dashboard activity overview card", () => {
       harness.renderActivityOverview();
       const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
-      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[0]?.children[0];
-      const lastBar = bars[6]?.children[0];
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const firstBar = getActivityBarFront(bars[0]);
+      const lastBar = getActivityBarFront(bars[6]);
 
       expect(axisDayCount).toBe(7);
       expect(bars).toHaveLength(7);
       expect(Number.parseFloat(String(firstBar?.getAttribute("width") || "0"))).toBeGreaterThan(60);
       expect(Number.parseFloat(String(firstBar?.getAttribute("x") || "0"))).toBeGreaterThan(90);
       expect(Number.parseFloat(String(lastBar?.getAttribute("x") || "0"))).toBeGreaterThan(600);
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarShadow")).not.toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarSide")).not.toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarTop")).not.toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarHighlight")).not.toBeNull();
+      expect(firstBar?.getAttribute("fill")).toMatch(/^url\(#dashboardActivityBarGradient-0\)$/);
     } finally {
       harness.restore();
     }
@@ -430,9 +447,9 @@ describe("dashboard activity overview card", () => {
       harness.renderActivityOverview();
       const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
-      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
-      const currentBar = bars[0]?.children[0];
+      const currentBar = getActivityBarFront(bars[0]);
       const ghostBar = previousBars?.children[0];
 
       expect(axisDayCount).toBe(7);
@@ -441,6 +458,7 @@ describe("dashboard activity overview card", () => {
       expect(previousBars?.children).toHaveLength(7);
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
       expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
+      expect(ghostBar?.getAttribute("class")).toBe("dashboardActivityPreviousBar");
       expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
         Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
       );
@@ -522,10 +540,10 @@ describe("dashboard activity overview card", () => {
       harness.renderActivityOverview();
       const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
-      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
       const yAxisHtml = harness.byId.get("dashboardActivityYAxis")?.innerHTML || "";
-      const currentBar = bars[0]?.children[0];
+      const currentBar = getActivityBarFront(bars[0]);
       const ghostBar = previousBars?.children[0];
 
       expect(axisDayCount).toBe(7);
@@ -535,6 +553,7 @@ describe("dashboard activity overview card", () => {
       expect(yAxisHtml).toContain("3h");
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
       expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
+      expect(ghostBar?.getAttribute("class")).toBe("dashboardActivityPreviousBar");
       expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
         Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
       );
@@ -559,15 +578,15 @@ describe("dashboard activity overview card", () => {
 
     try {
       harness.renderActivityOverview();
-      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[0]?.children[0];
-      const secondBar = bars[1]?.children[0];
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const firstBar = getActivityBarFront(bars[0]);
+      const secondBar = getActivityBarFront(bars[1]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(bars).toHaveLength(7);
-      expect(firstBar?.getAttribute("fill")).toBe("rgb(255,140,0)");
-      expect(secondBar?.getAttribute("fill")).toBe("rgb(12,245,127)");
+      expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(255,140,0)");
+      expect(secondBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
       expect(goalLine?.style.display).toBe("");
       expect(previousBars?.style.display).toBe("none");
@@ -594,11 +613,11 @@ describe("dashboard activity overview card", () => {
 
     try {
       harness.renderActivityOverview();
-      const bars = harness.byId.get("dashboardActivityBars")?.children || [];
-      const firstBar = bars[0]?.children[0];
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const firstBar = getActivityBarFront(bars[0]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
 
-      expect(firstBar?.getAttribute("fill")).toBe("#00e5ff");
+      expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("#00e5ff");
       expect(goalLine?.style.display).toBe("none");
     } finally {
       harness.restore();

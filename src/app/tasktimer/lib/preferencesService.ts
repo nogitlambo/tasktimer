@@ -53,6 +53,7 @@ type PreferencesStateSnapshot = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
+  checkpointAlertVibrationEnabled: boolean;
   checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
   optimalProductivityStartTime: string;
@@ -171,6 +172,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       interactionHapticsEnabled: state.interactionHapticsEnabled,
       interactionHapticsIntensity: normalizeInteractionHapticsIntensity(state.interactionHapticsIntensity),
       checkpointAlertSoundEnabled: state.checkpointAlertSoundEnabled,
+      checkpointAlertVibrationEnabled: state.checkpointAlertVibrationEnabled,
       checkpointAlertFlashEnabled: state.checkpointAlertFlashEnabled,
       checkpointAlertSoundMode: state.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
       optimalProductivityStartTime: normalizeTimeOfDay(
@@ -362,10 +364,11 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     return normalizeInteractionHapticsIntensity(cloudValue || localValue);
   }
 
-  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertFlashEnabled" | "checkpointAlertSoundMode"> {
+  function loadCheckpointAlerts(): Pick<StoredPreferences, "checkpointAlertSoundEnabled" | "checkpointAlertVibrationEnabled" | "checkpointAlertFlashEnabled" | "checkpointAlertSoundMode"> {
     const prefs = getStoredOrCachedPreferences();
     return {
       checkpointAlertSoundEnabled: prefs.checkpointAlertSoundEnabled !== false,
+      checkpointAlertVibrationEnabled: prefs.checkpointAlertVibrationEnabled !== false,
       checkpointAlertFlashEnabled: prefs.checkpointAlertFlashEnabled !== false,
       checkpointAlertSoundMode: prefs.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
     };

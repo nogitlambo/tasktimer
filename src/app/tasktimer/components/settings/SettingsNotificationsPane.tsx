@@ -122,6 +122,13 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
               </div>
               <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
             </div>
+            <div className="toggleRow" id="taskCheckpointVibrationToggleRow" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Checkpoint vibration</span>
+                <span className="settingsPreferenceControlHelp">Vibrate twice when an active task reaches a checkpoint.</span>
+              </div>
+              <button className="switch on" id="taskCheckpointVibrationToggle" type="button" role="switch" aria-checked="true" />
+            </div>
             <div className="field checkpointAlertSoundModeField" id="taskCheckpointSoundModeField">
               <label className="settingsPreferenceControlCopy" htmlFor="taskCheckpointSoundModeSelect">
                 <span className="settingsPreferenceControlLabel">Sound Behaviour</span>

@@ -127,6 +127,18 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   filter: none !important;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .timeBoxValue{
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  transform:translateY(-1px);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .timeBoxUnit{
+  transform:none;
+}
+
 .actions{
   grid-area:actions;
   display:flex;

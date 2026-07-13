@@ -304,6 +304,8 @@ const els = {
   taskInteractionHapticsIntensityLow: documentRef.getElementById("taskInteractionHapticsIntensityLow") as HTMLButtonElement | null,
   taskCheckpointSoundToggleRow: documentRef.getElementById("taskCheckpointSoundToggleRow"),
   taskCheckpointSoundToggle: documentRef.getElementById("taskCheckpointSoundToggle"),
+  taskCheckpointVibrationToggleRow: documentRef.getElementById("taskCheckpointVibrationToggleRow"),
+  taskCheckpointVibrationToggle: documentRef.getElementById("taskCheckpointVibrationToggle"),
   taskCheckpointFlashToggleRow: documentRef.getElementById("taskCheckpointFlashToggleRow"),
   taskCheckpointFlashToggle: documentRef.getElementById("taskCheckpointFlashToggle"),
   taskCheckpointSoundModeField: documentRef.getElementById("taskCheckpointSoundModeField"),

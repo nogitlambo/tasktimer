@@ -7,6 +7,7 @@ import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
 
 vi.mock("./interaction-haptics", () => ({
+  playCheckpointAlertVibration: vi.fn(),
   playTaskCompleteConfettiHaptic: vi.fn(),
   playTimeGoalXpCountHaptic: vi.fn(),
 }));
@@ -21,7 +22,7 @@ vi.mock("../lib/nativeTimerNotification", () => ({
   syncNativeCheckpointAlarms: vi.fn(async () => {}),
 }));
 
-import { playTimeGoalXpCountHaptic } from "./interaction-haptics";
+import { playCheckpointAlertVibration, playTimeGoalXpCountHaptic } from "./interaction-haptics";
 import { createTaskTimerSession } from "./session";
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -112,6 +113,7 @@ function createCompletionHarness(options?: {
   interactionHapticsIntensity?: "max" | "medium" | "low";
   reducedMotion?: boolean;
   checkpointAlertSoundEnabled?: boolean;
+  checkpointAlertVibrationEnabled?: boolean;
   checkpointAlertFlashEnabled?: boolean;
   checkpointAlertSoundMode?: "once" | "repeat";
   liveTaskDom?: boolean;
@@ -285,6 +287,7 @@ function createCompletionHarness(options?: {
     getModeColor: () => "#00ffff",
     sortMilestones: (milestones: Task["milestones"]) => milestones,
     getCheckpointAlertSoundEnabled: () => !!options?.checkpointAlertSoundEnabled,
+    getCheckpointAlertVibrationEnabled: () => !!options?.checkpointAlertVibrationEnabled,
     getCheckpointAlertFlashEnabled: () => options?.checkpointAlertFlashEnabled !== false,
     getCheckpointAlertSoundMode: () => options?.checkpointAlertSoundMode || "once",
     getCheckpointRepeatStopAtMs: () => checkpointRepeatStopAtMs,
@@ -417,8 +420,15 @@ function runLastScheduledTimeout(harness: ReturnType<typeof createCompletionHarn
   callback();
 }
 
+function runScheduledTimeoutByDelay(harness: ReturnType<typeof createCompletionHarness>, delayMs: number) {
+  const call = harness.windowStub.setTimeout.mock.calls.find(([, timeout]) => timeout === delayMs);
+  const callback = call?.[0];
+  if (typeof callback !== "function") throw new Error(`No ${delayMs}ms timeout callback found`);
+  callback();
+}
+
 describe("task timer session tick", () => {
-  it("plays the once-only checkpoint alert once without queued replays", () => {
+  it("plays the once-only checkpoint alert twice with a 300ms pause", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
       checkpointAlertSoundEnabled: true,
@@ -434,8 +444,69 @@ describe("task timer session tick", () => {
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
       expect(harness.audioInstances[0]?.src).toBe("/checkpoint.mp3");
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(1);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
+
+      runScheduledTimeoutByDelay(harness, 2800);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("vibrates with each of the two foreground checkpoint tones", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertSoundEnabled: true,
+      checkpointAlertVibrationEnabled: true,
+      taskOverrides: { checkpointSoundEnabled: true, timeGoalEnabled: false, timeGoalMinutes: 0 },
+    });
+
+    try {
+      vi.mocked(playCheckpointAlertVibration).mockClear();
+      harness.session.tick();
+      expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(1);
+
+      runScheduledTimeoutByDelay(harness, 2800);
+      expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(2);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("plays two checkpoint vibrations without audio when sound is disabled", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      checkpointAlertVibrationEnabled: true,
+      taskOverrides: { checkpointSoundEnabled: true, timeGoalEnabled: false, timeGoalMinutes: 0 },
+    });
+
+    try {
+      vi.mocked(playCheckpointAlertVibration).mockClear();
+      harness.session.tick();
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+      expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(1);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 450);
+
+      runScheduledTimeoutByDelay(harness, 450);
+      expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(2);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("does not play checkpoint audio or vibration when both channels are disabled", () => {
+    const harness = createCompletionHarness({
+      withCheckpoint: true,
+      taskOverrides: { checkpointSoundEnabled: true, timeGoalEnabled: false, timeGoalMinutes: 0 },
+    });
+
+    try {
+      vi.mocked(playCheckpointAlertVibration).mockClear();
+      harness.session.tick();
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+      expect(playCheckpointAlertVibration).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
     }
@@ -507,7 +578,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("plays one once-only checkpoint alert when multiple checkpoints are reached together", () => {
+  it("plays one double-beep alert when multiple checkpoints are reached together", () => {
     const harness = createCompletionHarness({
       checkpointAlertSoundEnabled: true,
       taskOverrides: {
@@ -527,8 +598,9 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(3);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
     } finally {
       harness.restoreWindow();
     }
@@ -565,7 +637,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("keeps repeat checkpoint alerts to one beep per repeat cycle", () => {
+  it("plays each repeat checkpoint alert cycle twice with a 300ms pause", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
       checkpointAlertSoundEnabled: true,
@@ -581,9 +653,13 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(3);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
       expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
+
+      runScheduledTimeoutByDelay(harness, 2800);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
     }

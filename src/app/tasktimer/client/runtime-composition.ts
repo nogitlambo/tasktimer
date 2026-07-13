@@ -103,6 +103,7 @@ export function createTaskTimerRuntimeComposition(
     interactionHapticsEnabled: initialState.interactionHapticsEnabled,
     interactionHapticsIntensity: initialState.interactionHapticsIntensity,
     checkpointAlertSoundEnabled: initialState.checkpointAlertSoundEnabled,
+    checkpointAlertVibrationEnabled: initialState.checkpointAlertVibrationEnabled,
     checkpointAlertFlashEnabled: initialState.checkpointAlertFlashEnabled,
     optimalProductivityStartTime: initialState.optimalProductivityStartTime,
     optimalProductivityEndTime: initialState.optimalProductivityEndTime,

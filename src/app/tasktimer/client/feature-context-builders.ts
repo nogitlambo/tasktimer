@@ -449,6 +449,7 @@ type CreateAddTaskOptionsArgs = {
   >;
   preferencesState: MutableStore;
   getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled: () => boolean;
   persistPushAlertsPreference: () => void;
   loadCachedTaskUi: () => unknown;
   saveCloudTaskUi: (value: unknown) => void;
@@ -942,6 +943,10 @@ export function createTaskTimerPreferencesContext(
     setCheckpointAlertSoundEnabledState: (value) => {
       args.preferencesState.set("checkpointAlertSoundEnabled", value);
     },
+    getCheckpointAlertVibrationEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertVibrationEnabled")),
+    setCheckpointAlertVibrationEnabledState: (value) => {
+      args.preferencesState.set("checkpointAlertVibrationEnabled", value);
+    },
     getCheckpointAlertFlashEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertFlashEnabled")),
     setCheckpointAlertFlashEnabledState: (value) => {
       args.preferencesState.set("checkpointAlertFlashEnabled", value);
@@ -1235,6 +1240,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getThemeMode: () => asType<"lime">(args.preferencesState.get("themeMode")),
     getAutoFocusOnTaskLaunchEnabled: () => asType<boolean>(args.preferencesState.get("autoFocusOnTaskLaunchEnabled")),
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
+    getCheckpointAlertVibrationEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertVibrationEnabled")),
     getCheckpointAlertFlashEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertFlashEnabled")),
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
@@ -1355,6 +1361,7 @@ export function createTaskTimerAddTaskContext(args: CreateAddTaskOptionsArgs): P
     getOptimalProductivityEndTime: () => asType<string>(args.preferencesState.get("optimalProductivityEndTime")),
     getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerAddTask>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     getCheckpointAlertSoundEnabled: args.getCheckpointAlertSoundEnabled,
+    getCheckpointAlertVibrationEnabled: args.getCheckpointAlertVibrationEnabled,
     getMobilePushAlertsEnabled: () => asType<boolean>(args.preferencesState.get("mobilePushAlertsEnabled")),
     setMobilePushAlertsEnabledState: (value) => {
       args.preferencesState.set("mobilePushAlertsEnabled", value);
@@ -1433,6 +1440,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getInteractionHapticsIntensity: () =>
       normalizeInteractionHapticsIntensity(args.preferencesState.get("interactionHapticsIntensity")),
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
+    getCheckpointAlertVibrationEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertVibrationEnabled")),
     getCheckpointAlertFlashEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertFlashEnabled")),
     getCheckpointAlertSoundMode: () =>
       args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",

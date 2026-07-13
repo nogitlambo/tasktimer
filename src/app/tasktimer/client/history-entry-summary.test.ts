@@ -108,6 +108,16 @@ describe("history entry summary", () => {
     expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">8</div>');
   });
 
+  it("renders the note section after the time goal and XP metrics", () => {
+    const html = renderSummary(task({ timeGoalEnabled: true, timeGoalValue: 3, timeGoalUnit: "minute", timeGoalPeriod: "day", timeGoalMinutes: 3 }));
+    const metricsIndex = html.indexOf("historyEntrySummaryGrid");
+    const noteIndex = html.indexOf("historyEntrySummaryNoteRow");
+
+    expect(metricsIndex).toBeGreaterThan(-1);
+    expect(noteIndex).toBeGreaterThan(-1);
+    expect(noteIndex).toBeGreaterThan(metricsIndex);
+  });
+
   it("shows pending for stopped incomplete time-goal session XP", () => {
     const ts = 1_717_200_000_000;
     const payload = buildHistoryEntrySummaryPayload({

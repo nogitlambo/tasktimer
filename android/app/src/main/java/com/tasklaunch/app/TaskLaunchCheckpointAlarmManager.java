@@ -95,7 +95,9 @@ public final class TaskLaunchCheckpointAlarmManager {
             .putExtra("taskName", alarm.optString("taskName", "Task"))
             .putExtra("checkpointKey", checkpointKey)
             .putExtra("checkpointLabel", alarm.optString("checkpointLabel", "Checkpoint"))
-            .putExtra("soundMode", alarm.optString("soundMode", "once"));
+            .putExtra("soundMode", alarm.optString("soundMode", "once"))
+            .putExtra("soundEnabled", alarm.optBoolean("soundEnabled", true))
+            .putExtra("vibrationEnabled", alarm.optBoolean("vibrationEnabled", false));
         return PendingIntent.getBroadcast(context, stableId(taskId + ":" + checkpointKey), intent, flags);
     }
 

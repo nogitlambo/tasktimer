@@ -25,6 +25,8 @@ export type NativeCheckpointAlarm = {
   checkpointLabel: string;
   triggerAtMs: number;
   soundMode: "once" | "repeat";
+  soundEnabled: boolean;
+  vibrationEnabled: boolean;
 };
 
 const TaskLaunchTimerNotification = registerPlugin<TaskLaunchTimerNotificationPlugin>("TaskLaunchTimerNotification");
@@ -126,6 +128,8 @@ export async function syncNativeCheckpointAlarms(alarms: NativeCheckpointAlarm[]
       checkpointLabel: String(alarm.checkpointLabel || "Checkpoint").trim() || "Checkpoint",
       triggerAtMs: Math.floor(Number(alarm.triggerAtMs)),
       soundMode: alarm.soundMode === "repeat" ? "repeat" as const : "once" as const,
+      soundEnabled: alarm.soundEnabled !== false,
+      vibrationEnabled: alarm.vibrationEnabled === true,
     }))
     .sort((a, b) => a.triggerAtMs - b.triggerAtMs || a.checkpointKey.localeCompare(b.checkpointKey));
   const signature = JSON.stringify(normalized);

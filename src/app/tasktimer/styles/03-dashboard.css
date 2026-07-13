@@ -152,10 +152,30 @@
   stroke-width:1;
 }
 
+.dashboardActivityBarShadow{
+  fill:rgba(0,0,0,.34);
+  filter:drop-shadow(3px 4px 7px rgba(0,0,0,.42));
+}
+
+.dashboardActivityBarSide{
+  stroke:rgba(7,16,20,.34);
+  stroke-width:1;
+}
+
 .dashboardActivityBar{
   stroke:rgba(7,16,20,.78);
   stroke-width:1.5;
   filter:drop-shadow(0 0 10px rgba(217,255,89,.22));
+}
+
+.dashboardActivityBarHighlight{
+  fill:rgba(255,255,255,.18);
+  pointer-events:none;
+}
+
+.dashboardActivityBarTop{
+  stroke:rgba(255,255,255,.24);
+  stroke-width:1;
 }
 
 .dashboardActivityYAxis{

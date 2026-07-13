@@ -42,6 +42,7 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
+    checkpointAlertVibrationEnabled: true,
     checkpointAlertFlashEnabled: true,
     checkpointAlertSoundMode: "once" as const,
     optimalProductivityStartTime: "00:00",

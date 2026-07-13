@@ -1261,6 +1261,43 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return chart.bottom - ratio * (chart.bottom - chart.top);
   }
 
+  function parseDashboardActivitySvgColor(color: string) {
+    const normalized = String(color || "").trim();
+    const rgbMatch = normalized.match(/^rgba?\(\s*([.\d]+)\s*,\s*([.\d]+)\s*,\s*([.\d]+)/i);
+    if (rgbMatch) {
+      return {
+        r: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[1]) || 0))),
+        g: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[2]) || 0))),
+        b: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[3]) || 0))),
+      };
+    }
+
+    const hexMatch = normalized.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+      const raw = hexMatch[1];
+      const hex = raw.length === 3 ? raw.split("").map((part) => `${part}${part}`).join("") : raw;
+      return {
+        r: Number.parseInt(hex.slice(0, 2), 16),
+        g: Number.parseInt(hex.slice(2, 4), 16),
+        b: Number.parseInt(hex.slice(4, 6), 16),
+      };
+    }
+
+    return { r: 217, g: 255, b: 89 };
+  }
+
+  function shadeDashboardActivitySvgColor(color: string, amount: number) {
+    const source = parseDashboardActivitySvgColor(color);
+    const mix = amount >= 0 ? 255 : 0;
+    const weight = Math.max(-1, Math.min(1, amount));
+    const channel = (value: number) => Math.max(0, Math.min(255, Math.round(value + (mix - value) * Math.abs(weight))));
+    return `rgb(${channel(source.r)}, ${channel(source.g)}, ${channel(source.b)})`;
+  }
+
+  function setDashboardActivityPolygonPoints(element: SVGPolygonElement, points: Array<[number, number]>) {
+    element.setAttribute("points", points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "));
+  }
+
   function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
     const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
     const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
@@ -1336,28 +1373,98 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (barsEl) {
       barsEl.innerHTML = "";
+      const defs = document.createElementNS(svgNs, "defs");
+      defs.setAttribute("class", "dashboardActivityBarDefs");
+      barsEl.appendChild(defs);
       const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
+      const columnDepthX = Math.max(5, Math.min(10, slotWidth * 0.1));
+      const columnDepthY = Math.max(4, Math.min(8, columnDepthX * 0.72));
       const barWidth = Math.min(76, slotWidth * 0.74);
       view.days.forEach((day, index) => {
-        const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
+        const maxColumnHeight = Math.max(3, chart.bottom - chart.top - columnDepthY);
+        const rawHeight = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
+        const height = Math.min(maxColumnHeight, rawHeight);
         const slotX = chart.left + index * slotWidth;
-        const x = slotX + (slotWidth - barWidth) / 2;
+        const x = slotX + (slotWidth - barWidth - columnDepthX) / 2;
         const y = chart.bottom - height;
+        const rightX = x + barWidth;
+        const bottomY = y + height;
+        const gradientId = `dashboardActivityBarGradient-${index}`;
+        const gradient = document.createElementNS(svgNs, "linearGradient");
+        gradient.setAttribute("id", gradientId);
+        gradient.setAttribute("x1", "0");
+        gradient.setAttribute("x2", "0");
+        gradient.setAttribute("y1", "0");
+        gradient.setAttribute("y2", "1");
+        [
+          ["0", shadeDashboardActivitySvgColor(day.activityBarColor, 0.32)],
+          [".16", shadeDashboardActivitySvgColor(day.activityBarColor, 0.12)],
+          [".72", day.activityBarColor],
+          ["1", shadeDashboardActivitySvgColor(day.activityBarColor, -0.18)],
+        ].forEach(([offset, stopColor]) => {
+          const stop = document.createElementNS(svgNs, "stop");
+          stop.setAttribute("offset", offset);
+          stop.setAttribute("stop-color", stopColor);
+          gradient.appendChild(stop);
+        });
+        defs.appendChild(gradient);
+
         const group = document.createElementNS(svgNs, "g");
         group.setAttribute("class", "dashboardActivityBarGroup");
         group.setAttribute(
           "aria-label",
           `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
         );
+        const shadow = document.createElementNS(svgNs, "polygon");
+        shadow.setAttribute("class", "dashboardActivityBarShadow");
+        setDashboardActivityPolygonPoints(shadow, [
+          [x + columnDepthX * 0.35, bottomY],
+          [rightX + columnDepthX, bottomY - columnDepthY],
+          [Math.min(chart.right, rightX + columnDepthX * 1.7), Math.min(chart.bottom, bottomY - columnDepthY + columnDepthY * 0.72)],
+          [Math.min(chart.right, x + columnDepthX * 1.25), Math.min(chart.bottom, bottomY + columnDepthY * 0.72)],
+        ]);
+        group.appendChild(shadow);
+
+        const side = document.createElementNS(svgNs, "polygon");
+        side.setAttribute("class", "dashboardActivityBarSide");
+        side.setAttribute("fill", shadeDashboardActivitySvgColor(day.activityBarColor, -0.42));
+        setDashboardActivityPolygonPoints(side, [
+          [rightX, y],
+          [rightX + columnDepthX, y - columnDepthY],
+          [rightX + columnDepthX, bottomY - columnDepthY],
+          [rightX, bottomY],
+        ]);
+        group.appendChild(side);
+
         const rect = document.createElementNS(svgNs, "rect");
         rect.setAttribute("class", "dashboardActivityBar");
         rect.setAttribute("x", x.toFixed(1));
         rect.setAttribute("y", y.toFixed(1));
         rect.setAttribute("width", barWidth.toFixed(1));
         rect.setAttribute("height", height.toFixed(1));
-        rect.setAttribute("rx", "5");
-        rect.setAttribute("fill", day.activityBarColor);
+        rect.setAttribute("rx", "0");
+        rect.setAttribute("fill", `url(#${gradientId})`);
+        rect.setAttribute("data-dashboard-activity-color", day.activityBarColor);
         group.appendChild(rect);
+
+        const highlight = document.createElementNS(svgNs, "rect");
+        highlight.setAttribute("class", "dashboardActivityBarHighlight");
+        highlight.setAttribute("x", (x + 1).toFixed(1));
+        highlight.setAttribute("y", (y + 1).toFixed(1));
+        highlight.setAttribute("width", Math.max(1, Math.min(3, Math.floor(barWidth * 0.14))).toFixed(1));
+        highlight.setAttribute("height", Math.max(1, height - 2).toFixed(1));
+        group.appendChild(highlight);
+
+        const top = document.createElementNS(svgNs, "polygon");
+        top.setAttribute("class", "dashboardActivityBarTop");
+        top.setAttribute("fill", shadeDashboardActivitySvgColor(day.activityBarColor, 0.34));
+        setDashboardActivityPolygonPoints(top, [
+          [x, y],
+          [x + columnDepthX, y - columnDepthY],
+          [rightX + columnDepthX, y - columnDepthY],
+          [rightX, y],
+        ]);
+        group.appendChild(top);
         barsEl.appendChild(group);
       });
     }

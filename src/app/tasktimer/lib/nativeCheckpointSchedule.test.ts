@@ -56,4 +56,17 @@ describe("buildNativeCheckpointSchedule", () => {
     expect(buildNativeCheckpointSchedule({ tasks: [task({ running: false })], soundEnabled: true, soundMode: "once" })).toEqual([]);
     expect(buildNativeCheckpointSchedule({ tasks: [task({ checkpointSoundEnabled: false })], soundEnabled: true, soundMode: "once" })).toEqual([]);
   });
+
+  it("schedules vibration-only alarms with independent channel flags", () => {
+    expect(buildNativeCheckpointSchedule({
+      tasks: [task()],
+      soundEnabled: false,
+      vibrationEnabled: true,
+      soundMode: "repeat",
+      nowMs: 1_000_000,
+    })).toEqual([
+      expect.objectContaining({ soundEnabled: false, vibrationEnabled: true, soundMode: "repeat" }),
+      expect.objectContaining({ soundEnabled: false, vibrationEnabled: true, soundMode: "repeat" }),
+    ]);
+  });
 });

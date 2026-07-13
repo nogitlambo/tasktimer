@@ -202,6 +202,7 @@ function createHarness() {
     interactionHapticsEnabled: boolean;
     interactionHapticsIntensity: InteractionHapticsIntensity;
     checkpointAlertSoundEnabled: boolean;
+    checkpointAlertVibrationEnabled: boolean;
     checkpointAlertFlashEnabled: boolean;
     checkpointAlertSoundMode: "once" | "repeat";
     optimalProductivityStartTime: string;
@@ -224,6 +225,7 @@ function createHarness() {
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
+    checkpointAlertVibrationEnabled: true,
     checkpointAlertFlashEnabled: true,
     checkpointAlertSoundMode: "once" as const,
     optimalProductivityStartTime: "00:00",
@@ -319,6 +321,10 @@ function createHarness() {
     getCheckpointAlertSoundEnabled: () => state.checkpointAlertSoundEnabled,
     setCheckpointAlertSoundEnabledState: (value) => {
       state.checkpointAlertSoundEnabled = value;
+    },
+    getCheckpointAlertVibrationEnabled: () => state.checkpointAlertVibrationEnabled,
+    setCheckpointAlertVibrationEnabledState: (value) => {
+      state.checkpointAlertVibrationEnabled = value;
     },
     getCheckpointAlertFlashEnabled: () => state.checkpointAlertFlashEnabled,
     setCheckpointAlertFlashEnabledState: (value: boolean) => {

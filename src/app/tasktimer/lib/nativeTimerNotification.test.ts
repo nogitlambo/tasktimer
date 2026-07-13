@@ -6,6 +6,7 @@ async function setupNativeTimerNotificationModule(options: { native?: boolean; p
   const showRunningTimer = vi.fn(async () => ({ notificationId: 1 }));
   const clearRunningTimer = vi.fn(async () => {});
   const cancelCheckpointAlarms = vi.fn(async () => {});
+  const syncCheckpointAlarms = vi.fn(async () => {});
   vi.doMock("@capacitor/core", () => ({
     Capacitor: {
       isNativePlatform: () => options.native === true,
@@ -15,11 +16,12 @@ async function setupNativeTimerNotificationModule(options: { native?: boolean; p
       showRunningTimer,
       clearRunningTimer,
       cancelCheckpointAlarms,
+      syncCheckpointAlarms,
     })),
   }));
   vi.stubGlobal("window", {});
   const mod = await import("./nativeTimerNotification");
-  return { mod, showRunningTimer, clearRunningTimer, cancelCheckpointAlarms };
+  return { mod, showRunningTimer, clearRunningTimer, cancelCheckpointAlarms, syncCheckpointAlarms };
 }
 
 describe("native timer notification bridge", () => {
@@ -69,5 +71,25 @@ describe("native timer notification bridge", () => {
 
     expect(showRunningTimer).not.toHaveBeenCalled();
     expect(clearRunningTimer).not.toHaveBeenCalled();
+  });
+
+  it("preserves independent sound and vibration flags for Android checkpoint alarms", async () => {
+    const { mod, syncCheckpointAlarms } = await setupNativeTimerNotificationModule({ native: true, platform: "android" });
+    const nowMs = Date.now();
+
+    await mod.syncNativeCheckpointAlarms([{
+      taskId: "task-1",
+      taskName: "Focus",
+      checkpointKey: "600",
+      checkpointLabel: "10m checkpoint",
+      triggerAtMs: nowMs + 60_000,
+      soundMode: "once",
+      soundEnabled: false,
+      vibrationEnabled: true,
+    }]);
+
+    expect(syncCheckpointAlarms).toHaveBeenCalledWith({
+      alarms: [expect.objectContaining({ soundEnabled: false, vibrationEnabled: true })],
+    });
   });
 });

@@ -76,6 +76,7 @@ export type UserPreferencesV1 = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
+  checkpointAlertVibrationEnabled: boolean;
   checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
   optimalProductivityStartTime: string;
@@ -1605,6 +1606,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
         interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
         interactionHapticsIntensity: normalizeInteractionHapticsIntensity(prefSnap.get("interactionHapticsIntensity")),
         checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
+        checkpointAlertVibrationEnabled: asBool(prefSnap.get("checkpointAlertVibrationEnabled"), true),
         checkpointAlertFlashEnabled: asBool(prefSnap.get("checkpointAlertFlashEnabled"), true),
         checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
         optimalProductivityStartTime: normalizeTimeOfDay(
@@ -2263,6 +2265,7 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     interactionHapticsEnabled: asBool(data.interactionHapticsEnabled, true),
     interactionHapticsIntensity: normalizeInteractionHapticsIntensity(data.interactionHapticsIntensity),
     checkpointAlertSoundEnabled: asBool(data.checkpointAlertSoundEnabled, true),
+    checkpointAlertVibrationEnabled: asBool(data.checkpointAlertVibrationEnabled, true),
     checkpointAlertFlashEnabled: asBool(data.checkpointAlertFlashEnabled, true),
     checkpointAlertSoundMode: data.checkpointAlertSoundMode === "repeat" ? "repeat" : "once",
     optimalProductivityStartTime: normalizeTimeOfDay(

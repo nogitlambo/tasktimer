@@ -920,6 +920,107 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return `${totalMinutes}m`;
   }
 
+  function parseCanvasRgbColor(color: string) {
+    const normalized = String(color || "").trim();
+    const rgbMatch = normalized.match(/^rgba?\(\s*([.\d]+)\s*,\s*([.\d]+)\s*,\s*([.\d]+)/i);
+    if (rgbMatch) {
+      return {
+        r: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[1]) || 0))),
+        g: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[2]) || 0))),
+        b: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[3]) || 0))),
+      };
+    }
+
+    const hexMatch = normalized.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+      const raw = hexMatch[1];
+      const hex = raw.length === 3 ? raw.split("").map((part) => `${part}${part}`).join("") : raw;
+      return {
+        r: Number.parseInt(hex.slice(0, 2), 16),
+        g: Number.parseInt(hex.slice(2, 4), 16),
+        b: Number.parseInt(hex.slice(4, 6), 16),
+      };
+    }
+
+    return { r: 0, g: 207, b: 200 };
+  }
+
+  function shadeCanvasRgbColor(color: string, amount: number) {
+    const source = parseCanvasRgbColor(color);
+    const mix = amount >= 0 ? 255 : 0;
+    const weight = Math.max(-1, Math.min(1, amount));
+    const channel = (value: number) => Math.max(0, Math.min(255, Math.round(value + (mix - value) * Math.abs(weight))));
+    return `rgb(${channel(source.r)}, ${channel(source.g)}, ${channel(source.b)})`;
+  }
+
+  function drawHistoryColumn3d(
+    draw: CanvasRenderingContext2D,
+    column: { x: number; y: number; w: number; h: number; color: string; depthX: number; depthY: number }
+  ) {
+    const { x, y, w: columnW, h: columnH, color, depthX, depthY } = column;
+    const rightX = x + columnW;
+    const bottomY = y + columnH;
+
+    draw.save();
+    draw.shadowColor = "rgba(0,0,0,.42)";
+    draw.shadowBlur = Math.max(5, Math.min(11, depthX * 1.8));
+    draw.shadowOffsetX = Math.max(2, Math.round(depthX * 0.55));
+    draw.shadowOffsetY = Math.max(2, Math.round(depthY * 0.75));
+    draw.fillStyle = "rgba(0,0,0,.34)";
+    draw.beginPath();
+    draw.moveTo(x + Math.max(1, depthX * 0.3), bottomY);
+    draw.lineTo(rightX + depthX, bottomY - depthY);
+    draw.lineTo(rightX + depthX + Math.max(5, depthX * 0.8), bottomY - depthY + Math.max(3, depthY * 0.55));
+    draw.lineTo(x + Math.max(5, depthX * 0.9), bottomY + Math.max(3, depthY * 0.55));
+    draw.closePath();
+    draw.fill();
+    draw.restore();
+
+    draw.save();
+    draw.fillStyle = shadeCanvasRgbColor(color, -0.42);
+    draw.beginPath();
+    draw.moveTo(rightX, y);
+    draw.lineTo(rightX + depthX, y - depthY);
+    draw.lineTo(rightX + depthX, bottomY - depthY);
+    draw.lineTo(rightX, bottomY);
+    draw.closePath();
+    draw.fill();
+    draw.restore();
+
+    draw.save();
+    const frontGradient = draw.createLinearGradient(0, y, 0, bottomY);
+    frontGradient.addColorStop(0, shadeCanvasRgbColor(color, 0.32));
+    frontGradient.addColorStop(0.16, shadeCanvasRgbColor(color, 0.12));
+    frontGradient.addColorStop(0.72, color);
+    frontGradient.addColorStop(1, shadeCanvasRgbColor(color, -0.18));
+    draw.fillStyle = frontGradient;
+    draw.fillRect(x, y, columnW, columnH);
+    draw.fillStyle = "rgba(255,255,255,.18)";
+    draw.fillRect(x + 1, y + 1, Math.max(1, Math.min(3, Math.floor(columnW * 0.14))), Math.max(1, columnH - 2));
+    draw.restore();
+
+    draw.save();
+    const topGradient = draw.createLinearGradient(x, y - depthY, rightX + depthX, y);
+    topGradient.addColorStop(0, shadeCanvasRgbColor(color, 0.58));
+    topGradient.addColorStop(1, shadeCanvasRgbColor(color, 0.22));
+    draw.fillStyle = topGradient;
+    draw.beginPath();
+    draw.moveTo(x, y);
+    draw.lineTo(x + depthX, y - depthY);
+    draw.lineTo(rightX + depthX, y - depthY);
+    draw.lineTo(rightX, y);
+    draw.closePath();
+    draw.fill();
+    draw.strokeStyle = "rgba(255,255,255,.26)";
+    draw.lineWidth = 1;
+    draw.beginPath();
+    draw.moveTo(x + 0.5, y + 0.5);
+    draw.lineTo(x + depthX, y - depthY + 0.5);
+    draw.lineTo(rightX + depthX - 0.5, y - depthY + 0.5);
+    draw.stroke();
+    draw.restore();
+  }
+
   function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
@@ -1066,6 +1167,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
     const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotEntryW * 0.02)) : Math.max(3, Math.floor(plotEntryW * 0.01));
     const barW = Math.max(4, Math.floor((plotEntryW - gap * (slotCount - 1)) / slotCount));
+    const columnDepthX = Math.max(3, Math.min(10, Math.round(barW * 0.2)));
+    const columnDepthY = Math.max(3, Math.min(8, Math.round(columnDepthX * 0.7)));
     const barTops: Array<{ x: number; y: number; w: number; h: number; ms: number; color: string }> = [];
     const checkpointMarkerColor = String(historyTask?.color || "rgb(0,207,200)");
 
@@ -1089,13 +1192,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW));
       const barRevealProgress = Math.max(0, Math.min(1, state.barRevealProgress ?? 1));
-      const rawAnimatedBarH = Math.floor(bh * barRevealProgress);
+      const maxColumnH = Math.max(2, innerH - columnDepthY);
+      const rawAnimatedBarH = Math.floor(Math.min(bh, maxColumnH) * barRevealProgress);
       const drawH =
         ms > 0 && barRevealProgress > 0
-          ? Math.max(2, Math.min(innerH, rawAnimatedBarH))
+          ? Math.max(2, Math.min(maxColumnH, rawAnimatedBarH))
           : 0;
-      const x = Math.max(plotEntryLeft, Math.min(plotRight - drawW, Math.floor(cx - drawW / 2)));
-      const y = drawH > 0 ? Math.max(padT, padT + innerH - drawH) : padT + innerH;
+      const x = Math.max(plotEntryLeft, Math.min(plotRight - drawW - columnDepthX, Math.floor(cx - drawW / 2)));
+      const y = drawH > 0 ? Math.max(padT + columnDepthY, padT + innerH - drawH) : padT + innerH;
       const reachesTimeGoal = timeGoalMs > 0 && ms >= timeGoalMs;
       const barColor = reachesTimeGoal ? "rgb(12,245,127)" : String(e.color || "rgb(0,207,200)");
       barTops[idx] = { x, y, w: drawW, h: drawH, ms, color: barColor };
@@ -1103,8 +1207,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (drawH > 0) {
         draw.save();
         draw.globalAlpha = hasSelection ? (isSelected || isLocked ? 0.98 : 0.28) : 0.92;
-        draw.fillStyle = barColor;
-        draw.fillRect(x, y, drawW, drawH);
+        drawHistoryColumn3d(draw, {
+          x,
+          y,
+          w: drawW,
+          h: drawH,
+          color: barColor,
+          depthX: columnDepthX,
+          depthY: columnDepthY,
+        });
         draw.restore();
       }
 
@@ -1127,6 +1238,27 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.strokeStyle = isLocked ? "rgba(255,77,77,.95)" : "rgba(255,255,255,.9)";
         draw.lineWidth = 2;
         draw.strokeRect(x + 1, y + 1, Math.max(1, drawW - 2), Math.max(1, drawH - 2));
+        draw.beginPath();
+        draw.moveTo(x + drawW, y + 1);
+        draw.lineTo(x + drawW + columnDepthX, y - columnDepthY + 1);
+        draw.lineTo(x + drawW + columnDepthX, y + drawH - columnDepthY - 1);
+        draw.lineTo(x + drawW, y + drawH - 1);
+        draw.stroke();
+        draw.restore();
+      }
+
+      if (drawH > 0 && (isSelected || isLocked)) {
+        const valueLabel = formatHistoryAxisDuration(ms);
+        draw.save();
+        draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
+        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.textAlign = "center";
+        draw.textBaseline = "bottom";
+        draw.shadowColor = "rgba(0,0,0,.7)";
+        draw.shadowBlur = 4;
+        const labelX = Math.max(plotLeft + 10, Math.min(plotRight - 10, x + drawW / 2 + columnDepthX / 2));
+        const labelY = Math.max(12, y - columnDepthY - 4);
+        draw.fillText(valueLabel, labelX, labelY);
         draw.restore();
       }
 

@@ -962,6 +962,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       addTaskStateBindings,
       preferencesState,
       getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
+      getCheckpointAlertVibrationEnabled: () => preferencesState.get("checkpointAlertVibrationEnabled"),
       persistPushAlertsPreference: () => {
         if (preferencesApi) {
           preferencesApi.saveMobilePushAlertsSetting();
@@ -1492,6 +1493,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     getTasks: taskCollectionBindings.getTasks,
     ...editStateBindings,
     getCheckpointAlertSoundEnabled: () => preferencesState.get("checkpointAlertSoundEnabled"),
+    getCheckpointAlertVibrationEnabled: () => preferencesState.get("checkpointAlertVibrationEnabled"),
     getMobilePushAlertsEnabled: () => preferencesState.get("mobilePushAlertsEnabled"),
     setMobilePushAlertsEnabledState: (value) => {
       preferencesState.set("mobilePushAlertsEnabled", value);

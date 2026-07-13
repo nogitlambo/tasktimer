@@ -13,6 +13,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -23,12 +25,17 @@ public class TaskLaunchCheckpointAlarmService extends Service {
     private static final int NOTIFICATION_ID = 41827;
     private static final String ACTION_START = "com.tasklaunch.app.START_CHECKPOINT_ALARM";
     private static final String ACTION_STOP = "com.tasklaunch.app.STOP_CHECKPOINT_ALARM";
-    private static final long[] ONCE_DELAYS_MS = { 120L, 180L, 120L, 180L };
+    private static final long ONCE_REPLAY_DELAY_MS = 300L;
+    private static final long VIBRATION_DURATION_MS = 150L;
+    private static final long VIBRATION_ONLY_REPLAY_DELAY_MS = 450L;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private MediaPlayer player;
     private String activeTaskId = "";
     private String soundMode = "once";
     private int onceIndex = 0;
+    private int vibrationCount = 0;
+    private boolean soundEnabled = true;
+    private boolean vibrationEnabled = false;
 
     public static void start(Context context, Intent alarmIntent) {
         Intent serviceIntent = new Intent(context, TaskLaunchCheckpointAlarmService.class)
@@ -66,9 +73,14 @@ public class TaskLaunchCheckpointAlarmService extends Service {
         stopPlaybackOnly();
         activeTaskId = value(intent.getStringExtra("taskId"));
         soundMode = "repeat".equals(intent.getStringExtra("soundMode")) ? "repeat" : "once";
+        soundEnabled = intent.getBooleanExtra("soundEnabled", true);
+        vibrationEnabled = intent.getBooleanExtra("vibrationEnabled", false);
         onceIndex = 0;
+        vibrationCount = 0;
         startForeground(NOTIFICATION_ID, buildNotification(intent));
-        playTone();
+        if (soundEnabled) playTone();
+        else if (vibrationEnabled) playVibrationOnlyPattern();
+        else stopAlarm();
         return START_NOT_STICKY;
     }
 
@@ -86,9 +98,36 @@ public class TaskLaunchCheckpointAlarmService extends Service {
             player.setOnCompletionListener(ignored -> onToneComplete());
             player.prepare();
             player.start();
+            vibrateForTone();
         } catch (Exception error) {
             stopAlarm();
         }
+    }
+
+    private void vibrateForTone() {
+        if (!vibrationEnabled || vibrationCount >= 2) return;
+        vibrationCount += 1;
+        vibrateOnce();
+    }
+
+    private void playVibrationOnlyPattern() {
+        vibrateOnce();
+        handler.postDelayed(() -> {
+            vibrateOnce();
+            handler.postDelayed(this::stopAlarm, VIBRATION_DURATION_MS);
+        }, VIBRATION_ONLY_REPLAY_DELAY_MS);
+    }
+
+    private void vibrateOnce() {
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator == null || !vibrator.hasVibrator()) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(VIBRATION_DURATION_MS, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                vibrator.vibrate(VIBRATION_DURATION_MS);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void onToneComplete() {
@@ -97,8 +136,9 @@ public class TaskLaunchCheckpointAlarmService extends Service {
             handler.postDelayed(this::playTone, 2000L);
             return;
         }
-        if (onceIndex < ONCE_DELAYS_MS.length - 1) {
-            handler.postDelayed(this::playTone, ONCE_DELAYS_MS[onceIndex++]);
+        if (onceIndex < 1) {
+            onceIndex += 1;
+            handler.postDelayed(this::playTone, ONCE_REPLAY_DELAY_MS);
         } else {
             stopAlarm();
         }
@@ -131,7 +171,7 @@ public class TaskLaunchCheckpointAlarmService extends Service {
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setContentIntent(openPending)
-            .addAction(0, "Stop Sound", stopPending)
+            .addAction(0, "Dismiss Alert", stopPending)
             .build();
     }
 
@@ -157,6 +197,10 @@ public class TaskLaunchCheckpointAlarmService extends Service {
     private void stopPlaybackOnly() {
         handler.removeCallbacksAndMessages(null);
         stopPlayer();
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null) vibrator.cancel();
+        } catch (Exception ignored) {}
     }
 
     private void stopPlayer() {

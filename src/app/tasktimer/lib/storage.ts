@@ -1518,6 +1518,7 @@ export function buildDefaultCloudPreferences() {
     interactionHapticsEnabled: true,
     interactionHapticsIntensity: "max" as const,
     checkpointAlertSoundEnabled: true,
+    checkpointAlertVibrationEnabled: true,
     checkpointAlertFlashEnabled: true,
     checkpointAlertSoundMode: "once" as const,
     optimalProductivityStartTime: DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,

@@ -18,10 +18,12 @@ function checkpointLabel(targetSeconds: number) {
 export function buildNativeCheckpointSchedule(input: {
   tasks: Task[];
   soundEnabled: boolean;
+  vibrationEnabled?: boolean;
   soundMode: "once" | "repeat";
   nowMs?: number;
 }): NativeCheckpointAlarm[] {
-  if (!input.soundEnabled) return [];
+  const vibrationEnabled = input.vibrationEnabled === true;
+  if (!input.soundEnabled && !vibrationEnabled) return [];
   const nowMs = Math.max(0, Math.floor(Number(input.nowMs ?? Date.now()) || 0));
   const alarms: NativeCheckpointAlarm[] = [];
   input.tasks.forEach((task) => {
@@ -47,6 +49,8 @@ export function buildNativeCheckpointSchedule(input: {
         checkpointLabel: checkpointLabel(targetSeconds),
         triggerAtMs,
         soundMode: input.soundMode === "repeat" ? "repeat" : "once",
+        soundEnabled: input.soundEnabled,
+        vibrationEnabled,
       });
     });
   });

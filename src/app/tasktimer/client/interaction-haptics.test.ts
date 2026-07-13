@@ -25,6 +25,7 @@ import {
   applyInteractionHapticsIntensity,
   getInteractionHapticImpact,
   isInteractionHapticsRuntimeAvailable,
+  playCheckpointAlertVibration,
   playTaskCompleteConfettiHaptic,
   playInteractionHaptic,
   playTimeGoalXpCountHaptic,
@@ -136,6 +137,17 @@ describe("interaction haptics", () => {
     expect(Haptics.vibrate).toHaveBeenNthCalledWith(2, { duration: 42 });
     expect(Haptics.vibrate).toHaveBeenNthCalledWith(3, { duration: 18 });
     expect(Haptics.impact).not.toHaveBeenCalled();
+  });
+
+  it("uses a fixed 150ms checkpoint vibration on Android only", () => {
+    vi.mocked(Capacitor.getPlatform).mockReturnValue("android");
+    playCheckpointAlertVibration(Haptics);
+    expect(Haptics.vibrate).toHaveBeenCalledWith({ duration: 150 });
+
+    vi.clearAllMocks();
+    vi.mocked(Capacitor.getPlatform).mockReturnValue("ios");
+    playCheckpointAlertVibration(Haptics);
+    expect(Haptics.vibrate).not.toHaveBeenCalled();
   });
 
   it("plays task-complete confetti haptics only when enabled and available", () => {

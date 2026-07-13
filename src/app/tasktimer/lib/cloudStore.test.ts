@@ -60,6 +60,11 @@ describe("normalizeUserPreferencesDocument", () => {
       }).weekStarting
     ).toBe("mon");
   });
+
+  it("defaults legacy cloud preferences to checkpoint vibration enabled", () => {
+    expect(normalizeUserPreferencesDocument({}).checkpointAlertVibrationEnabled).toBe(true);
+    expect(normalizeUserPreferencesDocument({ checkpointAlertVibrationEnabled: false }).checkpointAlertVibrationEnabled).toBe(false);
+  });
 });
 
 describe("isLargeImplicitHistoryDelete", () => {

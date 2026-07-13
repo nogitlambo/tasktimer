@@ -97,6 +97,7 @@ export type TaskTimerMutableState = {
   interactionHapticsEnabled: boolean;
   interactionHapticsIntensity: InteractionHapticsIntensity;
   checkpointAlertSoundEnabled: boolean;
+  checkpointAlertVibrationEnabled: boolean;
   checkpointAlertFlashEnabled: boolean;
   checkpointAlertSoundMode: "once" | "repeat";
   optimalProductivityStartTime: string;

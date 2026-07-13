@@ -115,6 +115,11 @@ export function playTimeGoalXpCountHaptic(options: {
   playInteractionHaptic("light", Haptics, normalizeInteractionHapticsIntensity(options.getIntensity?.()));
 }
 
+export function playCheckpointAlertVibration(haptics: HapticsAdapter = Haptics): void {
+  if (!isAndroidHapticsRuntime() || !haptics.vibrate) return;
+  void haptics.vibrate({ duration: 150 }).catch(() => {});
+}
+
 export function registerInteractionHaptics(options: {
   on: (el: EventTarget | null | undefined, type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => void;
   documentRef: Document;

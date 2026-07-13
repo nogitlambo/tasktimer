@@ -58,6 +58,7 @@ export type TaskTimerCachedPreferences = {
   interactionHapticsEnabled?: unknown;
   interactionHapticsIntensity?: unknown;
   checkpointAlertSoundEnabled?: unknown;
+  checkpointAlertVibrationEnabled?: unknown;
   checkpointAlertFlashEnabled?: unknown;
   optimalProductivityStartTime?: unknown;
   optimalProductivityEndTime?: unknown;
@@ -404,6 +405,7 @@ export type TaskTimerTasksContext = {
   getThemeMode: () => "lime";
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled: () => boolean;
   getCheckpointAlertFlashEnabled: () => boolean;
   getDynamicColorsEnabled: () => boolean;
   getRewardProgress: () => RewardProgressV1;
@@ -590,6 +592,7 @@ export type TaskTimerEditTaskContext = TaskTimerBindingsContext &
   getElapsedPadOriginal: () => string;
   setElapsedPadOriginal: (value: string) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled: () => boolean;
   getMobilePushAlertsEnabled: () => boolean;
   setMobilePushAlertsEnabledState: (value: boolean) => void;
   getWebPushAlertsEnabled: () => boolean;
@@ -636,6 +639,7 @@ export type TaskTimerAddTaskContext = TaskTimerBindingsContext & {
   setTasks: (value: Task[]) => void;
   getCurrentAppPage: () => AppPage;
   getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled: () => boolean;
   getMobilePushAlertsEnabled: () => boolean;
   setMobilePushAlertsEnabledState: (value: boolean) => void;
   getWebPushAlertsEnabled: () => boolean;
@@ -773,6 +777,7 @@ export type TaskTimerSessionContext = {
   getInteractionHapticsEnabled: () => boolean;
   getInteractionHapticsIntensity: () => InteractionHapticsIntensity;
   getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled: () => boolean;
   getCheckpointAlertFlashEnabled: () => boolean;
   getCheckpointAlertSoundMode: () => "once" | "repeat";
   getOptimalProductivityStartTime: () => string;
@@ -948,6 +953,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setInteractionHapticsIntensityState: (value: InteractionHapticsIntensity) => void;
   getCheckpointAlertSoundEnabled: () => boolean;
   setCheckpointAlertSoundEnabledState: (value: boolean) => void;
+  getCheckpointAlertVibrationEnabled: () => boolean;
+  setCheckpointAlertVibrationEnabledState: (value: boolean) => void;
   getCheckpointAlertFlashEnabled: () => boolean;
   setCheckpointAlertFlashEnabledState: (value: boolean) => void;
   getCheckpointAlertSoundMode: () => "once" | "repeat";
