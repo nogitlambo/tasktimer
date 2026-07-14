@@ -1,6 +1,10 @@
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress } from "../lib/rewards";
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
-import { createTaskTimerWorkspaceHistoryPersistence, createTaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
+import {
+  createTaskTimerWorkspaceHistoryPersistence,
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "../lib/workspaceRepository";
 import { createTaskTimerMutableStore } from "./mutable-store";
 import { createTaskTimerRootBootstrap } from "./root-state";
 import { createTaskTimerRuntime, type TaskTimerRuntime } from "./runtime";
@@ -23,8 +27,9 @@ export function createTaskTimerRuntimeComposition(
   } = createTaskTimerRootBootstrap(initialAppPage, storageKey);
   const runtime = (factories.createRuntime ?? createTaskTimerRuntime)();
   const workspaceRepository = (factories.createWorkspaceRepository ?? createTaskTimerWorkspaceRepository)();
+  const preferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(workspaceRepository);
   const workspaceSnapshot = workspaceRepository.loadWorkspaceSnapshot();
-  const cloudPreferencesCache = workspaceSnapshot.preferences;
+  const cloudPreferencesCache = preferencesPersistence.loadCached();
 
   const cloudSyncState = createTaskTimerMutableStore({
     cloudRefreshInFlight: initialState.cloudRefreshInFlight,
@@ -206,7 +211,7 @@ export function createTaskTimerRuntimeComposition(
   > = {};
   const rewardState = createTaskTimerMutableStore({
     rewardProgress: normalizeRewardProgress(
-      (cloudPreferencesCache || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS
+      (cloudPreferencesCache || preferencesPersistence.loadResolved()).rewards || DEFAULT_REWARD_PROGRESS
     ),
     rewardSessionTrackersByTaskId: rewardSessionTrackersByTaskIdInitial,
     cloudPreferencesCache,
@@ -231,11 +236,7 @@ export function createTaskTimerRuntimeComposition(
 
   const workspaceAdapters = {
     historyPersistence: createTaskTimerWorkspaceHistoryPersistence(workspaceRepository),
-    preferencesPersistence: {
-      loadCached: () => workspaceRepository.loadCachedPreferences(),
-      buildDefault: () => workspaceRepository.buildDefaultPreferences(),
-      save: (prefs: Parameters<TaskTimerWorkspaceRepository["savePreferences"]>[0]) => workspaceRepository.savePreferences(prefs),
-    },
+    preferencesPersistence,
   };
 
   return {
@@ -243,6 +244,7 @@ export function createTaskTimerRuntimeComposition(
     storageKeys,
     derivedKeys: {
       TIME_GOAL_PENDING_FLOW_KEY: `${storageKey}:timeGoalPendingFlow`,
+      TIME_GOAL_PENDING_COMPLETIONS_KEY: `${storageKey}:pendingTimeGoalCompletions`,
       TIME_GOAL_COMPLETION_ACK_KEY: `${storageKey}:timeGoalCompletionAck`,
       PENDING_PUSH_TASK_ID_KEY: `${storageKey}:pendingPushTaskId`,
       PENDING_PUSH_ACTION_KEY: `${storageKey}:pendingPushAction`,

@@ -47,29 +47,32 @@ const entitlementMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/firebaseClient", () => authMocks);
-vi.mock("./cloudStore", () => ({
-  ensureUserProfileIndex: cloudStoreMocks.ensureUserProfileIndex,
-  appendHistoryEntry: cloudStoreMocks.appendHistoryEntry,
-  buildDefaultCloudPreferences: vi.fn(),
-  clearLiveSession: cloudStoreMocks.clearLiveSession,
-  finalizeLiveSessionHistory: cloudStoreMocks.finalizeLiveSessionHistory,
-  deleteDeletedTaskMeta: cloudStoreMocks.deleteDeletedTaskMeta,
-  deleteTask: cloudStoreMocks.deleteTask,
-  loadDashboard: cloudStoreMocks.loadDashboard,
-  loadPreferences: cloudStoreMocks.loadPreferences,
-  loadTaskUi: cloudStoreMocks.loadTaskUi,
-  loadUserWorkspace: cloudStoreMocks.loadUserWorkspace,
-  loadUserTimerState: cloudStoreMocks.loadUserTimerState,
-  replaceTaskHistory: cloudStoreMocks.replaceTaskHistory,
-  saveDashboard: cloudStoreMocks.saveDashboard,
-  saveDeletedTaskMeta: cloudStoreMocks.saveDeletedTaskMeta,
-  saveLiveSession: cloudStoreMocks.saveLiveSession,
-  savePreferences: cloudStoreMocks.savePreferences,
-  saveTask: cloudStoreMocks.saveTask,
-  saveTaskUi: cloudStoreMocks.saveTaskUi,
-  subscribeToTaskCollection: cloudStoreMocks.subscribeToTaskCollection,
-  subscribeToTaskLiveSessionDocs: cloudStoreMocks.subscribeToTaskLiveSessionDocs,
-}));
+vi.mock("./cloudStore", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./cloudStore")>();
+  return {
+    ...actual,
+    ensureUserProfileIndex: cloudStoreMocks.ensureUserProfileIndex,
+    appendHistoryEntry: cloudStoreMocks.appendHistoryEntry,
+    clearLiveSession: cloudStoreMocks.clearLiveSession,
+    finalizeLiveSessionHistory: cloudStoreMocks.finalizeLiveSessionHistory,
+    deleteDeletedTaskMeta: cloudStoreMocks.deleteDeletedTaskMeta,
+    deleteTask: cloudStoreMocks.deleteTask,
+    loadDashboard: cloudStoreMocks.loadDashboard,
+    loadPreferences: cloudStoreMocks.loadPreferences,
+    loadTaskUi: cloudStoreMocks.loadTaskUi,
+    loadUserWorkspace: cloudStoreMocks.loadUserWorkspace,
+    loadUserTimerState: cloudStoreMocks.loadUserTimerState,
+    replaceTaskHistory: cloudStoreMocks.replaceTaskHistory,
+    saveDashboard: cloudStoreMocks.saveDashboard,
+    saveDeletedTaskMeta: cloudStoreMocks.saveDeletedTaskMeta,
+    saveLiveSession: cloudStoreMocks.saveLiveSession,
+    savePreferences: cloudStoreMocks.savePreferences,
+    saveTask: cloudStoreMocks.saveTask,
+    saveTaskUi: cloudStoreMocks.saveTaskUi,
+    subscribeToTaskCollection: cloudStoreMocks.subscribeToTaskCollection,
+    subscribeToTaskLiveSessionDocs: cloudStoreMocks.subscribeToTaskLiveSessionDocs,
+  };
+});
 vi.mock("./leaderboard", () => leaderboardMocks);
 vi.mock("./planFunctions", () => planMocks);
 vi.mock("./entitlements", () => entitlementMocks);
@@ -162,7 +165,8 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     });
     cloudStoreMocks.loadUserWorkspace.mockReset();
     cloudStoreMocks.loadUserTimerState.mockReset();
-    cloudStoreMocks.savePreferences.mockClear();
+    cloudStoreMocks.savePreferences.mockReset();
+    cloudStoreMocks.savePreferences.mockResolvedValue(undefined);
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
     leaderboardMocks.buildLeaderboardMetricsSnapshot.mockClear();
     leaderboardMocks.saveLeaderboardProfile.mockClear();
@@ -592,6 +596,64 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
   });
 
+  it("does not expose an owned preference cache to a different or signed-out account", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 100,
+    });
+
+    expect(loadCachedPreferences()).toEqual(expect.objectContaining({ startupModule: "friends" }));
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-2" } });
+    expect(loadCachedPreferences()).toBeNull();
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
+    expect(loadCachedPreferences()).toBeNull();
+
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+    expect(loadCachedPreferences()).toEqual(expect.objectContaining({ startupModule: "friends" }));
+  });
+
+  it("discards a delayed workspace hydration after the authenticated account changes", async () => {
+    let resolveUserOneHydration!: (value: Awaited<ReturnType<typeof cloudStoreMocks.loadUserWorkspace>>) => void;
+    const userOneHydration = new Promise<Awaited<ReturnType<typeof cloudStoreMocks.loadUserWorkspace>>>((resolve) => {
+      resolveUserOneHydration = resolve;
+    });
+    cloudStoreMocks.loadUserWorkspace.mockReturnValueOnce(userOneHydration);
+
+    const hydrateUserOne = hydrateStorageFromCloud({ force: true });
+    await Promise.resolve();
+
+    resetVolatileWorkspaceStateForAuthChange();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-2" } });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 200,
+    });
+
+    resolveUserOneHydration({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        startupModule: "dashboard",
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+    await hydrateUserOne;
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({ startupModule: "friends", updatedAtMs: 200 })
+    );
+  });
+
   it("replays preference saves made before auth resolves for the signed-in user", async () => {
     authMocks.getFirebaseAuthClient.mockReturnValue(null as never);
     const pendingPrefs = {
@@ -621,6 +683,257 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
       "uid-1",
       expect.objectContaining({ startupModule: "tasks" })
+    );
+  });
+
+  it("does not let an old account pending replay clear a new account pending snapshot", async () => {
+    let resolveUserOneReplay!: () => void;
+    let resolveUserTwoSave!: () => void;
+    const userOneReplay = new Promise<void>((resolve) => {
+      resolveUserOneReplay = resolve;
+    });
+    const userTwoSave = new Promise<void>((resolve) => {
+      resolveUserTwoSave = resolve;
+    });
+    cloudStoreMocks.savePreferences
+      .mockImplementationOnce(() => userOneReplay)
+      .mockImplementationOnce(() => userTwoSave);
+
+    authMocks.getFirebaseAuthClient.mockReturnValue(null as never);
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 100,
+    });
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-1" } });
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: null,
+      dashboard: null,
+      taskUi: null,
+    });
+    await hydrateStorageFromCloud({ force: true });
+
+    resetVolatileWorkspaceStateForAuthChange();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-2" } });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 200,
+    });
+
+    resolveUserOneReplay();
+    await userOneReplay;
+    await Promise.resolve();
+
+    expect(JSON.parse(localStorage.getItem("taskticker_tasks_v1:pendingPreferencesSync") || "null")).toEqual(
+      expect.objectContaining({
+        uid: "uid-2",
+        preferences: expect.objectContaining({ startupModule: "friends", updatedAtMs: 200 }),
+      })
+    );
+
+    resolveUserTwoSave();
+    await userTwoSave;
+  });
+
+  it("drains the latest preference snapshot queued during an in-flight save", async () => {
+    let resolveFirstSave!: () => void;
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    cloudStoreMocks.savePreferences.mockImplementationOnce(() => firstSave).mockResolvedValue(undefined);
+
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 100,
+    });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 101,
+    });
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(1);
+    resolveFirstSave();
+    await firstSave;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(2);
+    expect(cloudStoreMocks.savePreferences).toHaveBeenLastCalledWith(
+      "uid-1",
+      expect.objectContaining({ startupModule: "friends", updatedAtMs: 101 })
+    );
+  });
+
+  it("waits for the latest queued preference save when flushing pending cloud writes", async () => {
+    let resolveFirstSave!: () => void;
+    let resolveSecondSave!: () => void;
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    const secondSave = new Promise<void>((resolve) => {
+      resolveSecondSave = resolve;
+    });
+    cloudStoreMocks.savePreferences
+      .mockImplementationOnce(() => firstSave)
+      .mockImplementationOnce(() => secondSave);
+
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 100,
+    });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 101,
+    });
+    let flushSettled = false;
+    const flush = flushPendingCloudWrites().then(() => {
+      flushSettled = true;
+    });
+
+    resolveFirstSave();
+    await firstSave;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(2);
+    expect(flushSettled).toBe(false);
+
+    resolveSecondSave();
+    await flush;
+
+    expect(flushSettled).toBe(true);
+    expect(cloudStoreMocks.savePreferences).toHaveBeenLastCalledWith(
+      "uid-1",
+      expect.objectContaining({ startupModule: "friends", updatedAtMs: 101 })
+    );
+  });
+
+  it("clears matching pending state when an unchanged preference payload is deduplicated", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 100,
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 101,
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("taskticker_tasks_v1:pendingPreferencesSync")).toBeNull();
+  });
+
+  it("does not let an old account preference save drain a new account queue", async () => {
+    let resolveUserOneSave!: () => void;
+    let resolveUserTwoSave!: () => void;
+    const userOneSave = new Promise<void>((resolve) => {
+      resolveUserOneSave = resolve;
+    });
+    const userTwoSave = new Promise<void>((resolve) => {
+      resolveUserTwoSave = resolve;
+    });
+    cloudStoreMocks.savePreferences
+      .mockImplementationOnce(() => userOneSave)
+      .mockImplementationOnce(() => userTwoSave)
+      .mockResolvedValue(undefined);
+
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "dashboard",
+      updatedAtMs: 100,
+    });
+
+    resetVolatileWorkspaceStateForAuthChange();
+    authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: { uid: "uid-2" } });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "tasks",
+      updatedAtMs: 200,
+    });
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      updatedAtMs: 201,
+    });
+
+    resolveUserOneSave();
+    await userOneSave;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(2);
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ startupModule: "friends", updatedAtMs: 201 })
+    );
+
+    resolveUserTwoSave();
+    await userTwoSave;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledTimes(3);
+    expect(cloudStoreMocks.savePreferences).toHaveBeenLastCalledWith(
+      "uid-2",
+      expect.objectContaining({ startupModule: "friends", updatedAtMs: 201 })
+    );
+  });
+
+  it("ignores an unscoped preference shadow when a signed-in account hydrates", async () => {
+    localStorage.setItem(
+      "taskticker_tasks_v1:shadow:preferences",
+      JSON.stringify({
+        preferences: {
+          ...buildDefaultCloudPreferences(),
+          startupModule: "friends",
+          weekStarting: "sun",
+          updatedAtMs: 500,
+        },
+      })
+    );
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        startupModule: "dashboard",
+        weekStarting: "mon",
+        updatedAtMs: 100,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        startupModule: "dashboard",
+        weekStarting: "mon",
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
+      "uid-1",
+      expect.objectContaining({ startupModule: "friends" })
     );
   });
 
@@ -752,11 +1065,52 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     );
   });
 
-  it("does not replay stale pending optimal productivity settings over cloud values on login", async () => {
+  it("keeps cloud preferences when signed-in pending and shadow snapshots have the same timestamp", async () => {
+    cloudStoreMocks.savePreferences.mockImplementation(() => new Promise(() => {}));
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      weekStarting: "sun",
+      updatedAtMs: 200,
+    });
+    cloudStoreMocks.savePreferences.mockClear();
+
+    cloudStoreMocks.loadUserWorkspace.mockResolvedValue({
+      plan: "free",
+      tasks: [],
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      deletedTaskMeta: {},
+      preferences: {
+        ...buildDefaultCloudPreferences(),
+        startupModule: "dashboard",
+        weekStarting: "mon",
+        updatedAtMs: 200,
+      },
+      dashboard: null,
+      taskUi: null,
+    });
+
+    await hydrateStorageFromCloud({ force: true });
+
+    expect(loadCachedPreferences()).toEqual(
+      expect.objectContaining({
+        startupModule: "dashboard",
+        weekStarting: "mon",
+        updatedAtMs: 200,
+      })
+    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalled();
+  });
+
+  it("does not replay unscoped pending preferences over a signed-in cloud document", async () => {
     localStorage.setItem("taskticker_tasks_v1:activeUid", "uid-1");
     authMocks.getFirebaseAuthClient.mockReturnValue({ currentUser: null } as never);
     saveCloudPreferences({
       ...buildDefaultCloudPreferences(),
+      startupModule: "friends",
+      weekStarting: "sun",
+      autoFocusOnTaskLaunchEnabled: true,
       optimalProductivityStartTime: "07:30",
       optimalProductivityEndTime: "18:45",
       optimalProductivityDays: ["mon", "tue"],
@@ -773,6 +1127,9 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
       deletedTaskMeta: {},
       preferences: {
         ...buildDefaultCloudPreferences(),
+        startupModule: "dashboard",
+        weekStarting: "mon",
+        autoFocusOnTaskLaunchEnabled: false,
         optimalProductivityStartTime: "09:15",
         optimalProductivityEndTime: "15:30",
         optimalProductivityDays: ["wed", "fri"],
@@ -783,33 +1140,18 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     });
 
     await hydrateStorageFromCloud({ force: true });
-    await vi.waitFor(() => {
-      expect(cloudStoreMocks.savePreferences).toHaveBeenCalled();
-    });
 
     expect(loadCachedPreferences()).toEqual(
       expect.objectContaining({
+        startupModule: "dashboard",
+        weekStarting: "mon",
+        autoFocusOnTaskLaunchEnabled: false,
         optimalProductivityStartTime: "09:15",
         optimalProductivityEndTime: "15:30",
         optimalProductivityDays: ["wed", "fri"],
       })
     );
-    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalledWith(
-      "uid-1",
-      expect.objectContaining({
-        optimalProductivityStartTime: "07:30",
-        optimalProductivityEndTime: "18:45",
-        optimalProductivityDays: ["mon", "tue"],
-      })
-    );
-    expect(cloudStoreMocks.savePreferences).toHaveBeenCalledWith(
-      "uid-1",
-      expect.objectContaining({
-        optimalProductivityStartTime: "09:15",
-        optimalProductivityEndTime: "15:30",
-        optimalProductivityDays: ["wed", "fri"],
-      })
-    );
+    expect(cloudStoreMocks.savePreferences).not.toHaveBeenCalled();
   });
 
   it("keeps a direct completed-session append in a delayed queued history replacement", async () => {

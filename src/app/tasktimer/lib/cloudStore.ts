@@ -62,7 +62,7 @@ export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "lime";
   menuButtonStyle: "square";
-  weekStarting?: DashboardWeekStart;
+  weekStarting: DashboardWeekStart;
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
   taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
@@ -1586,43 +1586,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
   }
 
   const preferences: UserPreferencesV1 | null = prefSnap?.exists()
-      ? {
-        schemaVersion: 1,
-        theme: normalizeThemeMode(prefSnap.get("theme")),
-        menuButtonStyle: "square",
-        startupModule: normalizeStartupModule(prefSnap.get("startupModule")),
-        taskView: "tile",
-        taskOrderBy: normalizeTaskOrderBy(prefSnap.get("taskOrderBy")),
-        dynamicColorsEnabled: asBool(prefSnap.get("dynamicColorsEnabled"), true),
-        autoFocusOnTaskLaunchEnabled: asBool(prefSnap.get("autoFocusOnTaskLaunchEnabled"), true),
-        dashboardPreviousWeekVisible: asBool(prefSnap.get("dashboardPreviousWeekVisible"), true),
-        mobilePushAlertsEnabled: asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
-        webPushAlertsEnabled:
-          typeof prefSnap.get("webPushAlertsEnabled") === "boolean"
-            ? asBool(prefSnap.get("webPushAlertsEnabled"), false)
-            : asBool(prefSnap.get("mobilePushAlertsEnabled"), false),
-        interactionClickSoundEnabled: asBool(prefSnap.get("interactionClickSoundEnabled"), true),
-        achievementSoundsEnabled: asBool(prefSnap.get("achievementSoundsEnabled"), true),
-        interactionHapticsEnabled: asBool(prefSnap.get("interactionHapticsEnabled"), true),
-        interactionHapticsIntensity: normalizeInteractionHapticsIntensity(prefSnap.get("interactionHapticsIntensity")),
-        checkpointAlertSoundEnabled: asBool(prefSnap.get("checkpointAlertSoundEnabled"), true),
-        checkpointAlertVibrationEnabled: asBool(prefSnap.get("checkpointAlertVibrationEnabled"), true),
-        checkpointAlertFlashEnabled: asBool(prefSnap.get("checkpointAlertFlashEnabled"), true),
-        checkpointAlertSoundMode: prefSnap.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
-        optimalProductivityStartTime: normalizeTimeOfDay(
-          prefSnap.get("optimalProductivityStartTime"),
-          DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
-        ),
-        optimalProductivityEndTime: normalizeTimeOfDay(
-          prefSnap.get("optimalProductivityEndTime"),
-          DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-        ),
-        optimalProductivityDays: normalizeOptimalProductivityDays(
-          prefSnap.get("optimalProductivityDays") || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
-        ),
-        rewards: normalizeRewardProgress(prefSnap.get("rewards") || DEFAULT_REWARD_PROGRESS),
-        updatedAtMs: Number(prefSnap.get("updatedAtMs") || Date.now()),
-      }
+    ? normalizeUserPreferencesDocument(prefSnap.data() as Record<string, unknown>)
     : null;
 
   const dashboard: DashboardConfig | null = dashboardSnap?.exists()
@@ -2185,7 +2149,8 @@ export async function deleteDeletedTaskMeta(uid: string, taskId: string): Promis
 export async function savePreferences(uid: string, prefs: UserPreferencesV1): Promise<void> {
   const ref = preferencesDoc(uid);
   if (!ref) return;
-  const normalizedRewards = normalizeRewardProgress(prefs.rewards || DEFAULT_REWARD_PROGRESS);
+  const normalizedPreferences = normalizeUserPreferencesDocument(prefs as unknown as Record<string, unknown>);
+  const normalizedRewards = normalizedPreferences.rewards;
   try {
     await upsertUserRoot(uid);
   } catch (error) {
@@ -2201,19 +2166,9 @@ export async function savePreferences(uid: string, prefs: UserPreferencesV1): Pr
   await setDoc(
     ref,
     {
-      ...prefs,
+      ...normalizedPreferences,
       rewards: normalizedRewards,
-      optimalProductivityStartTime: normalizeTimeOfDay(
-        prefs.optimalProductivityStartTime,
-        DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
-      ),
-      optimalProductivityEndTime: normalizeTimeOfDay(
-        prefs.optimalProductivityEndTime,
-        DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-      ),
-      optimalProductivityDays: normalizeOptimalProductivityDays(prefs.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
       schemaVersion: 1,
-      updatedAtMs: Date.now(),
       updatedAt: serverTimestamp(),
     },
     { merge: true }
@@ -2243,7 +2198,13 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   return normalizeUserPreferencesDocument(snap.data());
 }
 
+export function buildDefaultUserPreferences(updatedAtMs = Date.now()): UserPreferencesV1 {
+  return normalizeUserPreferencesDocument({ updatedAtMs });
+}
+
 export function normalizeUserPreferencesDocument(data: Record<string, unknown>): UserPreferencesV1 {
+  const updatedAtMsRaw = Number(data.updatedAtMs);
+  const updatedAtMs = Number.isFinite(updatedAtMsRaw) && updatedAtMsRaw > 0 ? updatedAtMsRaw : 0;
   return {
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
@@ -2253,7 +2214,7 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     taskView: "tile",
     taskOrderBy: normalizeTaskOrderBy(data.taskOrderBy),
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
-    autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, true),
+    autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, false),
     dashboardPreviousWeekVisible: asBool(data.dashboardPreviousWeekVisible, true),
     mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),
     webPushAlertsEnabled:
@@ -2274,8 +2235,8 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     ),
     optimalProductivityEndTime: normalizeTimeOfDay(data.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
     optimalProductivityDays: normalizeOptimalProductivityDays(data.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
-    rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS),
-    updatedAtMs: Number(data.updatedAtMs || Date.now()),
+    rewards: normalizeRewardProgress(data.rewards || DEFAULT_REWARD_PROGRESS, { nowMs: updatedAtMs }),
+    updatedAtMs,
   };
 }
 

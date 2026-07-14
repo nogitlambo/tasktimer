@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getFirebaseAuthClient, firebaseAuthMode, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { resolveAuthSuccessRoute } from "./auth/authRedirect";
 import { resolveHomeEntry } from "./homeEntry";
 import { ensureUserProfileIndex } from "./tasktimer/lib/cloudStore";
-import { readStartupModulePreference, startupModuleToRoute } from "./tasktimer/lib/startupModule";
 import Landing from "./landing";
 import LandingSoon from "./landingsoon";
 import type { LandingProps } from "./landing.types";
@@ -111,7 +111,7 @@ function HomeContent({ variant = "landing" }: HomePageClientProps) {
       if (user?.uid && !user.isAnonymous) void ensureUserProfileIndex(user.uid);
       if (email && !hasRedirected) {
         setHasRedirected(true);
-        router.replace(startupModuleToRoute(readStartupModulePreference()));
+        router.replace(resolveAuthSuccessRoute());
       }
     });
     return () => unsub();

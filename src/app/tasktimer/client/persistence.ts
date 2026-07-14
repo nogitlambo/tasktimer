@@ -5,6 +5,7 @@ import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { enqueuePendingTimeGoalCompletion } from "./pending-time-goal-completions";
 import { clearNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
 
 type PersistOptions = { deletedTaskIds?: string[]; forceCloudFlush?: boolean };
@@ -44,6 +45,7 @@ type CreateTaskTimerPersistenceOptions = {
   workspaceRepository: Pick<TaskTimerWorkspaceRepository, "loadWorkspaceSnapshot" | "loadTimerStateSnapshot" | "saveTasks">;
   historyPersistence: TaskTimerWorkspaceHistoryPersistence;
   focusSessionNotesKey: string;
+  pendingTimeGoalCompletionsKey?: string;
   pendingTaskJumpKey: string;
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
@@ -149,6 +151,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, nowValue);
     options.setTasks(tasksWithLiveSessions);
     liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
+      enqueuePendingTimeGoalCompletion(options.pendingTimeGoalCompletionsKey || "", completion);
       const completedTask = tasksWithLiveSessions.find((row) => String(row.id || "").trim() === completion.taskId);
       if (!completedTask) return;
       options.finalizeLiveSession?.(completedTask, {

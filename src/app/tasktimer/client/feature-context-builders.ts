@@ -1,6 +1,5 @@
 import type { DeletedTaskMeta, HistoryByTaskId, Task } from "../lib/types";
 import type { LiveSessionsByTaskId } from "../lib/types";
-import type { UserPreferencesV1 } from "../lib/cloudStore";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
@@ -75,14 +74,10 @@ type CreatePreferencesOptionsArgs = {
   defaultModeColors: Parameters<typeof createTaskTimerPreferences>[0]["defaultModeColors"];
   toggleSwitchElement: Parameters<typeof createTaskTimerPreferences>[0]["toggleSwitchElement"];
   isSwitchOn: Parameters<typeof createTaskTimerPreferences>[0]["isSwitchOn"];
-  normalizeRewardProgress: (value: unknown) => unknown;
+  normalizeRewardProgress: (value: unknown) => RewardProgressV1;
   getCurrentUid: () => string | null;
-  loadCachedPreferences: Parameters<typeof createTaskTimerPreferences>[0]["loadCachedPreferences"];
   loadCachedTaskUi: Parameters<typeof createTaskTimerPreferences>[0]["loadCachedTaskUi"];
-  getCloudPreferencesCache: () => unknown;
-  setCloudPreferencesCache: (value: UserPreferencesV1 | null) => void;
-  buildDefaultCloudPreferences: () => unknown;
-  saveCloudPreferences: (prefs: unknown) => void;
+  preferencesPersistence: Parameters<typeof createTaskTimerPreferences>[0]["preferencesPersistence"];
   syncOwnFriendshipProfile: Parameters<typeof createTaskTimerPreferences>[0]["syncOwnFriendshipProfile"];
   saveDashboardWidgetState: Parameters<typeof createTaskTimerPreferences>[0]["saveDashboardWidgetState"];
   getDashboardCardSizeMapForStorage: Parameters<typeof createTaskTimerPreferences>[0]["getDashboardCardSizeMapForStorage"];
@@ -111,6 +106,7 @@ type CreatePersistenceOptionsArgs = {
   workspaceRepository: Parameters<typeof createTaskTimerPersistence>[0]["workspaceRepository"];
   historyPersistence: Parameters<typeof createTaskTimerPersistence>[0]["historyPersistence"];
   focusSessionNotesKey: string;
+  pendingTimeGoalCompletionsKey: string;
   pendingTaskJumpKey: string;
   taskCollectionBindings: {
     getTasks: () => Task[];
@@ -579,6 +575,7 @@ type CreateAppShellOptionsArgs = {
   navStackKey: string;
   navStackMax: number;
   nativeBackDebounceMs: number;
+  getStartupAppPage: () => AppPage;
   appRuntimeState: MutableStore;
   syncDashboardMenuFlipUi: () => void;
   getNavStackMemory: () => string[];
@@ -744,7 +741,7 @@ type CreateRewardsHistoryOptionsArgs = {
   preferencesState: MutableStore;
   rewardState: MutableStore;
   focusBindings: { getFocusModeTaskId: () => string | null };
-  setCloudPreferencesCache: (value: UserPreferencesV1 | null) => void;
+  preferencesPersistence: Parameters<typeof createTaskTimerRewardsHistory>[0]["preferencesPersistence"];
   getCurrentPlan: () => Parameters<typeof createTaskTimerRewardsHistory>[0]["getCurrentPlan"] extends () => infer T ? T : never;
   hasEntitlement: Parameters<typeof createTaskTimerRewardsHistory>[0]["hasEntitlement"];
   currentUid: () => string | null;
@@ -761,8 +758,6 @@ type CreateRewardsHistoryOptionsArgs = {
   clearLiveSession: Parameters<typeof createTaskTimerRewardsHistory>[0]["clearLiveSession"];
   saveHistoryLocally: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveHistoryLocally"];
   saveHistory: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveHistory"];
-  buildDefaultCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["buildDefaultCloudPreferences"];
-  saveCloudPreferences: Parameters<typeof createTaskTimerRewardsHistory>[0]["saveCloudPreferences"];
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncOwnFriendshipProfile: Parameters<typeof createTaskTimerRewardsHistory>[0]["syncOwnFriendshipProfile"];
 };
@@ -973,12 +968,8 @@ export function createTaskTimerPreferencesContext(
     getRewardProgress: () => args.rewardState.get("rewardProgress"),
     normalizeRewardProgress: args.normalizeRewardProgress,
     currentUid: args.getCurrentUid,
-    loadCachedPreferences: args.loadCachedPreferences,
     loadCachedTaskUi: args.loadCachedTaskUi,
-    getCloudPreferencesCache: args.getCloudPreferencesCache as Parameters<typeof createTaskTimerPreferences>[0]["getCloudPreferencesCache"],
-    setCloudPreferencesCache: args.setCloudPreferencesCache as Parameters<typeof createTaskTimerPreferences>[0]["setCloudPreferencesCache"],
-    buildDefaultCloudPreferences: args.buildDefaultCloudPreferences as Parameters<typeof createTaskTimerPreferences>[0]["buildDefaultCloudPreferences"],
-    saveCloudPreferences: args.saveCloudPreferences as Parameters<typeof createTaskTimerPreferences>[0]["saveCloudPreferences"],
+    preferencesPersistence: args.preferencesPersistence,
     syncOwnFriendshipProfile: args.syncOwnFriendshipProfile,
     saveDashboardWidgetState: args.saveDashboardWidgetState,
     getDashboardCardSizeMapForStorage: args.getDashboardCardSizeMapForStorage,
@@ -1009,6 +1000,7 @@ export function createTaskTimerPersistenceContext(
     workspaceRepository: args.workspaceRepository,
     historyPersistence: args.historyPersistence,
     focusSessionNotesKey: args.focusSessionNotesKey,
+    pendingTimeGoalCompletionsKey: args.pendingTimeGoalCompletionsKey,
     pendingTaskJumpKey: args.pendingTaskJumpKey,
     getTasks: args.taskCollectionBindings.getTasks,
     setTasks: args.taskCollectionBindings.setTasks,
@@ -1494,6 +1486,7 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     navStackKey: args.navStackKey,
     navStackMax: args.navStackMax,
     nativeBackDebounceMs: args.nativeBackDebounceMs,
+    getStartupAppPage: args.getStartupAppPage,
     getCurrentAppPage: () => asType<AppPage>(args.appRuntimeState.get("currentAppPage")),
     setCurrentAppPage: (page) => args.appRuntimeState.set("currentAppPage", page),
     getDashboardMenuFlipped: () => asType<boolean>(args.appRuntimeState.get("dashboardMenuFlipped")),
@@ -1710,11 +1703,7 @@ export function createTaskTimerRewardsHistoryContext(
         args.rewardState.get("rewardSessionTrackersByTaskId")
       ),
     setRewardSessionTrackersByTaskId: (value) => args.rewardState.set("rewardSessionTrackersByTaskId", value),
-    getCloudPreferencesCache: () =>
-      asType<Parameters<typeof createTaskTimerRewardsHistory>[0]["getCloudPreferencesCache"] extends () => infer T ? T : never>(
-        args.rewardState.get("cloudPreferencesCache")
-      ),
-    setCloudPreferencesCache: (value) => args.setCloudPreferencesCache(value ?? null),
+    preferencesPersistence: args.preferencesPersistence,
     getFocusModeTaskId: args.focusBindings.getFocusModeTaskId,
     getCurrentPlan: args.getCurrentPlan,
     hasEntitlement: args.hasEntitlement,
@@ -1732,8 +1721,6 @@ export function createTaskTimerRewardsHistoryContext(
     clearLiveSession: args.clearLiveSession,
     saveHistoryLocally: args.saveHistoryLocally,
     saveHistory: args.saveHistory,
-    buildDefaultCloudPreferences: args.buildDefaultCloudPreferences,
-    saveCloudPreferences: args.saveCloudPreferences,
     syncSharedTaskSummariesForTask: args.syncSharedTaskSummariesForTask,
     syncOwnFriendshipProfile: args.syncOwnFriendshipProfile,
   };

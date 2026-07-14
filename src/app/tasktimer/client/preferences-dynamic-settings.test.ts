@@ -6,6 +6,8 @@ import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskOrderBy } from "./types";
 import type { StartupModulePreference } from "../lib/startupModule";
 import type { InteractionHapticsIntensity } from "../lib/interactionHapticsIntensity";
+import { buildDefaultUserPreferences } from "../lib/cloudStore";
+import { normalizeRewardProgress } from "../lib/rewards";
 
 type Listener = (event: { target?: unknown; type?: string; detail?: unknown }) => void;
 
@@ -232,7 +234,16 @@ function createHarness() {
     optimalProductivityEndTime: "23:59",
     optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as DashboardWeekStart[],
   };
-  const saveCloudPreferences = vi.fn();
+  let cachedPreferences = null as ReturnType<typeof buildDefaultUserPreferences> | null;
+  const defaultPreferences = buildDefaultUserPreferences(1);
+  const saveCloudPreferences = vi.fn((mutation: Parameters<TaskTimerPreferencesContext["preferencesPersistence"]["update"]>[0]) => {
+    cachedPreferences = {
+      ...(cachedPreferences || defaultPreferences),
+      ...mutation,
+      updatedAtMs: (cachedPreferences?.updatedAtMs || defaultPreferences.updatedAtMs) + 1,
+    };
+    return cachedPreferences;
+  });
   const render = vi.fn();
 
   vi.stubGlobal("document", fakeDocument);
@@ -347,14 +358,15 @@ function createHarness() {
       state.optimalProductivityDays = value;
     },
     getRewardProgress: () => ({}),
-    normalizeRewardProgress: (value) => value,
+    normalizeRewardProgress,
     currentUid: () => null,
-    loadCachedPreferences: () => null,
     loadCachedTaskUi: () => null,
-    getCloudPreferencesCache: () => null,
-    setCloudPreferencesCache: vi.fn(),
-    buildDefaultCloudPreferences: () => ({ schemaVersion: 1 }),
-    saveCloudPreferences,
+    preferencesPersistence: {
+      loadCached: () => cachedPreferences,
+      loadResolved: () => cachedPreferences || defaultPreferences,
+      update: saveCloudPreferences,
+      subscribe: vi.fn(() => () => {}),
+    },
     syncOwnFriendshipProfile: vi.fn(() => Promise.resolve()),
     saveDashboardWidgetState: vi.fn(),
     getDashboardCardSizeMapForStorage: () => ({}),

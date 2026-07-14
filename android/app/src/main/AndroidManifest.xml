@@ -74,6 +74,7 @@
             android:exported="false" />
 
         <receiver android:name=".TaskLaunchCheckpointAlarmReceiver" android:exported="false" />
+        <receiver android:name=".TaskLaunchTimeGoalAlarmReceiver" android:exported="false" />
         <receiver android:name=".TaskLaunchCheckpointAlarmActionReceiver" android:exported="false" />
         <receiver android:name=".TaskLaunchCheckpointBootReceiver" android:exported="false">
             <intent-filter>

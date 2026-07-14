@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DashboardConfig, TaskUiConfig, UserPreferencesV1 } from "../lib/cloudStore";
+import { buildDefaultUserPreferences, type DashboardConfig, type TaskUiConfig, type UserPreferencesV1 } from "../lib/cloudStore";
 import { DEFAULT_REWARD_PROGRESS } from "../lib/rewards";
 import type { TaskTimerWorkspaceRepository } from "../lib/workspaceRepository";
 import { createTaskTimerRuntimeComposition } from "./runtime-composition";
@@ -79,6 +79,7 @@ describe("createTaskTimerRuntimeComposition", () => {
   });
 
   it("exposes focused workspace domain adapters for feature modules", () => {
+    const cachedPreferences = buildDefaultUserPreferences(10);
     const historySnapshot = {
       historyByTaskId: { "task-1": [{ ts: 1, name: "Focus", ms: 0 }] },
       cleanedHistoryByTaskId: { "task-1": [] },
@@ -87,6 +88,8 @@ describe("createTaskTimerRuntimeComposition", () => {
     const workspaceRepository = createWorkspaceRepositoryStub({
       loadHistorySnapshot: vi.fn(() => historySnapshot),
       saveHistory: vi.fn(),
+      loadCachedPreferences: vi.fn(() => cachedPreferences),
+      savePreferences: vi.fn(),
     });
 
     const composition = createTaskTimerRuntimeComposition("tasks", "taskticker_tasks_v1", {
@@ -97,6 +100,11 @@ describe("createTaskTimerRuntimeComposition", () => {
     expect(composition.workspaceAdapters.historyPersistence.loadSnapshot()).toBe(historySnapshot);
     composition.workspaceAdapters.historyPersistence.saveCleanedSnapshot(historySnapshot);
     expect(workspaceRepository.saveHistory).toHaveBeenCalledWith(historySnapshot.cleanedHistoryByTaskId, { showIndicator: false });
+
+    expect(composition.workspaceAdapters.preferencesPersistence.loadResolved()).toEqual(cachedPreferences);
+    const updatedPreferences = composition.workspaceAdapters.preferencesPersistence.update({ taskOrderBy: "alpha" });
+    expect(updatedPreferences).toEqual(expect.objectContaining({ taskOrderBy: "alpha", updatedAtMs: expect.any(Number) }));
+    expect(workspaceRepository.savePreferences).toHaveBeenCalledWith(updatedPreferences);
   });
 
   it("derives storage keys and event names in one testable module", () => {
@@ -108,6 +116,7 @@ describe("createTaskTimerRuntimeComposition", () => {
     expect(composition.storageKeys.NAV_STACK_KEY).toBe("taskticker_tasks_v1:navStack");
     expect(composition.derivedKeys).toEqual({
       TIME_GOAL_PENDING_FLOW_KEY: "taskticker_tasks_v1:timeGoalPendingFlow",
+      TIME_GOAL_PENDING_COMPLETIONS_KEY: "taskticker_tasks_v1:pendingTimeGoalCompletions",
       TIME_GOAL_COMPLETION_ACK_KEY: "taskticker_tasks_v1:timeGoalCompletionAck",
       PENDING_PUSH_TASK_ID_KEY: "taskticker_tasks_v1:pendingPushTaskId",
       PENDING_PUSH_ACTION_KEY: "taskticker_tasks_v1:pendingPushAction",
@@ -118,11 +127,12 @@ describe("createTaskTimerRuntimeComposition", () => {
     });
   });
 
-  it("hydrates cache-backed stores through the workspace snapshot adapter", () => {
+  it("hydrates preferences through the canonical adapter and other caches through the workspace snapshot", () => {
     const cachedPreferences = {
       schemaVersion: 1,
       theme: "lime",
       menuButtonStyle: "square",
+      weekStarting: "mon",
       startupModule: "dashboard",
       taskView: "tile",
       taskOrderBy: "custom",
@@ -142,7 +152,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       optimalProductivityStartTime: "00:00",
       optimalProductivityEndTime: "23:59",
       optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
-      rewards: { ...DEFAULT_REWARD_PROGRESS, totalXp: 42, totalXpPrecise: 42 },
+      rewards: { ...DEFAULT_REWARD_PROGRESS, totalXp: 42, totalXpPrecise: 42, currentRankId: "initiate" },
       updatedAtMs: 1,
     } satisfies UserPreferencesV1;
     const cachedDashboard = { order: ["momentum"] } satisfies DashboardConfig;
@@ -152,6 +162,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       pinnedHistoryTaskIds: ["task-1"],
     } satisfies TaskUiConfig;
     const workspaceRepository = createWorkspaceRepositoryStub({
+      loadCachedPreferences: vi.fn(() => cachedPreferences),
       loadWorkspaceSnapshot: vi.fn(() => ({
         tasks: [],
         historyByTaskId: {},
@@ -171,9 +182,10 @@ describe("createTaskTimerRuntimeComposition", () => {
     });
 
     expect(workspaceRepository.loadWorkspaceSnapshot).toHaveBeenCalledTimes(1);
-    expect(composition.stores.cacheRuntimeState.get("cloudPreferencesCache")).toBe(cachedPreferences);
+    expect(workspaceRepository.loadCachedPreferences).toHaveBeenCalled();
+    expect(composition.stores.cacheRuntimeState.get("cloudPreferencesCache")).toEqual(cachedPreferences);
     expect(composition.stores.cacheRuntimeState.get("cloudDashboardCache")).toBe(cachedDashboard);
     expect(composition.stores.cacheRuntimeState.get("cloudTaskUiCache")).toBe(cachedTaskUi);
-    expect(composition.stores.rewardState.get("cloudPreferencesCache")).toBe(cachedPreferences);
+    expect(composition.stores.rewardState.get("cloudPreferencesCache")).toEqual(cachedPreferences);
   });
 });

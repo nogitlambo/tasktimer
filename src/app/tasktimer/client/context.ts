@@ -20,7 +20,7 @@ import type {
   SessionNoteAttachment,
   Task,
 } from "../lib/types";
-import type { UserPreferencesV1 } from "../lib/cloudStore";
+import type { TaskTimerWorkspacePreferencesPersistence } from "../lib/workspaceRepository";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import type { TaskTimerEntitlement, TaskTimerPlan } from "../lib/entitlements";
@@ -35,45 +35,6 @@ export type TaskTimerAppPageSyncUrlMode = "replace" | "push" | false;
 
 export type FocusModeTransitionOptions = {
   sourceElement?: HTMLElement | null;
-};
-
-export type TaskTimerCachedModeSettings =
-  | Partial<
-      Record<
-        MainMode,
-        {
-          label?: unknown;
-          enabled?: unknown;
-        }
-      >
-    >
-  | Record<string, unknown>
-  | null;
-
-export type TaskTimerCachedPreferences = {
-  schemaVersion?: unknown;
-  theme?: unknown;
-  menuButtonStyle?: unknown;
-  weekStarting?: unknown;
-  startupModule?: unknown;
-  taskView?: unknown;
-  autoFocusOnTaskLaunchEnabled?: unknown;
-  dynamicColorsEnabled?: unknown;
-  mobilePushAlertsEnabled?: unknown;
-  webPushAlertsEnabled?: unknown;
-  interactionClickSoundEnabled?: unknown;
-  achievementSoundsEnabled?: unknown;
-  interactionHapticsEnabled?: unknown;
-  interactionHapticsIntensity?: unknown;
-  checkpointAlertSoundEnabled?: unknown;
-  checkpointAlertVibrationEnabled?: unknown;
-  checkpointAlertFlashEnabled?: unknown;
-  optimalProductivityStartTime?: unknown;
-  optimalProductivityEndTime?: unknown;
-  optimalProductivityDays?: unknown;
-  modeSettings?: TaskTimerCachedModeSettings;
-  rewards?: unknown;
-  updatedAtMs?: unknown;
 };
 
 export type TaskTimerConfirmOptions = {
@@ -173,8 +134,7 @@ export type TaskTimerRewardsHistoryContext = {
       }
     >
   ) => void;
-  getCloudPreferencesCache: () => UserPreferencesV1 | null;
-  setCloudPreferencesCache: (value: UserPreferencesV1 | null) => void;
+  preferencesPersistence: TaskTimerWorkspacePreferencesPersistence;
   getFocusModeTaskId: () => string | null;
   getCurrentPlan: () => TaskTimerPlan;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
@@ -192,8 +152,6 @@ export type TaskTimerRewardsHistoryContext = {
   clearLiveSession: (taskId: string, opts?: { forceCloudFlush?: boolean; reason?: string }) => void;
   saveHistoryLocally: (history: HistoryByTaskId) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { showIndicator?: boolean; allowDestructiveReplace?: boolean }) => void;
-  buildDefaultCloudPreferences: () => UserPreferencesV1;
-  saveCloudPreferences: (prefs: UserPreferencesV1) => void;
   syncSharedTaskSummariesForTask: (taskId: string) => Promise<void>;
   syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined; completedTaskCount?: number | null | undefined }) => Promise<unknown>;
 };
@@ -277,6 +235,7 @@ export type TaskTimerAppShellContext = {
   navStackKey: string;
   navStackMax: number;
   nativeBackDebounceMs: number;
+  getStartupAppPage: () => AppPage;
   getCurrentAppPage: () => AppPage;
   setCurrentAppPage: (page: AppPage) => void;
   getDashboardMenuFlipped: () => boolean;
@@ -717,6 +676,7 @@ export type TaskTimerSessionContext = {
   storageKeys: {
     FOCUS_SESSION_NOTES_KEY: string;
     TIME_GOAL_PENDING_FLOW_KEY: string;
+    TIME_GOAL_PENDING_COMPLETIONS_KEY?: string;
     TIME_GOAL_COMPLETION_ACK_KEY: string;
     FOCUS_DND_STORAGE_KEY: string;
   };
@@ -980,14 +940,10 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   getOptimalProductivityDays: () => OptimalProductivityDays;
   setOptimalProductivityDaysState: (value: OptimalProductivityDays) => void;
   getRewardProgress: () => unknown;
-  normalizeRewardProgress: (value: unknown) => unknown;
+  normalizeRewardProgress: (value: unknown) => RewardProgressV1;
   currentUid: () => string | null;
-  loadCachedPreferences: () => TaskTimerCachedPreferences | null | undefined;
   loadCachedTaskUi: () => unknown;
-  getCloudPreferencesCache: () => TaskTimerCachedPreferences | null | undefined;
-  setCloudPreferencesCache: (value: TaskTimerCachedPreferences | null | undefined) => void;
-  buildDefaultCloudPreferences: () => NonNullable<TaskTimerCachedPreferences>;
-  saveCloudPreferences: (prefs: NonNullable<TaskTimerCachedPreferences>) => void;
+  preferencesPersistence: TaskTimerWorkspacePreferencesPersistence;
   syncOwnFriendshipProfile: (uid: string, partial: { currentRankId?: string | null | undefined; totalXp?: number | null | undefined; completedTaskCount?: number | null | undefined }) => Promise<unknown>;
   saveDashboardWidgetState: (partialWidgets: Record<string, unknown>) => void;
   getDashboardCardSizeMapForStorage: () => Record<string, unknown>;

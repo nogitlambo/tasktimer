@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_REWARD_PROGRESS, MIN_REWARD_ELIGIBLE_SESSION_MS, normalizeRewardProgress } from "../lib/rewards";
 import { ACTIVE_SESSION_CLOUD_WRITE_INTERVAL_MS } from "../lib/storage";
 import type { HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
-import type { UserPreferencesV1 } from "../lib/cloudStore";
+import { buildDefaultUserPreferences, type UserPreferencesV1 } from "../lib/cloudStore";
 import { createTaskTimerRewardsHistory } from "./rewards-history";
 import type { TaskTimerRewardsHistoryContext } from "./context";
 import { TASKTIMER_RANK_PROMOTION_EVENT } from "./rank-promotion";
@@ -43,6 +43,7 @@ function createHarness(
     },
   };
   let cloudPreferencesCache: UserPreferencesV1 | null = null;
+  const defaultPreferences = buildDefaultUserPreferences(1);
   const elapsedMs = overrides.elapsedMs ?? MIN_REWARD_ELIGIBLE_SESSION_MS;
 
   const api = createTaskTimerRewardsHistory({
@@ -67,9 +68,19 @@ function createHarness(
     setRewardSessionTrackersByTaskId: (value) => {
       rewardSessionTrackersByTaskId = value;
     },
-    getCloudPreferencesCache: () => cloudPreferencesCache,
-    setCloudPreferencesCache: (value) => {
-      cloudPreferencesCache = value;
+    preferencesPersistence: {
+      loadCached: () => cloudPreferencesCache,
+      loadResolved: () => cloudPreferencesCache || defaultPreferences,
+      update: (mutation) => {
+        cloudPreferencesCache = {
+          ...(cloudPreferencesCache || defaultPreferences),
+          ...mutation,
+          updatedAtMs: (cloudPreferencesCache?.updatedAtMs || defaultPreferences.updatedAtMs) + 1,
+        };
+        calls.push(`save-preferences:${cloudPreferencesCache.rewards.totalXp}`);
+        return cloudPreferencesCache;
+      },
+      subscribe: vi.fn(() => () => {}),
     },
     getFocusModeTaskId: () => (Object.prototype.hasOwnProperty.call(overrides, "focusModeTaskId") ? overrides.focusModeTaskId || null : null),
     getCurrentPlan: () => "free",
@@ -95,15 +106,6 @@ function createHarness(
       savedHistoryArgs.push(history);
       storedHistoryByTaskId = history;
       calls.push("replace-history");
-    },
-    buildDefaultCloudPreferences: () =>
-      ({
-        schemaVersion: 1,
-        rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
-      }) as UserPreferencesV1,
-    saveCloudPreferences: (prefs) => {
-      cloudPreferencesCache = prefs;
-      calls.push(`save-preferences:${prefs.rewards.totalXp}`);
     },
     syncSharedTaskSummariesForTask: vi.fn(async (taskId: string) => {
       calls.push(`sync-shared:${taskId}`);

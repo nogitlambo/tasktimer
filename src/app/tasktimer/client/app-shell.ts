@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { readStartupAppPagePreference } from "../lib/startupModule";
 import { trackScreen } from "@/lib/firebaseTelemetry";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
@@ -184,13 +183,13 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
       if (isTaskTimerLeaderboardPath(path)) return "leaderboard";
       if (/\/history-manager(?:\/index\.html)?$/i.test(path)) return "history";
       if (isFirstInitialPageResolution && isNativeOrExportRuntime() && isTaskTimerMainAppPath(path)) {
-        return readStartupAppPagePreference();
+        return ctx.getStartupAppPage();
       }
-      if (isTaskTimerTasksPath(path)) return readStartupAppPagePreference();
+      if (isTaskTimerTasksPath(path)) return ctx.getStartupAppPage();
     } catch {
       // ignore
     }
-    return isTaskTimerTasksPath(normalizedPathname()) ? readStartupAppPagePreference() : defaultPage;
+    return isTaskTimerTasksPath(normalizedPathname()) ? ctx.getStartupAppPage() : defaultPage;
   }
 
   function normalizeTaskTimerRoutePath(pathRaw: string) {

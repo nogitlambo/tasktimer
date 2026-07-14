@@ -46,6 +46,11 @@ import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPending
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createClickAudioPlayer } from "./click-audio-player";
 import {
+  loadPendingTimeGoalCompletions,
+  removePendingTimeGoalCompletion,
+  type PendingTimeGoalCompletion,
+} from "./pending-time-goal-completions";
+import {
   getRichNoteEditorValue,
   handleRichNoteToolbarStateEvent,
   handleRichNotePaste,
@@ -1210,6 +1215,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return getTimeGoalCompletionAcknowledgementId(task);
   }
 
+  function getTimeGoalCompletionPeriodKey(task: Task | null | undefined): string {
+    return task?.timeGoalPeriod === "week"
+      ? String(task?.timeGoalCompletedWeekKey || "").trim()
+      : String(task?.timeGoalCompletedDayKey || "").trim();
+  }
+
   function getLegacyTimeGoalCompletionAckId(task: Task | null | undefined): string {
     const taskId = String(task?.id || "").trim();
     const completedAtMs = Math.max(0, Math.floor(Number(task?.timeGoalCompletedAtMs || 0) || 0));
@@ -1244,6 +1255,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const next = loadTimeGoalCompletionAckMap();
       next[ackId] = true;
       window.localStorage.setItem(ctx.storageKeys.TIME_GOAL_COMPLETION_ACK_KEY, JSON.stringify(next));
+      removePendingTimeGoalCompletion(
+        ctx.storageKeys.TIME_GOAL_PENDING_COMPLETIONS_KEY,
+        task?.id,
+        getTimeGoalCompletionPeriodKey(task)
+      );
     } catch {
       // ignore localStorage failures
     }
@@ -1394,7 +1410,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
-    acknowledgeTimeGoalCompletion(task);
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
     if (els.timeGoalCompleteOverlay) {
@@ -1494,6 +1509,34 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
   }
 
+  function findRestorablePendingCompletion(): { task: Task; completion: PendingTimeGoalCompletion } | null {
+    const queue = loadPendingTimeGoalCompletions(ctx.storageKeys.TIME_GOAL_PENDING_COMPLETIONS_KEY);
+    for (const completion of queue) {
+      const task = ctx.getTasks().find((row) => String(row.id || "").trim() === completion.taskId) || null;
+      if (!task) {
+        removePendingTimeGoalCompletion(ctx.storageKeys.TIME_GOAL_PENDING_COMPLETIONS_KEY, completion.taskId, completion.periodKey);
+        continue;
+      }
+      if (hasAcknowledgedTimeGoalCompletion(task)) {
+        removePendingTimeGoalCompletion(ctx.storageKeys.TIME_GOAL_PENDING_COMPLETIONS_KEY, completion.taskId, completion.periodKey);
+        continue;
+      }
+      if (getTimeGoalCompletionPeriodKey(task) !== completion.periodKey) {
+        removePendingTimeGoalCompletion(ctx.storageKeys.TIME_GOAL_PENDING_COMPLETIONS_KEY, completion.taskId, completion.periodKey);
+        continue;
+      }
+      if (!isFinalizedGoalCompletionAwaitingAcknowledgement(task)) {
+        continue;
+      }
+      return { task, completion };
+    }
+    return null;
+  }
+
+  function findFinalizedCompletionAwaitingAcknowledgement(): Task | null {
+    return ctx.getTasks().find((task) => isFinalizedGoalCompletionAwaitingAcknowledgement(task)) || null;
+  }
+
   function maybeRestorePendingTimeGoalFlow() {
     const pending = loadPendingTimeGoalFlow();
     const tasks = ctx.getTasks();
@@ -1520,6 +1563,20 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       return;
     }
     if (String(ctx.getTimeGoalModalTaskId() || "").trim()) return;
+    const queuedCompletion = findRestorablePendingCompletion();
+    if (queuedCompletion) {
+      openTimeGoalCompleteModal(queuedCompletion.task, queuedCompletion.completion.elapsedMs || getTaskElapsedMs(queuedCompletion.task), {
+        acknowledgement: true,
+      });
+      return;
+    }
+    const finalizedCompletion = findFinalizedCompletionAwaitingAcknowledgement();
+    if (finalizedCompletion) {
+      openTimeGoalCompleteModal(finalizedCompletion, getTaskElapsedMs(finalizedCompletion), {
+        acknowledgement: true,
+      });
+      return;
+    }
     const overdueTask = tasks.find((row) => !!row?.running && shouldKeepTimeGoalCompletionFlow(row));
     if (!overdueTask) return;
     openTimeGoalCompleteModal(overdueTask, getTaskElapsedMs(overdueTask), { reminder: true });

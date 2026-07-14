@@ -6,11 +6,38 @@ import { deleteUser, onAuthStateChanged, signOut, type User } from "firebase/aut
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { syncTaskTimerPushNotificationsEnabled } from "@/app/tasktimer/lib/pushNotifications";
 import { STORAGE_KEY } from "@/app/tasktimer/lib/storage";
-import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "@/app/tasktimer/lib/workspaceRepository";
+import type { UserPreferencesV1 } from "@/app/tasktimer/lib/cloudStore";
 import { consumeAccountDeletionLandingRedirectIntent } from "@/app/tasktimer/lib/accountDeletionRedirectIntent";
 
 type GuardStatus = "checking" | "ready";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
+const preferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(workspaceRepository);
+
+type PushAlertPreferences = Pick<UserPreferencesV1, "mobilePushAlertsEnabled" | "webPushAlertsEnabled">;
+
+export function resolveTaskLaunchPushAlertPreferences(input: {
+  isSignedIn: boolean;
+  cachedPreferences: PushAlertPreferences | null;
+  resolvedPreferences: PushAlertPreferences | null;
+  readSignedOutFallback: () => PushAlertPreferences;
+}): PushAlertPreferences {
+  const preferences = input.cachedPreferences || (input.isSignedIn ? input.resolvedPreferences : null);
+  if (preferences) {
+    const mobilePushAlertsEnabled = preferences.mobilePushAlertsEnabled === true;
+    return {
+      mobilePushAlertsEnabled,
+      webPushAlertsEnabled:
+        typeof preferences.webPushAlertsEnabled === "boolean"
+          ? preferences.webPushAlertsEnabled
+          : mobilePushAlertsEnabled,
+    };
+  }
+  return input.readSignedOutFallback();
+}
 
 export function resolveTaskLaunchAuthGuardAuthState(requireAuth: boolean, hasUser: boolean, isAnonymous = false): GuardStatus | "redirect" {
   if (!requireAuth) return "ready";
@@ -93,28 +120,42 @@ export default function TaskLaunchAuthGuard({
   }, [requireAuth, router]);
 
   useEffect(() => {
-    const syncPreference = (mobileEnabled: boolean, webEnabled: boolean) => {
-      if (!getFirebaseAuthClient()?.currentUser) return;
-      void syncTaskTimerPushNotificationsEnabled({ mobileEnabled, webEnabled }).catch(() => {});
+    const auth = getFirebaseAuthClient();
+    const resolveAndSyncPreferences = (
+      cachedPreferences: PushAlertPreferences | null,
+      isSignedIn = !!auth?.currentUser && !auth.currentUser.isAnonymous
+    ) => {
+      const preferences = resolveTaskLaunchPushAlertPreferences({
+        isSignedIn,
+        cachedPreferences,
+        resolvedPreferences: isSignedIn ? preferencesPersistence.loadResolved() : null,
+        readSignedOutFallback: () => {
+          const mobilePushAlertsEnabled = readStoredMobilePushAlertsEnabled();
+          return {
+            mobilePushAlertsEnabled,
+            webPushAlertsEnabled: readStoredWebPushAlertsEnabled(mobilePushAlertsEnabled),
+          };
+        },
+      });
+      if (!isSignedIn) return;
+      void syncTaskTimerPushNotificationsEnabled({
+        mobileEnabled: preferences.mobilePushAlertsEnabled,
+        webEnabled: preferences.webPushAlertsEnabled,
+      }).catch(() => {});
     };
-    const cachedPreferences = workspaceRepository.loadCachedPreferences();
-    const initialMobileEnabled =
-      cachedPreferences && typeof cachedPreferences === "object" && "mobilePushAlertsEnabled" in cachedPreferences
-        ? !!cachedPreferences.mobilePushAlertsEnabled
-        : readStoredMobilePushAlertsEnabled();
-    const initialWebEnabled =
-      cachedPreferences && typeof cachedPreferences === "object" && "webPushAlertsEnabled" in cachedPreferences
-        ? !!cachedPreferences.webPushAlertsEnabled
-        : readStoredWebPushAlertsEnabled(initialMobileEnabled);
-    syncPreference(initialMobileEnabled, initialWebEnabled);
-    const unsub = workspaceRepository.subscribeCachedPreferences((prefs) => {
-      if (!prefs || typeof prefs !== "object" || !("mobilePushAlertsEnabled" in prefs)) return;
-      const mobileEnabled = !!prefs.mobilePushAlertsEnabled;
-      const webEnabled = "webPushAlertsEnabled" in prefs ? !!prefs.webPushAlertsEnabled : mobileEnabled;
-      syncPreference(mobileEnabled, webEnabled);
+    resolveAndSyncPreferences(preferencesPersistence.loadCached());
+    const unsubscribePreferences = preferencesPersistence.subscribe((prefs) => {
+      resolveAndSyncPreferences(prefs);
     });
+    const unsubscribeAuth = auth
+      ? onAuthStateChanged(auth, (user) => {
+          if (!user || user.isAnonymous) return;
+          resolveAndSyncPreferences(preferencesPersistence.loadCached(), true);
+        })
+      : () => {};
     return () => {
-      unsub();
+      unsubscribePreferences();
+      unsubscribeAuth();
     };
   }, []);
 

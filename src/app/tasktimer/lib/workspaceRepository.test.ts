@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildDefaultUserPreferences } from "./cloudStore";
 import type { LiveTaskSession } from "./types";
 
 const storageMocks = vi.hoisted(() => ({
@@ -37,7 +38,10 @@ const storageMocks = vi.hoisted(() => ({
 
 vi.mock("./storage", () => storageMocks);
 
-import { createTaskTimerWorkspaceRepository } from "./workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "./workspaceRepository";
 
 function task(id: string, name: string) {
   return {
@@ -219,5 +223,65 @@ describe("TaskTimer workspace repository snapshots", () => {
       },
     });
     expect(storageMocks.cleanupHistory).not.toHaveBeenCalled();
+  });
+});
+
+describe("TaskTimer Workspace preferences persistence", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("resolves defaults and exposes cached preference subscriptions through one Interface", () => {
+    const defaults = buildDefaultUserPreferences(50);
+    const cached = { ...defaults, startupModule: "dashboard" as const, updatedAtMs: 100 };
+    const unsubscribe = vi.fn();
+    storageMocks.buildDefaultCloudPreferences.mockReturnValue(defaults);
+    storageMocks.loadCachedPreferences.mockReturnValue(null);
+    storageMocks.subscribeCachedPreferences.mockImplementation((listener: (prefs: typeof cached | null) => void) => {
+      listener(cached);
+      return unsubscribe;
+    });
+    const persistence = createTaskTimerWorkspacePreferencesPersistence(createTaskTimerWorkspaceRepository());
+
+    expect(persistence.loadCached()).toBeNull();
+    expect(persistence.loadResolved()).toEqual(defaults);
+
+    const listener = vi.fn();
+    const stop = persistence.subscribe(listener);
+    expect(listener).toHaveBeenCalledWith(cached);
+
+    stop();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("normalizes partial updates, preserves unrelated fields, and advances timestamps monotonically", () => {
+    const cached = {
+      ...buildDefaultUserPreferences(100),
+      startupModule: "friends" as const,
+      optimalProductivityDays: ["mon", "fri"] as const,
+      rewards: {
+        ...buildDefaultUserPreferences(100).rewards,
+        totalXp: 42,
+        totalXpPrecise: 42,
+      },
+    };
+    storageMocks.loadCachedPreferences.mockReturnValue(cached);
+    const persistence = createTaskTimerWorkspacePreferencesPersistence(createTaskTimerWorkspaceRepository(), {
+      now: () => 90,
+    });
+
+    const next = persistence.update({ autoFocusOnTaskLaunchEnabled: true });
+
+    expect(next).toEqual(
+      expect.objectContaining({
+        autoFocusOnTaskLaunchEnabled: true,
+        startupModule: "friends",
+        optimalProductivityDays: ["mon", "fri"],
+        updatedAtMs: 101,
+      })
+    );
+    expect(next.rewards).toEqual(expect.objectContaining({ totalXp: 42, totalXpPrecise: 42 }));
+    expect(storageMocks.saveCloudPreferences).toHaveBeenCalledTimes(1);
+    expect(storageMocks.saveCloudPreferences).toHaveBeenCalledWith(next);
   });
 });

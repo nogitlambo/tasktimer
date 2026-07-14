@@ -1,5 +1,10 @@
 import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, Task } from "./types";
-import type { UserPreferencesV1, DashboardConfig, TaskUiConfig } from "./cloudStore";
+import {
+  normalizeUserPreferencesDocument,
+  type UserPreferencesV1,
+  type DashboardConfig,
+  type TaskUiConfig,
+} from "./cloudStore";
 import {
   appendHistoryEntry,
   buildDefaultCloudPreferences,
@@ -59,6 +64,10 @@ export type TaskTimerTimerStateSnapshot = Pick<TaskTimerWorkspaceSnapshot, "task
 export type TaskTimerWorkspaceRepository = ReturnType<typeof createTaskTimerWorkspaceRepository>;
 
 export type TaskTimerWorkspaceHistoryPersistence = ReturnType<typeof createTaskTimerWorkspaceHistoryPersistence>;
+
+export type TaskTimerPreferenceMutation = Partial<Omit<UserPreferencesV1, "schemaVersion" | "updatedAtMs">>;
+
+export type TaskTimerWorkspacePreferencesPersistence = ReturnType<typeof createTaskTimerWorkspacePreferencesPersistence>;
 
 function historyRowsSignature(historyByTaskId: HistoryByTaskId) {
   return Object.keys(historyByTaskId || {})
@@ -122,6 +131,57 @@ export function createTaskTimerWorkspaceHistoryPersistence(
         repository.saveHistory(snapshot.cleanedHistoryByTaskId, { showIndicator: false });
       }
     },
+  };
+}
+
+export function createTaskTimerWorkspacePreferencesPersistence(
+  repository: Pick<
+    TaskTimerWorkspaceRepository,
+    "buildDefaultPreferences" | "loadCachedPreferences" | "savePreferences" | "subscribeCachedPreferences"
+  >,
+  options: { now?: () => number } = {}
+) {
+  const now = options.now ?? Date.now;
+
+  function normalize(prefs: UserPreferencesV1): UserPreferencesV1 {
+    return normalizeUserPreferencesDocument(prefs as unknown as Record<string, unknown>);
+  }
+
+  function loadCached(): UserPreferencesV1 | null {
+    const cached = repository.loadCachedPreferences();
+    return cached ? normalize(cached) : null;
+  }
+
+  function loadResolved(): UserPreferencesV1 {
+    return loadCached() || normalize(repository.buildDefaultPreferences());
+  }
+
+  function update(mutation: TaskTimerPreferenceMutation): UserPreferencesV1 {
+    const current = loadResolved();
+    const requestedNow = Number(now());
+    const safeNow = Number.isFinite(requestedNow) && requestedNow > 0 ? Math.floor(requestedNow) : 0;
+    const updatedAtMs = Math.max(safeNow, Number(current.updatedAtMs || 0) + 1);
+    const next = normalizeUserPreferencesDocument({
+      ...current,
+      ...mutation,
+      schemaVersion: 1,
+      updatedAtMs,
+    });
+    repository.savePreferences(next);
+    return next;
+  }
+
+  function subscribe(listener: (prefs: UserPreferencesV1 | null) => void): () => void {
+    return repository.subscribeCachedPreferences((prefs) => {
+      listener(prefs ? normalize(prefs) : null);
+    });
+  }
+
+  return {
+    loadCached,
+    loadResolved,
+    update,
+    subscribe,
   };
 }
 

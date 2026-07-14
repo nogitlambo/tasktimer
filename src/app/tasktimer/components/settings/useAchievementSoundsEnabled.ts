@@ -1,18 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "@/app/tasktimer/lib/workspaceRepository";
 
 const workspaceRepository = createTaskTimerWorkspaceRepository();
+const preferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(workspaceRepository);
 
 export function useAchievementSoundsEnabled() {
   const [achievementSoundsEnabled, setAchievementSoundsEnabled] = useState(
-    () => workspaceRepository.loadCachedPreferences()?.achievementSoundsEnabled !== false
+    () => preferencesPersistence.loadResolved().achievementSoundsEnabled !== false
   );
 
   useEffect(() => {
-    const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
-      setAchievementSoundsEnabled(prefs?.achievementSoundsEnabled !== false);
+    const unsubscribe = preferencesPersistence.subscribe((prefs) => {
+      setAchievementSoundsEnabled((prefs || preferencesPersistence.loadResolved()).achievementSoundsEnabled !== false);
     });
     return () => unsubscribe();
   }, []);

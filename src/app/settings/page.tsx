@@ -10,16 +10,20 @@ import { useTaskTimerRouteClient } from "../tasktimer/useTaskTimerRouteClient";
 import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
 import { resolveTaskTimerRouteHref } from "../tasktimer/lib/routeHref";
 import { getSettingsRouteRedirect } from "../tasktimer/lib/settingsRoute";
-import { createTaskTimerWorkspaceRepository } from "../tasktimer/lib/workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "../tasktimer/lib/workspaceRepository";
 import type { UserPreferencesV1 } from "../tasktimer/lib/cloudStore";
 import "../tasktimer/tasktimer.css";
 
 const settingsWorkspaceRepository = createTaskTimerWorkspaceRepository();
+const settingsPreferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(settingsWorkspaceRepository);
 
 export default function SettingsPage() {
   const initClient = useCallback(() => initTaskTimerSettingsClient(), []);
   const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() =>
-    settingsWorkspaceRepository.loadCachedPreferences()
+    settingsPreferencesPersistence.loadCached()
   );
   useTaskTimerRouteClient(initClient);
 
@@ -37,7 +41,7 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    return settingsWorkspaceRepository.subscribeCachedPreferences((prefs) => {
+    return settingsPreferencesPersistence.subscribe((prefs) => {
       setCachedPreferences(prefs);
     });
   }, []);

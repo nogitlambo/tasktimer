@@ -4,12 +4,14 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import {
   clearLiveSession as clearLiveSessionInCloud,
   appendHistoryEntry as appendHistoryEntryToCloud,
+  buildDefaultUserPreferences,
   ensureUserProfileIndex,
   finalizeLiveSessionHistory,
   deleteDeletedTaskMeta,
   deleteTask,
   loadUserTimerState,
   loadUserWorkspace,
+  normalizeUserPreferencesDocument,
   loadDashboard,
   loadPreferences,
   loadTaskUi,
@@ -36,13 +38,6 @@ import {
 import { syncCurrentUserPlanCache } from "./planFunctions";
 import { nowMs } from "./time";
 import { DEFAULT_REWARD_PROGRESS, normalizeRewardProgress, reconcileRewardProgressWithHistory } from "./rewards";
-import {
-  DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS,
-  DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
-  DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
-  normalizeOptimalProductivityDays,
-  normalizeTimeOfDay,
-} from "./productivityPeriod";
 import { normalizeSessionNoteAttachments } from "./sessionNoteAttachments";
 import {
   hasLocalDatePassed,
@@ -83,15 +78,6 @@ let historySaveWorkingShownAtMs = 0;
 let historySaveWorkingHideTimer: number | null = null;
 let historySaveWorkingMinVisibleMs = HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS;
 
-function loadStoredWeekStartingPreference() {
-  if (typeof window === "undefined") return "mon" as const;
-  try {
-    return normalizeDashboardWeekStart(window.localStorage.getItem(`${STORAGE_KEY}:weekStarting`));
-  } catch {
-    return "mon" as const;
-  }
-}
-
 function rewardProgressSignature(input: unknown): string {
   try {
     return JSON.stringify(normalizeRewardProgress(input));
@@ -102,23 +88,7 @@ function rewardProgressSignature(input: unknown): string {
 
 function normalizePreferenceSnapshot(prefs: CachedPreferences): CachedPreferences {
   if (!prefs) return null;
-  return {
-    ...prefs,
-    theme: "lime",
-    menuButtonStyle: "square",
-    rewards: normalizeRewardProgress((prefs as { rewards?: unknown }).rewards || DEFAULT_REWARD_PROGRESS),
-    optimalProductivityStartTime: normalizeTimeOfDay(
-      (prefs as { optimalProductivityStartTime?: unknown }).optimalProductivityStartTime,
-      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
-    ),
-    optimalProductivityEndTime: normalizeTimeOfDay(
-      (prefs as { optimalProductivityEndTime?: unknown }).optimalProductivityEndTime,
-      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-    ),
-    optimalProductivityDays: normalizeOptimalProductivityDays(
-      (prefs as { optimalProductivityDays?: unknown }).optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
-    ),
-  };
+  return normalizeUserPreferencesDocument(prefs as unknown as Record<string, unknown>);
 }
 
 function applyHistorySaveWorkingVisibility(visible: boolean): void {
@@ -250,9 +220,14 @@ let cachedPreferences: CachedPreferences = null;
 let cachedDashboard: Awaited<ReturnType<typeof loadDashboard>> = null;
 let cachedTaskUi: Awaited<ReturnType<typeof loadTaskUi>> = null;
 let hydratedUid = "";
+let cachedPreferencesUid = "";
+let preferencesSyncGeneration = 0;
 let inFlightPreferencesSync: Promise<void> | null = null;
+let inFlightPreferencesSyncUid = "";
 let queuedPreferencesSyncSnapshot: UserPreferencesV1 | null = null;
+let queuedPreferencesSyncUid = "";
 let lastSuccessfulPreferencesSyncSignature = "";
+let lastSuccessfulPreferencesSyncUid = "";
 let inFlightTaskQueueSync: Promise<void> | null = null;
 const queuedTaskUpsertsById = new Map<string, Task>();
 const queuedTaskDeletes = new Set<string>();
@@ -282,6 +257,16 @@ let lastSuccessfulTaskUiSyncSignature = "";
 const preferenceListeners = new Set<(prefs: CachedPreferences) => void>();
 const inFlightTaskSyncs = new Set<Promise<void>>();
 const LEADERBOARD_PROFILE_SYNC_DEBOUNCE_MS = 500;
+
+function resetPreferenceSyncQueueState(): void {
+  preferencesSyncGeneration += 1;
+  inFlightPreferencesSync = null;
+  inFlightPreferencesSyncUid = "";
+  queuedPreferencesSyncSnapshot = null;
+  queuedPreferencesSyncUid = "";
+  lastSuccessfulPreferencesSyncSignature = "";
+  lastSuccessfulPreferencesSyncUid = "";
+}
 
 function trackInFlightTaskSync<T>(promise: Promise<T>): Promise<T> {
   const tracked = promise.finally(() => {
@@ -396,7 +381,7 @@ function taskNeedsScheduleRepair(task: Task | null | undefined, shadowTask: Task
 function emitPreferenceChange() {
   for (const listener of preferenceListeners) {
     try {
-      listener(cachedPreferences);
+      listener(loadCachedPreferences());
     } catch {
       // ignore listener failures
     }
@@ -546,7 +531,7 @@ function loadShadowPreferences(uid?: string): CachedPreferences {
     if (!parsed || typeof parsed !== "object") return null;
     const shadowUid = String(parsed.uid || "").trim();
     const normalizedUid = String(uid || "").trim();
-    if (normalizedUid && shadowUid && shadowUid !== normalizedUid) return null;
+    if (shadowUid !== normalizedUid) return null;
     const prefs = parsed.preferences;
     if (!prefs || typeof prefs !== "object") return null;
     return normalizePreferenceSnapshot(prefs);
@@ -627,27 +612,6 @@ function saveShadowPreferences(uid: string, prefs: CachedPreferences): void {
   } catch {
     // ignore localStorage failures
   }
-}
-
-function applyCloudProductivityPreferenceFields(
-  selected: CachedPreferences,
-  cloudPreferences: CachedPreferences
-): CachedPreferences {
-  if (!selected || !cloudPreferences) return selected;
-  return {
-    ...selected,
-    optimalProductivityStartTime: normalizeTimeOfDay(
-      cloudPreferences.optimalProductivityStartTime,
-      DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME
-    ),
-    optimalProductivityEndTime: normalizeTimeOfDay(
-      cloudPreferences.optimalProductivityEndTime,
-      DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME
-    ),
-    optimalProductivityDays: normalizeOptimalProductivityDays(
-      cloudPreferences.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS
-    ),
-  };
 }
 
 function saveShadowDashboard(dashboard: Awaited<ReturnType<typeof loadDashboard>>, uid = scopedUid()): void {
@@ -1009,7 +973,9 @@ cachedTasks = cloneTasks(loadShadowTasks());
 cachedHistory = loadShadowHistory();
 cachedLiveSessions = loadShadowLiveSessions();
 cachedDeletedMeta = loadShadowDeletedMeta();
-cachedPreferences = loadShadowPreferences(scopedUid());
+const initialPreferencesUid = scopedUid();
+cachedPreferences = loadShadowPreferences(initialPreferencesUid);
+cachedPreferencesUid = cachedPreferences ? initialPreferencesUid : "";
 cachedDashboard = loadShadowDashboard(scopedUid());
 
 export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promise<void> {
@@ -1018,6 +984,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     clearScopedStorageState();
     return;
   }
+  const hydrationGeneration = preferencesSyncGeneration;
   writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
   if (!currentUserIsAnonymous()) {
@@ -1029,6 +996,7 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
     // Keep the last confirmed per-user plan when the plan refresh is temporarily unavailable.
   });
   const snapshot = await loadUserWorkspace(uid);
+  if (currentUid() !== uid || hydrationGeneration !== preferencesSyncGeneration) return;
   writeTaskTimerPlanToStorage(snapshot.plan, { uid });
   const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
   const nextHistory = snapshot.historyByTaskId || {};
@@ -1137,7 +1105,11 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
   const pendingPreferencesUid = String(pendingPreferencesSync?.uid || "").trim();
   const shadowUpdatedAtMs = Number(shadowPreferences?.updatedAtMs || 0);
   const cloudUpdatedAtMs = Number(cloudPreferences?.updatedAtMs || 0);
-  const pendingUpdatedAtMs = Number(pendingPreferences?.updatedAtMs || 0);
+  const pendingBelongsToUid = !!pendingPreferences && pendingPreferencesUid === uid;
+  const pendingCanInitializeAccount =
+    !!pendingPreferences && !pendingPreferencesUid && !cloudPreferences && !shadowPreferences;
+  const eligiblePendingPreferences = pendingBelongsToUid || pendingCanInitializeAccount ? pendingPreferences : null;
+  const pendingUpdatedAtMs = Number(eligiblePendingPreferences?.updatedAtMs || 0);
   const selectedPreferenceSource =
     pendingUpdatedAtMs > Math.max(shadowUpdatedAtMs, cloudUpdatedAtMs)
       ? "pending"
@@ -1147,27 +1119,16 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
           ? "cloud"
           : shadowPreferences
             ? "shadow"
-            : pendingPreferences
+            : eligiblePendingPreferences
               ? "pending"
               : "none";
   cachedPreferences =
     selectedPreferenceSource === "pending"
-      ? pendingPreferences
+      ? eligiblePendingPreferences
       : selectedPreferenceSource === "shadow"
         ? shadowPreferences
-        : cloudPreferences || shadowPreferences || pendingPreferences || null;
-  const hasSignedInPendingPreferences =
-    !!pendingPreferences &&
-    pendingPreferencesUid === uid &&
-    pendingUpdatedAtMs >= Math.max(shadowUpdatedAtMs, cloudUpdatedAtMs);
-  const shouldApplyCloudProductivityPreferenceFields =
-    !!cloudPreferences &&
-    (selectedPreferenceSource === "cloud" ||
-      (selectedPreferenceSource === "pending" && !hasSignedInPendingPreferences));
-  if (shouldApplyCloudProductivityPreferenceFields) {
-    cachedPreferences = applyCloudProductivityPreferenceFields(cachedPreferences, cloudPreferences);
-  }
-  const weekStarting = loadStoredWeekStartingPreference();
+         : cloudPreferences || shadowPreferences || eligiblePendingPreferences || null;
+  const weekStarting = normalizeDashboardWeekStart(cachedPreferences?.weekStarting);
   const reconciledRewards = reconcileRewardProgressWithHistory({
     currentProgress: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
     historyByTaskId: cachedHistory || {},
@@ -1184,23 +1145,22 @@ export async function hydrateStorageFromCloud(opts?: { force?: boolean }): Promi
       updatedAtMs: Date.now(),
     });
     queuedPreferencesSyncSnapshot = cachedPreferences;
+    queuedPreferencesSyncUid = uid;
     flushQueuedCloudPreferences(uid);
   }
+  cachedPreferencesUid = cachedPreferences ? uid : "";
   saveShadowPreferences(uid, cachedPreferences);
-  if (pendingPreferences && cachedPreferences && Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs) {
-    const replayPreferences = normalizePreferenceSnapshot(
-      pendingPreferencesUid === uid
-        ? pendingPreferences
-        : applyCloudProductivityPreferenceFields(pendingPreferences, cloudPreferences) || pendingPreferences
-    );
+  if (
+    selectedPreferenceSource === "pending" &&
+    eligiblePendingPreferences &&
+    cachedPreferences &&
+    Number(cachedPreferences.updatedAtMs || 0) <= pendingUpdatedAtMs
+  ) {
+    const replayPreferences = normalizePreferenceSnapshot(eligiblePendingPreferences);
     if (replayPreferences) {
-      void savePreferences(uid, replayPreferences)
-        .then(() => {
-          savePendingPreferencesSync(null);
-        })
-        .catch(() => {
-          // Keep pending preferences queued until a later successful sync.
-        });
+      queuedPreferencesSyncSnapshot = replayPreferences;
+      queuedPreferencesSyncUid = uid;
+      flushQueuedCloudPreferences(uid);
     }
   }
   cachedDashboard = snapshot.dashboard || null;
@@ -1249,10 +1209,12 @@ export async function hydrateTimerStateFromCloud(opts?: { force?: boolean }): Pr
     clearScopedStorageState();
     return;
   }
+  const hydrationGeneration = preferencesSyncGeneration;
   writeStoredActiveUid(uid);
   if (!opts?.force && hydratedUid === uid) return;
 
   const snapshot = await loadUserTimerState(uid);
+  if (currentUid() !== uid || hydrationGeneration !== preferencesSyncGeneration) return;
   const nextTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
   const nextLiveSessions = snapshot.liveSessionsByTaskId || {};
   const pendingTaskDeletes = loadPendingMap(PENDING_TASK_DELETES_KEY);
@@ -1342,9 +1304,7 @@ export async function hydrateTimerStateFromCloud(opts?: { force?: boolean }): Pr
 
 export function clearScopedStorageState(): void {
   hydratedUid = "";
-  inFlightPreferencesSync = null;
-  queuedPreferencesSyncSnapshot = null;
-  lastSuccessfulPreferencesSyncSignature = "";
+  resetPreferenceSyncQueueState();
   inFlightTaskQueueSync = null;
   queuedTaskUpsertsById.clear();
   queuedTaskDeletes.clear();
@@ -1360,6 +1320,7 @@ export function clearScopedStorageState(): void {
   cachedLiveSessions = {};
   cachedDeletedMeta = {};
   cachedPreferences = null;
+  cachedPreferencesUid = "";
   cachedDashboard = null;
   cachedTaskUi = null;
   lastQueuedDashboardSyncSignature = "";
@@ -1426,9 +1387,7 @@ export function clearScopedStorageState(): void {
 
 export function resetVolatileWorkspaceStateForAuthChange(): void {
   hydratedUid = "";
-  inFlightPreferencesSync = null;
-  queuedPreferencesSyncSnapshot = null;
-  lastSuccessfulPreferencesSyncSignature = "";
+  resetPreferenceSyncQueueState();
   inFlightTaskQueueSync = null;
   queuedTaskUpsertsById.clear();
   queuedTaskDeletes.clear();
@@ -1445,6 +1404,7 @@ export function resetVolatileWorkspaceStateForAuthChange(): void {
   cachedLiveSessions = {};
   cachedDeletedMeta = {};
   cachedPreferences = null;
+  cachedPreferencesUid = "";
   cachedDashboard = null;
   cachedTaskUi = null;
   lastQueuedDashboardSyncSignature = "";
@@ -1483,6 +1443,9 @@ export async function refreshHistoryFromCloud(): Promise<HistoryByTaskId> {
 }
 
 export function loadCachedPreferences() {
+  const uid = currentUid();
+  if (uid) return cachedPreferencesUid === uid ? cachedPreferences : null;
+  if (cachedPreferencesUid) return null;
   return cachedPreferences;
 }
 
@@ -1491,7 +1454,7 @@ export function subscribeCachedPreferences(
 ): () => void {
   preferenceListeners.add(listener);
   try {
-    listener(cachedPreferences);
+    listener(loadCachedPreferences());
   } catch {
     // ignore immediate listener failures
   }
@@ -1501,32 +1464,7 @@ export function subscribeCachedPreferences(
 }
 
 export function buildDefaultCloudPreferences() {
-  return {
-    schemaVersion: 1 as const,
-    theme: "lime" as const,
-    menuButtonStyle: "square" as const,
-    startupModule: "tasks" as const,
-    taskView: "tile" as const,
-    taskOrderBy: "custom" as const,
-    dynamicColorsEnabled: true,
-    autoFocusOnTaskLaunchEnabled: false,
-    dashboardPreviousWeekVisible: true,
-    mobilePushAlertsEnabled: false,
-    webPushAlertsEnabled: false,
-    interactionClickSoundEnabled: true,
-    achievementSoundsEnabled: true,
-    interactionHapticsEnabled: true,
-    interactionHapticsIntensity: "max" as const,
-    checkpointAlertSoundEnabled: true,
-    checkpointAlertVibrationEnabled: true,
-    checkpointAlertFlashEnabled: true,
-    checkpointAlertSoundMode: "once" as const,
-    optimalProductivityStartTime: DEFAULT_OPTIMAL_PRODUCTIVITY_START_TIME,
-    optimalProductivityEndTime: DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME,
-    optimalProductivityDays: [...DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS],
-    rewards: normalizeRewardProgress(DEFAULT_REWARD_PROGRESS),
-    updatedAtMs: Date.now(),
-  };
+  return buildDefaultUserPreferences();
 }
 
 export function loadCachedDashboard() {
@@ -1740,25 +1678,34 @@ function scheduleLeaderboardProfileSync(uidRaw?: string): void {
   }, LEADERBOARD_PROFILE_SYNC_DEBOUNCE_MS);
 }
 
-function flushQueuedCloudPreferences(uid: string): void {
+function flushQueuedCloudPreferences(uidRaw: string): void {
+  const uid = String(uidRaw || "").trim();
+  if (!uid || queuedPreferencesSyncUid !== uid) return;
   if (inFlightPreferencesSync) return;
   const nextSnapshot = normalizePreferenceSnapshot(queuedPreferencesSyncSnapshot);
   if (!nextSnapshot) return;
   const nextSignature = preferencesSyncSignature(nextSnapshot);
-  if (nextSignature === lastSuccessfulPreferencesSyncSignature) {
+  if (uid === lastSuccessfulPreferencesSyncUid && nextSignature === lastSuccessfulPreferencesSyncSignature) {
     debugLogCloudQueue("preferences", "skip", { reason: "duplicate-signature" });
     queuedPreferencesSyncSnapshot = null;
+    queuedPreferencesSyncUid = "";
+    clearPendingPreferencesSyncIfMatches(uid, nextSignature);
     return;
   }
+  const syncGeneration = preferencesSyncGeneration;
   debugLogCloudQueue("preferences", "start", { uid });
   queuedPreferencesSyncSnapshot = null;
+  queuedPreferencesSyncUid = "";
   const syncPromise = savePreferences(uid, nextSnapshot)
     .then(() => {
+      if (syncGeneration !== preferencesSyncGeneration || inFlightPreferencesSyncUid !== uid) return;
+      lastSuccessfulPreferencesSyncUid = uid;
       lastSuccessfulPreferencesSyncSignature = nextSignature;
       clearPendingPreferencesSyncIfMatches(uid, nextSignature);
       debugLogCloudQueue("preferences", "drain", { uid, status: "ok" });
     })
     .catch(() => {
+      if (syncGeneration !== preferencesSyncGeneration || inFlightPreferencesSyncUid !== uid) return;
       const pending = loadPendingPreferencesSync(uid)?.preferences || null;
       const hasNewerPending =
         !!pending &&
@@ -1768,10 +1715,19 @@ function flushQueuedCloudPreferences(uid: string): void {
       debugLogCloudQueue("preferences", "error", { uid, status: "save-pending" });
     })
     .finally(() => {
+      if (
+        syncGeneration !== preferencesSyncGeneration ||
+        inFlightPreferencesSync !== syncPromise ||
+        inFlightPreferencesSyncUid !== uid
+      ) {
+        return;
+      }
       inFlightPreferencesSync = null;
-      flushQueuedCloudPreferences(uid);
+      inFlightPreferencesSyncUid = "";
+      if (queuedPreferencesSyncUid) flushQueuedCloudPreferences(queuedPreferencesSyncUid);
     });
   inFlightPreferencesSync = syncPromise;
+  inFlightPreferencesSyncUid = uid;
 }
 
 function flushQueuedTaskSync(uid: string): void {
@@ -2071,6 +2027,7 @@ function enqueueLiveSessionClear(
 export function saveCloudPreferences(prefs: UserPreferencesV1) {
   cachedPreferences = normalizePreferenceSnapshot(prefs);
   const uid = currentUid();
+  cachedPreferencesUid = uid;
   if (uid) {
     saveShadowPreferences(uid, cachedPreferences);
     savePendingPreferencesSync(cachedPreferences, uid);
@@ -2080,6 +2037,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
   emitPreferenceChange();
   if (!uid) return;
   queuedPreferencesSyncSnapshot = cachedPreferences;
+  queuedPreferencesSyncUid = uid;
   debugLogCloudQueue("preferences", "enqueue", { uid });
   flushQueuedCloudPreferences(uid);
   scheduleLeaderboardProfileSync(uid);
@@ -2406,7 +2364,7 @@ function loadShadowDeletedMetaFromInput(meta: DeletedTaskMeta | null | undefined
 }
 
 export async function flushPendingCloudWrites(): Promise<void> {
-  const uid = currentUid() || scopedUid();
+  let uid = currentUid() || scopedUid();
   clearQueuedCloudFlushTimer("tasks");
   clearQueuedCloudFlushTimer("history");
   clearQueuedCloudFlushTimer("liveSessions");
@@ -2416,16 +2374,24 @@ export async function flushPendingCloudWrites(): Promise<void> {
     if (queuedLiveSessionFinalizesByTaskId.size || queuedLiveSessionClears.size || queuedLiveSessionUpsertsByTaskId.size) {
       flushQueuedLiveSessionSync(uid);
     }
-    if (queuedPreferencesSyncSnapshot) flushQueuedCloudPreferences(uid);
+    if (queuedPreferencesSyncSnapshot && queuedPreferencesSyncUid === uid) flushQueuedCloudPreferences(uid);
     if (queuedLeaderboardProfileSync) flushQueuedLeaderboardProfileSync(uid);
   }
   const pending: Promise<unknown>[] = [];
   if (inFlightTaskQueueSync) pending.push(inFlightTaskQueueSync);
   if (inFlightHistoryQueueSync) pending.push(inFlightHistoryQueueSync);
   if (inFlightLiveSessionQueueSync) pending.push(inFlightLiveSessionQueueSync);
-  if (inFlightPreferencesSync) pending.push(inFlightPreferencesSync);
   if (inFlightLeaderboardProfileSync) pending.push(inFlightLeaderboardProfileSync);
   if (pending.length) await Promise.allSettled(pending);
+  while (true) {
+    uid = currentUid() || scopedUid();
+    if (!inFlightPreferencesSync && queuedPreferencesSyncSnapshot && queuedPreferencesSyncUid === uid) {
+      flushQueuedCloudPreferences(uid);
+    }
+    const activePreferencesSync = inFlightPreferencesSync;
+    if (!activePreferencesSync) break;
+    await Promise.allSettled([activePreferencesSync]);
+  }
 }
 
 export function cleanupHistory(historyByTaskId: HistoryByTaskId): HistoryByTaskId {

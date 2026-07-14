@@ -1,8 +1,10 @@
 import type { LiveSessionsByTaskId, Task } from "../lib/types";
+import { localDayKey } from "../lib/history";
 import { isTaskTimeGoalStartLockedToday, markTaskTimeGoalCompleted } from "../lib/timeGoalCompletion";
 
 export type ClosedAppDailyTimeGoalCompletion = {
   taskId: string;
+  periodKey: string;
   completedAtMs: number;
   elapsedMs: number;
 };
@@ -65,9 +67,14 @@ export function getClosedAppDailyTimeGoalCompletion(
   const observedElapsedMs = elapsedMs + Math.max(0, nowValue - updatedAtMs);
   if (observedElapsedMs < goalMs) return null;
 
+  const resumedFromMs = Math.max(0, Math.floor(Number(liveSession.resumedFromMs || 0) || 0));
+  const remainingGoalMs = Math.max(0, goalMs - resumedFromMs);
+  const completedAtMs = startedAtMs + remainingGoalMs;
+
   return {
     taskId,
-    completedAtMs: startedAtMs,
+    periodKey: localDayKey(startedAtMs),
+    completedAtMs,
     elapsedMs: goalMs,
   };
 }

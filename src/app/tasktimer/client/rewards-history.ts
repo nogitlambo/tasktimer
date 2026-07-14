@@ -592,12 +592,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
   }
 
   function persistRewardProgress(rewardProgress: RewardProgressV1) {
-    const nextPrefs = {
-      ...(ctx.getCloudPreferencesCache() || ctx.buildDefaultCloudPreferences()),
-      rewards: rewardProgress,
-    };
-    ctx.setCloudPreferencesCache(nextPrefs);
-    ctx.saveCloudPreferences(nextPrefs);
+    ctx.preferencesPersistence.update({ rewards: rewardProgress });
   }
 
   function applyPendingTimeGoalXpForTask(taskIdRaw: string | null | undefined): RewardAwardResult {

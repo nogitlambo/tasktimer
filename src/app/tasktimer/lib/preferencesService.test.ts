@@ -53,19 +53,32 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
   };
 }
 
+function createPreferencesPersistence(cachedPreferences: TaskTimerStoredPreferences | null = null) {
+  let cached = cachedPreferences;
+  const update = vi.fn((mutation: Partial<TaskTimerStoredPreferences>) => {
+    const current = cached || buildDefaultPreferences();
+    cached = {
+      ...current,
+      ...mutation,
+      schemaVersion: 1,
+      updatedAtMs: Math.max(current.updatedAtMs + 1, 2),
+    };
+    return cached;
+  });
+  return {
+    loadCached: () => cached,
+    loadResolved: () => cached || buildDefaultPreferences(),
+    update,
+  };
+}
+
 function createService(overrides?: {
   cachedPreferences?: TaskTimerStoredPreferences | null;
   currentUid?: string;
 }) {
   return createTaskTimerPreferencesService({
     storageKeys,
-    repository: {
-      loadCachedPreferences: () => overrides?.cachedPreferences ?? null,
-      buildDefaultPreferences,
-      savePreferences: vi.fn(),
-    },
-    getCloudPreferencesCache: () => null,
-    setCloudPreferencesCache: vi.fn(),
+    preferencesPersistence: createPreferencesPersistence(overrides?.cachedPreferences ?? null),
     currentUid: () => overrides?.currentUid ?? "",
     syncOwnFriendshipProfile: vi.fn(),
   });
@@ -127,15 +140,25 @@ describe("createTaskTimerPreferencesService", () => {
     ]);
   });
 
-  it("uses the saved local week start when cached preferences do not contain that field", () => {
+  it("uses the saved local week start for signed-out users when cached preferences do not contain that field", () => {
+    window.localStorage.setItem(storageKeys.WEEK_STARTING_KEY, "sun");
+
+    expect(
+      createService({
+        cachedPreferences: { ...buildDefaultPreferences(), weekStarting: undefined as never },
+      }).loadWeekStarting()
+    ).toBe("sun");
+  });
+
+  it("does not use a shared local week start as a signed-in account default", () => {
     window.localStorage.setItem(storageKeys.WEEK_STARTING_KEY, "sun");
 
     expect(
       createService({
         currentUid: "uid-2",
-        cachedPreferences: { ...buildDefaultPreferences(), weekStarting: undefined },
+        cachedPreferences: { ...buildDefaultPreferences(), weekStarting: undefined as never },
       }).loadWeekStarting()
-    ).toBe("sun");
+    ).toBe("mon");
   });
 
   it("uses an explicit cached week start over shared local storage for signed-in users", () => {
@@ -208,17 +231,10 @@ describe("createTaskTimerPreferencesService", () => {
   });
 
   it("persists and reloads task order by from local storage", () => {
-    const savePreferences = vi.fn();
-    const setCloudPreferencesCache = vi.fn();
+    const preferencesPersistence = createPreferencesPersistence();
     const service = createTaskTimerPreferencesService({
       storageKeys,
-      repository: {
-        loadCachedPreferences: () => null,
-        buildDefaultPreferences,
-        savePreferences,
-      },
-      getCloudPreferencesCache: () => null,
-      setCloudPreferencesCache,
+      preferencesPersistence,
       currentUid: () => "",
       syncOwnFriendshipProfile: vi.fn(),
     });
@@ -233,8 +249,9 @@ describe("createTaskTimerPreferencesService", () => {
     expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("schedule");
     expect(localStorageMap.get(storageKeys.ACHIEVEMENT_SOUNDS_KEY)).toBe("true");
     expect(service.loadTaskOrderBy()).toBe("schedule");
-    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
-    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true }));
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(
+      expect.objectContaining({ taskOrderBy: "schedule", achievementSoundsEnabled: true })
+    );
   });
 
   it("defaults previous-week dashboard comparison to visible", () => {
@@ -257,17 +274,10 @@ describe("createTaskTimerPreferencesService", () => {
   });
 
   it("persists previous-week dashboard comparison in preference snapshots", () => {
-    const savePreferences = vi.fn();
-    const setCloudPreferencesCache = vi.fn();
+    const preferencesPersistence = createPreferencesPersistence();
     const service = createTaskTimerPreferencesService({
       storageKeys,
-      repository: {
-        loadCachedPreferences: () => null,
-        buildDefaultPreferences,
-        savePreferences,
-      },
-      getCloudPreferencesCache: () => null,
-      setCloudPreferencesCache,
+      preferencesPersistence,
       currentUid: () => "",
       syncOwnFriendshipProfile: vi.fn(),
     });
@@ -280,8 +290,9 @@ describe("createTaskTimerPreferencesService", () => {
     service.persistSnapshot(snapshot);
 
     expect(localStorageMap.get(storageKeys.DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY)).toBe("false");
-    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ dashboardPreviousWeekVisible: false }));
-    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ dashboardPreviousWeekVisible: false }));
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(
+      expect.objectContaining({ dashboardPreviousWeekVisible: false })
+    );
   });
 
   it("loads date added task order values from cloud and local storage", () => {
@@ -297,17 +308,10 @@ describe("createTaskTimerPreferencesService", () => {
   });
 
   it("persists date added task order values", () => {
-    const savePreferences = vi.fn();
-    const setCloudPreferencesCache = vi.fn();
+    const preferencesPersistence = createPreferencesPersistence();
     const service = createTaskTimerPreferencesService({
       storageKeys,
-      repository: {
-        loadCachedPreferences: () => null,
-        buildDefaultPreferences,
-        savePreferences,
-      },
-      getCloudPreferencesCache: () => null,
-      setCloudPreferencesCache,
+      preferencesPersistence,
       currentUid: () => "",
       syncOwnFriendshipProfile: vi.fn(),
     });
@@ -320,8 +324,7 @@ describe("createTaskTimerPreferencesService", () => {
     service.persistSnapshot(snapshot);
 
     expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("dateAddedDesc");
-    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
-    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
   });
 
   it("normalizes missing and legacy menu button styles to square", () => {
@@ -336,17 +339,10 @@ describe("createTaskTimerPreferencesService", () => {
   });
 
   it("does not persist legacy menu button styles from preference snapshots", () => {
-    const savePreferences = vi.fn();
-    const setCloudPreferencesCache = vi.fn();
+    const preferencesPersistence = createPreferencesPersistence();
     const service = createTaskTimerPreferencesService({
       storageKeys,
-      repository: {
-        loadCachedPreferences: () => null,
-        buildDefaultPreferences,
-        savePreferences,
-      },
-      getCloudPreferencesCache: () => null,
-      setCloudPreferencesCache,
+      preferencesPersistence,
       currentUid: () => "",
       syncOwnFriendshipProfile: vi.fn(),
     });
@@ -360,9 +356,8 @@ describe("createTaskTimerPreferencesService", () => {
 
     expect(snapshot.menuButtonStyle).toBe("square");
     expect(localStorageMap.get(storageKeys.MENU_BUTTON_STYLE_KEY)).toBe("square");
-    expect(savePreferences).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
-    expect(savePreferences).not.toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "legacy-shape" }));
-    expect(setCloudPreferencesCache).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
+    expect(preferencesPersistence.update).not.toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "legacy-shape" }));
   });
 
   it("maps legacy stored theme values to the Primary theme", () => {

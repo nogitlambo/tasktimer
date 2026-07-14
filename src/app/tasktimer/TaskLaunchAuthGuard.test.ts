@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ACCOUNT_DELETION_REDIRECT_INTENT_KEY, markAccountDeletionLandingRedirectIntent } from "./lib/accountDeletionRedirectIntent";
-import { resolveTaskLaunchAuthGuardAuthState, resolveTaskLaunchSignedOutRedirectTarget } from "./TaskLaunchAuthGuard";
+import {
+  resolveTaskLaunchAuthGuardAuthState,
+  resolveTaskLaunchPushAlertPreferences,
+  resolveTaskLaunchSignedOutRedirectTarget,
+} from "./TaskLaunchAuthGuard";
 
 describe("resolveTaskLaunchAuthGuardAuthState", () => {
   it("redirects signed-out users when auth is required", () => {
@@ -14,6 +18,77 @@ describe("resolveTaskLaunchAuthGuardAuthState", () => {
 
   it("allows authenticated users when auth is required", () => {
     expect(resolveTaskLaunchAuthGuardAuthState(true, true, false)).toBe("ready");
+  });
+});
+
+describe("resolveTaskLaunchPushAlertPreferences", () => {
+  it("uses canonical resolved defaults for a signed-in user without cached preferences", () => {
+    const readSignedOutFallback = vi.fn(() => ({
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: true,
+    }));
+
+    expect(
+      resolveTaskLaunchPushAlertPreferences({
+        isSignedIn: true,
+        cachedPreferences: null,
+        resolvedPreferences: {
+          mobilePushAlertsEnabled: false,
+          webPushAlertsEnabled: false,
+        },
+        readSignedOutFallback,
+      })
+    ).toEqual({
+      mobilePushAlertsEnabled: false,
+      webPushAlertsEnabled: false,
+    });
+    expect(readSignedOutFallback).not.toHaveBeenCalled();
+  });
+
+  it("preserves local fallback for signed-out and pre-auth preference reads", () => {
+    const readSignedOutFallback = vi.fn(() => ({
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: false,
+    }));
+
+    expect(
+      resolveTaskLaunchPushAlertPreferences({
+        isSignedIn: false,
+        cachedPreferences: null,
+        resolvedPreferences: null,
+        readSignedOutFallback,
+      })
+    ).toEqual({
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: false,
+    });
+    expect(readSignedOutFallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefers an explicit cache for signed-in users", () => {
+    const readSignedOutFallback = vi.fn(() => ({
+      mobilePushAlertsEnabled: false,
+      webPushAlertsEnabled: false,
+    }));
+
+    expect(
+      resolveTaskLaunchPushAlertPreferences({
+        isSignedIn: true,
+        cachedPreferences: {
+          mobilePushAlertsEnabled: true,
+          webPushAlertsEnabled: false,
+        },
+        resolvedPreferences: {
+          mobilePushAlertsEnabled: false,
+          webPushAlertsEnabled: false,
+        },
+        readSignedOutFallback,
+      })
+    ).toEqual({
+      mobilePushAlertsEnabled: true,
+      webPushAlertsEnabled: false,
+    });
+    expect(readSignedOutFallback).not.toHaveBeenCalled();
   });
 });
 

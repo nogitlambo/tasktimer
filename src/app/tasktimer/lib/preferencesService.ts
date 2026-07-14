@@ -13,6 +13,7 @@ import {
   type OptimalProductivityPeriod,
 } from "./productivityPeriod";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./interactionHapticsIntensity";
+import type { TaskTimerWorkspacePreferencesPersistence } from "./workspaceRepository";
 
 type TaskOrderByPreference = "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
 
@@ -62,21 +63,16 @@ type PreferencesStateSnapshot = {
   rewards: RewardProgressV1;
 };
 
-type StoredPreferences = UserPreferencesV1 & {
-  weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
-};
+type StoredPreferences = UserPreferencesV1;
 
 export type TaskTimerStoredPreferences = StoredPreferences;
 
 type PreferencesServiceOptions = {
   storageKeys: TaskTimerPreferenceStorageKeys;
-  repository: {
-    loadCachedPreferences: () => StoredPreferences | null;
-    buildDefaultPreferences: () => StoredPreferences;
-    savePreferences: (prefs: StoredPreferences) => void;
-  };
-  getCloudPreferencesCache: () => StoredPreferences | null;
-  setCloudPreferencesCache: (prefs: StoredPreferences) => void;
+  preferencesPersistence: Pick<
+    TaskTimerWorkspacePreferencesPersistence,
+    "loadCached" | "loadResolved" | "update"
+  >;
   currentUid: () => string;
   syncOwnFriendshipProfile: (uid: string, patch: { currentRankId?: string | null; totalXp?: number | null; completedTaskCount?: number | null }) => Promise<unknown>;
 };
@@ -130,16 +126,14 @@ function isDashboardWeekStart(value: unknown): value is PreferencesStateSnapshot
 }
 
 export function createTaskTimerPreferencesService(options: PreferencesServiceOptions) {
-  const { storageKeys, repository } = options;
+  const { storageKeys, preferencesPersistence } = options;
 
   function getStoredOrCachedPreferences() {
-    return (options.getCloudPreferencesCache() ||
-      repository.loadCachedPreferences() ||
-      (repository.buildDefaultPreferences() as StoredPreferences)) as StoredPreferences;
+    return preferencesPersistence.loadResolved();
   }
 
   function getStoredPreferencesWithoutDefaults() {
-    return (options.getCloudPreferencesCache() || repository.loadCachedPreferences() || null) as StoredPreferences | null;
+    return preferencesPersistence.loadCached();
   }
 
   function canUseLocalPreferenceFallback(): boolean {
@@ -182,11 +176,12 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       optimalProductivityEndTime: normalizeTimeOfDay(state.optimalProductivityEndTime, DEFAULT_OPTIMAL_PRODUCTIVITY_END_TIME),
       optimalProductivityDays: normalizeOptimalProductivityDays(state.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS),
       rewards: state.rewards,
-      updatedAtMs: Date.now(),
+      updatedAtMs: base.updatedAtMs,
     };
   }
 
   function persistSnapshot(snapshot: StoredPreferences): void {
+    snapshot = preferencesPersistence.update(snapshot);
     safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
     safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
     safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "tasks"));
@@ -237,9 +232,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY,
       normalizeOptimalProductivityDays(snapshot.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS).join(",")
     );
-    options.setCloudPreferencesCache(snapshot);
-    repository.savePreferences(snapshot);
-
     const uid = options.currentUid();
     if (!uid) return;
     void options
@@ -264,7 +256,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
     const cachedValue = getStoredPreferencesWithoutDefaults()?.weekStarting;
     if (isDashboardWeekStart(cachedValue)) return normalizeDashboardWeekStart(cachedValue);
-    const localValue = safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY);
+    const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.WEEK_STARTING_KEY) : "";
     if (isDashboardWeekStart(localValue)) return normalizeDashboardWeekStart(localValue);
     return "mon";
   }
@@ -375,7 +367,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadOptimalProductivityPeriod(): OptimalProductivityPeriod {
-    const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
+    const cached = getStoredPreferencesWithoutDefaults();
     const startTime =
       cached?.optimalProductivityStartTime ||
       (canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_START_TIME_KEY) : "") ||
@@ -391,7 +383,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   }
 
   function loadOptimalProductivityDays(): OptimalProductivityDays {
-    const cached = options.getCloudPreferencesCache() || repository.loadCachedPreferences();
+    const cached = getStoredPreferencesWithoutDefaults();
     const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY) : "";
     return normalizeOptimalProductivityDays(localValue || cached?.optimalProductivityDays || DEFAULT_OPTIMAL_PRODUCTIVITY_DAYS);
   }

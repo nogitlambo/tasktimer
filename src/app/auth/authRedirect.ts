@@ -1,9 +1,22 @@
-import { readStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
+import { resolveStartupModulePreference, startupModuleToRoute } from "../tasktimer/lib/startupModule";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "../tasktimer/lib/workspaceRepository";
+
+const authWorkspaceRepository = createTaskTimerWorkspaceRepository();
+const authPreferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(authWorkspaceRepository);
 
 export function resolveAuthSuccessRoute(redirectOnSuccess?: string | null): string {
   const explicitRoute = String(redirectOnSuccess || "").trim();
   if (explicitRoute) return explicitRoute;
-  return startupModuleToRoute(readStartupModulePreference());
+  return startupModuleToRoute(
+    resolveStartupModulePreference({
+      preferences: authPreferencesPersistence,
+      isSignedIn: true,
+      readSignedOutFallback: () => null,
+    })
+  );
 }
 
 export function shouldFallbackFromAuthSuccessRoute(currentPathname: string, targetRoute: string): boolean {

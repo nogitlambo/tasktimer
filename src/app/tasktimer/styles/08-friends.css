@@ -2055,7 +2055,7 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   gap:10px;
 }
 
-#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardPanelText{
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardPanelText{
   position:absolute;
   inset:0;
   display:flex;

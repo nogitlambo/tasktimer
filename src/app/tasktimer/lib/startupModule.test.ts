@@ -1,28 +1,19 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-const storageMocks = vi.hoisted(() => ({
-  cachedPreferences: null as { startupModule?: unknown } | null,
-  loadCachedPreferences: vi.fn(() => storageMocks.cachedPreferences),
-  STORAGE_KEY: "taskticker_tasks_v1",
-}));
+import {
+  normalizeStartupModule,
+  resolveStartupAppPagePreference,
+  resolveStartupModulePreference,
+  startupModuleToAppPage,
+  startupModuleToRoute,
+} from "./startupModule";
 
-vi.mock("./storage", () => storageMocks);
-
-import { normalizeStartupModule, readStartupModulePreference, startupModuleToAppPage, startupModuleToRoute } from "./startupModule";
-
-function stubLocalStorage(values: Record<string, string>) {
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: vi.fn((key: string) => values[key] ?? null),
-    },
-  });
+function createPreferenceSource(cached: unknown, resolved: unknown = "tasks") {
+  return {
+    loadCached: vi.fn(() => (cached == null ? null : { startupModule: cached })),
+    loadResolved: vi.fn(() => ({ startupModule: resolved })),
+  };
 }
-
-afterEach(() => {
-  storageMocks.cachedPreferences = null;
-  storageMocks.loadCachedPreferences.mockClear();
-  vi.unstubAllGlobals();
-});
 
 describe("startupModule", () => {
   it("defaults missing and invalid startup modules to Tasks", () => {
@@ -37,21 +28,50 @@ describe("startupModule", () => {
     expect(startupModuleToRoute("tasks")).toBe("/tasklaunch");
   });
 
-  it("defaults to Tasks when reading startup preference without browser storage", () => {
-    expect(readStartupModulePreference()).toBe("tasks");
+  it("defaults to Tasks when signed-out preference fallback is missing", () => {
+    expect(
+      resolveStartupModulePreference({
+        preferences: createPreferenceSource(null),
+        isSignedIn: false,
+        readSignedOutFallback: () => null,
+      })
+    ).toBe("tasks");
   });
 
   it("uses cached preferences before stale local startup module storage", () => {
-    storageMocks.cachedPreferences = { startupModule: "friends" };
-    stubLocalStorage({ "taskticker_tasks_v1:startupModule": "dashboard" });
+    const readSignedOutFallback = vi.fn(() => "dashboard");
 
-    expect(readStartupModulePreference()).toBe("friends");
+    expect(
+      resolveStartupModulePreference({
+        preferences: createPreferenceSource("friends"),
+        isSignedIn: true,
+        readSignedOutFallback,
+      })
+    ).toBe("friends");
+    expect(readSignedOutFallback).not.toHaveBeenCalled();
   });
 
-  it("uses local startup module storage when cached preferences are missing", () => {
-    stubLocalStorage({ "taskticker_tasks_v1:startupModule": "dashboard" });
+  it("uses canonical defaults instead of signed-out storage when a signed-in cache is missing", () => {
+    const readSignedOutFallback = vi.fn(() => "dashboard");
 
-    expect(readStartupModulePreference()).toBe("dashboard");
+    expect(
+      resolveStartupModulePreference({
+        preferences: createPreferenceSource(null, "tasks"),
+        isSignedIn: true,
+        readSignedOutFallback,
+      })
+    ).toBe("tasks");
+    expect(readSignedOutFallback).not.toHaveBeenCalled();
+  });
+
+  it("preserves signed-out startup module storage fallback", () => {
+    expect(
+      resolveStartupAppPagePreference({
+        preferences: createPreferenceSource(null),
+        isSignedIn: false,
+        readSignedOutFallback: () => "dashboard",
+      })
+    ).toBe("dashboard");
   });
 
   it("accepts Notes as a startup module", () => {

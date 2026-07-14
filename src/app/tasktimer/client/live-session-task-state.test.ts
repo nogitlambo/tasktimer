@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LiveSessionsByTaskId, Task } from "../lib/types";
-import { applyLiveSessionsToTasks } from "./live-session-task-state";
+import { applyLiveSessionsToTasks, applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -167,10 +167,38 @@ describe("applyLiveSessionsToTasks", () => {
       startMs: null,
       hasStarted: true,
       timeGoalCompletedDayKey: "2026-05-02",
-      timeGoalCompletedAtMs: startedAtMs,
+      timeGoalCompletedAtMs: startedAtMs + 60 * 60_000,
       timeGoalCompletedReason: "goal",
       timeGoalCompletedElapsedMs: 60 * 60_000,
     });
+  });
+
+  it("reports closed-app daily time-goal completions with the period key and crossing time", () => {
+    const startedAtMs = new Date(2026, 4, 2, 22, 0, 0).getTime();
+    const updatedAtMs = startedAtMs + 30 * 60_000;
+    const nowValue = startedAtMs + 3 * 60 * 60_000;
+    const result = applyLiveSessionsToTasksWithCompletions([task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+    })], {
+      "task-1": {
+        sessionId: "task-1:started",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs,
+        updatedAtMs,
+        elapsedMs: 30 * 60_000,
+        status: "running",
+      },
+    }, () => nowValue);
+
+    expect(result.closedAppDailyTimeGoalCompletions).toEqual([{
+      taskId: "task-1",
+      periodKey: "2026-05-02",
+      completedAtMs: startedAtMs + 60 * 60_000,
+      elapsedMs: 60 * 60_000,
+    }]);
   });
 
   it("keeps a closed-app daily time-goal live session running while it is below the goal", () => {

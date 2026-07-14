@@ -1,5 +1,4 @@
 import type { AppPage } from "../client/types";
-import { STORAGE_KEY, loadCachedPreferences } from "./storage";
 
 export type StartupModulePreference = "dashboard" | "tasks" | "notes" | "friends" | "leaderboard";
 
@@ -26,21 +25,22 @@ export function startupModuleToRoute(startupModule: StartupModulePreference): st
   return "/dashboard";
 }
 
-export function readStartupModulePreference(storageKey = `${STORAGE_KEY}:startupModule`): StartupModulePreference {
-  if (typeof window === "undefined") return "tasks";
-  const cachedPreferences = loadCachedPreferences();
-  if (cachedPreferences && typeof cachedPreferences === "object" && "startupModule" in cachedPreferences) {
-    return normalizeStartupModule((cachedPreferences as { startupModule?: unknown }).startupModule);
-  }
-  try {
-    const localValue = window.localStorage.getItem(storageKey);
-    if (localValue) return normalizeStartupModule(localValue);
-  } catch {
-    // ignore localStorage failures
-  }
-  return "tasks";
+type StartupModulePreferencesSource = {
+  loadCached: () => { startupModule?: unknown } | null;
+  loadResolved: () => { startupModule?: unknown };
+};
+
+export function resolveStartupModulePreference(input: {
+  preferences: StartupModulePreferencesSource;
+  isSignedIn: boolean;
+  readSignedOutFallback: () => unknown;
+}): StartupModulePreference {
+  const cachedPreferences = input.preferences.loadCached();
+  if (cachedPreferences) return normalizeStartupModule(cachedPreferences.startupModule);
+  if (input.isSignedIn) return normalizeStartupModule(input.preferences.loadResolved().startupModule);
+  return normalizeStartupModule(input.readSignedOutFallback());
 }
 
-export function readStartupAppPagePreference(storageKey?: string): AppPage {
-  return startupModuleToAppPage(readStartupModulePreference(storageKey));
+export function resolveStartupAppPagePreference(input: Parameters<typeof resolveStartupModulePreference>[0]): AppPage {
+  return startupModuleToAppPage(resolveStartupModulePreference(input));
 }

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   const source = readFileSync(resolve(__dirname, "TaskTimerMainAppClient.tsx"), "utf8");
   const shellCss = readFileSync(resolve(__dirname, "styles/01-shell.css"), "utf8");
+  const friendsCss = readFileSync(resolve(__dirname, "styles/08-friends.css"), "utf8");
 
   it("renders the leaderboard user summary overlay outside the app page scroller", () => {
     const frameCloseIndex = source.indexOf("</TaskTimerAppFrame>");
@@ -70,5 +71,20 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(shellCss).toContain("font-size: 15.12px !important;");
     expect(shellCss).toContain("@keyframes leaderboardLoadingDots");
     expect(shellCss).toContain("animation: leaderboardLoadingDots 1.2s steps(1, end) infinite;");
+  });
+
+  it("centers loading feedback in every leaderboard panel", () => {
+    const sharedPanelTextRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardPanelText\s*\{([\s\S]*?)\}/
+    )?.[1] ?? "";
+
+    expect(source.match(/className="leaderboardPanelText"/g)).toHaveLength(3);
+    expect(sharedPanelTextRule).not.toBe("");
+    expect(sharedPanelTextRule).toContain("position:absolute;");
+    expect(sharedPanelTextRule).toContain("inset:0;");
+    expect(sharedPanelTextRule).toContain("display:flex;");
+    expect(sharedPanelTextRule).toContain("align-items:center;");
+    expect(sharedPanelTextRule).toContain("justify-content:center;");
+    expect(sharedPanelTextRule).toContain("text-align:center;");
   });
 });

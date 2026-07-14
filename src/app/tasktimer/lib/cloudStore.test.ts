@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   applyHistoryReplaceModeToSyncPlan,
+  buildDefaultUserPreferences,
   buildScheduledTimeGoalPushPlan,
   buildCanonicalHistoryEntryDocId,
   buildIdentitySyncResponseError,
@@ -44,6 +45,49 @@ describe("buildIdentitySyncResponseError", () => {
 });
 
 describe("normalizeUserPreferencesDocument", () => {
+  it("uses the same canonical defaults as new preference snapshots", () => {
+    const nowMs = 123;
+    const normalizedLegacyDocument = normalizeUserPreferencesDocument({});
+
+    expect({ ...normalizedLegacyDocument, updatedAtMs: nowMs }).toEqual(buildDefaultUserPreferences(nowMs));
+    expect(normalizedLegacyDocument.updatedAtMs).toBe(0);
+    expect(buildDefaultUserPreferences(nowMs).autoFocusOnTaskLaunchEnabled).toBe(false);
+  });
+
+  it.each([
+    ["schemaVersion", 99, 1],
+    ["theme", "legacy-theme", "lime"],
+    ["menuButtonStyle", "legacy-shape", "square"],
+    ["weekStarting", "sun", "sun"],
+    ["startupModule", "friends", "friends"],
+    ["taskView", "list", "tile"],
+    ["taskOrderBy", "dateAddedDesc", "dateAddedDesc"],
+    ["dynamicColorsEnabled", false, false],
+    ["autoFocusOnTaskLaunchEnabled", true, true],
+    ["dashboardPreviousWeekVisible", false, false],
+    ["mobilePushAlertsEnabled", true, true],
+    ["webPushAlertsEnabled", true, true],
+    ["interactionClickSoundEnabled", false, false],
+    ["achievementSoundsEnabled", false, false],
+    ["interactionHapticsEnabled", false, false],
+    ["interactionHapticsIntensity", "low", "low"],
+    ["checkpointAlertSoundEnabled", false, false],
+    ["checkpointAlertVibrationEnabled", false, false],
+    ["checkpointAlertFlashEnabled", false, false],
+    ["checkpointAlertSoundMode", "repeat", "repeat"],
+    ["optimalProductivityStartTime", "07:30", "07:30"],
+    ["optimalProductivityEndTime", "18:45", "18:45"],
+    ["optimalProductivityDays", ["mon", "fri"], ["mon", "fri"]],
+    ["rewards", { totalXp: 42 }, expect.objectContaining({ totalXp: 42 })],
+    ["updatedAtMs", 456, 456],
+  ])("normalizes the %s preference through the canonical mapper", (field, rawValue, expectedValue) => {
+    const data = { [field]: rawValue, updatedAtMs: field === "updatedAtMs" ? rawValue : 123 };
+
+    expect(normalizeUserPreferencesDocument(data)[field as keyof ReturnType<typeof normalizeUserPreferencesDocument>]).toEqual(
+      expectedValue
+    );
+  });
+
   it("preserves the stored week start preference from cloud documents", () => {
     expect(
       normalizeUserPreferencesDocument({

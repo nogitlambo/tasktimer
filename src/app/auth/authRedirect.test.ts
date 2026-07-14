@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const startupModuleMocks = vi.hoisted(() => ({
-  readStartupModulePreference: vi.fn(() => "dashboard"),
+  resolveStartupModulePreference: vi.fn(() => "dashboard"),
   startupModuleToRoute: vi.fn((value: string) => {
     if (value === "friends") return "/friends";
     if (value === "leaderboard") return "/leaderboards";
@@ -11,36 +11,40 @@ const startupModuleMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../tasktimer/lib/startupModule", () => startupModuleMocks);
+vi.mock("../tasktimer/lib/workspaceRepository", () => ({
+  createTaskTimerWorkspaceRepository: vi.fn(() => ({})),
+  createTaskTimerWorkspacePreferencesPersistence: vi.fn(() => ({})),
+}));
 
 import { resolveAuthSuccessRoute, runAuthSuccessRedirect, shouldFallbackFromAuthSuccessRoute } from "./authRedirect";
 
 describe("resolveAuthSuccessRoute", () => {
   beforeEach(() => {
-    startupModuleMocks.readStartupModulePreference.mockClear();
+    startupModuleMocks.resolveStartupModulePreference.mockClear();
     startupModuleMocks.startupModuleToRoute.mockClear();
-    startupModuleMocks.readStartupModulePreference.mockReturnValue("dashboard");
+    startupModuleMocks.resolveStartupModulePreference.mockReturnValue("dashboard");
   });
 
   it("uses the startup module route for the login page", () => {
-    startupModuleMocks.readStartupModulePreference.mockReturnValue("friends");
+    startupModuleMocks.resolveStartupModulePreference.mockReturnValue("friends");
 
     expect(resolveAuthSuccessRoute()).toBe("/friends");
-    expect(startupModuleMocks.readStartupModulePreference).toHaveBeenCalledTimes(1);
+    expect(startupModuleMocks.resolveStartupModulePreference).toHaveBeenCalledTimes(1);
     expect(startupModuleMocks.startupModuleToRoute).toHaveBeenCalledWith("friends");
   });
 
   it("preserves an explicit friends return route", () => {
     expect(resolveAuthSuccessRoute("/friends")).toBe("/friends");
-    expect(startupModuleMocks.readStartupModulePreference).not.toHaveBeenCalled();
+    expect(startupModuleMocks.resolveStartupModulePreference).not.toHaveBeenCalled();
   });
 
   it("preserves an explicit leaderboards return route", () => {
     expect(resolveAuthSuccessRoute("/leaderboards")).toBe("/leaderboards");
-    expect(startupModuleMocks.readStartupModulePreference).not.toHaveBeenCalled();
+    expect(startupModuleMocks.resolveStartupModulePreference).not.toHaveBeenCalled();
   });
 
   it("runs the success redirect once with the resolved startup route", () => {
-    startupModuleMocks.readStartupModulePreference.mockReturnValue("tasks");
+    startupModuleMocks.resolveStartupModulePreference.mockReturnValue("tasks");
     const markRedirected = vi.fn();
     const replace = vi.fn();
 
@@ -106,9 +110,9 @@ describe("shouldFallbackFromAuthSuccessRoute", () => {
 
 describe("runAuthSuccessRedirect", () => {
   beforeEach(() => {
-    startupModuleMocks.readStartupModulePreference.mockClear();
+    startupModuleMocks.resolveStartupModulePreference.mockClear();
     startupModuleMocks.startupModuleToRoute.mockClear();
-    startupModuleMocks.readStartupModulePreference.mockReturnValue("dashboard");
+    startupModuleMocks.resolveStartupModulePreference.mockReturnValue("dashboard");
   });
 
   it("schedules a browser fallback when the login route is still active", () => {
@@ -140,7 +144,7 @@ describe("runAuthSuccessRedirect", () => {
   });
 
   it("uses the provided route resolver before replacing or falling back", () => {
-    startupModuleMocks.readStartupModulePreference.mockReturnValue("tasks");
+    startupModuleMocks.resolveStartupModulePreference.mockReturnValue("tasks");
     const markRedirected = vi.fn();
     const replace = vi.fn();
     const fallbackReplace = vi.fn();

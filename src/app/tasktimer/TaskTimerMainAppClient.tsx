@@ -89,7 +89,10 @@ import {
   getRankForXp,
   normalizeRewardProgress,
 } from "./lib/rewards";
-import { createTaskTimerWorkspaceRepository } from "./lib/workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "./lib/workspaceRepository";
 import type { UserPreferencesV1 } from "./lib/cloudStore";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
@@ -137,6 +140,7 @@ function isMobileTaskToolbarViewport() {
 }
 
 const workspaceRepository = createTaskTimerWorkspaceRepository();
+const preferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(workspaceRepository);
 
 const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
   topEntries: [],
@@ -541,12 +545,12 @@ function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => workspaceRepository.loadCachedPreferences());
+  const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => preferencesPersistence.loadCached());
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
-  const [achievementSoundsEnabled, setAchievementSoundsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().achievementSoundsEnabled !== false);
-  const [interactionHapticsEnabled, setInteractionHapticsEnabled] = useState(() => workspaceRepository.buildDefaultPreferences().interactionHapticsEnabled !== false);
+  const [achievementSoundsEnabled, setAchievementSoundsEnabled] = useState(() => preferencesPersistence.loadResolved().achievementSoundsEnabled !== false);
+  const [interactionHapticsEnabled, setInteractionHapticsEnabled] = useState(() => preferencesPersistence.loadResolved().interactionHapticsEnabled !== false);
   const [interactionHapticsIntensity, setInteractionHapticsIntensity] = useState<InteractionHapticsIntensity>(() =>
-    normalizeInteractionHapticsIntensity(workspaceRepository.buildDefaultPreferences().interactionHapticsIntensity)
+    normalizeInteractionHapticsIntensity(preferencesPersistence.loadResolved().interactionHapticsIntensity)
   );
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
   const [xpAwardFx, setXpAwardFx] = useState<{
@@ -631,7 +635,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, [initialPage, friendsAuthRuntimeKey]);
 
   useEffect(() => {
-    const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
+    const unsubscribe = preferencesPersistence.subscribe((prefs) => {
       setCachedPreferences(prefs);
       setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
       setAchievementSoundsEnabled(prefs?.achievementSoundsEnabled !== false);
@@ -950,7 +954,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setLeaderboardState("loading");
       setLeaderboardError(null);
       try {
-        const cachedPreferences = workspaceRepository.loadCachedPreferences();
+        const cachedPreferences = preferencesPersistence.loadCached();
         await saveLeaderboardProfile(
           uid,
           buildLeaderboardMetricsSnapshot({

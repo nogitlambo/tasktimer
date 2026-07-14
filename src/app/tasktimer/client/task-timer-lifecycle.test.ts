@@ -7,10 +7,13 @@ const nativeTimerNotificationMock = vi.hoisted(() => ({
 }));
 
 vi.mock("../lib/nativeTimerNotification", () => ({
-  showNativeRunningTimerNotification: vi.fn(async (input: { taskId: string; startedAtMs: number; elapsedBeforeStartMs?: number }) => {
+  showNativeRunningTimerNotification: vi.fn(async (input: { taskId: string; startedAtMs: number; elapsedBeforeStartMs?: number; timeGoalTriggerAtMs?: number }) => {
     nativeTimerNotificationMock.calls.push(
       `show-native:${input.taskId}:${input.startedAtMs}:${input.elapsedBeforeStartMs || 0}`
     );
+    if (input.timeGoalTriggerAtMs) {
+      nativeTimerNotificationMock.calls.push(`show-native-trigger:${input.taskId}:${input.timeGoalTriggerAtMs}`);
+    }
   }),
   clearNativeRunningTimerNotification: vi.fn(async (taskId: string) => {
     nativeTimerNotificationMock.calls.push(`clear-native:${taskId}`);
@@ -120,6 +123,26 @@ describe("task timer lifecycle", () => {
       "render",
       "open-focus:0",
     ]);
+  });
+
+  it("passes the daily time-goal trigger to the native running timer notification", () => {
+    const harness = createHarness({
+      nowMs: 1_000,
+      tasks: [
+        task({
+          accumulatedMs: 30_000,
+          hasStarted: true,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 1,
+        }),
+      ],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.calls).toContain("show-native:task-1:1000:30000");
+    expect(harness.calls).toContain("show-native-trigger:task-1:31000");
   });
 
   it("does not start a current-period goal-completed task when today's goal history is missing", () => {

@@ -1,18 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const startupModuleMocks = vi.hoisted(() => ({
-  startupAppPage: "tasks",
-  readStartupAppPagePreference: vi.fn(() => startupModuleMocks.startupAppPage),
-}));
-
-vi.mock("../lib/startupModule", () => startupModuleMocks);
-
 import { createTaskTimerAppShell } from "./app-shell";
+
+let startupAppPage = "tasks";
+const getStartupAppPage = vi.fn(() => startupAppPage);
 
 function createShell() {
   const context = {
     initialAppPage: "tasks",
     getCurrentAppPage: () => "tasks",
+    getStartupAppPage,
     els: {},
     runtime: { destroyed: false },
   } as unknown as Parameters<typeof createTaskTimerAppShell>[0];
@@ -33,8 +30,8 @@ function stubLocation(pathname: string, search = "", protocol = "http:") {
 }
 
 afterEach(() => {
-  startupModuleMocks.startupAppPage = "tasks";
-  startupModuleMocks.readStartupAppPagePreference.mockClear();
+  startupAppPage = "tasks";
+  getStartupAppPage.mockClear();
   vi.unstubAllGlobals();
 });
 
@@ -59,23 +56,23 @@ describe("createTaskTimerAppShell routing", () => {
   });
 
   it("resolves bare /tasklaunch through the startup module preference", () => {
-    startupModuleMocks.startupAppPage = "dashboard";
+    startupAppPage = "dashboard";
     stubLocation("/tasklaunch");
 
     expect(createShell().getInitialAppPageFromLocation()).toBe("dashboard");
-    expect(startupModuleMocks.readStartupAppPagePreference).toHaveBeenCalledTimes(1);
+    expect(getStartupAppPage).toHaveBeenCalledTimes(1);
   });
 
   it("resolves native /tasklaunch/index.html through the startup module preference", () => {
-    startupModuleMocks.startupAppPage = "friends";
+    startupAppPage = "friends";
     stubLocation("/tasklaunch/index.html", "", "file:");
 
     expect(createShell().getInitialAppPageFromLocation()).toBe("friends");
-    expect(startupModuleMocks.readStartupAppPagePreference).toHaveBeenCalledTimes(1);
+    expect(getStartupAppPage).toHaveBeenCalledTimes(1);
   });
 
   it("preserves explicit module routes as direct startup targets", () => {
-    startupModuleMocks.startupAppPage = "dashboard";
+    startupAppPage = "dashboard";
 
     stubLocation("/friends");
     expect(createShell().getInitialAppPageFromLocation()).toBe("friends");
@@ -83,6 +80,6 @@ describe("createTaskTimerAppShell routing", () => {
     stubLocation("/leaderboards");
     expect(createShell().getInitialAppPageFromLocation()).toBe("leaderboard");
 
-    expect(startupModuleMocks.readStartupAppPagePreference).not.toHaveBeenCalled();
+    expect(getStartupAppPage).not.toHaveBeenCalled();
   });
 });

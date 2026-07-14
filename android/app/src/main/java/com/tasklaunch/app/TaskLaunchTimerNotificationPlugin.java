@@ -37,6 +37,7 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
         if (taskName.isEmpty()) taskName = "Task";
         long startedAtMs = normalizeLong(call.getLong("startedAtMs"), System.currentTimeMillis());
         long elapsedBeforeStartMs = Math.max(0L, normalizeLong(call.getLong("elapsedBeforeStartMs"), 0L));
+        long timeGoalTriggerAtMs = Math.max(0L, normalizeLong(call.getLong("timeGoalTriggerAtMs"), 0L));
         int notificationId = runningNotificationId(taskId);
         int sourceNotificationId = normalizeInt(call.getInt("sourceNotificationId"), 0);
 
@@ -93,6 +94,10 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
             .addAction(0, "Close", closePendingIntent);
 
         NotificationManagerCompat.from(getContext()).notify(notificationId, builder.build());
+        TaskLaunchTimeGoalAlarmManager.cancel(getContext(), taskId);
+        if (timeGoalTriggerAtMs > 0L) {
+            TaskLaunchTimeGoalAlarmManager.schedule(getContext(), taskId, taskName, timeGoalTriggerAtMs);
+        }
         JSObject result = new JSObject();
         result.put("notificationId", notificationId);
         call.resolve(result);
@@ -109,6 +114,7 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
         if (notificationManager != null) {
             notificationManager.cancel(runningNotificationId(taskId));
         }
+        TaskLaunchTimeGoalAlarmManager.cancel(getContext(), taskId);
         call.resolve();
     }
 

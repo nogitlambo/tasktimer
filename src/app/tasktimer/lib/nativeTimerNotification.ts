@@ -8,6 +8,7 @@ type TaskLaunchTimerNotificationPlugin = {
     taskName: string;
     startedAtMs: number;
     elapsedBeforeStartMs?: number;
+    timeGoalTriggerAtMs?: number;
     sourceNotificationId?: number;
   }) => Promise<{ notificationId?: number } | void>;
   clearRunningTimer: (input: { taskId: string }) => Promise<void>;
@@ -29,7 +30,34 @@ export type NativeCheckpointAlarm = {
   vibrationEnabled: boolean;
 };
 
-const TaskLaunchTimerNotification = registerPlugin<TaskLaunchTimerNotificationPlugin>("TaskLaunchTimerNotification");
+const TASK_LAUNCH_TIMER_NOTIFICATION_PLUGIN_NAME = "TaskLaunchTimerNotification";
+const TASK_LAUNCH_TIMER_NOTIFICATION_CACHE_KEY = "__taskLaunchTimerNotificationPlugin";
+
+type TaskLaunchTimerNotificationGlobal = typeof globalThis & {
+  [TASK_LAUNCH_TIMER_NOTIFICATION_CACHE_KEY]?: TaskLaunchTimerNotificationPlugin;
+};
+
+type CapacitorPluginRegistry = {
+  Plugins?: Record<string, TaskLaunchTimerNotificationPlugin | undefined>;
+};
+
+function getTaskLaunchTimerNotificationPlugin() {
+  const globalRef = globalThis as TaskLaunchTimerNotificationGlobal;
+  if (globalRef[TASK_LAUNCH_TIMER_NOTIFICATION_CACHE_KEY]) {
+    return globalRef[TASK_LAUNCH_TIMER_NOTIFICATION_CACHE_KEY];
+  }
+
+  const existingPlugin = (Capacitor as unknown as CapacitorPluginRegistry).Plugins?.[
+    TASK_LAUNCH_TIMER_NOTIFICATION_PLUGIN_NAME
+  ];
+  const plugin = existingPlugin || registerPlugin<TaskLaunchTimerNotificationPlugin>(
+    TASK_LAUNCH_TIMER_NOTIFICATION_PLUGIN_NAME,
+  );
+  globalRef[TASK_LAUNCH_TIMER_NOTIFICATION_CACHE_KEY] = plugin;
+  return plugin;
+}
+
+const TaskLaunchTimerNotification = getTaskLaunchTimerNotificationPlugin();
 const pendingSourceNotificationIdsByTaskId = new Map<string, number>();
 let lastCheckpointAlarmSignature = "";
 const NATIVE_CHECKPOINT_DUE_GRACE_MS = 10_000;
@@ -72,15 +100,18 @@ export async function showNativeRunningTimerNotification(input: {
   taskName: string;
   startedAtMs: number;
   elapsedBeforeStartMs?: number;
+  timeGoalTriggerAtMs?: number;
 }) {
   const taskId = normalizeTaskId(input.taskId);
   if (!taskId || !isAndroidNativeRuntime()) return;
   const sourceNotificationId = consumePendingRunningTimerSourceNotification(taskId);
+  const timeGoalTriggerAtMs = Math.max(0, Math.floor(Number(input.timeGoalTriggerAtMs || 0) || 0));
   await TaskLaunchTimerNotification.showRunningTimer({
     taskId,
     taskName: String(input.taskName || "Task").trim() || "Task",
     startedAtMs: Math.max(0, Math.floor(Number(input.startedAtMs || 0) || 0)),
     elapsedBeforeStartMs: Math.max(0, Math.floor(Number(input.elapsedBeforeStartMs || 0) || 0)),
+    ...(timeGoalTriggerAtMs > 0 ? { timeGoalTriggerAtMs } : {}),
     sourceNotificationId,
   });
 }

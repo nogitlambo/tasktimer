@@ -2,9 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Task } from "./types";
 
+type FirestoreDocumentStub = {
+  exists: () => boolean;
+  data: () => Record<string, unknown> | undefined;
+  get: (key?: string) => unknown;
+};
+
 const firestoreMocks = vi.hoisted(() => ({
   setDoc: vi.fn(async () => undefined),
-  getDoc: vi.fn(async () => ({
+  getDoc: vi.fn<(ref?: { path?: string }) => Promise<FirestoreDocumentStub>>(async () => ({
     exists: () => false,
     data: () => undefined,
     get: () => undefined,
@@ -43,7 +49,7 @@ vi.mock("@/lib/firebaseClient", () => ({
   getFirebaseAuthClient: vi.fn(() => ({ currentUser: null })),
 }));
 
-const { loadUserWorkspace, saveTask } = await import("./cloudStore");
+const { buildDefaultUserPreferences, loadPreferences, loadUserWorkspace, savePreferences, saveTask } = await import("./cloudStore");
 
 function findSetDocWrite(path: string): Record<string, unknown> | undefined {
   const calls = firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>, unknown?]>;
@@ -70,7 +76,12 @@ function task(overrides: Partial<Task> = {}): Task {
 describe("saveTask Firestore planned start payloads", () => {
   beforeEach(() => {
     firestoreMocks.setDoc.mockClear();
-    firestoreMocks.getDoc.mockClear();
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDoc.mockResolvedValue({
+      exists: () => false,
+      data: () => undefined,
+      get: () => undefined,
+    });
     firestoreMocks.getDocs.mockReset();
     firestoreMocks.getDocs.mockResolvedValue({ docs: [] });
     firestoreMocks.deleteDoc.mockClear();
@@ -171,5 +182,87 @@ describe("saveTask Firestore planned start payloads", () => {
       accumulatedMs: 45_000,
       hasStarted: true,
     });
+  });
+
+  it("normalizes full-workspace and standalone preference documents identically", async () => {
+    const rawPreferences = {
+      weekStarting: "sun",
+      startupModule: "friends",
+      taskOrderBy: "dateAddedDesc",
+      dynamicColorsEnabled: false,
+      rewards: {
+        totalXp: 10,
+        completedSessions: 1,
+        awardLedger: [
+          {
+            ts: 1,
+            xp: 10,
+            baseXp: 10,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "launch",
+            dayKey: "1970-01-01",
+            sourceKey: "legacy-launch",
+          },
+        ],
+        pendingTimeGoalXp: {
+          byTaskId: {
+            "task-1": {
+              taskId: "task-1",
+              completedSessionsDelta: 1,
+              entries: [
+                {
+                  ts: 1,
+                  xp: 10,
+                  baseXp: 10,
+                  multiplier: 1,
+                  eligibleMs: 0,
+                  reason: "launch",
+                  dayKey: "1970-01-01",
+                  sourceKey: "legacy-pending-launch",
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    firestoreMocks.getDoc.mockImplementation(async (ref?: { path?: string }) => {
+      const isPreferences = ref?.path === "users/user-1/preferences/v1";
+      return {
+        exists: () => isPreferences,
+        data: () => (isPreferences ? rawPreferences : undefined),
+        get: (key?: string) =>
+          isPreferences && key ? rawPreferences[key as keyof typeof rawPreferences] : undefined,
+      };
+    });
+
+    const workspacePreferences = (await loadUserWorkspace("user-1")).preferences;
+    const standalonePreferences = await loadPreferences("user-1");
+
+    expect(workspacePreferences).toEqual(standalonePreferences);
+    expect(workspacePreferences).toEqual(
+      expect.objectContaining({
+        weekStarting: "sun",
+        autoFocusOnTaskLaunchEnabled: false,
+        updatedAtMs: 0,
+      })
+    );
+    expect(workspacePreferences?.rewards.awardLedger).toHaveLength(1);
+    expect(workspacePreferences?.rewards.pendingTimeGoalXp.byTaskId["task-1"]?.updatedAt).toBe(0);
+  });
+
+  it("persists the Adapter-owned preference mutation timestamp", async () => {
+    await savePreferences("user-1", {
+      ...buildDefaultUserPreferences(123),
+      startupModule: "dashboard",
+    });
+
+    expect(findSetDocWrite("users/user-1/preferences/v1")).toEqual(
+      expect.objectContaining({
+        startupModule: "dashboard",
+        updatedAtMs: 123,
+      })
+    );
   });
 });

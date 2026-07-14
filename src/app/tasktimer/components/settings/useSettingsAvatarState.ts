@@ -13,7 +13,10 @@ import {
   normalizeRewardProgress,
 } from "@/app/tasktimer/lib/rewards";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
-import { createTaskTimerWorkspaceRepository } from "@/app/tasktimer/lib/workspaceRepository";
+import {
+  createTaskTimerWorkspacePreferencesPersistence,
+  createTaskTimerWorkspaceRepository,
+} from "@/app/tasktimer/lib/workspaceRepository";
 import {
   appendStoredCustomAvatarUpload,
   customAvatarIdForUid,
@@ -38,6 +41,7 @@ import { saveRewardProgressToPreferences } from "./settingsPreferencesBridge";
 import type { SettingsAvatarGroup, SettingsAvatarViewModel } from "./types";
 
 const workspaceRepository = createTaskTimerWorkspaceRepository();
+const preferencesPersistence = createTaskTimerWorkspacePreferencesPersistence(workspaceRepository);
 
 export function buildSettingsAvatarOptions({
   authUserUid,
@@ -115,8 +119,8 @@ export function useSettingsAvatarState({
   }, []);
 
   useEffect(() => {
-    const unsubscribe = workspaceRepository.subscribeCachedPreferences((prefs) => {
-      setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+    const unsubscribe = preferencesPersistence.subscribe((prefs) => {
+      setRewardProgress(normalizeRewardProgress((prefs || preferencesPersistence.loadResolved()).rewards));
     });
     return () => unsubscribe();
   }, []);

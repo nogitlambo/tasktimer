@@ -98,6 +98,14 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
     options.render();
   }
 
+  function getDailyTimeGoalTriggerAtMs(task: Task, startMs: number, elapsedBeforeStartMs: number) {
+    const goalMinutes = Number(task.timeGoalMinutes || 0);
+    if (!(task.timeGoalEnabled && task.timeGoalPeriod === "day" && goalMinutes > 0)) return 0;
+    const goalMs = Math.max(0, Math.round(goalMinutes * 60_000));
+    const remainingMs = goalMs - Math.max(0, Math.floor(Number(elapsedBeforeStartMs || 0) || 0));
+    return remainingMs > 0 ? startMs + remainingMs : 0;
+  }
+
   function startTaskTimer(task: Task, index: number, startMs: number) {
     const taskId = String(task.id || "");
     const previousElapsedMs = getTaskResumeBaselineMs(task);
@@ -116,6 +124,7 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       taskName: String(task.name || "Task"),
       startedAtMs: startMs,
       elapsedBeforeStartMs: previousElapsedMs,
+      timeGoalTriggerAtMs: getDailyTimeGoalTriggerAtMs(task, startMs, previousElapsedMs),
     }).catch(() => {});
     options.resetCheckpointAlertTracking(task.id);
     persistTaskTimerCommand(taskId);

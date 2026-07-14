@@ -233,16 +233,19 @@ export function isAdminAccountEmail(email: unknown): boolean {
   return String(email || "").trim().toLowerCase() === ADMIN_ACCOUNT_EMAIL;
 }
 
-export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
+export function normalizeRewardProgress(input: unknown, options: { nowMs?: number } = {}): RewardProgressV1 {
   if (!input || typeof input !== "object") return { ...DEFAULT_REWARD_PROGRESS };
   const obj = input as Record<string, unknown>;
+  const requestedNowMs = Number(options.nowMs);
+  const normalizationNowMs =
+    Number.isFinite(requestedNowMs) && requestedNowMs >= 0 ? Math.floor(requestedNowMs) : Date.now();
   const totalXpPreciseRaw = Number(obj.totalXpPrecise ?? obj.totalXp ?? 0);
   const totalXpPrecise = Number.isFinite(totalXpPreciseRaw) ? Math.max(0, totalXpPreciseRaw) : 0;
   const totalXp = Math.max(0, Math.floor(totalXpPrecise));
   const completedSessions = Math.max(0, Math.floor(Number(obj.completedSessions || 0) || 0));
   const lastAwardedAtRaw = Number(obj.lastAwardedAt || 0);
   const lastAwardedAt = Number.isFinite(lastAwardedAtRaw) && lastAwardedAtRaw > 0 ? Math.floor(lastAwardedAtRaw) : null;
-  const awardLedger = normalizeAwardLedger(obj.awardLedger);
+  const awardLedger = normalizeAwardLedger(obj.awardLedger, normalizationNowMs);
   const resolvedRank = getRankForXp(totalXp);
   const rawRankId = String(obj.currentRankId || "").trim();
   return {
@@ -251,12 +254,12 @@ export function normalizeRewardProgress(input: unknown): RewardProgressV1 {
     completedSessions,
     lastAwardedAt,
     awardLedger,
-    pendingTimeGoalXp: normalizePendingTimeGoalXpState(obj.pendingTimeGoalXp),
+    pendingTimeGoalXp: normalizePendingTimeGoalXpState(obj.pendingTimeGoalXp, normalizationNowMs),
     currentRankId: rawRankId && rawRankId === resolvedRank.id ? rawRankId : resolvedRank.id,
   };
 }
 
-function normalizePendingTimeGoalXpState(input: unknown): PendingTimeGoalXpState {
+function normalizePendingTimeGoalXpState(input: unknown, normalizationNowMs = Date.now()): PendingTimeGoalXpState {
   if (!input || typeof input !== "object") return { byTaskId: {} };
   const obj = input as Record<string, unknown>;
   const source = obj.byTaskId && typeof obj.byTaskId === "object" ? (obj.byTaskId as Record<string, unknown>) : obj;
@@ -266,11 +269,11 @@ function normalizePendingTimeGoalXpState(input: unknown): PendingTimeGoalXpState
     const award = value as Record<string, unknown>;
     const taskId = String(award.taskId || rawTaskId || "").trim();
     if (!taskId) return;
-    const entries = normalizeAwardLedger(award.entries);
+    const entries = normalizeAwardLedger(award.entries, normalizationNowMs);
     const completedSessionsDelta = Math.max(0, Math.floor(Number(award.completedSessionsDelta || 0) || 0));
     if (!entries.length && completedSessionsDelta <= 0) return;
     const updatedAtRaw = Number(award.updatedAt || 0);
-    const updatedAt = Number.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.floor(updatedAtRaw) : Date.now();
+    const updatedAt = Number.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.floor(updatedAtRaw) : normalizationNowMs;
     byTaskId[taskId] = {
       taskId,
       updatedAt,
@@ -281,9 +284,9 @@ function normalizePendingTimeGoalXpState(input: unknown): PendingTimeGoalXpState
   return { byTaskId };
 }
 
-function normalizeAwardLedger(input: unknown): RewardLedgerEntry[] {
+function normalizeAwardLedger(input: unknown, normalizationNowMs = Date.now()): RewardLedgerEntry[] {
   if (!Array.isArray(input)) return [];
-  const minTs = Date.now() - LEDGER_RETENTION_DAYS * DAY_MS;
+  const minTs = normalizationNowMs - LEDGER_RETENTION_DAYS * DAY_MS;
   return input
     .map((entry, index) => {
       if (!entry || typeof entry !== "object") return null;

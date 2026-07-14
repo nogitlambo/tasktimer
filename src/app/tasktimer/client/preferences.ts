@@ -12,7 +12,7 @@ import {
   normalizeOptimalProductivityDays,
   normalizeTimeOfDay,
 } from "../lib/productivityPeriod";
-import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } from "../lib/preferencesService";
+import { createTaskTimerPreferencesService } from "../lib/preferencesService";
 import { SCHEDULE_DAY_ORDER } from "../lib/schedule-placement";
 import { normalizeStartupModule } from "../lib/startupModule";
 import { syncTaskTimerPushNotificationsEnabled } from "../lib/pushNotifications";
@@ -84,15 +84,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   let checkpointAlarmPermissionSyncSeq = 0;
   const preferenceService = createTaskTimerPreferencesService({
     storageKeys: ctx.storageKeys,
-    repository: {
-      loadCachedPreferences: () => (ctx.loadCachedPreferences() || null) as TaskTimerStoredPreferences | null,
-      buildDefaultPreferences: () => ctx.buildDefaultCloudPreferences() as TaskTimerStoredPreferences,
-      savePreferences: (prefs) => ctx.saveCloudPreferences(prefs),
-    },
-    getCloudPreferencesCache: () => (ctx.getCloudPreferencesCache() || null) as TaskTimerStoredPreferences | null,
-    setCloudPreferencesCache: (prefs) => {
-      ctx.setCloudPreferencesCache(prefs);
-    },
+    preferencesPersistence: ctx.preferencesPersistence,
     currentUid: () => String(ctx.currentUid() || ""),
     syncOwnFriendshipProfile: (uid, patch) => ctx.syncOwnFriendshipProfile(uid, patch),
   });
@@ -174,7 +166,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       optimalProductivityStartTime: ctx.getOptimalProductivityStartTime(),
       optimalProductivityEndTime: ctx.getOptimalProductivityEndTime(),
       optimalProductivityDays: ctx.getOptimalProductivityDays(),
-      rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()) as ReturnType<typeof buildCloudPreferencesSnapshot>["rewards"],
+      rewards: ctx.normalizeRewardProgress(ctx.getRewardProgress()),
     });
   }
 

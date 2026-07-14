@@ -8,6 +8,7 @@ import { fillBackgroundForPct, historyEntryColorForTaskMs, sessionColorForTaskMs
 import { normalizeHistoryTimestampMs, localDayKey } from "./lib/history";
 import { formatMainTaskElapsed, formatMainTaskElapsedHtml } from "./lib/tasks";
 import { AVATAR_CATALOG } from "./lib/avatarCatalog";
+import { resolveStartupAppPagePreference } from "./lib/startupModule";
 import {
   deleteSharedTaskSummariesForTask,
   syncOwnFriendshipProfile,
@@ -19,7 +20,7 @@ import {
 import {
   STORAGE_KEY,
 } from "./lib/storage";
-import type { DashboardConfig, TaskUiConfig, UserPreferencesV1 } from "./lib/cloudStore";
+import type { DashboardConfig, TaskUiConfig } from "./lib/cloudStore";
 import {
   DEFAULT_REWARD_PROGRESS,
   normalizeRewardProgress,
@@ -182,6 +183,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
     },
     derivedKeys: {
       TIME_GOAL_PENDING_FLOW_KEY,
+      TIME_GOAL_PENDING_COMPLETIONS_KEY,
       TIME_GOAL_COMPLETION_ACK_KEY,
       PENDING_PUSH_TASK_ID_KEY,
       PENDING_PUSH_ACTION_KEY,
@@ -288,10 +290,13 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   let rewardsHistoryApi: ReturnType<typeof createTaskTimerRewardsHistory> | null = null;
   let runtimeActions = null as unknown as ReturnType<typeof createTaskTimerRuntimeActions>;
   let unsubscribeCheckpointAlertMuteSignals: (() => void) | null = null;
-  const unsubscribeCachedPreferences = workspaceRepository.subscribeCachedPreferences((prefs) => {
+  const unsubscribeCachedPreferences = workspaceAdapters.preferencesPersistence.subscribe((prefs) => {
     cacheRuntimeState.set("cloudPreferencesCache", prefs);
     rewardState.set("cloudPreferencesCache", prefs);
-    rewardState.set("rewardProgress", normalizeRewardProgress((prefs || workspaceRepository.buildDefaultPreferences()).rewards || DEFAULT_REWARD_PROGRESS));
+    rewardState.set(
+      "rewardProgress",
+      normalizeRewardProgress((prefs || workspaceAdapters.preferencesPersistence.loadResolved()).rewards || DEFAULT_REWARD_PROGRESS)
+    );
   });
   const avatarSrcById = buildFriendAvatarSrcMap(AVATAR_CATALOG);
   const defaultFriendAvatarSrc = "/avatars/toons/toon-01-cap-glasses.webp";
@@ -1011,7 +1016,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       on,
       runtime,
       sharedTasks: sharedTaskApi,
-      storageKeys: { FOCUS_SESSION_NOTES_KEY, TIME_GOAL_PENDING_FLOW_KEY, TIME_GOAL_COMPLETION_ACK_KEY, FOCUS_DND_STORAGE_KEY: STORAGE_KEY },
+      storageKeys: { FOCUS_SESSION_NOTES_KEY, TIME_GOAL_PENDING_FLOW_KEY, TIME_GOAL_PENDING_COMPLETIONS_KEY, TIME_GOAL_COMPLETION_ACK_KEY, FOCUS_DND_STORAGE_KEY: STORAGE_KEY },
       getTasks: taskCollectionBindings.getTasks,
       appRuntimeState,
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
@@ -1123,6 +1128,18 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       navStackKey: NAV_STACK_KEY,
       navStackMax: NAV_STACK_MAX,
       nativeBackDebounceMs: NATIVE_BACK_DEBOUNCE_MS,
+      getStartupAppPage: () =>
+        resolveStartupAppPagePreference({
+          preferences: workspaceAdapters.preferencesPersistence,
+          isSignedIn: !!getCurrentTaskTimerUid(),
+          readSignedOutFallback: () => {
+            try {
+              return window.localStorage.getItem(STARTUP_MODULE_KEY);
+            } catch {
+              return null;
+            }
+          },
+        }),
       appRuntimeState,
       syncDashboardMenuFlipUi: () => syncDashboardMenuFlipUi(),
       getNavStackMemory: () => cacheRuntimeState.get("navStackMemory"),
@@ -1183,10 +1200,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       preferencesState,
       rewardState,
       focusBindings,
-      setCloudPreferencesCache: (value: UserPreferencesV1 | null) => {
-        rewardState.set("cloudPreferencesCache", value ?? null);
-        cacheRuntimeState.set("cloudPreferencesCache", value ?? null);
-      },
+      preferencesPersistence: workspaceAdapters.preferencesPersistence,
       getCurrentPlan,
       hasEntitlement,
       currentUid: () => getCurrentTaskTimerUid(),
@@ -1203,8 +1217,6 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       clearLiveSession: (taskId, opts) => workspaceRepository.clearLiveSession(taskId, opts),
       saveHistoryLocally: workspaceRepository.saveHistoryLocally,
       saveHistory: workspaceRepository.saveHistory,
-      buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
-      saveCloudPreferences: (prefs) => workspaceRepository.savePreferences(prefs),
       syncSharedTaskSummariesForTask,
       syncOwnFriendshipProfile: syncOwnFriendshipProfileForAccountUser,
     })
@@ -1427,16 +1439,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       defaultModeColors: DEFAULT_MODE_COLORS,
       normalizeRewardProgress,
       getCurrentUid: () => getCurrentTaskTimerUid(),
-      loadCachedPreferences: workspaceRepository.loadCachedPreferences,
       loadCachedTaskUi: workspaceRepository.loadCachedTaskUi,
-      getCloudPreferencesCache: () => cacheRuntimeState.get("cloudPreferencesCache"),
-      setCloudPreferencesCache: (value) => {
-        cacheRuntimeState.set("cloudPreferencesCache", value ?? null);
-      },
-      buildDefaultCloudPreferences: () => workspaceRepository.buildDefaultPreferences(),
-      saveCloudPreferences: (prefs) => {
-        workspaceRepository.savePreferences(prefs as UserPreferencesV1);
-      },
+      preferencesPersistence: workspaceAdapters.preferencesPersistence,
       syncOwnFriendshipProfile: syncOwnFriendshipProfileForAccountUser,
       saveDashboardWidgetState: saveDashboardWidgetStateApi,
       getDashboardCardSizeMapForStorage: getDashboardCardSizeMapForStorageApi,
@@ -1575,6 +1579,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   persistenceApi = createTaskTimerPersistence(
     createTaskTimerPersistenceContext({
       focusSessionNotesKey: FOCUS_SESSION_NOTES_KEY,
+      pendingTimeGoalCompletionsKey: TIME_GOAL_PENDING_COMPLETIONS_KEY,
       pendingTaskJumpKey: PENDING_PUSH_TASK_ID_KEY,
       workspaceRepository,
       historyPersistence: workspaceAdapters.historyPersistence,
