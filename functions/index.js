@@ -524,7 +524,9 @@ async function loadUserPushPreferences(uid) {
   if (!prefSnap.exists) {
     return {mobilePushAlertsEnabled: true, webPushAlertsEnabled: true};
   }
-  const mobilePushAlertsEnabled = prefSnap.get("mobilePushAlertsEnabled") === true;
+  const rawMobilePushAlertsEnabled = prefSnap.get("mobilePushAlertsEnabled");
+  const mobilePushAlertsEnabled =
+    typeof rawMobilePushAlertsEnabled === "boolean" ? rawMobilePushAlertsEnabled === true : true;
   const webPushAlertsEnabled =
     typeof prefSnap.get("webPushAlertsEnabled") === "boolean"
       ? prefSnap.get("webPushAlertsEnabled") === true
