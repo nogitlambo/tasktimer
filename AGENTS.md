@@ -162,8 +162,10 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 ### Persistent keys (derived from storage/client modules)
 - `ACHIEVEMENT_SOUNDS_KEY = `${storageKey}:achievementSoundsEnabled``
 - `AUTO_FOCUS_ON_TASK_LAUNCH_KEY = `${storageKey}:autoFocusOnTaskLaunchEnabled``
+- `CHECKPOINT_ALERT_FLASH_KEY = `${storageKey}:checkpointAlertFlashEnabled``
 - `CHECKPOINT_ALERT_SOUND_KEY = `${storageKey}:checkpointAlertSoundEnabled``
-- `CHECKPOINT_ALERT_TOAST_KEY = `${storageKey}:checkpointAlertToastEnabled``
+- `CHECKPOINT_ALERT_VIBRATION_KEY = `${storageKey}:checkpointAlertVibrationEnabled``
+- `DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY = `${storageKey}:dashboardPreviousWeekVisible``
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
 - `INTERACTION_CLICK_SOUND_KEY = `${storageKey}:interactionClickSoundEnabled``
@@ -185,20 +187,20 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 
 ### Data hooks (derived from client/components)
 - `data-action="archive"`
-- `data-action="closeCheckpointToast"`
 - `data-action="copyCloudSyncLogId"`
 - `data-action="delete"`
 - `data-action="dismissCloudSyncNotice"`
 - `data-action="edit"`
 - `data-action="editName"`
 - `data-action="exportTask"`
+- `data-action="fastForwardCheckpoint"`
 - `data-action="focus"`
 - `data-action="history"`
-- `data-action="jumpToCheckpointTask"`
 - `data-action="manualEntry"`
 - `data-action="muteCheckpointAlert"`
 - `data-action="openAddTask"`
 - `data-action="reset"`
+- `data-action="rewindCheckpoint"`
 - `data-action="rmMs"`
 - `data-action="shareTask"`
 - `data-action="start"`

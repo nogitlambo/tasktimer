@@ -6,6 +6,8 @@ import { renderHistoryManagerHtml, resolveHistoryManagerTaskIdFilter } from "./h
 import {
   buildHistoryManagerRowKey,
   groupSelectedHistoryRowsByTask,
+  removeUniqueHistoryManagerRow,
+  resolveHistoryManagerRowTarget,
 } from "./history-manager-shared";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
 import { isRichNoteFileInputTarget } from "./rich-session-notes";
@@ -215,7 +217,15 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     ctx.downloadCsvFile(filename, rows.join("\n"));
   }
 
-  function openHistoryManagerNoteOverlay(entry: { ts: unknown; ms: unknown; name: unknown; note?: unknown; taskId?: unknown }) {
+  function openHistoryManagerNoteOverlay(entry: {
+    ts: unknown;
+    ms: unknown;
+    name: unknown;
+    note?: unknown;
+    taskId?: unknown;
+    historyTargetKey?: unknown;
+    historyMutationAllowed?: unknown;
+  }) {
     const taskId = String(entry?.taskId || "").trim();
     historyEntrySummaryInteraction.openSummary(taskId, [entry]);
   }
@@ -244,6 +254,18 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const historyByTaskId = ctx.loadHistory();
       return Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
     },
+    resolveEntryTarget: (taskId, historyTargetKey) => {
+      const historyByTaskId = ctx.loadHistory();
+      const entries = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+      const resolution = resolveHistoryManagerRowTarget(entries, historyTargetKey);
+      if (resolution.kind !== "resolved" || resolution.entry.isLiveSession) return null;
+      return {
+        ...resolution.entry,
+        taskId,
+        historyTargetKey,
+        historyMutationAllowed: true,
+      };
+    },
     getRewardProgress: () => ctx.getRewardProgress(),
     openOverlay: ctx.openOverlay,
     closeOverlay: ctx.closeOverlay,
@@ -256,6 +278,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const drafts = historyEntrySummaryInteraction.getEditedNoteDrafts();
     const fallbackDraft = {
       taskId: String(overlay.dataset.historyEntryTaskId || "").trim(),
+      historyTargetKey: String(overlay.dataset.historyEntryTargetKey || ""),
       ts: Math.floor(Number(overlay.dataset.historyEntryTs || 0)),
       ms: Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0))),
       name: String(overlay.dataset.historyEntryName || "").trim(),
@@ -270,20 +293,21 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     const touchedTaskIds = new Set<string>();
     validDrafts.forEach((draft) => {
       const original = Array.isArray(nextHistory[draft.taskId]) ? nextHistory[draft.taskId] : [];
-      const pos = original.findIndex(
-        (entry: any) =>
-          Number(entry?.ts) === draft.ts &&
-          Number(entry?.ms) === draft.ms &&
-          String(entry?.name || "").trim() === draft.name
-      );
-      if (pos < 0) return;
+      const targetKey = String(draft.historyTargetKey || "") || buildHistoryManagerRowKey(draft);
+      const resolution = resolveHistoryManagerRowTarget(original, targetKey);
+      if (resolution.kind !== "resolved" || resolution.entry.isLiveSession) return;
+      const pos = resolution.index;
       const nextEntry = { ...original[pos], taskId: draft.taskId };
       if (draft.note) nextEntry.note = draft.note;
       else delete nextEntry.note;
       const nextTaskHistory = original.slice();
       nextTaskHistory[pos] = nextEntry;
       nextHistory[draft.taskId] = nextTaskHistory;
-      updatedEntries.push(nextEntry);
+      updatedEntries.push({
+        ...nextEntry,
+        historyTargetKey: targetKey,
+        historyMutationAllowed: true,
+      });
       touchedTaskIds.add(draft.taskId);
     });
     if (!updatedEntries.length) return;
@@ -293,8 +317,8 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     touchedTaskIds.forEach((taskId) => {
       void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
     });
-    if (options?.reopen !== false && validDrafts[0]?.taskId) {
-      historyEntrySummaryInteraction.openSummary(validDrafts[0].taskId, updatedEntries);
+    if (options?.reopen !== false && updatedEntries[0]?.taskId) {
+      historyEntrySummaryInteraction.openSummary(updatedEntries[0].taskId, updatedEntries);
     }
   }
 
@@ -540,6 +564,60 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
     syncHistoryManagerBulkUi();
   }
 
+  function confirmHistoryManagerEntryDelete(
+    taskIdRaw: unknown,
+    rowKeyRaw: unknown,
+    options?: { closeSummaryOnSuccess?: boolean }
+  ) {
+    const taskId = String(taskIdRaw || "").trim();
+    const rowKey = String(rowKeyRaw || "");
+    if (!taskId || !rowKey) return false;
+
+    const initialHistory = ctx.loadHistory() || {};
+    const initialEntries = Array.isArray(initialHistory[taskId]) ? initialHistory[taskId] : [];
+    const initialResolution = resolveHistoryManagerRowTarget(initialEntries, rowKey);
+    if (initialResolution.kind !== "resolved" || initialResolution.entry.isLiveSession) return false;
+
+    ctx.confirm("Delete Log Entry", "Delete this entry?", {
+      okLabel: "Delete",
+      cancelLabel: "Cancel",
+      onOk: async () => {
+        const historyByTaskId = { ...(ctx.loadHistory() || {}) };
+        const currentEntries = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+        const removal = removeUniqueHistoryManagerRow(currentEntries, rowKey);
+        if (!removal) {
+          renderHistoryManager();
+          ctx.closeConfirm();
+          return;
+        }
+
+        historyByTaskId[taskId] = removal.entries as any[];
+        ctx.setHistoryByTaskId(historyByTaskId);
+        const completionChanged = clearStaleCompletionForHistoryTasks([taskId], historyByTaskId);
+        await ctx.saveHistoryAndWait(historyByTaskId, { allowDestructiveReplace: true });
+        void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+
+        const deletedTaskMeta = ctx.getDeletedTaskMeta();
+        if (removal.entries.length === 0 && deletedTaskMeta && (deletedTaskMeta as any)[taskId]) {
+          delete (deletedTaskMeta as any)[taskId];
+          ctx.setDeletedTaskMeta(deletedTaskMeta);
+          ctx.saveDeletedMeta(deletedTaskMeta);
+        }
+        if (completionChanged) ctx.render();
+        ctx.renderDashboardWidgets();
+        renderHistoryManager();
+        if (options?.closeSummaryOnSuccess) {
+          historyEntrySummaryInteraction.clearTarget();
+          ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+        }
+        ctx.closeConfirm();
+      },
+      onCancel: () => ctx.closeConfirm(),
+    });
+    playDeleteAlertAudio();
+    return true;
+  }
+
   function registerHistoryManagerEvents() {
     ctx.on(els.historyManagerBtn, "click", () => {
       ctx.navigateToAppRoute("/history-manager");
@@ -576,10 +654,22 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       const hmBulkSelectedRows = ctx.getHmBulkSelectedRows();
       const selected = Array.from(hmBulkSelectedRows);
       if (!selected.length) return;
-      playDeleteAlertAudio();
-      const byTask = groupSelectedHistoryRowsByTask(selected);
+      const selectedByTask = groupSelectedHistoryRowsByTask(selected);
+      const initialHistoryByTaskId = ctx.loadHistory() || {};
+      const byTask: Record<string, Set<string>> = {};
+      Object.keys(selectedByTask).forEach((taskId) => {
+        const entries = Array.isArray(initialHistoryByTaskId[taskId]) ? initialHistoryByTaskId[taskId] : [];
+        selectedByTask[taskId].forEach((rowKey) => {
+          const resolution = resolveHistoryManagerRowTarget(entries, rowKey);
+          if (resolution.kind !== "resolved" || resolution.entry.isLiveSession) return;
+          if (!byTask[taskId]) byTask[taskId] = new Set<string>();
+          byTask[taskId].add(rowKey);
+        });
+      });
       const taskCount = Object.keys(byTask).length;
-      const entryCount = selected.length;
+      const entryCount = Object.values(byTask).reduce((count, keys) => count + keys.size, 0);
+      if (!entryCount) return;
+      playDeleteAlertAudio();
       ctx.confirm(
         "Delete Selected History",
         `${entryCount} entr${entryCount === 1 ? "y" : "ies"} across ${taskCount} task${
@@ -589,17 +679,20 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
           okLabel: "Delete",
           cancelLabel: "Cancel",
           onOk: () => {
-            const historyByTaskId = ctx.loadHistory();
+            const historyByTaskId = { ...(ctx.loadHistory() || {}) };
+            const deletedTaskIds = new Set<string>();
             Object.keys(byTask).forEach((taskId) => {
               const keys = byTask[taskId];
-              const arr = (historyByTaskId[taskId] || []).slice();
-              const next: any[] = [];
-              arr.forEach((e: any) => {
-                const rowKey = `${e.ts}|${e.ms}|${String(e.name || "")}`;
-                if (keys.has(rowKey)) keys.delete(rowKey);
-                else next.push(e);
+              const original = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
+              let next = original.slice();
+              keys.forEach((rowKey) => {
+                const removal = removeUniqueHistoryManagerRow(next, rowKey);
+                if (!removal) return;
+                next = removal.entries as any[];
               });
+              if (next.length === original.length) return;
               historyByTaskId[taskId] = next;
+              deletedTaskIds.add(taskId);
               const deletedTaskMeta = ctx.getDeletedTaskMeta();
               if (next.length === 0 && deletedTaskMeta && (deletedTaskMeta as any)[taskId]) {
                 delete (deletedTaskMeta as any)[taskId];
@@ -607,10 +700,16 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
                 ctx.saveDeletedMeta(deletedTaskMeta);
               }
             });
+            const affectedTaskIds = Array.from(deletedTaskIds);
+            if (!affectedTaskIds.length) {
+              renderHistoryManager();
+              ctx.closeConfirm();
+              return;
+            }
             ctx.setHistoryByTaskId(historyByTaskId);
-            const completionChanged = clearStaleCompletionForHistoryTasks(Object.keys(byTask), historyByTaskId);
+            const completionChanged = clearStaleCompletionForHistoryTasks(affectedTaskIds, historyByTaskId);
             ctx.saveHistory(historyByTaskId, { allowDestructiveReplace: true });
-            void ctx.syncSharedTaskSummariesForTasks(Object.keys(byTask));
+            void ctx.syncSharedTaskSummariesForTasks(affectedTaskIds);
             ctx.setHmBulkSelectedRows(new Set<string>());
             renderHistoryManager();
             if (completionChanged) ctx.render();
@@ -620,7 +719,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
               .refreshHistoryFromCloud()
               .then((nextHistory) => {
                 ctx.setHistoryByTaskId(nextHistory || {});
-                const refreshedCompletionChanged = clearStaleCompletionForHistoryTasks(Object.keys(byTask), nextHistory || {});
+                const refreshedCompletionChanged = clearStaleCompletionForHistoryTasks(affectedTaskIds, nextHistory || {});
                 renderHistoryManager();
                 if (refreshedCompletionChanged) ctx.render();
                 ctx.renderDashboardWidgets();
@@ -686,21 +785,21 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         const taskId = noteBtn.getAttribute("data-task");
         const key = noteBtn.getAttribute("data-key");
         if (!taskId || !key) return;
-        const parts = key.split("|");
-        const ts = parseInt(parts[0], 10);
-        const ms = parseInt(parts[1], 10);
-        const liveMarkerIndex = parts.findIndex((part: string) => String(part || "").startsWith("live:"));
-        const name = parts.slice(2, liveMarkerIndex >= 0 ? liveMarkerIndex : undefined).join("|");
-        const liveSessionId = liveMarkerIndex >= 0 ? String(parts[liveMarkerIndex] || "").slice(5) : "";
-        const entry =
-          (ctx.getHistoryByTaskId()?.[taskId] || []).find(
-            (e: any) =>
-              Number(e?.ts) === ts &&
-              Number(e?.ms) === ms &&
-              String(e?.name || "") === String(name || "") &&
-              (!liveSessionId || String(e?.liveSessionId || "") === liveSessionId)
-          ) || null;
-        if (entry) openHistoryManagerNoteOverlay({ ...entry, taskId });
+        const entries = ctx.getHistoryByTaskId()?.[taskId] || [];
+        const resolution = resolveHistoryManagerRowTarget(entries, key);
+        const entry = resolution.kind === "resolved"
+          ? resolution.entry
+          : resolution.kind === "ambiguous"
+            ? entries.find((candidate: any) => buildHistoryManagerRowKey(candidate) === key) || null
+            : null;
+        if (entry) {
+          openHistoryManagerNoteOverlay({
+            ...entry,
+            taskId,
+            historyTargetKey: key,
+            historyMutationAllowed: resolution.kind === "resolved" && !(entry as any).isLiveSession,
+          });
+        }
         return;
       }
 
@@ -728,39 +827,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       if (!taskId || !key) return;
       ev.preventDefault?.();
       ev.stopPropagation?.();
-      playDeleteAlertAudio();
-
-      ctx.confirm("Delete Log Entry", "Delete this entry?", {
-        okLabel: "Delete",
-        cancelLabel: "Cancel",
-        onOk: async () => {
-          const historyByTaskId = { ...(ctx.loadHistory() || {}) };
-          const orig = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId].slice() : [];
-          const pos = orig.findIndex((e: any) => buildHistoryManagerRowKey(e) === key);
-
-          if (pos !== -1) {
-            orig.splice(pos, 1);
-            historyByTaskId[taskId] = orig;
-            ctx.setHistoryByTaskId(historyByTaskId);
-            const completionChanged = clearStaleCompletionForHistoryTasks([taskId], historyByTaskId);
-            await ctx.saveHistoryAndWait(historyByTaskId, { allowDestructiveReplace: true });
-            void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
-
-            const deletedTaskMeta = ctx.getDeletedTaskMeta();
-            if (orig.length === 0 && deletedTaskMeta && (deletedTaskMeta as any)[taskId]) {
-              delete (deletedTaskMeta as any)[taskId];
-              ctx.setDeletedTaskMeta(deletedTaskMeta);
-              ctx.saveDeletedMeta(deletedTaskMeta);
-            }
-            if (completionChanged) ctx.render();
-            ctx.renderDashboardWidgets();
-          }
-
-          renderHistoryManager();
-          ctx.closeConfirm();
-        },
-        onCancel: () => ctx.closeConfirm(),
-      });
+      confirmHistoryManagerEntryDelete(taskId, key);
     });
     ctx.on(els.hmList, "change", (ev: any) => {
       if (!ctx.getHmBulkEditMode()) return;
@@ -794,6 +861,28 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
       ) as HTMLElement | null;
       if (xpReplayTarget) {
         historyEntrySummaryInteraction.triggerDevXpAward(xpReplayTarget);
+        return;
+      }
+
+      const deleteSessionTarget = (event.target as HTMLElement | null)?.closest?.(
+        '[data-history-summary-action="delete-session"]'
+      ) as HTMLElement | null;
+      if (deleteSessionTarget) {
+        const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+        if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
+        if (overlay.dataset.historyEntryEditing === "true") return;
+        const taskId = String(deleteSessionTarget.getAttribute("data-history-summary-task-id") || "").trim();
+        const historyTargetKey = String(
+          deleteSessionTarget.getAttribute("data-history-summary-target-key") || ""
+        );
+        if (!taskId || !historyTargetKey) return;
+        event.preventDefault?.();
+        event.stopPropagation?.();
+        confirmHistoryManagerEntryDelete(
+          taskId,
+          historyTargetKey,
+          { closeSummaryOnSuccess: true }
+        );
         return;
       }
 

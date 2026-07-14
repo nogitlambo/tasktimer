@@ -108,6 +108,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     getOpenHistoryTaskIds: ctx.getOpenHistoryTaskIds,
     getPinnedHistoryTaskIds: ctx.getPinnedHistoryTaskIds,
     getHistoryViewByTaskId: ctx.getHistoryViewByTaskId,
+    pruneInactiveHistoryTasks: ctx.pruneInactiveHistoryTasks,
     syncTaskFlipStatesForVisibleTasks: ctx.syncTaskFlipStatesForVisibleTasks,
     applyTaskFlipDomState: ctx.applyTaskFlipDomState,
     renderHistory: ctx.renderHistory,

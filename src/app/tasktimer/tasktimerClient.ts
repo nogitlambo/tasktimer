@@ -1,6 +1,6 @@
-﻿﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { Task } from "./lib/types";
+import type { HistoryEntry, Task } from "./lib/types";
 import { nowMs, formatTwo, formatTime, formatDateTime } from "./lib/time";
 import { cryptoRandomId } from "./lib/ids";
 import { sortMilestones } from "./lib/milestones";
@@ -48,6 +48,7 @@ import { createTaskTimerEditTask } from "./client/edit-task";
 import { createTaskTimerAddTask } from "./client/add-task";
 import { createTaskTimerPreferences } from "./client/preferences";
 import { createTaskTimerHistoryManager } from "./client/history-manager";
+import { resolveHistoryManagerRowTarget } from "./client/history-manager-shared";
 import { createTaskTimerHistoryInline } from "./client/history-inline";
 import { createTaskTimerCloudSync } from "./client/cloud-sync";
 import { registerCloudSyncNoticeRuntime } from "./client/cloud-sync-notice";
@@ -846,6 +847,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
       render: () => render(),
       renderHistory,
+      pruneInactiveHistoryTasks: (activeTaskIds) =>
+        historyInlineApi?.pruneInactiveHistoryTasks(activeTaskIds) ?? false,
       renderDashboardWidgets: renderBindings.renderDashboardWidgets,
       syncTimeGoalModalWithTaskState: () => sessionApi?.syncTimeGoalModalWithTaskState(),
       maybeRestorePendingTimeGoalFlow: () => sessionApi?.maybeRestorePendingTimeGoalFlow(),
@@ -1014,6 +1017,16 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getHistoryByTaskId: taskCollectionBindings.getHistoryByTaskId,
       setHistoryByTaskId: (value) => taskCollectionBindings.setHistoryByTaskId(value as TaskTimerMutableState["historyByTaskId"]),
       saveHistory: (history, opts) => workspaceRepository.saveHistory(history as TaskTimerMutableState["historyByTaskId"], opts),
+      resolveHistoryEntryTarget: (taskId, historyTargetKey, owner) => {
+        if (owner === "manager") {
+          const entries = taskCollectionBindings.getHistoryByTaskId()[taskId] || [];
+          const resolution = resolveHistoryManagerRowTarget(entries, historyTargetKey);
+          return resolution.kind === "resolved" && !resolution.entry.isLiveSession
+            ? (resolution.entry as HistoryEntry)
+            : null;
+        }
+        return historyInlineApi?.resolveHistoryEntryTarget(taskId, historyTargetKey) ?? null;
+      },
       getLiveSessionsByTaskId: taskCollectionBindings.getLiveSessionsByTaskId,
       preferencesState,
       dashboardUiState,

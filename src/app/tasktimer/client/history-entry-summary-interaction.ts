@@ -16,6 +16,8 @@ const CAN_TRIGGER_DEV_XP_REPLAY = process.env.NODE_ENV !== "production";
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
+  historyTargetKey?: unknown;
+  historyMutationAllowed?: unknown;
   ts?: unknown;
   ms?: unknown;
   name?: unknown;
@@ -26,6 +28,7 @@ type HistoryEntrySummarySource = {
 
 export type HistoryEntrySummaryNoteDraft = {
   taskId: string;
+  historyTargetKey?: string;
   ts: number;
   ms: number;
   name: string;
@@ -60,6 +63,7 @@ type CreateHistoryEntrySummaryInteractionOptions = {
   getEntryNote: (entry: HistoryEntrySummarySource) => string;
   getTaskById: (taskId: string) => Task | null;
   getEntriesForTask: (taskId: string) => HistoryEntrySummarySource[];
+  resolveEntryTarget?: (taskId: string, historyTargetKey: string) => HistoryEntrySummarySource | null;
   getRewardProgress: () => RewardProgressV1 | null | undefined;
   openOverlay: (overlay: HTMLElement | null) => void;
   closeOverlay: (overlay: HTMLElement | null) => void;
@@ -89,12 +93,13 @@ function findEntryByIdentity(
   entries: HistoryEntrySummarySource[],
   identity: { ts: number; ms: number; name: string }
 ) {
-  return entries.find(
+  const matches = entries.filter(
     (entry) =>
       normalizeTimestamp(entry?.ts) === identity.ts &&
       normalizeElapsedMs(entry?.ms) === identity.ms &&
       normalizeName(entry?.name) === identity.name
-  ) || null;
+  );
+  return matches.length === 1 ? matches[0] : null;
 }
 
 export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntrySummaryInteractionOptions) {
@@ -188,11 +193,14 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
   function readDraftIdentity(input: HTMLElement) {
     const source = input.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null;
     const taskId = String(input.dataset.historySummaryTaskId || source?.getAttribute("data-history-summary-task-id") || "").trim();
+    const historyTargetKey = String(
+      input.dataset.historySummaryTargetKey || source?.getAttribute("data-history-summary-target-key") || ""
+    );
     const ts = normalizeTimestamp(input.dataset.historySummaryTs || source?.getAttribute("data-history-summary-ts"));
     const ms = normalizeElapsedMs(input.dataset.historySummaryMs || source?.getAttribute("data-history-summary-ms"));
     const name = normalizeName(input.dataset.historySummaryName || source?.getAttribute("data-history-summary-name"));
     if (!taskId || ts <= 0 || !name) return null;
-    return { taskId, ts, ms, name };
+    return { taskId, ...(historyTargetKey ? { historyTargetKey } : {}), ts, ms, name };
   }
 
   function getEditedNoteDrafts(): HistoryEntrySummaryNoteDraft[] {
@@ -273,18 +281,30 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const ts = normalizeTimestamp(entry?.ts);
     const ms = normalizeElapsedMs(entry?.ms);
     const name = normalizeName(entry?.name);
+    const historyTargetKey = String(entry?.historyTargetKey ?? "");
     const note = entry ? options.getEntryNote(entry) : "";
-    const editable = !!taskId && !!entry && ts > 0 && !!name;
+    const editable =
+      !!taskId &&
+      !!entry &&
+      ts > 0 &&
+      !!name &&
+      !entry.isLiveSession &&
+      entry.historyMutationAllowed !== false &&
+      (options.owner !== "inline" || !!historyTargetKey);
 
     overlay.dataset.historyEntryOwner = options.owner;
     overlay.dataset.historyEntryTaskId = String(taskId || "");
+    overlay.dataset.historyEntryTargetKey = editable ? historyTargetKey : "";
     overlay.dataset.historyEntryEditable = editable ? "true" : "false";
     overlay.dataset.historyEntryTs = editable ? String(ts) : "";
     overlay.dataset.historyEntryMs = editable ? String(ms) : "";
     overlay.dataset.historyEntryName = editable ? name : "";
     overlay.dataset.historyEntryNote = editable ? note : "";
     overlay.dataset.historyEntryEditing = "false";
-    if (elements.input) setRichNoteEditorValue(elements.input, editable ? note : "");
+    if (elements.input) {
+      elements.input.dataset.historySummaryTargetKey = editable ? historyTargetKey : "";
+      setRichNoteEditorValue(elements.input, editable ? note : "");
+    }
     syncEditorUi(false);
   }
 
@@ -318,6 +338,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     if (overlay) {
       overlay.dataset.historyEntryOwner = "";
       overlay.dataset.historyEntryTaskId = "";
+      overlay.dataset.historyEntryTargetKey = "";
       overlay.dataset.historyEntryEditable = "false";
       overlay.dataset.historyEntryTs = "";
       overlay.dataset.historyEntryMs = "";
@@ -325,7 +346,10 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       overlay.dataset.historyEntryNote = "";
       overlay.dataset.historyEntryEditing = "false";
     }
-    if (elements.input) setRichNoteEditorValue(elements.input, "");
+    if (elements.input) {
+      elements.input.dataset.historySummaryTargetKey = "";
+      setRichNoteEditorValue(elements.input, "");
+    }
     syncEditorUi(false);
   }
 
@@ -339,16 +363,20 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     if (!trigger) return false;
 
     const taskId = String(trigger.getAttribute("data-history-summary-task-id") || "").trim();
+    const historyTargetKey = String(trigger.getAttribute("data-history-summary-target-key") || "");
     const ts = normalizeTimestamp(trigger.getAttribute("data-history-summary-ts"));
     const ms = normalizeElapsedMs(trigger.getAttribute("data-history-summary-ms"));
     const name = normalizeName(trigger.getAttribute("data-history-summary-name"));
     if (!taskId || ts <= 0 || !name) return false;
 
-    const entry = findEntryByIdentity(options.getEntriesForTask(taskId), { ts, ms, name });
+    const entry = historyTargetKey
+      ? options.resolveEntryTarget?.(taskId, historyTargetKey) || null
+      : findEntryByIdentity(options.getEntriesForTask(taskId), { ts, ms, name });
     if (!entry || entry.isLiveSession) return false;
 
     const note = options.getEntryNote(entry);
     overlay.dataset.historyEntryTaskId = taskId;
+    overlay.dataset.historyEntryTargetKey = historyTargetKey;
     overlay.dataset.historyEntryEditable = "true";
     overlay.dataset.historyEntryTs = String(ts);
     overlay.dataset.historyEntryMs = String(ms);
@@ -370,6 +398,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       input.classList.add("isActiveEditing");
       input.classList.remove("isCollapsed");
       input.dataset.historySummaryTaskId = taskId;
+      input.dataset.historySummaryTargetKey = historyTargetKey;
       input.dataset.historySummaryTs = String(ts);
       input.dataset.historySummaryMs = String(ms);
       input.dataset.historySummaryName = name;
@@ -394,6 +423,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       input.classList.remove("isActiveEditing");
       input.classList.remove("isCollapsed");
       delete input.dataset.historySummaryTaskId;
+      delete input.dataset.historySummaryTargetKey;
       delete input.dataset.historySummaryTs;
       delete input.dataset.historySummaryMs;
       delete input.dataset.historySummaryName;

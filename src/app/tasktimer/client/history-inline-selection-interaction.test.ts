@@ -1,188 +1,302 @@
 import { describe, expect, it } from "vitest";
-import { createHistoryInlineSelectionInteraction } from "./history-inline-selection-interaction";
-import type { HistoryViewState } from "./types";
+import { createHistoryInlineSelectionSession } from "./history-inline-selection-interaction";
 
-function createState(overrides: Partial<HistoryViewState> = {}): HistoryViewState {
-  return {
-    page: 0,
-    rangeDays: 7,
-    rangeMode: "entries",
-    revealPhase: "open",
-    revealTimer: null,
-    barRevealProgress: 1,
-    barRevealAnimRaf: null,
-    layoutRetryRaf: null,
-    editMode: false,
-    barRects: [],
-    labelHitRects: [],
-    lockedAbsIndexes: new Set<number>(),
-    selectedAbsIndex: null,
-    selectedRelIndex: null,
-    selectionClearTimer: null,
-    visualSelectedAbsIndex: null,
-    selectionZoom: 1,
-    selectionAnimRaf: null,
-    slideDir: null,
-    ...overrides,
-  };
-}
+describe("history inline selection session", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const nowMs = Date.UTC(2026, 6, 14, 12);
 
-describe("history inline selection interaction", () => {
-  it("syncs selected relative index inside the rendered window", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({ selectedAbsIndex: 9 });
+  function enabledDelete(view: ReturnType<ReturnType<typeof createHistoryInlineSelectionSession>["refresh"]>) {
+    const action = view.actions.delete;
+    expect(action.enabled).toBe(true);
+    if (!action.enabled) throw new Error(`Expected delete to be enabled, received ${action.reason}`);
+    return action;
+  }
 
-    selection.syncSelectedRelIndex(state, 7, 4);
+  it("deletes the selected recent entry when older entries are outside the 30-day projection", () => {
+    const old = { sessionId: "old", ts: nowMs - 31 * DAY_MS, ms: 60_000, name: "Focus" };
+    const target = { sessionId: "target", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [old, target], mode: "entries", nowMs, analysisEntitled: true });
 
-    expect(state.selectedRelIndex).toBe(2);
-    expect(state.selectedAbsIndex).toBe(9);
+    expect(view.rows).toHaveLength(1);
+    expect(view.rows[0]?.kind).toBe("entry");
+    expect(view.rows[0]?.value).toBe(target);
+
+    const selected = view.rows[0]?.activate();
+    expect(selected?.kind).toBe("changed");
+    if (!selected || selected.kind !== "changed") throw new Error("Expected the recent entry to be selected");
+    view = selected.view;
+
+    const result = enabledDelete(view).resolve([old, target]);
+    expect(result.kind).toBe("resolved");
+    if (result.kind !== "resolved") throw new Error(`Expected delete resolution, received ${result.reason}`);
+    expect(result.deletedEntry).toBe(target);
+    expect(result.remainingFinalizedEntries).toEqual([old]);
   });
 
-  it("clears transient selection when selected index leaves the rendered window", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({ selectedAbsIndex: 4, selectedRelIndex: 1 });
+  it("re-resolves a pending delete against refreshed full history after confirmation", () => {
+    const old = { sessionId: "old", ts: nowMs - 31 * DAY_MS, ms: 60_000, name: "Focus" };
+    const target = { sessionId: "target", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus" };
+    const inserted = { sessionId: "inserted", ts: nowMs - 2 * DAY_MS, ms: 90_000, name: "Inserted" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [old, target], mode: "entries", nowMs, analysisEntitled: true });
+    const selected = view.rows[0]?.activate();
+    if (!selected || selected.kind !== "changed") throw new Error("Expected the recent entry to be selected");
+    view = selected.view;
+    const pendingDelete = enabledDelete(view);
 
-    selection.syncSelectedRelIndex(state, 7, 4);
+    const result = pendingDelete.resolve([old, inserted, target]);
 
-    expect(state.selectedAbsIndex).toBeNull();
-    expect(state.selectedRelIndex).toBeNull();
+    expect(result.kind).toBe("resolved");
+    if (result.kind !== "resolved") throw new Error(`Expected delete resolution, received ${result.reason}`);
+    expect(result.deletedEntry).toBe(target);
+    expect(result.remainingFinalizedEntries).toEqual([old, inserted]);
   });
 
-  it("derives delete and summary availability from current mode and selection", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({ selectedAbsIndex: 3, selectedRelIndex: 1 });
+  it("normalizes legacy second timestamps for the recent-window projection", () => {
+    const old = { sessionId: "old", ts: Math.floor((nowMs - 31 * DAY_MS) / 1000), ms: 60_000, name: "Old" };
+    const recent = { sessionId: "recent", ts: Math.floor((nowMs - DAY_MS) / 1000), ms: 90_000, name: "Recent" };
+    const session = createHistoryInlineSelectionSession("task-1");
 
-    expect(selection.getRenderTargets(state, false)).toEqual({
-      hasDeleteTarget: true,
-      hasSummaryTarget: true,
-    });
-    expect(selection.getRenderTargets(state, true)).toEqual({
-      hasDeleteTarget: false,
-      hasSummaryTarget: true,
-    });
+    const view = session.refresh({ entries: [old, recent], mode: "entries", nowMs, analysisEntitled: true });
+
+    expect(view.windowKind).toBe("recent-30-days");
+    expect(view.rows.map((row) => row.value)).toEqual([recent]);
   });
 
-  it("selects, locks, unlocks, and clears by chart hit", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState();
+  it("refuses a pending delete when its stable identity disappears or becomes ambiguous", () => {
+    const target = { sessionId: "target", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus" };
+    const duplicate = { ...target, ts: nowMs, note: "Concurrent duplicate" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [target], mode: "entries", nowMs, analysisEntitled: true });
+    const selected = view.rows[0]?.activate();
+    if (!selected || selected.kind !== "changed") throw new Error("Expected selection");
+    view = selected.view;
+    const pendingDelete = enabledDelete(view);
 
-    expect(selection.applyHit(state, { rel: 1, abs: 4 })).toEqual({ kind: "selected", animateTo: 4 });
-    expect(state.selectedAbsIndex).toBe(4);
-    expect(state.selectedRelIndex).toBe(1);
-
-    expect(selection.applyHit(state, { rel: 1, abs: 4 })).toEqual({ kind: "locked", animateTo: null });
-    expect(state.selectedAbsIndex).toBeNull();
-    expect(state.selectedRelIndex).toBeNull();
-    expect(Array.from(state.lockedAbsIndexes)).toEqual([4]);
-
-    expect(selection.applyHit(state, { rel: 1, abs: 4 })).toEqual({ kind: "unlocked", animateTo: null });
-    expect(state.lockedAbsIndexes.size).toBe(0);
-
-    state.lockedAbsIndexes.add(2);
-    state.selectedAbsIndex = 5;
-    state.selectedRelIndex = 3;
-    expect(selection.applyHit(state, null)).toEqual({ kind: "cleared", animateTo: null });
-    expect(state.selectedAbsIndex).toBeNull();
-    expect(state.selectedRelIndex).toBeNull();
-    expect(state.lockedAbsIndexes.size).toBe(0);
+    expect(pendingDelete.resolve([])).toEqual({ kind: "refused", reason: "missing-target" });
+    expect(pendingDelete.resolve([target, duplicate])).toEqual({ kind: "refused", reason: "ambiguous-target" });
   });
 
-  it("prefers transient selection over locked selection for delete target", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 8,
-      lockedAbsIndexes: new Set([2, 5]),
-    });
+  it("issues an opaque capability for a unique external summary candidate", () => {
+    const current = { sessionId: "target", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus", note: "Current" };
+    const externalCopy = { sessionId: "target", ts: nowMs, ms: 1, name: "Copied display row" };
+    const session = createHistoryInlineSelectionSession("task-1");
 
-    expect(selection.getDeleteTargetIndex(state)).toBe(8);
+    const capability = session.resolveEntryCandidate(externalCopy, [current]);
 
-    state.selectedAbsIndex = null;
-    expect(selection.getDeleteTargetIndex(state)).toBe(5);
+    expect(capability.kind).toBe("resolved");
+    if (capability.kind !== "resolved") throw new Error("Expected an external entry capability");
+    expect(capability.entry).toBe(current);
+    expect(session.resolveEntryTarget(capability.targetKey, [current])).toEqual({ kind: "resolved", entry: current });
   });
 
-  it("uses the first sorted locked index as the summary primary target", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 8,
-      lockedAbsIndexes: new Set([5, 2]),
-    });
+  it("fails safely when duplicate legacy rows have an ambiguous identity", () => {
+    const first = { ts: nowMs - DAY_MS, ms: 60_000, name: "Focus", note: "First" };
+    const second = { ts: nowMs - DAY_MS, ms: 60_000, name: "Focus", note: "Second" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    const view = session.refresh({ entries: [first, second], mode: "entries", nowMs, analysisEntitled: true });
 
-    expect(selection.getSortedLockedIndexes(state)).toEqual([2, 5]);
-    expect(selection.getSummaryPrimaryIndex(state)).toBe(2);
+    expect(view.rows).toHaveLength(2);
+    expect(view.rows.every((row) => !row.interactive && row.blockedReason === "ambiguous-target")).toBe(true);
+    expect(view.actions.delete).toEqual({ enabled: false, reason: "selection-required" });
   });
 
-  it("shifts selection and locks after a deleted history index", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 6,
-      selectedRelIndex: 2,
-      lockedAbsIndexes: new Set([2, 4, 7]),
-    });
+  it("treats the legacy raw name as part of the exact identity", () => {
+    const plain = { ts: nowMs - DAY_MS, ms: 60_000, name: "Focus" };
+    const spaced = { ts: nowMs - DAY_MS, ms: 60_000, name: " Focus " };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [plain, spaced], mode: "entries", nowMs, analysisEntitled: true });
 
-    expect(selection.applyDeletedIndex(state, 4)).toEqual({ clearedSelected: false });
-    expect(state.selectedAbsIndex).toBe(5);
-    expect(Array.from(state.lockedAbsIndexes).sort((a, b) => a - b)).toEqual([2, 6]);
+    expect(view.rows.every((row) => row.interactive)).toBe(true);
+    const selected = view.rows.find((row) => row.value === spaced)?.activate();
+    if (!selected || selected.kind !== "changed") throw new Error("Expected the raw-name target to be selected");
+    view = selected.view;
+    const summary = view.actions.summary;
+    if (!summary.enabled) throw new Error("Expected summary to be enabled");
+    const summaryResolution = summary.resolve([plain, spaced]);
+    if (summaryResolution.kind !== "resolved") throw new Error("Expected summary resolution");
+    const targetKey = summaryResolution.entries[0]?.targetKey;
+    if (!targetKey) throw new Error("Expected an opaque entry target");
+
+    const deletion = session.resolveEntryDelete(targetKey, [plain, spaced]);
+
+    expect(deletion.kind).toBe("resolved");
+    if (deletion.kind !== "resolved") throw new Error("Expected keyed delete resolution");
+    expect(deletion.deletedEntry).toBe(spaced);
+    expect(deletion.remainingFinalizedEntries).toEqual([plain]);
   });
 
-  it("reports when deletion clears the selected history index", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 4,
-      selectedRelIndex: 1,
-      lockedAbsIndexes: new Set([3, 4]),
-    });
+  it("fails closed when distinct raw values collapse to the same persisted legacy tuple", () => {
+    const first = { ts: nowMs - DAY_MS + 0.1, ms: 60_000.1, name: "Focus" };
+    const second = { ts: nowMs - DAY_MS + 0.9, ms: 60_000.9, name: "Focus" };
+    const session = createHistoryInlineSelectionSession("task-1");
 
-    expect(selection.applyDeletedIndex(state, 4)).toEqual({ clearedSelected: true });
-    expect(state.selectedAbsIndex).toBeNull();
-    expect(state.selectedRelIndex).toBeNull();
-    expect(Array.from(state.lockedAbsIndexes)).toEqual([3]);
+    const view = session.refresh({ entries: [first, second], mode: "entries", nowMs, analysisEntitled: true });
+
+    expect(view.rows.every((row) => !row.interactive && row.blockedReason === "ambiguous-target")).toBe(true);
   });
 
-  it("falls back to the transient selection as the summary target when there are no locks", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({ selectedAbsIndex: 8, selectedRelIndex: 3 });
+  it("treats duplicate finalized session ids as ambiguous even when their display tuples differ", () => {
+    const first = { sessionId: "duplicate", ts: nowMs - 2 * DAY_MS, ms: 60_000, name: "First" };
+    const second = { sessionId: "duplicate", ts: nowMs - DAY_MS, ms: 120_000, name: "Second" };
+    const session = createHistoryInlineSelectionSession("task-1");
 
-    expect(selection.getSummaryPrimaryIndex(state)).toBe(8);
+    const view = session.refresh({ entries: [first, second], mode: "entries", nowMs, analysisEntitled: true });
+
+    expect(view.rows.every((row) => !row.interactive && row.blockedReason === "ambiguous-target")).toBe(true);
   });
 
-  it("clear locks preserves the transient selected entry", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 8,
-      selectedRelIndex: 3,
-      lockedAbsIndexes: new Set([1, 2]),
-    });
+  it("keeps live and finalized identity namespaces separate and forbids live deletion", () => {
+    const finalized = { sessionId: "same-id", ts: nowMs - DAY_MS, ms: 60_000, name: "Finalized" };
+    const live = {
+      sessionId: "same-id",
+      liveSessionId: "same-id",
+      isLiveSession: true,
+      ts: nowMs,
+      ms: 30_000,
+      name: "Live",
+    } as const;
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [finalized, live], mode: "entries", nowMs, analysisEntitled: true });
 
-    selection.clearLockedSelections(state);
+    expect(view.rows.every((row) => row.interactive)).toBe(true);
+    const selected = view.rows.find((row) => row.value === live)?.activate();
+    if (!selected || selected.kind !== "changed") throw new Error("Expected live selection");
+    view = selected.view;
 
-    expect(state.lockedAbsIndexes.size).toBe(0);
-    expect(state.selectedAbsIndex).toBe(8);
-    expect(state.selectedRelIndex).toBe(3);
+    expect(view.actions.delete).toEqual({ enabled: false, reason: "live-target" });
+    expect(view.actions.summary.enabled).toBe(true);
   });
 
-  it("clear selection handles click-away clearing for selected and locked entries", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({
-      selectedAbsIndex: 8,
-      selectedRelIndex: 3,
-      lockedAbsIndexes: new Set([1, 2]),
-    });
+  it("preserves unique locked targets across refresh and clears them on Entries to Day changes", () => {
+    const first = { sessionId: "first", ts: nowMs - 2 * DAY_MS, ms: 60_000, name: "Focus" };
+    const second = { sessionId: "second", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus" };
+    const inserted = { sessionId: "inserted", ts: nowMs - 3 * DAY_MS, ms: 30_000, name: "Inserted" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [first, second], mode: "entries", nowMs, analysisEntitled: true });
+    const transition = view.rows[0]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected first selection");
+    view = transition.view;
+    const lockedTransition = view.rows.find((row) => row.value === first)?.activate();
+    if (!lockedTransition || lockedTransition.kind !== "changed") throw new Error("Expected first lock");
+    view = lockedTransition.view;
 
-    selection.clearSelection(state);
+    view = session.refresh({ entries: [inserted, second, first], mode: "entries", nowMs, analysisEntitled: true });
+    expect(view.lockedCount).toBe(1);
+    expect(view.rows.find((row) => row.value === first)?.selection).toBe("locked");
 
-    expect(state.lockedAbsIndexes.size).toBe(0);
-    expect(state.selectedAbsIndex).toBeNull();
-    expect(state.selectedRelIndex).toBeNull();
+    view = session.refresh({ entries: [inserted, second, first], mode: "day", nowMs, analysisEntitled: true });
+    expect(view.lockedCount).toBe(0);
+    expect(view.rows.every((row) => row.selection === "none")).toBe(true);
   });
 
-  it("requires entitlement and at least two locked entries for analysis", () => {
-    const selection = createHistoryInlineSelectionInteraction();
-    const state = createState({ lockedAbsIndexes: new Set([1, 3]) });
+  it("disables the main Delete action when multiple targets are locked", () => {
+    const first = { sessionId: "first", ts: nowMs - 2 * DAY_MS, ms: 60_000, name: "Focus" };
+    const second = { sessionId: "second", ts: nowMs - DAY_MS, ms: 120_000, name: "Focus" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [first, second], mode: "entries", nowMs, analysisEntitled: true });
 
-    expect(selection.getCanAnalyse(state, true)).toBe(true);
-    expect(selection.getCanAnalyse(state, false)).toBe(false);
+    for (const entry of [first, second]) {
+      let transition = view.rows.find((row) => row.value === entry)?.activate();
+      if (!transition || transition.kind !== "changed") throw new Error("Expected selection");
+      view = transition.view;
+      transition = view.rows.find((row) => row.value === entry)?.activate();
+      if (!transition || transition.kind !== "changed") throw new Error("Expected lock");
+      view = transition.view;
+    }
 
-    state.lockedAbsIndexes.delete(3);
-    expect(selection.getCanAnalyse(state, true)).toBe(false);
+    expect(view.lockedCount).toBe(2);
+    expect(view.actions.delete).toEqual({ enabled: false, reason: "multiple-targets" });
+  });
+
+  it("orders locked summaries chronologically and lets an explicit transient target override multiple locks for Delete", () => {
+    const first = { sessionId: "first", ts: nowMs - 3 * DAY_MS, ms: 60_000, name: "First" };
+    const second = { sessionId: "second", ts: nowMs - 2 * DAY_MS, ms: 90_000, name: "Second" };
+    const explicit = { sessionId: "explicit", ts: nowMs - DAY_MS, ms: 120_000, name: "Explicit" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [first, second, explicit], mode: "entries", nowMs, analysisEntitled: true });
+
+    for (const entry of [second, first]) {
+      let transition = view.rows.find((row) => row.value === entry)?.activate();
+      if (!transition || transition.kind !== "changed") throw new Error("Expected selection");
+      view = transition.view;
+      transition = view.rows.find((row) => row.value === entry)?.activate();
+      if (!transition || transition.kind !== "changed") throw new Error("Expected lock");
+      view = transition.view;
+    }
+
+    const summary = view.actions.summary;
+    if (!summary.enabled) throw new Error("Expected summary");
+    const summaryResolution = summary.resolve([explicit, second, first]);
+    if (summaryResolution.kind !== "resolved") throw new Error("Expected summary resolution");
+    expect(summaryResolution.entries.map(({ entry }) => entry)).toEqual([first, second]);
+    expect(view.actions.delete).toEqual({ enabled: false, reason: "multiple-targets" });
+
+    const selected = view.rows.find((row) => row.value === explicit)?.activate();
+    if (!selected || selected.kind !== "changed") throw new Error("Expected explicit selection");
+    view = selected.view;
+    const deletion = enabledDelete(view).resolve([explicit, second, first]);
+    if (deletion.kind !== "resolved") throw new Error("Expected explicit delete resolution");
+    expect(deletion.deletedEntry).toBe(explicit);
+    expect(deletion.remainingFinalizedEntries).toEqual([first, second]);
+  });
+
+  it("projects Day rows as non-destructive aggregate capabilities", () => {
+    const first = { sessionId: "first", ts: nowMs - 2 * DAY_MS, ms: 60_000, name: "First" };
+    const second = { sessionId: "second", ts: nowMs - 2 * DAY_MS + 60 * 60 * 1000, ms: 90_000, name: "Second" };
+    const third = { sessionId: "third", ts: nowMs - DAY_MS, ms: 120_000, name: "Third" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [third, second, first], mode: "day", nowMs, analysisEntitled: true });
+
+    expect(view.rows).toHaveLength(2);
+    expect(view.rows.map((row) => row.value.ms)).toEqual([150_000, 120_000]);
+    let transition = view.rows[0]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected day selection");
+    view = transition.view;
+    expect(view.actions.delete).toEqual({ enabled: false, reason: "day-delete-forbidden" });
+    const summary = view.actions.summary;
+    if (!summary.enabled) throw new Error("Expected day summary");
+    const summaryResolution = summary.resolve([third, first, second]);
+    if (summaryResolution.kind !== "resolved") throw new Error("Expected day summary resolution");
+    expect(summaryResolution.entries.map(({ entry }) => entry)).toEqual([first, second]);
+
+    transition = view.rows[0]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected first day lock");
+    view = transition.view;
+    transition = view.rows[1]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected second day selection");
+    view = transition.view;
+    transition = view.rows[1]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected second day lock");
+    view = transition.view;
+    expect(view.actions.analyse.enabled).toBe(true);
+  });
+
+  it("drops a locked target that becomes ambiguous on a same-mode refresh", () => {
+    const target = { ts: nowMs - DAY_MS, ms: 60_000, name: "Legacy" };
+    const duplicate = { ...target, note: "Concurrent duplicate" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    let view = session.refresh({ entries: [target], mode: "entries", nowMs, analysisEntitled: true });
+    let transition = view.rows[0]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected selection");
+    view = transition.view;
+    transition = view.rows[0]?.activate();
+    if (!transition || transition.kind !== "changed") throw new Error("Expected lock");
+
+    view = session.refresh({ entries: [target, duplicate], mode: "entries", nowMs, analysisEntitled: true });
+
+    expect(view.lockedCount).toBe(0);
+    expect(view.rows.every((row) => !row.interactive)).toBe(true);
+  });
+
+  it("refuses capabilities retained from an older projection generation", () => {
+    const target = { sessionId: "target", ts: nowMs - DAY_MS, ms: 60_000, name: "Focus" };
+    const session = createHistoryInlineSelectionSession("task-1");
+    const staleView = session.refresh({ entries: [target], mode: "entries", nowMs, analysisEntitled: true });
+    const currentView = session.refresh({ entries: [target], mode: "entries", nowMs, analysisEntitled: true });
+
+    expect(staleView.rows[0]?.activate().kind).toBe("refused");
+    expect(currentView.rows[0]?.selection).toBe("none");
   });
 });

@@ -19,6 +19,7 @@ type TaskListRendererOptions = {
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
   getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null; revealTimer?: number | null }>;
+  pruneInactiveHistoryTasks?: (activeTaskIds: Set<string>) => boolean;
   syncTaskFlipStatesForVisibleTasks: (activeTaskIds: Set<string>) => void;
   applyTaskFlipDomState: (taskId: string, taskEl?: HTMLElement | null) => void;
   renderHistory: (taskId: string) => void;
@@ -153,6 +154,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     const activeTaskIds = new Set(tasks.map((task) => String(task.id || "")));
 
     options.syncTaskFlipStatesForVisibleTasks(activeTaskIds);
+    options.pruneInactiveHistoryTasks?.(activeTaskIds);
     for (const taskId of Array.from(pinnedHistoryTaskIds)) {
       if (activeTaskIds.has(taskId)) openHistoryTaskIds.add(taskId);
     }

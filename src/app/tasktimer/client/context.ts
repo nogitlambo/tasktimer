@@ -11,7 +11,15 @@ import type {
   HistoryViewState,
   MainMode,
 } from "./types";
-import type { DeletedTaskMeta, HistoryByTaskId, LiveSessionsByTaskId, LiveTaskSession, SessionNoteAttachment, Task } from "../lib/types";
+import type {
+  DeletedTaskMeta,
+  HistoryByTaskId,
+  HistoryEntry,
+  LiveSessionsByTaskId,
+  LiveTaskSession,
+  SessionNoteAttachment,
+  Task,
+} from "../lib/types";
 import type { UserPreferencesV1 } from "../lib/cloudStore";
 import type { FriendProfile, FriendRequest, Friendship, SharedTaskSummary } from "../lib/friendsStore";
 import type { DashboardWeekStart } from "../lib/historyChart";
@@ -402,6 +410,7 @@ export type TaskTimerTasksContext = {
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
   getHistoryViewByTaskId: () => Record<string, HistoryViewState>;
+  pruneInactiveHistoryTasks?: (activeTaskIds: Set<string>) => boolean;
   getThemeMode: () => "lime";
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   getCheckpointAlertSoundEnabled: () => boolean;
@@ -716,6 +725,11 @@ export type TaskTimerSessionContext = {
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
+  resolveHistoryEntryTarget: (
+    taskId: string,
+    historyTargetKey: string,
+    owner?: "inline" | "manager"
+  ) => HistoryEntry | null;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   getWeekStarting: () => DashboardWeekStart;
   getRewardProgress: () => RewardProgressV1;

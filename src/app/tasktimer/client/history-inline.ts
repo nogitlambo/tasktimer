@@ -3,8 +3,15 @@ import type { TaskTimerHistoryInlineContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
-import { createHistoryInlineSelectionInteraction } from "./history-inline-selection-interaction";
+import {
+  createHistoryInlineSelectionSession,
+  type HistoryInlineDeleteResolution,
+  type HistoryInlineSelectionRow,
+  type HistoryInlineSelectionSession,
+  type HistoryInlineSelectionView,
+} from "./history-inline-selection-interaction";
 import { isRichNoteFileInputTarget } from "./rich-session-notes";
+import { TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
 import { clearStaleTaskTimeGoalCompletionForPeriod } from "../lib/timeGoalCompletion";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -22,57 +29,6 @@ type HistoryUI = {
   deleteBtn: HTMLButtonElement | null;
 };
 
-type HistoryEntryIdentity = {
-  ts: number;
-  ms: number;
-  name: string;
-};
-
-type HistorySummaryDeleteSnapshot = {
-  rangeMode: HistoryViewState["rangeMode"];
-  selectedEntries: any[];
-  selectedDayKeys: string[];
-};
-
-export function getTaskTimerHistoryEntryIdentity(entry: any): HistoryEntryIdentity {
-  return {
-    ts: Number(entry?.ts),
-    ms: Number(entry?.ms),
-    name: String(entry?.name || "").trim(),
-  };
-}
-
-export function taskTimerHistoryEntryIdentityMatches(entry: any, identity: HistoryEntryIdentity) {
-  return (
-    Number(entry?.ts) === identity.ts &&
-    Number(entry?.ms) === identity.ms &&
-    String(entry?.name || "").trim() === identity.name
-  );
-}
-
-export function getTaskTimerHistorySummaryRemainingEntriesAfterDelete(options: {
-  allEntries: any[];
-  snapshot: HistorySummaryDeleteSnapshot;
-  deletedIdentity: HistoryEntryIdentity;
-  getDateKey: (entry: any) => string;
-}) {
-  const allEntries = Array.isArray(options.allEntries) ? options.allEntries : [];
-  const deletedIdentity = options.deletedIdentity;
-  if (options.snapshot.rangeMode === "day") {
-    const selectedDayKeys = new Set(options.snapshot.selectedDayKeys.filter(Boolean));
-    if (!selectedDayKeys.size) return [];
-    return allEntries.filter(
-      (entry) => selectedDayKeys.has(options.getDateKey(entry)) && !taskTimerHistoryEntryIdentityMatches(entry, deletedIdentity)
-    );
-  }
-
-  const selectedIdentities = options.snapshot.selectedEntries.map((entry) => getTaskTimerHistoryEntryIdentity(entry));
-  return selectedIdentities
-    .filter((identity) => !taskTimerHistoryEntryIdentityMatches(identity, deletedIdentity))
-    .map((identity) => allEntries.find((entry) => taskTimerHistoryEntryIdentityMatches(entry, identity)))
-    .filter((entry) => !!entry);
-}
-
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
   const HISTORY_LOOKBACK_DAYS = 30;
@@ -88,8 +44,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   const HISTORY_INLINE_CHART_LABEL_COLOR = "#fff";
   const { sharedTasks } = ctx;
   const historyCanvasResizeObservers = new Map<string, { observer: ResizeObserver; element: HTMLElement }>();
-  const historyInlineSelection = createHistoryInlineSelectionInteraction();
-  let historyEntrySummaryOpenEntries: any[] = [];
+  const historyInlineSelectionSessions = new Map<string, HistoryInlineSelectionSession>();
+  let suppressHistoryEntryNoteClosedEvent = false;
 
   function prefersReducedMotion() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
@@ -280,16 +236,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     }, delayMs);
   }
 
-  function historyLocalDateKey(tsRaw: unknown) {
-    const ts = ctx.normalizeHistoryTimestampMs(tsRaw);
-    if (ts <= 0) return "";
-    const d = new Date(ts);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${da}`;
-  }
-
   function getHistoryEntryNote(entry: any) {
     const note = String(entry?.note || "").trim();
     return note || "";
@@ -305,25 +251,50 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return arr.slice().sort((a: any, b: any) => historyTsMs(a) - historyTsMs(b));
   }
 
+  function getHistoryInlineSelectionSession(taskId: string) {
+    const existing = historyInlineSelectionSessions.get(taskId);
+    if (existing) return existing;
+    const created = createHistoryInlineSelectionSession(taskId);
+    historyInlineSelectionSessions.set(taskId, created);
+    return created;
+  }
+
+  function resolveHistoryEntryTarget(taskId: string, historyTargetKey: string) {
+    const resolution = getHistoryInlineSelectionSession(taskId).resolveEntryTarget(
+      historyTargetKey,
+      getHistoryForTask(taskId)
+    );
+    return resolution.kind === "resolved" && !resolution.entry.isLiveSession ? resolution.entry : null;
+  }
+
+  function refreshHistoryInlineSelectionView(taskId: string, state?: HistoryViewState | null) {
+    const nextState = state || ensureHistoryViewState(taskId);
+    return getHistoryInlineSelectionSession(taskId).refresh({
+      entries: getHistoryForTask(taskId),
+      mode: nextState.rangeMode === "day" ? "day" : "entries",
+      nowMs: ctx.nowMs(),
+      analysisEntitled: ctx.hasEntitlement("advancedHistory"),
+    });
+  }
+
+  function historyInlineDisplayValue(taskId: string, row: HistoryInlineSelectionRow) {
+    if (row.kind !== "day") return row.value;
+    const historyTask = ctx.getTasks().find((task) => String(task.id || "") === String(taskId));
+    return {
+      ...row.value,
+      ...(historyTask ? { color: ctx.historyEntryColorForTaskMs(historyTask as any, Math.max(0, Number(row.value.ms || 0))) } : {}),
+    };
+  }
+
   function getFinalizedHistoryByTaskId() {
     const projected = ctx.getHistoryByTaskId();
-    const next: Record<string, unknown[]> = {};
+    const next: Record<string, any[]> = {};
     Object.keys(projected || {}).forEach((taskId) => {
       const arr = Array.isArray(projected?.[taskId]) ? projected[taskId] : [];
       next[taskId] = arr.filter((entry: any) => !entry?.isLiveSession);
     });
     return next;
   }
-
-  function getHistoryWindowForTask(taskId: string) {
-    const allRaw = getHistoryForTask(taskId);
-    if (!allRaw.length) return { allRaw, windowed: allRaw, usesFallbackWindow: false };
-    const cutoffMs = ctx.nowMs() - HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-    const windowed = allRaw.filter((entry: any) => historyTsMs(entry) >= cutoffMs);
-    if (windowed.length) return { allRaw, windowed, usesFallbackWindow: false };
-    return { allRaw, windowed: allRaw, usesFallbackWindow: true };
-  }
-
 
   function historyPageSize(taskId?: string) {
     if (!taskId) return 7;
@@ -351,11 +322,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       editMode: false,
       barRects: [],
       labelHitRects: [],
-      lockedAbsIndexes: new Set<number>(),
-      selectedAbsIndex: null,
-      selectedRelIndex: null,
       selectionClearTimer: null,
-      visualSelectedAbsIndex: null,
+      visualSelectedRenderKey: null,
       selectionZoom: 1,
       selectionAnimRaf: null,
       slideDir: null,
@@ -376,7 +344,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     ctx.persistTaskUiToCloud();
   }
 
-  function startHistorySelectionAnimation(taskId: string, nextAbsIndex: number | null) {
+  function startHistorySelectionAnimation(taskId: string, nextRenderKey: string | null) {
     const state = ensureHistoryViewState(taskId);
     if (state.selectionAnimRaf != null) {
       window.cancelAnimationFrame(state.selectionAnimRaf);
@@ -385,14 +353,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     clearHistoryBarRevealAnimation(state);
     clearHistoryLayoutRetry(state);
 
-    const prevAbsIndex = state.visualSelectedAbsIndex;
-    const switchingTarget = prevAbsIndex !== nextAbsIndex;
-    const fromZoom = switchingTarget ? (nextAbsIndex == null ? state.selectionZoom : 1) : state.selectionZoom;
-    const toZoom = nextAbsIndex == null ? 1 : 1.5;
+    const previousRenderKey = state.visualSelectedRenderKey;
+    const switchingTarget = previousRenderKey !== nextRenderKey;
+    const fromZoom = switchingTarget ? (nextRenderKey == null ? state.selectionZoom : 1) : state.selectionZoom;
+    const toZoom = nextRenderKey == null ? 1 : 1.5;
     const durationMs = 180;
     const startAt = performance.now();
 
-    if (nextAbsIndex != null) state.visualSelectedAbsIndex = nextAbsIndex;
+    if (nextRenderKey != null) state.visualSelectedRenderKey = nextRenderKey;
 
     const tick = (now: number) => {
       const t = Math.max(0, Math.min(1, (now - startAt) / durationMs));
@@ -404,7 +372,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       } else {
         state.selectionAnimRaf = null;
         state.selectionZoom = toZoom;
-        if (nextAbsIndex == null) state.visualSelectedAbsIndex = null;
+        if (nextRenderKey == null) state.visualSelectedRenderKey = null;
         renderHistory(taskId);
       }
     };
@@ -421,8 +389,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     state.selectionClearTimer = window.setTimeout(() => {
       const next = ctx.getHistoryViewByTaskId()[taskId];
       if (!next) return;
-      next.selectedAbsIndex = null;
-      next.selectedRelIndex = null;
+      refreshHistoryInlineSelectionView(taskId, next).clear("transient");
       next.selectionClearTimer = null;
       startHistorySelectionAnimation(taskId, null);
     }, 3000);
@@ -434,7 +401,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.clearTimeout(state.selectionClearTimer);
       state.selectionClearTimer = null;
     }
-    historyInlineSelection.clearSelection(state);
+    refreshHistoryInlineSelectionView(taskId, state).clear("all");
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
     startHistorySelectionAnimation(taskId, null);
   }
@@ -450,8 +417,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       window.cancelAnimationFrame(state.selectionAnimRaf);
       state.selectionAnimRaf = null;
     }
-    historyInlineSelection.clearSelection(state);
-    state.visualSelectedAbsIndex = null;
+    refreshHistoryInlineSelectionView(taskId, state).clear("all");
+    state.visualSelectedRenderKey = null;
     state.selectionZoom = 1;
     if (ctx.getHistoryEntryNoteAnchorTaskId() === taskId) closeHistoryEntryNoteOverlay();
     if (ctx.getCurrentAppPage() === "tasks" && ctx.getOpenHistoryTaskIds().has(taskId)) renderHistory(taskId);
@@ -472,7 +439,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function clearHistoryLockedSelections(taskId: string) {
     const state = ensureHistoryViewState(taskId);
-    historyInlineSelection.clearLockedSelections(state);
+    refreshHistoryInlineSelectionView(taskId, state).clear("locks");
     syncHistoryEntryNoteOverlayForSelection(taskId, state);
   }
 
@@ -611,17 +578,43 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     getTaskById: (taskId) =>
       ctx.getTasks().find((candidate) => String(candidate?.id || "").trim() === String(taskId || "").trim()) || null,
     getEntriesForTask: getHistoryForTask,
+    resolveEntryTarget: (taskId, historyTargetKey) => {
+      const resolution = getHistoryInlineSelectionSession(taskId).resolveEntryTarget(
+        historyTargetKey,
+        getHistoryForTask(taskId)
+      );
+      return resolution.kind === "resolved" ? resolution.entry : null;
+    },
     getRewardProgress: () => ctx.getRewardProgress(),
     openOverlay: ctx.openOverlay,
     closeOverlay: ctx.closeOverlay,
     isMobileLayout: () => window.matchMedia?.("(max-width: 640px)")?.matches ?? window.innerWidth <= 640,
   });
 
-  function closeHistoryEntryNoteOverlay(opts?: { preservePosition?: boolean }) {
-    historyEntrySummaryOpenEntries = [];
+  function finalizeInlineHistoryEntryNoteOverlayClose(opts?: { preservePosition?: boolean }) {
+    const anchorTaskId = String(ctx.getHistoryEntryNoteAnchorTaskId() || "");
+    const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
+    if (overlay?.dataset.historyEntryOwner !== "inline" && !anchorTaskId) return false;
+    const shouldResumeTransientClear = !!anchorTaskId;
     historyEntrySummaryInteraction.clearTarget();
     if (!opts?.preservePosition) clearHistoryEntryNoteOverlayPosition();
-    ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+    if (shouldResumeTransientClear) {
+      const state = ctx.getHistoryViewByTaskId()[anchorTaskId];
+      if (state && refreshHistoryInlineSelectionView(anchorTaskId, state).selectedRenderKey) {
+        scheduleHistorySelectionClear(anchorTaskId);
+      }
+    }
+    return true;
+  }
+
+  function closeHistoryEntryNoteOverlay(opts?: { preservePosition?: boolean }) {
+    finalizeInlineHistoryEntryNoteOverlayClose(opts);
+    suppressHistoryEntryNoteClosedEvent = true;
+    try {
+      ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+    } finally {
+      suppressHistoryEntryNoteClosedEvent = false;
+    }
   }
 
   function isHistoryChartInteractionTarget(target: EventTarget | null) {
@@ -631,11 +624,40 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
-    if (!historyEntrySummaryInteraction.openSummary(taskId, entries)) {
+    const currentEntries = getHistoryForTask(taskId);
+    const selectionSession = getHistoryInlineSelectionSession(taskId);
+    const summaryEntries = (Array.isArray(entries) ? entries : []).map((entry) => {
+      const suppliedTargetKey = String(entry?.historyTargetKey || "");
+      const resolution = suppliedTargetKey
+        ? selectionSession.resolveEntryTarget(suppliedTargetKey, currentEntries)
+        : selectionSession.resolveEntryCandidate(entry, currentEntries);
+      if (resolution.kind !== "resolved") {
+        return {
+          ...entry,
+          taskId,
+          ts: ctx.normalizeHistoryTimestampMs(entry?.ts),
+          historyTargetKey: "",
+          historyMutationAllowed: false,
+        };
+      }
+      const historyTargetKey = suppliedTargetKey || ("targetKey" in resolution ? resolution.targetKey : "");
+      return {
+        ...resolution.entry,
+        taskId,
+        ts: ctx.normalizeHistoryTimestampMs(resolution.entry.ts),
+        historyTargetKey,
+        historyMutationAllowed: entry?.historyMutationAllowed !== false && !resolution.entry.isLiveSession,
+      };
+    });
+    if (!historyEntrySummaryInteraction.openSummary(taskId, summaryEntries)) {
       closeHistoryEntryNoteOverlay();
       return;
     }
-    historyEntrySummaryOpenEntries = Array.isArray(entries) ? entries.slice() : [];
+    const state = ctx.getHistoryViewByTaskId()[taskId];
+    if (state?.selectionClearTimer != null) {
+      window.clearTimeout(state.selectionClearTimer);
+      state.selectionClearTimer = null;
+    }
     ctx.setHistoryEntryNoteAnchorTaskId(taskId);
     requestAnimationFrame(() => {
       refreshHistoryEntryNoteOverlayPosition();
@@ -648,34 +670,31 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const drafts = historyEntrySummaryInteraction.getEditedNoteDrafts();
     const fallbackDraft = {
       taskId: String(overlay.dataset.historyEntryTaskId || "").trim(),
+      historyTargetKey: String(overlay.dataset.historyEntryTargetKey || ""),
       ts: Math.floor(Number(overlay.dataset.historyEntryTs || 0)),
       ms: Math.max(0, Math.floor(Number(overlay.dataset.historyEntryMs || 0))),
       name: String(overlay.dataset.historyEntryName || "").trim(),
       note: historyEntrySummaryInteraction.getActiveInputValue().trim(),
     };
     const noteDrafts = drafts.length ? drafts : [fallbackDraft];
-    const validDrafts = noteDrafts.filter((draft) => draft.taskId && draft.ts > 0 && draft.name);
+    const validDrafts = noteDrafts.filter(
+      (draft) => draft.taskId && String(draft.historyTargetKey || "") && draft.ts > 0 && draft.name
+    );
     if (!validDrafts.length) return;
-    const historyByTaskId = ctx.getHistoryByTaskId() || {};
-    const nextHistory = { ...historyByTaskId };
+    const nextHistory = { ...getFinalizedHistoryByTaskId() };
     const updatedEntries: any[] = [];
     const touchedTaskIds = new Set<string>();
     validDrafts.forEach((draft) => {
       const original = Array.isArray(nextHistory[draft.taskId]) ? nextHistory[draft.taskId] : [];
-      const pos = original.findIndex(
-        (entry: any) =>
-          Number(entry?.ts) === draft.ts &&
-          Number(entry?.ms) === draft.ms &&
-          String(entry?.name || "").trim() === draft.name
-      );
-      if (pos < 0) return;
-      const nextEntry = { ...original[pos] };
+      const historyTargetKey = String(draft.historyTargetKey || "");
+      const resolution = getHistoryInlineSelectionSession(draft.taskId).resolveEntryTarget(historyTargetKey, original);
+      if (resolution.kind !== "resolved" || resolution.entry.isLiveSession) return;
+      const nextEntry = { ...resolution.entry };
       if (draft.note) nextEntry.note = draft.note;
       else delete nextEntry.note;
-      const nextTaskHistory = original.slice();
-      nextTaskHistory[pos] = nextEntry;
+      const nextTaskHistory = original.map((entry: any) => (entry === resolution.entry ? nextEntry : entry));
       nextHistory[draft.taskId] = nextTaskHistory;
-      updatedEntries.push(nextEntry);
+      updatedEntries.push({ ...nextEntry, taskId: draft.taskId, historyTargetKey });
       touchedTaskIds.add(draft.taskId);
     });
     if (!updatedEntries.length) return;
@@ -688,27 +707,19 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function beginInlineHistoryEntryNoteEdit(trigger: HTMLElement | null) {
+    if (!String(trigger?.getAttribute("data-history-summary-target-key") || "")) return;
     if (historyEntrySummaryInteraction.beginEdit(trigger)) refreshHistoryEntryNoteOverlayPosition();
   }
 
-  function findHistoryEntryIndexByIdentity(entries: any[], identity: { ts: number; ms: number; name: string }) {
-    return findTaskTimerHistoryEntryIndexByIdentity(entries, identity);
-  }
-
-  function deleteHistoryEntryByAbsIndex(
+  function commitResolvedHistoryDelete(
     taskId: string,
     state: HistoryViewState,
-    deleteAbsIndex: number,
-    opts?: { syncOverlay?: boolean; selectedDayKeys?: string[]; deletedSelectionIndex?: number }
+    resolution: Extract<HistoryInlineDeleteResolution, { kind: "resolved" }>,
+    opts?: { syncOverlay?: boolean }
   ) {
-    const allEntries = getHistoryForTask(taskId);
-    if (deleteAbsIndex < 0 || deleteAbsIndex >= allEntries.length) return false;
-    if ((allEntries[deleteAbsIndex] as any)?.isLiveSession) return false;
-
-    allEntries.splice(deleteAbsIndex, 1);
     const nextHistory = {
       ...getFinalizedHistoryByTaskId(),
-      [taskId]: allEntries.filter((entry: any) => !entry?.isLiveSession) as any,
+      [taskId]: resolution.remainingFinalizedEntries,
     };
     ctx.setHistoryByTaskId(nextHistory);
     ctx.saveHistory(nextHistory, { allowDestructiveReplace: true });
@@ -720,24 +731,18 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       ctx.getWeekStarting()
     );
     if (clearedCompletion) ctx.save({ forceCloudFlush: true });
-
-    if (state.rangeMode === "day" && opts?.selectedDayKeys?.length) {
-      syncDaySelectionIndexesForSelectedKeys(taskId, state, opts.selectedDayKeys);
-    } else {
-      const deletedSelectionIndex =
-        typeof opts?.deletedSelectionIndex === "number" && opts.deletedSelectionIndex >= 0
-          ? opts.deletedSelectionIndex
-          : deleteAbsIndex;
-      const deletionSelection = historyInlineSelection.applyDeletedIndex(state, deletedSelectionIndex);
-      if (deletionSelection.clearedSelected) {
-        startHistorySelectionAnimation(taskId, null);
-      }
+    const selectionView = refreshHistoryInlineSelectionView(taskId, state);
+    if (
+      state.visualSelectedRenderKey &&
+      !selectionView.rows.some((row) => row.renderKey === state.visualSelectedRenderKey)
+    ) {
+      startHistorySelectionAnimation(taskId, null);
     }
     if (opts?.syncOverlay !== false) {
       syncHistoryEntryNoteOverlayForSelection(taskId, state);
     }
 
-    const maxPage = Math.max(0, Math.ceil(allEntries.length / historyPageSize(taskId)) - 1);
+    const maxPage = Math.max(0, Math.ceil(selectionView.rows.length / historyPageSize(taskId)) - 1);
     state.page = Math.min(state.page, maxPage);
     if (clearedCompletion) ctx.render();
     renderHistory(taskId);
@@ -758,118 +763,24 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function getCurrentHistorySummarySelection(taskId: string, state?: HistoryViewState | null) {
     const nextState = state || ensureHistoryViewState(taskId);
-    const targetAbsIndex = historyInlineSelection.getSummaryPrimaryIndex(nextState);
-    if (targetAbsIndex == null) return [];
-    return getHistorySummaryEntries(taskId, nextState, targetAbsIndex, nextState.lockedAbsIndexes);
+    const selectionView = refreshHistoryInlineSelectionView(taskId, nextState);
+    const action = selectionView.actions.summary;
+    if (!action.enabled) return [];
+    const resolution = action.resolve(getHistoryForTask(taskId));
+    if (resolution.kind !== "resolved") return [];
+    return resolution.entries.map(({ entry, targetKey }) => ({
+      ...entry,
+      taskId,
+      historyTargetKey: targetKey || "",
+      historyMutationAllowed: !!targetKey && !entry.isLiveSession,
+    }));
   }
 
   function getHistoryDisplayForTask(taskId: string, state: HistoryViewState) {
-    const { windowed: all } = getHistoryWindowForTask(taskId);
-    if (state.rangeMode !== "day") return all;
-
-    const groupedByDay: Array<any> = [];
-    const historyTask = ctx.getTasks().find((task) => String(task.id || "") === String(taskId));
-    all.forEach((e: any) => {
-      const ts = historyTsMs(e);
-      const ms = Math.max(0, +e.ms || 0);
-      const key = historyLocalDateKey(ts);
-      const last = groupedByDay[groupedByDay.length - 1];
-      if (last && last.dayKey === key) {
-        last.ms += ms;
-        last.count += 1;
-        if (ts >= last.ts) last.ts = ts;
-        if (historyTask) last.color = ctx.historyEntryColorForTaskMs(historyTask as any, last.ms);
-      } else {
-        groupedByDay.push({
-          dayKey: key,
-          ts,
-          ms,
-          count: 1,
-          color: historyTask ? ctx.historyEntryColorForTaskMs(historyTask as any, ms) : e.color,
-        });
-      }
-    });
-    return groupedByDay;
+    return refreshHistoryInlineSelectionView(taskId, state).rows.map((row) => historyInlineDisplayValue(taskId, row));
   }
 
-  function getHistorySummaryEntries(
-    taskId: string,
-    state: HistoryViewState,
-    primaryAbsIndex: number,
-    lockedAbsIndexes?: Set<number> | null
-  ) {
-    const display = getHistoryDisplayForTask(taskId, state);
-    const selectedIndexes = lockedAbsIndexes?.size
-      ? Array.from(lockedAbsIndexes.values()).sort((a, b) => a - b)
-      : [primaryAbsIndex];
-    if (state.rangeMode === "day") {
-      const dayKeys = new Set(
-        selectedIndexes.map((absIndex) => historyLocalDateKey(display[absIndex]?.ts)).filter((key) => !!key)
-      );
-      if (!dayKeys.size) {
-        const singleDisplayEntry = display[primaryAbsIndex];
-        return singleDisplayEntry ? [singleDisplayEntry] : [];
-      }
-      return getHistoryForTask(taskId)
-        .filter((entry: any) => dayKeys.has(historyLocalDateKey(entry?.ts)))
-        .sort((a: any, b: any) => historyTsMs(b) - historyTsMs(a));
-    }
-
-    return selectedIndexes
-      .map((absIndex) => display[absIndex])
-      .filter((entry) => !!entry);
-  }
-
-  function getCurrentHistorySummarySelectedIndexes(state: HistoryViewState) {
-    const primaryAbsIndex = historyInlineSelection.getSummaryPrimaryIndex(state);
-    if (primaryAbsIndex == null) return [];
-    return state.lockedAbsIndexes.size
-      ? Array.from(state.lockedAbsIndexes.values()).sort((a, b) => a - b)
-      : [primaryAbsIndex];
-  }
-
-  function createHistorySummaryDeleteSnapshot(taskId: string, state: HistoryViewState, entry: any): HistorySummaryDeleteSnapshot {
-    const selectedEntries = getCurrentHistorySummarySelection(taskId, state);
-    const openSummaryEntries = historyEntrySummaryOpenEntries.filter(
-      (summaryEntry) => String(summaryEntry?.taskId || taskId) === taskId
-    );
-    const selectedIndexes = getCurrentHistorySummarySelectedIndexes(state);
-    const display = getHistoryDisplayForTask(taskId, state);
-    const selectedDayKeys =
-      state.rangeMode === "day"
-        ? selectedIndexes.map((absIndex) => historyLocalDateKey(display[absIndex]?.ts)).filter((key) => !!key)
-        : [];
-    return {
-      rangeMode: state.rangeMode,
-      selectedEntries: selectedEntries.length ? selectedEntries : openSummaryEntries.length ? openSummaryEntries : [entry],
-      selectedDayKeys,
-    };
-  }
-
-  function syncDaySelectionIndexesForSelectedKeys(taskId: string, state: HistoryViewState, selectedDayKeys: string[]) {
-    const dayKeySet = new Set(selectedDayKeys.filter(Boolean));
-    const display = getHistoryDisplayForTask(taskId, state);
-    const nextIndexes = display
-      .map((entry, index) => (dayKeySet.has(historyLocalDateKey(entry?.ts)) ? index : null))
-      .filter((index): index is number => index != null);
-
-    if (!nextIndexes.length) {
-      historyInlineSelection.clearSelection(state);
-      return;
-    }
-
-    if (state.lockedAbsIndexes.size > 0) {
-      state.lockedAbsIndexes = new Set(nextIndexes);
-      state.selectedAbsIndex = null;
-      state.selectedRelIndex = null;
-      return;
-    }
-
-    state.selectedAbsIndex = nextIndexes[0] ?? null;
-    state.selectedRelIndex = null;
-  }
-
-  function renderHistoryTrashRow(slice: any[], absStartIndex: number, ui: HistoryUI) {
+  function renderHistoryTrashRow(rows: HistoryInlineSelectionRow[], ui: HistoryUI) {
     if (!ui.trashRow) return;
     const taskId = ui.root.closest(".task")?.getAttribute("data-task-id") || "";
     const state = ensureHistoryViewState(taskId);
@@ -886,12 +797,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const buttons: string[] = [];
 
     for (let i = 0; i < pageSize; i++) {
-      const e = slice[i];
-      const absIndex = absStartIndex + i;
-      const disabled = !e;
+      const row = rows[i];
+      const entry = row?.kind === "entry" ? row.value : null;
+      const disabled = !row || !entry || !row.interactive || !!entry.isLiveSession;
+      const targetAttr = disabled
+        ? ""
+        : ` data-history-entry-delete-target="${ctx.escapeHtmlUI(row.renderKey)}"`;
 
       buttons.push(
-        `<button class="historyTrashBtn" type="button" data-abs="${absIndex}" ${
+        `<button class="historyTrashBtn" type="button"${targetAttr} ${
           disabled ? "disabled" : ""
         } aria-label="Delete log" title="Delete log">&#128465;</button>`
       );
@@ -1021,7 +935,13 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     draw.restore();
   }
 
-  function drawHistoryChart(entries: any[], absStartIndex: number, ui: HistoryUI, taskId: string) {
+  function drawHistoryChart(
+    entries: any[],
+    ui: HistoryUI,
+    taskId: string,
+    selectionRows: HistoryInlineSelectionRow[],
+    selectionView: HistoryInlineSelectionView
+  ) {
     const canvas = ui.canvas;
     const wrap = ui.canvasWrap;
     if (!canvas || !wrap) return false;
@@ -1182,12 +1102,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const ms = Math.max(0, e.ms || 0);
       const ratio = ms / scaleMaxMs;
       const bh = Math.max(2, Math.floor(innerH * ratio));
-      const visualRelIndex =
-        state.visualSelectedAbsIndex != null ? state.visualSelectedAbsIndex - (absStartIndex || 0) : null;
-      const absIndex = (absStartIndex || 0) + idx;
-      const isLocked = state.lockedAbsIndexes.has(absIndex);
-      const isSelected = visualRelIndex === idx;
-      const hasSelection = visualRelIndex != null || state.lockedAbsIndexes.size > 0;
+      const selectionRow = selectionRows[idx];
+      const isLocked = selectionRow?.selection === "locked";
+      const isSelected = !!selectionRow && state.visualSelectedRenderKey === selectionRow.renderKey;
+      const hasSelection = state.visualSelectedRenderKey != null || selectionView.lockedCount > 0;
       const baseX = plotEntryLeft + idx * (barW + gap);
       const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW));
@@ -1226,7 +1144,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         y,
         w: drawW,
         h: drawH,
-        absIndex: (absStartIndex || 0) + idx,
+        renderKey: selectionRow?.renderKey || "",
         hitX: Math.max(plotEntryLeft, slotLeft),
         hitY: padT,
         hitW: Math.max(4, Math.min(plotRight, slotRight) - Math.max(plotEntryLeft, slotLeft)),
@@ -1310,7 +1228,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
             y: ty - 10,
             w: labelHitW,
             h: labelHitH,
-            absIndex: (absStartIndex || 0) + idx,
+            renderKey: selectionRow?.renderKey || "",
           };
           draw.textAlign = "center";
           draw.textBaseline = "alphabetic";
@@ -1326,7 +1244,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
             y: line1Y - 10,
             w: labelHitW,
             h: labelHitH,
-            absIndex: (absStartIndex || 0) + idx,
+            renderKey: selectionRow?.renderKey || "",
           };
         }
         draw.restore();
@@ -1480,13 +1398,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const ui = getHistoryUi(taskId);
     if (!ui) return false;
     const state = ensureHistoryViewState(taskId);
-
-    const { windowed: all, usesFallbackWindow } = getHistoryWindowForTask(taskId);
+    const selectionView = refreshHistoryInlineSelectionView(taskId, state);
     const rangeDays = state.rangeDays || 7;
-    const distinctDayCount = new Set(all.map((e: any) => historyLocalDateKey(e?.ts))).size;
     const pageSize = historyPageSize(taskId);
     const isDayMode = state.rangeMode === "day";
-    const display = getHistoryDisplayForTask(taskId, state);
+    const displayRows = selectionView.rows;
+    const display = displayRows.map((row) => historyInlineDisplayValue(taskId, row));
     const total = display.length;
     const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
     if (state.page > maxPage) state.page = maxPage;
@@ -1495,15 +1412,16 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const end = Math.max(0, total - state.page * pageSize);
     const start = Math.max(0, end - pageSize);
     const slice = display.slice(start, end);
+    const selectionSlice = displayRows.slice(start, end);
 
     if (ui.rangeText) {
       if (total === 0) ui.rangeText.textContent = "No entries yet";
       else {
         const summary = isDayMode
-          ? `Showing ${slice.length} of ${total} days (${all.length} entries)`
-          : `Showing ${slice.length} of ${total} entries (${distinctDayCount} ${distinctDayCount === 1 ? "day" : "days"})`;
+          ? `Showing ${slice.length} of ${total} days (${selectionView.sourceEntryCount} entries)`
+          : `Showing ${slice.length} of ${total} entries (${selectionView.dayCount} ${selectionView.dayCount === 1 ? "day" : "days"})`;
         const swipeHint = total > slice.length ? " - swipe to browse" : "";
-        const fallbackHint = usesFallbackWindow ? ` (showing older entries outside ${HISTORY_LOOKBACK_DAYS} days)` : "";
+        const fallbackHint = selectionView.windowKind === "all-entries-fallback" ? ` (showing older entries outside ${HISTORY_LOOKBACK_DAYS} days)` : "";
         ui.rangeText.textContent = `${summary}${swipeHint}${fallbackHint}`;
       }
     }
@@ -1511,15 +1429,15 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     if (ui.olderBtn) ui.olderBtn.disabled = start <= 0;
     if (ui.newerBtn) ui.newerBtn.disabled = end >= total;
 
-    historyInlineSelection.syncSelectedRelIndex(state, start, slice.length);
-    const { hasDeleteTarget, hasSummaryTarget } = historyInlineSelection.getRenderTargets(state, isDayMode);
+    const hasDeleteTarget = selectionView.actions.delete.enabled;
+    const hasSummaryTarget = selectionView.actions.summary.enabled;
     if (ui.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
     if (ui.viewSummaryBtn) {
       ui.viewSummaryBtn.disabled = !hasSummaryTarget;
       ui.viewSummaryBtn.setAttribute("aria-disabled", String(!hasSummaryTarget));
       ui.viewSummaryBtn.title = hasSummaryTarget ? "View Summary" : "Select a history entry to view the summary";
     }
-    if (ui.clearLocksBtn) ui.clearLocksBtn.style.display = state.lockedAbsIndexes.size > 0 ? "inline-flex" : "none";
+    if (ui.clearLocksBtn) ui.clearLocksBtn.style.display = selectionView.lockedCount > 0 ? "inline-flex" : "none";
 
     if (ui.canvasWrap && state.slideDir) {
       ui.canvasWrap.classList.remove("slideFromLeft", "slideFromRight");
@@ -1528,8 +1446,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       state.slideDir = null;
     }
 
-    const chartDrawn = drawHistoryChart(slice, start, ui, taskId);
-    renderHistoryTrashRow(slice, start, ui);
+    const chartDrawn = drawHistoryChart(slice, ui, taskId, selectionSlice, selectionView);
+    renderHistoryTrashRow(selectionSlice, ui);
     if (!chartDrawn) return false;
 
     const rangeToggle = ui.root.querySelector(".historyRangeToggle") as HTMLElement | null;
@@ -1552,7 +1470,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const analyseBtn = ui.root.querySelector('[data-history-action="analyse"]') as HTMLButtonElement | null;
     if (analyseBtn) {
       const hasHistoryEntitlement = ctx.hasEntitlement("advancedHistory");
-      const canAnalyse = historyInlineSelection.getCanAnalyse(state, hasHistoryEntitlement);
+      const canAnalyse = selectionView.actions.analyse.enabled;
       analyseBtn.classList.toggle("isDisabled", !canAnalyse);
       analyseBtn.disabled = !hasHistoryEntitlement;
       analyseBtn.setAttribute("aria-disabled", String(!canAnalyse));
@@ -1576,10 +1494,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function openHistoryAnalysisModal(taskId: string) {
     const state = ensureHistoryViewState(taskId);
-    if (state.lockedAbsIndexes.size < 2) return;
-    const display = getHistoryDisplayForTask(taskId, state);
-    if (!display.length) return;
-    const selected = Array.from(state.lockedAbsIndexes.values()).sort((a, b) => a - b).map((idx) => display[idx]).filter(Boolean);
+    const selectionView = refreshHistoryInlineSelectionView(taskId, state);
+    const action = selectionView.actions.analyse;
+    if (!action.enabled) return;
+    const resolution = action.resolve(getHistoryForTask(taskId));
+    if (resolution.kind !== "resolved") return;
+    const selected = resolution.entries.map(({ entry }) => entry);
     if (selected.length < 2) return;
 
     const totalMs = selected.reduce((sum, e: any) => sum + Math.max(0, +e.ms || 0), 0);
@@ -1640,6 +1560,38 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
   }
 
+  function disposeHistoryTask(taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "");
+    if (!taskId) return false;
+    if (ctx.getHistoryEntryNoteAnchorTaskId() === taskId) closeHistoryEntryNoteOverlay();
+    const historyViewByTaskId = ctx.getHistoryViewByTaskId();
+    const state = historyViewByTaskId[taskId];
+    if (state?.selectionClearTimer != null) window.clearTimeout(state.selectionClearTimer);
+    if (state?.selectionAnimRaf != null) window.cancelAnimationFrame(state.selectionAnimRaf);
+    clearHistoryBarRevealAnimation(state);
+    clearHistoryRevealTimer(state);
+    clearHistoryLayoutRetry(state);
+    clearHistoryCanvasResizeObserver(taskId);
+    ctx.getOpenHistoryTaskIds().delete(taskId);
+    delete historyViewByTaskId[taskId];
+    historyInlineSelectionSessions.delete(taskId);
+    return true;
+  }
+
+  function pruneInactiveHistoryTasks(activeTaskIds: Set<string>) {
+    const candidates = new Set<string>([
+      ...historyInlineSelectionSessions.keys(),
+      ...Object.keys(ctx.getHistoryViewByTaskId()),
+      ...ctx.getOpenHistoryTaskIds(),
+    ]);
+    const anchoredTaskId = String(ctx.getHistoryEntryNoteAnchorTaskId() || "");
+    if (anchoredTaskId) candidates.add(anchoredTaskId);
+    candidates.forEach((taskId) => {
+      if (!activeTaskIds.has(taskId)) disposeHistoryTask(taskId);
+    });
+    return true;
+  }
+
   function closeHistory(taskId?: string) {
     if (!taskId || ctx.getHistoryEntryNoteAnchorTaskId() === taskId) closeHistoryEntryNoteOverlay();
     const reducedMotion = prefersReducedMotion();
@@ -1655,6 +1607,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         clearHistoryLayoutRetry(state);
         clearHistoryCanvasResizeObserver(taskId);
         delete historyViewByTaskId[taskId];
+        historyInlineSelectionSessions.delete(taskId);
       } else {
         state.revealPhase = "closingSpace";
         startHistoryCloseContentDom(taskId);
@@ -1670,6 +1623,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
             clearHistoryLayoutRetry(finalState);
             clearHistoryCanvasResizeObserver(taskId);
             delete historyViewByTaskId[taskId];
+            historyInlineSelectionSessions.delete(taskId);
             ctx.render();
           });
         });
@@ -1687,12 +1641,20 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         clearHistoryLayoutRetry(state);
         clearHistoryCanvasResizeObserver(k);
         delete historyViewByTaskId[k];
+        historyInlineSelectionSessions.delete(k);
       });
+      historyInlineSelectionSessions.clear();
     }
     ctx.render();
   }
 
   function registerHistoryInlineEvents() {
+    ctx.on(window, TASKTIMER_OVERLAY_CLOSED_EVENT, (event: Event) => {
+      if (suppressHistoryEntryNoteClosedEvent) return;
+      const overlayId = String((event as CustomEvent<{ overlayId?: unknown }>).detail?.overlayId || "");
+      if (overlayId !== "historyEntryNoteOverlay") return;
+      finalizeInlineHistoryEntryNoteOverlayClose();
+    });
     ctx.on(window, "resize", () => {
       refreshHistoryEntryNoteOverlayPosition();
     });
@@ -1747,47 +1709,53 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       if (overlay.dataset.historyEntryEditing === "true") return;
 
       const taskId = String(deleteBtn.getAttribute("data-history-summary-task-id") || "").trim();
-      const ts = Math.floor(Number(deleteBtn.getAttribute("data-history-summary-ts") || 0));
-      const ms = Math.max(0, Math.floor(Number(deleteBtn.getAttribute("data-history-summary-ms") || 0)));
-      const name = String(deleteBtn.getAttribute("data-history-summary-name") || "").trim();
-      if (!taskId || ts <= 0 || !name) return;
+      const historyTargetKey = String(deleteBtn.getAttribute("data-history-summary-target-key") || "");
+      if (!taskId || !historyTargetKey) return;
 
       const state = ensureHistoryViewState(taskId);
-      const deleteAbsIndex = findHistoryEntryIndexByIdentity(getHistoryForTask(taskId), { ts, ms, name });
-      if (deleteAbsIndex < 0) return;
-      const entry = getHistoryForTask(taskId)[deleteAbsIndex] as any;
-      if (!entry || entry?.isLiveSession) return;
-      const deleteSnapshot = createHistorySummaryDeleteSnapshot(taskId, state, entry);
-      const deletedIdentity = getTaskTimerHistoryEntryIdentity(entry);
-      const deletedSelectionIndex = findHistoryEntryIndexByIdentity(getHistoryDisplayForTask(taskId, state), {
-        ts,
-        ms,
-        name,
-      });
+      const selectionSession = getHistoryInlineSelectionSession(taskId);
+      const initialResolution = selectionSession.resolveEntryTarget(historyTargetKey, getHistoryForTask(taskId));
+      if (initialResolution.kind !== "resolved" || initialResolution.entry.isLiveSession) return;
+      const entry = initialResolution.entry;
 
       ctx.confirm("Delete Session Entry", `Delete this session entry (${ctx.formatTime(entry.ms || 0)})?`, {
         okLabel: "Delete",
         overlayClassName: "isDeleteSessionEntryConfirm",
         onOk: () => {
-          deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex, {
-            syncOverlay: false,
-            selectedDayKeys: deleteSnapshot.selectedDayKeys,
-            deletedSelectionIndex,
-          });
+          const resolution = selectionSession.resolveEntryDelete(historyTargetKey, getHistoryForTask(taskId));
+          if (resolution.kind !== "resolved") {
+            ctx.closeConfirm();
+            refreshHistoryInlineSelectionView(taskId, state);
+            syncHistoryEntryNoteOverlayForSelection(taskId, state);
+            ctx.showActionConfirmation("History changed. Nothing was deleted.");
+            return;
+          }
+          commitResolvedHistoryDelete(taskId, state, resolution, { syncOverlay: false });
           ctx.closeConfirm();
-          const remainingEntries = getTaskTimerHistorySummaryRemainingEntriesAfterDelete({
-            allEntries: getHistoryForTask(taskId),
-            snapshot: deleteSnapshot,
-            deletedIdentity,
-            getDateKey: (nextEntry) => historyLocalDateKey(nextEntry?.ts),
-          });
+          const remainingEntries = getCurrentHistorySummarySelection(taskId, state);
           if (remainingEntries.length) openHistoryEntryNoteOverlay(taskId, remainingEntries);
           else closeHistoryEntryNoteOverlay();
         },
         onCancel: () => {
           ctx.closeConfirm();
           const selectedEntries = getCurrentHistorySummarySelection(taskId, state);
-          openHistoryEntryNoteOverlay(taskId, selectedEntries.length ? selectedEntries : [entry]);
+          if (selectedEntries.length) {
+            openHistoryEntryNoteOverlay(taskId, selectedEntries);
+            return;
+          }
+          const currentTarget = selectionSession.resolveEntryTarget(historyTargetKey, getHistoryForTask(taskId));
+          if (currentTarget.kind === "resolved") {
+            openHistoryEntryNoteOverlay(taskId, [
+              {
+                ...currentTarget.entry,
+                taskId,
+                historyTargetKey,
+                historyMutationAllowed: !currentTarget.entry.isLiveSession,
+              },
+            ]);
+          } else {
+            closeHistoryEntryNoteOverlay();
+          }
         },
       });
       playDeleteAlertAudio();
@@ -1875,6 +1843,40 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
 
     ctx.on(els.taskList, "click", (ev: any) => {
+      const entryDeleteBtn = findDelegatedElement(
+        ev.target,
+        "[data-history-entry-delete-target]"
+      ) as HTMLButtonElement | null;
+      if (entryDeleteBtn) {
+        const taskEl = entryDeleteBtn.closest?.(".task") as HTMLElement | null;
+        const taskId = taskEl?.getAttribute?.("data-task-id") || "";
+        const historyTargetKey = String(entryDeleteBtn.getAttribute("data-history-entry-delete-target") || "");
+        if (!taskId || !historyTargetKey) return;
+        const state = ensureHistoryViewState(taskId);
+        const selectionSession = getHistoryInlineSelectionSession(taskId);
+        const initial = selectionSession.resolveEntryTarget(historyTargetKey, getHistoryForTask(taskId));
+        if (initial.kind !== "resolved" || initial.entry.isLiveSession) return;
+        ctx.confirm("Delete Log Entry", `Delete this entry (${ctx.formatTime(initial.entry.ms || 0)})?`, {
+          okLabel: "Delete",
+          onOk: () => {
+            const resolution = selectionSession.resolveEntryDelete(historyTargetKey, getHistoryForTask(taskId));
+            if (resolution.kind !== "resolved") {
+              ctx.closeConfirm();
+              refreshHistoryInlineSelectionView(taskId, state);
+              syncHistoryEntryNoteOverlayForSelection(taskId, state);
+              renderHistory(taskId);
+              ctx.showActionConfirmation("History changed. Nothing was deleted.");
+              return;
+            }
+            commitResolvedHistoryDelete(taskId, state, resolution);
+            ctx.closeConfirm();
+            ctx.showActionConfirmation("History entry deleted.");
+          },
+        });
+        playDeleteAlertAudio();
+        return;
+      }
+
       const rangeToggle = findDelegatedElement(ev.target, "[data-history-range-toggle]");
       if (rangeToggle) {
         const taskEl = rangeToggle.closest?.(".task") as HTMLElement | null;
@@ -1894,8 +1896,11 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (!taskId) return;
         const state = ensureHistoryViewState(taskId);
         const mode = rangeModeBtn.getAttribute("data-history-range-mode");
-        state.rangeMode = mode === "day" ? "day" : "entries";
+        const nextMode = mode === "day" ? "day" : "entries";
+        const modeChanged = state.rangeMode !== nextMode;
+        state.rangeMode = nextMode;
         saveHistoryRangeModePref(taskId, state.rangeMode);
+        if (modeChanged) clearHistoryChartSelection(taskId);
         renderHistory(taskId);
         return;
       }
@@ -1948,7 +1953,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
             ctx.showUpgradePrompt("Inline history analysis", "pro");
             return;
           }
-          if (!historyInlineSelection.getCanAnalyse(state, true)) return;
+          if (!refreshHistoryInlineSelectionView(taskId, state).actions.analyse.enabled) return;
           openHistoryAnalysisModal(taskId);
         },
         viewSummary: () => {
@@ -1965,17 +1970,23 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         actionHandlers[action]?.();
         if (Object.prototype.hasOwnProperty.call(actionHandlers, action)) return;
       }
-      const deleteAbsIndex = historyInlineSelection.getDeleteTargetIndex(state);
-      if (action !== "delete" || deleteAbsIndex == null) return;
+      if (action !== "delete") return;
+      const deleteAction = refreshHistoryInlineSelectionView(taskId, state).actions.delete;
+      if (!deleteAction.enabled) return;
 
-      const all = getHistoryForTask(taskId);
-      const e = all[deleteAbsIndex] as any;
-      if (!e) return;
-
-      ctx.confirm("Delete Log Entry", `Delete this entry (${ctx.formatTime(e.ms || 0)})?`, {
+      ctx.confirm("Delete Log Entry", `Delete this entry (${ctx.formatTime(deleteAction.preview.totalMs)})?`, {
         okLabel: "Delete",
         onOk: () => {
-          deleteHistoryEntryByAbsIndex(taskId, state, deleteAbsIndex);
+          const resolution = deleteAction.resolve(getHistoryForTask(taskId));
+          if (resolution.kind !== "resolved") {
+            ctx.closeConfirm();
+            refreshHistoryInlineSelectionView(taskId, state);
+            syncHistoryEntryNoteOverlayForSelection(taskId, state);
+            renderHistory(taskId);
+            ctx.showActionConfirmation("History changed. Nothing was deleted.");
+            return;
+          }
+          commitResolvedHistoryDelete(taskId, state, resolution);
           ctx.closeConfirm();
           ctx.showActionConfirmation("History entry deleted.");
         },
@@ -1998,7 +2009,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const x = ev.clientX - rect.left;
       const y = ev.clientY - rect.top;
 
-      let hit: any = null;
+      let hitRenderKey = "";
       for (let i = 0; i < state.barRects.length; i++) {
         const r = state.barRects[i];
         if (!r) continue;
@@ -2007,38 +2018,51 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const hw = typeof r.hitW === "number" ? r.hitW : r.w;
         const hh = typeof r.hitH === "number" ? r.hitH : r.h;
         if (x >= hx && x <= hx + hw && y >= hy && y <= hy + hh) {
-          hit = { rel: i, abs: r.absIndex };
+          hitRenderKey = r.renderKey;
           break;
         }
       }
-      if (!hit) {
+      if (!hitRenderKey) {
         for (let i = 0; i < state.labelHitRects.length; i++) {
           const r = state.labelHitRects[i];
           if (!r) continue;
           if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
-            hit = { rel: i, abs: r.absIndex };
+            hitRenderKey = r.renderKey;
             break;
           }
         }
       }
 
-      const selectionResult = historyInlineSelection.applyHit(state, hit);
-      if (state.selectionClearTimer != null && (selectionResult.kind === "locked" || selectionResult.kind === "cleared")) {
-        window.clearTimeout(state.selectionClearTimer);
-        state.selectionClearTimer = null;
-      }
-      if (selectionResult.kind === "selected") {
-        startHistorySelectionAnimation(taskId, selectionResult.animateTo);
-        scheduleHistorySelectionClear(taskId);
-      } else if (selectionResult.kind === "locked" || selectionResult.kind === "cleared") {
+      let selectionView = refreshHistoryInlineSelectionView(taskId, state);
+      if (!hitRenderKey) {
+        selectionView = selectionView.clear("all");
+        if (state.selectionClearTimer != null) {
+          window.clearTimeout(state.selectionClearTimer);
+          state.selectionClearTimer = null;
+        }
         startHistorySelectionAnimation(taskId, null);
-      }
-      if (selectionResult.kind === "unlocked" || selectionResult.kind === "cleared") {
         syncHistoryEntryNoteOverlayForSelection(taskId, state);
+      } else {
+        const selectionRow = selectionView.rows.find((row) => row.renderKey === hitRenderKey);
+        const transition = selectionRow?.activate();
+        if (transition?.kind === "changed") {
+          selectionView = transition.view;
+          if (transition.change === "selected") {
+            startHistorySelectionAnimation(taskId, transition.animateTo);
+            scheduleHistorySelectionClear(taskId);
+          } else if (transition.change === "locked") {
+            if (state.selectionClearTimer != null) {
+              window.clearTimeout(state.selectionClearTimer);
+              state.selectionClearTimer = null;
+            }
+            startHistorySelectionAnimation(taskId, null);
+          } else {
+            syncHistoryEntryNoteOverlayForSelection(taskId, state);
+          }
+        }
       }
       const ui = getHistoryUi(taskId);
-      const { hasDeleteTarget } = historyInlineSelection.getRenderTargets(state, state.rangeMode === "day");
-      if (ui?.deleteBtn) ui.deleteBtn.disabled = !hasDeleteTarget;
+      if (ui?.deleteBtn) ui.deleteBtn.disabled = !selectionView.actions.delete.enabled;
       renderHistory(taskId);
     });
 
@@ -2078,9 +2102,9 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const applyHistorySwipe = (taskId: string, dx: number) => {
       if (!taskId) return false;
       const state = ensureHistoryViewState(taskId);
-      const display = getHistoryDisplayForTask(taskId, state);
+      const selectionView = refreshHistoryInlineSelectionView(taskId, state);
       const pageSize = historyPageSize(taskId);
-      const maxPage = Math.max(0, Math.ceil(display.length / pageSize) - 1);
+      const maxPage = Math.max(0, Math.ceil(selectionView.rows.length / pageSize) - 1);
 
       if (dx > 0) {
         if (state.page >= maxPage) return false;
@@ -2213,7 +2237,10 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     saveHistoryRangeModePref,
     openHistory,
     closeHistory,
+    disposeHistoryTask,
+    pruneInactiveHistoryTasks,
     getHistoryForTask,
+    resolveHistoryEntryTarget,
     historyPageSize,
     ensureHistoryViewState,
     startHistorySelectionAnimation,
@@ -2236,13 +2263,4 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     clearHistoryEntryNoteOverlayPosition,
     refreshHistoryEntryNoteOverlayPosition,
   };
-}
-
-export function findTaskTimerHistoryEntryIndexByIdentity(entries: any[], identity: { ts: number; ms: number; name: string }) {
-  return entries.findIndex(
-    (entry: any) =>
-      Number(entry?.ts) === identity.ts &&
-      Number(entry?.ms) === identity.ms &&
-      String(entry?.name || "").trim() === identity.name
-  );
 }

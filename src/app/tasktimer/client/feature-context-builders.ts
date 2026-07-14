@@ -317,6 +317,7 @@ type CreateTasksOptionsArgs = {
   getCheckpointBaselineSecByTaskId: () => Record<string, number>;
   render: () => void;
   renderHistory: (taskId: string) => void;
+  pruneInactiveHistoryTasks?: (activeTaskIds: Set<string>) => boolean;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   syncTimeGoalModalWithTaskState: () => void;
   maybeRestorePendingTimeGoalFlow: () => void;
@@ -479,6 +480,7 @@ type CreateSessionOptionsArgs = {
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
   saveHistory: (history: HistoryByTaskId, opts?: { allowDestructiveReplace?: boolean }) => void;
+  resolveHistoryEntryTarget: Parameters<typeof createTaskTimerSession>[0]["resolveHistoryEntryTarget"];
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   preferencesState: MutableStore;
   dashboardUiState: MutableStore;
@@ -1251,6 +1253,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getCheckpointBaselineSecByTaskId: args.getCheckpointBaselineSecByTaskId,
     render: args.render,
     renderHistory: args.renderHistory,
+    pruneInactiveHistoryTasks: args.pruneInactiveHistoryTasks,
     renderDashboardWidgets: args.renderDashboardWidgets,
     syncTimeGoalModalWithTaskState: args.syncTimeGoalModalWithTaskState,
     maybeRestorePendingTimeGoalFlow: args.maybeRestorePendingTimeGoalFlow,
@@ -1401,6 +1404,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getHistoryByTaskId: args.getHistoryByTaskId,
     setHistoryByTaskId: args.setHistoryByTaskId,
     saveHistory: args.saveHistory,
+    resolveHistoryEntryTarget: args.resolveHistoryEntryTarget,
     getLiveSessionsByTaskId: () => asType<Parameters<typeof createTaskTimerSession>[0]["getLiveSessionsByTaskId"] extends () => infer T ? T : never>(args.getLiveSessionsByTaskId()),
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),

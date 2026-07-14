@@ -257,7 +257,19 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
 function createRenderHarness(
   tasks: Task[],
   options?: {
-    historyByTaskId?: Record<string, Array<{ ts: number; name: string; ms: number; color?: string; note?: string }>>;
+    historyByTaskId?: Record<
+      string,
+      Array<{
+        ts: number;
+        name: string;
+        ms: number;
+        color?: string;
+        note?: string;
+        sessionId?: string;
+        isLiveSession?: boolean;
+        liveSessionId?: string;
+      }>
+    >;
     hasEntitlement?: boolean;
     rewardProgress?: object;
     includeHeaderXpCard?: boolean;
@@ -267,7 +279,18 @@ function createRenderHarness(
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
-  const openSummaryCalls: Array<{ taskId: string; entries: Array<{ ts: number; name: string; ms: number; note?: string }> }> = [];
+  const openSummaryCalls: Array<{
+    taskId: string;
+    entries: Array<{
+      ts: number;
+      name: string;
+      ms: number;
+      note?: string;
+      sessionId?: string;
+      isLiveSession?: boolean;
+      liveSessionId?: string;
+    }>;
+  }> = [];
   const originalDocument = globalThis.document;
   const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
   Object.defineProperty(globalThis, "document", {
@@ -350,7 +373,18 @@ function createRenderHarness(
     getModeColor: () => "#00ffff",
     addRangeMsToLocalDayMap: () => {},
     openHistoryEntryNoteOverlay: (taskId, entries) => {
-      openSummaryCalls.push({ taskId, entries: entries as Array<{ ts: number; name: string; ms: number; note?: string }> });
+      openSummaryCalls.push({
+        taskId,
+        entries: entries as Array<{
+          ts: number;
+          name: string;
+          ms: number;
+          note?: string;
+          sessionId?: string;
+          isLiveSession?: boolean;
+          liveSessionId?: string;
+        }>,
+      });
     },
     hasEntitlement: () => options?.hasEntitlement ?? true,
     getCurrentPlan: () => "pro",
@@ -857,6 +891,35 @@ describe("dashboard heatmap summaries", () => {
         {
           taskId: "focus",
           entries: [{ ts, ms: 30 * 60 * 1000, name: "Focus", note: undefined }],
+        },
+      ]);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("preserves canonical session identity and the raw name for summary capability enrichment", () => {
+    const ts = middayToday();
+    const dayKey = localDayKey(ts);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        historyByTaskId: {
+          focus: [{ ts, name: " Focus ", ms: 30 * 60 * 1000, sessionId: "session-1" }],
+        },
+      }
+    );
+
+    try {
+      expect(harness.openHeatTaskSummary(dayKey, "focus")).toBe(true);
+
+      expect(harness.openSummaryCalls[0]?.entries).toEqual([
+        {
+          ts,
+          ms: 30 * 60 * 1000,
+          name: " Focus ",
+          note: undefined,
+          sessionId: "session-1",
         },
       ]);
     } finally {

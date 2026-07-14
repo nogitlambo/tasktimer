@@ -61,6 +61,7 @@ function createHarness(
     appPage: string;
     tileColumnCount: number;
     historyByTaskId: Record<string, Array<{ ts: number; ms: number; name: string }>>;
+    pruneInactiveHistoryTasks: (activeTaskIds: Set<string>) => boolean;
   }> = {}
 ) {
   const taskListEl = elementStub("section");
@@ -84,6 +85,7 @@ function createHarness(
     getOpenHistoryTaskIds: () => openHistoryTaskIds,
     getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
     getHistoryViewByTaskId: () => historyViewByTaskId,
+    pruneInactiveHistoryTasks: overrides.pruneInactiveHistoryTasks,
     syncTaskFlipStatesForVisibleTasks: (ids) => calls.push(`sync-flips:${Array.from(ids).join(",")}`),
     applyTaskFlipDomState: (taskId) => calls.push(`apply-flip:${taskId}`),
     renderHistory: (taskId) => calls.push(`render-history:${taskId}`),
@@ -233,6 +235,20 @@ describe("task list renderer", () => {
     expect(harness.historyViewByTaskId.missing).toBeUndefined();
     expect(harness.calls).toContain("clear-timeout:42");
     expect(harness.calls.filter((call) => call === "render-history:a")).toHaveLength(2);
+  });
+
+  it("delegates inactive history capability cleanup with the active task ids", () => {
+    const snapshots: string[][] = [];
+    const harness = createHarness({
+      pruneInactiveHistoryTasks: (activeTaskIds) => {
+        snapshots.push(Array.from(activeTaskIds).sort());
+        return true;
+      },
+    });
+
+    harness.renderer.renderTasksPage();
+
+    expect(snapshots).toEqual([["a", "b"]]);
   });
 
   it("reserves opening history drawer space before chart rendering", () => {

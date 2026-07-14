@@ -17,7 +17,7 @@ type HistoryBarRect = {
   y: number;
   w: number;
   h: number;
-  absIndex: number;
+  renderKey: string;
   hitX?: number;
   hitY?: number;
   hitW?: number;
@@ -29,7 +29,7 @@ type HistoryLabelHitRect = {
   y: number;
   w: number;
   h: number;
-  absIndex: number;
+  renderKey: string;
 };
 
 export type HistoryViewState = {
@@ -44,11 +44,8 @@ export type HistoryViewState = {
   editMode: boolean;
   barRects: HistoryBarRect[];
   labelHitRects: HistoryLabelHitRect[];
-  lockedAbsIndexes: Set<number>;
-  selectedAbsIndex: number | null;
-  selectedRelIndex: number | null;
   selectionClearTimer: number | null;
-  visualSelectedAbsIndex: number | null;
+  visualSelectedRenderKey: string | null;
   selectionZoom: number;
   selectionAnimRaf: number | null;
   slideDir: "left" | "right" | null;

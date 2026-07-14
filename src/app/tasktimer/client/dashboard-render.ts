@@ -143,6 +143,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     ms: number;
     name: string;
     note?: string;
+    sessionId?: string;
+    isLiveSession?: boolean;
+    liveSessionId?: string;
   };
   type DashboardHeatTaskSummaryRow = {
     taskId: string;
@@ -2538,10 +2541,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (!Number.isFinite(ts) || ms <= 0 || localDayKey(ts) !== dayKey) return list;
         list.push({
-          ts,
+          ts: Number(entry?.ts),
           ms,
-          name: String(entry?.name || "").trim() || taskNameById.get(taskId) || "Task",
+          name: String(entry?.name || ""),
           note: typeof entry?.note === "string" ? entry.note : undefined,
+          ...(typeof entry?.sessionId === "string" && entry.sessionId.trim()
+            ? { sessionId: entry.sessionId.trim() }
+            : {}),
+          ...(entry?.isLiveSession ? { isLiveSession: true } : {}),
+          ...(typeof entry?.liveSessionId === "string" && entry.liveSessionId.trim()
+            ? { liveSessionId: entry.liveSessionId.trim() }
+            : {}),
         });
         return list;
       }, [] as DashboardHeatHistoryEntry[]);

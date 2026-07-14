@@ -51,6 +51,85 @@ function rewardLedgerEntry(overrides: Partial<RewardLedgerEntry>): RewardLedgerE
 }
 
 describe("history entry summary", () => {
+  it("propagates an optional opaque target key while preserving existing history action and tuple hooks", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task(),
+      rewardProgress: null,
+      entries: [
+        {
+          taskId: "task-1",
+          historyTargetKey: "opaque-target-1",
+          ts: 1_717_200_000_000,
+          ms: 180_000,
+          name: "Focus",
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html.match(/data-history-summary-target-key="opaque-target-1"/g)).toHaveLength(3);
+    expect(html).toContain('data-history-summary-action="delete-session"');
+    expect(html).toContain('data-history-summary-action="edit-note"');
+    expect(html).toContain('data-history-summary-note-input="true"');
+    expect(html).toContain('data-history-summary-task-id="task-1"');
+    expect(html).toContain('data-history-summary-ts="1717200000000"');
+    expect(html).toContain('data-history-summary-ms="180000"');
+    expect(html).toContain('data-history-summary-name="Focus"');
+  });
+
+  it("renders live or explicitly unresolved summary entries as read-only", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task(),
+      rewardProgress: null,
+      entries: [
+        {
+          taskId: "task-1",
+          historyTargetKey: "opaque-live-target",
+          isLiveSession: true,
+          ts: 1_717_200_000_000,
+          ms: 180_000,
+          name: "Live Focus",
+        },
+        {
+          taskId: "task-1",
+          historyMutationAllowed: false,
+          ts: 1_717_200_060_000,
+          ms: 120_000,
+          name: "Ambiguous Focus",
+          attachments: [
+            {
+              id: "file-1",
+              name: "notes.txt",
+              contentType: "text/plain",
+              size: 12,
+              storagePath: "notes/file-1",
+              downloadUrl: "https://example.test/notes.txt",
+              createdAtMs: 1,
+            },
+          ],
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html).not.toContain('data-history-summary-action="delete-session"');
+    expect(html).not.toContain('data-history-summary-action="edit-note"');
+    expect(html).not.toContain("data-session-note-attachment-remove");
+    expect(html).toContain('data-placeholder="No session note."');
+  });
+
   it("omits sentiment information from the rendered session summary", () => {
     const html = renderSummary(task({ timeGoalEnabled: true, timeGoalValue: 3, timeGoalUnit: "minute", timeGoalPeriod: "day", timeGoalMinutes: 3 }));
 

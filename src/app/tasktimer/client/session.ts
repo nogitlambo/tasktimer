@@ -1,4 +1,4 @@
-import type { HistoryByTaskId, LiveTaskSession, Task } from "../lib/types";
+import type { HistoryByTaskId, HistoryEntry, LiveTaskSession, SessionNoteAttachment, Task } from "../lib/types";
 import { nowMs } from "../lib/time";
 import { computeFocusInsights } from "../lib/focusInsights";
 import { applyPendingTimeGoalXpAward, awardCompletedSessionXp, hasPendingTimeGoalXp } from "../lib/rewards";
@@ -63,6 +63,57 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const SESSION_NOTE_ATTACHMENT_UPLOAD_TEXT = "Uploading...";
+
+type HistoryEntryMutationIdentity = {
+  owner?: "inline" | "manager";
+  historyTargetKey?: unknown;
+  ts?: unknown;
+  ms?: unknown;
+  name?: unknown;
+};
+
+export function resolveHistoryEntryMutationTarget(
+  taskIdRaw: string,
+  rows: readonly HistoryEntry[],
+  identity: HistoryEntryMutationIdentity,
+  resolveHistoryEntryTarget: (
+    taskId: string,
+    historyTargetKey: string,
+    owner?: "inline" | "manager"
+  ) => HistoryEntry | null
+) {
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId) return null;
+
+  const historyTargetKey = String(identity.historyTargetKey || "");
+  if (historyTargetKey) {
+    const resolvedEntry = resolveHistoryEntryTarget(taskId, historyTargetKey, identity.owner);
+    if (!resolvedEntry) return null;
+    const matchingIndexes = rows
+      .map((entry, index) => (entry === resolvedEntry ? index : -1))
+      .filter((index) => index >= 0);
+    if (matchingIndexes.length !== 1) return null;
+    const index = matchingIndexes[0]!;
+    return { index, entry: rows[index]! };
+  }
+
+  const ts = Math.floor(Number(identity.ts || 0));
+  const ms = Math.max(0, Math.floor(Number(identity.ms || 0)));
+  const name = String(identity.name || "").trim();
+  if (ts <= 0 || !name) return null;
+  const matchingIndexes = rows
+    .map((entry, index) =>
+      Math.floor(Number(entry?.ts || 0)) === ts &&
+      Math.max(0, Math.floor(Number(entry?.ms || 0))) === ms &&
+      String(entry?.name || "").trim() === name
+        ? index
+        : -1
+    )
+    .filter((index) => index >= 0);
+  if (matchingIndexes.length !== 1) return null;
+  const index = matchingIndexes[0]!;
+  return { index, entry: rows[index]! };
+}
 
 export function isHistoryEntryNoteOverlayEditor(editor: HTMLElement | null | undefined) {
   return !!editor?.closest?.("#historyEntryNoteOverlay");
@@ -821,22 +872,80 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncFocusSessionNoteAttachments(taskId);
   }
 
-  function getHistoryEntryByIdentity(taskId: string, editor: HTMLElement | null) {
+  function getHistoryEntryEditorIdentity(editor: HTMLElement | null) {
+    if (!editor) return null;
     const source = editor?.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null;
-    const ts = Math.floor(Number(editor?.dataset.historySummaryTs || source?.getAttribute("data-history-summary-ts") || 0));
-    const ms = Math.max(0, Math.floor(Number(editor?.dataset.historySummaryMs || source?.getAttribute("data-history-summary-ms") || 0)));
-    const name = String(editor?.dataset.historySummaryName || source?.getAttribute("data-history-summary-name") || "").trim();
-    if (!taskId || ts <= 0 || !name) return null;
-    const history = ctx.getHistoryByTaskId() || {};
-    const rows = Array.isArray(history[taskId]) ? history[taskId] : [];
-    const index = rows.findIndex((entry: any) => Number(entry?.ts) === ts && Number(entry?.ms) === ms && String(entry?.name || "").trim() === name);
-    if (index < 0) return null;
-    return { taskId, index, entry: rows[index], rows, history };
+    const overlay =
+      (editor.closest?.("#historyEntryNoteOverlay") as HTMLElement | null) ||
+      (els.historyEntryNoteOverlay as HTMLElement | null);
+    const isSharedEditor = editor.id === "historyEntryNoteInput";
+    const owner = String(overlay?.dataset.historyEntryOwner || "");
+    if (owner !== "inline" && owner !== "manager") return null;
+    if (isSharedEditor) {
+      if (overlay?.dataset.historyEntryEditable !== "true") return null;
+    } else if (!source) {
+      return null;
+    }
+
+    const taskId = String(
+      editor.dataset.historySummaryTaskId ||
+      source?.getAttribute("data-history-summary-task-id") ||
+      (isSharedEditor ? overlay?.dataset.historyEntryTaskId : "") ||
+      ""
+    ).trim();
+    const historyTargetKey = String(
+      editor.dataset.historySummaryTargetKey ||
+      source?.getAttribute("data-history-summary-target-key") ||
+      (isSharedEditor ? overlay?.dataset.historyEntryTargetKey : "") ||
+      ""
+    );
+    const ts = Math.floor(
+      Number(
+        editor.dataset.historySummaryTs ||
+        source?.getAttribute("data-history-summary-ts") ||
+        (isSharedEditor ? overlay?.dataset.historyEntryTs : 0) ||
+        0
+      )
+    );
+    const ms = Math.max(
+      0,
+      Math.floor(
+        Number(
+          editor.dataset.historySummaryMs ||
+          source?.getAttribute("data-history-summary-ms") ||
+          (isSharedEditor ? overlay?.dataset.historyEntryMs : 0) ||
+          0
+        )
+      )
+    );
+    const name = String(
+      editor.dataset.historySummaryName ||
+      source?.getAttribute("data-history-summary-name") ||
+      (isSharedEditor ? overlay?.dataset.historyEntryName : "") ||
+      ""
+    ).trim();
+    if (!taskId || (!historyTargetKey && (ts <= 0 || !name))) return null;
+    return { taskId, owner: owner as "inline" | "manager", historyTargetKey, ts, ms, name };
   }
 
-  function setHistoryEntryAttachments(taskId: string, editor: HTMLElement | null, attachmentsRaw: unknown) {
-    const found = getHistoryEntryByIdentity(taskId, editor);
-    if (!found) return;
+  function getHistoryEntryByIdentity(editor: HTMLElement | null) {
+    const identity = getHistoryEntryEditorIdentity(editor);
+    if (!identity) return null;
+    const history = ctx.getHistoryByTaskId() || {};
+    const rows = Array.isArray(history[identity.taskId]) ? history[identity.taskId] : [];
+    const resolved = resolveHistoryEntryMutationTarget(
+      identity.taskId,
+      rows,
+      identity,
+      ctx.resolveHistoryEntryTarget
+    );
+    if (!resolved) return null;
+    return { taskId: identity.taskId, ...resolved, rows, history };
+  }
+
+  function setHistoryEntryAttachments(editor: HTMLElement | null, attachmentsRaw: unknown) {
+    const found = getHistoryEntryByIdentity(editor);
+    if (!found) return false;
     const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
     const nextEntry = { ...(found.entry as any) };
     if (attachments.length) nextEntry.attachments = attachments;
@@ -848,6 +957,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.saveHistory(nextHistory);
     ctx.renderDashboardWidgets();
     renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor?.id });
+    return true;
   }
 
   function resolveAttachmentContainerForEditor(editor: HTMLElement | null) {
@@ -867,50 +977,50 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (editor.id === "timeGoalCompleteNoteInput") {
       return getFocusNoteAttachments(ctx.getTimeGoalModalTaskId());
     }
-    const taskId = String(
-      editor.dataset.historySummaryTaskId ||
-      (editor.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null)?.getAttribute("data-history-summary-task-id") ||
-      (els.historyEntryNoteOverlay as HTMLElement | null)?.dataset.historyEntryTaskId ||
-      ""
-    ).trim();
-    const found = getHistoryEntryByIdentity(taskId, editor);
+    const found = getHistoryEntryByIdentity(editor);
     return normalizeSessionNoteAttachments(found?.entry?.attachments);
   }
 
   function writeAttachmentsForEditor(editor: HTMLElement | null, attachmentsRaw: unknown) {
     const attachments = normalizeSessionNoteAttachments(attachmentsRaw);
-    if (!editor) return;
+    if (!editor) return false;
     if (editor.id === "focusSessionNotesInput") {
       setFocusNoteAttachments(String(ctx.getFocusModeTaskId() || ""), attachments);
       renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor.id });
-      return;
+      return true;
     }
     if (editor.id === "timeGoalCompleteNoteInput") {
       setFocusNoteAttachments(String(ctx.getTimeGoalModalTaskId() || ""), attachments);
       renderSessionNoteAttachments(resolveAttachmentContainerForEditor(editor), attachments, { editorId: editor.id });
-      return;
+      return true;
     }
-    const taskId = String(
-      editor.dataset.historySummaryTaskId ||
-      (editor.closest?.('[data-history-summary-action="edit-note"]') as HTMLElement | null)?.getAttribute("data-history-summary-task-id") ||
-      (els.historyEntryNoteOverlay as HTMLElement | null)?.dataset.historyEntryTaskId ||
-      ""
-    ).trim();
-    setHistoryEntryAttachments(taskId, editor, attachments);
+    return setHistoryEntryAttachments(editor, attachments);
   }
 
   async function attachFilesToEditor(editor: HTMLElement | null, files: FileList | File[]) {
     if (!editor || !files.length) return;
+    if (
+      editor.id !== "focusSessionNotesInput" &&
+      editor.id !== "timeGoalCompleteNoteInput" &&
+      !getHistoryEntryByIdentity(editor)
+    ) {
+      return;
+    }
     const container = resolveAttachmentContainerForEditor(editor);
     showSessionNoteAttachmentUploadStatus(container);
+    const uploadedAttachments: SessionNoteAttachment[] = [];
     try {
       let next = readAttachmentsForEditor(editor);
       for (const file of Array.from(files)) {
         const attachment = await uploadSessionNoteAttachment(file, next);
+        uploadedAttachments.push(attachment);
         next = [attachment, ...next];
       }
-      writeAttachmentsForEditor(editor, next);
+      if (!writeAttachmentsForEditor(editor, next)) {
+        await Promise.all(uploadedAttachments.map((attachment) => deleteSessionNoteAttachmentFile(attachment)));
+      }
     } catch (error) {
+      await Promise.all(uploadedAttachments.map((attachment) => deleteSessionNoteAttachmentFile(attachment)));
       if (container) {
         showSessionNoteAttachmentUploadError(container, error instanceof Error ? error.message : "Could not upload file.");
       }
@@ -923,9 +1033,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (!editor || !attachmentId) return;
     const current = readAttachmentsForEditor(editor);
     const target = current.find((attachment) => attachment.id === attachmentId);
+    if (!target) return;
     const next = current.filter((attachment) => attachment.id !== attachmentId);
-    writeAttachmentsForEditor(editor, next);
-    await deleteSessionNoteAttachmentFile(target);
+    if (writeAttachmentsForEditor(editor, next)) {
+      await deleteSessionNoteAttachmentFile(target);
+    }
   }
 
   function maybeShowFocusSessionNotesSavedStatus(taskId?: string | null) {

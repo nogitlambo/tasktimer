@@ -76,6 +76,7 @@ function rewardLedgerEntry(overrides: Partial<RewardLedgerEntry>): RewardLedgerE
 function createHarness(overrides?: {
   owner?: "inline" | "manager";
   entries?: Array<Record<string, unknown>>;
+  resolveEntryTarget?: (taskId: string, historyTargetKey: string) => Record<string, unknown> | null;
   isMobileLayout?: () => boolean;
   rewardProgress?: RewardProgressV1;
 }) {
@@ -148,6 +149,7 @@ function createHarness(overrides?: {
         timeGoalValue: 1,
       }) as Task,
     getEntriesForTask: () => entries,
+    resolveEntryTarget: overrides?.resolveEntryTarget,
     getRewardProgress: () => overrides?.rewardProgress ?? DEFAULT_REWARD_PROGRESS,
     openOverlay: (node) => opened.push(node),
     closeOverlay: (node) => closed.push(node),
@@ -190,7 +192,14 @@ function triggerStub() {
   };
 }
 
-function triggerStubFor(overrides: { taskId?: string; ts: string; ms?: string; name?: string; note?: string }) {
+function triggerStubFor(overrides: {
+  taskId?: string;
+  historyTargetKey?: string;
+  ts: string;
+  ms?: string;
+  name?: string;
+  note?: string;
+}) {
   const input = inputStub();
   const attrs: Record<string, string> = {
     "data-history-summary-task-id": overrides.taskId ?? "task-1",
@@ -198,6 +207,7 @@ function triggerStubFor(overrides: { taskId?: string; ts: string; ms?: string; n
     "data-history-summary-ms": overrides.ms ?? "60000",
     "data-history-summary-name": overrides.name ?? "Focus",
   };
+  if (overrides.historyTargetKey) attrs["data-history-summary-target-key"] = overrides.historyTargetKey;
   const trigger = {
     getAttribute: vi.fn((name: string) => attrs[name] ?? null),
     querySelector: vi.fn((selector: string) => selector === "[data-history-summary-note-input]" ? input : null),
@@ -262,14 +272,54 @@ describe("createHistoryEntrySummaryInteraction", () => {
   it("sets editable target dataset for a single entry", () => {
     const h = createHarness();
 
-    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.interaction.openSummary("task-1", [
+      {
+        taskId: "task-1",
+        historyTargetKey: "opaque-target-1",
+        ts: 1000,
+        ms: 60000,
+        name: "Focus",
+        note: "Original note",
+      },
+    ]);
 
     expect(h.overlay.dataset.historyEntryOwner).toBe("inline");
     expect(h.overlay.dataset.historyEntryTaskId).toBe("task-1");
+    expect(h.overlay.dataset.historyEntryTargetKey).toBe("opaque-target-1");
     expect(h.overlay.dataset.historyEntryEditable).toBe("true");
     expect(h.overlay.dataset.historyEntryNote).toBe("Original note");
     expect(h.editorInput.value).toBe("Original note");
+    expect(h.editorInput.dataset.historySummaryTargetKey).toBe("opaque-target-1");
     expect(h.editBtn.textContent).toBe("Edit Note");
+  });
+
+  it("fails closed for an unkeyed inline edit target while preserving the manager fallback", () => {
+    const entry = { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" };
+    const inline = createHarness({ owner: "inline" });
+    const manager = createHarness({ owner: "manager" });
+
+    inline.interaction.openSummary("task-1", [entry]);
+    manager.interaction.openSummary("task-1", [entry]);
+
+    expect(inline.overlay.dataset.historyEntryEditable).toBe("false");
+    expect(manager.overlay.dataset.historyEntryEditable).toBe("true");
+  });
+
+  it("keeps a keyed live summary target read-only", () => {
+    const h = createHarness({ owner: "inline" });
+
+    h.interaction.openSummary("task-1", [
+      {
+        taskId: "task-1",
+        historyTargetKey: "opaque-live-target",
+        ts: 1000,
+        ms: 60000,
+        name: "Focus",
+        isLiveSession: true,
+      },
+    ]);
+
+    expect(h.overlay.dataset.historyEntryEditable).toBe("false");
   });
 
   it("marks multi-entry summaries as non-editable", () => {
@@ -338,6 +388,63 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.saveAndCloseBtn.style.display).toBe("");
     expect(input.style.height).toBe("22px");
     expect(input.style.overflowY).toBe("hidden");
+  });
+
+  it("uses a keyed Manager resolver to edit the intended entry when tuples are duplicated", () => {
+    const first = { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "First note" };
+    const intended = { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Intended note" };
+    const resolveEntryTarget = vi.fn((taskId: string, historyTargetKey: string) =>
+      taskId === "task-1" && historyTargetKey === "opaque-target-2" ? intended : null
+    );
+    const h = createHarness({ owner: "manager", entries: [first, intended], resolveEntryTarget });
+    const { trigger, input } = triggerStubFor({ historyTargetKey: "opaque-target-2", ts: "1000" });
+    h.interaction.openSummary("task-1", [first, { ...intended, historyTargetKey: "opaque-target-2" }]);
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
+      return null;
+    });
+
+    expect(h.interaction.beginEdit(trigger)).toBe(true);
+
+    expect(resolveEntryTarget).toHaveBeenCalledWith("task-1", "opaque-target-2");
+    expect(input.value).toBe("Intended note");
+    expect(h.overlay.dataset.historyEntryNote).toBe("Intended note");
+  });
+
+  it("refuses an ambiguous unkeyed manager note target even when session IDs differ", () => {
+    const first = {
+      taskId: "task-1",
+      sessionId: "session-a",
+      ts: 1000,
+      ms: 60000,
+      name: "Focus",
+      note: "First note",
+    };
+    const second = { ...first, sessionId: "session-b", note: "Second note" };
+    const h = createHarness({ owner: "manager", entries: [first, second] });
+    const { trigger, input } = triggerStubFor({ ts: "1000" });
+    h.interaction.openSummary("task-1", [{ ...first, historyMutationAllowed: false }]);
+
+    expect(h.interaction.beginEdit(trigger)).toBe(false);
+    expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(input.classList.contains("isEditing")).toBe(false);
+    expect(input.focus).not.toHaveBeenCalled();
+  });
+
+  it("refuses keyed note editing when the opaque target cannot be resolved", () => {
+    const entry = { taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "First note" };
+    const resolveEntryTarget = vi.fn(() => null);
+    const h = createHarness({ entries: [entry], resolveEntryTarget });
+    const { trigger, input } = triggerStubFor({ historyTargetKey: "missing-target", ts: "1000" });
+    h.interaction.openSummary("task-1", [{ ...entry, historyTargetKey: "missing-target" }]);
+
+    expect(h.interaction.beginEdit(trigger)).toBe(false);
+
+    expect(resolveEntryTarget).toHaveBeenCalledWith("task-1", "missing-target");
+    expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(input.classList.contains("isEditing")).toBe(false);
+    expect(input.focus).not.toHaveBeenCalled();
   });
 
   it("mirrors input changes into the hidden editor input, autosizes, and toggles save-and-close visibility from draft content", () => {
@@ -508,6 +615,79 @@ describe("createHistoryEntrySummaryInteraction", () => {
     ]);
   });
 
+  it("carries a keyed Manager target from edit into its save draft", () => {
+    const { trigger, input } = triggerStubFor({
+      historyTargetKey: "opaque-target-1",
+      ts: "1000",
+      note: "Original note",
+    });
+    const h = createHarness({
+      owner: "manager",
+      entries: [
+        {
+          taskId: "task-1",
+          historyTargetKey: "opaque-target-1",
+          ts: 1000,
+          ms: 60000,
+          name: "Focus",
+          note: "Original note",
+        },
+      ],
+      resolveEntryTarget: (_taskId, historyTargetKey) =>
+        historyTargetKey === "opaque-target-1"
+          ? {
+              taskId: "task-1",
+              historyTargetKey: "opaque-target-1",
+              ts: 1000,
+              ms: 60000,
+              name: "Focus",
+              note: "Original note",
+            }
+          : null,
+    });
+    h.overlay.querySelector.mockImplementation((selector: string) => {
+      if (selector === ".closePopup") return h.closeBtn;
+      if (selector === ".modal") return h.modal;
+      if (selector === ".historyEntrySummaryNoteInput.isActiveEditing") {
+        return input.classList.contains("isActiveEditing") ? input : null;
+      }
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") {
+        return input.classList.contains("isEditing") ? input : null;
+      }
+      return null;
+    });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector !== ".historyEntrySummaryNoteInput.isEditing") return [];
+      return input.classList.contains("isEditing") ? [input] : [];
+    });
+    h.interaction.openSummary("task-1", [
+      {
+        taskId: "task-1",
+        historyTargetKey: "opaque-target-1",
+        ts: 1000,
+        ms: 60000,
+        name: "Focus",
+        note: "Original note",
+      },
+    ]);
+
+    expect(h.interaction.beginEdit(trigger)).toBe(true);
+    input.innerHTML = "Updated note";
+
+    expect(h.overlay.dataset.historyEntryTargetKey).toBe("opaque-target-1");
+    expect(input.dataset.historySummaryTargetKey).toBe("opaque-target-1");
+    expect(h.interaction.getEditedNoteDrafts()).toEqual([
+      {
+        taskId: "task-1",
+        historyTargetKey: "opaque-target-1",
+        ts: 1000,
+        ms: 60000,
+        name: "Focus",
+        note: "Updated note",
+      },
+    ]);
+  });
+
   it("cancels all edited inline note drafts and restores each saved note", () => {
     const first = triggerStubFor({ ts: "1000", note: "Original A" });
     const second = triggerStubFor({ ts: "2000", note: "Original B" });
@@ -621,15 +801,26 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
   it("clears target state", () => {
     const h = createHarness();
-    h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
+    h.interaction.openSummary("task-1", [
+      {
+        taskId: "task-1",
+        historyTargetKey: "opaque-target-1",
+        ts: 1000,
+        ms: 60000,
+        name: "Focus",
+        note: "Original note",
+      },
+    ]);
 
     h.interaction.clearTarget();
 
     expect(h.overlay.dataset.historyEntryOwner).toBe("");
     expect(h.overlay.dataset.historyEntryTaskId).toBe("");
+    expect(h.overlay.dataset.historyEntryTargetKey).toBe("");
     expect(h.overlay.dataset.historyEntryEditable).toBe("false");
     expect(h.overlay.dataset.historyEntryNote).toBe("");
     expect(h.editorInput.value).toBe("");
+    expect(h.editorInput.dataset.historySummaryTargetKey).toBe("");
   });
 
   it("dispatches a representative dev XP replay award from the visible XP value and closes the overlay", () => {

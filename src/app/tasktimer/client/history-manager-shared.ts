@@ -1,12 +1,19 @@
 import { normalizeCompletionDifficulty, type CompletionDifficulty } from "../lib/completionDifficulty";
 
-type HistoryManagerRowEntry = {
+export type HistoryManagerRowEntry = {
   ts: unknown;
   ms: unknown;
   name: unknown;
+  sessionId?: unknown;
+  note?: unknown;
   isLiveSession?: unknown;
   liveSessionId?: unknown;
 };
+
+export type HistoryManagerRowTargetResolution =
+  | { kind: "missing" }
+  | { kind: "ambiguous" }
+  | { kind: "resolved"; index: number; entry: HistoryManagerRowEntry };
 
 export type HistoryManagerManualDraft = {
   dateTimeValue: string;
@@ -104,11 +111,43 @@ export function buildHistoryManagerRowKey(entry: HistoryManagerRowEntry) {
   const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : 0;
   const ms = Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0;
   const name = String(entry?.name || "");
-  const liveSuffix =
-    entry?.isLiveSession && String(entry?.liveSessionId || "").trim()
-      ? `|live:${String(entry.liveSessionId).trim()}`
-      : "";
-  return `${ts}|${ms}|${name}${liveSuffix}`;
+  const liveSessionId = String(entry?.liveSessionId || "").trim();
+  if (entry?.isLiveSession && liveSessionId) {
+    return `${ts}|${ms}|${name}|live:${liveSessionId}`;
+  }
+  const sessionId = String(entry?.sessionId || "").trim();
+  if (sessionId) {
+    return `${ts}|${ms}|${name}|session:${sessionId}`;
+  }
+  return `${ts}|${ms}|${name}`;
+}
+
+export function resolveHistoryManagerRowTarget(
+  entries: readonly HistoryManagerRowEntry[],
+  rowKey: string
+): HistoryManagerRowTargetResolution {
+  const normalizedKey = String(rowKey || "");
+  if (!normalizedKey) return { kind: "missing" };
+
+  let resolvedIndex = -1;
+  for (let index = 0; index < entries.length; index += 1) {
+    if (buildHistoryManagerRowKey(entries[index]) !== normalizedKey) continue;
+    if (resolvedIndex >= 0) return { kind: "ambiguous" };
+    resolvedIndex = index;
+  }
+  if (resolvedIndex < 0) return { kind: "missing" };
+  return { kind: "resolved", index: resolvedIndex, entry: entries[resolvedIndex] };
+}
+
+export function removeUniqueHistoryManagerRow(
+  entries: readonly HistoryManagerRowEntry[],
+  rowKey: string
+) {
+  const resolution = resolveHistoryManagerRowTarget(entries, rowKey);
+  if (resolution.kind !== "resolved" || resolution.entry.isLiveSession) return null;
+  const nextEntries = entries.slice();
+  nextEntries.splice(resolution.index, 1);
+  return { entries: nextEntries, removedEntry: resolution.entry };
 }
 
 export function groupSelectedHistoryRowsByTask(selectedRowIds: string[]) {
