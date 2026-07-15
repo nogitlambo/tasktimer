@@ -47,6 +47,10 @@ vi.mock("@/app/tasktimer/lib/routeHref", () => ({
 import { handleDeleteAccountFlow, handleSignOutFlow } from "./settingsAccountService";
 import { ACCOUNT_DELETION_REDIRECT_INTENT_KEY } from "../../lib/accountDeletionRedirectIntent";
 
+vi.mock("@/app/tasktimer/lib/apiClient", () => ({
+  getApiUrl: (path: string) => `https://tasklaunch.app${path}`,
+}));
+
 describe("handleSignOutFlow", () => {
   beforeEach(() => {
     const sessionValues = new Map<string, string>();
@@ -103,8 +107,8 @@ describe("handleSignOutFlow", () => {
 
     await handleDeleteAccountFlow(user as never);
 
-    expect(fetch).toHaveBeenCalledWith("/api/account/retain-subscription-before-delete", expect.any(Object));
-    expect(fetch).toHaveBeenCalledWith("/api/account/delete-user-data", expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/retain-subscription-before-delete", expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/delete-user-data", expect.any(Object));
     expect(deleteUser).not.toHaveBeenCalled();
     expect(GoogleAuthProvider).not.toHaveBeenCalled();
     expect(reauthenticateWithPopup).not.toHaveBeenCalled();
