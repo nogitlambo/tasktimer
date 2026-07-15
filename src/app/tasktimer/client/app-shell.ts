@@ -3,6 +3,11 @@
 import { trackScreen } from "@/lib/firebaseTelemetry";
 import type { TaskTimerAppPageOptions, TaskTimerAppShellContext } from "./context";
 import type { AppPage } from "./types";
+import {
+  normalizeModuleIntroTourPage,
+  TASKTIMER_MODULE_INTRO_TOUR_APPLY_PAGE_EVENT,
+  type ModuleIntroTourApplyPageEventDetail,
+} from "./module-intro-tour";
 
 export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   let appPageSlideTimerId: number | null = null;
@@ -622,6 +627,13 @@ export function createTaskTimerAppShell(ctx: TaskTimerAppShellContext) {
   }
 
   function registerAppShellEvents() {
+    ctx.on(window as any, TASKTIMER_MODULE_INTRO_TOUR_APPLY_PAGE_EVENT, (event: Event) => {
+      const detail = (event as CustomEvent<ModuleIntroTourApplyPageEventDetail>).detail;
+      const page = normalizeModuleIntroTourPage(detail?.page);
+      if (!page) return;
+      applyAppPage(page, { syncUrl: "replace" });
+    });
+
     ctx.on(ctx.els.footerTasksBtn, "click", () => applyAppPage("tasks", { pushNavStack: true, syncUrl: "push" }));
     ctx.on(ctx.els.footerDashboardBtn, "click", () =>
       applyAppPage("dashboard", { pushNavStack: true, syncUrl: "push" })

@@ -14,6 +14,7 @@ import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 import { AVATAR_CATALOG, type AvatarOption } from "../lib/avatarCatalog";
+import { ADD_TASK_PRESET_NAMES } from "../lib/addTaskNames";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
 import {
@@ -40,9 +41,16 @@ import {
 } from "../lib/accountProfileStorage";
 import {
   TASKTIMER_OPEN_ONBOARDING_EVENT,
+  createOnboardingTaskViaRuntime,
+  getOnboardingTaskDefaultsViaRuntime,
+  resolveOnboardingCreateTaskError,
   resolveOnboardingPreferenceError,
   saveOnboardingPreferencesViaRuntime,
+  type TaskTimerOnboardingTaskType,
+  type TaskTimerOnboardingTimeGoalPeriod,
+  type TaskTimerOnboardingTimeGoalUnit,
 } from "../client/onboarding-events";
+import { dispatchModuleIntroTourStartEvent } from "../client/module-intro-tour";
 import { getErrorMessage, loadClaimedUsername, saveUserDocPatch, updateAliasFlow } from "./settings/settingsAccountService";
 
 type TaskLaunchOnboardingProps = {
@@ -57,6 +65,7 @@ export type StepKey =
   | "chronotypeResult"
   | "days"
   | "firstTask"
+  | "firstTaskSelection"
   | "push";
 type OnboardingTimeField = "start" | "end";
 export type ChronotypeResultPhase = "summary" | "hours";
@@ -71,6 +80,18 @@ export const ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT = [
 export const ONBOARDING_CHRONOTYPE_SELECTION_PROMPT = "Which best describes you?";
 export const ONBOARDING_NEUTRAL_BACKGROUND_ACCENT = "rgba(170, 178, 190, .46)";
 export const ONBOARDING_DAYS_BACKGROUND_ACCENT = "rgba(54, 58, 66, .58)";
+export const ONBOARDING_FIRST_TASK_CHOICE_PROMPT =
+  "Do you have a specific task in mind for today, or would you prefer to choose a quick task from a curated list?";
+export const ONBOARDING_FIRST_TASK_CHOICES = [
+  { id: "specific", label: "Specific Task" },
+  { id: "select", label: "Select a Task" },
+] as const;
+export type OnboardingFirstTaskChoiceId = (typeof ONBOARDING_FIRST_TASK_CHOICES)[number]["id"];
+export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE = 2;
+export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT: TaskTimerOnboardingTimeGoalUnit = "minute";
+export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD: TaskTimerOnboardingTimeGoalPeriod = "day";
+export const ONBOARDING_FIRST_TASK_DEFAULT_TYPE: TaskTimerOnboardingTaskType = "recurring";
+export const ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME = "09:00";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
@@ -80,8 +101,24 @@ export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = 
   { key: "chronotypeResult", title: "Chronotype Result" },
   { key: "days", title: "Productivity Days" },
   { key: "firstTask", title: "Let's create your first task" },
+  { key: "firstTaskSelection", title: "Specific Task" },
   { key: "push", title: "Notifications" },
 ];
+
+export function onboardingStepIndex(step: StepKey) {
+  const index = ONBOARDING_STEPS.findIndex((item) => item.key === step);
+  return index >= 0 ? index : 0;
+}
+
+export function onboardingFirstTaskSelectionTitle(choiceId: OnboardingFirstTaskChoiceId | "" = "") {
+  return choiceId === "select" ? "Select a Task" : "Specific Task";
+}
+
+export function onboardingNextStepIndex(activeStep: StepKey, stepIndex: number) {
+  if (activeStep === "firstTask") return stepIndex;
+  if (activeStep === "firstTaskSelection") return onboardingStepIndex("push");
+  return Math.min(ONBOARDING_STEPS.length - 1, stepIndex + 1);
+}
 
 export function shouldResetChronotypeChoiceForNavigation(currentStep: StepKey, nextStep: StepKey) {
   if (nextStep === "chronotypeSelection") return true;
@@ -346,20 +383,38 @@ export function isOnboardingContinueDisabled(
   busy: boolean,
   step: StepKey,
   selectedDays: ReadonlyArray<DashboardWeekStart>,
-  selectedChronotypeChoiceId = ""
+  selectedChronotypeChoiceId = "",
+  firstTaskDetailsReady = true
 ) {
   if (busy) return true;
   if (step === "chronotypeSelection") return !canContinueOnboardingStep(step, selectedDays, selectedChronotypeChoiceId);
+  if (step === "firstTask") return true;
+  if (step === "firstTaskSelection") return !firstTaskDetailsReady;
   return false;
 }
 
 export function isOnboardingContinueReservedHidden(step: StepKey, selectedChronotypeChoiceId = "") {
-  return step === "chronotypeSelection" && !ONBOARDING_CHRONOTYPE_OPTIONS.some((option) => option.id === selectedChronotypeChoiceId);
+  return (
+    step === "firstTask" ||
+    (step === "chronotypeSelection" && !ONBOARDING_CHRONOTYPE_OPTIONS.some((option) => option.id === selectedChronotypeChoiceId))
+  );
 }
 
 export function onboardingContinueBlockedMessage(step: StepKey) {
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE;
   if (step === "days") return "Select at least one productivity day before continuing.";
+  if (step === "firstTaskSelection") return "Complete the task details before continuing.";
+  return "";
+}
+
+export function validateOnboardingFirstTaskDetails(input: {
+  name: string;
+  timeGoalValue: number;
+  plannedStartTime: string;
+}) {
+  if (!String(input.name || "").trim()) return "Task name is required";
+  if (!(Math.floor(Number(input.timeGoalValue) || 0) > 0)) return "Enter a time amount greater than 0";
+  if (!normalizeTimeOfDay(input.plannedStartTime, "")) return "Choose a planned start time.";
   return "";
 }
 
@@ -445,6 +500,7 @@ function stepIntro(step: StepKey, isNativeRuntime: boolean) {
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
   if (step === "days") return "Choose the days that count toward your productivity streaks, rewards, and dashboard insights.";
+  if (step === "firstTask") return ONBOARDING_FIRST_TASK_CHOICE_PROMPT;
   void isNativeRuntime;
   return "To receive task reminders and alerts, please enable push notifications.";
 }
@@ -453,12 +509,18 @@ function alertUsernameError(message: string) {
   if (typeof window !== "undefined") window.alert(message);
 }
 
-export function onboardingTitle(step: StepKey, username: string, selectedChronotypeChoiceId = "") {
-  if (step === "username") return "Welcome";
-  if (step === "greeting") return `Great to meet you, ${username}!`;
+export function onboardingTitle(
+  step: StepKey,
+  username: string,
+  selectedChronotypeChoiceId = "",
+  selectedFirstTaskChoiceId: OnboardingFirstTaskChoiceId | "" = ""
+) {
+  if (step === "username") return "Profile Setup";
+  if (step === "greeting") return `Welcome, ${username}`;
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
   if (step === "chronotypeResult") return onboardingChronotypeResultTitle(selectedChronotypeChoiceId);
+  if (step === "firstTaskSelection") return onboardingFirstTaskSelectionTitle(selectedFirstTaskChoiceId);
   return ONBOARDING_STEPS.find((item) => item.key === step)?.title || "TaskLaunch Setup";
 }
 
@@ -507,6 +569,7 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
     step !== "chronotypeSelection" &&
     step !== "chronotypeResult" &&
     step !== "firstTask" &&
+    step !== "firstTaskSelection" &&
     step !== "push"
   );
 }
@@ -518,7 +581,7 @@ export function shouldShowOnboardingStepSubtext(step: StepKey) {
     step !== "chronotypeChoice" &&
     step !== "chronotypeSelection" &&
     step !== "chronotypeResult" &&
-    step !== "firstTask"
+    step !== "firstTaskSelection"
   );
 }
 
@@ -554,6 +617,18 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [hoursTouched, setHoursTouched] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushTouched, setPushTouched] = useState(false);
+  const [selectedFirstTaskChoiceId, setSelectedFirstTaskChoiceId] = useState<OnboardingFirstTaskChoiceId | "">("");
+  const [selectedFirstTaskPresetName, setSelectedFirstTaskPresetName] = useState("");
+  const [firstTaskNameDraft, setFirstTaskNameDraft] = useState("");
+  const [firstTaskDetailsReady, setFirstTaskDetailsReady] = useState(false);
+  const [firstTaskType, setFirstTaskType] = useState<TaskTimerOnboardingTaskType>(ONBOARDING_FIRST_TASK_DEFAULT_TYPE);
+  const [firstTaskTimeGoalValue, setFirstTaskTimeGoalValue] = useState(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE);
+  const [firstTaskTimeGoalUnit, setFirstTaskTimeGoalUnit] = useState<TaskTimerOnboardingTimeGoalUnit>(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT);
+  const [firstTaskTimeGoalPeriod, setFirstTaskTimeGoalPeriod] = useState<TaskTimerOnboardingTimeGoalPeriod>(
+    ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD
+  );
+  const [firstTaskPlannedStartTime, setFirstTaskPlannedStartTime] = useState(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME);
+  const [firstTaskPlannedStartTouched, setFirstTaskPlannedStartTouched] = useState(false);
   const [visibleTimeFallback, setVisibleTimeFallback] = useState<OnboardingTimeField | null>(null);
   const [busy, setBusy] = useState(false);
   const [chronotypeResultPhase, setChronotypeResultPhase] = useState<ChronotypeResultPhase>("summary");
@@ -576,12 +651,14 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const selectedChronotypeMostProductiveStat =
     selectedChronotypeSummary?.stats.find((stat) => stat.label === "Most Productive") ?? selectedChronotypeSummary?.stats[0] ?? null;
   const onboardingGreetingName = username || normalizeUsername(usernameDraft) || "there";
-  const onboardingHeadingText = onboardingTitle(activeStep, onboardingGreetingName, selectedChronotypeChoiceId);
+  const onboardingHeadingText = onboardingTitle(activeStep, onboardingGreetingName, selectedChronotypeChoiceId, selectedFirstTaskChoiceId);
   const showStepImage = shouldShowOnboardingStepImage(activeStep);
   const showStepSubtext = shouldShowOnboardingStepSubtext(activeStep) || (activeStep === "chronotypeResult" && chronotypeResultPhase === "hours");
   const selectedAvatar = AVATAR_CATALOG.find((avatar) => avatar.id === selectedAvatarId) || AVATAR_CATALOG[0] || null;
   const productivityHoursIntroSubtext = ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES[0];
   const productivityHoursFineTuneSubtext = ONBOARDING_PRODUCTIVITY_HOURS_SUBTEXT_LINES[1];
+  const firstTaskDetailsActive = activeStep === "firstTaskSelection" && firstTaskDetailsReady;
+  const firstTaskTimeGoalValueNormalized = Math.max(0, Math.floor(Number(firstTaskTimeGoalValue) || 0));
 
   useEffect(() => {
     openRef.current = open;
@@ -596,6 +673,34 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     if (activeStep !== "username") setAvatarPickerOpen(false);
     if (activeStep !== "chronotypeResult") setChronotypeResultPhase("summary");
   }, [activeStep, chronotypeResultPhase]);
+
+  useEffect(() => {
+    if (!firstTaskDetailsActive || firstTaskPlannedStartTouched) return;
+    let cancelled = false;
+    void getOnboardingTaskDefaultsViaRuntime({
+      taskType: firstTaskType,
+      timeGoalValue: firstTaskTimeGoalValueNormalized || ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE,
+      timeGoalUnit: firstTaskTimeGoalUnit,
+      timeGoalPeriod: firstTaskType === "once-off" ? "day" : firstTaskTimeGoalPeriod,
+      optimalProductivityStartTime: startTime,
+      optimalProductivityEndTime: endTime,
+    }).then((result) => {
+      if (cancelled || !result.ok || !result.plannedStartTime) return;
+      setFirstTaskPlannedStartTime(normalizeTimeOfDay(result.plannedStartTime, ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    firstTaskDetailsActive,
+    firstTaskPlannedStartTouched,
+    firstTaskTimeGoalPeriod,
+    firstTaskTimeGoalUnit,
+    firstTaskTimeGoalValueNormalized,
+    firstTaskType,
+    startTime,
+    endTime,
+  ]);
 
   const resetDrafts = useCallback(
     (nextUid: string, nextUsername: string, nextPresence: TaskTimerOnboardingPreferencePresence | null) => {
@@ -616,6 +721,16 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setHoursTouched(false);
       setPushEnabled(isNativeRuntime ? !!preferences?.mobilePushAlertsEnabled : !!preferences?.webPushAlertsEnabled);
       setPushTouched(false);
+      setSelectedFirstTaskChoiceId("");
+      setSelectedFirstTaskPresetName("");
+      setFirstTaskNameDraft("");
+      setFirstTaskDetailsReady(false);
+      setFirstTaskType(ONBOARDING_FIRST_TASK_DEFAULT_TYPE);
+      setFirstTaskTimeGoalValue(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE);
+      setFirstTaskTimeGoalUnit(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT);
+      setFirstTaskTimeGoalPeriod(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD);
+      setFirstTaskPlannedStartTime(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME);
+      setFirstTaskPlannedStartTouched(false);
       setStepIndex(0);
       setStatus("");
       setError("");
@@ -710,6 +825,47 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     },
     []
   );
+
+  const saveOnboardingTaskStep = useCallback(async () => {
+    const validationMessage = validateOnboardingFirstTaskDetails({
+      name: firstTaskNameDraft,
+      timeGoalValue: firstTaskTimeGoalValueNormalized,
+      plannedStartTime: firstTaskPlannedStartTime,
+    });
+    if (validationMessage) {
+      setError(validationMessage);
+      return false;
+    }
+
+    setBusy(true);
+    setError("");
+    setStatus("");
+    try {
+      const result = await createOnboardingTaskViaRuntime({
+        name: firstTaskNameDraft.trim(),
+        taskType: firstTaskType,
+        timeGoalValue: firstTaskTimeGoalValueNormalized,
+        timeGoalUnit: firstTaskTimeGoalUnit,
+        timeGoalPeriod: firstTaskType === "once-off" ? "day" : firstTaskTimeGoalPeriod,
+        plannedStartTime: normalizeTimeOfDay(firstTaskPlannedStartTime, ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME),
+      });
+      if (!result.ok) throw new Error(result.error || "Could not create onboarding task.");
+      setStatus("Task created.");
+      return true;
+    } catch (err: unknown) {
+      setError(resolveOnboardingCreateTaskError(err));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [
+    firstTaskNameDraft,
+    firstTaskPlannedStartTime,
+    firstTaskTimeGoalPeriod,
+    firstTaskTimeGoalUnit,
+    firstTaskTimeGoalValueNormalized,
+    firstTaskType,
+  ]);
 
   const saveSelectedOnboardingAvatar = useCallback(async () => {
     const avatarId = selectedAvatarId || AVATAR_CATALOG[0]?.id || "";
@@ -823,6 +979,13 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const saveCurrentStep = useCallback(async () => {
     if (activeStep === "username") return confirmUsername();
+    if (activeStep === "firstTaskSelection") {
+      if (!firstTaskDetailsReady) {
+        setError(onboardingContinueBlockedMessage(activeStep));
+        return false;
+      }
+      return saveOnboardingTaskStep();
+    }
     if (!canContinueOnboardingStep(activeStep, selectedDays, selectedChronotypeChoiceId)) {
       setError(onboardingContinueBlockedMessage(activeStep));
       return false;
@@ -841,8 +1004,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     activeStep,
     chronotypeResultPhase,
     confirmUsername,
+    firstTaskDetailsReady,
     pushEnabled,
     pushTouched,
+    saveOnboardingTaskStep,
     savePreferenceStep,
     selectedChronotypeChoiceId,
     selectedDays,
@@ -863,6 +1028,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         void next;
         resetChronotypeResultPhase();
         setOpen(false);
+        if (nextStatus === "completed") dispatchModuleIntroTourStartEvent(uid);
       } catch (err: unknown) {
         setError(getErrorMessage(err, "Could not save onboarding state."));
       } finally {
@@ -875,7 +1041,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const handleNext = useCallback(async () => {
     const saved = await saveCurrentStep();
     if (!saved) return;
-    const nextIndex = Math.min(ONBOARDING_STEPS.length - 1, stepIndex + 1);
+    const nextIndex = onboardingNextStepIndex(activeStep, stepIndex);
     const nextStep = ONBOARDING_STEPS[nextIndex]?.key || activeStep;
     const advanceToNextStep = () => {
       if (shouldResetChronotypeChoiceForNavigation(activeStep, nextStep)) {
@@ -894,7 +1060,45 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     advanceToNextStep();
   }, [activeStep, chronotypeResultPhase, saveCurrentStep, selectedChronotypeChoiceId, stepIndex]);
 
+  const selectFirstTaskChoice = useCallback(
+    async (choiceId: OnboardingFirstTaskChoiceId) => {
+      const saved = await saveCurrentStep();
+      if (!saved) return;
+      setSelectedFirstTaskChoiceId(choiceId);
+      setFirstTaskDetailsReady(choiceId === "specific");
+      setFirstTaskType(ONBOARDING_FIRST_TASK_DEFAULT_TYPE);
+      setFirstTaskTimeGoalValue(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE);
+      setFirstTaskTimeGoalUnit(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT);
+      setFirstTaskTimeGoalPeriod(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD);
+      setFirstTaskPlannedStartTime(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME);
+      setFirstTaskPlannedStartTouched(false);
+      if (choiceId === "specific") setSelectedFirstTaskPresetName("");
+      if (choiceId === "select") {
+        setSelectedFirstTaskPresetName("");
+        setFirstTaskNameDraft("");
+      }
+      setStepIndex(onboardingStepIndex("firstTaskSelection"));
+      setStatus("");
+      setError("");
+    },
+    [saveCurrentStep]
+  );
+
   const handleBack = useCallback(() => {
+    if (activeStep === "firstTaskSelection") {
+      if (selectedFirstTaskChoiceId === "select" && firstTaskDetailsReady) {
+        setFirstTaskDetailsReady(false);
+        setSelectedFirstTaskPresetName("");
+        setFirstTaskNameDraft("");
+        setStatus("");
+        setError("");
+        return;
+      }
+      setStepIndex(onboardingStepIndex("firstTask"));
+      setStatus("");
+      setError("");
+      return;
+    }
     const backNavigation = onboardingBackNavigation({
       activeStep,
       chronotypeResultPhase,
@@ -908,7 +1112,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     setChronotypeResultPhase(backNavigation.nextChronotypeResultPhase);
     setStatus("");
     setError("");
-  }, [activeStep, chronotypeResultPhase, selectedChronotypeChoiceId, stepIndex]);
+  }, [activeStep, chronotypeResultPhase, firstTaskDetailsReady, selectedChronotypeChoiceId, selectedFirstTaskChoiceId, stepIndex]);
 
   const handleFinish = useCallback(async () => {
     if (!usernameConfirmed) {
@@ -979,9 +1183,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     onboardingActionsDisabled,
     activeStep,
     selectedDays,
-    selectedChronotypeChoiceId
+    selectedChronotypeChoiceId,
+    activeStep !== "firstTaskSelection" || firstTaskDetailsReady
   );
-  const onboardingContinueReservedHidden = isOnboardingContinueReservedHidden(activeStep, selectedChronotypeChoiceId);
+  const onboardingContinueReservedHidden =
+    isOnboardingContinueReservedHidden(activeStep, selectedChronotypeChoiceId) ||
+    (activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" && !firstTaskDetailsReady);
   const onboardingBackgroundAccent = onboardingBackgroundAccentForStep(activeStep, selectedChronotypeResult?.accentColor, isChronotypeHoursPhase);
   const onboardingModalStyle = {
     "--onboarding-background-accent": onboardingBackgroundAccent,
@@ -1012,6 +1219,16 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             isChronotypeResultSummaryStep ? " onboardingContentChronotypeResultSummary" : ""
           }${isChronotypeHoursPhase ? " onboardingContentChronotypeHours" : ""}`}
         >
+          {activeStep === "username" ? (
+            <AppImg
+              className="onboardingProfileSetupImage"
+              src="/onboarding/profile_setup.webp"
+              alt=""
+              width={837}
+              height={1002}
+              aria-hidden="true"
+            />
+          ) : null}
           {showStepImage && activeStep === "chronotypeChoice" ? (
             <div className="onboardingChronotypeChoicePreview" aria-label="Chronotype animals">
               {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => (
@@ -1163,8 +1380,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
               {isGreetingStep ? (
                 <>
-                  <span className="onboardingGreetingStepLead">Great</span>
-                  <span className="onboardingGreetingStepSublead">to meet you,</span>
+                  <span className="onboardingGreetingStepLead">Welcome,</span>
                   <span className="onboardingGreetingStepAlias">{onboardingGreetingName}</span>
                 </>
               ) : isChronotypeChoiceStep ? (
@@ -1324,6 +1540,217 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 </div>
               );
             })}
+          </div>
+        ) : null}
+
+        {activeStep === "firstTask" ? (
+          <div className="onboardingTaskChoiceGrid" role="group" aria-label={ONBOARDING_FIRST_TASK_CHOICE_PROMPT}>
+            {ONBOARDING_FIRST_TASK_CHOICES.map((choice) => (
+              <button
+                className="onboardingTaskChoiceTile"
+                type="button"
+                key={choice.id}
+                data-onboarding-task-choice={choice.id}
+                data-onboarding-next-action="true"
+                onClick={() => void selectFirstTaskChoice(choice.id)}
+                disabled={onboardingActionsDisabled}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" ? (
+          <ul className={`onboardingTaskPresetList${firstTaskDetailsReady ? " isHidden" : ""}`} aria-label="Curated task presets">
+            {ADD_TASK_PRESET_NAMES.map((presetName) => {
+              const selected = selectedFirstTaskPresetName === presetName;
+              return (
+                <li className="onboardingTaskPresetListItem" key={presetName}>
+                  <button
+                    className={`onboardingTaskPresetItem${selected ? " isSelected" : ""}`}
+                    type="button"
+                    aria-pressed={selected}
+                    data-onboarding-preset-task={presetName}
+                    onClick={() => {
+                      setSelectedFirstTaskPresetName(presetName);
+                      setFirstTaskNameDraft(presetName);
+                      setFirstTaskDetailsReady(true);
+                      setFirstTaskType(ONBOARDING_FIRST_TASK_DEFAULT_TYPE);
+                      setFirstTaskTimeGoalValue(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE);
+                      setFirstTaskTimeGoalUnit(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT);
+                      setFirstTaskTimeGoalPeriod(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD);
+                      setFirstTaskPlannedStartTime(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME);
+                      setFirstTaskPlannedStartTouched(false);
+                      setStatus("");
+                      setError("");
+                    }}
+                  >
+                    {presetName}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+
+        {firstTaskDetailsActive ? (
+          <div className="onboardingTaskDetailsGrid">
+            <div className="field onboardingSpecificTaskField">
+              <label htmlFor="onboardingTaskNameInput">Task Name</label>
+              <div className="addTaskNameCombo onboardingSpecificTaskNameCombo" id="onboardingTaskNameCombo">
+                <div className="taskNameRow onboardingTaskNameRow">
+                  <input
+                    id="onboardingTaskNameInput"
+                    type="text"
+                    placeholder="Enter a description for this task"
+                    value={firstTaskNameDraft}
+                    onChange={(event) => {
+                      setFirstTaskNameDraft(event.target.value);
+                      setStatus("");
+                      setError("");
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="onboardingTaskTypePills" role="group" aria-label="Task type">
+              <button
+                id="onboardingTaskTypeRecurringBtn"
+                className={`btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn${firstTaskType === "recurring" ? " isOn" : ""}`}
+                type="button"
+                aria-pressed={firstTaskType === "recurring"}
+                onClick={() => {
+                  setFirstTaskType("recurring");
+                  setStatus("");
+                  setError("");
+                }}
+                disabled={onboardingActionsDisabled}
+              >
+                Recurring
+              </button>
+              <button
+                id="onboardingTaskTypeOnceOffBtn"
+                className={`btn btn-ghost small unitBtn timerTypePill taskScreenPill taskScreenHeaderBtn${firstTaskType === "once-off" ? " isOn" : ""}`}
+                type="button"
+                aria-pressed={firstTaskType === "once-off"}
+                onClick={() => {
+                  setFirstTaskType("once-off");
+                  setFirstTaskTimeGoalPeriod("day");
+                  setStatus("");
+                  setError("");
+                }}
+                disabled={onboardingActionsDisabled}
+              >
+                Once-off
+              </button>
+            </div>
+
+            <div className="field editTaskTimeGoalField onboardingTaskTimeGoalField">
+              <div className="editTaskTimeGoalHeader">
+                <label className="editTaskTimeGoalHeaderLabel" htmlFor="onboardingTaskTimeGoalValueInput">
+                  Time Goal
+                </label>
+              </div>
+              <div className="addTaskDurationRow editTaskDurationRow onboardingTaskDurationRow" id="onboardingTaskDurationRow">
+                <input
+                  id="onboardingTaskTimeGoalValueInput"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={firstTaskTimeGoalValue}
+                  onChange={(event) => {
+                    setFirstTaskTimeGoalValue(Math.max(0, Math.floor(Number(event.target.value) || 0)));
+                    setStatus("");
+                    setError("");
+                  }}
+                  disabled={onboardingActionsDisabled}
+                />
+                <div className="unitPills" role="group" aria-label="Time goal unit">
+                  <button
+                    className={`btn btn-ghost small unitBtn${firstTaskTimeGoalUnit === "minute" ? " isOn" : ""}`}
+                    type="button"
+                    aria-pressed={firstTaskTimeGoalUnit === "minute"}
+                    onClick={() => {
+                      setFirstTaskTimeGoalUnit("minute");
+                      setStatus("");
+                      setError("");
+                    }}
+                    disabled={onboardingActionsDisabled}
+                  >
+                    Min
+                  </button>
+                  <button
+                    className={`btn btn-ghost small unitBtn${firstTaskTimeGoalUnit === "hour" ? " isOn" : ""}`}
+                    type="button"
+                    aria-pressed={firstTaskTimeGoalUnit === "hour"}
+                    onClick={() => {
+                      setFirstTaskTimeGoalUnit("hour");
+                      setStatus("");
+                      setError("");
+                    }}
+                    disabled={onboardingActionsDisabled}
+                  >
+                    Hour
+                  </button>
+                </div>
+                <span className={`durationPerLabel${firstTaskType === "once-off" ? " isHidden" : ""}`}>per</span>
+                <div className={`unitPills${firstTaskType === "once-off" ? " isHidden" : ""}`} role="group" aria-label="Time goal period">
+                  <button
+                    className={`btn btn-ghost small unitBtn${firstTaskTimeGoalPeriod === "day" ? " isOn" : ""}`}
+                    type="button"
+                    aria-pressed={firstTaskTimeGoalPeriod === "day"}
+                    onClick={() => {
+                      setFirstTaskTimeGoalPeriod("day");
+                      setStatus("");
+                      setError("");
+                    }}
+                    disabled={onboardingActionsDisabled}
+                  >
+                    Day
+                  </button>
+                  <button
+                    className={`btn btn-ghost small unitBtn${firstTaskTimeGoalPeriod === "week" ? " isOn" : ""}`}
+                    type="button"
+                    aria-pressed={firstTaskTimeGoalPeriod === "week"}
+                    onClick={() => {
+                      setFirstTaskTimeGoalPeriod("week");
+                      setStatus("");
+                      setError("");
+                    }}
+                    disabled={onboardingActionsDisabled}
+                  >
+                    Week
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="field editPlannedStartField onboardingPlannedStartField">
+              <label htmlFor="onboardingTaskPlannedStartTimeInput">Planned Start Time</label>
+              <div className="addTaskPlannedStartSection editPlannedStartSection onboardingPlannedStartSection">
+                <div className="addTaskPlannedStartSelectorRow">
+                  <div className="addTaskPlannedStartTimeCluster">
+                    <input
+                      id="onboardingTaskPlannedStartTimeInput"
+                      className="plannedStartClockInput"
+                      type="time"
+                      step="300"
+                      value={firstTaskPlannedStartTime}
+                      onChange={(event) => {
+                        setFirstTaskPlannedStartTime(normalizeTimeOfDay(event.target.value, ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME));
+                        setFirstTaskPlannedStartTouched(true);
+                        setStatus("");
+                        setError("");
+                      }}
+                      disabled={onboardingActionsDisabled}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
 

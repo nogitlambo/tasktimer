@@ -1550,10 +1550,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   title="Add Task"
                   type="button"
                 >
-                  <span className="openAddTaskBtnContent">
-                    <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add-task.webp" alt="" aria-hidden="true" />
-                    <span className="taskScreenHeaderBtnText">Add Task</span>
-                  </span>
+                  <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add_new_resized.png" alt="" aria-hidden="true" />
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
@@ -1603,14 +1600,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               ) : null}
               <div className="friendTopRow">
                 <div className="friendPageHeaderActions">
-                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" disabled={!isAuthenticated}>
+                  <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" aria-label="Add Friend" title="Add Friend" disabled={!isAuthenticated}>
                     <AppImg
                       className="friendRequestBtnIcon"
-                      src="/icons/icons_default/add-friend.webp"
+                      src="/icons/icons_default/add_new_resized.png"
                       alt=""
                       aria-hidden="true"
                     />
-                    Add Friend
                   </button>
                 </div>
               </div>

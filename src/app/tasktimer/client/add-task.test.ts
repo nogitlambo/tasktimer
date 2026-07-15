@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { createTaskTimerAddTask } from "./add-task";
-import { getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
+import { getLocalScheduleDay, getScheduleTaskDurationMinutesForDay } from "../lib/schedule-placement";
 import type { Task } from "../lib/types";
+import {
+  TASKTIMER_ONBOARDING_CREATE_TASK_EVENT,
+  TASKTIMER_ONBOARDING_TASK_DEFAULTS_EVENT,
+  type TaskTimerOnboardingCreateTaskResult,
+  type TaskTimerOnboardingTaskDefaultsResult,
+} from "./onboarding-events";
 
 type HandlerMap = Map<string, (event?: Event) => void>;
 
@@ -42,14 +48,15 @@ function createHarness(
   const documentStub = {};
   vi.stubGlobal("HTMLElement", class HTMLElementStub {});
   vi.stubGlobal("document", documentStub);
-  vi.stubGlobal("window", {
+  const windowStub = {
     location: { protocol: "http:" },
     setTimeout: vi.fn((callback: () => void) => {
       callback();
       return 1;
     }),
     clearTimeout: vi.fn(),
-  });
+  };
+  vi.stubGlobal("window", windowStub);
   let addTaskMilestones: Array<{ hours: number; description: string }> = [];
   let addTaskType: "recurring" | "once-off" = overrides?.taskType || "recurring";
   let addTaskDurationUnit: "minute" | "hour" = "minute";
@@ -343,6 +350,32 @@ function createHarness(
     focus: () => handlers.get(addTaskDurationValueInput)?.get("focus")?.(),
     inputDuration: () => handlers.get(addTaskDurationValueInput)?.get("input")?.(),
     toggleCheckpoints: () => handlers.get(addTaskMsToggle)?.get("change")?.(),
+    getOnboardingDefaults: (payload: {
+      taskType: "recurring" | "once-off";
+      timeGoalValue: number;
+      timeGoalUnit: "minute" | "hour";
+      timeGoalPeriod: "day" | "week";
+      optimalProductivityStartTime?: string;
+      optimalProductivityEndTime?: string;
+    }) =>
+      new Promise<TaskTimerOnboardingTaskDefaultsResult>((resolve) => {
+        handlers.get(windowStub)?.get(TASKTIMER_ONBOARDING_TASK_DEFAULTS_EVENT)?.({
+          detail: { payload, done: resolve },
+        } as unknown as Event);
+      }),
+    createOnboardingTask: (payload: {
+      name: string;
+      taskType: "recurring" | "once-off";
+      timeGoalValue: number;
+      timeGoalUnit: "minute" | "hour";
+      timeGoalPeriod: "day" | "week";
+      plannedStartTime: string;
+    }) =>
+      new Promise<TaskTimerOnboardingCreateTaskResult>((resolve) => {
+        handlers.get(windowStub)?.get(TASKTIMER_ONBOARDING_CREATE_TASK_EVENT)?.({
+          detail: { payload, done: resolve },
+        } as unknown as Event);
+      }),
   };
 }
 
@@ -559,6 +592,181 @@ describe("createTaskTimerAddTask", () => {
         timeGoalPeriod: "day",
         timeGoalMinutes: 1,
       }),
+    ]);
+  });
+
+  it("returns onboarding planned-start defaults from the Add Task scheduling helper", async () => {
+    const harness = createHarness("1", { productivityStartTime: "08:00", productivityEndTime: "12:00" });
+
+    await expect(
+      harness.getOnboardingDefaults({
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+      })
+    ).resolves.toEqual({ ok: true, plannedStartTime: "08:00" });
+  });
+
+  it("uses onboarding-selected productivity hours for onboarding planned-start defaults", async () => {
+    const harness = createHarness("1", { productivityStartTime: "09:00", productivityEndTime: "17:00" });
+
+    await expect(
+      harness.getOnboardingDefaults({
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        optimalProductivityStartTime: "06:30",
+        optimalProductivityEndTime: "11:00",
+      })
+    ).resolves.toEqual({ ok: true, plannedStartTime: "06:30" });
+  });
+
+  it("creates a recurring onboarding task with weekly planned-start mapping", async () => {
+    const harness = createHarness("1", { productivityDays: ["mon", "wed", "fri"] });
+    const setTasksMock = vi.mocked(harness.ctx.setTasks);
+
+    await expect(
+      harness.createOnboardingTask({
+        name: "Plan launch",
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        plannedStartTime: "08:30",
+      })
+    ).resolves.toEqual({ ok: true });
+
+    expect(setTasksMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "Plan launch",
+        taskType: "recurring",
+        timeGoalEnabled: true,
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 2,
+        plannedStartTime: "08:30",
+        plannedStartByDay: { mon: "08:30", wed: "08:30", fri: "08:30" },
+        plannedStartPushRemindersEnabled: false,
+      }),
+    ]);
+    expect(harness.ctx.jumpToTaskAndHighlight).toHaveBeenCalledWith("task-1");
+  });
+
+  it("creates a once-off onboarding task using today silently", async () => {
+    const today = getLocalScheduleDay();
+    const harness = createHarness("1");
+
+    await expect(
+      harness.createOnboardingTask({
+        name: "Call client",
+        taskType: "once-off",
+        timeGoalValue: 1,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "week",
+        plannedStartTime: "14:00",
+      })
+    ).resolves.toEqual({ ok: true });
+
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "Call client",
+        taskType: "once-off",
+        onceOffDay: today,
+        plannedStartDay: today,
+        timeGoalValue: 1,
+        timeGoalUnit: "hour",
+        timeGoalPeriod: "day",
+        timeGoalMinutes: 60,
+        plannedStartTime: "14:00",
+        plannedStartByDay: { [today]: "14:00" },
+      }),
+    ]);
+  });
+
+  it("rejects invalid onboarding task creation payloads", async () => {
+    const harness = createHarness("1");
+
+    await expect(
+      harness.createOnboardingTask({
+        name: "",
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        plannedStartTime: "09:00",
+      })
+    ).resolves.toEqual({ ok: false, error: "Task name is required" });
+    await expect(
+      harness.createOnboardingTask({
+        name: "Bad duration",
+        taskType: "recurring",
+        timeGoalValue: 0,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        plannedStartTime: "09:00",
+      })
+    ).resolves.toEqual({ ok: false, error: "Enter a time amount greater than 0" });
+    expect(harness.ctx.setTasks).not.toHaveBeenCalled();
+  });
+
+  it("keeps onboarding task creation pending until schedule conflict resolution succeeds", async () => {
+    const existingTask = {
+      id: "busy-1",
+      name: "Deep Work",
+      taskType: "once-off",
+      onceOffDay: "mon",
+      onceOffTargetDate: null,
+      order: 1,
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      collapsed: false,
+      milestonesEnabled: false,
+      milestoneTimeUnit: "hour",
+      milestones: [],
+      hasStarted: false,
+      timeGoalEnabled: true,
+      timeGoalValue: 1,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 60,
+      plannedStartDay: "mon",
+      plannedStartTime: "09:00",
+      plannedStartByDay: { mon: "09:00" },
+      plannedStartOpenEnded: false,
+    };
+    const harness = createHarness("1", { tasks: [existingTask], productivityDays: ["mon"] });
+    let resolved = false;
+
+    const resultPromise = harness
+      .createOnboardingTask({
+        name: "Review plan",
+        taskType: "recurring",
+        timeGoalValue: 2,
+        timeGoalUnit: "minute",
+        timeGoalPeriod: "day",
+        plannedStartTime: "09:00",
+      })
+      .then((result) => {
+        resolved = true;
+        return result;
+      });
+
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+    expect(harness.ctx.confirm).toHaveBeenCalledWith("Schedule conflict", "", expect.objectContaining({ overlayClassName: "isScheduleConflictConfirm" }));
+    expect(harness.ctx.setTasks).not.toHaveBeenCalled();
+
+    const confirmOpts = vi.mocked(harness.ctx.confirm).mock.calls[0]?.[2];
+    confirmOpts?.onOk?.();
+
+    await expect(resultPromise).resolves.toEqual({ ok: true });
+    expect(harness.ctx.setTasks).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "busy-1" }),
+      expect.objectContaining({ name: "Review plan", plannedStartByDay: { mon: "09:00" } }),
     ]);
   });
 

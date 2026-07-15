@@ -14,6 +14,7 @@ import {
 } from "./mobileSwipeClose";
 import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
+import ModuleIntroTour from "./ModuleIntroTour";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, buildRankLadderSummary, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
@@ -660,6 +661,7 @@ export default function TaskTimerAppFrame({
         onConfirm={() => void handleMobileSignOut()}
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
+      <ModuleIntroTour />
       <div
         className={`initialAuthBusyOverlay${isLeaderboardPage ? "" : " isOn"}`}
         id="initialAuthBusyOverlay"

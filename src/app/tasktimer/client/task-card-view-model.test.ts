@@ -353,6 +353,21 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('class="taskHistoryReveal ');
   });
 
+  it("keeps the redesigned front-card structure and action hooks intact", () => {
+    const rendered = renderCard();
+
+    expect(rendered.html).toContain('class="taskFaceShell taskFaceShellFront"');
+    expect(rendered.html).toContain('class="taskColorPill"');
+    expect(rendered.html).toContain('class="iconBtn taskFlipBtn"');
+    expect(rendered.html).toContain('class="name" data-action="editName"');
+    expect(rendered.html).toContain('class="time" data-action="focus"');
+    expect(rendered.html).toContain('class="actions"');
+    expect(rendered.html).toContain('class="progressRow');
+    expect(rendered.html).toContain('data-action="history"');
+    expect(rendered.html).toContain('class="btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch"');
+    expect(rendered.html).toContain('data-action="start" title="Launch" aria-label="Launch"');
+  });
+
   it("keeps the front history tab border gap from being overdrawn by the back face", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
 
@@ -386,8 +401,27 @@ describe("task card view model", () => {
     expect(css).toContain("justify-self: center !important;");
     expect(css).toContain("grid-column: 1 / 2 !important;");
     expect(css).toContain(".task .taskFaceShellFront > .taskFlipBtn");
-    expect(css).toContain("top:10px !important;");
-    expect(css).toContain("right:10px !important;");
+    expect(css).toContain("top: 10px !important;");
+    expect(css).toContain("right: 10px !important;");
+  });
+
+  it("defines reference-style front task card styling without changing compact card dimensions", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain("/* Task card redesign: front-face shell and layout only. Keep button chrome owned by task action rules below. */");
+    expect(css).toContain("--task-card-redesign-cyan: rgba(67,229,255,.86);");
+    expect(css).toContain("padding: 14px 10px 8px !important;");
+    expect(css).toContain("top: 12px;");
+    expect(css).toContain("width: 14px;");
+    expect(css).toContain("border: 1px solid var(--task-card-outline-color) !important;");
+    expect(css).toContain("border-radius: 6px;");
+    expect(css).toContain("content: none !important;");
+    expect(css).toContain(".task .taskFaceShellFront::after{\n  content: none !important;\n  display: none !important;");
+    expect(css).toContain("border: 1px solid rgba(184,204,220,.34) !important;");
+    expect(css).not.toContain("min-height: clamp(430px, 46vw, 560px);");
+    expect(css).not.toContain("min-height: 92px;");
+    expect(css).not.toContain("margin-top: clamp(34px, 5.2vw, 62px);");
+    expect(css).toContain("/* Task action sizing ownership. */");
   });
 
   it("lays out back-face task actions as a fixed grid of labeled tiles", () => {

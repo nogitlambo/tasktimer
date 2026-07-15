@@ -13,6 +13,13 @@ import {
   ONBOARDING_DOLPHIN_CHRONOTYPE_SUMMARY,
   ONBOARDING_LION_CHRONOTYPE_SUMMARY,
   ONBOARDING_WOLF_CHRONOTYPE_SUMMARY,
+  ONBOARDING_FIRST_TASK_CHOICES,
+  ONBOARDING_FIRST_TASK_CHOICE_PROMPT,
+  ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME,
+  ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD,
+  ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT,
+  ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE,
+  ONBOARDING_FIRST_TASK_DEFAULT_TYPE,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
@@ -30,7 +37,10 @@ import {
   onboardingContinueBlockedMessage,
   onboardingChronotypeResultCopy,
   onboardingChronotypeResultSummary,
+  onboardingFirstTaskSelectionTitle,
+  onboardingNextStepIndex,
   onboardingProductivityHoursSubtext,
+  onboardingStepIndex,
   resolveOnboardingAvatarId,
   shouldShowOnboardingStepImage,
   shouldShowOnboardingStepSubtext,
@@ -42,6 +52,7 @@ import {
   toggleAllOnboardingProductivityDays,
   toggleOnboardingProductivityDay,
   toggleOnboardingChronotypeChoice,
+  validateOnboardingFirstTaskDetails,
 } from "./TaskLaunchOnboarding";
 
 describe("TaskLaunchOnboarding finish action", () => {
@@ -61,12 +72,14 @@ describe("TaskLaunchOnboarding steps", () => {
       "chronotypeResult",
       "days",
       "firstTask",
+      "firstTaskSelection",
       "push",
     ]);
   });
 
   it("uses the username greeting for the standalone greeting step", () => {
-    expect(onboardingTitle("greeting", "Avery")).toBe("Great to meet you, Avery!");
+    expect(onboardingTitle("username", "Avery")).toBe("Profile Setup");
+    expect(onboardingTitle("greeting", "Avery")).toBe("Welcome, Avery");
     expect(ONBOARDING_GREETING_SUBTEXT).toBe("Let's set up your profile around how you work best. A few quick questions will help personalise your experience.");
   });
 
@@ -177,6 +190,19 @@ describe("TaskLaunchOnboarding steps", () => {
   it("keeps the productivity-days title after the chronotype result step", () => {
     expect(onboardingTitle("days", "Avery")).toBe("Productivity Days");
     expect(onboardingTitle("firstTask", "Avery")).toBe("Let's create your first task");
+    expect(ONBOARDING_FIRST_TASK_CHOICE_PROMPT).toBe(
+      "Do you have a specific task in mind for today, or would you prefer to choose a quick task from a curated list?"
+    );
+    expect(ONBOARDING_FIRST_TASK_CHOICES.map((choice) => choice.label)).toEqual(["Specific Task", "Select a Task"]);
+    expect(onboardingFirstTaskSelectionTitle("specific")).toBe("Specific Task");
+    expect(onboardingFirstTaskSelectionTitle("select")).toBe("Select a Task");
+    expect(onboardingTitle("firstTaskSelection", "Avery", "", "specific")).toBe("Specific Task");
+    expect(onboardingTitle("firstTaskSelection", "Avery", "", "select")).toBe("Select a Task");
+    expect(ONBOARDING_FIRST_TASK_DEFAULT_TYPE).toBe("recurring");
+    expect(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE).toBe(2);
+    expect(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT).toBe("minute");
+    expect(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD).toBe("day");
+    expect(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME).toBe("09:00");
   });
 
   it("uses the notifications title for the final onboarding step", () => {
@@ -191,8 +217,30 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(shouldShowOnboardingStepImage("chronotypeResult")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeResult")).toBe(false);
     expect(shouldShowOnboardingStepImage("firstTask")).toBe(false);
-    expect(shouldShowOnboardingStepSubtext("firstTask")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("firstTask")).toBe(true);
+    expect(shouldShowOnboardingStepImage("firstTaskSelection")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("firstTaskSelection")).toBe(false);
     expect(shouldShowOnboardingStepImage("push")).toBe(false);
+  });
+
+  it("routes the first-task branch page back into notifications", () => {
+    expect(onboardingNextStepIndex("firstTask", onboardingStepIndex("firstTask"))).toBe(onboardingStepIndex("firstTask"));
+    expect(onboardingNextStepIndex("firstTaskSelection", onboardingStepIndex("firstTaskSelection"))).toBe(onboardingStepIndex("push"));
+    expect(isOnboardingContinueDisabled(false, "firstTask", ["mon"], "")).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", false)).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", true)).toBe(false);
+    expect(isOnboardingContinueReservedHidden("firstTask")).toBe(true);
+  });
+
+  it("validates onboarding task details before runtime creation", () => {
+    expect(validateOnboardingFirstTaskDetails({ name: "Write notes", timeGoalValue: 2, plannedStartTime: "09:00" })).toBe("");
+    expect(validateOnboardingFirstTaskDetails({ name: "", timeGoalValue: 2, plannedStartTime: "09:00" })).toBe("Task name is required");
+    expect(validateOnboardingFirstTaskDetails({ name: "Write notes", timeGoalValue: 0, plannedStartTime: "09:00" })).toBe(
+      "Enter a time amount greater than 0"
+    );
+    expect(validateOnboardingFirstTaskDetails({ name: "Write notes", timeGoalValue: 2, plannedStartTime: "bad" })).toBe(
+      "Choose a planned start time."
+    );
   });
 
   it("keeps the neutral background accent until the chronotype result reveal", () => {
@@ -246,6 +294,26 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(
       onboardingStepPreferencePayload({
         step: "firstTask",
+        selectedDays: ["mon", "tue", "wed", "thu", "fri"],
+        startTime: "09:00",
+        endTime: "17:00",
+        pushEnabled: false,
+        pushTouched: false,
+      })
+    ).toBeNull();
+    expect(
+      onboardingStepPreferencePayload({
+        step: "firstTask",
+        selectedDays: ["mon", "tue", "wed", "thu", "fri"],
+        startTime: "09:00",
+        endTime: "17:00",
+        pushEnabled: false,
+        pushTouched: false,
+      })
+    ).toBeNull();
+    expect(
+      onboardingStepPreferencePayload({
+        step: "firstTaskSelection",
         selectedDays: ["mon", "tue", "wed", "thu", "fri"],
         startTime: "09:00",
         endTime: "17:00",

@@ -334,6 +334,7 @@ function renderMobileNavItem(item: NavItem, activePage: DesktopRailPage, useClie
   const commonProps = {
     className: `btn btn-ghost small appFooterBtn${isActive ? " isOn" : ""}`,
     "aria-label": item.ariaLabel,
+    "data-nav-page": item.page,
   };
 
   if (useClientNavButtons && item.page !== "settings") {

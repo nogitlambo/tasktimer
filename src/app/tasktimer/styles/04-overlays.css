@@ -8062,6 +8062,16 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: min(100%, 520px);
 }
 
+#onboardingOverlay .onboardingProfileSetupImage{
+  aspect-ratio: 837 / 1002;
+  display: block;
+  height: auto;
+  margin: 0 auto 12px;
+  max-height: min(26dvh, 210px);
+  object-fit: contain;
+  width: min(100%, 176px);
+}
+
 #onboardingOverlay .onboardingChronotypePreview.onboardingProductivityDaysPreview{
   aspect-ratio: 1967 / 799;
   background: #0d0f13;
@@ -8133,6 +8143,257 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-size: 11px;
   font-style: italic;
   margin-bottom: 32px;
+}
+
+#onboardingOverlay .onboardingTaskChoiceGrid{
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 154px));
+  justify-content: center;
+  margin: 22px auto 0;
+  width: min(100%, 340px) !important;
+  animation: onboardingGreetingTitleReveal 500ms ease-out 260ms both;
+}
+
+#onboardingOverlay .onboardingTaskChoiceTile{
+  align-items: center;
+  aspect-ratio: 1 / 1;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)),
+    rgba(170, 178, 190, .11) !important;
+  border: 1px solid rgba(170, 178, 190, .5) !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .22) !important;
+  color: rgba(238, 242, 246, .92) !important;
+  display: flex;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 1.18;
+  min-height: 0;
+  padding: 14px;
+  text-align: center;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+#onboardingOverlay .onboardingTaskChoiceTile:hover:not(:disabled),
+#onboardingOverlay .onboardingTaskChoiceTile:focus-visible:not(:disabled){
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--accent, #c9ff24) 12%, rgba(170, 178, 190, .14)) !important;
+  border-color: var(--accent, #c9ff24) !important;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .28), 0 0 18px rgba(201, 255, 36, .12) !important;
+  color: var(--accent, #c9ff24) !important;
+  outline: none;
+  transform: translateY(-2px);
+}
+
+#onboardingOverlay .onboardingTaskChoiceTile:disabled{
+  cursor: default;
+  opacity: .55;
+}
+
+#onboardingOverlay .onboardingTaskPresetList{
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 18px auto 0;
+  max-width: 360px;
+  padding: 0;
+  width: min(100%, 360px) !important;
+  animation: onboardingGreetingTitleReveal 500ms ease-out 260ms both;
+}
+
+#onboardingOverlay .onboardingTaskPresetListItem{
+  margin: 0;
+  min-width: 0;
+}
+
+#onboardingOverlay .onboardingTaskPresetItem{
+  background: rgba(170, 178, 190, .1) !important;
+  border: 1px solid rgba(170, 178, 190, .44) !important;
+  box-shadow: none !important;
+  color: rgba(238, 242, 246, .9) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px !important;
+  min-height: 40px;
+  padding: 9px 12px;
+  text-align: center;
+  width: 100%;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+#onboardingOverlay .onboardingTaskPresetItem:hover,
+#onboardingOverlay .onboardingTaskPresetItem:focus-visible,
+#onboardingOverlay .onboardingTaskPresetItem.isSelected{
+  background: rgba(170, 178, 190, .16) !important;
+  border-color: var(--accent, #c9ff24) !important;
+  color: var(--accent, #c9ff24) !important;
+  outline: none;
+}
+
+#onboardingOverlay .onboardingTaskPresetList.isHidden{
+  display: none;
+}
+
+#onboardingOverlay .onboardingTaskDetailsGrid{
+  display: grid;
+  gap: 14px;
+  margin: 18px auto 0;
+  max-width: 390px;
+  width: min(100%, 390px);
+  animation: onboardingGreetingTitleReveal 500ms ease-out 260ms both;
+}
+
+#onboardingOverlay .onboardingSpecificTaskField{
+  margin: 0 auto;
+  max-width: 390px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingSpecificTaskField label,
+#onboardingOverlay .onboardingTaskTimeGoalField label,
+#onboardingOverlay .onboardingTaskTimeGoalField .editTaskTimeGoalHeaderLabel,
+#onboardingOverlay .onboardingPlannedStartField label{
+  color: rgba(245,248,244,.88) !important;
+  font-family: var(--font-orbitron) !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+#onboardingOverlay .onboardingSpecificTaskNameCombo{
+  display: block;
+}
+
+#onboardingOverlay .onboardingTaskNameRow{
+  align-items: stretch;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskNameRow > input{
+  background: #0d0f13 !important;
+  border-color: rgba(255,255,255,.02) !important;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  color: rgba(245,248,244,.94) !important;
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.35;
+  min-height: 36px;
+  min-width: 0;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskNameRow > input::placeholder{
+  color: rgba(245,248,244,.54) !important;
+}
+
+#onboardingOverlay .onboardingTaskNameRow > input:focus,
+#onboardingOverlay .onboardingTaskNameRow > input:focus-visible{
+  border-color: rgba(255,255,255,.02) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 0 0 1px rgba(201,255,36,.12) !important;
+  outline: 1px solid rgba(201,255,36,.2) !important;
+}
+
+#onboardingOverlay .onboardingTaskTypePills{
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskTypePills .timerTypePill,
+#onboardingOverlay .onboardingTaskDurationRow .unitBtn{
+  border-radius: 0 !important;
+  min-height: 34px;
+}
+
+#onboardingOverlay .onboardingTaskTimeGoalField,
+#onboardingOverlay .onboardingPlannedStartField{
+  margin: 0;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskTimeGoalField .editTaskTimeGoalHeader{
+  margin-bottom: 6px;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow{
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(64px, .55fr) minmax(100px, 1fr) auto minmax(100px, 1fr);
+  align-items: center;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow input[type="number"],
+#onboardingOverlay .onboardingPlannedStartField .plannedStartClockInput{
+  background: #0d0f13 !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  color: rgba(245,248,244,.94) !important;
+  font-size: 14px;
+  min-height: 36px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow input[type="number"]:focus,
+#onboardingOverlay .onboardingTaskDurationRow input[type="number"]:focus-visible,
+#onboardingOverlay .onboardingPlannedStartField .plannedStartClockInput:focus,
+#onboardingOverlay .onboardingPlannedStartField .plannedStartClockInput:focus-visible{
+  border-color: rgba(255,255,255,.02) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 0 0 1px rgba(201,255,36,.12) !important;
+  outline: 1px solid rgba(201,255,36,.2) !important;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow .unitPills{
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#onboardingOverlay .onboardingTaskDurationRow .durationPerLabel{
+  color: rgba(245,248,244,.58);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow .isHidden{
+  display: none;
+}
+
+#onboardingOverlay .onboardingTaskDurationRow:has(.durationPerLabel.isHidden){
+  grid-template-columns: minmax(64px, .65fr) minmax(130px, 1fr);
+}
+
+#onboardingOverlay .onboardingPlannedStartSection{
+  margin-top: 6px;
+}
+
+#onboardingOverlay .onboardingPlannedStartSection .addTaskPlannedStartSelectorRow{
+  display: block;
+}
+
+#onboardingOverlay .onboardingPlannedStartSection .addTaskPlannedStartTimeCluster{
+  width: 100%;
 }
 
 #onboardingOverlay .onboardingHoursHeadingSummary{
@@ -9577,7 +9838,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingProductivityIntroText,
   #onboardingOverlay .onboardingNotificationsSubtext,
   #onboardingOverlay .onboardingPushRow,
-  #onboardingOverlay .onboardingDayPill{
+  #onboardingOverlay .onboardingDayPill,
+  #onboardingOverlay .onboardingTaskChoiceGrid,
+  #onboardingOverlay .onboardingTaskPresetList,
+  #onboardingOverlay .onboardingTaskDetailsGrid,
+  #onboardingOverlay .onboardingSpecificTaskField{
     animation: none;
     opacity: 1;
     transform: none;
@@ -9771,8 +10036,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay #onboardingUsernameInput{
+  background: #fff !important;
   border: 0 !important;
   box-shadow: none !important;
+  color: #000 !important;
   display: block;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 15.12px;
@@ -9780,6 +10047,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   outline: none !important;
   text-align: center;
   width: calc(20ch + 22px);
+}
+
+#onboardingOverlay #onboardingUsernameInput::placeholder{
+  color: rgba(0,0,0,.45);
 }
 
 #onboardingOverlay #onboardingUsernameInput:hover,

@@ -1650,9 +1650,12 @@ canvas {
 }
 
 .landingV2 .landingSoonV2Header {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
+  padding-right: 16px;
+  padding-left: 16px;
 }
 
 .landingV2 .landingSoonV2Countdown {
@@ -2354,6 +2357,11 @@ canvas {
     padding-left: 34px;
   }
 
+  .landingV2 .landingSoonV2Header {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
   .landingV2 .landingV2HeroProof {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2390,6 +2398,11 @@ canvas {
     gap: 18px;
     padding-right: 24px;
     padding-left: 24px;
+  }
+
+  .landingV2 .landingSoonV2Header {
+    padding-right: 16px;
+    padding-left: 16px;
   }
 
   .landingV2 .landingV2BrandLogo {
@@ -2520,6 +2533,8 @@ canvas {
 
   .landingV2 .landingSoonV2Header {
     grid-template-columns: auto 1fr;
+    padding-right: 16px;
+    padding-left: 16px;
   }
 
   .landingV2 .landingSoonV2CountdownMobile {

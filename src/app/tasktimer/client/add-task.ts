@@ -22,6 +22,7 @@ import {
   formatScheduleSlotTime,
   formatScheduleStoredTimeFromMinutes,
   formatScheduleTimeRange,
+  getLocalScheduleDay,
   normalizeScheduleStoredTime,
   resolveNextScheduleDayDate,
   setTaskScheduledTimeForDay,
@@ -42,6 +43,15 @@ import {
   type CheckpointSliderUnit,
 } from "./checkpoint-slider";
 import type { TaskTimerAddTaskContext } from "./context";
+import {
+  TASKTIMER_ONBOARDING_CREATE_TASK_EVENT,
+  TASKTIMER_ONBOARDING_TASK_DEFAULTS_EVENT,
+  type TaskTimerOnboardingCreateTaskEventDetail,
+  type TaskTimerOnboardingCreateTaskPayload,
+  type TaskTimerOnboardingCreateTaskResult,
+  type TaskTimerOnboardingTaskDefaultsEventDetail,
+  type TaskTimerOnboardingTaskDefaultsPayload,
+} from "./onboarding-events";
 import { readPlannedStartValueFromSelectors as readPlannedStartValue, syncPlannedStartSelectors } from "./planned-start";
 
 export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
@@ -730,26 +740,44 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     return `No available timeslot was found to resolve the conflict between ${conflictingTaskName} and ${candidateTaskName}.`;
   }
 
-  function finishScheduledTaskCreate(tasks: Task[], newTask: Task) {
+  type ScheduledTaskCreateOptions = {
+    closeAddTaskModal?: boolean;
+    sourcePage?: string;
+    syncAddTaskPlannedStart?: boolean;
+    onSuccess?: () => void;
+    onValidationError?: (message: string) => void;
+    onCancel?: () => void;
+  };
+
+  function reportScheduledTaskValidationError(message: string, options?: ScheduledTaskCreateOptions) {
+    if (options?.onValidationError) {
+      options.onValidationError(message);
+      return;
+    }
+    showAddTaskValidationError(message);
+  }
+
+  function finishScheduledTaskCreate(tasks: Task[], newTask: Task, options?: ScheduledTaskCreateOptions) {
     ctx.setTasks([...tasks, newTask]);
     ctx.render();
-    closeAddTaskModal();
+    if (options?.closeAddTaskModal !== false) closeAddTaskModal();
     ctx.save();
     ctx.showActionConfirmation("Task added.");
     void trackEvent("task_created", {
-      source_page: ctx.getCurrentAppPage(),
+      source_page: options?.sourcePage || ctx.getCurrentAppPage(),
       has_time_goal: Boolean(newTask.timeGoalEnabled && (newTask.timeGoalMinutes || 0) > 0),
       task_has_elapsed: false,
       plan_tier: getTelemetryPlanTier(),
     });
     ctx.jumpToTaskAndHighlight(String(newTask.id || ""));
+    options?.onSuccess?.();
   }
 
-  function openScheduleConflictModal(tasks: Task[], newTask: Task) {
+  function openScheduleConflictModal(tasks: Task[], newTask: Task, options?: ScheduledTaskCreateOptions) {
     const overlap = findScheduleOverlap(tasks, newTask);
     const conflictingTask = overlap?.task || null;
     if (!overlap || !conflictingTask || overlap.candidateStartMinutes == null || overlap.conflictingStartMinutes == null) {
-      showAddTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask));
+      reportScheduledTaskValidationError(formatPlannedStartOverlapMessage(tasks, newTask), options);
       return;
     }
     const candidateStartMinutes = overlap.candidateStartMinutes;
@@ -765,12 +793,25 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
 
     const openNoSlotMessage = () => {
-      ctx.confirm("Schedule conflict", formatScheduleConflictNoSlotMessage(conflictingTaskName, candidateTaskName), {
+      const message = formatScheduleConflictNoSlotMessage(conflictingTaskName, candidateTaskName);
+      ctx.confirm("Schedule conflict", message, {
         cancelLabel: "Cancel",
         okLabel: "OK",
         overlayClassName: "isScheduleConflictConfirm",
-        onCancel: () => ctx.closeConfirm(),
+        ...(options?.onCancel
+          ? {
+              onOk: () => {
+                ctx.closeConfirm();
+                options.onCancel?.();
+              },
+            }
+          : {}),
+        onCancel: () => {
+          ctx.closeConfirm();
+          options?.onCancel?.();
+        },
       });
+      reportScheduledTaskValidationError(message, options);
     };
 
     const handleMove = () => {
@@ -782,9 +823,9 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       candidateSlot.days.forEach((day) => {
         setTaskScheduledTimeForDay(newTask, day, nextTime);
       });
-      setAddTaskPlannedStartTime(nextTime);
+      if (options?.syncAddTaskPlannedStart !== false) setAddTaskPlannedStartTime(nextTime);
       ctx.closeConfirm();
-      finishScheduledTaskCreate(tasks, newTask);
+      finishScheduledTaskCreate(tasks, newTask, options);
     };
 
     const handleContinue = () => {
@@ -794,7 +835,7 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       }
       setTaskScheduledTimeForDay(conflictingTask, conflictingTaskSlot.day, formatScheduleStoredTimeFromMinutes(conflictingTaskSlot.startMinutes));
       ctx.closeConfirm();
-      finishScheduledTaskCreate(tasks, newTask);
+      finishScheduledTaskCreate(tasks, newTask, options);
     };
 
     if ((!candidateSlot && !conflictingTaskSlot) || conflictingEndMinutes == null) {
@@ -821,7 +862,10 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       overlayClassName: "isScheduleConflictConfirm",
       onOk: canContinue ? handleContinue : handleMove,
       onAlt: canChange && canContinue ? handleMove : null,
-      onCancel: () => ctx.closeConfirm(),
+      onCancel: () => {
+        ctx.closeConfirm();
+        options?.onCancel?.();
+      },
     });
   }
 
@@ -1016,6 +1060,177 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     confirmDiscardAddTaskChanges();
   }
 
+  function normalizeOnboardingTimeGoalValue(value: unknown) {
+    const parsed = Math.floor(Number(value) || 0);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  }
+
+  function normalizeOnboardingTimeGoalUnit(value: unknown): "minute" | "hour" {
+    return value === "hour" ? "hour" : "minute";
+  }
+
+  function normalizeOnboardingTaskType(value: unknown): "recurring" | "once-off" {
+    return value === "once-off" ? "once-off" : "recurring";
+  }
+
+  function normalizeOnboardingTimeGoalPeriod(taskType: "recurring" | "once-off", value: unknown): "day" | "week" {
+    if (taskType === "once-off") return "day";
+    return value === "week" ? "week" : "day";
+  }
+
+  function getOnboardingTimeGoalMinutes(payload: TaskTimerOnboardingTaskDefaultsPayload) {
+    const value = normalizeOnboardingTimeGoalValue(payload.timeGoalValue);
+    if (!(value > 0)) return 0;
+    return normalizeOnboardingTimeGoalUnit(payload.timeGoalUnit) === "hour" ? value * 60 : value;
+  }
+
+  function buildOnboardingScheduledTask(
+    payload: TaskTimerOnboardingCreateTaskPayload,
+    tasks: Task[],
+    name: string,
+    plannedStartTime: string
+  ) {
+    const taskType = normalizeOnboardingTaskType(payload.taskType);
+    const timeGoalUnit = normalizeOnboardingTimeGoalUnit(payload.timeGoalUnit);
+    const timeGoalPeriod = normalizeOnboardingTimeGoalPeriod(taskType, payload.timeGoalPeriod);
+    const timeGoalValue = normalizeOnboardingTimeGoalValue(payload.timeGoalValue);
+    const timeGoalMinutes = getOnboardingTimeGoalMinutes(payload);
+    const nextOrder = (tasks.reduce((mx, task) => Math.max(mx, task.order || 0), 0) || 0) + 1;
+    const newTask = sharedTasks.makeTask(name, nextOrder);
+    newTask.color = resolveNewTaskColor({
+      tasks,
+      selectedColor: getNextAutoTaskColor(tasks),
+      selectedColorTouched: false,
+    });
+    newTask.taskType = taskType;
+    newTask.timeGoalEnabled = timeGoalMinutes > 0;
+    newTask.timeGoalValue = timeGoalValue;
+    newTask.timeGoalUnit = timeGoalUnit;
+    newTask.timeGoalPeriod = timeGoalPeriod;
+    newTask.timeGoalMinutes = timeGoalMinutes;
+    newTask.milestonesEnabled = false;
+    newTask.milestoneTimeUnit = "minute";
+    newTask.milestones = [];
+    newTask.checkpointSoundEnabled = false;
+    newTask.checkpointSoundMode = "once";
+    newTask.presetIntervalsEnabled = false;
+    newTask.presetIntervalValue = 0;
+    newTask.timeGoalAction = "confirmModal";
+    newTask.plannedStartPushRemindersEnabled = false;
+    newTask.plannedStartOpenEnded = false;
+
+    if (taskType === "once-off") {
+      const today = getLocalScheduleDay();
+      newTask.onceOffDay = today;
+      newTask.onceOffTargetDate = resolveNextScheduleDayDate(today);
+      newTask.plannedStartDay = today;
+      newTask.plannedStartTime = plannedStartTime;
+      newTask.plannedStartByDay = { [today]: plannedStartTime };
+      return newTask;
+    }
+
+    newTask.onceOffDay = null;
+    newTask.onceOffTargetDate = null;
+    newTask.plannedStartDay = null;
+    newTask.plannedStartTime = plannedStartTime;
+    newTask.splitAcrossProductivityDays = timeGoalPeriod === "week" ? true : undefined;
+    newTask.plannedStartByDay = buildWeeklyPlannedStartByDay(ctx.getOptimalProductivityDays(), plannedStartTime);
+    return newTask;
+  }
+
+  function validateOnboardingScheduledTaskPayload(payload: TaskTimerOnboardingCreateTaskPayload, tasks: Task[]) {
+    const name = String(payload.name || "").trim();
+    if (!name) return "Task name is required";
+    const taskType = normalizeOnboardingTaskType(payload.taskType);
+    const timeGoalValue = normalizeOnboardingTimeGoalValue(payload.timeGoalValue);
+    const timeGoalUnit = normalizeOnboardingTimeGoalUnit(payload.timeGoalUnit);
+    const timeGoalPeriod = normalizeOnboardingTimeGoalPeriod(taskType, payload.timeGoalPeriod);
+    if (!(getOnboardingTimeGoalMinutes(payload) > 0)) return "Enter a time amount greater than 0";
+    if (taskType !== "once-off") {
+      const maxForPeriod = getAddTaskDurationMaxForPeriod(timeGoalUnit, timeGoalPeriod);
+      if (timeGoalValue > maxForPeriod) {
+        const unitLabel = timeGoalUnit === "minute" ? "minutes" : "hours";
+        const periodLabel = timeGoalPeriod === "day" ? "day" : "week";
+        return `Enter ${maxForPeriod} ${unitLabel} or less per ${periodLabel}`;
+      }
+    }
+    const plannedStartTime = normalizeScheduleStoredTime(payload.plannedStartTime);
+    if (!plannedStartTime) return "Choose a planned start time.";
+    if (taskType === "once-off") return "";
+    const draftTask = buildOnboardingScheduledTask(payload, tasks, name, plannedStartTime);
+    const validation = validateAggregateTimeGoalTotals([...tasks, draftTask]);
+    return validation.isWithinLimit ? "" : formatAggregateTimeGoalValidationMessage(validation);
+  }
+
+  function getOnboardingTaskDefaultPlannedStart(payload: TaskTimerOnboardingTaskDefaultsPayload) {
+    const timeGoalValue = normalizeOnboardingTimeGoalValue(payload.timeGoalValue);
+    const productivityStartTime =
+      normalizeScheduleStoredTime(payload.optimalProductivityStartTime) ||
+      normalizeScheduleStoredTime(ctx.getOptimalProductivityStartTime()) ||
+      "09:00";
+    const productivityEndTime =
+      normalizeScheduleStoredTime(payload.optimalProductivityEndTime) ||
+      normalizeScheduleStoredTime(ctx.getOptimalProductivityEndTime()) ||
+      "23:59";
+    const normalizedPayload: TaskTimerOnboardingCreateTaskPayload = {
+      name: "Draft task",
+      taskType: normalizeOnboardingTaskType(payload.taskType),
+      timeGoalValue: timeGoalValue > 0 ? timeGoalValue : 2,
+      timeGoalUnit: normalizeOnboardingTimeGoalUnit(payload.timeGoalUnit),
+      timeGoalPeriod: normalizeOnboardingTimeGoalPeriod(normalizeOnboardingTaskType(payload.taskType), payload.timeGoalPeriod),
+      plannedStartTime: productivityStartTime,
+    };
+    const draftTask = buildOnboardingScheduledTask(normalizedPayload, ctx.getTasks(), "Draft task", productivityStartTime);
+    const slot = findFirstAvailableScheduleSlotFromProductivityWindow(ctx.getTasks(), draftTask, {
+      optimalProductivityStartTime: productivityStartTime,
+      optimalProductivityEndTime: productivityEndTime,
+      allowOutsideProductivityWindow: true,
+    });
+    return slot?.time || productivityStartTime;
+  }
+
+  function createOnboardingScheduledTask(
+    payload: TaskTimerOnboardingCreateTaskPayload,
+    done?: (result: TaskTimerOnboardingCreateTaskResult) => void
+  ) {
+    let settled = false;
+    const finish = (result: TaskTimerOnboardingCreateTaskResult) => {
+      if (settled) return;
+      settled = true;
+      done?.(result);
+    };
+
+    try {
+      const tasks = ctx.getTasks();
+      const validationMessage = validateOnboardingScheduledTaskPayload(payload, tasks);
+      if (validationMessage) {
+        finish({ ok: false, error: validationMessage });
+        return;
+      }
+      const name = String(payload.name || "").trim();
+      const plannedStartTime = normalizeScheduleStoredTime(payload.plannedStartTime) || "09:00";
+      rememberCustomTaskName(name);
+      const newTask = buildOnboardingScheduledTask(payload, tasks, name, plannedStartTime);
+      const finishOptions: ScheduledTaskCreateOptions = {
+        closeAddTaskModal: false,
+        sourcePage: "onboarding",
+        syncAddTaskPlannedStart: false,
+        onSuccess: () => finish({ ok: true }),
+        onValidationError: (message) => finish({ ok: false, error: message }),
+        onCancel: () => finish({ ok: false, cancelled: true, error: "Task creation was cancelled." }),
+      };
+
+      if (findScheduleOverlap(tasks, newTask)) {
+        openScheduleConflictModal(tasks, newTask, finishOptions);
+        return;
+      }
+
+      finishScheduledTaskCreate(tasks, newTask, finishOptions);
+    } catch (err: unknown) {
+      finish({ ok: false, error: err instanceof Error ? err.message : "Could not create onboarding task." });
+    }
+  }
+
   function createTask() {
     syncPlannedStartValueFromSelectors();
     clearAddTaskValidationState();
@@ -1114,6 +1329,24 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
   }
 
   function registerAddTaskEvents() {
+    ctx.on(window, TASKTIMER_ONBOARDING_TASK_DEFAULTS_EVENT, (event: Event) => {
+      const detail = (event as CustomEvent<TaskTimerOnboardingTaskDefaultsEventDetail>).detail;
+      try {
+        detail?.done?.({
+          ok: true,
+          plannedStartTime: getOnboardingTaskDefaultPlannedStart(detail.payload),
+        });
+      } catch (err: unknown) {
+        detail?.done?.({
+          ok: false,
+          error: err instanceof Error ? err.message : "Could not load onboarding task defaults.",
+        });
+      }
+    });
+    ctx.on(window, TASKTIMER_ONBOARDING_CREATE_TASK_EVENT, (event: Event) => {
+      const detail = (event as CustomEvent<TaskTimerOnboardingCreateTaskEventDetail>).detail;
+      createOnboardingScheduledTask(detail.payload, detail.done);
+    });
     ctx.on(els.addTaskCancelBtn, "click", handleAddTaskCancel);
     ctx.on(els.addTaskForm, "submit", (e: Event) => {
       e.preventDefault();

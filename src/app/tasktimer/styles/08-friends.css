@@ -1569,12 +1569,14 @@
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn{
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  justify-content: center;
+  gap: 0;
+  width: 36px;
+  min-width: 36px;
   height: 36px;
   min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid #c9ff24 !important;
+  padding: 0;
+  border: 0 !important;
   color: #c9ff24 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -1599,12 +1601,12 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .friendRequestBtnIcon{
-  width: 18px;
-  height: 18px;
+  width: 36px;
+  height: 36px;
   display: block;
   object-fit: contain;
   flex: 0 0 auto;
-  filter: brightness(0) saturate(100%) invert(88%) sepia(79%) saturate(1471%) hue-rotate(19deg) brightness(105%) contrast(103%);
+  filter: none;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard:not(.friendSharedTaskCard){
