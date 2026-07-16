@@ -33,4 +33,11 @@ describe("getApiUrl", () => {
     expect(getApiUrl("/api/account/claim-username/")).toBe("https://tasklaunch.app/api/account/claim-username/");
     expect(getApiUrl("/api/account/sync-identity/")).toBe("https://tasklaunch.app/api/account/sync-identity/");
   });
+
+  it("falls back to the hosted origin in native or file runtime when no app URL is configured", async () => {
+    mocks.isNativeOrFileRuntime.mockReturnValue(true);
+    const { getApiUrl } = await import("./apiClient");
+
+    expect(getApiUrl("/api/account/delete-user-data")).toBe("https://tasklaunch.app/api/account/delete-user-data");
+  });
 });
