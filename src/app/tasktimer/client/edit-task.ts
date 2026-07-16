@@ -909,19 +909,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     });
   }
 
-  function setEditTaskColorFamily(familyId: string | null | undefined, task?: Task | null) {
-    const currentTask = task || getCurrentEditTask();
-    const nextFamily =
-      TASK_COLOR_FAMILIES.find((family) => family.id === familyId)?.id ||
-      getTaskColorFamilyForColor(currentTask?.color)?.id ||
-      TASK_COLOR_FAMILIES[0].id;
-    if (els.editTaskColorPalette) {
-      els.editTaskColorPalette.setAttribute("data-active-family", nextFamily);
-      els.editTaskColorPalette.setAttribute("data-view", "shades");
-    }
-    syncEditTaskColorPalette(currentTask);
-  }
-
   function setEditTaskColorPopoverOpen(open: boolean) {
     if (els.editTaskColorPopover instanceof HTMLElement) {
       els.editTaskColorPopover.style.display = open ? "flex" : "none";
@@ -1885,17 +1872,6 @@ export function createTaskTimerEditTask(ctx: TaskTimerEditTaskContext) {
     });
     ctx.on(els.editTaskColorPalette, "click", (event: any) => {
       const t = getCurrentEditTask();
-      const familyButton = (event?.target as HTMLElement | null)?.closest?.('[data-task-color-family][role="tab"]') as HTMLElement | null;
-      if (familyButton && els.editTaskColorPalette?.contains(familyButton)) {
-        setEditTaskColorFamily(familyButton.dataset.taskColorFamily);
-        return;
-      }
-      const backButton = (event?.target as HTMLElement | null)?.closest?.("[data-task-color-back='true']") as HTMLElement | null;
-      if (backButton && els.editTaskColorPalette?.contains(backButton)) {
-        els.editTaskColorPalette.setAttribute("data-view", "main");
-        syncEditTaskColorPalette(t);
-        return;
-      }
       const button = (event?.target as HTMLElement | null)?.closest?.("[data-task-color]") as HTMLElement | null;
       if (!button || !t || !els.editTaskColorPalette?.contains(button)) return;
       t.color = normalizeTaskColor(button.dataset.taskColor);

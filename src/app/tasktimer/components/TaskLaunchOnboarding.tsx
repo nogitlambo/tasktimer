@@ -17,6 +17,7 @@ import { AVATAR_CATALOG, type AvatarOption } from "../lib/avatarCatalog";
 import { ADD_TASK_PRESET_NAMES } from "../lib/addTaskNames";
 import { syncOwnFriendshipProfile } from "../lib/friendsStore";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "../lib/historyChart";
+import { TASK_COLOR_PALETTE } from "../lib/taskColors";
 import {
   TASKTIMER_ONBOARDING_DEFAULT_END_TIME,
   TASKTIMER_ONBOARDING_DEFAULT_START_TIME,
@@ -92,6 +93,28 @@ export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT: TaskTimerOnboardingTi
 export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD: TaskTimerOnboardingTimeGoalPeriod = "day";
 export const ONBOARDING_FIRST_TASK_DEFAULT_TYPE: TaskTimerOnboardingTaskType = "recurring";
 export const ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME = "09:00";
+export const ONBOARDING_FIRST_TASK_PRESET_PARAMETER_LABELS = ["Type: Recurring", "Time Goal: 2 min/day", "Scheduled Time: 9:00 AM"] as const;
+export const ONBOARDING_FIRST_TASK_PRESET_TIME_GOAL_VALUES: Readonly<Record<string, number>> = {
+  "Tidy small area": 3,
+  "Movement break": 5,
+  "Plan next day": 2,
+};
+export const ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  "Tidy small area": "Even a small reduction in visual clutter can lower cognitive load.",
+  "Movement break": "Movements like stretching and walking often help regulate attention and reduce restlessness.",
+  "Plan next day": "Write down your top priority for tomorrow. This reduces decision paralysis when you start the day.",
+};
+export const ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS: Readonly<Record<string, string>> = {
+  "Tidy small area": "/onboarding/tile_tidyarea.png",
+  "Movement break": "/onboarding/tile_movement.png",
+  "Plan next day": "/onboarding/tile_planday.png",
+};
+export const ONBOARDING_FIRST_TASK_PRESET_COLORS: Readonly<Record<string, string>> = {
+  "Tidy small area": TASK_COLOR_PALETTE[0],
+  "Movement break": TASK_COLOR_PALETTE[1],
+  "Plan next day": TASK_COLOR_PALETTE[2],
+};
+export const ONBOARDING_FIRST_TASK_PRESET_NAMES = ADD_TASK_PRESET_NAMES.filter((presetName) => presetName !== "Brush teeth");
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
@@ -407,6 +430,27 @@ export function onboardingContinueBlockedMessage(step: StepKey) {
   return "";
 }
 
+export function onboardingPresetTaskTimeGoalValue(name: string) {
+  const trimmedName = String(name || "").trim();
+  return ONBOARDING_FIRST_TASK_PRESET_TIME_GOAL_VALUES[trimmedName] || ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE;
+}
+
+export function onboardingPresetTaskTimeGoalLabel(name: string) {
+  return `Goal: ${onboardingPresetTaskTimeGoalValue(name)} min/day`;
+}
+
+export function onboardingPresetTaskCreatePayload(name: string) {
+  const trimmedName = String(name || "").trim();
+  return {
+    name: trimmedName,
+    taskType: ONBOARDING_FIRST_TASK_DEFAULT_TYPE,
+    timeGoalValue: onboardingPresetTaskTimeGoalValue(trimmedName),
+    timeGoalUnit: ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT,
+    timeGoalPeriod: ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD,
+    plannedStartTime: ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME,
+  };
+}
+
 export function validateOnboardingFirstTaskDetails(input: {
   name: string;
   timeGoalValue: number;
@@ -591,6 +635,7 @@ type OnboardingCustomPropertyStyle = CSSProperties & {
   "--onboarding-background-base"?: string;
   "--onboarding-background-reveal-accent"?: string;
   "--onboarding-chronotype-accent"?: string;
+  "--onboarding-task-preset-color"?: string;
   "--onboarding-handoff-duration"?: string;
   "--onboarding-handoff-height"?: string;
   "--onboarding-handoff-left"?: string;
@@ -867,6 +912,34 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     firstTaskType,
   ]);
 
+  const savePresetOnboardingTaskStep = useCallback(async (presetName: string) => {
+    const payload = onboardingPresetTaskCreatePayload(presetName);
+    const validationMessage = validateOnboardingFirstTaskDetails({
+      name: payload.name,
+      timeGoalValue: payload.timeGoalValue,
+      plannedStartTime: payload.plannedStartTime,
+    });
+    if (validationMessage) {
+      setError(validationMessage);
+      return false;
+    }
+
+    setBusy(true);
+    setError("");
+    setStatus("");
+    try {
+      const result = await createOnboardingTaskViaRuntime(payload);
+      if (!result.ok) throw new Error(result.error || "Could not create onboarding task.");
+      setStatus("Task created.");
+      return true;
+    } catch (err: unknown) {
+      setError(resolveOnboardingCreateTaskError(err));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
   const saveSelectedOnboardingAvatar = useCallback(async () => {
     const avatarId = selectedAvatarId || AVATAR_CATALOG[0]?.id || "";
     if (!uid || !avatarId) return;
@@ -1060,6 +1133,21 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     advanceToNextStep();
   }, [activeStep, chronotypeResultPhase, saveCurrentStep, selectedChronotypeChoiceId, stepIndex]);
 
+  const selectPresetTask = useCallback(
+    async (presetName: string) => {
+      const saved = await savePresetOnboardingTaskStep(presetName);
+      if (!saved) return;
+      setSelectedFirstTaskPresetName(presetName);
+      setFirstTaskNameDraft(presetName);
+      setFirstTaskDetailsReady(false);
+      setStepIndex(onboardingStepIndex("push"));
+      setChronotypeResultPhase("summary");
+      setStatus("");
+      setError("");
+    },
+    [savePresetOnboardingTaskStep]
+  );
+
   const selectFirstTaskChoice = useCallback(
     async (choiceId: OnboardingFirstTaskChoiceId) => {
       const saved = await saveCurrentStep();
@@ -1086,14 +1174,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const handleBack = useCallback(() => {
     if (activeStep === "firstTaskSelection") {
-      if (selectedFirstTaskChoiceId === "select" && firstTaskDetailsReady) {
-        setFirstTaskDetailsReady(false);
-        setSelectedFirstTaskPresetName("");
-        setFirstTaskNameDraft("");
-        setStatus("");
-        setError("");
-        return;
-      }
       setStepIndex(onboardingStepIndex("firstTask"));
       setStatus("");
       setError("");
@@ -1112,7 +1192,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     setChronotypeResultPhase(backNavigation.nextChronotypeResultPhase);
     setStatus("");
     setError("");
-  }, [activeStep, chronotypeResultPhase, firstTaskDetailsReady, selectedChronotypeChoiceId, selectedFirstTaskChoiceId, stepIndex]);
+  }, [activeStep, chronotypeResultPhase, selectedChronotypeChoiceId, stepIndex]);
 
   const handleFinish = useCallback(async () => {
     if (!usernameConfirmed) {
@@ -1562,9 +1642,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         ) : null}
 
         {activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" ? (
-          <ul className={`onboardingTaskPresetList${firstTaskDetailsReady ? " isHidden" : ""}`} aria-label="Curated task presets">
-            {ADD_TASK_PRESET_NAMES.map((presetName) => {
+          <ul className="onboardingTaskPresetList" aria-label="Curated task presets">
+            {ONBOARDING_FIRST_TASK_PRESET_NAMES.map((presetName) => {
               const selected = selectedFirstTaskPresetName === presetName;
+              const description = ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS[presetName] || "";
+              const imageSrc = ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS[presetName] || "";
+              const presetColor = ONBOARDING_FIRST_TASK_PRESET_COLORS[presetName] || "#dce775";
               return (
                 <li className="onboardingTaskPresetListItem" key={presetName}>
                   <button
@@ -1572,21 +1655,19 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                     type="button"
                     aria-pressed={selected}
                     data-onboarding-preset-task={presetName}
-                    onClick={() => {
-                      setSelectedFirstTaskPresetName(presetName);
-                      setFirstTaskNameDraft(presetName);
-                      setFirstTaskDetailsReady(true);
-                      setFirstTaskType(ONBOARDING_FIRST_TASK_DEFAULT_TYPE);
-                      setFirstTaskTimeGoalValue(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE);
-                      setFirstTaskTimeGoalUnit(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT);
-                      setFirstTaskTimeGoalPeriod(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD);
-                      setFirstTaskPlannedStartTime(ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME);
-                      setFirstTaskPlannedStartTouched(false);
-                      setStatus("");
-                      setError("");
-                    }}
+                    data-onboarding-next-action="true"
+                    style={{ "--onboarding-task-preset-color": presetColor } as OnboardingCustomPropertyStyle}
+                    onClick={() => void selectPresetTask(presetName)}
+                    disabled={onboardingActionsDisabled}
                   >
-                    {presetName}
+                    {imageSrc ? (
+                      <span className="onboardingTaskPresetImageFrame" aria-hidden="true">
+                        <AppImg className="onboardingTaskPresetImage" src={imageSrc} alt="" width={96} height={96} />
+                      </span>
+                    ) : null}
+                    <span className="onboardingTaskPresetName">{presetName}</span>
+                    <span className="onboardingTaskPresetTimeGoal">{onboardingPresetTaskTimeGoalLabel(presetName)}</span>
+                    {description ? <span className="onboardingTaskPresetDescription">{description}</span> : null}
                   </button>
                 </li>
               );

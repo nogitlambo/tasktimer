@@ -20,6 +20,12 @@ import {
   ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT,
   ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE,
   ONBOARDING_FIRST_TASK_DEFAULT_TYPE,
+  ONBOARDING_FIRST_TASK_PRESET_COLORS,
+  ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS,
+  ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS,
+  ONBOARDING_FIRST_TASK_PRESET_NAMES,
+  ONBOARDING_FIRST_TASK_PRESET_PARAMETER_LABELS,
+  ONBOARDING_FIRST_TASK_PRESET_TIME_GOAL_VALUES,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
@@ -39,6 +45,8 @@ import {
   onboardingChronotypeResultSummary,
   onboardingFirstTaskSelectionTitle,
   onboardingNextStepIndex,
+  onboardingPresetTaskCreatePayload,
+  onboardingPresetTaskTimeGoalLabel,
   onboardingProductivityHoursSubtext,
   onboardingStepIndex,
   resolveOnboardingAvatarId,
@@ -230,6 +238,48 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", false)).toBe(true);
     expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", true)).toBe(false);
     expect(isOnboardingContinueReservedHidden("firstTask")).toBe(true);
+  });
+
+  it("uses the default task parameters for select-a-task preset creation", () => {
+    expect(ONBOARDING_FIRST_TASK_PRESET_NAMES).toEqual(["Tidy small area", "Movement break", "Plan next day"]);
+    expect(ONBOARDING_FIRST_TASK_PRESET_TIME_GOAL_VALUES).toEqual({
+      "Tidy small area": 3,
+      "Movement break": 5,
+      "Plan next day": 2,
+    });
+    expect(onboardingPresetTaskTimeGoalLabel("Tidy small area")).toBe("Goal: 3 min/day");
+    expect(onboardingPresetTaskTimeGoalLabel("Movement break")).toBe("Goal: 5 min/day");
+    expect(onboardingPresetTaskTimeGoalLabel("Plan next day")).toBe("Goal: 2 min/day");
+    expect(ONBOARDING_FIRST_TASK_PRESET_PARAMETER_LABELS).toEqual(["Type: Recurring", "Time Goal: 2 min/day", "Scheduled Time: 9:00 AM"]);
+    expect(ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS).toEqual({
+      "Tidy small area": "Even a small reduction in visual clutter can lower cognitive load.",
+      "Movement break": "Movements like stretching and walking often help regulate attention and reduce restlessness.",
+      "Plan next day": "Write down your top priority for tomorrow. This reduces decision paralysis when you start the day.",
+    });
+    expect(ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS).toEqual({
+      "Tidy small area": "/onboarding/tile_tidyarea.png",
+      "Movement break": "/onboarding/tile_movement.png",
+      "Plan next day": "/onboarding/tile_planday.png",
+    });
+    expect(Object.values(ONBOARDING_FIRST_TASK_PRESET_COLORS)).toEqual(["#f44336", "#e91e63", "#9c27b0"]);
+    expect(onboardingPresetTaskCreatePayload("Brush teeth")).toEqual({
+      name: "Brush teeth",
+      taskType: "recurring",
+      timeGoalValue: 2,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      plannedStartTime: "09:00",
+    });
+    expect(onboardingPresetTaskCreatePayload("  Movement break  ")).toEqual({
+      name: "Movement break",
+      taskType: ONBOARDING_FIRST_TASK_DEFAULT_TYPE,
+      timeGoalValue: 5,
+      timeGoalUnit: ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT,
+      timeGoalPeriod: ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD,
+      plannedStartTime: ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME,
+    });
+    expect(onboardingPresetTaskCreatePayload("Tidy small area").timeGoalValue).toBe(3);
+    expect(onboardingPresetTaskCreatePayload("Plan next day").timeGoalValue).toBe(2);
   });
 
   it("validates onboarding task details before runtime creation", () => {

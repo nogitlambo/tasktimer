@@ -49,12 +49,12 @@ describe("module intro tour helpers", () => {
       "notes",
       "friends",
       "leaderboard",
-      "history",
     ]);
   });
 
   it("normalizes only pages included in the tour", () => {
     expect(normalizeModuleIntroTourPage("tasks")).toBe("tasks");
+    expect(normalizeModuleIntroTourPage("history")).toBeNull();
     expect(normalizeModuleIntroTourPage("schedule")).toBeNull();
     expect(normalizeModuleIntroTourPage("settings")).toBeNull();
     expect(normalizeModuleIntroTourPage("")).toBeNull();

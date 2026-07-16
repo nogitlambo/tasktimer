@@ -1144,29 +1144,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   width: 100%;
   overflow: hidden;
-  min-height: 92px;
 }
 
 #editOverlay .taskColorPickerScreen{
   width: 100%;
-  transition: transform .22s ease, opacity .22s ease;
-}
-
-#editOverlay .taskColorPickerScreenShades{
-  position: absolute;
-  inset: 0;
-  transform: translateX(100%);
-  opacity: .01;
-}
-
-#editOverlay .taskColorPicker[data-view="shades"] .taskColorPickerScreenMain{
-  transform: translateX(-100%);
-  opacity: .01;
-}
-
-#editOverlay .taskColorPicker[data-view="shades"] .taskColorPickerScreenShades{
-  transform: translateX(0);
-  opacity: 1;
 }
 
 #editOverlay .taskColorPickerMainSwatch{
@@ -1194,58 +1175,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: var(--task-color);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
   cursor: pointer;
-}
-
-#editOverlay .taskColorPickerShadePanels{
-  min-width: 0;
-  width: 100%;
-}
-
-#editOverlay .taskColorPickerShadeHeader{
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 8px;
-}
-
-#editOverlay .taskColorPickerBackBtn{
-  min-width: 38px;
-  width: 38px;
-  min-height: 38px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-#editOverlay .taskColorPickerBackIcon{
-  width: 18px;
-  height: 18px;
-  display: block;
-  margin: 0 auto;
-  fill: none;
-  stroke: rgba(255,255,255,.92);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,.16));
-}
-
-#editOverlay .taskColorPickerBackBtn,
-#editOverlay .taskColorPickerBackBtn:hover,
-#editOverlay .taskColorPickerBackBtn:focus-visible{
-  border-color: rgba(180,190,194,.34) !important;
-}
-
-#editOverlay .taskColorPickerShades{
-  display: grid;
-  grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-}
-
-#editOverlay .taskColorPickerShade{
-  width: 100%;
-  height: 38px;
-  min-width: 0;
 }
 
 #editOverlay .editTaskColorSwatch{
@@ -3643,29 +3572,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: relative;
   width: 100%;
   overflow: hidden;
-  min-height: 92px;
 }
 
 #addTaskOverlay .taskColorPickerScreen{
   width: 100%;
-  transition: transform .22s ease, opacity .22s ease;
-}
-
-#addTaskOverlay .taskColorPickerScreenShades{
-  position: absolute;
-  inset: 0;
-  transform: translateX(100%);
-  opacity: .01;
-}
-
-#addTaskOverlay .taskColorPicker[data-view="shades"] .taskColorPickerScreenMain{
-  transform: translateX(-100%);
-  opacity: .01;
-}
-
-#addTaskOverlay .taskColorPicker[data-view="shades"] .taskColorPickerScreenShades{
-  transform: translateX(0);
-  opacity: 1;
 }
 
 #addTaskOverlay .taskColorPickerMainSwatch{
@@ -3693,58 +3603,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: var(--task-color);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
   cursor: pointer;
-}
-
-#addTaskOverlay .taskColorPickerShadePanels{
-  min-width: 0;
-  width: 100%;
-}
-
-#addTaskOverlay .taskColorPickerShadeHeader{
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 8px;
-}
-
-#addTaskOverlay .taskColorPickerBackBtn{
-  min-width: 38px;
-  width: 38px;
-  min-height: 38px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-}
-
-#addTaskOverlay .taskColorPickerBackIcon{
-  width: 18px;
-  height: 18px;
-  display: block;
-  margin: 0 auto;
-  fill: none;
-  stroke: rgba(255,255,255,.92);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(255,255,255,.16));
-}
-
-#addTaskOverlay .taskColorPickerBackBtn,
-#addTaskOverlay .taskColorPickerBackBtn:hover,
-#addTaskOverlay .taskColorPickerBackBtn:focus-visible{
-  border-color: rgba(180,190,194,.34) !important;
-}
-
-#addTaskOverlay .taskColorPickerShades{
-  display: grid;
-  grid-template-columns: repeat(var(--task-color-columns, 5), minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-}
-
-#addTaskOverlay .taskColorPickerShade{
-  width: 100%;
-  height: 38px;
-  min-width: 0;
 }
 
 #addTaskOverlay .editTaskColorSwatch{
@@ -8200,12 +8058,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingTaskPresetList{
   display: grid;
-  gap: 8px;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: center;
   list-style: none;
   margin: 18px auto 0;
-  max-width: 360px;
+  max-width: 720px;
   padding: 0;
-  width: min(100%, 360px) !important;
+  width: min(100%, 720px) !important;
   animation: onboardingGreetingTitleReveal 500ms ease-out 260ms both;
 }
 
@@ -8215,33 +8075,100 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingTaskPresetItem{
-  background: rgba(170, 178, 190, .1) !important;
-  border: 1px solid rgba(170, 178, 190, .44) !important;
-  box-shadow: none !important;
+  align-items: center;
+  min-height: 242px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)),
+    rgba(170, 178, 190, .11) !important;
+  border: 1px solid rgba(170, 178, 190, .5) !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .22) !important;
   color: rgba(238, 242, 246, .9) !important;
+  display: flex;
+  flex-direction: column;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 13px !important;
-  min-height: 40px;
-  padding: 9px 12px;
+  gap: 8px;
+  justify-content: flex-start;
+  padding: 0;
   text-align: center;
   width: 100%;
   transition:
     background 180ms ease,
     border-color 180ms ease,
-    color 180ms ease;
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
-#onboardingOverlay .onboardingTaskPresetItem:hover,
-#onboardingOverlay .onboardingTaskPresetItem:focus-visible,
-#onboardingOverlay .onboardingTaskPresetItem.isSelected{
-  background: rgba(170, 178, 190, .16) !important;
+#onboardingOverlay .onboardingTaskPresetName{
+  align-items: center;
+  color: rgba(238, 242, 246, .94);
+  display: flex;
+  font-size: 15.12px;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 1.16;
+  min-height: 0;
+}
+
+#onboardingOverlay .onboardingTaskPresetTimeGoal{
+  border-bottom: 1px solid rgba(170, 178, 190, .36);
+  box-sizing: border-box;
+  color: cyan;
+  display: block;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.12;
+  margin-top: -8px;
+  padding: 0 10px 7px;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskPresetImageFrame{
+  display: block;
+  height: 52px;
+  margin: 12px 0 -2px;
+  width: 52px;
+}
+
+#onboardingOverlay .onboardingTaskPresetImage{
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingTaskPresetDescription{
+  color: #fff;
+  display: block;
+  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono), monospace;
+  font-size: 11px;
+  line-height: 1.18;
+  max-width: 22ch;
+}
+
+#onboardingOverlay .onboardingTaskPresetItem:hover:not(:disabled),
+#onboardingOverlay .onboardingTaskPresetItem:focus-visible:not(:disabled),
+#onboardingOverlay .onboardingTaskPresetItem.isSelected:not(:disabled){
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--accent, #c9ff24) 12%, rgba(170, 178, 190, .14)) !important;
   border-color: var(--accent, #c9ff24) !important;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .28), 0 0 18px rgba(201, 255, 36, .12) !important;
   color: var(--accent, #c9ff24) !important;
   outline: none;
+  transform: translateY(-2px);
 }
 
-#onboardingOverlay .onboardingTaskPresetList.isHidden{
-  display: none;
+#onboardingOverlay .onboardingTaskPresetItem:hover:not(:disabled) .onboardingTaskPresetName,
+#onboardingOverlay .onboardingTaskPresetItem:focus-visible:not(:disabled) .onboardingTaskPresetName,
+#onboardingOverlay .onboardingTaskPresetItem.isSelected:not(:disabled) .onboardingTaskPresetName{
+  color: var(--accent, #c9ff24);
+}
+
+#onboardingOverlay .onboardingTaskPresetItem:disabled{
+  cursor: default;
+  opacity: .55;
 }
 
 #onboardingOverlay .onboardingTaskDetailsGrid{
@@ -10729,6 +10656,62 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #onboardingOverlay .onboardingHoursTimeGrid{
     gap: 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #onboardingOverlay .onboardingTaskPresetList{
+    gap: 10px;
+    grid-template-columns: 1fr;
+    max-width: 330px;
+    width: min(100%, 330px) !important;
+  }
+
+  #onboardingOverlay .onboardingTaskPresetItem{
+    align-items: center;
+    display: grid;
+    column-gap: 16px;
+    row-gap: 8px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    justify-items: stretch;
+    min-height: 132px;
+    overflow: hidden;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  #onboardingOverlay .onboardingTaskPresetImageFrame{
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    height: 46px;
+    justify-self: center;
+    margin: 0;
+    width: 46px;
+  }
+
+  #onboardingOverlay .onboardingTaskPresetName{
+    box-sizing: border-box;
+    grid-column: 2;
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 0;
+    text-align: left;
+    width: 100%;
+  }
+
+  #onboardingOverlay .onboardingTaskPresetTimeGoal{
+    grid-column: 2;
+    margin-top: -8px;
+    padding: 0 0 7px;
+    text-align: left;
+  }
+
+  #onboardingOverlay .onboardingTaskPresetDescription{
+    box-sizing: border-box;
+    font-size: 11px;
+    grid-column: 2;
+    line-height: 1.18;
+    max-width: none;
+    padding: 0;
+    width: 100%;
   }
 
   #onboardingOverlay .onboardingContentChronotypeHours .onboardingClockButton{

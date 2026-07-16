@@ -50,11 +50,6 @@ export const MODULE_INTRO_TOUR_STEPS: ModuleIntroTourStep[] = [
     label: "Leaderboards",
     message: "Leaderboards show rankings, XP, and progress across your network.",
   },
-  {
-    page: "history",
-    label: "History",
-    message: "History lets you review, analyze, and manage completed focus sessions.",
-  },
 ];
 
 export function normalizeModuleIntroTourPage(value: unknown): ModuleIntroTourPage | null {

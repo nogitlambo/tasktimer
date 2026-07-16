@@ -901,18 +901,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
     });
   }
 
-  function setAddTaskColorFamily(familyId: string | null | undefined) {
-    const nextFamily =
-      TASK_COLOR_FAMILIES.find((family) => family.id === familyId)?.id ||
-      getTaskColorFamilyForColor(selectedColor)?.id ||
-      TASK_COLOR_FAMILIES[0].id;
-    if (els.addTaskColorPalette) {
-      els.addTaskColorPalette.setAttribute("data-active-family", nextFamily);
-      els.addTaskColorPalette.setAttribute("data-view", "shades");
-    }
-    syncAddTaskColorPalette();
-  }
-
   function setAddTaskColorPopoverOpen(open: boolean) {
     if (els.addTaskColorPopover instanceof HTMLElement) {
       els.addTaskColorPopover.style.display = open ? "flex" : "none";
@@ -1529,17 +1517,6 @@ export function createTaskTimerAddTask(ctx: TaskTimerAddTaskContext) {
       if (event.target === els.addTaskColorPopover) setAddTaskColorPopoverOpen(false);
     });
     ctx.on(els.addTaskColorPalette, "click", (event: Event) => {
-      const familyButton = (event.target as HTMLElement | null)?.closest?.('[data-task-color-family][role="tab"]') as HTMLElement | null;
-      if (familyButton && els.addTaskColorPalette?.contains(familyButton)) {
-        setAddTaskColorFamily(familyButton.dataset.taskColorFamily);
-        return;
-      }
-      const backButton = (event.target as HTMLElement | null)?.closest?.("[data-task-color-back='true']") as HTMLElement | null;
-      if (backButton && els.addTaskColorPalette?.contains(backButton)) {
-        els.addTaskColorPalette.setAttribute("data-view", "main");
-        syncAddTaskColorPalette();
-        return;
-      }
       const button = (event.target as HTMLElement | null)?.closest?.("[data-task-color]") as HTMLElement | null;
       if (!button || !els.addTaskColorPalette?.contains(button)) return;
       selectedColorTouched = true;
