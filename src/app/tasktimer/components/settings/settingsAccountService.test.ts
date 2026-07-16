@@ -107,8 +107,8 @@ describe("handleSignOutFlow", () => {
 
     await handleDeleteAccountFlow(user as never);
 
-    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/retain-subscription-before-delete", expect.any(Object));
-    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/delete-user-data", expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/retain-subscription-before-delete/", expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith("https://tasklaunch.app/api/account/delete-user-data/", expect.any(Object));
     expect(deleteUser).not.toHaveBeenCalled();
     expect(GoogleAuthProvider).not.toHaveBeenCalled();
     expect(reauthenticateWithPopup).not.toHaveBeenCalled();

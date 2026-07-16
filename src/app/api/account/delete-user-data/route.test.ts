@@ -47,10 +47,10 @@ vi.mock("../../shared/rateLimit", async (importOriginal) => {
   };
 });
 
-import { POST } from "./route";
+import { OPTIONS, POST } from "./route";
 
 function deleteUserDataRequest(body: Record<string, unknown> = {}) {
-  return new Request("https://tasklaunch.app/api/account/delete-user-data", {
+  return new Request("https://tasklaunch.app/api/account/delete-user-data/", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -145,6 +145,24 @@ describe("POST /api/account/delete-user-data", () => {
     });
   });
 
+  it("answers native webview preflight requests without redirecting", () => {
+    const response = OPTIONS(
+      new Request("https://tasklaunch.app/api/account/delete-user-data/", {
+        method: "OPTIONS",
+        headers: {
+          origin: "https://localhost",
+          "access-control-request-method": "POST",
+          "access-control-request-headers": "content-type,x-firebase-auth",
+        },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://localhost");
+    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+    expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+  });
+
   it("deletes the canonical leaderboard profile document for the authenticated uid", async () => {
     const firestore = createFirestoreMock();
     mocks.getFirebaseAdminDb.mockReturnValue(firestore.db);
@@ -153,6 +171,7 @@ describe("POST /api/account/delete-user-data", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
     expect(payload).toEqual({ ok: true });
     expect(firestore.setsByPath.get("deletedAccountUids/uid-1")).toHaveBeenCalledWith(
       {

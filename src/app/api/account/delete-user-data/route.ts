@@ -7,6 +7,7 @@ import {
   createApiInternalErrorResponse,
   verifyFirebaseRequestUser,
 } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 import { DELETED_ACCOUNT_UIDS_COLLECTION } from "../deletedAccountUid";
 
@@ -112,6 +113,10 @@ async function deleteFirebaseAuthUser(uid: string) {
   }
 }
 
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -169,18 +174,21 @@ export async function POST(req: Request) {
     ]);
     await deleteFirebaseAuthUser(uid);
 
-    return NextResponse.json({ ok: true });
+    return withAuthenticatedApiCors(req, NextResponse.json({ ok: true }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not delete your cloud data.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not delete your cloud data."));
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not delete your cloud data.",
-      "[api/account/delete-user-data] Request failed"
+    return withAuthenticatedApiCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not delete your cloud data.",
+        "[api/account/delete-user-data] Request failed"
+      )
     );
   }
 }

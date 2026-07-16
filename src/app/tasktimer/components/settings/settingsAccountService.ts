@@ -75,7 +75,7 @@ export async function handleDeleteAccountFlow(user: User) {
   const preserveRetainedSubscription = async (targetUser: User) => {
     const idToken = await targetUser.getIdToken();
     if (!idToken) return;
-    await fetch(getApiUrl("/api/account/retain-subscription-before-delete"), {
+    await fetch(getApiUrl("/api/account/retain-subscription-before-delete/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export async function handleDeleteAccountFlow(user: User) {
   const deleteCloudData = async (targetUser: User) => {
     const idToken = await targetUser.getIdToken();
     if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-    const response = await fetch(getApiUrl("/api/account/delete-user-data"), {
+    const response = await fetch(getApiUrl("/api/account/delete-user-data/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -38,6 +38,6 @@ describe("getApiUrl", () => {
     mocks.isNativeOrFileRuntime.mockReturnValue(true);
     const { getApiUrl } = await import("./apiClient");
 
-    expect(getApiUrl("/api/account/delete-user-data")).toBe("https://tasklaunch.app/api/account/delete-user-data");
+    expect(getApiUrl("/api/account/delete-user-data/")).toBe("https://tasklaunch.app/api/account/delete-user-data/");
   });
 });

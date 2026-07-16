@@ -14,6 +14,7 @@ import {
   createApiInternalErrorResponse,
   verifyFirebaseRequestUser,
 } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
@@ -40,6 +41,10 @@ async function resolveCurrentPeriodEndAt(subscriptionId: string) {
   return resolveSubscriptionPeriodEndAt(subscription);
 }
 
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -54,12 +59,12 @@ export async function POST(req: Request) {
     });
     const normalizedEmail = asString(email).toLowerCase();
     if (!normalizedEmail) {
-      return NextResponse.json({ retained: false, reason: "missing-email" });
+      return withAuthenticatedApiCors(req, NextResponse.json({ retained: false, reason: "missing-email" }));
     }
 
     const subscription = await loadUserSubscription(uid);
     if (!subscription?.stripeCustomerId || !isActiveSubscriptionStatus(subscription.stripeSubscriptionStatus)) {
-      return NextResponse.json({ retained: false, reason: "no-active-subscription" });
+      return withAuthenticatedApiCors(req, NextResponse.json({ retained: false, reason: "no-active-subscription" }));
     }
 
     let currentPeriodEndAt = subscription.currentPeriodEndAt;
@@ -67,7 +72,7 @@ export async function POST(req: Request) {
       currentPeriodEndAt = await resolveCurrentPeriodEndAt(subscription.stripeSubscriptionId);
     }
     if (!isPeriodEndInFuture(currentPeriodEndAt)) {
-      return NextResponse.json({ retained: false, reason: "no-active-period" });
+      return withAuthenticatedApiCors(req, NextResponse.json({ retained: false, reason: "no-active-period" }));
     }
 
     await upsertRetainedSubscription({
@@ -80,18 +85,21 @@ export async function POST(req: Request) {
       currentPeriodEndAt,
     });
 
-    return NextResponse.json({ retained: true });
+    return withAuthenticatedApiCors(req, NextResponse.json({ retained: true }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not preserve subscription access before deletion.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not preserve subscription access before deletion."));
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not preserve subscription access before deletion.",
-      "[api/account/retain-subscription-before-delete] Request failed"
+    return withAuthenticatedApiCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not preserve subscription access before deletion.",
+        "[api/account/retain-subscription-before-delete] Request failed"
+      )
     );
   }
 }
