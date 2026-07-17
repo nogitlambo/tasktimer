@@ -486,10 +486,6 @@ function extractAndroidDeviceRows(snapshot) {
     .filter((row) => !!row.token && row.enabled && row.provider === "fcm" && (row.native || row.platform === "web"));
 }
 
-function hasFreshForegroundWebDevice(deviceRows, nowMs) {
-  return deviceRows.some((row) => !row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
-}
-
 function hasFreshForegroundNativeDevice(deviceRows, nowMs) {
   return deviceRows.some((row) => row.native && row.appActive && nowMs - row.appStateUpdatedAtMs <= TASK_TIME_GOAL_ACTIVE_TTL_MS);
 }
@@ -508,7 +504,7 @@ function splitDeviceRows(deviceRows) {
   return {nativeRows, webRows};
 }
 
-function selectPreferredFriendRequestDeviceRows(deviceRows) {
+function selectFriendRequestDeviceRows(deviceRows) {
   return [...deviceRows]
     .sort((a, b) => {
       if (a.native !== b.native) return a.native ? -1 : 1;
@@ -516,7 +512,7 @@ function selectPreferredFriendRequestDeviceRows(deviceRows) {
       if (updatedDelta !== 0) return updatedDelta;
       return asString(a.id).localeCompare(asString(b.id));
     })
-    .slice(0, 1);
+    .slice(0, MAX_PUSH_DEVICE_ROWS_PER_USER);
 }
 
 async function loadUserPushPreferences(uid) {
@@ -998,6 +994,7 @@ async function sendScheduledTaskNotification({
   skipIfForeground = false,
   cleanupInvalidTokens = true,
   selectDeviceRows = null,
+  stopAfterFirstSuccessfulBatch = false,
 }) {
   const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
   const prefs = await loadUserPushPreferences(uid);
@@ -1057,6 +1054,17 @@ async function sendScheduledTaskNotification({
     invalidRows.push(...await cleanupInvalidDeviceTokens(uid, nativeRows, nativeResponse, {
       deleteInvalidTokens: cleanupInvalidTokens,
     }));
+    if (stopAfterFirstSuccessfulBatch && nativeResponse.successCount > 0) {
+      return {
+        status: "sent",
+        successCount: nativeResponse.successCount,
+        failureCount: nativeResponse.failureCount,
+        invalidTokenCount: invalidRows.length,
+        failures: invalidRows,
+        taskId,
+        taskName,
+      };
+    }
   }
 
   if (allowWeb && webRows.length) {
@@ -1149,7 +1157,8 @@ async function sendFriendRequestPendingNotification(event) {
     allowWeb: true,
     skipIfForeground: false,
     cleanupInvalidTokens: true,
-    selectDeviceRows: selectPreferredFriendRequestDeviceRows,
+    selectDeviceRows: selectFriendRequestDeviceRows,
+    stopAfterFirstSuccessfulBatch: true,
   });
 
   logger.info("Friend request push notification processed", {

@@ -378,8 +378,6 @@ Allowed fields (`isTaskDoc`):
 - `milestones: list`
 - `checkpointSoundEnabled: bool`
 - `checkpointSoundMode: "once" | "repeat"`
-- `checkpointToastEnabled: bool`
-- `checkpointToastMode: "auto5s" | "auto3s" | "manual"`
 - `finalCheckpointAction: "continue" | "resetLog" | "resetNoLog"`
 - `xpDisqualifiedUntilReset: bool`
 - `presetIntervalsEnabled: bool`

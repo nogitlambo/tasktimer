@@ -66,6 +66,7 @@ type RegisterRootEventsOptions = {
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   applyAppPage: (page: AppPage, opts?: { syncUrl?: "replace" | "push" | false }) => void;
+  refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<unknown>;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<void>;
   maybeRestorePendingTimeGoalFlow: () => void;
   flushPendingCloudWrites: () => Promise<void>;
@@ -201,6 +202,7 @@ export function registerTaskTimerRootEvents(options: RegisterRootEventsOptions) 
     runtimeDestroyed: () => runtime.destroyed,
     pendingPushEvent: options.pendingPushEvent,
     applyAppPage: options.applyAppPage,
+    refreshGroupsData: options.refreshGroupsData,
     maybeHandlePendingTaskJump: options.maybeHandlePendingTaskJump,
     maybeHandlePendingPushAction: options.maybeHandlePendingPushAction,
     rehydrateFromCloudAndRender: options.rehydrateFromCloudAndRender,

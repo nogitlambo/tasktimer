@@ -11,6 +11,9 @@ function createWindowRuntimeHarness() {
   const maybeHandlePendingTaskJump = vi.fn(() => calls.push("jump"));
   const maybeHandlePendingPushAction = vi.fn(() => calls.push("action"));
   const maybeRestorePendingTimeGoalFlow = vi.fn(() => calls.push("restore"));
+  const refreshGroupsData = vi.fn(async () => {
+    calls.push("groups");
+  });
   const rehydrateFromCloudAndRender = vi.fn(async () => {
     calls.push("rehydrate");
   });
@@ -27,6 +30,7 @@ function createWindowRuntimeHarness() {
     runtimeDestroyed: () => false,
     pendingPushEvent: "tasktimer:pendingTaskJump",
     applyAppPage,
+    refreshGroupsData,
     maybeHandlePendingTaskJump,
     maybeHandlePendingPushAction,
     rehydrateFromCloudAndRender,
@@ -41,6 +45,7 @@ function createWindowRuntimeHarness() {
     maybeHandlePendingTaskJump,
     maybeHandlePendingPushAction,
     maybeRestorePendingTimeGoalFlow,
+    refreshGroupsData,
     rehydrateFromCloudAndRender,
   };
 }
@@ -53,8 +58,10 @@ describe("registerTaskTimerWindowRuntimeEvents", () => {
     await Promise.resolve();
 
     expect(harness.applyAppPage).toHaveBeenCalledWith("friends", { syncUrl: "replace" });
+    expect(harness.refreshGroupsData).toHaveBeenCalledWith({ preserveStatus: true });
+    expect(harness.refreshGroupsData).toHaveBeenCalledTimes(2);
     expect(harness.rehydrateFromCloudAndRender).toHaveBeenCalledWith({ force: true });
-    expect(harness.calls.slice(0, 4)).toEqual(["apply:friends:{\"syncUrl\":\"replace\"}", "jump", "action", "rehydrate"]);
+    expect(harness.calls.slice(0, 5)).toEqual(["apply:friends:{\"syncUrl\":\"replace\"}", "groups", "jump", "action", "rehydrate"]);
     expect(harness.maybeRestorePendingTimeGoalFlow).toHaveBeenCalled();
   });
 
@@ -65,6 +72,7 @@ describe("registerTaskTimerWindowRuntimeEvents", () => {
     await Promise.resolve();
 
     expect(harness.applyAppPage).not.toHaveBeenCalled();
+    expect(harness.refreshGroupsData).not.toHaveBeenCalled();
     expect(harness.maybeHandlePendingTaskJump).toHaveBeenCalledTimes(2);
     expect(harness.maybeHandlePendingPushAction).toHaveBeenCalledTimes(2);
     expect(harness.rehydrateFromCloudAndRender).toHaveBeenCalledWith({ force: true });

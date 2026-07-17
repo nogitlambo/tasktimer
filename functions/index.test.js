@@ -201,18 +201,8 @@ describe("sendFriendRequestPendingNotification", () => {
     resetState();
   });
 
-  it("sends one friend request push when a request becomes pending, preferring native over web", async () => {
+  it("sends friend request pushes to the preferred native receiver device first", async () => {
     state.devices = [
-      {
-        id: "web-1",
-        token: "web-token",
-        enabled: true,
-        native: false,
-        provider: "fcm",
-        platform: "web",
-        appActive: false,
-        appStateUpdatedAtMs: Date.now(),
-      },
       {
         id: "native-1",
         token: "native-token",
@@ -220,6 +210,16 @@ describe("sendFriendRequestPendingNotification", () => {
         native: true,
         provider: "fcm",
         platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now() + 1,
+      },
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
         appActive: false,
         appStateUpdatedAtMs: Date.now(),
       },
@@ -242,7 +242,8 @@ describe("sendFriendRequestPendingNotification", () => {
       successCount: 1,
     }));
     expect(state.sendEachForMulticast).toHaveBeenCalledTimes(1);
-    expect(state.sendEachForMulticast).toHaveBeenCalledWith(
+    expect(state.sendEachForMulticast).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         tokens: ["native-token"],
         notification: {
@@ -258,6 +259,93 @@ describe("sendFriendRequestPendingNotification", () => {
     );
     expect(state.sendEachForMulticast).not.toHaveBeenCalledWith(
       expect.objectContaining({ tokens: ["web-token"] })
+    );
+  });
+
+  it("falls back to another receiver device when the preferred native token is stale", async () => {
+    state.devices = [
+      {
+        id: "native-1",
+        token: "stale-native-token",
+        enabled: true,
+        native: true,
+        provider: "fcm",
+        platform: "android",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now() + 1,
+      },
+      {
+        id: "web-1",
+        token: "web-token",
+        enabled: true,
+        native: false,
+        provider: "fcm",
+        platform: "web",
+        appActive: false,
+        appStateUpdatedAtMs: Date.now(),
+      },
+    ];
+    state.sendEachForMulticast = vi.fn(async (payload) => {
+      if (payload.tokens.includes("stale-native-token")) {
+        return {
+          successCount: 0,
+          failureCount: 1,
+          responses: [
+            {
+              success: false,
+              error: {
+                code: "messaging/registration-token-not-registered",
+                message: "Requested entity was not found.",
+              },
+            },
+          ],
+        };
+      }
+      return {
+        successCount: 1,
+        failureCount: 0,
+        responses: [{ success: true }],
+      };
+    });
+
+    const result = await __testing.sendFriendRequestPendingNotification(friendRequestEvent({
+      requestId: "pending:sender-1:receiver-1",
+      after: {
+        requestId: "pending:sender-1:receiver-1",
+        senderUid: "sender-1",
+        receiverUid: "receiver-1",
+        status: "pending",
+      },
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      ok: true,
+      requestId: "pending:sender-1:receiver-1",
+      status: "sent",
+      successCount: 1,
+      failureCount: 1,
+      invalidTokenCount: 1,
+    }));
+    expect(state.sendEachForMulticast).toHaveBeenCalledTimes(2);
+    expect(state.sendEachForMulticast).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ tokens: ["stale-native-token"] })
+    );
+    expect(state.sendEachForMulticast).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ tokens: ["web-token"] })
+    );
+    expect(state.writes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: "users/receiver-1/devices/native-1",
+          data: expect.objectContaining({
+            token: "DELETE_FIELD",
+            enabled: false,
+            lastPushErrorCode: "messaging/registration-token-not-registered",
+          }),
+        }),
+      ])
     );
   });
 

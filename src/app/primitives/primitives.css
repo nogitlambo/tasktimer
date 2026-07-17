@@ -94,12 +94,6 @@
   font-size: 13px;
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveDisabledButton:disabled{
-  border-color: rgba(170, 178, 190, .42) !important;
-  background: #1a1b20 !important;
-  color: #1a1b20 !important;
-}
-
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveExamplePanel,
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveCode{
   min-width: 0;
@@ -140,6 +134,122 @@
   align-items: center;
 }
 
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn{
+  position: relative;
+  box-sizing: border-box;
+  min-width: min(178px, 38vw);
+  min-height: 48px;
+  padding: 0 28px !important;
+  border: 4px solid #020509 !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+  color: #f7f8fb !important;
+  overflow: hidden !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 11px !important;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
+  transition:
+    filter .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn,
+#app.primitiveSurface .primitiveButtonGrid .btn{
+  border-radius: 8px !important;
+  clip-path: none !important;
+  overflow: hidden !important;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn:hover:not(:disabled),
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn:focus-visible:not(:disabled){
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn:active:not(:disabled){
+  transform: translateY(3px);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn:focus-visible{
+  outline: 1px solid rgba(126, 243, 255, .95);
+  outline-offset: 6px;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn::before,
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn::after{
+  content: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-accent{
+  border-color: #0f1600 !important;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .1),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn-accent,
+body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-accent{
+  border-color: #0f1600 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  color: #f7f8fb !important;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .1),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-ghost{
+  border-color: #020509 !important;
+  box-shadow:
+    0 0 0 1px rgba(184, 207, 224, .1),
+    0 0 14px rgba(184, 207, 224, .2),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-warn{
+  border-color: #1a0303 !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 77, .1),
+    0 0 14px rgba(255, 77, 77, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(255, 77, 77, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn:disabled{
+  cursor: not-allowed;
+  filter: grayscale(.35) brightness(.78);
+  opacity: .7;
+  transform: none;
+}
+
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveTypeStack{
   display: grid;
   gap: 8px;
@@ -159,8 +269,9 @@
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchExamplePanel{
   align-items: center;
   background: transparent;
-  border: 0;
+  border: 1px solid rgba(128, 128, 128, .25);
   box-shadow: none;
+  min-block-size: 180px;
 }
 
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveAndroidSplashPanel{
@@ -178,69 +289,164 @@
   object-fit: contain;
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton{
-  inline-size: min(340px, 82vw);
-  aspect-ratio: 1;
-  position: relative;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: 0 18px 28px rgba(0,0,0,.46);
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction{
+  --task-primary-action-size: 96px;
+  --task-primary-accent: #aeb6c0;
+  --task-primary-accent-soft: rgba(174,182,192,.32);
+  --task-primary-ring-top: #26272b;
+  --task-primary-ring: #1d1e21;
+  --task-primary-ring-bottom: #0e1417;
+  --task-primary-ring-soft: rgba(38,39,43,.34);
+  --task-primary-label: #e7ebef;
+  --task-primary-label-shadow: rgba(0,0,0,.72);
+  --task-primary-face-top: #2f343b;
+  --task-primary-face-mid: #1e2228;
+  --task-primary-face-bottom: #0c0f13;
+  inline-size: var(--task-primary-action-size) !important;
+  block-size: var(--task-primary-action-size) !important;
+  width: var(--task-primary-action-size) !important;
+  height: var(--task-primary-action-size) !important;
+  min-width: var(--task-primary-action-size) !important;
+  min-height: var(--task-primary-action-size) !important;
+  max-width: var(--task-primary-action-size) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  isolation: isolate;
+  color: var(--task-primary-label) !important;
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  background: #090a0d !important;
+  box-shadow:
+    0 17px 28px rgba(0,0,0,.62),
+    0 0 22px rgba(210,220,230,.13),
+    inset 0 9px 16px rgba(0,0,0,.72),
+    inset 0 -6px 10px rgba(255,255,255,.04),
+    inset 0 0 0 1px rgba(255,255,255,.07) !important;
   cursor: pointer;
-  overflow: visible;
   transition:
-    filter .16s ease,
-    box-shadow .16s ease;
+    box-shadow .14s ease,
+    filter .14s ease !important;
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton::after{
-  content: "";
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction::before,
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction::after,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction::before,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction::after{
+  content: none !important;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionRing,
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionRing,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace{
   position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionRing,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionRing{
   inset: 0;
   z-index: 1;
-  border-radius: 50%;
-  background: url("/launch_button.png") center / contain no-repeat;
-  clip-path: circle(38% at 50% 50%);
-  pointer-events: none;
-  transition: transform .16s ease;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255,255,255,.42) 0 8%, transparent 25%),
+    linear-gradient(
+      180deg,
+      var(--task-primary-ring-top) 0%,
+      var(--task-primary-ring) 54%,
+      var(--task-primary-ring-bottom) 100%
+    );
+  box-shadow:
+    0 0 18px var(--task-primary-ring-soft),
+    inset 0 0 0 2px rgba(255,255,255,.14),
+    inset 0 -12px 18px rgba(0,0,0,.28);
+  filter: brightness(.96) contrast(1.08) saturate(1.08);
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButtonImage{
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace{
+  inset: 15px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--task-primary-face-top) 0%, var(--task-primary-face-mid) 48%, var(--task-primary-face-bottom) 100%) !important;
+  box-shadow:
+    0 8px 12px rgba(0,0,0,.62),
+    0 -1px 0 rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.055),
+    inset 0 -10px 14px rgba(0,0,0,.52),
+    inset 0 0 0 2px rgba(0,0,0,.72) !important;
+  transition:
+    transform .14s cubic-bezier(.2,.8,.2,1),
+    box-shadow .14s ease,
+    filter .14s ease;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionLabel,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionLabel{
+  position: relative;
+  z-index: 3;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  max-width: calc(var(--task-primary-action-size) - 38px);
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: 0 2px 3px var(--task-primary-label-shadow);
+  white-space: nowrap;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionText,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionText{
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionPrimary,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionPrimary{
   display: block;
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: contain;
-  user-select: none;
-  pointer-events: none;
+  font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  color: var(--task-primary-label);
+  font-size: clamp(11px, calc(var(--task-primary-action-size) * .14), 13px);
+  font-weight: 600;
+  line-height: 1;
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--task-primary-accent) 42%, transparent),
+    0 2px 4px var(--task-primary-label-shadow);
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:hover,
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:focus-visible{
-  filter: brightness(1.04) saturate(1.06);
-  box-shadow: 0 8px 12px rgba(0,0,0,.42);
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction:hover:not(:disabled),
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction:focus-visible:not(:disabled),
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction:hover:not(:disabled),
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction:focus-visible:not(:disabled){
+  filter: none;
+  transform: none !important;
 }
 
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:hover::after,
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:focus-visible::after{
-  transform: translateY(7px) scale(.975);
-}
-
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:focus-visible{
-  outline: 2px solid var(--accent);
-  outline-offset: 7px;
-}
-
-:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton:active::after{
-  transform: translateY(10px) scale(.96);
+#app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction:active:not(:disabled) .taskPrimaryActionFace,
+#app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction:active:not(:disabled) .taskPrimaryActionFace{
+  transform: translateY(3px) scale(.975);
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce){
-  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton,
-  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButton::after,
-  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveLaunchButtonImage{
+  #app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction,
+  #app[aria-label="TaskLaunch Primitives"] .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace,
+  #app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction,
+  #app.primitiveSurface .primitiveLaunchExamplePanel .taskPrimaryAction .taskPrimaryActionFace{
     transition: none;
   }
 }
@@ -335,6 +541,246 @@
   z-index: 1500;
 }
 
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveModalPreviewPanel{
+  justify-content: stretch;
+  overflow: hidden;
+  padding: 0;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveModalPreviewPanel .primitiveLiveOverlay{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  min-height: 360px;
+  align-items: center;
+  justify-content: center;
+  z-index: auto;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveModalPreviewPanel .primitiveSciFiModal{
+  width: min(100%, 760px);
+  min-height: 360px;
+  max-height: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalOverlay{
+  padding: max(18px, var(--safe-top)) 14px max(18px, var(--safe-bottom));
+  background:
+    radial-gradient(circle at 12% 72%, rgba(0, 229, 255, .18), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(128, 255, 64, .16), transparent 26%),
+    rgba(3, 5, 8, .72);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModal{
+  position: relative;
+  display: grid;
+  width: min(820px, calc(100vw - 28px));
+  min-height: min(460px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)));
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom));
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08);
+  color: #f4f7fb;
+  isolation: isolate;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModal::before{
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .72),
+    inset 0 18px 38px rgba(255, 255, 255, .03);
+  pointer-events: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModal::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
+  pointer-events: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalHeader{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 36px 8px;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .45),
+    0 2px 0 rgba(255, 255, 255, .06),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .78),
+    inset 0 -9px 16px rgba(0, 0, 0, .28);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalHeader h2{
+  margin: 0;
+  color: #f7f8fb;
+  font-family: var(--font-geist-sans), var(--font-readable);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .72);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalBody{
+  min-height: 250px;
+  padding: 58px 46px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalBody .modalSubtext{
+  max-width: 640px;
+  margin: 0;
+  color: rgba(247, 249, 252, .94) !important;
+  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .76);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalFooter{
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(22px, 5vw, 52px);
+  padding: 22px 36px 24px;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, .68),
+    0 -1px 0 rgba(255, 255, 255, .05);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction{
+  position: relative;
+  box-sizing: border-box;
+  min-width: min(178px, 38vw);
+  min-height: 48px;
+  padding: 0 28px;
+  border: 4px solid #020509;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34);
+  color: #f7f8fb;
+  cursor: pointer;
+  overflow: hidden !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
+  transition:
+    filter .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction:hover,
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction:focus-visible{
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction:active{
+  transform: translateY(3px);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction:focus-visible{
+  outline: 1px solid rgba(126, 243, 255, .95);
+  outline-offset: 6px;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction::after{
+  content: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalPrimaryAction{
+  border-color: #0f1600;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .28),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28);
+  color: #f7f8fb;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalSecondaryAction{
+  border-color: #020509;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction::before{
+  content: none;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalPrimaryAction::before{
+  content: none;
+}
+
+#app[aria-label="TaskLaunch Primitives"] .primitiveSciFiModal .primitiveSciFiModalAction,
+#app.primitiveSurface .primitiveSciFiModal .primitiveSciFiModalAction{
+  border-radius: 8px !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
+  overflow: hidden !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction{
+    transition: none;
+  }
+}
+
 @media (max-width: 820px){
   :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveHero,
   :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSectionHeader{
@@ -348,4 +794,46 @@
   :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveShell{
     width: min(100% - 18px, 680px);
   }
+}
+
+@media (max-width: 640px){
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveModalPreviewPanel .primitiveLiveOverlay{
+    min-height: 330px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModal{
+    width: min(100%, calc(100vw - 20px));
+    min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom)));
+    border-radius: 12px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModal::before{
+    inset: 6px;
+    border-radius: 8px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalHeader{
+    min-height: 56px;
+    padding: 9px 20px 7px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalBody{
+    min-height: 210px;
+    padding: 34px 24px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalFooter{
+    min-height: 92px;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 22px;
+  }
+
+  :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction{
+    min-width: min(168px, 100%);
+    min-height: 46px;
+    padding: 0 24px;
+    border-width: 4px;
+  }
+
 }

@@ -29,85 +29,93 @@ export default function FriendsOverlays() {
       </div>
 
       <div className="overlay" id="shareTaskModal" style={{ display: "none" }}>
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Share Task">
-          <h2 id="shareTaskTitle">Share Task</h2>
-          <p className="modalSubtext shareTaskModalSubtext">Select who to share this task with:</p>
-          <div className="field modalDropdownField">
-            <select
-              id="shareTaskScopeSelect"
-              className="text w100 shareTaskScopeNativeSelect"
-              defaultValue="all"
-              aria-label="Sharing scope"
-              tabIndex={-1}
-            >
-              <option value="all">All friends</option>
-              <option value="specific">Specific friend(s)</option>
-            </select>
-            <div className="modalDropdown" id="shareTaskScopeDropdown">
-              <button
-                className="modalDropdownButton modalPreviewDropdownButton"
-                id="shareTaskScopeDropdownButton"
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded="false"
-                aria-controls="shareTaskScopeDropdownList"
+        <div className="modal shareTaskPrimitiveModal" role="dialog" aria-modal="true" aria-label="Share Task">
+          <header className="shareTaskPrimitiveHeader">
+            <h2 id="shareTaskTitle">Share Task</h2>
+          </header>
+          <div className="shareTaskPrimitiveBody">
+            <div className="field modalDropdownField modalPreviewDropdownField">
+              <p className="modalDropdownHelp shareTaskModalSubtext">Select who to share this task with:</p>
+              <select
+                id="shareTaskScopeSelect"
+                className="text w100 shareTaskScopeNativeSelect"
+                defaultValue="all"
+                aria-label="Sharing scope"
+                tabIndex={-1}
               >
-                <span id="shareTaskScopeDropdownLabel">All friends</span>
-                <span aria-hidden="true">v</span>
-              </button>
-              <div
-                className="modalDropdownList"
-                id="shareTaskScopeDropdownList"
-                role="listbox"
-                aria-labelledby="shareTaskScopeDropdownButton"
-                hidden
-              >
+                <option value="all">All friends</option>
+                <option value="specific">Specific friend(s)</option>
+              </select>
+              <div className="modalDropdown modalPreviewDropdown" id="shareTaskScopeDropdown">
                 <button
-                  className="modalDropdownOption modalPreviewDropdownOption isSelected"
+                  className="modalDropdownButton modalPreviewDropdownButton"
+                  id="shareTaskScopeDropdownButton"
                   type="button"
-                  role="option"
-                  aria-selected="true"
-                  data-share-task-scope-option="all"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                  aria-controls="shareTaskScopeDropdownList"
                 >
-                  All friends
+                  <span id="shareTaskScopeDropdownLabel">All friends</span>
+                  <span aria-hidden="true">v</span>
                 </button>
-                <button
-                  className="modalDropdownOption modalPreviewDropdownOption"
-                  type="button"
-                  role="option"
-                  aria-selected="false"
-                  data-share-task-scope-option="specific"
+                <div
+                  className="modalDropdownList modalPreviewDropdownList"
+                  id="shareTaskScopeDropdownList"
+                  role="listbox"
+                  aria-labelledby="shareTaskScopeDropdownButton"
+                  hidden
                 >
-                  Specific friend(s)
-                </button>
+                  <button
+                    className="modalDropdownOption modalPreviewDropdownOption isSelected"
+                    type="button"
+                    role="option"
+                    aria-selected="true"
+                    data-share-task-scope-option="all"
+                  >
+                    All friends
+                  </button>
+                  <button
+                    className="modalDropdownOption modalPreviewDropdownOption"
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    data-share-task-scope-option="specific"
+                  >
+                    Specific friend(s)
+                  </button>
+                </div>
               </div>
             </div>
+            <div className="field" id="shareTaskFriendsField" style={{ display: "none" }}>
+              <label>Select friend(s)</label>
+              <div id="shareTaskFriendsList" />
+            </div>
+            <div id="shareTaskStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
           </div>
-          <div className="field" id="shareTaskFriendsField" style={{ display: "none" }}>
-            <label>Select friend(s)</label>
-            <div id="shareTaskFriendsList" />
-          </div>
-          <div id="shareTaskStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
-          <div className="footerBtns">
-            <button className="btn btn-ghost" id="shareTaskCancelBtn" type="button">
+          <footer className="footerBtns shareTaskPrimitiveFooter">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction shareTaskPrimitiveAction shareTaskPrimitiveSecondaryAction" id="shareTaskCancelBtn" type="button">
               Cancel
             </button>
-            <button className="btn btn-accent" id="shareTaskConfirmBtn" type="button">
+            <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction shareTaskPrimitiveAction shareTaskPrimitivePrimaryAction" id="shareTaskConfirmBtn" type="button">
               Share
             </button>
-          </div>
+          </footer>
         </div>
       </div>
 
-      <div className="overlay standardModalOverlay" id="sharedTaskSummaryModal" style={{ display: "none" }}>
-        <div className="modal sharedTaskSummaryModal" role="dialog" aria-modal="true" aria-labelledby="sharedTaskSummaryTitle">
-          <h2 id="sharedTaskSummaryTitle">Shared Task Summary</h2>
-          <div id="sharedTaskSummaryBody" className="sharedTaskSummaryBody" />
-          <div className="confirmBtns sharedTaskSummaryActions">
-            <button className="btn btn-ghost" id="sharedTaskSummaryCloseBtn" type="button">
+      <div className="overlay" id="sharedTaskSummaryModal" style={{ display: "none" }}>
+        <div className="modal sharedTaskSummaryModal sharedTaskSummaryPrimitiveModal" role="dialog" aria-modal="true" aria-labelledby="sharedTaskSummaryTitle">
+          <header className="shareTaskPrimitiveHeader sharedTaskSummaryPrimitiveHeader">
+            <h2 id="sharedTaskSummaryTitle">Shared Task Summary</h2>
+          </header>
+          <div className="shareTaskPrimitiveBody sharedTaskSummaryPrimitiveBody">
+            <div id="sharedTaskSummaryBody" className="sharedTaskSummaryBody" />
+          </div>
+          <footer className="footerBtns shareTaskPrimitiveFooter sharedTaskSummaryActions sharedTaskSummaryPrimitiveFooter">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction sharedTaskSummaryPrimitiveAction sharedTaskSummaryPrimitiveSecondaryAction" id="sharedTaskSummaryCloseBtn" type="button">
               Close
             </button>
-          </div>
+          </footer>
         </div>
       </div>
 

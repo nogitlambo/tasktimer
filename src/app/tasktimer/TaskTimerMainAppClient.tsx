@@ -1550,7 +1550,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   title="Add Task"
                   type="button"
                 >
-                  <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add_new_resized.png" alt="" aria-hidden="true" />
+                  <AppImg className="taskScreenIconBtnImage taskScreenAddTaskBtnImage" src="/icons/icons_default/add_new.png" alt="" aria-hidden="true" />
                 </button>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
@@ -1603,7 +1603,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <button className="btn btn-ghost small" id="openFriendRequestModalBtn" type="button" aria-label="Add Friend" title="Add Friend" disabled={!isAuthenticated}>
                     <AppImg
                       className="friendRequestBtnIcon"
-                      src="/icons/icons_default/add_new_resized.png"
+                      src="/icons/icons_default/add_new.png"
                       alt=""
                       aria-hidden="true"
                     />

@@ -1071,7 +1071,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     const hasChoices = isShareTaskSpecificScopeSelected()
       ? availability.availableFriendRows.length > 0
       : availability.friendRows.length > 0 && !availability.isSharedWithAllFriends;
-    setShareTaskModalModeUi({ mode, taskName, hasChoices });
+    setShareTaskModalModeUi({ mode, taskName, hasChoices, isSharedWithAllFriends: availability.isSharedWithAllFriends });
     if (!availability.friendRows.length) {
       setShareTaskStatus("No friends available to share with.", "error");
       return;
@@ -1083,26 +1083,27 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     setShareTaskStatus("");
   }
 
-  function setShareTaskModalModeUi(opts: { mode: "share" | "unshare"; taskName: string; hasChoices?: boolean }) {
+  function setShareTaskModalModeUi(opts: { mode: "share" | "unshare"; taskName: string; hasChoices?: boolean; isSharedWithAllFriends?: boolean }) {
     const mode = opts.mode === "unshare" ? "unshare" : "share";
     const taskName = String(opts.taskName || "").trim() || "Untitled task";
     const hasChoices = opts.hasChoices !== false;
+    const hideShareControls = mode === "share" && opts.isSharedWithAllFriends === true;
     const scopeField = (els.shareTaskScopeSelect?.parentElement as HTMLElement | null) || null;
     const friendsField = els.shareTaskFriendsField as HTMLElement | null;
     const friendsLabel = friendsField?.querySelector("label") as HTMLElement | null;
     if (els.shareTaskTitle) {
       els.shareTaskTitle.textContent = mode === "unshare" ? `Unshare "${taskName}"` : `Share "${taskName}"`;
     }
-    const subtextEl = (els.shareTaskTitle?.nextElementSibling as HTMLElement | null) || null;
+    const subtextEl = (els.shareTaskModal as HTMLElement | null)?.querySelector<HTMLElement>(".shareTaskModalSubtext") || null;
     if (subtextEl && subtextEl.classList.contains("shareTaskModalSubtext")) {
       subtextEl.textContent =
         mode === "unshare"
           ? "Choose which friends should no longer receive this task and its live progress."
           : "Select who to share this task with:";
     }
-    if (scopeField) scopeField.style.display = mode === "share" ? "grid" : "none";
+    if (scopeField) scopeField.style.display = mode === "share" && !hideShareControls ? "grid" : "none";
     if (friendsField) {
-      friendsField.style.display = mode === "share" ? (isShareTaskSpecificScopeSelected() ? "grid" : "none") : "grid";
+      friendsField.style.display = mode === "share" ? (!hideShareControls && isShareTaskSpecificScopeSelected() ? "grid" : "none") : "grid";
     }
     if (friendsLabel) {
       friendsLabel.textContent = mode === "unshare" ? "Select friend(s) to unshare" : "Select friend(s)";
@@ -1112,6 +1113,13 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.shareTaskConfirmBtn) {
       els.shareTaskConfirmBtn.textContent = mode === "unshare" ? "Unshare" : "Share";
       els.shareTaskConfirmBtn.disabled = !hasChoices;
+      const confirmBtn = els.shareTaskConfirmBtn as HTMLElement;
+      confirmBtn.hidden = hideShareControls;
+      if (hideShareControls) {
+        confirmBtn.style.setProperty("display", "none", "important");
+      } else {
+        confirmBtn.style.removeProperty("display");
+      }
     }
   }
 

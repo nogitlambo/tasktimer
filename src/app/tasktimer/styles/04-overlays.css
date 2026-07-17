@@ -7679,10 +7679,182 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   border-radius: 0 !important;
   clip-path: none !important;
   box-shadow: var(--modal-shadow) !important;
-}:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay, #friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns){
+}
+
+#confirmOverlay.isDeleteTaskConfirm .modal{
+  position: relative !important;
+  display: grid !important;
+  width: min(820px, calc(100vw - 28px)) !important;
+  min-height: min(460px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom))) !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow: hidden !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  padding: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, .2) !important;
+  border-right: 1px solid rgba(255, 255, 255, .08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82) !important;
+  border-left: 1px solid rgba(255, 255, 255, .08) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31 !important;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08) !important;
+  color: #f4f7fb !important;
+  isolation: isolate !important;
+}
+
+#confirmOverlay.isDeleteTaskConfirm .modal::before{
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .72),
+    inset 0 18px 38px rgba(255, 255, 255, .03);
+  pointer-events: none;
+}
+
+#confirmOverlay.isDeleteTaskConfirm .modal::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
+  pointer-events: none;
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmTitle{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 !important;
+  padding: 10px 36px 8px;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .45),
+    0 2px 0 rgba(255, 255, 255, .06),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .78),
+    inset 0 -9px 16px rgba(0, 0, 0, .28);
+  color: #f7f8fb;
+  font-family: var(--font-geist-sans), var(--font-readable);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .72);
+}
+
+#confirmOverlay.isDeleteTaskConfirm .confirmText{
+  min-height: 0;
+  overflow: auto;
+  margin: 0 !important;
+  padding: 58px 46px 18px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74);
+  color: rgba(247, 249, 252, .94) !important;
+  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .76);
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow,
+#confirmOverlay.isDeleteTaskConfirm #confirmChkNote,
+#confirmOverlay.isDeleteTaskConfirm #confirmChkRow2,
+#confirmOverlay.isDeleteTaskConfirm #confirmDangerInputRow{
+  margin: 0 !important;
+  padding-right: 46px;
+  padding-left: 46px;
+  background: rgba(8, 14, 19, .74);
+}
+
+#confirmOverlay.isDeleteTaskConfirm .confirmBtns{
+  display: flex !important;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center !important;
+  gap: clamp(22px, 5vw, 52px) !important;
+  margin-top: 0 !important;
+  padding: 22px 36px 24px;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, .68),
+    0 -1px 0 rgba(255, 255, 255, .05);
+}
+
+#confirmOverlay.isDeleteTaskConfirm #confirmAltBtn[style*="display: none"]{
+  display: none !important;
+}
+
+@media (max-width: 640px){
+  #confirmOverlay.isDeleteTaskConfirm .modal{
+    width: min(100%, calc(100vw - 20px)) !important;
+    min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
+    border-radius: 12px !important;
+  }
+
+  #confirmOverlay.isDeleteTaskConfirm .modal::before{
+    inset: 6px;
+    border-radius: 8px;
+  }
+
+  #confirmOverlay.isDeleteTaskConfirm #confirmTitle{
+    min-height: 56px;
+    padding: 9px 20px 7px;
+  }
+
+  #confirmOverlay.isDeleteTaskConfirm .confirmText{
+    padding: 34px 24px 18px;
+  }
+
+  #confirmOverlay.isDeleteTaskConfirm #confirmChkRow,
+  #confirmOverlay.isDeleteTaskConfirm #confirmChkNote,
+  #confirmOverlay.isDeleteTaskConfirm #confirmChkRow2,
+  #confirmOverlay.isDeleteTaskConfirm #confirmDangerInputRow{
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  #confirmOverlay.isDeleteTaskConfirm .confirmBtns{
+    min-height: 92px;
+    flex-wrap: wrap;
+    gap: 16px !important;
+    padding: 22px;
+  }
+}
+
+:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay, #friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns){
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
+}
+
+#confirmOverlay.isDeleteTaskConfirm .modal .confirmBtns{
+  justify-content: center !important;
+  gap: clamp(22px, 5vw, 52px) !important;
 }
 
 .standardModalOverlay .modal .confirmBtns,

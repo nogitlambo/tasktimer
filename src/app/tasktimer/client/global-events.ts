@@ -44,6 +44,7 @@ type RegisterWindowRuntimeEventsOptions = {
   runtimeDestroyed: () => boolean;
   pendingPushEvent: string;
   applyAppPage: (page: AppPage, opts?: { syncUrl?: "replace" | "push" | false }) => void;
+  refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<unknown>;
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
@@ -197,13 +198,20 @@ export function registerTaskTimerWindowRuntimeEvents(options: RegisterWindowRunt
     const detail = event && typeof event === "object" && "detail" in event ? (event as { detail?: unknown }).detail : null;
     const route = detail && typeof detail === "object" && "route" in detail ? (detail as { route?: unknown }).route : "";
     const routePage = appPageForPushRoute(route);
+    const shouldRefreshFriends = routePage === "friends";
     if (routePage) {
       options.applyAppPage(routePage, { syncUrl: "replace" });
+    }
+    if (shouldRefreshFriends) {
+      void options.refreshGroupsData({ preserveStatus: true }).catch(() => {});
     }
     options.maybeHandlePendingTaskJump();
     options.maybeHandlePendingPushAction();
     void options.rehydrateFromCloudAndRender({ force: true }).then(() => {
       if (options.runtimeDestroyed()) return;
+      if (shouldRefreshFriends) {
+        void options.refreshGroupsData({ preserveStatus: true }).catch(() => {});
+      }
       options.maybeHandlePendingTaskJump();
       options.maybeHandlePendingPushAction();
       options.maybeRestorePendingTimeGoalFlow();

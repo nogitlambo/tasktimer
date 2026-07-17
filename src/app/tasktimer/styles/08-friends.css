@@ -1034,6 +1034,7 @@
 
 #shareTaskModal label{
   margin-bottom: 4px;
+  color: #fff;
   font-size: 10px;
   letter-spacing: .06em;
 }
@@ -1067,6 +1068,131 @@
   margin: 2px 0 0;
 }
 
+#shareTaskModal .shareTaskPrimitiveModal{
+  position: relative !important;
+  display: grid !important;
+  width: min(820px, calc(100vw - 28px)) !important;
+  min-height: min(460px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom))) !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow: hidden !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  border-top: 1px solid rgba(255, 255, 255, .2) !important;
+  border-right: 1px solid rgba(255, 255, 255, .08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82) !important;
+  border-left: 1px solid rgba(255, 255, 255, .08) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31 !important;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08) !important;
+  color: #f4f7fb !important;
+  isolation: isolate !important;
+  padding: 0 !important;
+}
+
+#shareTaskModal .shareTaskPrimitiveModal::before{
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .72),
+    inset 0 18px 38px rgba(255, 255, 255, .03);
+  pointer-events: none;
+}
+
+#shareTaskModal .shareTaskPrimitiveModal::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
+  pointer-events: none;
+}
+
+#shareTaskModal .shareTaskPrimitiveHeader{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 36px 8px;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .45),
+    0 2px 0 rgba(255, 255, 255, .06),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .78),
+    inset 0 -9px 16px rgba(0, 0, 0, .28);
+}
+
+#shareTaskModal .shareTaskPrimitiveHeader h2{
+  margin: 0;
+  color: #f7f8fb;
+  font-family: var(--font-geist-sans), var(--font-readable);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .72);
+}
+
+#shareTaskModal .shareTaskPrimitiveHeader .modalSubtext{
+  max-width: 640px;
+  margin: 0 !important;
+  color: rgba(247, 249, 252, .94) !important;
+  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .76);
+}
+
+#shareTaskModal .shareTaskPrimitiveBody{
+  min-height: 250px;
+  overflow: auto;
+  padding: 38px 46px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74);
+}
+
+#shareTaskModal .shareTaskPrimitiveFooter{
+  display: flex !important;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center !important;
+  gap: clamp(22px, 5vw, 52px) !important;
+  margin-top: 0 !important;
+  padding: 22px 36px 24px;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, .68),
+    0 -1px 0 rgba(255, 255, 255, .05);
+}
+
+#shareTaskModal .shareTaskPrimitiveFooter #shareTaskConfirmBtn[hidden]{
+  display: none !important;
+}
+
 @media (max-width: 980px){
 #shareTaskModal .modal{
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom));
@@ -1076,14 +1202,54 @@
   }
 }
 
+@media (max-width: 640px){
+  #shareTaskModal .shareTaskPrimitiveModal{
+    width: min(100%, calc(100vw - 20px)) !important;
+    min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
+    border-radius: 12px !important;
+  }
+
+  #shareTaskModal .shareTaskPrimitiveModal::before{
+    inset: 6px;
+    border-radius: 8px;
+  }
+
+  #shareTaskModal .shareTaskPrimitiveHeader{
+    min-height: 56px;
+    padding: 9px 20px 7px;
+  }
+
+  #shareTaskModal .shareTaskPrimitiveBody{
+    min-height: 210px;
+    padding: 34px 24px;
+  }
+
+  #shareTaskModal .shareTaskPrimitiveFooter{
+    min-height: 92px;
+    flex-wrap: wrap;
+    gap: 16px !important;
+    padding: 22px;
+  }
+}
+
+#shareTaskModal .modalDropdownField .modalDropdownHelp{
+  margin: 0 0 8px !important;
+}
+
+#shareTaskModal .settingsDetailNote{
+  font-size: 13px;
+}
+
 #shareTaskFriendsField label{
-  margin-bottom: 6px;
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
 }
 
 #shareTaskFriendsList{
-  margin-top: 2px;
+  margin-top: 4px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   max-height: min(32dvh, 220px);
   overflow: auto;
   padding-right: 2px;
@@ -1092,26 +1258,78 @@
 #shareTaskModal .shareTaskFriendOption{
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  align-items: start;
+  gap: 10px;
+  padding: 0;
   border: 0;
-  background: rgba(255,255,255,.02);
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(238, 242, 246, .92);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
+  letter-spacing: 0;
 }
 
 #shareTaskModal .shareTaskFriendOption input[type="checkbox"]{
-  accent-color: var(--accent, #c9ff24);
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  border: 1px solid rgba(170, 178, 190, .72);
+  border-radius: 0;
+  background: rgba(26, 27, 32, .72);
+  box-shadow: none;
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:hover{
+  background: #1a1b20;
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:checked{
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: none;
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:checked:hover{
+  background: var(--accent);
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:checked::after{
+  content: "";
+  width: 8px;
+  height: 5px;
+  border: solid #050607;
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:focus-visible{
+  outline: 1px solid rgba(170, 178, 190, .5);
+  outline-offset: 2px;
+}
+
+#shareTaskModal .shareTaskFriendOption input[type="checkbox"]:disabled{
+  cursor: not-allowed;
+  opacity: .55;
 }
 
 #shareTaskModal .shareTaskFriendOptionLabel{
   min-width: 0;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable);
+  overflow-wrap: anywhere;
 }
 
 #shareTaskModal .shareTaskFriendOptionState{
-  font-size: 11px;
+  color: rgba(170, 178, 190, .88);
+  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-size: 13px;
   font-style: italic;
-  color: rgba(188,214,230,.72);
   justify-self: end;
 }
 
@@ -1124,14 +1342,202 @@
   font-size: 11px;
 }
 
-#sharedTaskSummaryModal .modal{
-  border: 0 !important;
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveModal{
+  position: relative !important;
+  display: grid !important;
+  width: min(860px, calc(100vw - 28px)) !important;
+  min-height: min(520px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom))) !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow: hidden !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  border-top: 1px solid rgba(255, 255, 255, .2) !important;
+  border-right: 1px solid rgba(255, 255, 255, .08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82) !important;
+  border-left: 1px solid rgba(255, 255, 255, .08) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31 !important;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08) !important;
+  color: #f4f7fb !important;
+  isolation: isolate !important;
+  padding: 0 !important;
   outline: 0 !important;
-  width: min(92vw, 720px);
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveModal::before{
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .72),
+    inset 0 18px 38px rgba(255, 255, 255, .03);
+  pointer-events: none;
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveModal::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
+  pointer-events: none;
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveHeader{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 36px 8px;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .45),
+    0 2px 0 rgba(255, 255, 255, .06),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .78),
+    inset 0 -9px 16px rgba(0, 0, 0, .28);
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveHeader h2{
+  margin: 0;
+  color: #f7f8fb;
+  font-family: var(--font-geist-sans), var(--font-readable);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .72);
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveBody{
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 36px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74);
+}
+
+#sharedTaskSummaryModal .sharedTaskSummaryPrimitiveFooter{
+  display: flex !important;
+  min-height: 88px;
+  align-items: center;
+  justify-content: center !important;
+  gap: clamp(22px, 5vw, 52px) !important;
+  margin-top: 0 !important;
+  padding: 20px 36px 22px;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, .68),
+    0 -1px 0 rgba(255, 255, 255, .05);
+}
+
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn{
+  position: relative;
+  box-sizing: border-box;
+  min-width: min(178px, 38vw);
+  height: 48px;
+  min-height: 0;
+  padding: 0 28px;
+  border: 4px solid #020509 !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+  color: #f7f8fb !important;
+  cursor: pointer;
+  overflow: hidden !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 11px !important;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
+  transition:
+    filter .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:hover:not(:disabled),
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:focus-visible{
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:active{
+  transform: translateY(3px);
+}
+
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:focus-visible{
+  outline: 1px solid rgba(126, 243, 255, .95);
+  outline-offset: 6px;
+}
+
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn::before,
+#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn::after{
+  content: none;
+}
+
+@media (max-width: 640px){
+  #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveModal{
+    width: min(100%, calc(100vw - 20px)) !important;
+    min-height: min(460px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
+    border-radius: 12px !important;
+  }
+
+  #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveModal::before{
+    inset: 6px;
+    border-radius: 8px;
+  }
+
+  #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveHeader{
+    min-height: 56px;
+    padding: 9px 20px 7px;
+  }
+
+  #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveBody{
+    padding: 22px 18px;
+  }
+
+  #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveFooter{
+    min-height: 84px;
+    flex-wrap: wrap;
+    gap: 16px !important;
+    padding: 18px 22px 20px;
+  }
 }
 
 #sharedTaskSummaryModal .sharedTaskSummaryBody{
-  margin-top: 8px;
+  margin: 0;
 }
 
 #sharedTaskSummaryModal .sharedTaskSummaryCard{
@@ -1167,7 +1573,7 @@
 }
 
 #sharedTaskSummaryModal .sharedTaskSummaryActions{
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 #sharedTaskSummaryModal .sharedTaskImportPrompt{
@@ -1963,7 +2369,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 
 body[data-theme="lime"] #shareTaskModal .shareTaskFriendOption{
   border: 0;
-  background: rgba(18,20,24,.96);
+  background: transparent;
 }
 
 body[data-theme="lime"] .friendIdentityUid,

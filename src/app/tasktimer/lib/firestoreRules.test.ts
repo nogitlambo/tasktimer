@@ -98,6 +98,17 @@ describe("firestore shared task summary rules", () => {
     expect(configBlock).toContain('"milestones"');
     expect(configBlock).toContain('"presetIntervalNextSeq"');
   });
+
+  it("does not allow obsolete checkpoint toast fields", () => {
+    const rules = readRules();
+    const taskBlock = functionBlock(rules, "isTaskDoc");
+    const configBlock = functionBlock(rules, "isSharedTaskImportConfig");
+
+    expect(taskBlock).not.toContain("checkpointToastEnabled");
+    expect(taskBlock).not.toContain("checkpointToastMode");
+    expect(configBlock).not.toContain("checkpointToastEnabled");
+    expect(configBlock).not.toContain("checkpointToastMode");
+  });
 });
 
 describe("firestore task document rules", () => {

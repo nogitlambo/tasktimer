@@ -1302,7 +1302,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           {activeStep === "username" ? (
             <AppImg
               className="onboardingProfileSetupImage"
-              src="/onboarding/profile_setup.webp"
+              src="/onboarding/profile_setup.png"
               alt=""
               width={837}
               height={1002}

@@ -41,7 +41,6 @@ function PrimitiveSection({ title, note, code, children, exampleClassName = "" }
 
 export default function PrimitiveGallery() {
   const [switchOn, setSwitchOn] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownValue, setDropdownValue] = useState("standard");
 
@@ -139,10 +138,10 @@ export default function PrimitiveGallery() {
         <PrimitiveSection
           title="Buttons"
           note="Compose button intent with the shared `btn` base and intent/size modifiers."
-          code={`<button className="btn btn-accent" type="button">Primary</button>\n<button className="btn btn-ghost small" type="button">Secondary</button>\n<button className="btn btn-warn" type="button">Destructive</button>`}
+          code={`<button className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">Primary</button>\n<button className="btn btn-ghost" type="button">Secondary</button>\n<button className="btn btn-warn" type="button">Destructive</button>`}
         >
-          <div className="primitiveInlineGrid">
-            <button className="btn btn-accent" type="button">
+          <div className="primitiveInlineGrid primitiveButtonGrid">
+            <button className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">
               Primary
             </button>
             <button className="btn btn-ghost" type="button">
@@ -150,15 +149,6 @@ export default function PrimitiveGallery() {
             </button>
             <button className="btn btn-warn" type="button">
               Destructive
-            </button>
-            <button className="btn btn-ghost small" type="button">
-              Small
-            </button>
-            <button className="btn btn-accent primitiveDisabledButton" type="button" disabled>
-              Disabled
-            </button>
-            <button className="btn btn-ghost isOn" type="button" aria-pressed="true">
-              Selected
             </button>
           </div>
         </PrimitiveSection>
@@ -183,12 +173,25 @@ export default function PrimitiveGallery() {
 
         <PrimitiveSection
           title="Launch Button"
-          note="Use the interactive launch primitive when the primary action needs a tactile launcher treatment."
-          code={`<button className="primitiveLaunchButton" type="button" aria-label="Launch">\n  <AppImg className="primitiveLaunchButtonImage" src="/launch_button.png" alt="" aria-hidden="true" />\n</button>`}
+          note="Use the current Task launch action for primary task starts, preserving the same nested ring, face, and label structure."
+          code={`<button className="btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch" data-action="start" title="Launch" aria-label="Launch" type="button">\n  <span className="taskPrimaryActionRing" aria-hidden="true"></span>\n  <span className="taskPrimaryActionFace">\n    <span className="taskPrimaryActionLabel">\n      <span className="taskPrimaryActionText">\n        <span className="taskPrimaryActionPrimary">Launch</span>\n      </span>\n    </span>\n  </span>\n</button>`}
           exampleClassName="primitiveLaunchExamplePanel"
         >
-          <button className="primitiveLaunchButton" type="button" aria-label="Launch">
-            <AppImg className="primitiveLaunchButtonImage" src="/launch_button.png" alt="" aria-hidden="true" />
+          <button
+            className="btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch primitiveTaskLaunchButton"
+            data-action="start"
+            title="Launch"
+            aria-label="Launch"
+            type="button"
+          >
+            <span className="taskPrimaryActionRing" aria-hidden="true"></span>
+            <span className="taskPrimaryActionFace">
+              <span className="taskPrimaryActionLabel">
+                <span className="taskPrimaryActionText">
+                  <span className="taskPrimaryActionPrimary">Launch</span>
+                </span>
+              </span>
+            </span>
           </button>
         </PrimitiveSection>
 
@@ -203,12 +206,30 @@ export default function PrimitiveGallery() {
 
         <PrimitiveSection
           title="Modal Baseline"
-          note="Standard modals use the shared overlay/modal structure, modal helper text, and confirm action primitives."
-          code={`<div className="overlay standardModalOverlay" style={{ display: "flex" }}>\n  <div className="modal" role="dialog" aria-modal="true" aria-label="Modal preview">\n    <h2>Modal Preview</h2>\n    <p className="modalSubtext">Standard modal helper text.</p>\n    <div className="confirmBtns">...</div>\n  </div>\n</div>`}
+          note="The primitives modal preview uses an isolated visual shell while preserving the expected dialog, helper text, and action patterns."
+          code={`<div className="overlay primitiveLiveOverlay primitiveSciFiModalOverlay" style={{ display: "flex" }}>\n  <div className="primitiveSciFiModal" role="dialog" aria-modal="true" aria-label="Primitive modal example">\n    <header className="primitiveSciFiModalHeader">\n      <h2>Modal Preview</h2>\n    </header>\n    <div className="primitiveSciFiModalBody">\n      <p className="modalSubtext">Standard modal helper text.</p>\n    </div>\n    <footer className="primitiveSciFiModalFooter">\n      <button className="primitiveSciFiModalAction primitiveSciFiModalSecondaryAction">Secondary</button>\n      <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction">Primary</button>\n    </footer>\n  </div>\n</div>`}
+          exampleClassName="primitiveModalPreviewPanel"
         >
-          <button className="btn btn-accent" type="button" onClick={() => setModalOpen(true)}>
-            Open Modal Preview
-          </button>
+          <div className="overlay primitiveLiveOverlay primitiveSciFiModalOverlay" style={{ display: "flex" }}>
+            <div className="primitiveSciFiModal" role="dialog" aria-modal="true" aria-label="Primitive modal example">
+              <header className="primitiveSciFiModalHeader">
+                <h2>Modal Preview</h2>
+              </header>
+              <div className="primitiveSciFiModalBody">
+                <p className="modalSubtext">
+                  This modal uses the standard TaskLaunch modal styling baseline.
+                </p>
+              </div>
+              <footer className="primitiveSciFiModalFooter">
+                <button className="primitiveSciFiModalAction primitiveSciFiModalSecondaryAction" type="button">
+                  Secondary
+                </button>
+                <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">
+                  Primary
+                </button>
+              </footer>
+            </div>
+          </div>
         </PrimitiveSection>
 
         <PrimitiveSection
@@ -299,30 +320,6 @@ export default function PrimitiveGallery() {
         </PrimitiveSection>
       </div>
 
-      {modalOpen ? (
-        <div
-          className="overlay standardModalOverlay primitiveLiveOverlay"
-          style={{ display: "flex" }}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setModalOpen(false);
-          }}
-        >
-          <div className="modal" role="dialog" aria-modal="true" aria-label="Primitive modal example">
-            <h2>Modal Preview</h2>
-            <p className="modalSubtext">
-              This modal uses the standard TaskLaunch modal styling baseline.
-            </p>
-            <div className="confirmBtns">
-              <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}>
-                Secondary
-              </button>
-              <button className="btn btn-accent" type="button" onClick={() => setModalOpen(false)}>
-                Primary
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }
