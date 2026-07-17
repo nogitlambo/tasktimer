@@ -17,15 +17,31 @@ export default function SignOutConfirmModal({ open, busy, onCancel, onConfirm }:
   if (!open) return null;
 
   const modal = (
-    <div className="overlay" id="signOutConfirmOverlay" aria-hidden="false" style={{ display: "flex" }} onClick={busy ? undefined : onCancel}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Sign Out" onClick={(event) => event.stopPropagation()}>
+    <div
+      className="overlay primitiveSciFiModalOverlay signOutPrimitiveOverlay"
+      id="signOutConfirmOverlay"
+      aria-hidden="false"
+      style={{ display: "flex" }}
+      onClick={busy ? undefined : onCancel}
+    >
+      <div className="modal signOutPrimitiveModal" role="dialog" aria-modal="true" aria-label="Sign Out" onClick={(event) => event.stopPropagation()}>
         <h2>Sign Out</h2>
         <p className="modalSubtext confirmText">Sign out of TaskLaunch on this device?</p>
         <div className="confirmBtns">
-          <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={busy}>
+          <button
+            className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction signOutPrimitiveAction signOutPrimitiveSecondaryAction"
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+          >
             Cancel
           </button>
-          <button className="btn btn-warn" type="button" onClick={onConfirm} disabled={busy}>
+          <button
+            className="btn btn-warn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+          >
             {getSignOutConfirmActionLabel(busy)}
           </button>
         </div>

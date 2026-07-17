@@ -122,16 +122,16 @@ export default function FriendsOverlays() {
         </div>
       </div>
 
-      <div className="overlay" id="friendProfileModal" style={{ display: "none" }}>
-        <div className="modal friendUserSummaryModal" role="dialog" aria-modal="true" aria-label="User Summary">
+      <div className="overlay primitiveSciFiModalOverlay friendProfilePrimitiveOverlay" id="friendProfileModal" style={{ display: "none" }}>
+        <div className="modal friendUserSummaryModal friendProfilePrimitiveModal" role="dialog" aria-modal="true" aria-label="User Summary">
           <span className="friendUserSummaryBorderTrace" aria-hidden="true">
             <span className="friendUserSummaryBorderTraceEdge isTop" />
             <span className="friendUserSummaryBorderTraceEdge isRight" />
             <span className="friendUserSummaryBorderTraceEdge isBottom" />
             <span className="friendUserSummaryBorderTraceEdge isLeft" />
           </span>
-          <div className="friendUserSummaryRevealBody">
-            <div className="friendUserSummaryHeaderRow">
+          <div className="friendUserSummaryRevealBody friendProfilePrimitiveBody">
+            <div className="friendUserSummaryHeaderRow friendProfilePrimitiveHeader">
               <p className="modalSubtext friendUserSummaryTitle">Friend Info</p>
             </div>
             <div className="friendUserSummaryHeader">
@@ -174,11 +174,11 @@ export default function FriendsOverlays() {
                 <span>Tasks Completed</span>
               </div>
             </div>
-            <div className="confirmBtns friendProfileCloseRow">
-              <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+            <div className="confirmBtns friendProfileCloseRow friendProfilePrimitiveFooter">
+              <button className="friendUserSummaryRemoveBtn primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendProfilePrimitiveAction friendProfilePrimitiveDestructiveAction" id="friendProfileDeleteBtn" type="button">
                 Unfriend
               </button>
-              <button className="btn btn-ghost" id="friendProfileCloseBtn" type="button">
+              <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendProfilePrimitiveAction friendProfilePrimitiveSecondaryAction" id="friendProfileCloseBtn" type="button">
                 Close
               </button>
             </div>

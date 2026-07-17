@@ -1,25 +1,27 @@
 
 export default function ExportTaskOverlay() {
   return (
-    <div className="overlay" id="exportTaskOverlay">
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Export Task">
-        <div className="editHead">
+    <div className="overlay primitiveSciFiModalOverlay exportTaskPrimitiveOverlay" id="exportTaskOverlay">
+      <div className="modal exportTaskPrimitiveModal" role="dialog" aria-modal="true" aria-label="Export Task">
+        <header className="editHead exportTaskPrimitiveHeader">
           <h2 id="exportTaskTitle">Export Task</h2>
+        </header>
+        <div className="exportTaskPrimitiveBody">
+          <div className="chkRow" id="exportTaskIncludeHistoryRow">
+            <input type="checkbox" id="exportTaskIncludeHistory" />
+            <label htmlFor="exportTaskIncludeHistory" id="exportTaskIncludeHistoryLabel">
+              Include history entries
+            </label>
+          </div>
         </div>
-        <div className="chkRow" id="exportTaskIncludeHistoryRow">
-          <input type="checkbox" id="exportTaskIncludeHistory" />
-          <label htmlFor="exportTaskIncludeHistory" id="exportTaskIncludeHistoryLabel">
-            Include history entries
-          </label>
-        </div>
-        <div className="footerBtns">
-          <button className="btn btn-ghost" id="exportTaskCancelBtn" type="button">
+        <footer className="footerBtns exportTaskPrimitiveFooter">
+          <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction exportTaskPrimitiveAction exportTaskPrimitiveSecondaryAction" id="exportTaskCancelBtn" type="button">
             Cancel
           </button>
-          <button className="btn btn-accent" id="exportTaskConfirmBtn" type="button">
+          <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction exportTaskPrimitiveAction exportTaskPrimitivePrimaryAction" id="exportTaskConfirmBtn" type="button">
             Export
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

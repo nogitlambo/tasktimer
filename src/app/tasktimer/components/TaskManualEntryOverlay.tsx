@@ -2,12 +2,14 @@ import AppImg from "@/components/AppImg";
 
 export default function TaskManualEntryOverlay() {
   return (
-    <div className="overlay" id="taskManualEntryOverlay" style={{ display: "none" }}>
-      <div className="modal hmManualEntryModal" role="dialog" aria-modal="true" aria-label="Add manual history entry">
-        <h2 id="taskManualEntryTitle">Add Manual Entry for This Task</h2>
-        <div className="modalSubtext" id="taskManualEntryMeta" hidden />
+    <div className="overlay primitiveSciFiModalOverlay taskManualEntryPrimitiveOverlay" id="taskManualEntryOverlay" style={{ display: "none" }}>
+      <div className="modal hmManualEntryModal taskManualEntryPrimitiveModal" role="dialog" aria-modal="true" aria-label="Add manual history entry">
+        <header className="taskManualEntryPrimitiveHeader">
+          <h2 id="taskManualEntryTitle">Add Manual Entry for This Task</h2>
+          <div className="modalSubtext" id="taskManualEntryMeta" hidden />
+        </header>
 
-        <div className="hmManualEntryModalBody">
+        <div className="hmManualEntryModalBody taskManualEntryPrimitiveBody">
           <div className="hmManualEntryTopRow">
             <div className="hmManualEntryField hmManualEntryDateTimeField">
               <label className="hmManualEntryLabel" htmlFor="taskManualDateTimeInput">
@@ -118,14 +120,14 @@ export default function TaskManualEntryOverlay() {
           <div className="hmManualEntryError" id="taskManualEntryError" style={{ display: "none" }} />
         </div>
 
-        <div className="footerBtns hmManualEntryFooterBtns">
-          <button className="btn btn-ghost" id="taskManualEntryCancelBtn" type="button">
+        <footer className="footerBtns hmManualEntryFooterBtns taskManualEntryPrimitiveFooter">
+          <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitiveSecondaryAction" id="taskManualEntryCancelBtn" type="button">
             Cancel
           </button>
-          <button className="btn btn-accent" id="taskManualEntrySaveBtn" type="button">
+          <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitivePrimaryAction" id="taskManualEntrySaveBtn" type="button">
             Save
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

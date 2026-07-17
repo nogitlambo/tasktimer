@@ -1733,16 +1733,22 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       </TaskTimerAppFrame>
 
       {selectedLeaderboardProfile ? (
-        <div className="overlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
-          <div className="modal leaderboardPositionModal isLeaderboardPositionRevealing" role="dialog" aria-modal="true" aria-label="User summary" onClick={(event) => event.stopPropagation()}>
+        <div className="overlay primitiveSciFiModalOverlay leaderboardPositionPrimitiveOverlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>
+          <div
+            className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"
+            role="dialog"
+            aria-modal="true"
+            aria-label="User summary"
+            onClick={(event) => event.stopPropagation()}
+          >
             <span className="friendUserSummaryBorderTrace" aria-hidden="true">
               <span className="friendUserSummaryBorderTraceEdge isTop" />
               <span className="friendUserSummaryBorderTraceEdge isRight" />
               <span className="friendUserSummaryBorderTraceEdge isBottom" />
               <span className="friendUserSummaryBorderTraceEdge isLeft" />
             </span>
-            <div className="leaderboardPositionRevealBody">
-              <div className="leaderboardPositionModalHeaderRow">
+            <div className="leaderboardPositionRevealBody leaderboardPositionPrimitiveBody">
+              <div className="leaderboardPositionModalHeaderRow leaderboardPositionPrimitiveHeader">
                 <p className="modalSubtext leaderboardUserSummaryTitle">User Summary</p>
               </div>
               <div className="leaderboardPositionModalHeader">
@@ -1788,8 +1794,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                   <span>Tasks Completed</span>
                 </div>
               </div>
-              <div className="confirmBtns">
-                <button className="btn btn-ghost" type="button" onClick={closeLeaderboardPositionModal}>
+              <div className="confirmBtns leaderboardPositionPrimitiveFooter">
+                <button
+                  className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction leaderboardPositionPrimitiveAction leaderboardPositionPrimitiveSecondaryAction"
+                  type="button"
+                  onClick={closeLeaderboardPositionModal}
+                >
                   Close
                 </button>
               </div>

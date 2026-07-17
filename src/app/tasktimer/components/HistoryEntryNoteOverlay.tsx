@@ -2,16 +2,16 @@ import AppImg from "@/components/AppImg";
 
 export default function HistoryEntryNoteOverlay() {
   return (
-    <div className="overlay" id="historyEntryNoteOverlay">
-      <div className="modal historyEntrySummaryModal" role="dialog" aria-modal="true" aria-label="Session Summary">
-        <div className="historyEntryNoteHeader">
+    <div className="overlay primitiveSciFiModalOverlay historyEntrySummaryPrimitiveOverlay" id="historyEntryNoteOverlay">
+      <div className="modal historyEntrySummaryModal historyEntrySummaryPrimitiveModal" role="dialog" aria-modal="true" aria-label="Session Summary">
+        <div className="historyEntryNoteHeader historyEntrySummaryPrimitiveHeader">
           <h2 id="historyEntryNoteTitle">Task</h2>
           <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
         </div>
-        <div className="historyEntryNoteBody" id="historyEntryNoteBody">
+        <div className="historyEntryNoteBody historyEntrySummaryPrimitiveBody" id="historyEntryNoteBody">
           No session summary available.
         </div>
-        <div className="historyEntryNoteEditor" id="historyEntryNoteEditor" style={{ display: "none" }}>
+        <div className="historyEntryNoteEditor historyEntrySummaryPrimitiveEditor" id="historyEntryNoteEditor" style={{ display: "none" }}>
           <label className="historyEntryNoteEditorLabel" htmlFor="historyEntryNoteInput">
             Session note
           </label>
@@ -50,17 +50,32 @@ export default function HistoryEntryNoteOverlay() {
             <div className="sessionNoteAttachments" id="historyEntryNoteAttachments" aria-live="polite" />
           </div>
         </div>
-        <div className="confirmBtns historyEntrySummaryActions">
-          <button className="btn btn-ghost" id="historyEntryNoteCancelBtn" type="button" style={{ display: "none" }}>
+        <div className="confirmBtns historyEntrySummaryActions historyEntrySummaryPrimitiveFooter">
+          <button
+            className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction"
+            id="historyEntryNoteCancelBtn"
+            type="button"
+            style={{ display: "none" }}
+          >
             Cancel
           </button>
-          <button className="btn btn-accent" id="historyEntryNoteSaveBtn" type="button" style={{ display: "none" }}>
+          <button
+            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitivePrimaryAction"
+            id="historyEntryNoteSaveBtn"
+            type="button"
+            style={{ display: "none" }}
+          >
             Save Note
           </button>
-          <button className="btn btn-accent historyEntryNoteSaveAndCloseBtn" id="historyEntryNoteSaveAndCloseBtn" type="button" style={{ display: "none" }}>
+          <button
+            className="btn btn-accent historyEntryNoteSaveAndCloseBtn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitivePrimaryAction"
+            id="historyEntryNoteSaveAndCloseBtn"
+            type="button"
+            style={{ display: "none" }}
+          >
             Save &amp; Close
           </button>
-          <button className="btn btn-ghost closePopup" type="button">
+          <button className="btn btn-ghost closePopup modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction" type="button">
             Close
           </button>
         </div>
