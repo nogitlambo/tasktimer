@@ -14,11 +14,11 @@ describe("SignOutConfirmModal", () => {
       })
     );
 
-    expect(html).toContain('class="overlay"');
+    expect(html).toContain('class="overlay primitiveSciFiModalOverlay signOutPrimitiveOverlay"');
     expect(html).toContain('id="signOutConfirmOverlay"');
     expect(html).toContain('style="display:flex"');
     expect(html).toContain('aria-hidden="false"');
-    expect(html).toContain('class="modal"');
+    expect(html).toContain('class="modal signOutPrimitiveModal"');
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain('aria-label="Sign Out"');
@@ -26,8 +26,12 @@ describe("SignOutConfirmModal", () => {
     expect(html).toContain("Sign out of TaskLaunch on this device?");
     expect(html).toContain('class="modalSubtext confirmText"');
     expect(html).toContain('class="confirmBtns"');
-    expect(html).toContain('class="btn btn-ghost"');
-    expect(html).toContain('class="btn btn-warn"');
+    expect(html).toContain(
+      'class="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction signOutPrimitiveAction signOutPrimitiveSecondaryAction"'
+    );
+    expect(html).toContain(
+      'class="btn btn-warn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"'
+    );
   });
 
   it("uses the busy confirmation label", () => {

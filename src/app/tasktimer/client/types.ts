@@ -86,6 +86,7 @@ export type TaskTimerMutableState = {
   taskOrderBy: TaskOrderBy;
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
+  timeGoalCompleteNextTasksEnabled: boolean;
   dashboardPreviousWeekVisible: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;

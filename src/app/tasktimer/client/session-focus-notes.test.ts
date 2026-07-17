@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
 import type { TaskTimerSessionContext } from "./context";
@@ -395,6 +396,17 @@ describe("task timer session focus notes", () => {
     expect(container.getStatusNode()?.className).toBe("sessionNoteAttachmentStatus");
     expect(container.getStatusNode()?.role).toBe("status");
     expect(container.getStatusNode()?.textContent).toBe("Uploading...");
+  });
+
+  it("animates the visible upload status with CSS while keeping stable status text", () => {
+    const css = readFileSync("src/app/tasktimer/styles/00-base.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain(".sessionNoteAttachmentStatus::before");
+    expect(css).toContain('content:"Uploading";');
+    expect(css).toContain(".sessionNoteAttachmentStatus::after");
+    expect(css).toContain("@keyframes sessionNoteAttachmentDots");
+    expect(css).toContain("@keyframes sessionNoteAttachmentStatusPulse");
+    expect(css).toContain("@media (prefers-reduced-motion: reduce)");
   });
 
   it("clears the upload status row without reopening an overlay", () => {

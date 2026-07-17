@@ -101,6 +101,13 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
             </div>
             <button className="switch" id="taskAutoFocusOnLaunchToggle" type="button" role="switch" aria-checked="false" />
           </div>
+          <div className="toggleRow" id="timeGoalCompleteNextTasksToggleRow">
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Show next task tiles after completion</span>
+              <span className="settingsPreferenceControlHelp">Shows incomplete task tiles in the task complete modal so you can launch the next task immediately.</span>
+            </div>
+            <button className="switch" id="timeGoalCompleteNextTasksToggle" type="button" role="switch" aria-checked="false" />
+          </div>
           <div className="unitRow" id="taskStartupModuleRow">
             <div className="settingsPreferenceControlCopy">
               <span className="settingsPreferenceControlLabel">Default Module on App Startup</span>

@@ -41,7 +41,7 @@ describe("session note attachments", () => {
     });
     expect(validateSessionNoteAttachmentFile({ name: "large.pdf", size: SESSION_NOTE_MAX_FILE_BYTES + 1, type: "application/pdf" })).toEqual({
       ok: false,
-      message: "Files must be 10 MB or smaller.",
+      message: "File size exceeds the max 10MB limit",
     });
   });
 

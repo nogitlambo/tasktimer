@@ -278,6 +278,8 @@ const els = {
   taskStartupModuleSelect: documentRef.getElementById("taskStartupModuleSelect") as HTMLSelectElement | null,
   taskAutoFocusOnLaunchToggleRow: documentRef.getElementById("taskAutoFocusOnLaunchToggleRow"),
   taskAutoFocusOnLaunchToggle: documentRef.getElementById("taskAutoFocusOnLaunchToggle"),
+  timeGoalCompleteNextTasksToggleRow: documentRef.getElementById("timeGoalCompleteNextTasksToggleRow"),
+  timeGoalCompleteNextTasksToggle: documentRef.getElementById("timeGoalCompleteNextTasksToggle"),
   dashboardPreviousWeekToggleRow: documentRef.getElementById("dashboardPreviousWeekToggleRow"),
   dashboardPreviousWeekToggle: documentRef.getElementById("dashboardPreviousWeekToggle"),
   taskFocusDndSectionHead: documentRef.getElementById("taskFocusDndSectionHead"),

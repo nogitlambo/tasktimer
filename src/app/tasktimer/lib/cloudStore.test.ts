@@ -52,6 +52,7 @@ describe("normalizeUserPreferencesDocument", () => {
     expect({ ...normalizedLegacyDocument, updatedAtMs: nowMs }).toEqual(buildDefaultUserPreferences(nowMs));
     expect(normalizedLegacyDocument.updatedAtMs).toBe(0);
     expect(buildDefaultUserPreferences(nowMs).autoFocusOnTaskLaunchEnabled).toBe(false);
+    expect(buildDefaultUserPreferences(nowMs).timeGoalCompleteNextTasksEnabled).toBe(false);
   });
 
   it.each([
@@ -64,6 +65,7 @@ describe("normalizeUserPreferencesDocument", () => {
     ["taskOrderBy", "dateAddedDesc", "dateAddedDesc"],
     ["dynamicColorsEnabled", false, false],
     ["autoFocusOnTaskLaunchEnabled", true, true],
+    ["timeGoalCompleteNextTasksEnabled", true, true],
     ["dashboardPreviousWeekVisible", false, false],
     ["mobilePushAlertsEnabled", true, true],
     ["webPushAlertsEnabled", true, true],

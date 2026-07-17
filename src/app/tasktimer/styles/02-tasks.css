@@ -5092,6 +5092,32 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   filter: saturate(.86) brightness(.9);
 }
 
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction.isXpAwardReceiving{
+  color: #c9ff24;
+  text-shadow: 0 0 12px rgba(201, 255, 36, 0.42);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction.isXpAwardReceiving .taskPrimaryActionFace{
+  border-color: rgba(201, 255, 36, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(201, 255, 36, 0.16), 0 0 22px rgba(201, 255, 36, 0.22);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.taskPrimaryAction.isXpAwardImpact .taskPrimaryActionFace{
+  animation: taskPrimaryActionXpImpact 220ms cubic-bezier(.2,.78,.18,1);
+}
+
+@keyframes taskPrimaryActionXpImpact{
+  0%{
+    transform: translateZ(0) scale(1);
+  }
+  42%{
+    transform: translateZ(0) scale(0.92);
+  }
+  100%{
+    transform: translateZ(0) scale(1);
+  }
+}
+
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:hover:not(:disabled),
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:hover:not(:disabled),
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions > .btn.btn-accent.taskPrimaryAction.taskPrimaryActionLaunch[data-action="start"]:focus-visible:not(:disabled),

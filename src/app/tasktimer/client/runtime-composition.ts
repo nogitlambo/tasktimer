@@ -100,6 +100,7 @@ export function createTaskTimerRuntimeComposition(
     taskOrderBy: initialState.taskOrderBy,
     dynamicColorsEnabled: initialState.dynamicColorsEnabled,
     autoFocusOnTaskLaunchEnabled: initialState.autoFocusOnTaskLaunchEnabled,
+    timeGoalCompleteNextTasksEnabled: initialState.timeGoalCompleteNextTasksEnabled,
     dashboardPreviousWeekVisible: initialState.dashboardPreviousWeekVisible,
     mobilePushAlertsEnabled: initialState.mobilePushAlertsEnabled,
     webPushAlertsEnabled: initialState.webPushAlertsEnabled,

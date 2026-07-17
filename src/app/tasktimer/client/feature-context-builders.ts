@@ -140,6 +140,7 @@ type CreatePersistenceOptionsArgs = {
   loadTaskViewPreference: () => void;
   loadTaskOrderByPreference: () => void;
   loadAutoFocusOnTaskLaunchSetting: () => void;
+  loadTimeGoalCompleteNextTasksSetting: () => void;
   loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
@@ -543,6 +544,8 @@ type CreateSessionOptionsArgs = {
   normalizedPathname: () => string;
   savePendingTaskJump: (taskId: string) => void;
   jumpToTaskById: (taskId: string) => void;
+  jumpToTaskAndHighlight: (taskId: string, opts?: { behavior?: ScrollBehavior }) => void;
+  applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   escapeHtmlUI: (value: unknown) => string;
   formatTime: (value: number) => string;
   formatMainTaskElapsed: (elapsedMs: number, running?: boolean) => string;
@@ -903,6 +906,10 @@ export function createTaskTimerPreferencesContext(
     setAutoFocusOnTaskLaunchEnabledState: (value) => {
       args.preferencesState.set("autoFocusOnTaskLaunchEnabled", value);
     },
+    getTimeGoalCompleteNextTasksEnabled: () => asType<boolean>(args.preferencesState.get("timeGoalCompleteNextTasksEnabled")),
+    setTimeGoalCompleteNextTasksEnabledState: (value) => {
+      args.preferencesState.set("timeGoalCompleteNextTasksEnabled", value);
+    },
     getDashboardPreviousWeekVisible: () => args.preferencesState.get("dashboardPreviousWeekVisible") !== false,
     setDashboardPreviousWeekVisibleState: (value) => {
       args.preferencesState.set("dashboardPreviousWeekVisible", value);
@@ -1047,6 +1054,7 @@ export function createTaskTimerPersistenceContext(
     loadTaskViewPreference: args.loadTaskViewPreference,
     loadTaskOrderByPreference: args.loadTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting: args.loadAutoFocusOnTaskLaunchSetting,
+    loadTimeGoalCompleteNextTasksSetting: args.loadTimeGoalCompleteNextTasksSetting,
     loadDashboardPreviousWeekSetting: args.loadDashboardPreviousWeekSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
@@ -1431,6 +1439,7 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     getCheckpointFiredKeysByTaskId: args.getCheckpointFiredKeysByTaskId,
     getCheckpointBaselineSecByTaskId: args.getCheckpointBaselineSecByTaskId,
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
+    getTimeGoalCompleteNextTasksEnabled: () => args.preferencesState.get("timeGoalCompleteNextTasksEnabled") === true,
     getAchievementSoundsEnabled: () => args.preferencesState.get("achievementSoundsEnabled") !== false,
     getInteractionHapticsEnabled: () => asType<boolean>(args.preferencesState.get("interactionHapticsEnabled")),
     getInteractionHapticsIntensity: () =>
@@ -1453,6 +1462,8 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     normalizedPathname: args.normalizedPathname,
     savePendingTaskJump: args.savePendingTaskJump,
     jumpToTaskById: args.jumpToTaskById,
+    jumpToTaskAndHighlight: args.jumpToTaskAndHighlight,
+    applyAppPage: args.applyAppPage,
     escapeHtmlUI: args.escapeHtmlUI,
     formatTime: args.formatTime,
     formatMainTaskElapsed: args.formatMainTaskElapsed,

@@ -233,6 +233,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.meta.textContent).toBe("Focus");
     expect(h.body.innerHTML).toContain("Session note");
     expect(h.opened).toEqual([h.overlay]);
+    expect(h.closeBtn.textContent).toBe("Close");
   });
 
   it("renders aggregate and session XP values without modal replay buttons", () => {
@@ -258,12 +259,13 @@ describe("createHistoryEntrySummaryInteraction", () => {
     ]);
 
     expect(h.body.innerHTML).toContain("historyEntrySummaryAggregateCard historyEntrySummarySharedCard");
-    expect(h.body.innerHTML).toContain("historyEntrySummaryAggregateTitle");
+    expect(h.body.innerHTML).not.toContain("historyEntrySummaryAggregateTitle");
+    expect(h.body.innerHTML).toContain("Date Range:");
     expect(h.body.innerHTML).toContain("Total Time");
     expect(h.body.innerHTML).toContain("Sessions");
     expect(h.body.innerHTML).toContain("2 sessions");
     expect(h.body.innerHTML).not.toContain('data-history-summary-action="trigger-xp-award"');
-    expect(h.body.innerHTML.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(3);
+    expect(h.body.innerHTML.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(1);
     expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
     expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">20</div>');
     expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">12</div>');
@@ -368,7 +370,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(mobile.cardInput.placeholder).toBe("Tap to add note");
   });
 
-  it("begins card note editing and keeps close visible while exposing save-and-close only for non-empty drafts", () => {
+  it("begins card note editing and turns close into cancel while exposing save-and-close only for non-empty drafts", () => {
     const h = createHarness();
     const { trigger, input } = triggerStub();
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
@@ -386,7 +388,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.focus).toHaveBeenCalledTimes(1);
     expect(h.closeBtn.style.display).toBe("");
     expect(h.closeBtn.hidden).toBe(false);
-    expect(h.closeBtn.textContent).toBe("");
+    expect(h.closeBtn.textContent).toBe("Cancel");
     expect(h.cancelBtn.hidden).toBe(true);
     expect(h.saveBtn.hidden).toBe(true);
     expect(h.cancelBtn.style.display).toBe("none");
@@ -471,6 +473,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     expect(h.editorInput.value).toBe("Updated note");
     expect(h.closeBtn.style.display).toBe("");
+    expect(h.closeBtn.textContent).toBe("Cancel");
     expect(h.saveAndCloseBtn.style.display).toBe("");
     expect(input.style.height).toBe("180px");
     expect(input.style.overflowY).toBe("hidden");
@@ -480,6 +483,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     h.interaction.syncInputMirror("   ");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
     expect(h.saveAndCloseBtn.hidden).toBe(true);
+    expect(h.closeBtn.textContent).toBe("Cancel");
   });
 
   it("collapses the active inline note to compact height while preserving the draft and edit state", () => {
@@ -741,6 +745,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(first.input.classList.contains("isActiveEditing")).toBe(false);
     expect(second.input.classList.contains("isActiveEditing")).toBe(false);
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(h.closeBtn.textContent).toBe("Close");
   });
 
   it("cancels editing and restores the stored dataset note", () => {
@@ -765,6 +770,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
     expect(input.style.height).toBe("");
     expect(input.style.overflowY).toBe("");
+    expect(h.closeBtn.textContent).toBe("Close");
   });
 
   it("discards the active draft and restores the stored note", () => {
@@ -785,6 +791,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.editorInput.value).toBe("Original note");
     expect(input.value).toBe("Original note");
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
+    expect(h.closeBtn.textContent).toBe("Close");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
   });
 

@@ -40,7 +40,6 @@ function formatXp(value: number) {
 export function getAccountSignOutActionCopy(signOutBusy: boolean) {
   return {
     label: signOutBusy ? "Signing Out" : "Sign Out",
-    description: "Log out of your account",
   };
 }
 
@@ -196,6 +195,14 @@ export default function AccountScreen() {
                       <p className="accountProfileBio">
                         Member since {formatMemberSinceDate(account.authMemberSince)}.
                       </p>
+                      <button
+                        className="accountProfileInlineDeleteAction"
+                        type="button"
+                        onClick={() => account.setShowDeleteAccountConfirm(true)}
+                        disabled={account.authBusy}
+                      >
+                        Delete Account
+                      </button>
                     </div>
                   </div>
 
@@ -233,7 +240,6 @@ export default function AccountScreen() {
                       <AppImg src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
                       <span>
                         <strong>{signOutActionCopy.label}</strong>
-                        <small>{signOutActionCopy.description}</small>
                       </span>
                     </button>
                   </div>
@@ -247,9 +253,6 @@ export default function AccountScreen() {
                     {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
                   </div>
 
-                  <button className="btn btn-ghost accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
-                    Back
-                  </button>
                 </section>
                 ) : (
                   <section className="accountProfilePage accountProfileLoadingPage" aria-label="Loading account profile" aria-busy="true">
@@ -262,6 +265,11 @@ export default function AccountScreen() {
                     </div>
                   </section>
                 )}
+              </div>
+              <div className="accountMobileBackFooter">
+                <button className="btn btn-ghost small modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+                  Back
+                </button>
               </div>
             </main>
           </div>

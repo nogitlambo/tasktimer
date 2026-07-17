@@ -464,7 +464,43 @@ describe("task list ui drag ordering", () => {
 
       expect(querySelector).toHaveBeenCalledTimes(2);
       expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center", inline: "nearest" });
       expect(delayedTaskCard.classList.contains("isNewTaskGlow")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("supports instant task highlight scrolling", () => {
+    vi.useFakeTimers();
+    try {
+      const harness = createHarness();
+      const scrollIntoView = vi.fn();
+      const taskCard = harness.list.children[0] as FakeElement & { scrollIntoView: typeof scrollIntoView };
+      taskCard.scrollIntoView = scrollIntoView;
+      vi.spyOn(harness.list, "querySelector").mockReturnValue(taskCard as unknown as FakeElement);
+      const ui = createTaskTimerTaskListUi({
+        els: { taskList: harness.list as unknown as HTMLElement } as never,
+        on: (() => {}) as never,
+        runtime: { newTaskHighlightTimer: null } as never,
+        getTasks: () => harness.tasks,
+        setTasks: () => {},
+        getCurrentAppPage: () => "tasks",
+        getTaskView: () => "tile",
+        getTaskOrderBy: () => "custom",
+        getTaskDragEl: () => null,
+        setTaskDragEl: () => {},
+        getFlippedTaskIds: () => new Set<string>(),
+        getLastRenderedTaskFlipView: () => null,
+        setLastRenderedTaskFlipView: () => {},
+        save: vi.fn(),
+        render: vi.fn(),
+      });
+
+      ui.jumpToTaskAndHighlight("a", { behavior: "instant" });
+      vi.runOnlyPendingTimers();
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "instant", block: "center", inline: "nearest" });
     } finally {
       vi.useRealTimers();
     }

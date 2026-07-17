@@ -4,10 +4,13 @@ import {
   createXpAwardAnimationState,
   enqueuePendingXpAward,
   enqueuePendingXpAwardFromOverlayState,
+  getDisplayedXpAfterParticleArrival,
+  getTaskButtonXpAwardCountdownDurationMs,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
+  shouldUseTaskButtonXpAwardDelivery,
   type PendingXpAward,
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
@@ -147,5 +150,25 @@ describe("xp award animation state", () => {
         startedDuringEffect: true,
       })
     ).toBe(true);
+  });
+
+  it("uses task button delivery only for time-goal completion awards with a task source", () => {
+    expect(shouldUseTaskButtonXpAwardDelivery(award())).toBe(true);
+    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceModal: "resetConfirm" }))).toBe(false);
+    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceModal: "historyEntrySummaryTest" }))).toBe(false);
+    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceTaskId: null }))).toBe(false);
+  });
+
+  it("matches the task completion modal count timing for button countdowns", () => {
+    expect(getTaskButtonXpAwardCountdownDurationMs(10)).toBe(500);
+    expect(getTaskButtonXpAwardCountdownDurationMs(25)).toBe(1500);
+    expect(getTaskButtonXpAwardCountdownDurationMs(50)).toBe(2000);
+    expect(getTaskButtonXpAwardCountdownDurationMs(51)).toBe(2500);
+  });
+
+  it("advances displayed xp by arrived unit particles without exceeding the target", () => {
+    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 0 })).toBe(10);
+    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 5 })).toBe(15);
+    expect(getDisplayedXpAfterParticleArrival({ startXp: 10, endXp: 22, arrivedParticles: 99 })).toBe(22);
   });
 });

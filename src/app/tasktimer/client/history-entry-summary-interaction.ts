@@ -242,10 +242,12 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
   function syncCloseLabel() {
     const overlay = elements.overlay;
     const saveAndCloseBtn = elements.saveAndCloseBtn;
+    const closeBtn = getCloseButton();
     if (!overlay || !saveAndCloseBtn) return;
     const shouldShowSaveAndClose = overlay.dataset.historyEntryOwner === "inline"
       && overlay.dataset.historyEntryEditing === "true"
       && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
+    if (closeBtn) closeBtn.textContent = overlay.dataset.historyEntryEditing === "true" ? "Cancel" : "Close";
     setButtonVisible(saveAndCloseBtn, shouldShowSaveAndClose);
   }
 

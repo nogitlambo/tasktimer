@@ -104,14 +104,6 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
       aria-label="Menu"
     >
       <div className="menuHead">
-        <button
-          type="button"
-          className="btn btn-ghost small settingsMobileBackBtn"
-          onClick={paneState.closeMobileDetail}
-          aria-label="Back to settings sections"
-        >
-          ←
-        </button>
         <div className="menuTitle" aria-label={paneState.mobileDetailOpen ? activeDetailTitle : "Task Timer Settings"}>
           <span className="settingsMenuTitleDefault">Settings</span>
           <span className="settingsMenuTitleActive">{activeDetailTitle}</span>
@@ -161,6 +153,16 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
           />
           <SettingsDataPane active={paneState.activePane === "data"} exiting={paneState.exitingPane === "data"} />
         </div>
+      </div>
+      <div className="settingsMobileBackFooter" aria-hidden={paneState.mobileDetailOpen ? "false" : "true"}>
+        <button
+          type="button"
+          className="btn btn-ghost small modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction settingsMobileBackBtn"
+          onClick={paneState.closeMobileDetail}
+          aria-label="Back to settings sections"
+        >
+          Back
+        </button>
       </div>
     </div>
   );

@@ -308,7 +308,7 @@ export type TaskTimerGroupsContext = {
   buildFriendInitialAvatarDataUrl: (labelRaw: string) => string;
   getFriendAvatarSrc: (profile?: FriendProfile | null) => string;
   jumpToTaskById: (taskId: string) => void;
-  jumpToTaskAndHighlight: (taskId: string) => void;
+  jumpToTaskAndHighlight: (taskId: string, opts?: { behavior?: ScrollBehavior }) => void;
   getGroupsIncomingRequests: () => FriendRequest[];
   setGroupsIncomingRequests: (value: FriendRequest[]) => void;
   getGroupsOutgoingRequests: () => FriendRequest[];
@@ -747,6 +747,7 @@ export type TaskTimerSessionContext = {
   getCheckpointFiredKeysByTaskId: () => Record<string, Set<string>>;
   getCheckpointBaselineSecByTaskId: () => Record<string, number>;
   getDynamicColorsEnabled: () => boolean;
+  getTimeGoalCompleteNextTasksEnabled: () => boolean;
   getAchievementSoundsEnabled: () => boolean;
   getInteractionHapticsEnabled: () => boolean;
   getInteractionHapticsIntensity: () => InteractionHapticsIntensity;
@@ -768,6 +769,8 @@ export type TaskTimerSessionContext = {
   normalizedPathname: () => string;
   savePendingTaskJump: (taskId: string) => void;
   jumpToTaskById: (taskId: string) => void;
+  jumpToTaskAndHighlight: (taskId: string, opts?: { behavior?: ScrollBehavior }) => void;
+  applyAppPage: (page: AppPage, opts?: TaskTimerAppPageOptions) => void;
   escapeHtmlUI: (value: unknown) => string;
   formatTime: (value: number) => string;
   formatMainTaskElapsed: (elapsedMs: number, running?: boolean) => string;
@@ -880,6 +883,7 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     TASK_ORDER_BY_KEY: string;
     STARTUP_MODULE_KEY: string;
     AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+    TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: string;
     DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
     MOBILE_PUSH_ALERTS_KEY: string;
     WEB_PUSH_ALERTS_KEY: string;
@@ -909,6 +913,8 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setStartupModuleState: (value: StartupModulePreference) => void;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
   setAutoFocusOnTaskLaunchEnabledState: (value: boolean) => void;
+  getTimeGoalCompleteNextTasksEnabled: () => boolean;
+  setTimeGoalCompleteNextTasksEnabledState: (value: boolean) => void;
   getDashboardPreviousWeekVisible: () => boolean;
   setDashboardPreviousWeekVisibleState: (value: boolean) => void;
   getDynamicColorsEnabled: () => boolean;

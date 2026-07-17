@@ -79,6 +79,7 @@ type FocusElementStub = ReturnType<typeof createClassList> extends infer ClassLi
       offsetWidth: number;
       clientWidth: number;
       clientHeight: number;
+      hidden: boolean;
       setAttribute: ReturnType<typeof vi.fn>;
       closest: ReturnType<typeof vi.fn>;
       querySelector: ReturnType<typeof vi.fn>;
@@ -95,6 +96,7 @@ function createFocusElementStub(options: { clientWidth?: number; clientHeight?: 
     offsetWidth: 0,
     clientWidth: options.clientWidth ?? 0,
     clientHeight: options.clientHeight ?? 0,
+    hidden: false,
     setAttribute: vi.fn(),
     closest: vi.fn(() => null),
     querySelector: vi.fn(() => null),
@@ -118,6 +120,9 @@ function createCompletionHarness(options?: {
   checkpointAlertSoundMode?: "once" | "repeat";
   liveTaskDom?: boolean;
   nativeAndroidCheckpointAlarmRuntime?: boolean;
+  timeGoalCompleteNextTasksEnabled?: boolean;
+  extraTasks?: Task[];
+  withNextTaskElements?: boolean;
 }) {
   nativeRuntime.androidCheckpointAlarmRuntime = !!options?.nativeAndroidCheckpointAlarmRuntime;
   const completedTask = task({
@@ -169,6 +174,8 @@ function createCompletionHarness(options?: {
   };
   const timeGoalCompleteCloseBtn = createFocusElementStub();
   const timeGoalCompleteText = createFocusElementStub();
+  const timeGoalCompleteNextTasks = createFocusElementStub();
+  const timeGoalCompleteNextTaskGrid = createFocusElementStub();
   const handlers = new Map<string, (event?: Event) => unknown>();
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousDocument = (globalThis as { document?: unknown }).document;
@@ -248,8 +255,8 @@ function createCompletionHarness(options?: {
       timeGoalCompleteMeta: createFocusElementStub() as unknown as HTMLElement,
       timeGoalCompleteCloseBtn: timeGoalCompleteCloseBtn as unknown as HTMLButtonElement,
       timeGoalCompleteLaunchNextBtn: null,
-      timeGoalCompleteNextTasks: null,
-      timeGoalCompleteNextTaskGrid: null,
+      timeGoalCompleteNextTasks: options?.withNextTaskElements ? timeGoalCompleteNextTasks as unknown as HTMLElement : null,
+      timeGoalCompleteNextTaskGrid: options?.withNextTaskElements ? timeGoalCompleteNextTaskGrid as unknown as HTMLElement : null,
       timeGoalCompleteConfettiStage: null,
       timeGoalCompleteNoteInput: null,
     },
@@ -260,7 +267,7 @@ function createCompletionHarness(options?: {
       TIME_GOAL_COMPLETION_ACK_KEY: "tasktimer:time-goal-ack",
     },
     sharedTasks: { milestoneUnitSec: () => 60 } as unknown as TaskTimerSharedTaskApi,
-    getTasks: () => [completedTask],
+    getTasks: () => [completedTask, ...(options?.extraTasks || [])],
     getHistoryByTaskId: () => ({}),
     getCheckpointFlashUntilMsByTaskId: () => checkpointFlashUntilMsByTaskId,
     getCheckpointBaselineSecByTaskId: () => checkpointBaselineSecByTaskId,
@@ -283,6 +290,7 @@ function createCompletionHarness(options?: {
     syncLiveSessionForTask: () => {},
     formatMainTaskElapsedHtml: (elapsedMs: number) => `${elapsedMs}ms`,
     getDynamicColorsEnabled: () => false,
+    getTimeGoalCompleteNextTasksEnabled: () => options?.timeGoalCompleteNextTasksEnabled === true,
     fillBackgroundForPct: () => "#00ffff",
     getModeColor: () => "#00ffff",
     sortMilestones: (milestones: Task["milestones"]) => milestones,
@@ -385,6 +393,8 @@ function createCompletionHarness(options?: {
     openOverlay,
     timeGoalCompleteOverlay,
     timeGoalCompleteText,
+    timeGoalCompleteNextTasks,
+    timeGoalCompleteNextTaskGrid,
     audioPlay,
     audioPause,
     audioInstances,
@@ -745,6 +755,80 @@ describe("task timer session tick", () => {
       );
     } finally {
       harness.restoreWindow();
+    }
+  });
+
+  it("hides and clears task complete next task tiles by default", () => {
+    const harness = createCompletionHarness({
+      withNextTaskElements: true,
+      extraTasks: [
+        task({
+          id: "task-2",
+          name: "Next Focus",
+          timeGoalEnabled: true,
+          timeGoalMinutes: 1,
+          timeGoalPeriod: "day",
+        }),
+      ],
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(true);
+      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toBe("");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("renders task complete next task tiles when the preference is enabled", () => {
+    const harness = createCompletionHarness({
+      withNextTaskElements: true,
+      timeGoalCompleteNextTasksEnabled: true,
+      extraTasks: [
+        task({
+          id: "task-2",
+          name: "Next Focus",
+          color: "#ff00aa",
+          timeGoalEnabled: true,
+          timeGoalMinutes: 1,
+          timeGoalPeriod: "day",
+        }),
+      ],
+    });
+
+    try {
+      harness.session.tick();
+
+      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(false);
+      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("Click a task below to launch immediately");
+      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain('data-time-goal-next-task-id="task-2"');
+      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("Next Focus");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("shows the all-complete message only when next task tiles are enabled", () => {
+    const disabledHarness = createCompletionHarness({ withNextTaskElements: true });
+    try {
+      disabledHarness.session.tick();
+
+      expect(disabledHarness.timeGoalCompleteNextTasks.hidden).toBe(true);
+      expect(disabledHarness.timeGoalCompleteNextTaskGrid.innerHTML).not.toContain("All tasks completed for today!");
+    } finally {
+      disabledHarness.restoreWindow();
+    }
+
+    const enabledHarness = createCompletionHarness({ withNextTaskElements: true, timeGoalCompleteNextTasksEnabled: true });
+    try {
+      enabledHarness.session.tick();
+
+      expect(enabledHarness.timeGoalCompleteNextTasks.hidden).toBe(false);
+      expect(enabledHarness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("All tasks completed for today!");
+    } finally {
+      enabledHarness.restoreWindow();
     }
   });
 

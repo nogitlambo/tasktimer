@@ -117,6 +117,7 @@ function createHarness(
     loadTaskViewPreference: () => {},
     loadTaskOrderByPreference: () => {},
     loadAutoFocusOnTaskLaunchSetting: () => {},
+    loadTimeGoalCompleteNextTasksSetting: () => {},
     loadDashboardPreviousWeekSetting: () => {},
     loadDynamicColorsSetting: () => {},
     loadInteractionClickSoundSetting: () => {},

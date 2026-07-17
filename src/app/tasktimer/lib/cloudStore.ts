@@ -68,6 +68,7 @@ export type UserPreferencesV1 = {
   taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc";
   dynamicColorsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
+  timeGoalCompleteNextTasksEnabled: boolean;
   dashboardPreviousWeekVisible: boolean;
   mobilePushAlertsEnabled: boolean;
   webPushAlertsEnabled: boolean;
@@ -2215,6 +2216,7 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
     taskOrderBy: normalizeTaskOrderBy(data.taskOrderBy),
     dynamicColorsEnabled: asBool(data.dynamicColorsEnabled, true),
     autoFocusOnTaskLaunchEnabled: asBool(data.autoFocusOnTaskLaunchEnabled, false),
+    timeGoalCompleteNextTasksEnabled: asBool(data.timeGoalCompleteNextTasksEnabled, false),
     dashboardPreviousWeekVisible: asBool(data.dashboardPreviousWeekVisible, true),
     mobilePushAlertsEnabled: asBool(data.mobilePushAlertsEnabled, false),
     webPushAlertsEnabled:

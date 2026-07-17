@@ -25,6 +25,7 @@ type TaskTimerPreferenceStorageKeys = {
   TASK_VIEW_KEY: string;
   TASK_ORDER_BY_KEY: string;
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: string;
+  TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: string;
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
@@ -45,6 +46,7 @@ type PreferencesStateSnapshot = {
   taskView: "list" | "tile";
   taskOrderBy: TaskOrderByPreference;
   autoFocusOnTaskLaunchEnabled: boolean;
+  timeGoalCompleteNextTasksEnabled: boolean;
   dashboardPreviousWeekVisible: boolean;
   dynamicColorsEnabled: boolean;
   mobilePushAlertsEnabled: boolean;
@@ -157,6 +159,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       taskView: "tile",
       taskOrderBy: state.taskOrderBy,
       autoFocusOnTaskLaunchEnabled: state.autoFocusOnTaskLaunchEnabled,
+      timeGoalCompleteNextTasksEnabled: state.timeGoalCompleteNextTasksEnabled,
       dashboardPreviousWeekVisible: state.dashboardPreviousWeekVisible !== false,
       dynamicColorsEnabled: state.dynamicColorsEnabled,
       mobilePushAlertsEnabled: state.mobilePushAlertsEnabled,
@@ -190,6 +193,10 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     safeWriteLocalStorage(
       storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
       snapshot.autoFocusOnTaskLaunchEnabled ? "true" : "false",
+    );
+    safeWriteLocalStorage(
+      storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY,
+      snapshot.timeGoalCompleteNextTasksEnabled ? "true" : "false",
     );
     safeWriteLocalStorage(
       storageKeys.DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY,
@@ -285,6 +292,15 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     const cloudValue = getStoredPreferencesWithoutDefaults()?.autoFocusOnTaskLaunchEnabled;
     if (typeof cloudValue === "boolean") return cloudValue;
     const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY).toLowerCase() : "";
+    if (raw === "false" || raw === "0" || raw === "off") return false;
+    if (raw === "true" || raw === "1" || raw === "on") return true;
+    return false;
+  }
+
+  function loadTimeGoalCompleteNextTasksEnabled(): boolean {
+    const cloudValue = getStoredPreferencesWithoutDefaults()?.timeGoalCompleteNextTasksEnabled;
+    if (typeof cloudValue === "boolean") return cloudValue;
+    const raw = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY).toLowerCase() : "";
     if (raw === "false" || raw === "0" || raw === "off") return false;
     if (raw === "true" || raw === "1" || raw === "on") return true;
     return false;
@@ -398,6 +414,7 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     loadTaskView,
     loadTaskOrderBy,
     loadAutoFocusOnTaskLaunchEnabled,
+    loadTimeGoalCompleteNextTasksEnabled,
     loadDashboardPreviousWeekVisible,
     loadDynamicColorsEnabled,
     loadMobilePushAlertsEnabled,

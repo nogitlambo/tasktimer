@@ -1132,6 +1132,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function syncTimeGoalCompleteLaunchNextButton() {
     const button = els.timeGoalCompleteLaunchNextBtn as HTMLButtonElement | null;
     if (!button) return;
+    if (!ctx.getTimeGoalCompleteNextTasksEnabled()) {
+      button.hidden = true;
+      button.disabled = true;
+      delete button.dataset.nextTaskId;
+      button.textContent = "Launch Next Task";
+      return;
+    }
     const activeTaskId = getActiveTimeGoalModalTaskId();
     const next = getNextScheduledTaskAfterNow(activeTaskId);
     if (!next) {
@@ -1159,6 +1166,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const host = els.timeGoalCompleteNextTasks as HTMLElement | null;
     const grid = els.timeGoalCompleteNextTaskGrid as HTMLElement | null;
     if (!host || !grid) return;
+    if (!ctx.getTimeGoalCompleteNextTasksEnabled()) {
+      host.hidden = true;
+      grid.innerHTML = "";
+      return;
+    }
     const options = getTimeGoalCompleteNextTaskOptions();
     const metaMessage = getTimeGoalCompleteMetaMessage(options);
     if (!options.length) {
@@ -1410,6 +1422,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   ) {
     const taskId = String(task.id || "").trim();
     if (!taskId) return;
+    prepareCompletedTaskSurfaceForModal(taskId);
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
     if (els.timeGoalCompleteOverlay) {
@@ -1477,6 +1490,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         sourceRect: captureXpAwardRectSnapshot(els.timeGoalCompleteText),
       });
     }
+  }
+
+  function prepareCompletedTaskSurfaceForModal(taskIdRaw: string) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return;
+    if (String(ctx.getFocusModeTaskId() || "").trim()) closeFocusMode();
+    if (ctx.getCurrentAppPage() !== "tasks") {
+      ctx.applyAppPage("tasks", { syncUrl: "replace" });
+    } else {
+      ctx.render();
+    }
+    ctx.jumpToTaskAndHighlight(taskId, { behavior: "instant" });
   }
 
   function replayTimeGoalCompleteXpText() {

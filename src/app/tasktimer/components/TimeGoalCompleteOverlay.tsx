@@ -76,35 +76,41 @@ const GOLD_FRAGMENTS = buildGoldFragments();
 
 export default function TimeGoalCompleteOverlay() {
   return (
-    <div className="overlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
+    <div className="overlay primitiveSciFiModalOverlay timeGoalCompletePrimitiveOverlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
       <div className="timeGoalCompleteConfettiStage" id="timeGoalCompleteConfettiStage" aria-hidden="true">
         {CONFETTI_PIECES.map((piece, index) => (
           <i className={piece.className} key={index} style={piece.style} />
         ))}
       </div>
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Task Complete">
+      <div className="modal timeGoalCompletePrimitiveModal" role="dialog" aria-modal="true" aria-label="Task Complete">
         <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
-        <div className="timeGoalCompleteXpFx" aria-live="polite">
-          <p className="modalSubtext confirmText" id="timeGoalCompleteText">
-            Calculating XP...
-          </p>
-          <span className="timeGoalCompleteGoldFragments" aria-hidden="true">
-            {GOLD_FRAGMENTS.map((fragment, index) => (
-              <i className="timeGoalCompleteGoldFragment" key={index} style={fragment.style} />
-            ))}
-          </span>
+        <div className="timeGoalCompletePrimitiveBody">
+          <div className="timeGoalCompleteXpFx" aria-live="polite">
+            <p className="modalSubtext confirmText" id="timeGoalCompleteText">
+              Calculating XP...
+            </p>
+            <span className="timeGoalCompleteGoldFragments" aria-hidden="true">
+              {GOLD_FRAGMENTS.map((fragment, index) => (
+                <i className="timeGoalCompleteGoldFragment" key={index} style={fragment.style} />
+              ))}
+            </span>
+          </div>
+          <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
+          <div className="timeGoalCompleteDivider" aria-hidden="true" />
+          <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
+            <div
+              className="timeGoalCompleteNextTaskGrid"
+              id="timeGoalCompleteNextTaskGrid"
+              aria-label="Incomplete tasks for today"
+            />
+          </div>
         </div>
-        <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
-        <div className="timeGoalCompleteDivider" aria-hidden="true" />
-        <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
-          <div
-            className="timeGoalCompleteNextTaskGrid"
-            id="timeGoalCompleteNextTaskGrid"
-            aria-label="Incomplete tasks for today"
-          />
-        </div>
-        <div className="confirmBtns timeGoalCompleteActionGrid">
-          <button className="btn btn-accent" id="timeGoalCompleteCloseBtn" type="button">
+        <div className="confirmBtns timeGoalCompleteActionGrid timeGoalCompletePrimitiveFooter">
+          <button
+            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction"
+            id="timeGoalCompleteCloseBtn"
+            type="button"
+          >
             Close
           </button>
         </div>

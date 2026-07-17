@@ -100,13 +100,18 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAwardFromOverlayState,
+  getDisplayedXpAfterParticleArrival,
+  getTaskButtonXpAwardCountdownDurationMs,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
+  shouldUseTaskButtonXpAwardDelivery,
   type PendingXpAward,
+  XP_AWARD_BUTTON_HOLD_MS,
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
+  XP_AWARD_UNIT_FX_DURATION_MS,
 } from "./client/xp-award-animation";
 import {
   playXpAwardDeliveryHaptic,
@@ -128,6 +133,13 @@ import "./tasktimer.css";
 
 type TaskTimerMainAppClientProps = {
   initialPage: AppPage;
+};
+
+type XpAwardFxPayload = {
+  id: string;
+  text: string;
+  style: CSSProperties | null;
+  className?: string;
 };
 
 function isMobileTaskToolbarViewport() {
@@ -295,6 +307,44 @@ function buildXpPayloadStyle(sourceRect: PendingXpAward["sourceRect"], targetRec
     ["--xp-award-dx" as keyof CSSProperties]: `${targetX - sourceX}px`,
     ["--xp-award-dy" as keyof CSSProperties]: `${targetY - sourceY}px`,
   };
+}
+
+function getCssEscapedValue(value: string) {
+  if (typeof window !== "undefined" && window.CSS && typeof window.CSS.escape === "function") {
+    return window.CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, "\\$&");
+}
+
+function getVisibleCompletedTaskPrimaryButton(doc: Document, taskIdRaw: string | null | undefined): HTMLButtonElement | null {
+  const taskId = String(taskIdRaw || "").trim();
+  if (!taskId) return null;
+  const selector = `.task[data-task-id="${getCssEscapedValue(taskId)}"] .taskPrimaryAction.taskPrimaryActionReset`;
+  const button = doc.querySelector(selector) as HTMLButtonElement | null;
+  if (!button) return null;
+  const style = window.getComputedStyle(button);
+  if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) return null;
+  const rect = button.getBoundingClientRect();
+  if (!(rect.width > 0) || !(rect.height > 0)) return null;
+  return button;
+}
+
+function getTaskPrimaryActionTextElement(button: HTMLElement | null | undefined): HTMLElement | null {
+  return (button?.querySelector(".taskPrimaryActionPrimary") as HTMLElement | null) || null;
+}
+
+function setTaskPrimaryActionXpLabel(button: HTMLElement, xp: number) {
+  const label = getTaskPrimaryActionTextElement(button);
+  if (!label) return;
+  label.textContent = `${Math.max(0, Math.floor(Number(xp) || 0))} XP`;
+  button.classList.add("isXpAwardReceiving");
+}
+
+function restoreTaskPrimaryActionLabel(button: HTMLElement | null | undefined, originalText: string | null) {
+  if (!button) return;
+  const label = getTaskPrimaryActionTextElement(button);
+  if (label && originalText != null) label.textContent = originalText;
+  button.classList.remove("isXpAwardReceiving", "isXpAwardImpact");
 }
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
@@ -555,9 +605,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [displayedXp, setDisplayedXp] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS).totalXp);
   const [xpAwardFx, setXpAwardFx] = useState<{
     visible: boolean;
-    payloadStyle: CSSProperties | null;
-    deltaText: string | null;
-  }>({ visible: false, payloadStyle: null, deltaText: null });
+    payloads: XpAwardFxPayload[];
+  }>({ visible: false, payloads: [] });
   const [xpAnimationState, setXpAnimationState] = useState(() => createXpAwardAnimationState());
   const [isXpCountAnimating, setIsXpCountAnimating] = useState(false);
   const [isXpAwardSpotlightActive, setIsXpAwardSpotlightActive] = useState(false);
@@ -589,8 +638,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationFrameRef = useRef<number | null>(null);
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
+  const xpAnimationExtraTimersRef = useRef<number[]>([]);
+  const xpAwardButtonRestoreRef = useRef<(() => void) | null>(null);
+  const xpAwardPayloadSeqRef = useRef(0);
   const xpCountAnimationStartedRef = useRef(false);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
+  const clearXpAwardExtraTimers = useCallback(() => {
+    xpAnimationExtraTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    xpAnimationExtraTimersRef.current = [];
+  }, []);
+  const cleanupXpAwardButtonLabel = useCallback(() => {
+    xpAwardButtonRestoreRef.current?.();
+    xpAwardButtonRestoreRef.current = null;
+  }, []);
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
     return {
@@ -697,6 +757,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+      clearXpAwardExtraTimers();
+      cleanupXpAwardButtonLabel();
       xpCountAnimationStartedRef.current = false;
       return;
     }
@@ -704,108 +766,298 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
+    clearXpAwardExtraTimers();
+    cleanupXpAwardButtonLabel();
     const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
-    let targetRect: DOMRect | null = null;
-    let payloadStyle: CSSProperties | null = null;
-
-    try {
-      targetRect = typeof document !== "undefined" ? getVisibleXpTargetRectFromDocument(document) : null;
-      payloadStyle = targetRect ? buildXpPayloadStyle(!reducedMotion ? activeAward.sourceRect : null, targetRect) : null;
-    } catch {
-      targetRect = null;
-      payloadStyle = null;
-    }
-
     const { startXp, endXp } = getXpAwardCountRange(activeAward, {
       wasIdle,
       displayedXp: displayedXpRef.current,
     });
-    displayedXpRef.current = startXp;
-    window.requestAnimationFrame(() => {
-      setDisplayedXp(startXp);
-      setIsXpCountAnimating(countAnimationStarted);
-      setIsXpAwardSpotlightActive(true);
-      setXpAwardFx({
-        visible: true,
-        payloadStyle,
-        deltaText: activeAward.awardedXp > 0 ? `+${activeAward.awardedXp} XP` : null,
-      });
-    });
+    let countAnimationStartedDuringEffect = false;
 
-    if (startXp === endXp) {
-      window.requestAnimationFrame(() => {
-        setDisplayedXp(endXp);
-        xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
-          setIsXpCountAnimating(false);
-          setIsXpAwardSpotlightActive(false);
-          setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
-          setXpAnimationState((current) => clearActiveXpAward(current));
-        }, reducedMotion ? 160 : 360);
-      });
-      return;
-    }
+    const addExtraTimer = (handler: () => void, delayMs: number) => {
+      const timer = window.setTimeout(() => {
+        xpAnimationExtraTimersRef.current = xpAnimationExtraTimersRef.current.filter((value) => value !== timer);
+        handler();
+      }, delayMs);
+      xpAnimationExtraTimersRef.current.push(timer);
+      return timer;
+    };
 
-    const startCountAnimation = () => {
-      countAnimationStartedDuringEffect = true;
-      xpCountAnimationStartedRef.current = true;
-      setIsXpCountAnimating(true);
-      if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
-        playXpAwardDeliveryHaptic({
-          isEnabled: interactionHapticsEnabled,
-          intensity: interactionHapticsIntensity,
-        });
+    const finishAward = (delayMs: number) => {
+      xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
+        cleanupXpAwardButtonLabel();
+        setIsXpCountAnimating(false);
+        setIsXpAwardSpotlightActive(false);
+        setXpAwardFx({ visible: false, payloads: [] });
+        setXpAnimationState((current) => clearActiveXpAward(current));
+      }, delayMs);
+    };
+
+    const runDirectDelivery = () => {
+      let targetRect: DOMRect | null = null;
+      let payloadStyle: CSSProperties | null = null;
+
+      try {
+        targetRect = typeof document !== "undefined" ? getVisibleXpTargetRectFromDocument(document) : null;
+        payloadStyle = targetRect ? buildXpPayloadStyle(!reducedMotion ? activeAward.sourceRect : null, targetRect) : null;
+      } catch {
+        targetRect = null;
+        payloadStyle = null;
       }
-      const durationMs = XP_AWARD_COUNT_DURATION_MS;
-      const startedAt = performance.now();
 
-      const tick = (nowValue: number) => {
-        const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / durationMs));
-        const eased = 1 - (1 - progress) * (1 - progress);
-        const nextXp = Math.round(startXp + (endXp - startXp) * eased);
-        displayedXpRef.current = nextXp;
-        setDisplayedXp(nextXp);
-        if (progress >= 1) {
-          xpCountAnimationStartedRef.current = false;
-          displayedXpRef.current = endXp;
+      displayedXpRef.current = startXp;
+      window.requestAnimationFrame(() => {
+        setDisplayedXp(startXp);
+        setIsXpCountAnimating(countAnimationStarted);
+        setIsXpAwardSpotlightActive(true);
+        setXpAwardFx({
+          visible: true,
+          payloads:
+            payloadStyle && activeAward.awardedXp > 0
+              ? [
+                  {
+                    id: `direct-${activeAward.sourceOverlayId}-${activeAward.sourceElementKey}`,
+                    text: `+${activeAward.awardedXp} XP`,
+                    style: payloadStyle,
+                  },
+                ]
+              : [],
+        });
+      });
+
+      if (startXp === endXp) {
+        window.requestAnimationFrame(() => {
           setDisplayedXp(endXp);
-          window.requestAnimationFrame(() => {
-            setIsXpCountAnimating(false);
+          finishAward(reducedMotion ? 160 : 360);
+        });
+        return;
+      }
+
+      const startCountAnimation = () => {
+        countAnimationStartedDuringEffect = true;
+        xpCountAnimationStartedRef.current = true;
+        setIsXpCountAnimating(true);
+        if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
+          playXpAwardDeliveryHaptic({
+            isEnabled: interactionHapticsEnabled,
+            intensity: interactionHapticsIntensity,
           });
-          xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
-            setIsXpAwardSpotlightActive(false);
-            setXpAwardFx({ visible: false, payloadStyle: null, deltaText: null });
-            setXpAnimationState((current) => clearActiveXpAward(current));
-          }, reducedMotion ? 180 : 420);
-          return;
         }
+        const durationMs = XP_AWARD_COUNT_DURATION_MS;
+        const startedAt = performance.now();
+
+        const tick = (nowValue: number) => {
+          const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / durationMs));
+          const eased = 1 - (1 - progress) * (1 - progress);
+          const nextXp = Math.round(startXp + (endXp - startXp) * eased);
+          displayedXpRef.current = nextXp;
+          setDisplayedXp(nextXp);
+          if (progress >= 1) {
+            xpCountAnimationStartedRef.current = false;
+            displayedXpRef.current = endXp;
+            setDisplayedXp(endXp);
+            window.requestAnimationFrame(() => {
+              setIsXpCountAnimating(false);
+            });
+            finishAward(reducedMotion ? 180 : 420);
+            return;
+          }
+          xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+        };
+
         xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
       };
 
-      xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+      const countStartDelayMs = getXpAwardCountStartDelayMs({
+        wasIdle,
+        countAnimationStarted,
+        fxDurationMs: XP_AWARD_FX_DURATION_MS,
+      });
+      xpAnimationStartTimerRef.current = window.setTimeout(() => {
+        xpAnimationStartTimerRef.current = null;
+        startCountAnimation();
+      }, countStartDelayMs);
     };
 
-    let countAnimationStartedDuringEffect = false;
-    const countStartDelayMs = getXpAwardCountStartDelayMs({
-      wasIdle,
-      countAnimationStarted,
-      fxDurationMs: XP_AWARD_FX_DURATION_MS,
-    });
-    xpAnimationStartTimerRef.current = window.setTimeout(() => {
-      xpAnimationStartTimerRef.current = null;
-      startCountAnimation();
-    }, countStartDelayMs);
+    const runButtonDelivery = (button: HTMLButtonElement, targetRect: DOMRect) => {
+      const label = getTaskPrimaryActionTextElement(button);
+      const originalText = label?.textContent ?? "Reset";
+      xpAwardButtonRestoreRef.current = () => restoreTaskPrimaryActionLabel(button, originalText);
+      displayedXpRef.current = startXp;
+      setDisplayedXp(startXp);
+      setIsXpCountAnimating(false);
+      setIsXpAwardSpotlightActive(true);
+
+      const buttonRect = button.getBoundingClientRect();
+      const smashPayloadStyle = buildXpPayloadStyle(activeAward.sourceRect, buttonRect as DOMRect);
+      const showSmashPayload = !reducedMotion && smashPayloadStyle && activeAward.awardedXp > 0;
+      setXpAwardFx({
+        visible: !!showSmashPayload,
+        payloads: showSmashPayload
+          ? [
+              {
+                id: `smash-${activeAward.sourceTaskId}-${activeAward.awardedXp}`,
+                text: `+${activeAward.awardedXp} XP`,
+                style: smashPayloadStyle,
+                className: "xpAwardFxPayloadSmash",
+              },
+            ]
+          : [],
+      });
+
+      const totalUnits = Math.max(0, Math.floor(endXp - startXp));
+      const targetCountdownXp = Math.max(0, Math.floor(Number(activeAward.awardedXp) || 0));
+      const countdownDurationMs = getTaskButtonXpAwardCountdownDurationMs(targetCountdownXp);
+      let arrivedParticles = 0;
+      let previousRemaining = targetCountdownXp;
+
+      const updateDeliveredXp = () => {
+        if (arrivedParticles >= totalUnits) return;
+        arrivedParticles += 1;
+        const nextXp = getDisplayedXpAfterParticleArrival({
+          startXp,
+          endXp,
+          arrivedParticles,
+        });
+        displayedXpRef.current = nextXp;
+        setDisplayedXp(nextXp);
+        if (arrivedParticles >= totalUnits) {
+          displayedXpRef.current = endXp;
+          setDisplayedXp(endXp);
+          setIsXpCountAnimating(false);
+          finishAward(reducedMotion ? 80 : 180);
+        }
+      };
+
+      const removePayload = (id: string) => {
+        setXpAwardFx((current) => ({
+          visible: current.payloads.length > 1,
+          payloads: current.payloads.filter((payload) => payload.id !== id),
+        }));
+      };
+
+      const launchUnitPayload = () => {
+        if (totalUnits <= 0) return;
+        if (reducedMotion) {
+          updateDeliveredXp();
+          return;
+        }
+        const currentButtonRect = button.getBoundingClientRect();
+        const style = buildXpPayloadStyle(currentButtonRect as DOMRect, targetRect);
+        const id = `unit-${activeAward.sourceTaskId}-${xpAwardPayloadSeqRef.current++}`;
+        setXpAwardFx((current) => ({
+          visible: true,
+          payloads: [
+            ...current.payloads,
+            {
+              id,
+              text: "+1 XP",
+              style,
+              className: "xpAwardFxPayloadUnit",
+            },
+          ],
+        }));
+        addExtraTimer(updateDeliveredXp, XP_AWARD_UNIT_FX_DURATION_MS);
+        addExtraTimer(() => removePayload(id), XP_AWARD_UNIT_FX_DURATION_MS + 120);
+      };
+
+      const finishCountdownWithoutUnits = () => {
+        setTaskPrimaryActionXpLabel(button, 0);
+        displayedXpRef.current = endXp;
+        setDisplayedXp(endXp);
+        finishAward(reducedMotion ? 120 : 220);
+      };
+
+      const startCountdown = () => {
+        setXpAwardFx({ visible: false, payloads: [] });
+        setTaskPrimaryActionXpLabel(button, targetCountdownXp);
+        if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
+          playXpAwardDeliveryHaptic({
+            isEnabled: interactionHapticsEnabled,
+            intensity: interactionHapticsIntensity,
+          });
+        }
+        if (targetCountdownXp <= 0 || countdownDurationMs <= 0 || totalUnits <= 0) {
+          finishCountdownWithoutUnits();
+          return;
+        }
+        countAnimationStartedDuringEffect = true;
+        xpCountAnimationStartedRef.current = true;
+        setIsXpCountAnimating(true);
+        const startedAt = performance.now();
+
+        const tick = (nowValue: number) => {
+          const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / countdownDurationMs));
+          const eased = 1 - (1 - progress) * (1 - progress);
+          const nextRemaining = Math.max(0, Math.ceil(targetCountdownXp * (1 - eased)));
+          if (nextRemaining !== previousRemaining) {
+            for (let value = previousRemaining; value > nextRemaining; value -= 1) {
+              launchUnitPayload();
+            }
+            previousRemaining = nextRemaining;
+            setTaskPrimaryActionXpLabel(button, nextRemaining);
+          }
+          if (progress >= 1) {
+            xpCountAnimationStartedRef.current = false;
+            setTaskPrimaryActionXpLabel(button, 0);
+            if (arrivedParticles >= totalUnits) {
+              displayedXpRef.current = endXp;
+              setDisplayedXp(endXp);
+              setIsXpCountAnimating(false);
+              finishAward(reducedMotion ? 120 : 220);
+            }
+            return;
+          }
+          xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+        };
+
+        xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
+      };
+
+      const startAfterImpact = () => {
+        button.classList.add("isXpAwardImpact");
+        setTaskPrimaryActionXpLabel(button, targetCountdownXp);
+        addExtraTimer(() => button.classList.remove("isXpAwardImpact"), 220);
+        addExtraTimer(startCountdown, XP_AWARD_BUTTON_HOLD_MS);
+      };
+
+      if (reducedMotion) {
+        startAfterImpact();
+      } else {
+        addExtraTimer(startAfterImpact, XP_AWARD_FX_DURATION_MS);
+      }
+    };
+
+    let shouldFallbackToDirectDelivery = true;
+    if (shouldUseTaskButtonXpAwardDelivery(activeAward) && typeof document !== "undefined") {
+      try {
+        const button = getVisibleCompletedTaskPrimaryButton(document, activeAward.sourceTaskId);
+        const targetRect = getVisibleXpTargetRectFromDocument(document);
+        if (button && targetRect) {
+          shouldFallbackToDirectDelivery = false;
+          runButtonDelivery(button, targetRect);
+        }
+      } catch {
+        shouldFallbackToDirectDelivery = true;
+      }
+    }
+
+    if (shouldFallbackToDirectDelivery) runDirectDelivery();
 
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
+      clearXpAwardExtraTimers();
+      cleanupXpAwardButtonLabel();
       xpCountAnimationStartedRef.current = getXpAwardCountStartedAfterEffectCleanup({
         wasStartedBeforeEffect: countAnimationStarted,
         startedDuringEffect: countAnimationStartedDuringEffect,
       });
     };
-  }, [interactionHapticsEnabled, interactionHapticsIntensity, xpAnimationState.active]);
+  }, [cleanupXpAwardButtonLabel, clearXpAwardExtraTimers, interactionHapticsEnabled, interactionHapticsIntensity, xpAnimationState.active]);
 
   useEffect(() => {
     if (!isXpAwardSpotlightActive || typeof window === "undefined") return;

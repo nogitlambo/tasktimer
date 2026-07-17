@@ -148,7 +148,7 @@ export function clearHoldingSpaceShadow() {
 
 export function validateHoldingSpaceFile(file: Pick<File, "name" | "size" | "type">): HoldingSpaceUploadValidation {
   if (!file) return { ok: false, message: "Choose a file to upload." };
-  if (file.size > HOLDING_SPACE_MAX_FILE_BYTES) return { ok: false, message: "Files must be 10 MB or smaller." };
+  if (file.size > HOLDING_SPACE_MAX_FILE_BYTES) return { ok: false, message: "File size exceeds the max 10MB limit" };
   const contentType = String(file.type || "").trim().toLowerCase();
   const extension = String(file.name || "").trim().toLowerCase().split(".").pop() || "";
   const inferredMarkdown = extension === "md" || extension === "markdown";

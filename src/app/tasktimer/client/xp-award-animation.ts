@@ -1,3 +1,5 @@
+import { getTimeGoalXpCountDurationMs } from "./time-goal-confetti";
+
 export type XpAwardRectSnapshot = {
   left: number;
   top: number;
@@ -23,6 +25,8 @@ export type XpAwardAnimationState = {
 
 export const XP_AWARD_COUNT_DURATION_MS = 300;
 export const XP_AWARD_FX_DURATION_MS = 1600;
+export const XP_AWARD_BUTTON_HOLD_MS = 500;
+export const XP_AWARD_UNIT_FX_DURATION_MS = 520;
 
 function normalizeAward(input: PendingXpAward): PendingXpAward {
   const fromXp = Math.max(0, Math.floor(Number(input.fromXp) || 0));
@@ -134,4 +138,23 @@ export function getXpAwardCountStartedAfterEffectCleanup(opts?: {
   startedDuringEffect?: boolean;
 }): boolean {
   return !!opts?.wasStartedBeforeEffect || !!opts?.startedDuringEffect;
+}
+
+export function shouldUseTaskButtonXpAwardDelivery(award: PendingXpAward | null | undefined): boolean {
+  return !!award && award.sourceModal === "timeGoalComplete" && !!String(award.sourceTaskId || "").trim();
+}
+
+export function getTaskButtonXpAwardCountdownDurationMs(awardedXp: number): number {
+  return getTimeGoalXpCountDurationMs(awardedXp);
+}
+
+export function getDisplayedXpAfterParticleArrival(opts: {
+  startXp: number;
+  endXp: number;
+  arrivedParticles: number;
+}): number {
+  const startXp = Math.max(0, Math.floor(Number(opts.startXp) || 0));
+  const endXp = Math.max(startXp, Math.floor(Number(opts.endXp) || 0));
+  const arrivedParticles = Math.max(0, Math.floor(Number(opts.arrivedParticles) || 0));
+  return Math.min(endXp, startXp + arrivedParticles);
 }

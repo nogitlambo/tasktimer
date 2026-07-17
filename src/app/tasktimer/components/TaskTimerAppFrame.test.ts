@@ -64,11 +64,12 @@ afterEach(() => {
 });
 
 describe("TaskTimerAppFrame mobile menu", () => {
-  it("shows Settings first without Account in the hamburger menu", () => {
+  it("shows Settings and User Guide without Account or Sign Out in the hamburger menu", () => {
     const items = getTaskLaunchMobileMenuItems();
 
-    expect(items.map((item) => item.label)).toEqual(["Settings", "User Guide", "Sign Out"]);
+    expect(items.map((item) => item.label)).toEqual(["Settings", "User Guide"]);
     expect(items.map((item) => item.label)).not.toContain("Account");
+    expect(items.map((item) => item.label)).not.toContain("Sign Out");
     expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/settings", "/user-guide"]);
   });
 

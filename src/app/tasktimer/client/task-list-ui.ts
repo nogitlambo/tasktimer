@@ -142,7 +142,7 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
     ctx.save();
   }
 
-  function jumpToTaskAndHighlight(taskId: string) {
+  function jumpToTaskAndHighlight(taskId: string, opts?: { behavior?: ScrollBehavior }) {
     if (!taskId) return;
     const attemptDelaysMs = [0, 48, 120, 240];
     let attemptIndex = 0;
@@ -166,8 +166,9 @@ export function createTaskTimerTaskListUi(ctx: TaskTimerTaskListUiContext) {
         }
         return;
       }
+      const behavior = opts?.behavior || "smooth";
       try {
-        taskEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        taskEl.scrollIntoView({ behavior, block: "center", inline: "nearest" });
       } catch {
         taskEl.scrollIntoView();
       }

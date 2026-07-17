@@ -365,8 +365,11 @@ export function renderHistoryEntrySummaryHtml(
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
     </div>`;
-  const renderXpField = (label: string, value: string) => {
-    const valueClass = value === "Pending" ? "historyEntrySummaryValue" : "historyEntrySummaryValue historyEntrySummaryXpRibbonValue";
+  const renderXpField = (label: string, value: string, options?: { showRibbon?: boolean }) => {
+    const valueClass =
+      options?.showRibbon && value !== "Pending"
+        ? "historyEntrySummaryValue historyEntrySummaryXpRibbonValue"
+        : "historyEntrySummaryValue";
     return `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
@@ -378,13 +381,12 @@ export function renderHistoryEntrySummaryHtml(
     ? `<section class="historyEntrySummaryAggregateCard historyEntrySummarySharedCard" aria-label="${escapeHtml(payload.titleText)} activity summary">
         <div class="historyEntrySummaryAggregateInfo">
           <div class="historyEntrySummarySectionTitle">Activity Summary</div>
-          <div class="historyEntrySummaryAggregateTitle">${escapeHtml(payload.titleText)}</div>
-          <div class="historyEntrySummaryMeta"><span class="historyEntrySummaryMetaLabel">Date Span:</span> ${escapeHtml(payload.aggregate.dateSpanText)}</div>
+          <div class="historyEntrySummaryMeta"><span class="historyEntrySummaryMetaLabel">Date Range:</span> ${escapeHtml(payload.aggregate.dateSpanText)}</div>
         </div>
         <div class="historyEntrySummaryAggregateMetrics">
           ${renderField("Total Time", payload.aggregate.totalElapsedText)}
           ${renderField("Sessions", payload.aggregate.sessionCountText)}
-          ${renderXpField("Total XP", payload.aggregate.xpText)}
+          ${renderXpField("Total XP", payload.aggregate.xpText, { showRibbon: true })}
         </div>
       </section>`
     : "";

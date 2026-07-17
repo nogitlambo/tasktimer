@@ -366,24 +366,57 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn{
-  position:static;
+  position:relative;
+  box-sizing:border-box;
   right:auto;
   top:auto;
-  min-width:72px;
-  min-height:32px;
-  padding:6px 10px;
+  min-width:min(178px, 100%);
+  min-height:48px;
+  padding:0 28px;
   justify-content:center;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  border-color:rgba(160,168,178,.58) !important;
-  box-shadow:0 0 0 1px rgba(160,168,178,.18) inset !important;
+  overflow:hidden !important;
+  border:4px solid #020509 !important;
+  border-radius:8px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.035) 38%, rgba(0,0,0,.28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180,206,226,.22),
+    0 10px 14px rgba(0,0,0,.58),
+    inset 0 0 0 3px rgba(184,207,224,.4),
+    inset 0 12px 18px rgba(255,255,255,.045),
+    inset 0 -18px 22px rgba(0,0,0,.34) !important;
+  color:#f7f8fb !important;
+  font-family:var(--font-orbitron), var(--font-geist-sans), var(--font-readable);
+  font-size:11px;
+  font-weight:500;
+  line-height:1;
+  letter-spacing:0;
   text-align:center;
+  text-shadow:0 2px 2px rgba(0,0,0,.8);
+  transition:filter .16s ease, transform .16s ease, box-shadow .16s ease;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:focus-visible{
-  color:#c9ff24 !important;
-  border-color:#c9ff24 !important;
-  box-shadow:0 0 0 1px rgba(201,255,36,.18) inset !important;
+  color:#f7f8fb !important;
+  border-color:#020509 !important;
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:active{
+  transform:translateY(3px);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:focus-visible{
+  outline:1px solid rgba(126,243,255,.95);
+  outline-offset:6px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn::before,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn::after{
+  content:none;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid{
@@ -407,15 +440,57 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn{
   display:none;
-  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  border-color:transparent !important;
-  box-shadow:none !important;
+  box-sizing:border-box;
+  min-width:min(178px, calc(100vw - 56px));
+  min-height:48px;
+  padding:0 28px;
+  overflow:hidden !important;
+  border:4px solid #020509 !important;
+  border-radius:8px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.035) 38%, rgba(0,0,0,.28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180,206,226,.22),
+    0 10px 14px rgba(0,0,0,.58),
+    inset 0 0 0 3px rgba(184,207,224,.4),
+    inset 0 12px 18px rgba(255,255,255,.045),
+    inset 0 -18px 22px rgba(0,0,0,.34) !important;
+  color:#f7f8fb !important;
+  font-family:var(--font-orbitron), var(--font-geist-sans), var(--font-readable);
+  font-size:11px;
+  font-weight:500;
+  line-height:1;
+  letter-spacing:0;
+  text-align:center;
+  text-shadow:0 2px 2px rgba(0,0,0,.8);
+  transition:filter .16s ease, transform .16s ease, box-shadow .16s ease;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn:focus-visible{
-  border-color:transparent !important;
-  box-shadow:none !important;
+  color:#f7f8fb !important;
+  border-color:#020509 !important;
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn:active{
+  transform:translateY(3px);
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn:focus-visible{
+  outline:1px solid rgba(126,243,255,.95);
+  outline-offset:6px;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn::before,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackBtn::after{
+  content:none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMobileBackFooter{
+  display:none;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane{
@@ -1754,6 +1829,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsUidCopyBtn,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsPushTestBtn,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsDangerDisclosureActions .btn,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsProfileSignOutActions .btn,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn{
   border-radius: 0 !important;
   clip-path: polygon(var(--control-slant) 0, 100% 0, calc(100% - var(--control-slant)) 100%, 0 100%);
@@ -1765,6 +1841,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsUidCopyBtn:hover:not(:disabled),
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsPushTestBtn:hover:not(:disabled),
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsDangerDisclosureActions .btn:hover:not(:disabled),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsProfileSignOutActions .btn:hover:not(:disabled),
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:hover:not(:disabled){
   border-color: rgba(53,232,255,.56);
   box-shadow: 0 0 0 1px rgba(53,232,255,.22) inset, 0 0 12px rgba(0,220,255,.2);
@@ -1774,6 +1851,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsUidCopyBtn:focus-visible,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsPushTestBtn:focus-visible,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsDangerDisclosureActions .btn:focus-visible,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsProfileSignOutActions .btn:focus-visible,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .settingsInlineConfirmOverlay .settingsInlineConfirmBtns .btn:focus-visible{
   border-color: rgba(53,232,255,.64);
   box-shadow: 0 0 0 1px rgba(53,232,255,.25) inset, 0 0 14px rgba(0,220,255,.24);
@@ -2972,6 +3050,14 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   border-color: rgba(255,120,120,.95) !important;
   color: #fff !important;
   box-shadow: 0 0 0 1px rgba(255,77,77,.34) inset, 0 0 13px rgba(255,77,77,.2) !important;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsProfileSignOutActions{
+  display:none;
+}
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsProfileSignOutError{
+  display:none;
 }
 
 /* Final Appearance layout override: keep setting labels left and values right on one line. */
@@ -4916,17 +5002,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   display:none !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane #historyManagerBtn .settingsMenuItemIcon,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane #exportBtn .settingsMenuItemIcon,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane #importBtn .settingsMenuItemIcon{
-  display:block !important;
-  width:22px !important;
-  height:22px !important;
-  flex:0 0 22px !important;
-  margin:0 !important;
-  filter:none !important;
-}
-
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemIcon{
   display:block !important;
   width:22px !important;
@@ -4957,21 +5032,47 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem.settingsDataListItemLocked .settingsMenuItemText{
-  width:auto !important;
+  width:100% !important;
   flex:1 1 auto !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsPlanLockIcon{
+  position:absolute !important;
+  right:14px !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
   flex:0 0 auto !important;
   min-width:18px !important;
-  margin-left:auto !important;
+  margin-left:0 !important;
   color:rgba(121,226,255,.88) !important;
   font-size:12px !important;
   line-height:1 !important;
   text-shadow:0 0 10px rgba(53,232,255,.18) !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataList{
+  align-items:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
+  position:relative !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText:has(.settingsMenuItemHelper){
+  align-items:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
+  text-align:center !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem:hover,
@@ -5091,11 +5192,13 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsMenu .menuHead::after{
     content:"";
     position:absolute;
-    left:0;
-    right:0;
+    left:50%;
+    right:auto;
     bottom:0;
+    width:100vw;
     height:1px;
-    background:linear-gradient(90deg, transparent, rgba(201,255,36,.58), rgba(160,168,178,.35), transparent);
+    background:#2c3036;
+    transform:translateX(-50%);
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout{
@@ -5119,6 +5222,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     -webkit-overflow-scrolling: touch;
   }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout > .settingsNavPanel{
+    min-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
+  }
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTopActions,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid{
     width:min(100%, 420px);
@@ -5129,7 +5236,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTopActions{
     order:2;
     justify-content:center;
-    margin:12px auto 0;
+    margin:auto auto 0;
+    padding-top:12px;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid{
@@ -5137,14 +5245,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn{
-    border-color:rgba(160,168,178,.58) !important;
-    box-shadow:0 0 0 1px rgba(160,168,178,.18) inset !important;
-  }
-
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:hover,
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn:focus-visible{
-    border-color:#c9ff24 !important;
-    box-shadow:0 0 0 1px rgba(201,255,36,.18) inset !important;
+    min-height:48px;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile{
@@ -5188,12 +5289,36 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     display:none;
   }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen{
+    display:flex;
+    flex-direction:column;
+    height:calc(100dvh - var(--safe-top) - var(--safe-bottom));
+    max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom));
+    overflow:hidden;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .menuHead{
+    flex:0 0 auto;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsSplitLayout{
+    flex:1 1 auto;
+    min-height:0;
+    height:auto;
+    overflow:hidden;
+  }
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout.isMobileDetailOpen .settingsNavPanel{
     display:none;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout.isMobileDetailOpen .settingsDetailPanel{
     display:block;
+    height:100%;
+    max-height:none;
+    padding-bottom:16px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout[data-settings-slide-direction="forward"].isMobileDetailOpen .settingsDetailPanel{
@@ -5204,22 +5329,43 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     animation: settingsPaneSlideInBackward .22s ease both;
   }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackBtn{
-    display:inline-flex;
-    position:absolute;
-    left:4px;
-    top:2px;
-    z-index:2;
-    width:34px;
-    min-width:34px;
-    height:34px;
-    min-height:34px;
-    margin:0;
-    padding:0;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackFooter{
+    position:relative;
+    z-index:40;
+    flex:0 0 auto;
+    display:flex;
     align-items:center;
     justify-content:center;
-    font-size:18px;
+    min-height:calc(76px + var(--safe-bottom));
+    padding:12px 14px calc(12px + var(--safe-bottom));
+    border-top:1px solid #2c3036;
+    background:#0d0f13;
+    box-shadow:0 -14px 24px rgba(0,0,0,.32);
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackBtn{
+    display:inline-flex;
+    position:static;
+    width:auto;
+    min-width:min(178px, calc(100vw - 56px));
+    height:auto;
+    min-height:48px;
+    margin:0;
+    padding:0 28px;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
     line-height:1;
+    transform:none;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackBtn:hover,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackBtn:focus-visible{
+    transform:translateY(-1px);
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackBtn:active{
+    transform:translateY(3px);
   }
 
 .settingsMenu .menuTitle{
@@ -5267,6 +5413,21 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     box-sizing:border-box;
     padding-left:8px !important;
     padding-right:8px !important;
+  }
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsProfileSignOutActions{
+    display:flex;
+    justify-content:flex-start !important;
+    margin-top:8px;
+  }
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsProfileSignOutBtn{
+    min-width:148px;
+  }
+
+#app[aria-label="TaskLaunch Settings"] .settingsMenu .settingsProfileSignOutError{
+    display:block;
+    margin-top:8px;
   }
 }
 
@@ -5534,6 +5695,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   font-size: 13px;
   line-height: 1.1;
   letter-spacing: .1em;
+}
+
+.accountProfileInlineDeleteAction{
+  display: none;
 }
 
 .accountProfileAliasEdit{
@@ -5823,6 +5988,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   text-align: center;
 }
 
+#app[aria-label="TaskLaunch Account"] .accountMobileBackFooter{
+  display:none;
+}
+
 #app[aria-label="TaskLaunch Account"] .accountInlineConfirmOverlay{
   position: fixed;
   inset: 0;
@@ -6017,6 +6186,22 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     flex-direction: column;
   }
 
+#app[aria-label="TaskLaunch Account"] .accountMobileBackFooter{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:40;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:calc(76px + var(--safe-bottom));
+    padding:12px 14px calc(12px + var(--safe-bottom));
+    border-top:1px solid #2c3036;
+    background:#0d0f13;
+    box-shadow:0 -14px 24px rgba(0,0,0,.32);
+  }
+
 #app[aria-label="TaskLaunch Account"] .accountProfileActions{
     margin-top: 0;
   }
@@ -6026,22 +6211,75 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 
 #app[aria-label="TaskLaunch Account"] .accountProfileActionDanger{
+    display:none;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileInlineDeleteAction{
+    display:inline-flex;
+    width:auto;
+    min-width:0;
+    min-height:0;
+    margin:2px auto 0;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:#ff4d4d;
+    font-family:var(--font-readable);
+    font-size:11px;
+    font-weight:600;
+    line-height:1.2;
+    letter-spacing:0;
+    text-align:center;
+    text-decoration:none;
+    cursor:pointer;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileInlineDeleteAction:hover,
+  #app[aria-label="TaskLaunch Account"] .accountProfileInlineDeleteAction:focus-visible{
+    color:#ff7777;
+    outline:none;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileInlineDeleteAction:disabled{
+    cursor:wait;
+    opacity:.62;
+    text-decoration:none;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileActionSignOut{
     grid-template-columns: 22px auto;
     justify-content: center;
     gap: 10px;
     text-align: center;
   }
 
-#app[aria-label="TaskLaunch Account"] .accountProfileActionDanger span{
+#app[aria-label="TaskLaunch Account"] .accountProfileActionSignOut span{
     width: auto;
   }
 
+#app[aria-label="TaskLaunch Account"] .accountProfileActionSignOut strong{
+    font-size: 13px;
+  }
+
 #app[aria-label="TaskLaunch Account"] .accountProfileBackAction{
-    position: sticky;
-    bottom: calc(var(--safe-bottom) + 16px);
-    z-index: 12;
-    justify-self: center;
-    align-self: end;
+    position:static;
+    width:auto;
+    min-width:min(178px, calc(100vw - 56px));
+    min-height:48px;
+    margin:0;
+    padding:0 28px;
+    transform:none;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction:hover,
+  #app[aria-label="TaskLaunch Account"] .accountProfileBackAction:focus-visible{
+    transform:translateY(-1px);
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileBackAction:active{
+    transform:translateY(3px);
   }
 
 #app[aria-label="TaskLaunch Account"] .accountDetailPanel{
@@ -6090,9 +6328,6 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     font-size: 16px;
   }
 
-#app[aria-label="TaskLaunch Account"] .accountProfileActionSignOut{
-    display:none;
-  }
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .toggleRow > span,
@@ -6119,7 +6354,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #closeMenuBtn.settingsNavExitBtn{
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
   font-size: 11px;
 }
 
@@ -6136,8 +6371,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   color:#ff4d4d !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsHelpPane .settingsDataListItem .settingsMenuItemText{
   align-self:stretch !important;
   justify-content:flex-start !important;
   text-align:left !important;
@@ -6145,7 +6379,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span:not(.settingsMenuItemHelper){
   width:100%;
-  text-align:left !important;
+  text-align:center !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > .settingsMenuItemHelper{
@@ -6291,4 +6525,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 .settingsPermissionRow.isHidden,
 .settingsPermissionRow .isHidden {
   display: none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) :where(.settingsPreferenceControlHelp, .settingsMenuItemHelper, .settingsDetailText, .settingsMenuTitleText){
+  opacity:.5 !important;
 }

@@ -18,8 +18,6 @@ import ModuleIntroTour from "./ModuleIntroTour";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import { RANK_LADDER, buildRankLadderSummary, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
-import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
-import SignOutConfirmModal from "./SignOutConfirmModal";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "friends" | "leaderboard" | "history";
 
@@ -30,13 +28,7 @@ type TaskLaunchMobileMenuLinkItem = {
   iconSrc: string;
 };
 
-type TaskLaunchMobileMenuActionItem = {
-  kind: "signOut";
-  label: string;
-  iconSrc: string;
-};
-
-type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem | TaskLaunchMobileMenuActionItem;
+type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem;
 
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
@@ -62,8 +54,12 @@ type TaskTimerAppFrameProps = {
   onTestRankPromotion?: (rankId: string) => void;
   xpAwardFx?: {
     visible: boolean;
-    payloadStyle: CSSProperties | null;
-    deltaText: string | null;
+    payloads: Array<{
+      id: string;
+      text: string;
+      style: CSSProperties | null;
+      className?: string;
+    }>;
   };
 };
 
@@ -157,11 +153,6 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       href: resolveTaskTimerRouteHref("/user-guide"),
       iconSrc: "/User_Guide.svg",
     },
-    {
-      kind: "signOut",
-      label: "Sign Out",
-      iconSrc: "/icons/icons_default/signout.webp",
-    },
   ];
 }
 
@@ -196,9 +187,6 @@ export default function TaskTimerAppFrame({
   const [mobileMenuDragY, setMobileMenuDragY] = useState(0);
   const [isMobileMenuDragging, setIsMobileMenuDragging] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
-  const [signOutBusy, setSignOutBusy] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -275,19 +263,6 @@ export default function TaskTimerAppFrame({
       document.body.classList.remove("taskLaunchMobileMenuOpen");
     };
   }, [mobileMenuOpen]);
-
-  const handleMobileSignOut = useCallback(async () => {
-    if (signOutBusy) return;
-    setSignOutBusy(true);
-    setSignOutError("");
-    try {
-      await handleSignOutFlow();
-    } catch (error: unknown) {
-      setSignOutError(getErrorMessage(error, "Could not sign out."));
-      setSignOutBusy(false);
-      setShowSignOutConfirm(false);
-    }
-  }, [signOutBusy]);
 
   const handleOpenMobileAccount = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -518,42 +493,17 @@ export default function TaskTimerAppFrame({
         >
           <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
-            {getTaskLaunchMobileMenuItems().map((item) =>
-              item.kind === "link" ? (
-                <a
-                  key={item.label}
-                  className="menuItem taskLaunchMobileMenuItem"
-                  href={item.href}
-                  role="menuitem"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
-                </a>
-              ) : (
-                <button
-                  key={item.label}
-                  className="menuItem taskLaunchMobileMenuItem"
-                  type="button"
-                  role="menuitem"
-                  aria-label={item.label}
-                  onClick={() => setShowSignOutConfirm(true)}
-                  disabled={signOutBusy}
-                >
-                  <AppImg
-                    className="taskLaunchMobileMenuItemIcon"
-                    src={item.iconSrc}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                  <span className="taskLaunchMobileMenuItemText">{signOutBusy ? "Signing Out" : item.label}</span>
-                </button>
-              )
-            )}
-            {signOutError ? (
-              <div className="settingsDetailNote taskLaunchMobileMenuError" role="alert" aria-live="polite">
-                {signOutError}
-              </div>
-            ) : null}
+            {getTaskLaunchMobileMenuItems().map((item) => (
+              <a
+                key={item.label}
+                className="menuItem taskLaunchMobileMenuItem"
+                href={item.href}
+                role="menuitem"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="taskLaunchMobileMenuItemText">{item.label}</span>
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -654,12 +604,6 @@ export default function TaskTimerAppFrame({
           onTestRankPromotion?.(rankId);
         }}
       />
-      <SignOutConfirmModal
-        open={showSignOutConfirm}
-        busy={signOutBusy}
-        onCancel={() => setShowSignOutConfirm(false)}
-        onConfirm={() => void handleMobileSignOut()}
-      />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <ModuleIntroTour />
       <div
@@ -684,11 +628,13 @@ export default function TaskTimerAppFrame({
       {isXpAwardSpotlightActive ? <div className="xpAwardSpotlightLayer" aria-hidden="true" /> : null}
       {xpAwardFx?.visible ? (
         <div className="xpAwardFxLayer" aria-hidden="true">
-          {xpAwardFx.payloadStyle && xpAwardFx.deltaText ? (
-            <span className="xpAwardFxPayload" style={xpAwardFx.payloadStyle}>
-              {xpAwardFx.deltaText}
-            </span>
-          ) : null}
+          {xpAwardFx.payloads.map((payload) =>
+            payload.style ? (
+              <span key={payload.id} className={`xpAwardFxPayload${payload.className ? ` ${payload.className}` : ""}`} style={payload.style}>
+                {payload.text}
+              </span>
+            ) : null
+          )}
         </div>
       ) : null}
     </div>

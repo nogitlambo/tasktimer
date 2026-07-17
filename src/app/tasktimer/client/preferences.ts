@@ -151,6 +151,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       taskView: ctx.getTaskView(),
       taskOrderBy: ctx.getTaskOrderBy(),
       autoFocusOnTaskLaunchEnabled: ctx.getAutoFocusOnTaskLaunchEnabled(),
+      timeGoalCompleteNextTasksEnabled: ctx.getTimeGoalCompleteNextTasksEnabled(),
       dashboardPreviousWeekVisible: ctx.getDashboardPreviousWeekVisible(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
@@ -354,6 +355,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.setAutoFocusOnTaskLaunchEnabledState(preferenceService.loadAutoFocusOnTaskLaunchEnabled());
   }
 
+  function loadTimeGoalCompleteNextTasksSetting() {
+    ctx.setTimeGoalCompleteNextTasksEnabledState(preferenceService.loadTimeGoalCompleteNextTasksEnabled());
+  }
+
   function loadDashboardPreviousWeekSetting() {
     ctx.setDashboardPreviousWeekVisibleState(preferenceService.loadDashboardPreviousWeekVisible());
   }
@@ -363,6 +368,18 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       localStorage.setItem(
         ctx.storageKeys.AUTO_FOCUS_ON_TASK_LAUNCH_KEY,
         ctx.getAutoFocusOnTaskLaunchEnabled() ? "true" : "false"
+      );
+    } catch {
+      // ignore localStorage write failures
+    }
+    persistPreferencesToCloud();
+  }
+
+  function saveTimeGoalCompleteNextTasksSetting() {
+    try {
+      localStorage.setItem(
+        ctx.storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY,
+        ctx.getTimeGoalCompleteNextTasksEnabled() ? "true" : "false"
       );
     } catch {
       // ignore localStorage write failures
@@ -387,6 +404,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     const startupModule = ctx.getStartupModule();
     ctx.setTaskViewState("tile");
     ctx.toggleSwitchElement(els.taskAutoFocusOnLaunchToggle as HTMLElement | null, ctx.getAutoFocusOnTaskLaunchEnabled());
+    ctx.toggleSwitchElement(els.timeGoalCompleteNextTasksToggle as HTMLElement | null, ctx.getTimeGoalCompleteNextTasksEnabled());
     ctx.toggleSwitchElement(els.dashboardPreviousWeekToggle as HTMLElement | null, ctx.getDashboardPreviousWeekVisible());
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
@@ -1039,6 +1057,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveTaskViewPreference();
     saveTaskOrderByPreference();
     saveAutoFocusOnTaskLaunchSetting();
+    saveTimeGoalCompleteNextTasksSetting();
     saveDynamicColorsSetting();
     saveMobilePushAlertsSetting();
     saveAchievementSoundsSetting();
@@ -1138,6 +1157,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       ignoreSelector: "#taskAutoFocusOnLaunchToggle",
       handleToggle: () => {
         ctx.setAutoFocusOnTaskLaunchEnabledState(!ctx.getAutoFocusOnTaskLaunchEnabled());
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.timeGoalCompleteNextTasksToggle,
+      row: els.timeGoalCompleteNextTasksToggleRow,
+      ignoreSelector: "#timeGoalCompleteNextTasksToggle",
+      handleToggle: () => {
+        ctx.setTimeGoalCompleteNextTasksEnabledState(!ctx.getTimeGoalCompleteNextTasksEnabled());
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
       },
@@ -1355,6 +1385,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveStartupModulePreference();
       saveTaskOrderByPreference();
       saveAutoFocusOnTaskLaunchSetting();
+      saveTimeGoalCompleteNextTasksSetting();
       saveDashboardPreviousWeekSetting();
       saveDynamicColorsSetting();
       saveMobilePushAlertsSetting();
@@ -1396,8 +1427,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveTaskViewPreference,
     saveTaskOrderByPreference,
     loadAutoFocusOnTaskLaunchSetting,
+    loadTimeGoalCompleteNextTasksSetting,
     loadDashboardPreviousWeekSetting,
     saveAutoFocusOnTaskLaunchSetting,
+    saveTimeGoalCompleteNextTasksSetting,
     saveDashboardPreviousWeekSetting,
     toggleSwitchElement: ctx.toggleSwitchElement,
     isSwitchOn: ctx.isSwitchOn,

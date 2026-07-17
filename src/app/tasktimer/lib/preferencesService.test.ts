@@ -11,6 +11,7 @@ const storageKeys = {
   TASK_VIEW_KEY: "taskticker_tasks_v1:taskView",
   TASK_ORDER_BY_KEY: "taskticker_tasks_v1:taskOrderBy",
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "taskticker_tasks_v1:autoFocusOnTaskLaunchEnabled",
+  TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: "taskticker_tasks_v1:timeGoalCompleteNextTasksEnabled",
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
@@ -34,6 +35,7 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
     taskOrderBy: "custom" as const,
     dynamicColorsEnabled: true,
     autoFocusOnTaskLaunchEnabled: false,
+    timeGoalCompleteNextTasksEnabled: false,
     dashboardPreviousWeekVisible: true,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
@@ -256,6 +258,74 @@ describe("createTaskTimerPreferencesService", () => {
 
   it("defaults previous-week dashboard comparison to visible", () => {
     expect(createService().loadDashboardPreviousWeekVisible()).toBe(true);
+  });
+
+  it("defaults task complete next task tiles off", () => {
+    expect(createService().loadTimeGoalCompleteNextTasksEnabled()).toBe(false);
+  });
+
+  it("loads task complete next task tiles from local storage before auth", () => {
+    window.localStorage.setItem(storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY, "true");
+
+    expect(createService().loadTimeGoalCompleteNextTasksEnabled()).toBe(true);
+  });
+
+  it("loads task complete next task tiles from cloud preferences", () => {
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), timeGoalCompleteNextTasksEnabled: true },
+      }).loadTimeGoalCompleteNextTasksEnabled()
+    ).toBe(true);
+  });
+
+  it("persists disabled task complete next task tiles in preference snapshots", () => {
+    const preferencesPersistence = createPreferencesPersistence({
+      ...buildDefaultPreferences(),
+      timeGoalCompleteNextTasksEnabled: true,
+    });
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      preferencesPersistence,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      timeGoalCompleteNextTasksEnabled: false,
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY)).toBe("false");
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(
+      expect.objectContaining({ timeGoalCompleteNextTasksEnabled: false })
+    );
+    expect(service.loadTimeGoalCompleteNextTasksEnabled()).toBe(false);
+  });
+
+  it("persists enabled task complete next task tiles in preference snapshots", () => {
+    const preferencesPersistence = createPreferencesPersistence();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      preferencesPersistence,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      timeGoalCompleteNextTasksEnabled: true,
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.TIME_GOAL_COMPLETE_NEXT_TASKS_KEY)).toBe("true");
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(
+      expect.objectContaining({ timeGoalCompleteNextTasksEnabled: true })
+    );
+    expect(service.loadTimeGoalCompleteNextTasksEnabled()).toBe(true);
   });
 
   it("loads previous-week dashboard comparison from cloud preferences", () => {

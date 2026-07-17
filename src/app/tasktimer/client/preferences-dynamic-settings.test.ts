@@ -17,6 +17,7 @@ const storageKeys = {
   TASK_ORDER_BY_KEY: "taskticker_tasks_v1:taskOrderBy",
   STARTUP_MODULE_KEY: "taskticker_tasks_v1:startupModule",
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "taskticker_tasks_v1:autoFocusOnTaskLaunchEnabled",
+  TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: "taskticker_tasks_v1:timeGoalCompleteNextTasksEnabled",
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
@@ -195,6 +196,7 @@ function createHarness() {
     weekStarting: DashboardWeekStart;
     startupModule: StartupModulePreference;
     autoFocusOnTaskLaunchEnabled: boolean;
+    timeGoalCompleteNextTasksEnabled: boolean;
     dashboardPreviousWeekVisible: boolean;
     dynamicColorsEnabled: boolean;
     mobilePushAlertsEnabled: boolean;
@@ -218,6 +220,7 @@ function createHarness() {
     weekStarting: "mon" as DashboardWeekStart,
     startupModule: "tasks" as const,
     autoFocusOnTaskLaunchEnabled: false,
+    timeGoalCompleteNextTasksEnabled: false,
     dashboardPreviousWeekVisible: true,
     dynamicColorsEnabled: true,
     mobilePushAlertsEnabled: false,
@@ -296,6 +299,10 @@ function createHarness() {
     getAutoFocusOnTaskLaunchEnabled: () => state.autoFocusOnTaskLaunchEnabled,
     setAutoFocusOnTaskLaunchEnabledState: (value) => {
       state.autoFocusOnTaskLaunchEnabled = value;
+    },
+    getTimeGoalCompleteNextTasksEnabled: () => state.timeGoalCompleteNextTasksEnabled,
+    setTimeGoalCompleteNextTasksEnabledState: (value) => {
+      state.timeGoalCompleteNextTasksEnabled = value;
     },
     getDashboardPreviousWeekVisible: () => state.dashboardPreviousWeekVisible,
     setDashboardPreviousWeekVisibleState: (value) => {

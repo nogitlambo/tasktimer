@@ -46,7 +46,7 @@ describe("Holding Space persistence helpers", () => {
     });
     expect(validateHoldingSpaceFile({ name: "large.pdf", size: HOLDING_SPACE_MAX_FILE_BYTES + 1, type: "application/pdf" })).toEqual({
       ok: false,
-      message: "Files must be 10 MB or smaller.",
+      message: "File size exceeds the max 10MB limit",
     });
   });
 });

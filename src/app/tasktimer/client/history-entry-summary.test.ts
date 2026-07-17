@@ -157,7 +157,7 @@ describe("history entry summary", () => {
     expect(html).toContain("Not tracked");
   });
 
-  it("renders aggregate and session XP values inside ribbon values while preserving the XP source hook", () => {
+  it("renders only aggregate XP inside a ribbon value while preserving the XP source hook", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",
       task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
@@ -180,11 +180,11 @@ describe("history entry summary", () => {
 
     const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
 
-    expect(html.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(3);
+    expect(html.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(1);
     expect(html.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
     expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">20</div>');
-    expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">12</div>');
-    expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">8</div>');
+    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">12</div>');
+    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">8</div>');
   });
 
   it("renders the note section after the time goal and XP metrics", () => {
