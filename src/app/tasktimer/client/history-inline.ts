@@ -1169,7 +1169,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const valueLabel = formatHistoryAxisDuration(ms);
         draw.save();
         draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
-        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.font = `11px "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
         draw.textAlign = "center";
         draw.textBaseline = "bottom";
         draw.shadowColor = "rgba(0,0,0,.7)";
@@ -1288,7 +1288,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.lineTo(plotLeft, markerY);
         draw.stroke();
         draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
-        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.font = `11px "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
         draw.textAlign = "right";
         draw.textBaseline = "middle";
         draw.fillText(underGoalPeakLabel, axisTickStartX - 3, markerY);
@@ -1325,7 +1325,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.lineTo(plotLeft, markerY);
         draw.stroke();
         draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
-        draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+        draw.font = `11px "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
         draw.textAlign = "right";
         draw.textBaseline = "middle";
         draw.fillText(lowestLoggedLabel, axisTickStartX - 3, markerY);
@@ -1366,7 +1366,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
           draw.lineTo(plotLeft, markerY);
           draw.stroke();
           draw.fillStyle = HISTORY_INLINE_CHART_LABEL_COLOR;
-          draw.font = `11px Ligconsolata, Inconsolata, "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
+          draw.font = `11px "Geist Mono Variable", "Cascadia Mono", Consolas, monospace`;
           draw.textAlign = "right";
           draw.textBaseline = "middle";
           draw.fillText(timeGoalAxisLabel, axisTickStartX - 3, markerY);

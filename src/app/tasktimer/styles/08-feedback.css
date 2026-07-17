@@ -1076,7 +1076,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch Feedback"] .feedbackAttachme
     linear-gradient(135deg, rgba(238, 242, 246, .82) 50%, transparent 50%) calc(100% - 13px) 50% / 5px 5px no-repeat,
     rgba(26, 27, 32, .58);
   color: rgba(238, 242, 246, .92);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
 }
 

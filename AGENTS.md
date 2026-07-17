@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 ## Agent skills
 
@@ -99,9 +99,9 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - Required styling behavior:
   - Do not introduce new font stacks in modal code.
   - Do not introduce standalone modal color palettes; use existing tokens/colors from `tasktimer.css`.
-  - Use `Ligconsolata`, `Inconsolata`, then `var(--font-geist-mono)` at `13px` for standard modal `.modalSubtext` and confirm explanatory text such as `.confirmText`; do not apply this rule to labels, inputs, selects, or buttons unless a modal has a local rule.
+  - Use `var(--font-readable)` (Geist Variable) at `13px` for standard modal `.modalSubtext` and confirm explanatory text such as `.confirmText`; do not apply this rule to labels, inputs, selects, or buttons unless a modal has a local rule.
   - Use the Modal preview action-button treatment for standard modal action rows: grey border/background, Orbitron text at `11px`, and primary-theme border/text color on hover/focus. Preserve `btn-warn` destructive styling unless the user explicitly requests otherwise.
-  - For standard modal dropdowns/selects, use square select chrome with `#1a1b20` as the border accent; helper text should use `.modalDropdownHelp` with `Ligconsolata`, `Inconsolata`, then `var(--font-geist-mono)` at `13px` in grey.
+  - For standard modal dropdowns/selects, use square select chrome with `#1a1b20` as the border accent; helper text should use `.modalDropdownHelp` with `var(--font-readable)` (Geist Variable) at `13px` in grey.
   - Use explicit allowlists for standard modal CSS rules; avoid broad `.overlay .modal` catch-all styling that would affect exempt modals.
   - Avoid inline styles except transient visibility/state toggles (for example `display: none`).
 - Required interaction behavior:

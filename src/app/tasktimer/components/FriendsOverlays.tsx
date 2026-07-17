@@ -3,28 +3,31 @@ import AppImg from "@/components/AppImg";
 export default function FriendsOverlays() {
   return (
     <>
-      <div className="overlay" id="friendRequestModal" style={{ display: "none" }}>
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
-          <h2>Send Friend Request</h2>
-          <div className="field">
+      <div className="overlay primitiveSciFiModalOverlay friendRequestPrimitiveOverlay" id="friendRequestModal" style={{ display: "none" }}>
+        <div className="primitiveSciFiModal friendRequestPrimitiveModal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
+          <header className="primitiveSciFiModalHeader friendRequestPrimitiveHeader">
+            <h2>Send Friend Request</h2>
+          </header>
+          <div className="primitiveSciFiModalBody friendRequestPrimitiveBody">
+            <p className="friendRequestPrimitiveSubtext">Email address must be linked to an active TaskLaunch account.</p>
             <input
               id="friendRequestEmailInput"
               type="email"
               autoComplete="email"
-              className="text w100"
+              className="friendRequestPrimitiveInput"
               placeholder="Email address"
               aria-label="Email address"
             />
+            <div id="friendRequestModalStatus" className="friendRequestPrimitiveStatus" style={{ display: "none" }} aria-live="polite" />
           </div>
-          <div className="confirmBtns">
-            <button className="btn btn-ghost" id="friendRequestCancelBtn" type="button">
+          <footer className="primitiveSciFiModalFooter friendRequestPrimitiveFooter">
+            <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendRequestPrimitiveAction friendRequestPrimitiveSecondaryAction" id="friendRequestCancelBtn" type="button">
               Cancel
             </button>
-            <button className="btn btn-accent" id="friendRequestSendBtn" type="button">
+            <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction friendRequestPrimitiveAction friendRequestPrimitivePrimaryAction" id="friendRequestSendBtn" type="button">
               Send Request
             </button>
-          </div>
-          <div id="friendRequestModalStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
+          </footer>
         </div>
       </div>
 
@@ -93,10 +96,10 @@ export default function FriendsOverlays() {
             <div id="shareTaskStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
           </div>
           <footer className="footerBtns shareTaskPrimitiveFooter">
-            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction shareTaskPrimitiveAction shareTaskPrimitiveSecondaryAction" id="shareTaskCancelBtn" type="button">
+            <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction shareTaskPrimitiveAction shareTaskPrimitiveSecondaryAction" id="shareTaskCancelBtn" type="button">
               Cancel
             </button>
-            <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction shareTaskPrimitiveAction shareTaskPrimitivePrimaryAction" id="shareTaskConfirmBtn" type="button">
+            <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction shareTaskPrimitiveAction shareTaskPrimitivePrimaryAction" id="shareTaskConfirmBtn" type="button">
               Share
             </button>
           </footer>

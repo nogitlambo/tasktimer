@@ -261,7 +261,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   letter-spacing:.1px;
 }
 
-.modal :where(p, label, input, select, textarea, .modalSubtext, .confirmText, .field, .settingsDetailNote){
+.modal :where(p, input, select, textarea, .modalSubtext, .confirmText, .settingsDetailNote){
   font-family: var(--font-readable);
 }
 
@@ -389,7 +389,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 .rankLadderModal p.modalSubtext{
   margin: 0 42px 8px 0;
   color: #ffffff !important;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 11px;
   font-weight: 400;
   line-height: 1.45;
@@ -3800,7 +3800,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay #historyEntryNoteMeta.modalSubtext{
     margin: 0;
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+    font-family: var(--font-readable);
     font-size: 13px;
     font-weight: 400;
     letter-spacing: 0;
@@ -3953,7 +3953,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .historyEntryNoteEditor .focusSessionNotesInput{
   min-height: 108px;
-  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 13px;
 }
 
@@ -4194,7 +4194,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay .historyEntrySummaryValue{
   min-width: 0;
   color: rgba(238, 242, 246, .95);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 12px;
   line-height: 1.35;
   font-weight: 400;
@@ -4236,7 +4236,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   color: rgba(238, 242, 246, .95);
   font-size: 12px;
   line-height: 1.45;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -5196,7 +5196,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   display: block;
   margin: 0 auto;
   color: rgba(190,196,205,.72);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 11px;
   font-weight: 400;
   line-height: 1.3;
@@ -6140,7 +6140,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   flex: 0 0 100%;
   margin: 0 0 9px;
   color: rgba(210,218,228,.76);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
@@ -6169,7 +6169,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   display: grid;
   place-items: center;
   gap: 4px;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -6543,7 +6543,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 #addTaskOverlay .taskScheduleDaysHelper{
   margin: 6px 0 0;
   color: rgba(245,248,244,.56);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 11px;
   line-height: 1.35;
 }
@@ -6594,7 +6594,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   margin: 0;
   padding: 0 10px 10px;
   color: rgba(245,248,244,.62);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -6964,7 +6964,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex: 1 1 auto;
   align-items: center;
   min-height: 18px;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
   letter-spacing: 0;
   line-height: 1.35;
@@ -7053,7 +7053,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   align-items: center;
   color: #fff;
   flex: 1 1 auto;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
   letter-spacing: 0;
   line-height: 1.35;
@@ -7195,7 +7195,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #taskSettingsOverlay,
   #contactOverlay,
   #elapsedPadOverlay,
-  #friendRequestModal,
   #shareTaskModal,
   #onboardingOverlay,
   #signOutConfirmOverlay,
@@ -7218,19 +7217,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-family: var(--font-readable) !important;
 }:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
-}:is(#aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #shareTaskModal, #taskManualEntryOverlay) .modal{
+}:is(#aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #shareTaskModal, #taskManualEntryOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
 }:is(#rankLadderOverlay, #timeGoalCompleteOverlay) .modal{
   width:min(var(--modal-width-lg), 100%) !important;
 }#rankPromotionOverlay .modal{
   width:min(520px, 100%) !important;
-}:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
+}:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-readable) !important;
   font-size: 13px !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
   color: #a8a7a7 !important;
 }
 
@@ -7253,26 +7252,26 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 @media (min-width: 641px){
   #temporaryModalOverlay .modalSubtext{
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+    font-family: var(--font-readable) !important;
     font-size: 13px !important;
   }
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
   border-color: #1a1b20 !important;
   background-color: rgba(26, 27, 32, .58) !important;
   color: rgba(238, 242, 246, .92) !important;
   border-radius: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
   border-color: var(--accent) !important;
   outline: 1px solid var(--accent) !important;
   outline-offset: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
   background: #0d0f13 !important;
   color: rgba(238, 242, 246, .92) !important;
 }
@@ -7297,7 +7296,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 .modalDropdownButton,
 .modalDropdownOption{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-geist-mono) !important;
   font-size: 13px !important;
 }
 
@@ -7483,7 +7482,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #temporaryModalOverlay .modalDropdownOption,
 #onboardingOverlay .modalDropdownButton,
 #onboardingOverlay .modalDropdownOption{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-readable) !important;
   font-size: 13px !important;
 }
 
@@ -7657,10 +7656,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal .modalDropdownHelp{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal .modalDropdownHelp{
   margin: 6px 0 0 !important;
   color: rgba(170, 178, 190, .88) !important;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-readable) !important;
   font-size: 13px !important;
   line-height: 1.35 !important;
 }
@@ -7846,7 +7845,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay, #friendRequestModal, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns){
+:is(#confirmOverlay, #signOutConfirmOverlay, #exportTaskOverlay, #shareTaskModal) .modal :where(.confirmBtns, .footerBtns){
   justify-content:flex-end !important;
   gap:10px !important;
   flex-wrap:wrap !important;
@@ -7864,7 +7863,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex-wrap:wrap !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
   border-color: rgba(170, 178, 190, .58) !important;
   background: rgba(170, 178, 190, .12) !important;
   color: rgba(238, 242, 246, .88) !important;
@@ -7873,8 +7872,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-size: 11px !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #friendRequestModal, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
   border-color: var(--accent) !important;
   color: var(--accent) !important;
   background: rgba(170, 178, 190, .16) !important;
@@ -7905,7 +7904,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #taskSettingsOverlay,
   #contactOverlay,
   #elapsedPadOverlay,
-  #friendRequestModal,
   #shareTaskModal,
   #onboardingOverlay,
   #signOutConfirmOverlay,
@@ -8050,7 +8048,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingChronotypeChoiceSubtextLine,
 #onboardingOverlay .onboardingHoursSubtext,
 #onboardingOverlay .onboardingNotificationsSubtext{
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-family: var(--font-readable) !important;
 }
 
 #onboardingOverlay .onboardingSkipLink{
@@ -8068,7 +8066,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background: transparent !important;
   color: rgba(170, 178, 190, .86) !important;
   box-shadow: none !important;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-geist-mono) !important;
   font-size: 9px !important;
   line-height: 1;
   padding: 0;
@@ -8313,7 +8311,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingTaskPresetDescription{
   color: #fff;
   display: block;
-  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono), monospace;
+  font-family: var(--font-geist-mono), monospace;
   font-size: 11px;
   line-height: 1.18;
   max-width: 22ch;
@@ -10022,7 +10020,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingFieldsGrid .onboardingField label{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
   text-transform: none;
 }
@@ -10034,7 +10032,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   border-radius: 0;
   background: rgba(26, 27, 32, .58);
   color: rgba(238, 242, 246, .92);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
   padding: 7px 10px;
 }
@@ -10162,7 +10160,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingUsernameInlineError{
   color: #ff9aa2;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 12px;
   line-height: 1.35;
   margin: 8px auto 0;
@@ -10332,7 +10330,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #onboardingOverlay .onboardingProductivitySettingsNote{
   color: rgba(170, 178, 190, .78);
   display: inline-block;
-  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
   font-style: italic;
   line-height: 1.4;

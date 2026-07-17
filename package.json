@@ -60,7 +60,6 @@
     "@capacitor/push-notifications": "^8.0.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/geist-mono": "^5.2.7",
-    "@fontsource/inconsolata": "^5.2.8",
     "@fontsource/orbitron": "^5.2.8",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.9.0",

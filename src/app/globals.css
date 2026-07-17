@@ -4,8 +4,6 @@
 @import "@fontsource/orbitron/latin-700.css";
 @import "@fontsource/orbitron/latin-800.css";
 @import "@fontsource/orbitron/latin-900.css";
-@import "@fontsource/inconsolata/latin-400.css";
-@import "@fontsource/inconsolata/latin-700.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 @import "tailwindcss";
@@ -16,7 +14,7 @@
   --font-geist-sans: Geist Variable, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   --font-geist-mono: Geist Mono Variable, "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --font-orbitron: Orbitron, "Bahnschrift", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  --font-readable: Inconsolata, var(--font-geist-mono);
+  --font-readable: var(--font-geist-sans);
   --font-display-ui: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
@@ -521,7 +519,7 @@ body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
 .webSignInFooterText {
   margin: 0;
   color: rgba(248, 250, 252, 0.58);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 0.72rem;
   line-height: 1.45;
 }

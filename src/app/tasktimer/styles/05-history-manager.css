@@ -485,7 +485,7 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
 
 #taskManualEntryOverlay .hmManualEntryNoteInput{
   min-height:108px;
-  font-family: Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size:13px;
 }
 
@@ -766,6 +766,6 @@ body[data-theme="lime"] #historyManagerScreen .hmGroup{
   font-family: var(--font-readable) !important;
 }#taskManualEntryOverlay .modalSubtext{
   color: rgba(170, 178, 190, .88) !important;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-geist-mono) !important;
   font-size: 13px !important;
 }

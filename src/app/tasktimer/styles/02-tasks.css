@@ -879,7 +879,7 @@ body.isFocusModeTransitioning #focusModeScreen{
 .focusDndSetupText{
   margin-top:6px;
   color:rgba(238,244,250,.72);
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-family:var(--font-geist-mono);
   font-size:13px;
   line-height:1.35;
   text-align:center;

@@ -48,8 +48,8 @@ function main() {
 
   assertMatch(
     globals,
-    /--font-readable:\s*Inconsolata,\s*var\(--font-geist-mono\);/m,
-    "globals.css must keep --font-readable mapped to Inconsolata."
+    /--font-readable:\s*var\(--font-geist-sans\);/m,
+    "globals.css must keep --font-readable mapped to Geist Variable."
   );
 
   assertMatch(

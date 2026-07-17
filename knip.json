@@ -19,7 +19,6 @@
     "@capacitor/app",
     "@fontsource-variable/geist",
     "@fontsource-variable/geist-mono",
-    "@fontsource/inconsolata",
     "@fontsource/orbitron",
     "firebase-functions",
     "tailwindcss"

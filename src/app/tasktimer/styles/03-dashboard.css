@@ -308,7 +308,7 @@
 }
 
 .dashboardActivitySummaryMini .dashboardSummaryFoot{
-  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family:var(--font-geist-mono);
   font-size:13px;
   min-height:18px;
 }
@@ -763,7 +763,7 @@ body[data-theme="lime"] .dashboardActivityGoalLine{
 }
 
 .dashboardSummaryFoot{
-  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family:var(--font-geist-mono);
   font-size:13px;
 }
 
@@ -3141,6 +3141,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumSubtext{
   margin:0;
+  font-family: var(--font-readable);
   color:rgba(219,236,245,.78);
   font-size:13px;
   line-height:1.5;
@@ -3406,6 +3407,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumSubtext{
   max-width: 28ch;
+  font-family: var(--font-readable);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -4452,7 +4454,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverText{
   min-width: 0 !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-family: var(--font-readable) !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumDriverTextList .dashboardMomentumDriver{
@@ -5344,6 +5346,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverText{
   display: block !important;
   min-width: 0 !important;
+  font-family: var(--font-readable) !important;
   font-size: 11px;
   line-height: 1.28;
   box-sizing: border-box !important;
@@ -5433,6 +5436,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 5px 0 0;
   min-height: 0;
   max-height: 2.5em;
+  font-family: var(--font-readable);
   font-size: 11px;
   line-height: 1.25;
   color: rgba(232,238,247,.82);
@@ -5633,6 +5637,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin: 0 !important;
   max-height: none !important;
   min-height: 0 !important;
+  font-family: var(--font-readable) !important;
   font-size: 11px !important;
   line-height: 1.22 !important;
   overflow: visible !important;
@@ -6029,7 +6034,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot span{
   min-height: 14px;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-geist-mono);
   font-size: 13px;
   line-height: 1.18;
 }
@@ -6493,7 +6498,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryFoot{
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+    font-family: var(--font-geist-mono) !important;
     font-size: 13px !important;
   }
 
@@ -6953,6 +6958,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
   margin: 0 !important;
   max-height: none !important;
+  font-family: var(--font-readable) !important;
   font-size: 11px !important;
   line-height: 1.22 !important;
   overflow: visible !important;
@@ -7042,6 +7048,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDriverText{
+    font-family: var(--font-readable) !important;
     font-size: 11px !important;
     line-height: 1.25 !important;
   }
@@ -7053,6 +7060,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
     margin-top: 0 !important;
+    font-family: var(--font-readable) !important;
     font-size: 11px !important;
     line-height: 1.25 !important;
     max-height: none !important;
@@ -7325,7 +7333,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appPages::-we
 
 /* Dashboard momentum footer responsive ownership. */
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumFooterMessage{
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+    font-family: var(--font-readable);
     font-size: 13px !important;
     color: #fff !important;
     line-height: 1.22 !important;
@@ -7334,7 +7342,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumFooterMessage{
-    font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+    font-family: var(--font-readable);
     font-size: 13px !important;
     color: #fff !important;
     line-height: 1.22 !important;
@@ -7342,7 +7350,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardMomentumCard .dashboardMomentumDriverText,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardGrid > .dashboardMomentumCard .dashboardMomentumDriverText{
-    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+    font-family: var(--font-readable);
     font-size: 12px !important;
   }
 }
@@ -8087,7 +8095,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   margin:0 !important;
   max-height:none !important;
   overflow:visible !important;
-  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family:var(--font-readable) !important;
   font-size:13px !important;
   color:#fff !important;
   line-height:1.24 !important;

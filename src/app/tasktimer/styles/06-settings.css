@@ -19,7 +19,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 
 .taskFocusDndStatus{
   color:rgba(238,244,250,.72);
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-family:var(--font-readable);
   font-size:13px;
   line-height:1.35;
 }
@@ -964,7 +964,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .inlineConfirmTit
 body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.settingsInlineConfirmText, .accountInlineConfirmText){
   margin:0 !important;
   color:rgba(255,255,255,.88) !important;
-  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family:var(--font-readable) !important;
   font-size:13px !important;
   line-height:1.45 !important;
 }
@@ -980,7 +980,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal .deleteAccountBus
   gap:10px !important;
   min-height:38px !important;
   color:rgba(255,255,255,.92) !important;
-  font-family:"Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family:var(--font-readable) !important;
   font-size:13px !important;
   line-height:1.2 !important;
 }
@@ -1362,7 +1362,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
   align-items:start;
   gap:4px;
   color: #fff;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-tight);
   font-size:13px;
   font-weight:400;
   text-transform:none;
@@ -1382,7 +1382,7 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityStartTimeInput,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) #optimalProductivityEndTimeInput{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection textarea{
@@ -3128,12 +3128,12 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem .settingsMenuItemHelper{
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono);
+  font-family:var(--font-readable);
   font-size:11px;
   font-weight:400;
   line-height:1.35;
   letter-spacing:0;
-  color:rgba(154,164,180,.82);
+  color:inherit;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDataListItem.settingsDataListItemLocked .settingsMenuItemText{
@@ -4096,7 +4096,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPreferenceControlHelp{
   max-width: 44ch;
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 11px;
   font-weight: 400;
   line-height: 1.35;
@@ -4255,7 +4255,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   border: 1px solid #1a1b20;
   background: rgba(26, 27, 32, .58);
   color: rgba(238, 242, 246, .92);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 13px;
   padding: 7px 10px;
   text-align: center;
@@ -4569,7 +4569,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .settingsDetailText{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-readable) !important;
   font-size:13px;
   text-transform:none;
   letter-spacing:.01em;
@@ -4587,15 +4587,19 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   padding: 8px 0;
 }
 
-/* Final Preferences/Appearance/Notifications typography pass: use Ligconsolata-style readable text and normal casing
+/* Final Preferences/Appearance/Notifications typography pass: use readable text and normal casing
    for the primary inline controls shown in these panes. */
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineFooter .btn,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection option,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection input{
-  font-family: var(--font-readable) !important;
   text-transform: none !important;
   letter-spacing: 0.01em !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection option,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection input{
+  font-family: var(--font-readable) !important;
 }
 
 /* Final About pane layout and typography overrides. */
@@ -4745,6 +4749,13 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection select,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection option,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection input,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection textarea{
+  font-family: var(--font-readable) !important;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityClockValue,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityDaysMenu .chkRow,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityDaysAllBtn{
@@ -4754,9 +4765,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityPeriodInputs label span,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityClockNativeInput.isFallbackVisible{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDisplayTypographyPane .settingsInlineSection .optimalProductivityClockNativeInput.isFallbackVisible{
+  font-family: var(--font-readable) !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsDetailNote{
@@ -5291,7 +5305,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   border: 1px solid rgba(168, 176, 189, .56);
   background: rgba(255,255,255,.02);
   color: rgba(232,236,242,.92);
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono);
+  font-family: var(--font-tight);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -6114,7 +6128,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span:not(.settingsMenuItemHelper){
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
@@ -6129,17 +6143,18 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   text-align:left !important;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span:not(.settingsMenuItemHelper){
   width:100%;
   text-align:left !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > .settingsMenuItemHelper{
-  font-family:Ligconsolata, Inconsolata, var(--font-geist-mono) !important;
+  font-family:var(--font-readable) !important;
   font-size:11px !important;
   font-weight:400 !important;
   line-height:1.35 !important;
   letter-spacing:0 !important;
+  color:inherit !important;
 }
 
 @media (max-width: 980px){
@@ -6242,14 +6257,14 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 }
 
-:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) :where(.modalSubtext, .confirmText, label, p),
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal :where(.settingsInlineConfirmText, label, p){
+:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) :where(.modalSubtext, .confirmText, p),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal :where(.settingsInlineConfirmText, p){
   font-family: var(--font-readable) !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmText,
 #app[aria-label="TaskLaunch Account"] .accountInlineConfirmText{
-  font-family: "Ligconsolata", Inconsolata, var(--font-geist-mono) !important;
+  font-family: var(--font-readable) !important;
   font-size: 13px !important;
 }
 

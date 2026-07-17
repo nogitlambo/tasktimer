@@ -2344,7 +2344,7 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   border:1px solid rgba(45,48,54,.78);
   background:#101217;
   color:#dfe8da;
-  font-family:"Ligconsolata", "Inconsolata", var(--font-geist-mono), monospace;
+  font-family:var(--font-geist-mono);
   font-size:12px;
   line-height:1.35;
 }
