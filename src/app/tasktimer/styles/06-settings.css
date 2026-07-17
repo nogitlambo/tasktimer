@@ -6262,6 +6262,11 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   font-family: var(--font-readable) !important;
 }
 
+:is(#howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay) .modal :is(h1, h2, h3, h4, h5, h6, .modalTitle),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmModal :is(h1, h2, h3, h4, h5, h6, .modalTitle){
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineConfirmText,
 #app[aria-label="TaskLaunch Account"] .accountInlineConfirmText{
   font-family: var(--font-readable) !important;

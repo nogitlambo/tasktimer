@@ -5,7 +5,7 @@ export default function HistoryEntryNoteOverlay() {
     <div className="overlay primitiveSciFiModalOverlay historyEntrySummaryPrimitiveOverlay" id="historyEntryNoteOverlay">
       <div className="modal historyEntrySummaryModal historyEntrySummaryPrimitiveModal" role="dialog" aria-modal="true" aria-label="Session Summary">
         <div className="historyEntryNoteHeader historyEntrySummaryPrimitiveHeader">
-          <h2 id="historyEntryNoteTitle">Task</h2>
+          <h2 id="historyEntryNoteTitle">Session Summary</h2>
           <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
         </div>
         <div className="historyEntryNoteBody historyEntrySummaryPrimitiveBody" id="historyEntryNoteBody">
@@ -55,6 +55,7 @@ export default function HistoryEntryNoteOverlay() {
             className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction"
             id="historyEntryNoteCancelBtn"
             type="button"
+            hidden
             style={{ display: "none" }}
           >
             Cancel
@@ -63,6 +64,7 @@ export default function HistoryEntryNoteOverlay() {
             className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitivePrimaryAction"
             id="historyEntryNoteSaveBtn"
             type="button"
+            hidden
             style={{ display: "none" }}
           >
             Save Note
@@ -71,6 +73,7 @@ export default function HistoryEntryNoteOverlay() {
             className="btn btn-accent historyEntryNoteSaveAndCloseBtn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitivePrimaryAction"
             id="historyEntryNoteSaveAndCloseBtn"
             type="button"
+            hidden
             style={{ display: "none" }}
           >
             Save &amp; Close

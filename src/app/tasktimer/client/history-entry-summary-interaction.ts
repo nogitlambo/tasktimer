@@ -106,6 +106,12 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
   const { elements } = options;
   const INLINE_NOTE_COMPACT_HEIGHT_PX = 22;
 
+  function setButtonVisible(button: HTMLButtonElement | null, visible: boolean) {
+    if (!button) return;
+    button.hidden = !visible;
+    button.style.display = visible ? "" : "none";
+  }
+
   function getCloseButton() {
     return elements.overlay?.querySelector(".closePopup") as HTMLButtonElement | null;
   }
@@ -240,7 +246,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const shouldShowSaveAndClose = overlay.dataset.historyEntryOwner === "inline"
       && overlay.dataset.historyEntryEditing === "true"
       && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
-    saveAndCloseBtn.style.display = shouldShowSaveAndClose ? "" : "none";
+    setButtonVisible(saveAndCloseBtn, shouldShowSaveAndClose);
   }
 
   function syncEditorUi(editing: boolean) {
@@ -253,22 +259,22 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
     if (options.owner === "manager" && editing && !getActiveInput()) {
       if (elements.editor) elements.editor.style.display = "grid";
-      if (elements.cancelBtn) elements.cancelBtn.style.display = "";
-      if (elements.saveBtn) elements.saveBtn.style.display = "";
-      if (saveAndCloseBtn) saveAndCloseBtn.style.display = "none";
-      if (elements.editBtn) elements.editBtn.style.display = "none";
+      setButtonVisible(elements.cancelBtn, true);
+      setButtonVisible(elements.saveBtn, true);
+      setButtonVisible(saveAndCloseBtn, false);
+      setButtonVisible(elements.editBtn, false);
     } else {
       if (elements.editor) elements.editor.style.display = "none";
       if (elements.editBtn) {
         elements.editBtn.textContent = currentNote ? "Edit Note" : "Add Note";
-        elements.editBtn.style.display = editable && !editing ? "" : "none";
       }
-      if (elements.cancelBtn) elements.cancelBtn.style.display = "none";
-      if (elements.saveBtn) elements.saveBtn.style.display = "none";
-      if (saveAndCloseBtn) saveAndCloseBtn.style.display = "none";
+      setButtonVisible(elements.editBtn, editable && !editing);
+      setButtonVisible(elements.cancelBtn, false);
+      setButtonVisible(elements.saveBtn, false);
+      setButtonVisible(saveAndCloseBtn, false);
     }
 
-    if (closeBtn) closeBtn.style.display = "";
+    setButtonVisible(closeBtn, true);
 
     overlay.dataset.historyEntryEditing = editing ? "true" : "false";
     syncCloseLabel();
@@ -319,10 +325,10 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       getEntryNote: options.getEntryNote,
     });
     if (!payload) return false;
-    if (elements.title) elements.title.textContent = payload.titleText;
+    if (elements.title) elements.title.textContent = "Session Summary";
     if (elements.meta) {
-      elements.meta.textContent = payload.metaText;
-      elements.meta.style.display = payload.metaText ? "" : "none";
+      elements.meta.textContent = payload.titleText;
+      elements.meta.style.display = payload.titleText ? "" : "none";
     }
     if (elements.body) {
       elements.body.innerHTML = renderHistoryEntrySummaryHtml(payload, options.escapeHtml);

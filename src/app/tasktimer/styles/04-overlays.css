@@ -254,11 +254,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 .modal h2{
   margin:0 0 12px;
-  font-family:var(--font-tight);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size:20px;
   font-weight:700;
   line-height:1.25;
   letter-spacing:.1px;
+}
+
+.modal :is(h1, h2, h3, h4, h5, h6, .modalTitle),
+.overlay .modal :is(h1, h2, h3, h4, h5, h6, .modalTitle){
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
 }
 
 .modal :where(p, input, select, textarea, .modalSubtext, .confirmText, .settingsDetailNote){
@@ -2727,7 +2732,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #exportTaskOverlay .exportTaskPrimitiveHeader h2{
   margin: 0 !important;
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   line-height: 1.1 !important;
@@ -2940,7 +2945,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
     rgba(22, 29, 37, .96) !important;
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
@@ -3086,7 +3091,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     inset 0 -2px 0 rgba(0, 0, 0, .78),
     inset 0 -9px 16px rgba(0, 0, 0, .28);
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   line-height: 1.1 !important;
@@ -3095,22 +3100,35 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader{
-  flex-wrap: wrap;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: flex-start;
+  align-items: flex-start;
+  gap: 8px;
+  justify-content: center;
+  justify-items: start;
+  text-align: left !important;
 }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader h2{
+  display: block;
   margin: 0 !important;
+  width: 100%;
   font: inherit !important;
   color: inherit !important;
+  text-align: left !important;
 }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay #historyEntryNoteMeta.modalSubtext{
-  flex: 1 1 100%;
-  margin: 4px 0 0 !important;
+  display: block;
+  width: 100%;
+  margin: 0 !important;
   color: rgba(190, 198, 210, .8) !important;
   font-family: var(--font-readable) !important;
   font-size: 13px !important;
   line-height: 1.35 !important;
+  text-align: left !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmText,
@@ -3182,6 +3200,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     filter .16s ease,
     transform .16s ease,
     box-shadow .16s ease !important;
+}
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction[hidden]{
+  display: none !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:hover:not(:disabled),
@@ -4373,6 +4395,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: 0;
+    text-align: left;
     text-transform: uppercase;
   }
 
@@ -4382,6 +4405,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     font-size: 13px;
     font-weight: 400;
     letter-spacing: 0;
+    text-align: left;
     text-transform: uppercase;
     color: rgba(188, 214, 230, .72) !important;
   }
@@ -4421,8 +4445,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySharedCard{
+  box-sizing: border-box;
+  width: calc(100% + 92px);
+  max-width: none;
+  margin-inline: -46px;
   min-width: 0;
-  margin: 0;
   padding: 12px;
   border: 1px solid rgba(188, 214, 230, 0.18);
   background: #0d0f13;
@@ -4566,11 +4593,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 }
 
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn,
-#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn,
 #historyEntryNoteOverlay #historyEntryNoteSaveBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible,
-#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:focus-visible{
+#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible{
   background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
   color: #02060d !important;
   border-color: rgba(174,184,194,.58) !important;
@@ -4582,21 +4606,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn{
   order: 2;
-  border-radius: 0 !important;
 }
 
 #historyEntryNoteOverlay .closePopup{
   order: 1;
   margin-left: auto;
-}
-
-#historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn:active{
-  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
-  color: #02060d !important;
-  border-color: rgba(201,255,36,.86) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
 }
 
 #historyEntryNoteOverlay .closePopup:hover,
@@ -4923,6 +4937,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   #historyEntryNoteOverlay .historyEntrySummarySessionLayout{
       grid-template-columns: minmax(0, 1fr);
       gap: 10px;
+    }
+
+#historyEntryNoteOverlay .historyEntrySummarySharedCard{
+      width: calc(100% + 48px);
+      margin-inline: -24px;
     }
 
 #historyEntryNoteOverlay .historyEntrySummarySessionCard{
@@ -11889,7 +11908,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
     rgba(22, 29, 37, .96) !important;
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;

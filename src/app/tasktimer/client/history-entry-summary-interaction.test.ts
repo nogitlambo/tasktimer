@@ -25,6 +25,7 @@ function elementStub(id = "") {
     id,
     dataset: {} as Record<string, string>,
     style: { display: "" } as Record<string, string>,
+    hidden: false,
     textContent: "",
     innerHTML: "",
     classList,
@@ -228,8 +229,8 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     expect(h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }])).toBe(true);
 
-    expect(h.title.textContent).toBe("Focus");
-    expect(h.meta.textContent).toBe("Session Summary");
+    expect(h.title.textContent).toBe("Session Summary");
+    expect(h.meta.textContent).toBe("Focus");
     expect(h.body.innerHTML).toContain("Session note");
     expect(h.opened).toEqual([h.overlay]);
   });
@@ -384,8 +385,14 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.value).toBe("Original note");
     expect(input.focus).toHaveBeenCalledTimes(1);
     expect(h.closeBtn.style.display).toBe("");
+    expect(h.closeBtn.hidden).toBe(false);
     expect(h.closeBtn.textContent).toBe("");
+    expect(h.cancelBtn.hidden).toBe(true);
+    expect(h.saveBtn.hidden).toBe(true);
+    expect(h.cancelBtn.style.display).toBe("none");
+    expect(h.saveBtn.style.display).toBe("none");
     expect(h.saveAndCloseBtn.style.display).toBe("");
+    expect(h.saveAndCloseBtn.hidden).toBe(false);
     expect(input.style.height).toBe("22px");
     expect(input.style.overflowY).toBe("hidden");
   });
@@ -472,6 +479,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     input.value = "   ";
     h.interaction.syncInputMirror("   ");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
+    expect(h.saveAndCloseBtn.hidden).toBe(true);
   });
 
   it("collapses the active inline note to compact height while preserving the draft and edit state", () => {

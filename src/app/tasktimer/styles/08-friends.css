@@ -103,7 +103,7 @@
 :is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendUserSummaryTitle, .leaderboardUserSummaryTitle){
   margin: 0 !important;
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   line-height: 1.1 !important;
@@ -6819,7 +6819,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
 :is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendUserSummaryTitle, .leaderboardUserSummaryTitle){
   color: #f7f8fb !important;
-  font-family: var(--font-geist-sans), var(--font-readable) !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 18px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
