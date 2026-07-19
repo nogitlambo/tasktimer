@@ -537,7 +537,6 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
             <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? 'aria-disabled="true"' : ""}>
               <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
-            ${historyHTML}
             </div>
           </div>
           <div class="taskFace taskFaceBack" aria-hidden="true" inert>
@@ -558,6 +557,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
             </div>
             </div>
           </div>
+          ${historyHTML}
         </div>
       `,
   };

@@ -282,6 +282,22 @@ describe("task list renderer", () => {
     expect(harness.calls.filter((call) => call === "render-history:b")).toHaveLength(2);
   });
 
+  it("keeps inline history outside the flipping task faces", () => {
+    const harness = createHarness();
+    harness.openHistoryTaskIds.add("a");
+    harness.historyViewByTaskId.a = { revealPhase: "open", revealTimer: null };
+
+    harness.renderer.renderTasksPage();
+
+    const renderedTask = harness.taskListEl.children[0];
+    const historyIndex = renderedTask?.innerHTML.indexOf("historyInline historyInlineMotion");
+    const backFaceIndex = renderedTask?.innerHTML.indexOf('class="taskFace taskFaceBack"');
+
+    expect(historyIndex).toBeGreaterThan(0);
+    expect(backFaceIndex).toBeGreaterThan(0);
+    expect(historyIndex).toBeGreaterThan(backFaceIndex || 0);
+  });
+
   it("waits to rerender opening history until the chart reveal phase is complete", () => {
     const harness = createHarness();
     harness.openHistoryTaskIds.add("a");

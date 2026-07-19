@@ -6512,80 +6512,78 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   pointer-events: none;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteMedalWrap{
+#timeGoalCompleteOverlay .timeGoalCompleteTickWrap{
   position: relative;
   display: grid;
   place-items: center;
   width: 150px;
-  height: 86px;
-  margin: -8px 0 2px;
+  height: 112px;
+  margin: -14px 0 -2px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteMedalRibbon{
-  position: absolute;
-  left: 50%;
-  top: 24px;
-  width: 188px;
-  height: 28px;
-  border: 1px solid rgba(255, 219, 120, .34);
-  background:
-    linear-gradient(90deg, transparent 0 8%, rgba(255, 229, 159, .78) 17%, rgba(123, 78, 25, .7) 36%, rgba(35, 17, 8, .78) 50%, rgba(123, 78, 25, .7) 64%, rgba(255, 229, 159, .78) 83%, transparent 92%),
-    linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(0, 0, 0, .24));
-  box-shadow: 0 8px 18px rgba(0, 0, 0, .42);
-  transform: translateX(-50%) rotate(-6deg) skewX(-16deg);
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteMedal{
+#timeGoalCompleteOverlay .timeGoalCompleteTickBadge{
   position: relative;
   display: grid;
   place-items: center;
-  width: 82px;
-  height: 82px;
-  border: 2px solid rgba(255, 244, 180, .9);
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, .95), rgba(255, 241, 156, .9) 18%, transparent 19%),
-    radial-gradient(circle at 50% 52%, #fff5b8 0 9%, #f6ce55 10% 42%, #b46d17 72%, #6a3808 100%);
+    radial-gradient(circle at 38% 24%, rgba(255, 255, 255, .86), rgba(240, 255, 218, .58) 16%, transparent 30%),
+    radial-gradient(circle at 66% 20%, rgba(221, 255, 105, .9), transparent 32%),
+    radial-gradient(circle at 36% 72%, rgba(14, 173, 29, .96), transparent 45%),
+    linear-gradient(135deg, #9eff45 0%, #3bd835 38%, #08a92d 72%, #c9ff32 100%);
   box-shadow:
-    0 0 0 4px rgba(103, 59, 10, .72),
-    0 0 0 6px rgba(255, 228, 107, .24),
-    0 18px 22px rgba(0, 0, 0, .54),
-    inset 0 0 0 5px rgba(99, 54, 8, .24),
-    inset 0 0 18px rgba(255, 255, 255, .54);
+    0 0 0 1px rgba(218, 255, 132, .42),
+    0 0 0 7px rgba(116, 255, 54, .09),
+    0 18px 30px rgba(0, 0, 0, .46),
+    0 20px 42px rgba(108, 255, 43, .18),
+    inset 0 -14px 24px rgba(0, 92, 14, .34),
+    inset 0 14px 22px rgba(255, 255, 255, .28);
+  overflow: visible;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteMedal::before,
-#timeGoalCompleteOverlay .timeGoalCompleteMedal::after{
+#timeGoalCompleteOverlay .timeGoalCompleteTickBadge::before{
   content: "";
   position: absolute;
-  border-radius: 999px;
-  background: rgba(88, 45, 5, .46);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24);
+  inset: 9px 11px 42px 15px;
+  border-radius: 999px 999px 72% 72%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, .12) 58%, transparent 100%);
+  filter: blur(.2px);
+  transform: rotate(-12deg);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteMedal::before{
-  left: 23px;
-  top: 25px;
-  width: 9px;
-  height: 24px;
+#timeGoalCompleteOverlay .timeGoalCompleteTickBadge::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  width: 64px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(126, 255, 91, .32), transparent 72%);
+  filter: blur(5px);
+  transform: translateX(-50%);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteMedal::after{
-  right: 23px;
-  top: 25px;
-  width: 9px;
-  height: 24px;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteMedalMark{
-  position: relative;
+#timeGoalCompleteOverlay .timeGoalCompleteTickMark{
+  position: absolute;
+  left: 3px;
+  top: -20px;
   z-index: 1;
-  margin-top: 34px;
-  color: rgba(70, 38, 5, .72);
-  font-family: var(--font-orbitron), var(--font-geist-sans), sans-serif;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0;
+  width: 118px;
+  height: 126px;
+  background: rgba(255, 255, 255, .96);
+  clip-path: polygon(0 55%, 13% 43%, 40% 63%, 84% 3%, 92% 8%, 50% 82%, 40% 88%);
+  filter: drop-shadow(8px 13px 14px rgba(33, 105, 0, .28));
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteTickMark::before{
+  content: "";
+  position: absolute;
+  inset: 10px 9px 12px 9px;
+  background: linear-gradient(135deg, #bfff68 0%, #7ae000 42%, #22b72c 100%);
+  clip-path: polygon(0 55%, 13% 43%, 40% 63%, 84% 3%, 92% 8%, 50% 82%, 40% 88%);
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteRewardEyebrows{
@@ -8014,10 +8012,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-weight: 700;
 }
 
-#leaderboardMovementOverlay .leaderboardMovementModal{
-  width:min(520px, 100%) !important;
-}
-
 #leaderboardMovementOverlay .leaderboardMovementBoardLabel{
   margin:0 0 6px !important;
   text-transform:uppercase;
@@ -8038,18 +8032,20 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #leaderboardMovementOverlay .leaderboardMovementTable{
   display:grid;
   gap:0;
+  min-width:0;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
   display:grid;
-  grid-template-columns:52px minmax(0, 1fr) 86px 52px;
-  min-height:42px;
-  padding:0 10px;
+  grid-template-columns:38px minmax(0, 1fr) 70px 34px;
+  min-height:38px;
+  padding:0 8px;
   align-items:center;
   border:0;
   border-bottom:1px solid rgba(255,255,255,.08);
   background:transparent;
   color:rgba(238,242,246,.9);
+  min-width:0;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow:last-child{
@@ -8057,7 +8053,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead{
-  min-height:30px;
+  min-height:28px;
   color:rgba(168,167,167,.9);
 }
 
@@ -8068,6 +8064,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerCell{
   min-width:0;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow > span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardAvatarSmall{
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerText{
@@ -8085,14 +8094,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   justify-content:flex-end;
 }
 
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyInsigniaCell .leaderboardRankInsignia{
+  width:24px;
+  height:24px;
+}
+
 #leaderboardMovementOverlay .confirmBtns{
   margin-top:16px;
 }
 
 @media (max-width: 520px){
   #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
-    grid-template-columns:42px minmax(0, 1fr) 72px 40px;
-    padding:0 8px;
+    grid-template-columns:32px minmax(0, 1fr) 62px 30px;
+    padding:0 6px;
   }
 }
 

@@ -99,10 +99,9 @@ export default function TimeGoalCompleteOverlay() {
         </div>
         <div className="timeGoalCompletePrimitiveBody">
           <div className="timeGoalCompleteRewardCard">
-            <div className="timeGoalCompleteMedalWrap" aria-hidden="true">
-              <span className="timeGoalCompleteMedalRibbon" />
-              <span className="timeGoalCompleteMedal">
-                <span className="timeGoalCompleteMedalMark">XP</span>
+            <div className="timeGoalCompleteTickWrap" aria-hidden="true">
+              <span className="timeGoalCompleteTickBadge">
+                <span className="timeGoalCompleteTickMark" />
               </span>
             </div>
             <div className="timeGoalCompleteRewardEyebrows" aria-hidden="true">

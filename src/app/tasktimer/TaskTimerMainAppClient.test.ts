@@ -144,7 +144,7 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).not.toContain('text: "+1 XP"');
   });
 
-  it("plays a coin-slot style XP sound as each modal XP unit lands", () => {
+  it("plays a coin-slot style XP sound in sync with each modal XP unit launch", () => {
     expect(source).toContain('import { createClickAudioPlayer } from "./client/click-audio-player";');
     expect(source).toContain('const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp-reward.mp3";');
     expect(source).toContain('const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";');
@@ -159,7 +159,8 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.play();");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.warm();");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
-    expect(source).toContain("playXpAwardUnitDeliverySound();\n          updateDeliveredXp();");
+    expect(source).toContain("playXpAwardUnitDeliverySound();\n        setXpAwardFx((current) => ({");
+    expect(source).toContain("addExtraTimer(() => {\n          updateDeliveredXp();\n        }, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("playXpAwardDoneSoundOnce();\n          finishAward");
     expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");

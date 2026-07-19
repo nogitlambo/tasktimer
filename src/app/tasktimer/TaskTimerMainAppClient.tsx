@@ -1038,6 +1038,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const launchUnitPayload = () => {
         if (totalUnits <= 0) return;
         if (reducedMotion || !targetRect) {
+          playXpAwardUnitDeliverySound();
           updateDeliveredXp();
           return;
         }
@@ -1045,11 +1046,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         const sourceRect = sourceElement?.getBoundingClientRect?.() || null;
         const unitOriginRect = isUsableXpAwardRect(sourceRect) ? sourceRect as DOMRect : activeAward.sourceRect;
         if (!unitOriginRect) {
+          playXpAwardUnitDeliverySound();
           updateDeliveredXp();
           return;
         }
         const style = buildXpPayloadStyle(unitOriginRect, targetRect);
         const id = `modal-unit-${activeAward.sourceOverlayId}-${xpAwardPayloadSeqRef.current++}`;
+        playXpAwardUnitDeliverySound();
         setXpAwardFx((current) => ({
           visible: true,
           payloads: [
@@ -1063,7 +1066,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           ],
         }));
         addExtraTimer(() => {
-          playXpAwardUnitDeliverySound();
           updateDeliveredXp();
         }, XP_AWARD_UNIT_FX_DURATION_MS);
         addExtraTimer(() => removePayload(id), XP_AWARD_UNIT_FX_DURATION_MS + 120);

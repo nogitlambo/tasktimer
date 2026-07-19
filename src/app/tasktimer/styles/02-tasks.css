@@ -671,7 +671,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   overflow: visible;
 }
 
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .historyInline{
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .historyInline,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFlipScene > .historyInline{
   position: absolute;
   top: 100%;
   left: 0;
@@ -1367,11 +1368,6 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-width:0;
   min-height:100%;
   transform-style:preserve-3d;
-  transition: transform .48s cubic-bezier(.22,.78,.2,1);
-}
-
-body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isFlipped .taskFlipScene{
-  transform: rotateY(180deg);
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFace{
@@ -1381,10 +1377,19 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-height:100%;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
+  transition: transform .48s cubic-bezier(.22,.78,.2,1);
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceBack{
   transform: rotateY(180deg);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isFlipped .taskFaceFront{
+  transform: rotateY(-180deg);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task.isFlipped .taskFaceBack{
+  transform: rotateY(0);
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.isFlipped) .taskFaceBack{

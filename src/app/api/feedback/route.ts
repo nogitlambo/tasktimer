@@ -4,6 +4,7 @@ import {
   ApiRateLimitError,
   enforceUidRateLimit,
 } from "../shared/rateLimit";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../shared/cors";
 import {
   asString,
   createJiraIssue,
@@ -53,6 +54,10 @@ function createErrorResponse(error: unknown, fallbackMessage: string) {
   }
   const message = error instanceof Error && error.message ? error.message : fallbackMessage;
   return NextResponse.json({ error: message, code: "feedback/internal" }, { status: 500 });
+}
+
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
 }
 
 async function parseFeedbackPostBody(req: Request) {
@@ -226,19 +231,19 @@ export async function POST(req: Request) {
         : undefined,
     });
 
-    return NextResponse.json({
+    return withAuthenticatedApiCors(req, NextResponse.json({
       ok: true,
       feedbackId: result.feedbackId,
       jiraIssueId: jira?.jiraIssueId || null,
       jiraIssueKey: jira?.jiraIssueKey || null,
       jiraIssueBrowseUrl: jira?.jiraIssueBrowseUrl || null,
       deduplicated: jira?.deduplicated || false,
-    });
+    }));
   } catch (error) {
     console.error("[api/feedback] Feedback submission failed", {
       error: describeError(error),
     });
-    return createErrorResponse(error, "Could not submit feedback.");
+    return withAuthenticatedApiCors(req, createErrorResponse(error, "Could not submit feedback."));
   }
 }
 
@@ -283,16 +288,16 @@ export async function PATCH(req: Request) {
       }
     }
 
-    return NextResponse.json({
+    return withAuthenticatedApiCors(req, NextResponse.json({
       ok: true,
       upvoted: result.upvoted,
       upvoteCount: result.upvoteCount,
       jiraIssueBrowseUrl: result.jiraIssueBrowseUrl,
-    });
+    }));
   } catch (error) {
     console.error("[api/feedback] Feedback vote failed", {
       error: describeError(error),
     });
-    return createErrorResponse(error, "Could not update vote.");
+    return withAuthenticatedApiCors(req, createErrorResponse(error, "Could not update vote."));
   }
 }
