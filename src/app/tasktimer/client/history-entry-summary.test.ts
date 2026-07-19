@@ -157,7 +157,7 @@ describe("history entry summary", () => {
     expect(html).toContain("Not tracked");
   });
 
-  it("renders only aggregate XP inside a ribbon value while preserving the XP source hook", () => {
+  it("renders positive aggregate and session XP as hidden replay triggers while preserving the XP source hook", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",
       task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
@@ -182,9 +182,10 @@ describe("history entry summary", () => {
 
     expect(html.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(1);
     expect(html.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
-    expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">20</div>');
-    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">12</div>');
-    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">8</div>');
+    expect(html.match(/data-history-summary-action="trigger-xp-award"/g)).toHaveLength(3);
+    expect(html).toContain('class="historyEntrySummaryValue historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true" data-history-summary-action="trigger-xp-award" data-history-summary-xp="20" data-history-summary-task-id="task-1">20</div>');
+    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true" data-history-summary-action="trigger-xp-award" data-history-summary-xp="12" data-history-summary-task-id="task-1">12</div>');
+    expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true" data-history-summary-action="trigger-xp-award" data-history-summary-xp="8" data-history-summary-task-id="task-1">8</div>');
   });
 
   it("renders the note section after the time goal and XP metrics", () => {
@@ -235,6 +236,33 @@ describe("history entry summary", () => {
     expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true">Pending</div>');
     expect(html).not.toContain('data-history-summary-xp-source="true">1</div>');
     expect(html).not.toContain('historyEntrySummaryXpRibbonValue" data-history-summary-xp-source="true">Pending</div>');
+    expect(html).not.toContain('data-history-summary-action="trigger-xp-award"');
+    expect(html).not.toContain('data-history-summary-xp="1"');
+  });
+
+  it("leaves zero and untracked XP values inert", () => {
+    const zeroPayload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
+      rewardProgress: {
+        ...DEFAULT_REWARD_PROGRESS,
+        awardLedger: [],
+      },
+      entries: [{ taskId: "task-1", ts: 1_717_200_000_000, ms: 180_000, name: "Focus" }],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(zeroPayload).not.toBeNull();
+    const zeroHtml = renderHistoryEntrySummaryHtml(zeroPayload!, (value) => String(value ?? ""));
+
+    expect(zeroHtml).toContain('data-history-summary-xp-source="true">0</div>');
+    expect(zeroHtml).not.toContain('data-history-summary-action="trigger-xp-award"');
+    expect(zeroHtml).not.toContain('data-history-summary-xp="0"');
+
+    const untrackedHtml = renderSummary(task({ timeGoalEnabled: false, timeGoalMinutes: 0 }));
+    expect(untrackedHtml).toContain('data-history-summary-xp-source="true">Not tracked</div>');
+    expect(untrackedHtml).not.toContain('data-history-summary-action="trigger-xp-award"');
   });
 
   it("renders session summary attachments as a comma-separated editable filename and size list", () => {

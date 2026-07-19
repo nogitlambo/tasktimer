@@ -17,6 +17,7 @@ type TaskCardActionEffectsOptions = {
   deleteTask: (index: number) => void;
   openEdit: (index: number, sourceEl?: HTMLElement | null) => void;
   openHistory: (index: number) => void;
+  getPinnedHistoryTaskIds: () => Set<string>;
   openFocusMode: (index: number, opts?: FocusModeTransitionOptions) => void;
   toggleCollapse: (index: number) => void;
   openTaskExportModal: (index: number) => void;
@@ -43,6 +44,27 @@ type HandleTaskCardActionOptions = {
 };
 
 export function createTaskCardActionEffects(options: TaskCardActionEffectsOptions) {
+  function flashPinnedHistoryButton(sourceElement?: HTMLElement | null) {
+    const taskEl = sourceElement?.closest?.(".task") as HTMLElement | null;
+    const pinBtn = taskEl?.querySelector?.('[data-history-action="pin"]') as HTMLElement | null;
+    if (!pinBtn) return;
+    pinBtn.classList.remove("isPinnedHideChartFlash");
+    void pinBtn.offsetWidth;
+    pinBtn.classList.add("isPinnedHideChartFlash");
+    options.setTimeoutRef(() => {
+      pinBtn.classList.remove("isPinnedHideChartFlash");
+    }, 1000);
+  }
+
+  function handleHistoryAction(taskIndex: number, taskId: string, sourceElement?: HTMLElement | null) {
+    const isHideChartControl = !!sourceElement?.closest?.(".taskHistoryReveal, .historyDrawerReveal");
+    if (isHideChartControl && taskId && options.getPinnedHistoryTaskIds().has(taskId)) {
+      flashPinnedHistoryButton(sourceElement);
+      return;
+    }
+    options.openHistory(taskIndex);
+  }
+
   function confirmUnshareTask(taskIndex: number) {
     const task = options.getTasks()[taskIndex];
     if (!task) return;
@@ -88,7 +110,7 @@ export function createTaskCardActionEffects(options: TaskCardActionEffectsOption
         archive: () => options.archiveTask(taskIndex),
         delete: () => options.deleteTask(taskIndex),
         edit: () => options.openEdit(taskIndex, sourceElement || null),
-        history: () => options.openHistory(taskIndex),
+        history: () => handleHistoryAction(taskIndex, taskId, sourceElement),
         editName: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),
         focus: () => options.openFocusMode(taskIndex, { sourceElement: sourceElement?.closest?.(".task") as HTMLElement | null }),
         collapse: () => options.toggleCollapse(taskIndex),

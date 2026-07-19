@@ -860,7 +860,7 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         '[data-history-summary-action="trigger-xp-award"]'
       ) as HTMLElement | null;
       if (xpReplayTarget) {
-        historyEntrySummaryInteraction.triggerDevXpAward(xpReplayTarget);
+        historyEntrySummaryInteraction.triggerXpAwardReplay(xpReplayTarget);
         return;
       }
 

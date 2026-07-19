@@ -409,7 +409,7 @@ function renderTaskHistoryInlineHtml({
                 </div>
               </div>
             </div>
-            <button class="historyDrawerReveal" type="button" data-action="history" title="Hide history chart" aria-label="Hide history chart" aria-pressed="true" ${isHistoryPinned ? "disabled" : ""}>
+            <button class="historyDrawerReveal" type="button" data-action="history" title="Hide history chart" aria-label="Hide history chart" aria-pressed="true" ${isHistoryPinned ? 'aria-disabled="true"' : ""}>
               <span class="historyDrawerRevealText">HIDE CHART</span>
             </button>
           </section>
@@ -534,7 +534,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
               </div>
             </div>
             ${progressHTML}
-            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? "disabled" : ""}>
+            <button class="taskHistoryReveal ${showHistory ? "isOpen" : ""}${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}" type="button" data-action="history" title="${showHistory ? "Hide history chart" : "Show history chart"}" aria-label="${showHistory ? "Hide history chart" : "Show history chart"}" aria-pressed="${showHistory ? "true" : "false"}" ${isHistoryPinned ? 'aria-disabled="true"' : ""}>
               <span class="taskHistoryRevealText">${showHistory ? "HIDE CHART" : "VIEW CHART"}</span>
             </button>
             ${historyHTML}

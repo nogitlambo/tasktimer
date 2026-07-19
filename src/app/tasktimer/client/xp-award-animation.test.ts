@@ -10,10 +10,10 @@ import {
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
-  shouldUseTaskButtonXpAwardDelivery,
   type PendingXpAward,
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
+  XP_AWARD_UNIT_FX_DURATION_MS,
 } from "./xp-award-animation";
 
 function award(overrides: Partial<PendingXpAward> = {}): PendingXpAward {
@@ -152,11 +152,13 @@ describe("xp award animation state", () => {
     ).toBe(true);
   });
 
-  it("uses task button delivery only for time-goal completion awards with a task source", () => {
-    expect(shouldUseTaskButtonXpAwardDelivery(award())).toBe(true);
-    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceModal: "resetConfirm" }))).toBe(false);
-    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceModal: "historyEntrySummaryTest" }))).toBe(false);
-    expect(shouldUseTaskButtonXpAwardDelivery(award({ sourceTaskId: null }))).toBe(false);
+  it("preserves the modal XP value as the task-complete award source", () => {
+    const queued = enqueuePendingXpAward(
+      createXpAwardAnimationState(),
+      award({ sourceElementKey: "timeGoalCompleteXpValue" })
+    );
+
+    expect(queued.pending?.sourceElementKey).toBe("timeGoalCompleteXpValue");
   });
 
   it("matches the task completion modal count timing for button countdowns", () => {
@@ -164,6 +166,10 @@ describe("xp award animation state", () => {
     expect(getTaskButtonXpAwardCountdownDurationMs(25)).toBe(1500);
     expect(getTaskButtonXpAwardCountdownDurationMs(50)).toBe(2000);
     expect(getTaskButtonXpAwardCountdownDurationMs(51)).toBe(2500);
+  });
+
+  it("uses a slightly slower star flight duration for unit delivery", () => {
+    expect(XP_AWARD_UNIT_FX_DURATION_MS).toBe(760);
   });
 
   it("advances displayed xp by arrived unit particles without exceeding the target", () => {

@@ -61,6 +61,7 @@ class FakeElement {
   children: FakeElement[] = [];
   classList = new FakeClassList();
   dataset: Record<string, string> = {};
+  disabled = false;
   parent: FakeElement | null = null;
   textContent = "";
   value = "";
@@ -94,6 +95,8 @@ class FakeElement {
   }
 
   focus() {}
+
+  addEventListener() {}
 
   hasAttribute(name: string) {
     return this.attributes.has(name);
@@ -184,7 +187,7 @@ function createLocalStorageStub() {
   };
 }
 
-function createHarness() {
+function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Partial<TaskTimerPreferencesContext["els"]> } = {}) {
   const fakeDocument = new FakeDocument();
   const localStorageStub = createLocalStorageStub();
   const windowStub = createWindowStub(localStorageStub as unknown as Storage);
@@ -264,7 +267,7 @@ function createHarness() {
   });
 
   const ctx: TaskTimerPreferencesContext = {
-    els: {} as TaskTimerPreferencesContext["els"],
+    els: options.setupEls?.(fakeDocument) as TaskTimerPreferencesContext["els"] || ({} as TaskTimerPreferencesContext["els"]),
     on: (target, type, listener) => {
       target?.addEventListener(type, listener as EventListener);
     },
@@ -431,6 +434,28 @@ function addOptimalProductivityControls(fakeDocument: FakeDocument) {
   return { allButton, dayInputs, endButton, endInput, endValue, startButton, startInput, startValue };
 }
 
+function setupInteractionHapticsIntensityControls(fakeDocument: FakeDocument) {
+  const maxButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityMax"));
+  maxButton.dataset.hapticsIntensity = "max";
+  const medButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityMed"));
+  medButton.dataset.hapticsIntensity = "medium";
+  const lowButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityLow"));
+  lowButton.dataset.hapticsIntensity = "low";
+  const select = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensitySelect"));
+
+  return {
+    els: {
+      taskInteractionHapticsIntensityMax: maxButton,
+      taskInteractionHapticsIntensityMed: medButton,
+      taskInteractionHapticsIntensityLow: lowButton,
+      taskInteractionHapticsIntensitySelect: select,
+    } as Partial<TaskTimerPreferencesContext["els"]>,
+    lowButton,
+    medButton,
+    select,
+  };
+}
+
 describe("createTaskTimerPreferences dynamic optimal productivity settings", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -548,6 +573,23 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(startValue.textContent).toBe("7:15 AM");
     expect(endValue.textContent).toBe("2:30 PM");
     expect(dayInputs.filter((input) => input.checked).map((input) => input.value)).toEqual(["tue", "thu"]);
+  });
+
+  it("syncs haptics intensity into the mobile dropdown and desktop pill controls", () => {
+    let controls: ReturnType<typeof setupInteractionHapticsIntensityControls> | null = null;
+    const { preferences, state } = createHarness({
+      setupEls: (fakeDocument) => {
+        controls = setupInteractionHapticsIntensityControls(fakeDocument);
+        return controls.els;
+      },
+    });
+    state.interactionHapticsIntensity = "low";
+
+    preferences.syncTaskSettingsUi();
+
+    expect(controls?.select.value).toBe("low");
+    expect(controls?.lowButton.classList.has("isOn")).toBe(true);
+    expect(controls?.medButton.classList.has("isOn")).toBe(false);
   });
 
   it("reveals the native time input when the clock button is clicked", () => {

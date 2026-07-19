@@ -114,6 +114,11 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
                   Low
                 </button>
               </div>
+              <SettingsDownwardSelect className="hapticsIntensitySelect" id="taskInteractionHapticsIntensitySelect" defaultValue="max" aria-label="Haptics intensity">
+                <option value="max">Max</option>
+                <option value="medium">Med</option>
+                <option value="low">Low</option>
+              </SettingsDownwardSelect>
             </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <div className="settingsPreferenceControlCopy">

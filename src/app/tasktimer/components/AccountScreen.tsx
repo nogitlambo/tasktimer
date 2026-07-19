@@ -179,6 +179,7 @@ export default function AccountScreen() {
                             disabled={account.authUserAliasBusy}
                             aria-label="Username"
                             maxLength={60}
+                            autoFocus
                           />
                           <button className="iconBtn" type="button" onClick={() => void account.onSaveAlias()} disabled={account.authUserAliasBusy} aria-label="Save username">
                             {"\u2713"}
@@ -188,7 +189,17 @@ export default function AccountScreen() {
                           </button>
                         </div>
                       ) : (
-                        <h2>{profileName}</h2>
+                        <h2>
+                          <button
+                            className="accountProfileNameButton"
+                            type="button"
+                            onClick={account.onStartAliasEdit}
+                            aria-label="Edit username"
+                            title="Edit username"
+                          >
+                            {profileName}
+                          </button>
+                        </h2>
                       )}
                       <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
                       {account.authUserUid ? <p className="accountProfileUserId">UserID: {account.authUserUid}</p> : null}

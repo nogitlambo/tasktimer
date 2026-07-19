@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   formatTimeGoalAwardCountText,
   formatTimeGoalAwardText,
+  formatTimeGoalXpAwardedText,
   getTimeGoalConfettiStage,
   getTimeGoalXpCueDelaysMs,
   getTimeGoalXpCountDurationMs,
@@ -11,6 +12,7 @@ import {
   startTimeGoalXpIntervalSplash,
   startTimeGoalXpSplash,
   startTimeGoalXpSplashAfterConfetti,
+  showStaticTimeGoalXpAward,
   stopTimeGoalConfetti,
   TIME_GOAL_CONFETTI_DURATION_MS,
   TIME_GOAL_XP_CALCULATING_TEXT,
@@ -38,6 +40,37 @@ describe("time goal confetti", () => {
     expect(formatTimeGoalAwardText(-4)).toBe("No XP awarded");
     expect(formatTimeGoalAwardText(Number.NaN)).toBe("No XP awarded");
     expect(formatTimeGoalAwardCountText(0)).toBe("You got 0 XP!");
+    expect(formatTimeGoalXpAwardedText(12)).toBe("XP Awarded: 12");
+    expect(formatTimeGoalXpAwardedText(-4)).toBe("XP Awarded: 0");
+  });
+
+  it("shows static awarded xp without count animation classes", () => {
+    const fx = elementStub();
+    fx.classList.add("isPlaying");
+    fx.classList.add("isCounting");
+    fx.classList.add("isIntervalSplashing");
+    const text = elementStub({ closest: fx });
+
+    expect(showStaticTimeGoalXpAward(text, 18)).toBe(true);
+
+    expect(text.textContent).toBe("XP Awarded: 18");
+    expect(fx.classList.contains("isPlaying")).toBe(false);
+    expect(fx.classList.contains("isCounting")).toBe(false);
+    expect(fx.classList.contains("isIntervalSplashing")).toBe(false);
+    expect(fx.dataset.xpCountState).toBe("static");
+  });
+
+  it("updates only the modal XP value child when present", () => {
+    const value = elementStub();
+    const text = {
+      ...elementStub(),
+      querySelector: (selector: string) => (selector === "#timeGoalCompleteXpValue" ? value : null),
+    } as unknown as HTMLElement;
+
+    expect(showStaticTimeGoalXpAward(text, 18)).toBe(true);
+
+    expect(text.textContent).toBe("");
+    expect(value.textContent).toBe("18");
   });
 
   it("uses tiered xp count durations", () => {
@@ -186,8 +219,8 @@ describe("time goal confetti", () => {
       })
     ).toBe(true);
 
-    expect(text.textContent).toBe(calculatingText);
-    expect(text.textContent).not.toBe("You got 0 XP!");
+    expect(calculatingText).toBe(TIME_GOAL_XP_CALCULATING_TEXT);
+    expect(text.textContent).toBe("You got 0 XP!");
     expect(fx.classList.contains("isCalculating")).toBe(false);
     expect(fx.classList.contains("isPlaying")).toBe(true);
     expect(fx.classList.contains("isCounting")).toBe(true);
@@ -241,7 +274,7 @@ describe("time goal confetti", () => {
     expect(fx.classList.contains("isCalculating")).toBe(false);
     expect(fx.classList.contains("isPlaying")).toBe(true);
     expect(fx.classList.contains("isCounting")).toBe(true);
-    expect(text.textContent).toBe(TIME_GOAL_XP_CALCULATING_TEXT);
+    expect(text.textContent).toBe("You got 0 XP!");
     expect(scheduledDelays).toEqual([TIME_GOAL_CONFETTI_DURATION_MS]);
 
     expect(fx.classList.contains("isPlaying")).toBe(true);
@@ -318,6 +351,7 @@ describe("time goal confetti", () => {
     const scheduledHandlers: Array<() => void> = [];
     const scheduledDelays: number[] = [];
     const onStart = vi.fn();
+    const onFinish = vi.fn();
 
     expect(
       startTimeGoalXpSplashAfterConfetti(text, {
@@ -331,12 +365,14 @@ describe("time goal confetti", () => {
           throw new Error("unexpected frame");
         },
         onStart,
+        onFinish,
       })
     ).toBe(true);
 
     expect(text.textContent).toBe(TIME_GOAL_XP_CALCULATING_TEXT);
     expect(fx.classList.contains("isCalculating")).toBe(true);
     expect(scheduledDelays).toEqual([TIME_GOAL_CONFETTI_DURATION_MS]);
+    expect(onFinish).not.toHaveBeenCalled();
 
     scheduledHandlers[0]?.();
 
@@ -348,6 +384,7 @@ describe("time goal confetti", () => {
     expect(fx.dataset.xpSplashState).toBeUndefined();
     expect(fx.dataset.xpCountState).toBeUndefined();
     expect(onStart).not.toHaveBeenCalled();
+    expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
   it("shows final xp immediately when reduced motion is enabled", () => {
@@ -409,7 +446,7 @@ describe("time goal confetti", () => {
 
     expect(cancelAnimationFrameFn).toHaveBeenCalledTimes(1);
     expect(clearTimeoutFn).toHaveBeenCalledWith("cue-timeout");
-    expect(text.textContent).not.toBe("You got 0 XP!");
+    expect(text.textContent).toBe("You got 0 XP!");
 
     frames[2]?.(0);
     frames[3]?.(1800);

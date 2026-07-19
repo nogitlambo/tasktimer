@@ -10,6 +10,7 @@ import {
   getTaskTimeGoalResetBoundaryMs,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
   isTaskTimeGoalCompletedForPeriod,
+  isTaskTimeGoalStartLockedForPeriod,
   isTaskTimeGoalStartLockedByHistoryForPeriod,
   markTaskTimeGoalCompleted,
 } from "../lib/timeGoalCompletion";
@@ -27,13 +28,13 @@ import type { FocusModeTransitionOptions, TaskTimerSessionContext } from "./cont
 import { buildTaskProgressModel, getTaskPrimaryActionModel, type TaskPrimaryActionState } from "./task-card-view-model";
 import { formatCompactCheckpointDuration } from "./checkpoint-duration-format";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
-import { playCheckpointAlertVibration, playTaskCompleteConfettiHaptic, playTimeGoalXpCountHaptic } from "./interaction-haptics";
+import { playCheckpointAlertVibration, playTaskCompleteConfettiHaptic } from "./interaction-haptics";
 import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
 import {
   dismissNativeCheckpointAlarm,
   syncNativeCheckpointAlarms,
 } from "../lib/nativeTimerNotification";
-import { startTimeGoalConfetti, startTimeGoalXpIntervalSplash, startTimeGoalXpSplashAfterConfetti, stopTimeGoalConfetti, TIME_GOAL_XP_CALCULATING_TEXT } from "./time-goal-confetti";
+import { showStaticTimeGoalXpAward, startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -42,7 +43,16 @@ import {
   startNativeFocusDndSession,
   stopNativeFocusDndSession,
 } from "../lib/nativeFocusDnd";
-import { captureXpAwardRectSnapshot, dispatchOverlayClosedEvent, dispatchPendingXpAwardEvent, TASKTIMER_OVERLAY_CLOSED_EVENT } from "./xp-award-events";
+import {
+  captureXpAwardRectSnapshot,
+  dispatchOverlayClosedEvent,
+  dispatchPendingXpAwardEvent,
+  dispatchTimeGoalCompleteXpClaimEvent,
+  TASKTIMER_OVERLAY_CLOSED_EVENT,
+  TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
+  TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT,
+  type TimeGoalCompleteXpReplayRequest,
+} from "./xp-award-events";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createClickAudioPlayer } from "./click-audio-player";
 import {
@@ -64,6 +74,10 @@ import {
   normalizeSessionNoteAttachments,
   uploadSessionNoteAttachment,
 } from "../lib/sessionNoteAttachments";
+import {
+  clearXpAwardButtonLabelOverride,
+  setXpAwardButtonLabelOverride,
+} from "./xp-award-button-label-override";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -183,11 +197,7 @@ const FOCUS_PROGRESS_ARC_CENTER = 50;
 const FOCUS_PROGRESS_ARC_RADIUS = 41;
 const FOCUS_MODE_START_AUDIO_SRC = "/focus-mode-start.mp3";
 const FOCUS_MODE_EXIT_CLICK_AUDIO_SRC = "/click_close_button.mp3";
-const TIME_GOAL_XP_COUNT_AUDIO_SRC = "/xp_increase.mp3";
-const TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 const CHECKPOINT_BEEP_AUDIO_SRC = "/checkpoint.mp3";
-const CHECKPOINT_BEEP_DURATION_MS = 2500;
-const CHECKPOINT_BEEP_GAP_MS = 300;
 
 export type TimeGoalCompleteNextTaskOption = {
   id: string;
@@ -583,7 +593,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let checkpointBeepQueueVibration: boolean[] = [];
   const focusModeStartPlayer = createClickAudioPlayer(FOCUS_MODE_START_AUDIO_SRC);
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
-  const timeGoalXpCountDonePlayer = createClickAudioPlayer(TIME_GOAL_XP_COUNT_DONE_AUDIO_SRC);
 
   function stopTimeGoalXpCountAudio() {
     if (!timeGoalXpCountAudio) return;
@@ -600,27 +609,6 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     } catch {
       // Some audio implementations may reject seeking before metadata is ready.
     }
-  }
-
-  function playTimeGoalXpCountAudio() {
-    stopTimeGoalXpCountAudio();
-    if (typeof window === "undefined" || typeof Audio === "undefined") return;
-    try {
-      const audio = new Audio(TIME_GOAL_XP_COUNT_AUDIO_SRC);
-      audio.preload = "auto";
-      audio.loop = true;
-      audio.currentTime = 0;
-      timeGoalXpCountAudio = audio;
-      const playback = audio.play();
-      if (playback && typeof playback.catch === "function") playback.catch(() => {});
-    } catch {
-      timeGoalXpCountAudio = null;
-    }
-  }
-
-  function finishTimeGoalXpCountAudio(playDone: boolean) {
-    stopTimeGoalXpCountAudio();
-    if (playDone) timeGoalXpCountDonePlayer.play();
   }
 
   function setFocusDndSetupVisible(visible: boolean, message?: string) {
@@ -1132,6 +1120,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function syncTimeGoalCompleteLaunchNextButton() {
     const button = els.timeGoalCompleteLaunchNextBtn as HTMLButtonElement | null;
     if (!button) return;
+    if (isTimeGoalCompleteReplayActive()) {
+      button.hidden = true;
+      button.disabled = true;
+      delete button.dataset.nextTaskId;
+      button.textContent = "Launch Next Task";
+      return;
+    }
     if (!ctx.getTimeGoalCompleteNextTasksEnabled()) {
       button.hidden = true;
       button.disabled = true;
@@ -1166,6 +1161,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const host = els.timeGoalCompleteNextTasks as HTMLElement | null;
     const grid = els.timeGoalCompleteNextTaskGrid as HTMLElement | null;
     if (!host || !grid) return;
+    if (isTimeGoalCompleteReplayActive()) {
+      host.hidden = true;
+      grid.innerHTML = "";
+      return;
+    }
     if (!ctx.getTimeGoalCompleteNextTasksEnabled()) {
       host.hidden = true;
       grid.innerHTML = "";
@@ -1212,6 +1212,53 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(taskIdRaw || "").trim();
     const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
     return !!taskId && isOverlayVisible(overlay) && String(overlay?.dataset.taskId || "").trim() === taskId;
+  }
+
+  function isTimeGoalCompleteReplayActive() {
+    return (els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.replay === "true";
+  }
+
+  function clearTimeGoalCompleteReplayState() {
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    if (!overlay) return;
+    delete overlay.dataset.replay;
+    delete overlay.dataset.replayFromXp;
+    delete overlay.dataset.replayToXp;
+    delete overlay.dataset.replayAwardedXp;
+  }
+
+  function setTimeGoalCompleteClaimDeliveryActive(active: boolean) {
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    overlay?.classList?.toggle("isClaimDeliveryActive", active);
+  }
+
+  function holdClaimedTaskPrimaryActionReset(taskIdRaw: unknown) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || typeof window === "undefined") return;
+    setXpAwardButtonLabelOverride(taskId, "Reset");
+    ctx.render();
+  }
+
+  function isClaimedTaskPrimaryActionSettled(taskIdRaw: unknown) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId) return true;
+    const task = ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null;
+    return !task || isTaskTimeGoalStartLockedForPeriod(task, nowMs(), ctx.getWeekStarting());
+  }
+
+  function releaseClaimedTaskPrimaryActionReset(taskIdRaw: unknown, attempt = 0) {
+    const taskId = String(taskIdRaw || "").trim();
+    if (!taskId || typeof window === "undefined") return;
+    window.setTimeout(() => {
+      if (!isClaimedTaskPrimaryActionSettled(taskId) && attempt < 20) {
+        releaseClaimedTaskPrimaryActionReset(taskId, attempt + 1);
+        return;
+      }
+      if (isClaimedTaskPrimaryActionSettled(taskId)) {
+        clearXpAwardButtonLabelOverride(taskId);
+        ctx.render();
+      }
+    }, 80);
   }
 
   function clearPendingTimeGoalFlow() {
@@ -1302,9 +1349,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ) {
       const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
       if (overlay) {
+        overlay.classList?.remove("isClaimDeliveryActive");
         delete overlay.dataset.taskId;
         delete overlay.dataset.awardedXp;
         delete overlay.dataset.acknowledgement;
+        clearTimeGoalCompleteReplayState();
       }
     }
     syncTimeGoalCompleteLaunchNextButton();
@@ -1426,6 +1475,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.setTimeGoalModalTaskId(taskId);
     ctx.setTimeGoalModalFrozenElapsedMs(Math.max(0, Math.floor(Number(elapsedMs || 0) || 0)));
     if (els.timeGoalCompleteOverlay) {
+      clearTimeGoalCompleteReplayState();
       (els.timeGoalCompleteOverlay as HTMLElement).dataset.taskId = taskId;
       (els.timeGoalCompleteOverlay as HTMLElement).dataset.acknowledgement = opts?.acknowledgement ? "true" : "false";
     }
@@ -1439,8 +1489,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       (els.timeGoalCompleteOverlay as HTMLElement).dataset.awardedXp = String(awardedXp);
     }
     if (els.timeGoalCompleteText) {
-      els.timeGoalCompleteText.textContent = TIME_GOAL_XP_CALCULATING_TEXT;
+      showStaticTimeGoalXpAward(els.timeGoalCompleteText as HTMLElement | null, awardedXp);
     }
+    setTimeGoalCompleteClaimReady(true);
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";
       els.timeGoalCompleteMeta.hidden = true;
@@ -1458,38 +1509,70 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
     startTimeGoalCompleteConfetti();
     stopTimeGoalXpCountAudio();
-    startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
-      awardedXp,
-      matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
-      onStart: () => {
-        if (ctx.getAchievementSoundsEnabled()) playTimeGoalXpCountAudio();
-        else stopTimeGoalXpCountAudio();
-        playTimeGoalXpCountHaptic({
-          isEnabled: ctx.getInteractionHapticsEnabled,
-          getIntensity: ctx.getInteractionHapticsIntensity,
-        });
-      },
-      onIntervalCue: () => {
-        startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
-        playTimeGoalXpCountHaptic({
-          isEnabled: ctx.getInteractionHapticsEnabled,
-          getIntensity: ctx.getInteractionHapticsIntensity,
-        });
-      },
-      onFinish: () => {
-        finishTimeGoalXpCountAudio(ctx.getAchievementSoundsEnabled());
-      },
-    });
     if (awardedXp > 0 && typeof window !== "undefined") {
       dispatchPendingXpAwardEvent(window, {
         ...awardPreview,
         sourceModal: "timeGoalComplete",
         sourceTaskId: taskId,
         sourceOverlayId: "timeGoalCompleteOverlay",
-        sourceElementKey: "timeGoalCompleteText",
-        sourceRect: captureXpAwardRectSnapshot(els.timeGoalCompleteText),
+        sourceElementKey: "timeGoalCompleteXpValue",
+        sourceRect: captureXpAwardRectSnapshot((els.timeGoalCompleteXpValue as HTMLElement | null) || els.timeGoalCompleteText),
       });
     }
+  }
+
+  function openTimeGoalCompleteXpReplayModal(request: TimeGoalCompleteXpReplayRequest | null | undefined) {
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    if (!overlay) return false;
+    const awardedXp = Math.max(0, Math.floor(Number(request?.awardedXp || 0) || 0));
+    if (awardedXp <= 0) return false;
+    const fromXp = Math.max(0, Math.floor(Number(request?.fromXp || 0) || 0));
+    const toXp = Math.max(fromXp, Math.floor(Number(request?.toXp || 0) || 0));
+    const taskId = String(request?.sourceTaskId || request?.taskId || "").trim();
+    const task = taskId ? ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null : null;
+
+    ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
+    if (taskId && task) prepareCompletedTaskSurfaceForModal(taskId);
+    ctx.setTimeGoalModalTaskId(taskId || null);
+    ctx.setTimeGoalModalFrozenElapsedMs(0);
+    overlay.dataset.taskId = taskId;
+    overlay.dataset.acknowledgement = "false";
+    overlay.dataset.replay = "true";
+    overlay.dataset.replayFromXp = String(fromXp);
+    overlay.dataset.replayToXp = String(toXp);
+    overlay.dataset.replayAwardedXp = String(awardedXp);
+    overlay.dataset.awardedXp = String(awardedXp);
+
+    if (els.timeGoalCompleteTitle) {
+      els.timeGoalCompleteTitle.textContent = task ? `${String(task.name || "Task")} Complete!` : "Task Complete!";
+    }
+    if (els.timeGoalCompleteText) {
+      showStaticTimeGoalXpAward(els.timeGoalCompleteText as HTMLElement | null, awardedXp);
+    }
+    setTimeGoalCompleteClaimReady(true);
+    if (els.timeGoalCompleteMeta) {
+      els.timeGoalCompleteMeta.textContent = "";
+      els.timeGoalCompleteMeta.hidden = true;
+    }
+    syncTimeGoalCompleteLaunchNextButton();
+    syncTimeGoalCompleteNextTaskGrid();
+    ctx.openOverlay(overlay);
+    if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
+    startTimeGoalCompleteConfetti();
+    stopTimeGoalXpCountAudio();
+    if (typeof window !== "undefined") {
+      dispatchPendingXpAwardEvent(window, {
+        fromXp,
+        toXp,
+        awardedXp,
+        sourceModal: "timeGoalComplete",
+        sourceTaskId: taskId || null,
+        sourceOverlayId: "timeGoalCompleteOverlay",
+        sourceElementKey: "timeGoalCompleteXpValue",
+        sourceRect: captureXpAwardRectSnapshot((els.timeGoalCompleteXpValue as HTMLElement | null) || els.timeGoalCompleteText),
+      });
+    }
+    return true;
   }
 
   function prepareCompletedTaskSurfaceForModal(taskIdRaw: string) {
@@ -1510,28 +1593,15 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const awardedXp = Math.max(0, Math.floor(Number(overlay?.dataset.awardedXp || 0) || 0));
     if (awardedXp <= 0) return;
     stopTimeGoalXpCountAudio();
-    startTimeGoalXpSplashAfterConfetti(els.timeGoalCompleteText as HTMLElement | null, {
-      awardedXp,
-      matchMediaFn: typeof window !== "undefined" ? window.matchMedia.bind(window) : undefined,
-      onStart: () => {
-        if (ctx.getAchievementSoundsEnabled()) playTimeGoalXpCountAudio();
-        else stopTimeGoalXpCountAudio();
-        playTimeGoalXpCountHaptic({
-          isEnabled: ctx.getInteractionHapticsEnabled,
-          getIntensity: ctx.getInteractionHapticsIntensity,
-        });
-      },
-      onIntervalCue: () => {
-        startTimeGoalXpIntervalSplash(els.timeGoalCompleteText as HTMLElement | null);
-        playTimeGoalXpCountHaptic({
-          isEnabled: ctx.getInteractionHapticsEnabled,
-          getIntensity: ctx.getInteractionHapticsIntensity,
-        });
-      },
-      onFinish: () => {
-        finishTimeGoalXpCountAudio(ctx.getAchievementSoundsEnabled());
-      },
-    });
+    showStaticTimeGoalXpAward(els.timeGoalCompleteText as HTMLElement | null, awardedXp);
+    setTimeGoalCompleteClaimReady(true);
+  }
+
+  function setTimeGoalCompleteClaimReady(ready: boolean) {
+    const button = els.timeGoalCompleteCloseBtn as HTMLButtonElement | null;
+    if (!button) return;
+    button.hidden = !ready;
+    button.classList.toggle("isClaimReady", ready);
   }
 
   function findRestorablePendingCompletion(): { task: Task; completion: PendingTimeGoalCompletion } | null {
@@ -1563,6 +1633,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function maybeRestorePendingTimeGoalFlow() {
+    if (isTimeGoalCompleteReplayActive()) return;
     const pending = loadPendingTimeGoalFlow();
     const tasks = ctx.getTasks();
     if (pending) {
@@ -1608,6 +1679,11 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function syncTimeGoalModalWithTaskState() {
+    if (isTimeGoalCompleteReplayActive()) {
+      syncTimeGoalCompleteLaunchNextButton();
+      syncTimeGoalCompleteNextTaskGrid();
+      return;
+    }
     const activeTaskId = String(ctx.getTimeGoalModalTaskId() || "").trim();
     if (!activeTaskId) {
       syncTimeGoalCompleteLaunchNextButton();
@@ -1699,6 +1775,34 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function notifyTimeGoalCompleteOverlayClosedForXpAward() {
     if (typeof window === "undefined") return;
     dispatchOverlayClosedEvent(window, "timeGoalCompleteOverlay");
+  }
+
+  async function requestTimeGoalCompleteXpClaimDelivery(awardedXpRaw: unknown) {
+    const awardedXp = Math.max(0, Math.floor(Number(awardedXpRaw) || 0));
+    if (awardedXp <= 0 || typeof window === "undefined") return;
+    const sourceElement =
+      (els.timeGoalCompleteXpValue as HTMLElement | null) ||
+      (els.timeGoalCompleteText as HTMLElement | null);
+    await new Promise<void>((resolve) => {
+      const handledByApp = !dispatchTimeGoalCompleteXpClaimEvent(window, {
+        overlayId: "timeGoalCompleteOverlay",
+        awardedXp,
+        sourceElementKey: "timeGoalCompleteXpValue",
+        sourceRect: captureXpAwardRectSnapshot(sourceElement),
+      });
+      if (!handledByApp) {
+        resolve();
+        return;
+      }
+      let fallbackTimer: number | null = null;
+      const handleDelivered = () => {
+        if (fallbackTimer != null) window.clearTimeout(fallbackTimer);
+        window.removeEventListener(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
+        resolve();
+      };
+      fallbackTimer = window.setTimeout(handleDelivered, 3400);
+      window.addEventListener(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
+    });
   }
 
   function completeTimeGoalTask(task: Task, elapsedMs: number, opts?: { reminder?: boolean; deferModal?: boolean }) {
@@ -2521,14 +2625,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (ctx.getCheckpointBeepQueueTimer() == null) flushCheckpointBeepQueue();
   }
 
-  function enqueueCheckpointDoubleBeep(vibrate = false) {
-    enqueueCheckpointBeepDelays([CHECKPOINT_BEEP_DURATION_MS + CHECKPOINT_BEEP_GAP_MS, 0], vibrate);
+  function enqueueCheckpointSingleBeep(vibrate = false) {
+    enqueueCheckpointBeepDelays([0], vibrate);
   }
 
   function enqueueCheckpointOncePatterns(count: number, vibrate = false) {
     const patternCount = Math.max(0, Math.floor(Number(count) || 0));
     if (patternCount <= 0) return;
-    enqueueCheckpointDoubleBeep(vibrate);
+    enqueueCheckpointSingleBeep(vibrate);
+  }
+
+  function isCheckpointBeepPlaying() {
+    const audio = ctx.getCheckpointBeepAudio();
+    return !!audio && "paused" in audio && !audio.paused;
   }
 
   function scheduleCheckpointRepeatCycle() {
@@ -2536,7 +2645,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       stopCheckpointRepeatAlert();
       return;
     }
-    enqueueCheckpointDoubleBeep(false);
+    if (!isCheckpointBeepPlaying()) enqueueCheckpointSingleBeep(false);
     ctx.setCheckpointRepeatCycleTimer(window.setTimeout(scheduleCheckpointRepeatCycle, 2000));
   }
 
@@ -2545,7 +2654,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ctx.setCheckpointRepeatStopAtMs(Date.now() + 60_000);
     if (!runtime.destroyed) ctx.render();
     if (ctx.getCheckpointRepeatCycleTimer() != null) return;
-    enqueueCheckpointDoubleBeep(vibrate);
+    enqueueCheckpointSingleBeep(vibrate);
     ctx.setCheckpointRepeatCycleTimer(window.setTimeout(scheduleCheckpointRepeatCycle, 2000));
   }
 
@@ -2843,12 +2952,46 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       }, 0);
     });
     ctx.on(els.timeGoalCompleteCloseBtn, "click", async () => {
-      const task = getActiveTimeGoalModalTask();
-      const shouldExitFocusMode =
-        !!task && String(task.id || "").trim() === String(ctx.getFocusModeTaskId() || "").trim();
-      if (task) {
-        const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
-        if (completed && shouldExitFocusMode) closeFocusMode({ animate: true });
+      if (isTimeGoalCompleteReplayActive()) {
+        const button = els.timeGoalCompleteCloseBtn as HTMLButtonElement | null;
+        if (button?.disabled) return;
+        if (button) button.disabled = true;
+        setTimeGoalCompleteClaimDeliveryActive(true);
+        try {
+          const awardedXp = Math.max(0, Math.floor(Number((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.awardedXp || 0) || 0));
+          await requestTimeGoalCompleteXpClaimDelivery(awardedXp);
+          stopTimeGoalCompleteConfetti();
+          stopTimeGoalXpCountAudio();
+          clearTimeGoalCompleteReplayState();
+          ctx.setTimeGoalModalTaskId(null);
+          ctx.setTimeGoalModalFrozenElapsedMs(0);
+          ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
+        } finally {
+          setTimeGoalCompleteClaimDeliveryActive(false);
+          if (button) button.disabled = false;
+        }
+        return;
+      }
+      const button = els.timeGoalCompleteCloseBtn as HTMLButtonElement | null;
+      if (button?.disabled) return;
+      if (button) button.disabled = true;
+      const claimedTaskId = String((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.taskId || ctx.getTimeGoalModalTaskId() || "").trim();
+      setTimeGoalCompleteClaimDeliveryActive(true);
+      holdClaimedTaskPrimaryActionReset(claimedTaskId);
+      try {
+        const awardedXp = Math.max(0, Math.floor(Number((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.awardedXp || 0) || 0));
+        await requestTimeGoalCompleteXpClaimDelivery(awardedXp);
+        const task = getActiveTimeGoalModalTask();
+        const shouldExitFocusMode =
+          !!task && String(task.id || "").trim() === String(ctx.getFocusModeTaskId() || "").trim();
+        if (task) {
+          const completed = await resolveTimeGoalCompletion(task, { logHistory: true });
+          if (completed && shouldExitFocusMode) closeFocusMode({ animate: true });
+        }
+      } finally {
+        setTimeGoalCompleteClaimDeliveryActive(false);
+        releaseClaimedTaskPrimaryActionReset(claimedTaskId);
+        if (button) button.disabled = false;
       }
     });
     ctx.on(els.timeGoalCompleteText, "click", () => {
@@ -2882,6 +3025,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
     if (typeof window !== "undefined") {
       ctx.on(window, "resize", () => autosizeFocusSessionNotesInput());
+      ctx.on(window, TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT, (event: Event) => {
+        openTimeGoalCompleteXpReplayModal((event as CustomEvent<TimeGoalCompleteXpReplayRequest>).detail);
+      });
       ctx.on(window, TASKTIMER_OVERLAY_CLOSED_EVENT, () => {
         window.setTimeout(() => {
           openDeferredFocusModeTimeGoalModal();

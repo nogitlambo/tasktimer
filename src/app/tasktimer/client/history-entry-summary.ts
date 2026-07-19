@@ -365,15 +365,19 @@ export function renderHistoryEntrySummaryHtml(
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValue">${escapeHtml(value)}</div>
     </div>`;
-  const renderXpField = (label: string, value: string, options?: { showRibbon?: boolean }) => {
+  const renderXpField = (label: string, value: string, options?: { showRibbon?: boolean; xpEarned?: number | null; taskId?: string }) => {
     const valueClass =
       options?.showRibbon && value !== "Pending"
         ? "historyEntrySummaryValue historyEntrySummaryXpRibbonValue"
         : "historyEntrySummaryValue";
+    const replayXp = Math.max(0, Math.floor(Number(options?.xpEarned) || 0));
+    const replayAttrs = replayXp > 0
+      ? ` data-history-summary-action="trigger-xp-award" data-history-summary-xp="${escapeHtml(replayXp)}" data-history-summary-task-id="${escapeHtml(options?.taskId || "")}"`
+      : "";
     return `<div class="historyEntrySummaryField">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
-        <div class="${valueClass}" data-history-summary-xp-source="true">${escapeHtml(value)}</div>
+        <div class="${valueClass}" data-history-summary-xp-source="true"${replayAttrs}>${escapeHtml(value)}</div>
       </div>
     </div>`;
   };
@@ -386,7 +390,7 @@ export function renderHistoryEntrySummaryHtml(
         <div class="historyEntrySummaryAggregateMetrics">
           ${renderField("Total Time", payload.aggregate.totalElapsedText)}
           ${renderField("Sessions", payload.aggregate.sessionCountText)}
-          ${renderXpField("Total XP", payload.aggregate.xpText, { showRibbon: true })}
+          ${renderXpField("Total XP", payload.aggregate.xpText, { showRibbon: true, xpEarned: payload.aggregate.xpEarned, taskId: payload.sessions[0]?.taskId || "" })}
         </div>
       </section>`
     : "";
@@ -419,7 +423,7 @@ export function renderHistoryEntrySummaryHtml(
             </div>
             <div class="historyEntrySummaryGrid">
               ${renderField("Time goal", session.timeGoalText)}
-              ${renderXpField("XP earned", session.xpText)}
+              ${renderXpField("XP earned", session.xpText, { xpEarned: session.xpEarned, taskId: session.taskId })}
             </div>
           </div>
           <div class="historyEntrySummaryNoteRow">

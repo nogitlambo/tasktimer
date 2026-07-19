@@ -146,7 +146,7 @@ export function SettingsAccountPane({
                             </>
                           ) : (
                             <>
-                              <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountIdCardNameValue">
+                              <div className="settingsAccountFieldValue settingsAccountFieldValueWrap settingsAccountUsername">
                                 {accountDisplayName}
                               </div>
                               <button
@@ -196,12 +196,12 @@ export function SettingsAccountPane({
                   <dl className="settingsAccountIdCardMetaList">
                     <div className="settingsAccountMetaListItem">
                       <dt className="settingsAccountUidLabel">{accountEmailLabel}</dt>
-                      <dd className="settingsAccountUidValue">{accountEmailValue}</dd>
+                      <dd className="settingsAccountEmailValue">{accountEmailValue}</dd>
                     </div>
                     {account.authUserUid ? (
                       <div className="settingsAccountMetaListItem settingsAccountUidListItem">
                         <dt className="settingsAccountUidLabel">UID</dt>
-                        <dd className="settingsAccountUidValue settingsAccountUidValueWithCopy">
+                        <dd className="settingsAccountUserIdValue settingsAccountUserIdWithCopy">
                           <span>{account.authUserUid}</span>
                           <button
                             className="iconBtn settingsUidCopyBtn"
@@ -217,7 +217,7 @@ export function SettingsAccountPane({
                     ) : null}
                     <div className="settingsAccountMetaListItem">
                       <dt className="settingsAccountUidLabel">Member Since</dt>
-                      <dd className="settingsAccountUidValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
+                      <dd className="settingsAccountMemberSinceValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
                     </div>
                   </dl>
                 </div>
@@ -236,6 +236,14 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
+              <button
+                className="settingsDeleteAccountLink"
+                type="button"
+                disabled={account.authBusy}
+                onClick={() => account.setShowDeleteAccountConfirm(true)}
+              >
+                Delete Account
+              </button>
             </div>
           ) : null}
 
@@ -247,8 +255,8 @@ export function SettingsAccountPane({
 
           {hasAccountSession ? (
             <>
-              <div className="settingsDeleteAccountDivider" aria-hidden="true" />
-              <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions">
+              <div className="settingsDeleteAccountDivider settingsDeleteAccountMobileOnly" aria-hidden="true" />
+              <div className="settingsInlineFooter settingsAuthActions settingsDangerDisclosureActions settingsDeleteAccountMobileOnly">
                   <button className="btn btn-warn" type="button" disabled={account.authBusy} onClick={() => account.setShowDeleteAccountConfirm(true)}>
                     Delete Account
                   </button>

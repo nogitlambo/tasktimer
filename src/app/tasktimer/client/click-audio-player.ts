@@ -14,6 +14,7 @@ export type ClickAudioFactory = (src: string) => ClickAudioLike;
 
 export function createClickAudioPlayer(src: string, audioFactory?: ClickAudioFactory) {
   const pool: ClickAudioLike[] = [];
+  const activeAudios = new Set<ClickAudioLike>();
   let nextIndex = 0;
   let warmedFactoryAudio: ClickAudioLike | null = null;
   const readyAudios = new WeakSet<ClickAudioLike>();
@@ -101,11 +102,25 @@ export function createClickAudioPlayer(src: string, audioFactory?: ClickAudioFac
       try {
         const audio = getAudio();
         if (!audio) return;
+        activeAudios.add(audio);
         audio.currentTime = 0;
         const playback = audio.play();
         if (playback && typeof playback.catch === "function") playback.catch(() => {});
       } catch {
         // Browser autoplay failures are non-blocking for click feedback.
+      }
+    },
+    stop() {
+      try {
+        const audios = new Set<ClickAudioLike>([...pool, ...activeAudios]);
+        if (warmedFactoryAudio) audios.add(warmedFactoryAudio);
+        for (const audio of audios) {
+          audio.pause?.();
+          audio.currentTime = 0;
+        }
+        activeAudios.clear();
+      } catch {
+        // Audio feedback is optional.
       }
     },
     playWhenReady(timeoutMs: number) {
@@ -114,6 +129,7 @@ export function createClickAudioPlayer(src: string, audioFactory?: ClickAudioFac
           ? getOrCreateWarmAudio()
           : (!pool.length ? getAudio() : null, pool.find((audio) => isAudioReady(audio)));
         if (readyAudio && isAudioReady(readyAudio)) {
+          activeAudios.add(readyAudio);
           readyAudio.currentTime = 0;
           const playback = readyAudio.play();
           if (playback && typeof playback.catch === "function") playback.catch(() => {});
@@ -143,6 +159,7 @@ export function createClickAudioPlayer(src: string, audioFactory?: ClickAudioFac
             return;
           }
           try {
+            activeAudios.add(readyAudio);
             readyAudio.currentTime = 0;
             const playback = readyAudio.play();
             if (playback && typeof playback.catch === "function") playback.catch(() => {});

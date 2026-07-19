@@ -29,6 +29,32 @@ type HistoryUI = {
   deleteBtn: HTMLButtonElement | null;
 };
 
+export function calculateHistoryInlineColumnLayout(options: {
+  plotEntryLeft: number;
+  plotEntryW: number;
+  slotCount: number;
+  gap: number;
+}) {
+  const plotEntryW = Math.max(4, Math.floor(Number(options.plotEntryW) || 0));
+  const slotCount = Math.max(1, Math.floor(Number(options.slotCount) || 1));
+  const gap = Math.max(0, Math.floor(Number(options.gap) || 0));
+  const preliminaryBarW = Math.max(4, Math.floor((plotEntryW - gap * (slotCount - 1)) / slotCount));
+  const preliminaryDepthX = Math.max(3, Math.min(10, Math.round(preliminaryBarW * 0.2)));
+  const barW = Math.max(4, Math.floor((plotEntryW - preliminaryDepthX - gap * (slotCount - 1)) / slotCount));
+  const columnDepthX = Math.max(3, Math.min(10, Math.round(barW * 0.2)));
+  const columnDepthY = Math.max(3, Math.min(8, Math.round(columnDepthX * 0.7)));
+  const usedW = barW * slotCount + gap * (slotCount - 1) + columnDepthX;
+  const left = Math.floor(Number(options.plotEntryLeft) || 0) + Math.max(0, Math.floor((plotEntryW - usedW) / 2));
+
+  return {
+    left,
+    barW,
+    columnDepthX,
+    columnDepthY,
+    xForIndex: (index: number) => left + Math.max(0, Math.floor(Number(index) || 0)) * (barW + gap),
+  };
+}
+
 export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext) {
   const { els } = ctx;
   const HISTORY_LOOKBACK_DAYS = 30;
@@ -243,6 +269,14 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
 
   function historyTsMs(entry: any) {
     return ctx.normalizeHistoryTimestampMs(entry?.ts);
+  }
+
+  function formatHistoryInlineWeekdayShort(ts: number) {
+    return new Date(ts).toLocaleDateString(undefined, { weekday: "short" });
+  }
+
+  function formatHistoryInlineMonthDay(ts: number) {
+    return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 
   function getHistoryForTask(taskId: string) {
@@ -975,8 +1009,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const padT = 14;
     const barCount = Math.max(1, entries.length);
     const slotCount = Math.max(1, historyPageSize(taskId));
-    const useAngledLabels = true;
-    const padB = useAngledLabels ? (veryCompactLabels ? 116 : 128) : compactLabels ? 84 : 72;
+    const padB = compactLabels ? 84 : 72;
 
     const maxEntryMs = Math.max(...entries.map((e) => e.ms || 0), 1);
     const historyTask = ctx.getTasks().find((task) => String(task.id || "") === taskId) || null;
@@ -1055,7 +1088,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         )
       : 10;
     const labelGutterW = markerLabelPadR;
-    const plotSidePad = useAngledLabels ? (veryCompactLabels ? 10 : 14) : 6;
+    const plotSidePad = 6;
     const yAxisEntryGap = 4;
     const plotW = Math.max(140, innerW - labelGutterW - plotSidePad * 2);
     const plotLeft = padL + plotSidePad;
@@ -1086,9 +1119,13 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     const maxGoalMs = chartMarkers.length ? Math.max(...chartMarkers.map((m) => m.ms || 0), 0) : 0;
     const scaleMaxMs = Math.max(maxEntryMs, maxGoalMs, 1);
     const gap = slotCount <= 10 ? Math.max(6, Math.floor(plotEntryW * 0.02)) : Math.max(3, Math.floor(plotEntryW * 0.01));
-    const barW = Math.max(4, Math.floor((plotEntryW - gap * (slotCount - 1)) / slotCount));
-    const columnDepthX = Math.max(3, Math.min(10, Math.round(barW * 0.2)));
-    const columnDepthY = Math.max(3, Math.min(8, Math.round(columnDepthX * 0.7)));
+    const columnLayout = calculateHistoryInlineColumnLayout({
+      plotEntryLeft,
+      plotEntryW,
+      slotCount,
+      gap,
+    });
+    const { barW, columnDepthX, columnDepthY } = columnLayout;
     const barTops: Array<{ x: number; y: number; w: number; h: number; ms: number; color: string }> = [];
     const checkpointMarkerColor = String(historyTask?.color || "rgb(0,207,200)");
 
@@ -1106,8 +1143,6 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const isLocked = selectionRow?.selection === "locked";
       const isSelected = !!selectionRow && state.visualSelectedRenderKey === selectionRow.renderKey;
       const hasSelection = state.visualSelectedRenderKey != null || selectionView.lockedCount > 0;
-      const baseX = plotEntryLeft + idx * (barW + gap);
-      const cx = baseX + barW / 2;
       const drawW = Math.max(2, Math.floor(barW));
       const barRevealProgress = Math.max(0, Math.min(1, state.barRevealProgress ?? 1));
       const maxColumnH = Math.max(2, innerH - columnDepthY);
@@ -1116,7 +1151,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         ms > 0 && barRevealProgress > 0
           ? Math.max(2, Math.min(maxColumnH, rawAnimatedBarH))
           : 0;
-      const x = Math.max(plotEntryLeft, Math.min(plotRight - drawW - columnDepthX, Math.floor(cx - drawW / 2)));
+      const x = columnLayout.xForIndex(idx);
       const y = drawH > 0 ? Math.max(padT + columnDepthY, padT + innerH - drawH) : padT + innerH;
       const reachesTimeGoal = timeGoalMs > 0 && ms >= timeGoalMs;
       const barColor = reachesTimeGoal ? "rgb(12,245,127)" : String(e.color || "rgb(0,207,200)");
@@ -1137,8 +1172,8 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         draw.restore();
       }
 
-      const slotLeft = idx === 0 ? plotEntryLeft : plotEntryLeft + idx * (barW + gap) - Math.floor(gap / 2);
-      const slotRight = idx === barCount - 1 ? plotRight : plotEntryLeft + (idx + 1) * (barW + gap) - Math.floor(gap / 2);
+      const slotLeft = idx === 0 ? columnLayout.left : columnLayout.xForIndex(idx) - Math.floor(gap / 2);
+      const slotRight = idx === barCount - 1 ? plotRight : columnLayout.xForIndex(idx + 1) - Math.floor(gap / 2);
       state.barRects[idx] = {
         x,
         y,
@@ -1189,64 +1224,30 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         const labelFontScale = 1;
         draw.font = `${Math.round(baseDateFont * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
 
-        const d = new Date(e.ts || 0);
-        const dd = ctx.formatTwo(d.getDate());
-        const mm = ctx.formatTwo(d.getMonth() + 1);
-        const hh = ctx.formatTwo(d.getHours());
-        const mi = ctx.formatTwo(d.getMinutes());
-        const compactDateLabel = veryCompactLabels ? `${dd}/${mm}` : compactLabels ? `${dd}/${mm} ${hh}:${mi}` : `${dd}/${mm}:${hh}:${mi}`;
-
-        if (useAngledLabels) {
-          const expandedLabelDrop = isSelected || isLocked ? Math.round(10 * labelFontScale) : 0;
-          const tx = x + drawW / 2;
-          const ty = padT + innerH + (compactLabels ? 20 : 24) + expandedLabelDrop;
-          const lineStartX = x + drawW / 2;
-          const lineStartY = padT + innerH + 2;
-          const lineEndX = tx;
-          const lineEndY = ty - 4;
-          draw.save();
-          draw.strokeStyle = "rgba(255,255,255,.72)";
-          draw.lineWidth = 1;
-          draw.beginPath();
-          draw.moveTo(lineStartX, lineStartY);
-          draw.lineTo(lineEndX, lineEndY);
-          draw.stroke();
-          draw.restore();
-          const angle = (-45 * Math.PI) / 180;
-          draw.save();
-          draw.translate(tx, ty);
-          draw.rotate(angle);
-          draw.textAlign = "right";
-          draw.textBaseline = "middle";
-          draw.font = `${Math.round((veryCompactLabels ? 9 : 10) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
-          draw.fillText(compactDateLabel, 0, 0);
-          draw.restore();
-          const labelHitW = Math.max(24, Math.round(barW * (isSelected || isLocked ? 1.5 : 1.15)));
-          const labelHitH = Math.max(24, Math.round((veryCompactLabels ? 18 : 22) * (isSelected || isLocked ? 1.2 : 1)));
-          state.labelHitRects[idx] = {
-            x: tx - labelHitW / 2,
-            y: ty - 10,
-            w: labelHitW,
-            h: labelHitH,
-            renderKey: selectionRow?.renderKey || "",
-          };
-          draw.textAlign = "center";
-          draw.textBaseline = "alphabetic";
-        } else {
-          const lx = x + drawW / 2;
-          const expandedLabelDrop = isSelected || isLocked ? Math.round(8 * labelFontScale) : 0;
-          const line1Y = padT + innerH + (compactLabels ? 18 : 22) + expandedLabelDrop;
-          draw.fillText(compactDateLabel, lx, line1Y);
-          const labelHitW = Math.max(24, Math.round(barW * (isSelected || isLocked ? 1.5 : 1.15)));
-          const labelHitH = Math.max(24, Math.round((compactLabels ? 18 : 22) * (isSelected || isLocked ? 1.2 : 1)));
-          state.labelHitRects[idx] = {
-            x: lx - labelHitW / 2,
-            y: line1Y - 10,
-            w: labelHitW,
-            h: labelHitH,
-            renderKey: selectionRow?.renderKey || "",
-          };
-        }
+        const labelTs = Number(e.ts || 0);
+        const weekdayLabel = formatHistoryInlineWeekdayShort(labelTs);
+        const dateLabel = formatHistoryInlineMonthDay(labelTs);
+        const lx = x + drawW / 2;
+        const expandedLabelDrop = isSelected || isLocked ? Math.round(8 * labelFontScale) : 0;
+        const line1Y = padT + innerH + (compactLabels ? 18 : 22) + expandedLabelDrop;
+        const line2Y = line1Y + (veryCompactLabels ? 12 : 13);
+        draw.textAlign = "center";
+        draw.textBaseline = "alphabetic";
+        draw.fillText(weekdayLabel, lx, line1Y);
+        draw.save();
+        draw.globalAlpha = labelAlpha * 0.72;
+        draw.font = `${Math.round((veryCompactLabels ? 9 : 10) * labelFontScale)}px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+        draw.fillText(dateLabel, lx, line2Y);
+        draw.restore();
+        const labelHitW = Math.max(24, Math.round(barW * (isSelected || isLocked ? 1.5 : 1.15)));
+        const labelHitH = Math.max(32, Math.round((compactLabels ? 32 : 34) * (isSelected || isLocked ? 1.2 : 1)));
+        state.labelHitRects[idx] = {
+          x: lx - labelHitW / 2,
+          y: line1Y - 12,
+          w: labelHitW,
+          h: labelHitH,
+          renderKey: selectionRow?.renderKey || "",
+        };
         draw.restore();
       }
     }
@@ -1686,7 +1687,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         '[data-history-summary-action="trigger-xp-award"]'
       ) as HTMLElement | null;
       if (xpReplayTarget) {
-        historyEntrySummaryInteraction.triggerDevXpAward(xpReplayTarget);
+        historyEntrySummaryInteraction.triggerXpAwardReplay(xpReplayTarget);
         return;
       }
 

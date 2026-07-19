@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_REWARD_PROGRESS, type RewardLedgerEntry, type RewardProgressV1 } from "../lib/rewards";
 import type { Task } from "../lib/types";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
-import { TASKTIMER_PENDING_XP_AWARD_EVENT } from "./xp-award-events";
+import { TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT } from "./xp-award-events";
 
 function classListStub() {
   const values = new Set<string>();
@@ -236,7 +236,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.closeBtn.textContent).toBe("Close");
   });
 
-  it("renders aggregate and session XP values without modal replay buttons", () => {
+  it("renders aggregate and session XP values as hidden replay targets without modal replay buttons", () => {
     const rewardProgress = {
       ...DEFAULT_REWARD_PROGRESS,
       totalXp: 120,
@@ -264,12 +264,15 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.body.innerHTML).toContain("Total Time");
     expect(h.body.innerHTML).toContain("Sessions");
     expect(h.body.innerHTML).toContain("2 sessions");
-    expect(h.body.innerHTML).not.toContain('data-history-summary-action="trigger-xp-award"');
+    expect(h.body.innerHTML.match(/data-history-summary-action="trigger-xp-award"/g)).toHaveLength(3);
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="20"');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="12"');
+    expect(h.body.innerHTML).toContain('data-history-summary-xp="8"');
     expect(h.body.innerHTML.match(/historyEntrySummaryXpRibbonValue/g)).toHaveLength(1);
     expect(h.body.innerHTML.match(/data-history-summary-xp-source="true"/g)).toHaveLength(3);
-    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">20</div>');
-    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">12</div>');
-    expect(h.body.innerHTML).toContain('data-history-summary-xp-source="true">8</div>');
+    expect(h.body.innerHTML).toContain('data-history-summary-task-id="task-1">20</div>');
+    expect(h.body.innerHTML).toContain('data-history-summary-task-id="task-1">12</div>');
+    expect(h.body.innerHTML).toContain('data-history-summary-task-id="task-1">8</div>');
   });
 
   it("sets editable target dataset for a single entry", () => {
@@ -838,7 +841,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.editorInput.dataset.historySummaryTargetKey).toBe("");
   });
 
-  it("dispatches a representative dev XP replay award from the visible XP value and closes the overlay", () => {
+  it("dispatches a task-complete XP replay request from the visible XP value and closes the overlay without mutating rewards", () => {
     const dispatchEvent = vi.fn();
     class CustomEventStub<T = unknown> {
       type: string;
@@ -875,25 +878,26 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
 
-    expect(h.interaction.triggerDevXpAward(trigger)).toBe(true);
+    expect(h.interaction.triggerXpAwardReplay(trigger)).toBe(true);
     expect(dispatchEvent).toHaveBeenCalledTimes(1);
     const queuedEvent = dispatchEvent.mock.calls[0]?.[0] as CustomEventStub | undefined;
-    expect(queuedEvent?.type).toBe(TASKTIMER_PENDING_XP_AWARD_EVENT);
+    expect(queuedEvent?.type).toBe(TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT);
     expect(queuedEvent?.detail).toMatchObject({
       fromXp: 108,
       toXp: 120,
       awardedXp: 12,
-      sourceModal: "historyEntrySummaryTest",
+      taskId: "task-1",
       sourceTaskId: "task-1",
-      sourceOverlayId: "historyEntryNoteOverlay",
       sourceElementKey: "historyEntrySummaryXpValue",
       sourceRect: { left: 40, top: 50, width: 70, height: 18 },
     });
     expect(h.closed).toEqual([h.overlay]);
+    expect(rewardProgress.totalXp).toBe(120);
+    expect(rewardProgress.awardLedger).toHaveLength(1);
     vi.unstubAllGlobals();
   });
 
-  it("uses the XP value as the dev replay animation source when it is available", () => {
+  it("uses the XP value as the replay animation source when it is available", () => {
     const dispatchEvent = vi.fn();
     class CustomEventStub<T = unknown> {
       type: string;
@@ -930,7 +934,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
 
-    expect(h.interaction.triggerDevXpAward(trigger)).toBe(true);
+    expect(h.interaction.triggerXpAwardReplay(trigger)).toBe(true);
     const queuedEvent = dispatchEvent.mock.calls[0]?.[0] as CustomEventStub | undefined;
     expect(queuedEvent?.detail).toMatchObject({
       sourceElementKey: "historyEntrySummaryXpValue",
@@ -969,7 +973,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
 
-    expect(h.interaction.triggerDevXpAward(trigger)).toBe(true);
+    expect(h.interaction.triggerXpAwardReplay(trigger)).toBe(true);
     const queuedEvent = dispatchEvent.mock.calls[0]?.[0] as CustomEventStub | undefined;
     expect(queuedEvent?.detail).toMatchObject({
       sourceElementKey: "historyEntrySummaryXpReplayFallback",

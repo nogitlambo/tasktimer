@@ -43,8 +43,55 @@ afterEach(() => {
 });
 
 describe("xp award target selection", () => {
+  it("prefers the mobile topbar target on mobile when both XP values are measurable", () => {
+    vi.stubGlobal("window", {
+      matchMedia: (query: string) => ({
+        matches: query === "(max-width: 900px)",
+      }),
+      getComputedStyle: (element: ElementStub) => ({
+        display: element.__style.display ?? "block",
+        visibility: element.__style.visibility ?? "visible",
+        opacity: element.__style.opacity ?? "1",
+      }),
+    });
+
+    const desktopTarget = makeElement("appShellHeaderXpValue", { left: 10, top: 20, width: 120, height: 24 });
+    const mobileTarget = makeElement("taskLaunchTopbarXpValue", { left: 30, top: 40, width: 96, height: 18 });
+
+    const rect = getVisibleXpTargetRectFromDocument(makeDocument([desktopTarget, mobileTarget]));
+
+    expect(rect).not.toBeNull();
+    expect(rect?.left).toBe(30);
+    expect(rect?.top).toBe(40);
+    expect(rect?.width).toBe(96);
+  });
+
+  it("prefers the desktop header target on desktop when both XP values are measurable", () => {
+    vi.stubGlobal("window", {
+      matchMedia: (query: string) => ({
+        matches: query === "(max-width: 900px)" ? false : true,
+      }),
+      getComputedStyle: (element: ElementStub) => ({
+        display: element.__style.display ?? "block",
+        visibility: element.__style.visibility ?? "visible",
+        opacity: element.__style.opacity ?? "1",
+      }),
+    });
+
+    const desktopTarget = makeElement("appShellHeaderXpValue", { left: 10, top: 20, width: 120, height: 24 });
+    const mobileTarget = makeElement("taskLaunchTopbarXpValue", { left: 30, top: 40, width: 96, height: 18 });
+
+    const rect = getVisibleXpTargetRectFromDocument(makeDocument([desktopTarget, mobileTarget]));
+
+    expect(rect).not.toBeNull();
+    expect(rect?.left).toBe(10);
+    expect(rect?.top).toBe(20);
+    expect(rect?.width).toBe(120);
+  });
+
   it("skips a target whose ancestor tree is hidden and falls back to the mobile topbar target", () => {
     vi.stubGlobal("window", {
+      matchMedia: () => ({ matches: false }),
       getComputedStyle: (element: ElementStub) => ({
         display: element.__style.display ?? "block",
         visibility: element.__style.visibility ?? "visible",
@@ -66,6 +113,7 @@ describe("xp award target selection", () => {
 
   it("returns null when no candidate is visible", () => {
     vi.stubGlobal("window", {
+      matchMedia: () => ({ matches: false }),
       getComputedStyle: (element: ElementStub) => ({
         display: element.__style.display ?? "block",
         visibility: element.__style.visibility ?? "visible",

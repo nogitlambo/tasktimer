@@ -311,7 +311,8 @@ describe("task card view model", () => {
     expect(rendered.html).not.toContain('data-action="archive"');
     expect(rendered.html).toContain('data-history-action="pin"');
     expect(rendered.html).toContain('data-action="history" title="Hide history chart"');
-    expect(rendered.html).toContain("disabled");
+    expect(rendered.html).toContain('aria-disabled="true"');
+    expect(rendered.html).not.toContain('data-action="history" title="Hide history chart" aria-label="Hide history chart" aria-pressed="true" disabled');
   });
 
   it("renders plan-locked labels without changing data hooks", () => {

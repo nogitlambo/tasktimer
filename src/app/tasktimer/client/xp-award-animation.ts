@@ -25,8 +25,7 @@ export type XpAwardAnimationState = {
 
 export const XP_AWARD_COUNT_DURATION_MS = 300;
 export const XP_AWARD_FX_DURATION_MS = 1600;
-export const XP_AWARD_BUTTON_HOLD_MS = 500;
-export const XP_AWARD_UNIT_FX_DURATION_MS = 520;
+export const XP_AWARD_UNIT_FX_DURATION_MS = 760;
 
 function normalizeAward(input: PendingXpAward): PendingXpAward {
   const fromXp = Math.max(0, Math.floor(Number(input.fromXp) || 0));
@@ -138,10 +137,6 @@ export function getXpAwardCountStartedAfterEffectCleanup(opts?: {
   startedDuringEffect?: boolean;
 }): boolean {
   return !!opts?.wasStartedBeforeEffect || !!opts?.startedDuringEffect;
-}
-
-export function shouldUseTaskButtonXpAwardDelivery(award: PendingXpAward | null | undefined): boolean {
-  return !!award && award.sourceModal === "timeGoalComplete" && !!String(award.sourceTaskId || "").trim();
 }
 
 export function getTaskButtonXpAwardCountdownDurationMs(awardedXp: number): number {

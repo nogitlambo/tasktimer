@@ -12,7 +12,14 @@ export function isElementActuallyVisible(element: HTMLElement | null | undefined
 }
 
 export function getVisibleXpTargetRectFromDocument(doc: Document): DOMRect | null {
-  const candidates = ["appShellHeaderXpValue", "taskLaunchTopbarXpValue"]
+  const prefersMobileTopbar =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 900px)").matches;
+  const targetIds = prefersMobileTopbar
+    ? ["taskLaunchTopbarXpValue", "appShellHeaderXpValue"]
+    : ["appShellHeaderXpValue", "taskLaunchTopbarXpValue"];
+  const candidates = targetIds
     .map((id) => doc.getElementById(id))
     .filter((element): element is HTMLElement => !!element);
 

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   const source = readFileSync(resolve(__dirname, "TaskTimerMainAppClient.tsx"), "utf8");
   const shellCss = readFileSync(resolve(__dirname, "styles/01-shell.css"), "utf8");
+  const overlaysCss = readFileSync(resolve(__dirname, "styles/04-overlays.css"), "utf8");
   const friendsCss = readFileSync(resolve(__dirname, "styles/08-friends.css"), "utf8");
 
   it("renders the leaderboard user summary overlay outside the app page scroller", () => {
@@ -17,9 +18,9 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   });
 
   it("renders the leaderboard user summary reveal wrapper and entrance class", () => {
-    expect(source).toContain('className="modal leaderboardPositionModal isLeaderboardPositionRevealing"');
+    expect(source).toContain('className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"');
     expect(source).toContain('className="friendUserSummaryBorderTrace"');
-    expect(source).toContain('className="leaderboardPositionRevealBody"');
+    expect(source).toContain('className="leaderboardPositionRevealBody leaderboardPositionPrimitiveBody"');
   });
 
   it("does not let leaderboard swipe handling capture profile-open clicks", () => {
@@ -65,6 +66,40 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).not.toContain("preserveReadyState");
   });
 
+  it("renders the leaderboard movement overlay outside the app page scroller", () => {
+    const frameCloseIndex = source.indexOf("</TaskTimerAppFrame>");
+    const overlayIndex = source.indexOf('id="leaderboardMovementOverlay"');
+
+    expect(frameCloseIndex).toBeGreaterThan(-1);
+    expect(overlayIndex).toBeGreaterThan(-1);
+    expect(overlayIndex).toBeGreaterThan(frameCloseIndex);
+    expect(source).toContain('className="overlay standardModalOverlay"');
+    expect(source).toContain('className="modal leaderboardMovementModal"');
+  });
+
+  it("queues leaderboard movements and blocks them behind XP and rank UI", () => {
+    expect(source).toContain("LEADERBOARD_POSITION_CHANGED_EVENT");
+    expect(source).toContain("setLeaderboardMovementQueue((current) => current.concat(changes))");
+    expect(source).toContain("const leaderboardMovementBlocked = Boolean(");
+    expect(source).toContain("xpAnimationState.pending ||");
+    expect(source).toContain("xpAnimationState.active ||");
+    expect(source).toContain("pendingRankPromotion ||");
+    expect(source).toContain("activeRankPromotion");
+  });
+
+  it("auto-advances leaderboard movement modals every three seconds", () => {
+    expect(source).toContain("const LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS = 3_000;");
+    expect(source).toContain("leaderboardMovementTimerRef.current = window.setTimeout");
+    expect(source).toContain("LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS");
+    expect(source).toContain("setActiveLeaderboardMovement(null)");
+  });
+
+  it("highlights the current user row in the leaderboard movement modal", () => {
+    expect(source).toContain("function LeaderboardMovementTable");
+    expect(source).toContain('leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}');
+    expect(source).toContain("formatLeaderboardMovementMetric(change, row.profile)");
+  });
+
   it("styles leaderboard loading text with Orbitron and repeating dots", () => {
     expect(shellCss).toContain("#app[aria-label=\"TaskLaunch App\"] .leaderboardLoadingText");
     expect(shellCss).toContain("font-family: var(--font-orbitron), Orbitron, \"Segoe UI Variable\", \"Segoe UI\", Arial, sans-serif !important;");
@@ -86,5 +121,79 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(sharedPanelTextRule).toContain("align-items:center;");
     expect(sharedPanelTextRule).toContain("justify-content:center;");
     expect(sharedPanelTextRule).toContain("text-align:center;");
+  });
+
+  it("delivers task-complete XP from the modal XP value after Claim", () => {
+    expect(source).toContain("TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT");
+    expect(source).toContain("event.preventDefault();");
+    expect(source).toContain('document.getElementById("timeGoalCompleteXpValue")');
+    expect(source).toContain('if (sourceElement?.id === "timeGoalCompleteXpValue")');
+    expect(source).toContain('id = `modal-unit-${activeAward.sourceOverlayId}-${xpAwardPayloadSeqRef.current++}`');
+    expect(source).toContain('if (activeAward.sourceModal === "timeGoalComplete")');
+    expect(source).toContain("runModalXpValueDelivery();");
+  });
+
+  it("keeps modal XP delivery undimmed and emits unit payloads from the XP value", () => {
+    expect(source).toContain("setIsXpAwardSpotlightActive(false);\n      setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, detail.overlayId));");
+    expect(source).toContain("setIsXpAwardSpotlightActive(false);\n      setXpAwardFx({ visible: false, payloads: [] });");
+    expect(source).toContain("const sourceRect = sourceElement?.getBoundingClientRect?.() || null;");
+    expect(source).toContain("const unitOriginRect = isUsableXpAwardRect(sourceRect) ? sourceRect as DOMRect : activeAward.sourceRect;");
+    expect(source).toContain("const style = buildXpPayloadStyle(unitOriginRect, targetRect);");
+    expect(source).toContain('text: "*"');
+    expect(source).toContain('className: "xpAwardFxPayloadUnit xpAwardFxPayloadStar"');
+    expect(source).not.toContain('text: "+1 XP"');
+  });
+
+  it("plays a coin-slot style XP sound as each modal XP unit lands", () => {
+    expect(source).toContain('import { createClickAudioPlayer } from "./client/click-audio-player";');
+    expect(source).toContain('const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp-reward.mp3";');
+    expect(source).toContain('const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";');
+    expect(source).toContain("const xpAwardUnitDeliveryAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_UNIT_DELIVERY_AUDIO_SRC), []);");
+    expect(source).toContain("const xpAwardDeliveryDoneAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_DELIVERY_DONE_AUDIO_SRC), []);");
+    expect(source).toContain("const playXpAwardUnitDeliverySound = () => {");
+    expect(source).toContain("const playXpAwardDoneSoundOnce = () => {");
+    expect(source).toContain("if (didPlayDoneSound) return;");
+    expect(source).toContain("if (!achievementSoundsEnabled) return;");
+    expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.play();");
+    expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.stop();");
+    expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.play();");
+    expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.warm();");
+    expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
+    expect(source).toContain("playXpAwardUnitDeliverySound();\n          updateDeliveredXp();");
+    expect(source).toContain("playXpAwardDoneSoundOnce();\n          finishAward");
+    expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
+    expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");
+    expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");
+  });
+
+  it("counts the task-complete modal XP value down to zero", () => {
+    expect(source).toContain("const setModalRemainingXp = (xp: number) => {");
+    expect(source).toContain("sourceElement.textContent = String(Math.max(0, Math.floor(Number(xp) || 0)));");
+    expect(source).toContain("setModalRemainingXp(targetCountdownXp);");
+    expect(source).toContain("setModalRemainingXp(nextRemaining);");
+    expect(source).toContain("setModalRemainingXp(0);");
+  });
+
+  it("spaces modal XP payload launches evenly instead of batching them per countdown frame", () => {
+    expect(source).toContain("const scheduleUnitPayloadDelivery = () => {");
+    expect(source).toContain("const launchIntervalMs = countdownDurationMs / totalUnits;");
+    expect(source).toContain("addExtraTimer(launchUnitPayload, Math.round(unitIndex * launchIntervalMs));");
+    expect(source).toContain("scheduleUnitPayloadDelivery();");
+    expect(source).not.toContain("for (let value = previousRemaining; value > nextRemaining; value -= 1)");
+  });
+
+  it("keeps the XP award spotlight transparent without backdrop blur and defines unit animation CSS", () => {
+    const spotlightRule = shellCss.match(/\.xpAwardSpotlightLayer\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+
+    expect(spotlightRule).not.toBe("");
+    expect(spotlightRule).toContain("background:transparent;");
+    expect(spotlightRule).not.toContain("rgba(");
+    expect(spotlightRule).not.toContain("backdrop-filter");
+    expect(overlaysCss).toContain(".xpAwardFxPayloadStar");
+    expect(overlaysCss).toContain("animation: xpAwardPayloadUnit 760ms");
+    expect(overlaysCss).toContain("width: 22px;");
+    expect(overlaysCss).toContain("height: 22px;");
+    expect(overlaysCss).toContain("font-size: 23px;");
+    expect(overlaysCss).toContain("color: #ffd45a;");
   });
 });

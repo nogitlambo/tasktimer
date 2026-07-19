@@ -64,6 +64,7 @@ import {
 import { formatDashboardDurationShort } from "./lib/historyChart";
 import {
   LEADERBOARD_PROFILE_UPDATED_EVENT,
+  LEADERBOARD_POSITION_CHANGED_EVENT,
   TASKTIMER_OPEN_FRIEND_PROFILE_EVENT,
   buildRankRivalLadderViewModel,
   buildGlobalLeaderboardRows,
@@ -76,6 +77,8 @@ import {
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
   type OpenFriendProfileFromLeaderboardEventDetail,
+  type LeaderboardPositionChangedEventDetail,
+  type LeaderboardPositionChangeSnapshot,
   type LeaderboardProfile,
   type LeaderboardScreenData,
   type RankRivalLadderViewModel,
@@ -106,9 +109,7 @@ import {
   getXpAwardCountStartedAfterEffectCleanup,
   getXpAwardCountStartDelayMs,
   notifyXpAwardOverlayClosed,
-  shouldUseTaskButtonXpAwardDelivery,
   type PendingXpAward,
-  XP_AWARD_BUTTON_HOLD_MS,
   XP_AWARD_COUNT_DURATION_MS,
   XP_AWARD_FX_DURATION_MS,
   XP_AWARD_UNIT_FX_DURATION_MS,
@@ -117,8 +118,15 @@ import {
   playXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
 } from "./client/xp-award-feedback";
+import { createClickAudioPlayer } from "./client/click-audio-player";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
-import { TASKTIMER_OVERLAY_CLOSED_EVENT, TASKTIMER_PENDING_XP_AWARD_EVENT } from "./client/xp-award-events";
+import {
+  TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+  TASKTIMER_OVERLAY_CLOSED_EVENT,
+  TASKTIMER_PENDING_XP_AWARD_EVENT,
+  TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
+  type TimeGoalCompleteXpClaimRequest,
+} from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
   buildRankPromotionTestPayload,
@@ -137,7 +145,7 @@ type TaskTimerMainAppClientProps = {
 
 type XpAwardFxPayload = {
   id: string;
-  text: string;
+  text?: string;
   style: CSSProperties | null;
   className?: string;
 };
@@ -169,6 +177,7 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
 
 const LEADERBOARD_LOADING_TEXT = "Loading leaderboard standings";
 const LEADERBOARD_LOADING_MIN_MS = 2_000;
+const LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS = 3_000;
 
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
 type LeaderboardView = "global" | "weekly" | "rivals";
@@ -196,6 +205,17 @@ function formatLeaderboardXp(xpRaw: number): string {
 function formatLeaderboardTrend(xpRaw: number): string {
   const xp = Math.max(0, Math.floor(xpRaw || 0));
   return xp > 0 ? `+${new Intl.NumberFormat().format(xp)} XP` : "-";
+}
+
+function formatLeaderboardMovementRank(rankRaw: number): string {
+  const rank = Math.max(0, Math.floor(Number(rankRaw || 0) || 0));
+  return rank > 0 ? `#${rank}` : "Unranked";
+}
+
+function formatLeaderboardMovementMetric(change: LeaderboardPositionChangeSnapshot, profile: LeaderboardProfile): string {
+  return change.boardId === "weekly"
+    ? formatLeaderboardTrend(profile.weeklyXpGain)
+    : formatLeaderboardXp(profile.rewardTotalXp);
 }
 
 function formatLeaderboardTaskCount(countRaw: number): string {
@@ -306,46 +326,17 @@ function buildXpPayloadStyle(sourceRect: PendingXpAward["sourceRect"], targetRec
     top: `${sourceY}px`,
     ["--xp-award-dx" as keyof CSSProperties]: `${targetX - sourceX}px`,
     ["--xp-award-dy" as keyof CSSProperties]: `${targetY - sourceY}px`,
+    ["--xp-award-pre-impact-dx" as keyof CSSProperties]: `${(targetX - sourceX) * 0.74}px`,
+    ["--xp-award-pre-impact-dy" as keyof CSSProperties]: `${(targetY - sourceY) * 0.74}px`,
   };
 }
 
-function getCssEscapedValue(value: string) {
-  if (typeof window !== "undefined" && window.CSS && typeof window.CSS.escape === "function") {
-    return window.CSS.escape(value);
-  }
-  return value.replace(/["\\]/g, "\\$&");
+function isUsableXpAwardRect(rect: Pick<DOMRect, "left" | "top" | "width" | "height"> | null | undefined): rect is DOMRect {
+  return !!rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 0 && rect.height > 0;
 }
 
-function getVisibleCompletedTaskPrimaryButton(doc: Document, taskIdRaw: string | null | undefined): HTMLButtonElement | null {
-  const taskId = String(taskIdRaw || "").trim();
-  if (!taskId) return null;
-  const selector = `.task[data-task-id="${getCssEscapedValue(taskId)}"] .taskPrimaryAction.taskPrimaryActionReset`;
-  const button = doc.querySelector(selector) as HTMLButtonElement | null;
-  if (!button) return null;
-  const style = window.getComputedStyle(button);
-  if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") === 0) return null;
-  const rect = button.getBoundingClientRect();
-  if (!(rect.width > 0) || !(rect.height > 0)) return null;
-  return button;
-}
-
-function getTaskPrimaryActionTextElement(button: HTMLElement | null | undefined): HTMLElement | null {
-  return (button?.querySelector(".taskPrimaryActionPrimary") as HTMLElement | null) || null;
-}
-
-function setTaskPrimaryActionXpLabel(button: HTMLElement, xp: number) {
-  const label = getTaskPrimaryActionTextElement(button);
-  if (!label) return;
-  label.textContent = `${Math.max(0, Math.floor(Number(xp) || 0))} XP`;
-  button.classList.add("isXpAwardReceiving");
-}
-
-function restoreTaskPrimaryActionLabel(button: HTMLElement | null | undefined, originalText: string | null) {
-  if (!button) return;
-  const label = getTaskPrimaryActionTextElement(button);
-  if (label && originalText != null) label.textContent = originalText;
-  button.classList.remove("isXpAwardReceiving", "isXpAwardImpact");
-}
+const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp-reward.mp3";
+const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
   const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
@@ -467,6 +458,44 @@ function LeaderboardSharedTable({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardMovementTable({
+  change,
+}: {
+  change: LeaderboardPositionChangeSnapshot;
+}) {
+  return (
+    <div className="leaderboardMovementTableWrap">
+      <div className="leaderboardWeeklyTable leaderboardMovementTable" role="table" aria-label={`${change.boardLabel} position change`}>
+        <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
+          <span role="columnheader">Pos</span>
+          <span role="columnheader">User</span>
+          <span role="columnheader">{change.metricLabel}</span>
+          <span role="columnheader">Rank</span>
+        </div>
+        {change.rows.map((row) => (
+          <div
+            className={`leaderboardWeeklyTableRow leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}`}
+            role="row"
+            key={`${change.boardId}-${row.profile.uid}-${row.rank}`}
+          >
+            <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
+            <span className="leaderboardWeeklyPlayerCell" role="cell">
+              <LeaderboardAvatar profile={row.profile} small />
+              <span className="leaderboardWeeklyPlayerText">
+                <strong>{row.playerLabel}</strong>
+              </span>
+            </span>
+            <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardMovementMetric(change, row.profile)}</span>
+            <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+              <LeaderboardRankInsignia profile={row.profile} />
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -620,6 +649,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardScreenData>(EMPTY_LEADERBOARD_SCREEN_DATA);
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
+  const [leaderboardMovementQueue, setLeaderboardMovementQueue] = useState<LeaderboardPositionChangeSnapshot[]>([]);
+  const [activeLeaderboardMovement, setActiveLeaderboardMovement] = useState<LeaderboardPositionChangeSnapshot | null>(null);
   const [weeklyAwardsInfoOpen, setWeeklyAwardsInfoOpen] = useState(false);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
   const [exitingLeaderboardView, setExitingLeaderboardView] = useState<LeaderboardView | null>(null);
@@ -639,17 +670,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpAnimationExtraTimersRef = useRef<number[]>([]);
-  const xpAwardButtonRestoreRef = useRef<(() => void) | null>(null);
+  const leaderboardMovementTimerRef = useRef<number | null>(null);
   const xpAwardPayloadSeqRef = useRef(0);
   const xpCountAnimationStartedRef = useRef(false);
+  const xpAwardUnitDeliveryAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_UNIT_DELIVERY_AUDIO_SRC), []);
+  const xpAwardDeliveryDoneAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_DELIVERY_DONE_AUDIO_SRC), []);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const clearXpAwardExtraTimers = useCallback(() => {
     xpAnimationExtraTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     xpAnimationExtraTimersRef.current = [];
-  }, []);
-  const cleanupXpAwardButtonLabel = useCallback(() => {
-    xpAwardButtonRestoreRef.current?.();
-    xpAwardButtonRestoreRef.current = null;
   }, []);
   const displayedRewardProgress = useMemo(() => {
     const totalXp = Math.max(0, Math.floor(Number(effectiveDisplayedXp || 0) || 0));
@@ -733,21 +762,69 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         })
       );
     };
+    const handleLeaderboardMovement = (event: Event) => {
+      const detail = (event as CustomEvent<LeaderboardPositionChangedEventDetail>).detail;
+      const changes = Array.isArray(detail?.changes) ? detail.changes.filter((change) => change?.rows?.length) : [];
+      if (!changes.length) return;
+      setLeaderboardMovementQueue((current) => current.concat(changes));
+    };
     const handleOverlayClosed = (event: Event) => {
       const overlayId = String((event as CustomEvent<{ overlayId?: string }>).detail?.overlayId || "").trim();
       if (!overlayId) return;
       setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, overlayId));
       setPromotionOverlayRetrySeq((current) => current + 1);
     };
+    const handleTimeGoalXpClaim = (event: Event) => {
+      const detail = (event as CustomEvent<TimeGoalCompleteXpClaimRequest>).detail;
+      if (!detail || String(detail.overlayId || "").trim() !== "timeGoalCompleteOverlay") return;
+      event.preventDefault();
+      setIsXpAwardSpotlightActive(false);
+      setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, detail.overlayId));
+    };
     window.addEventListener(TASKTIMER_RANK_PROMOTION_EVENT, handleRankPromotion as EventListener);
     window.addEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
+    window.addEventListener(LEADERBOARD_POSITION_CHANGED_EVENT, handleLeaderboardMovement as EventListener);
     window.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
+    window.addEventListener(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, handleTimeGoalXpClaim as EventListener);
     return () => {
       window.removeEventListener(TASKTIMER_RANK_PROMOTION_EVENT, handleRankPromotion as EventListener);
       window.removeEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
+      window.removeEventListener(LEADERBOARD_POSITION_CHANGED_EVENT, handleLeaderboardMovement as EventListener);
       window.removeEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
+      window.removeEventListener(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, handleTimeGoalXpClaim as EventListener);
     };
   }, []);
+
+  const leaderboardMovementBlocked = Boolean(
+    xpAnimationState.pending ||
+    xpAnimationState.active ||
+    pendingRankPromotion ||
+    activeRankPromotion
+  );
+
+  useEffect(() => {
+    if (leaderboardMovementBlocked || activeLeaderboardMovement || !leaderboardMovementQueue.length) return;
+    const openTimer = window.setTimeout(() => {
+      setActiveLeaderboardMovement(leaderboardMovementQueue[0] || null);
+      setLeaderboardMovementQueue((current) => current.slice(1));
+    }, 0);
+    return () => window.clearTimeout(openTimer);
+  }, [activeLeaderboardMovement, leaderboardMovementBlocked, leaderboardMovementQueue]);
+
+  useEffect(() => {
+    if (!activeLeaderboardMovement) return undefined;
+    if (leaderboardMovementTimerRef.current != null) window.clearTimeout(leaderboardMovementTimerRef.current);
+    leaderboardMovementTimerRef.current = window.setTimeout(() => {
+      leaderboardMovementTimerRef.current = null;
+      setActiveLeaderboardMovement(null);
+    }, LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS);
+    return () => {
+      if (leaderboardMovementTimerRef.current != null) {
+        window.clearTimeout(leaderboardMovementTimerRef.current);
+        leaderboardMovementTimerRef.current = null;
+      }
+    };
+  }, [activeLeaderboardMovement]);
 
   useEffect(() => {
     const activeAward = xpAnimationState.active;
@@ -758,7 +835,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
       clearXpAwardExtraTimers();
-      cleanupXpAwardButtonLabel();
       xpCountAnimationStartedRef.current = false;
       return;
     }
@@ -767,7 +843,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
     if (xpAnimationCleanupTimerRef.current != null) window.clearTimeout(xpAnimationCleanupTimerRef.current);
     clearXpAwardExtraTimers();
-    cleanupXpAwardButtonLabel();
     const countAnimationStarted = xpCountAnimationStartedRef.current;
 
     const reducedMotion = prefersReducedMotion();
@@ -788,11 +863,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
     const finishAward = (delayMs: number) => {
       xpAnimationCleanupTimerRef.current = window.setTimeout(() => {
-        cleanupXpAwardButtonLabel();
         setIsXpCountAnimating(false);
         setIsXpAwardSpotlightActive(false);
         setXpAwardFx({ visible: false, payloads: [] });
         setXpAnimationState((current) => clearActiveXpAward(current));
+        if (activeAward.sourceModal === "timeGoalComplete") {
+          window.dispatchEvent(new CustomEvent(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT));
+        }
       }, delayMs);
     };
 
@@ -882,37 +959,46 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       }, countStartDelayMs);
     };
 
-    const runButtonDelivery = (button: HTMLButtonElement, targetRect: DOMRect) => {
-      const label = getTaskPrimaryActionTextElement(button);
-      const originalText = label?.textContent ?? "Reset";
-      xpAwardButtonRestoreRef.current = () => restoreTaskPrimaryActionLabel(button, originalText);
+    const runModalXpValueDelivery = () => {
+      const getSourceElement = () =>
+        typeof document === "undefined"
+          ? null
+          : (document.getElementById("timeGoalCompleteXpValue") as HTMLElement | null) ||
+            (document.getElementById("timeGoalCompleteText") as HTMLElement | null);
+      const setModalRemainingXp = (xp: number) => {
+        const sourceElement = getSourceElement();
+        if (sourceElement?.id === "timeGoalCompleteXpValue") {
+          sourceElement.textContent = String(Math.max(0, Math.floor(Number(xp) || 0)));
+        } else if (sourceElement) {
+          sourceElement.textContent = `XP Awarded: ${Math.max(0, Math.floor(Number(xp) || 0))}`;
+        }
+      };
+      let targetRect: DOMRect | null = null;
+      try {
+        targetRect = typeof document !== "undefined" ? getVisibleXpTargetRectFromDocument(document) : null;
+      } catch {
+        targetRect = null;
+      }
+
+      setIsXpAwardSpotlightActive(false);
+      setXpAwardFx({ visible: false, payloads: [] });
       displayedXpRef.current = startXp;
       setDisplayedXp(startXp);
-      setIsXpCountAnimating(false);
-      setIsXpAwardSpotlightActive(true);
-
-      const buttonRect = button.getBoundingClientRect();
-      const smashPayloadStyle = buildXpPayloadStyle(activeAward.sourceRect, buttonRect as DOMRect);
-      const showSmashPayload = !reducedMotion && smashPayloadStyle && activeAward.awardedXp > 0;
-      setXpAwardFx({
-        visible: !!showSmashPayload,
-        payloads: showSmashPayload
-          ? [
-              {
-                id: `smash-${activeAward.sourceTaskId}-${activeAward.awardedXp}`,
-                text: `+${activeAward.awardedXp} XP`,
-                style: smashPayloadStyle,
-                className: "xpAwardFxPayloadSmash",
-              },
-            ]
-          : [],
-      });
 
       const totalUnits = Math.max(0, Math.floor(endXp - startXp));
       const targetCountdownXp = Math.max(0, Math.floor(Number(activeAward.awardedXp) || 0));
       const countdownDurationMs = getTaskButtonXpAwardCountdownDurationMs(targetCountdownXp);
       let arrivedParticles = 0;
       let previousRemaining = targetCountdownXp;
+      let didPlayDoneSound = false;
+      setModalRemainingXp(targetCountdownXp);
+
+      const playXpAwardDoneSoundOnce = () => {
+        if (didPlayDoneSound) return;
+        didPlayDoneSound = true;
+        if (!achievementSoundsEnabled) return;
+        xpAwardDeliveryDoneAudioPlayer.play();
+      };
 
       const updateDeliveredXp = () => {
         if (arrivedParticles >= totalUnits) return;
@@ -928,136 +1014,142 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           displayedXpRef.current = endXp;
           setDisplayedXp(endXp);
           setIsXpCountAnimating(false);
+          xpAwardUnitDeliveryAudioPlayer.stop();
+          playXpAwardDoneSoundOnce();
           finishAward(reducedMotion ? 80 : 180);
         }
       };
 
       const removePayload = (id: string) => {
-        setXpAwardFx((current) => ({
-          visible: current.payloads.length > 1,
-          payloads: current.payloads.filter((payload) => payload.id !== id),
-        }));
+        setXpAwardFx((current) => {
+          const nextPayloads = current.payloads.filter((payload) => payload.id !== id);
+          return {
+            visible: nextPayloads.length > 0,
+            payloads: nextPayloads,
+          };
+        });
+      };
+
+      const playXpAwardUnitDeliverySound = () => {
+        if (!achievementSoundsEnabled) return;
+        xpAwardUnitDeliveryAudioPlayer.play();
       };
 
       const launchUnitPayload = () => {
         if (totalUnits <= 0) return;
-        if (reducedMotion) {
+        if (reducedMotion || !targetRect) {
           updateDeliveredXp();
           return;
         }
-        const currentButtonRect = button.getBoundingClientRect();
-        const style = buildXpPayloadStyle(currentButtonRect as DOMRect, targetRect);
-        const id = `unit-${activeAward.sourceTaskId}-${xpAwardPayloadSeqRef.current++}`;
+        const sourceElement = getSourceElement();
+        const sourceRect = sourceElement?.getBoundingClientRect?.() || null;
+        const unitOriginRect = isUsableXpAwardRect(sourceRect) ? sourceRect as DOMRect : activeAward.sourceRect;
+        if (!unitOriginRect) {
+          updateDeliveredXp();
+          return;
+        }
+        const style = buildXpPayloadStyle(unitOriginRect, targetRect);
+        const id = `modal-unit-${activeAward.sourceOverlayId}-${xpAwardPayloadSeqRef.current++}`;
         setXpAwardFx((current) => ({
           visible: true,
           payloads: [
             ...current.payloads,
             {
               id,
-              text: "+1 XP",
+              text: "*",
               style,
-              className: "xpAwardFxPayloadUnit",
+              className: "xpAwardFxPayloadUnit xpAwardFxPayloadStar",
             },
           ],
         }));
-        addExtraTimer(updateDeliveredXp, XP_AWARD_UNIT_FX_DURATION_MS);
+        addExtraTimer(() => {
+          playXpAwardUnitDeliverySound();
+          updateDeliveredXp();
+        }, XP_AWARD_UNIT_FX_DURATION_MS);
         addExtraTimer(() => removePayload(id), XP_AWARD_UNIT_FX_DURATION_MS + 120);
       };
 
-      const finishCountdownWithoutUnits = () => {
-        setTaskPrimaryActionXpLabel(button, 0);
-        displayedXpRef.current = endXp;
-        setDisplayedXp(endXp);
-        finishAward(reducedMotion ? 120 : 220);
+      const scheduleUnitPayloadDelivery = () => {
+        if (totalUnits <= 0) return;
+        const launchIntervalMs = countdownDurationMs / totalUnits;
+        for (let unitIndex = 0; unitIndex < totalUnits; unitIndex += 1) {
+          addExtraTimer(launchUnitPayload, Math.round(unitIndex * launchIntervalMs));
+        }
       };
 
-      const startCountdown = () => {
-        setXpAwardFx({ visible: false, payloads: [] });
-        setTaskPrimaryActionXpLabel(button, targetCountdownXp);
-        if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
-          playXpAwardDeliveryHaptic({
-            isEnabled: interactionHapticsEnabled,
-            intensity: interactionHapticsIntensity,
-          });
+      if (startXp === endXp || targetCountdownXp <= 0 || countdownDurationMs <= 0 || totalUnits <= 0) {
+        setModalRemainingXp(0);
+        displayedXpRef.current = endXp;
+        setDisplayedXp(endXp);
+        finishAward(reducedMotion ? 80 : 180);
+        return;
+      }
+
+      countAnimationStartedDuringEffect = true;
+      xpCountAnimationStartedRef.current = true;
+      setIsXpCountAnimating(true);
+      if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
+        playXpAwardDeliveryHaptic({
+          isEnabled: interactionHapticsEnabled,
+          intensity: interactionHapticsIntensity,
+        });
+      }
+      if (achievementSoundsEnabled) {
+        xpAwardUnitDeliveryAudioPlayer.warm();
+        xpAwardDeliveryDoneAudioPlayer.warm();
+      }
+      scheduleUnitPayloadDelivery();
+      const startedAt = performance.now();
+
+      const tick = (nowValue: number) => {
+        const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / countdownDurationMs));
+        const eased = 1 - (1 - progress) * (1 - progress);
+        const nextRemaining = Math.max(0, Math.ceil(targetCountdownXp * (1 - eased)));
+        if (nextRemaining !== previousRemaining) {
+          previousRemaining = nextRemaining;
+          setModalRemainingXp(nextRemaining);
         }
-        if (targetCountdownXp <= 0 || countdownDurationMs <= 0 || totalUnits <= 0) {
-          finishCountdownWithoutUnits();
+        if (progress >= 1) {
+          xpCountAnimationStartedRef.current = false;
+          setModalRemainingXp(0);
+          if (arrivedParticles >= totalUnits) {
+            displayedXpRef.current = endXp;
+            setDisplayedXp(endXp);
+            setIsXpCountAnimating(false);
+            finishAward(reducedMotion ? 80 : 180);
+          }
           return;
         }
-        countAnimationStartedDuringEffect = true;
-        xpCountAnimationStartedRef.current = true;
-        setIsXpCountAnimating(true);
-        const startedAt = performance.now();
-
-        const tick = (nowValue: number) => {
-          const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / countdownDurationMs));
-          const eased = 1 - (1 - progress) * (1 - progress);
-          const nextRemaining = Math.max(0, Math.ceil(targetCountdownXp * (1 - eased)));
-          if (nextRemaining !== previousRemaining) {
-            for (let value = previousRemaining; value > nextRemaining; value -= 1) {
-              launchUnitPayload();
-            }
-            previousRemaining = nextRemaining;
-            setTaskPrimaryActionXpLabel(button, nextRemaining);
-          }
-          if (progress >= 1) {
-            xpCountAnimationStartedRef.current = false;
-            setTaskPrimaryActionXpLabel(button, 0);
-            if (arrivedParticles >= totalUnits) {
-              displayedXpRef.current = endXp;
-              setDisplayedXp(endXp);
-              setIsXpCountAnimating(false);
-              finishAward(reducedMotion ? 120 : 220);
-            }
-            return;
-          }
-          xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
-        };
-
         xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
       };
 
-      const startAfterImpact = () => {
-        button.classList.add("isXpAwardImpact");
-        setTaskPrimaryActionXpLabel(button, targetCountdownXp);
-        addExtraTimer(() => button.classList.remove("isXpAwardImpact"), 220);
-        addExtraTimer(startCountdown, XP_AWARD_BUTTON_HOLD_MS);
-      };
-
-      if (reducedMotion) {
-        startAfterImpact();
-      } else {
-        addExtraTimer(startAfterImpact, XP_AWARD_FX_DURATION_MS);
-      }
+      xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
     };
 
-    let shouldFallbackToDirectDelivery = true;
-    if (shouldUseTaskButtonXpAwardDelivery(activeAward) && typeof document !== "undefined") {
-      try {
-        const button = getVisibleCompletedTaskPrimaryButton(document, activeAward.sourceTaskId);
-        const targetRect = getVisibleXpTargetRectFromDocument(document);
-        if (button && targetRect) {
-          shouldFallbackToDirectDelivery = false;
-          runButtonDelivery(button, targetRect);
-        }
-      } catch {
-        shouldFallbackToDirectDelivery = true;
-      }
+    if (activeAward.sourceModal === "timeGoalComplete") {
+      runModalXpValueDelivery();
+    } else {
+      runDirectDelivery();
     }
-
-    if (shouldFallbackToDirectDelivery) runDirectDelivery();
 
     return () => {
       if (xpAnimationFrameRef.current != null) window.cancelAnimationFrame(xpAnimationFrameRef.current);
       if (xpAnimationStartTimerRef.current != null) window.clearTimeout(xpAnimationStartTimerRef.current);
       clearXpAwardExtraTimers();
-      cleanupXpAwardButtonLabel();
       xpCountAnimationStartedRef.current = getXpAwardCountStartedAfterEffectCleanup({
         wasStartedBeforeEffect: countAnimationStarted,
         startedDuringEffect: countAnimationStartedDuringEffect,
       });
     };
-  }, [cleanupXpAwardButtonLabel, clearXpAwardExtraTimers, interactionHapticsEnabled, interactionHapticsIntensity, xpAnimationState.active]);
+  }, [
+    achievementSoundsEnabled,
+    clearXpAwardExtraTimers,
+    interactionHapticsEnabled,
+    interactionHapticsIntensity,
+    xpAnimationState.active,
+    xpAwardDeliveryDoneAudioPlayer,
+    xpAwardUnitDeliveryAudioPlayer,
+  ]);
 
   useEffect(() => {
     if (!isXpAwardSpotlightActive || typeof window === "undefined") return;
@@ -1378,6 +1470,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     ? getLeaderboardInitials(getLeaderboardLabel(hydratedCurrentUserEntry))
     : getLeaderboardInitials(hydratedCurrentUserProfileLabel || "User");
   const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
+
+  const closeLeaderboardMovementModal = () => {
+    if (leaderboardMovementTimerRef.current != null) {
+      window.clearTimeout(leaderboardMovementTimerRef.current);
+      leaderboardMovementTimerRef.current = null;
+    }
+    setActiveLeaderboardMovement(null);
+    setLeaderboardMovementQueue([]);
+  };
 
   const closeLeaderboardPositionModal = () => {
     setSelectedLeaderboardProfile(null);
@@ -1983,6 +2084,31 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
 
         <EditTaskOverlay />
       </TaskTimerAppFrame>
+
+      {activeLeaderboardMovement ? (
+        <div className="overlay standardModalOverlay" id="leaderboardMovementOverlay" style={{ display: "flex" }} onClick={closeLeaderboardMovementModal}>
+          <div
+            className="modal leaderboardMovementModal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Leaderboard position changed"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2>Position Changed</h2>
+            <p className="modalSubtext leaderboardMovementBoardLabel">{activeLeaderboardMovement.boardLabel}</p>
+            <p className="confirmText leaderboardMovementSummary">
+              You moved from {formatLeaderboardMovementRank(activeLeaderboardMovement.previousRank)} to{" "}
+              {formatLeaderboardMovementRank(activeLeaderboardMovement.currentRank)}.
+            </p>
+            <LeaderboardMovementTable change={activeLeaderboardMovement} />
+            <div className="confirmBtns">
+              <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" onClick={closeLeaderboardMovementModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {selectedLeaderboardProfile ? (
         <div className="overlay primitiveSciFiModalOverlay leaderboardPositionPrimitiveOverlay" id="leaderboardPositionOverlay" onClick={closeLeaderboardPositionModal}>

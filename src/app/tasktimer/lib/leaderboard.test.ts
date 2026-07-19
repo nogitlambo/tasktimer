@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const firestoreMocks = vi.hoisted(() => {
   const getDocs = vi.fn();
@@ -35,6 +35,7 @@ vi.mock("./accountProfileStorage", () => ({
 }));
 
 import {
+  LEADERBOARD_POSITION_CHANGED_EVENT,
   buildLeaderboardMetricsSnapshot,
   buildGlobalLeaderboardRows,
   buildRankRivalLadderViewModel,
@@ -48,6 +49,7 @@ import {
   getLeaderboardResolvedRank,
   loadLeaderboardScreenData,
   saveLeaderboardProfile,
+  type LeaderboardPositionChangedEventDetail,
   type LeaderboardProfile,
   type WeeklyLeaderboardRow,
 } from "./leaderboard";
@@ -90,6 +92,33 @@ function querySnap(docs: Array<ReturnType<typeof docSnap>>) {
     size: docs.length,
   };
 }
+
+function captureLeaderboardPositionEvents() {
+  const events: Array<{ type: string; detail: LeaderboardPositionChangedEventDetail }> = [];
+  vi.stubGlobal(
+    "CustomEvent",
+    class {
+      type: string;
+      detail: LeaderboardPositionChangedEventDetail;
+
+      constructor(type: string, init: { detail: LeaderboardPositionChangedEventDetail }) {
+        this.type = type;
+        this.detail = init.detail;
+      }
+    }
+  );
+  vi.stubGlobal("window", {
+    dispatchEvent: vi.fn((event: { type: string; detail: LeaderboardPositionChangedEventDetail }) => {
+      if (event.type === LEADERBOARD_POSITION_CHANGED_EVENT) events.push(event);
+      return true;
+    }),
+  });
+  return events;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function tableRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow[] {
   return rows.filter((row) => (row.rank && row.rank >= 4 && row.rank <= 10) || (row.isPinnedCurrentUser && (!row.rank || row.rank > 10)));
@@ -743,6 +772,123 @@ describe("loadLeaderboardScreenData", () => {
 });
 
 describe("saveLeaderboardProfile", () => {
+  it("dispatches a global leaderboard movement with closest real rows", async () => {
+    const events = captureLeaderboardPositionEvents();
+    const previousProfile = createProfile({ uid: "uid-global", username: "pilot", rewardTotalXp: 100, weeklyXpGain: 10 });
+    const currentProfile = createProfile({ uid: "uid-global", username: "pilot", rewardTotalXp: 300, weeklyXpGain: 10 });
+    const belowProfile = createProfile({ uid: "uid-2", username: "below", rewardTotalXp: 250, weeklyXpGain: 5 });
+    const oldAboveProfile = createProfile({ uid: "uid-3", username: "old_above", rewardTotalXp: 180, weeklyXpGain: 4 });
+    const blockedProfile = createProfile({ uid: "blocked-1", username: "codexemaillinktest", rewardTotalXp: 280, weeklyXpGain: 3 });
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(docSnap("uid-global", previousProfile));
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([docSnap("blocked-1", blockedProfile), docSnap("uid-2", belowProfile), docSnap("uid-3", oldAboveProfile), docSnap("uid-global", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-global", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([]))
+      .mockResolvedValueOnce(querySnap([docSnap("blocked-1", blockedProfile), docSnap("uid-2", belowProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-global", currentProfile)]));
+
+    await saveLeaderboardProfile("uid-global", {
+      rewardCurrentRankId: "operator",
+      rewardTotalXp: 300,
+      completedTaskCount: 8,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 10,
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.detail.changes).toHaveLength(1);
+    expect(events[0]?.detail.changes[0]).toMatchObject({
+      boardId: "global",
+      boardLabel: "Global Leaderboard",
+      metricLabel: "Total XP",
+      previousRank: 3,
+      currentRank: 1,
+    });
+    expect(events[0]?.detail.changes[0]?.rows.map((row) => row.profile.uid)).toEqual(["uid-global", "uid-2"]);
+    expect(events[0]?.detail.changes[0]?.rows.find((row) => row.profile.uid === "uid-global")).toMatchObject({
+      isCurrentUser: true,
+      rank: 1,
+    });
+  });
+
+  it("dispatches global and weekly movements in leaderboard order", async () => {
+    const events = captureLeaderboardPositionEvents();
+    const previousProfile = createProfile({ uid: "uid-queue", username: "pilot", rewardTotalXp: 100, weeklyXpGain: 10 });
+    const currentProfile = createProfile({ uid: "uid-queue", username: "pilot", rewardTotalXp: 300, weeklyXpGain: 90 });
+    const globalBelowProfile = createProfile({ uid: "global-below", username: "global_below", rewardTotalXp: 250, weeklyXpGain: 1 });
+    const weeklyBelowProfile = createProfile({ uid: "weekly-below", username: "weekly_below", rewardTotalXp: 80, weeklyXpGain: 70 });
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(docSnap("uid-queue", previousProfile));
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([docSnap("global-below", globalBelowProfile), docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([]))
+      .mockResolvedValueOnce(querySnap([docSnap("global-below", globalBelowProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("weekly-below", weeklyBelowProfile), docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([]))
+      .mockResolvedValueOnce(querySnap([docSnap("weekly-below", weeklyBelowProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]));
+
+    await saveLeaderboardProfile("uid-queue", {
+      rewardCurrentRankId: "operator",
+      rewardTotalXp: 300,
+      completedTaskCount: 8,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 90,
+    });
+
+    expect(events[0]?.detail.changes.map((change) => change.boardId)).toEqual(["global", "weekly"]);
+    expect(events[0]?.detail.changes.map((change) => change.currentRank)).toEqual([1, 1]);
+    expect(events[0]?.detail.changes[1]?.rows.map((row) => row.profile.uid)).toEqual(["uid-queue", "weekly-below"]);
+  });
+
+  it("does not dispatch a movement when XP increases without a rank position change", async () => {
+    const events = captureLeaderboardPositionEvents();
+    const previousProfile = createProfile({ uid: "uid-no-move", username: "pilot", rewardTotalXp: 100, weeklyXpGain: 10 });
+    const currentProfile = createProfile({ uid: "uid-no-move", username: "pilot", rewardTotalXp: 120, weeklyXpGain: 10 });
+    const aboveProfile = createProfile({ uid: "uid-2", username: "above", rewardTotalXp: 500, weeklyXpGain: 5 });
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(docSnap("uid-no-move", previousProfile));
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([docSnap("uid-2", aboveProfile), docSnap("uid-no-move", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-2", aboveProfile)]));
+
+    await saveLeaderboardProfile("uid-no-move", {
+      rewardCurrentRankId: "operator",
+      rewardTotalXp: 120,
+      completedTaskCount: 8,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 10,
+    });
+
+    expect(events).toHaveLength(0);
+  });
+
   it("persists the weekly focus metric used by leaderboard profile rules", async () => {
     firestoreMocks.getDoc.mockReset();
     firestoreMocks.setDoc.mockClear();

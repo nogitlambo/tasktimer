@@ -21,6 +21,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
   const calls: string[] = [];
   const timers: Array<() => void> = [];
   const confirmOptions: Array<{ onOk: () => void }> = [];
+  const pinnedHistoryTaskIds = new Set<string>();
   const effects = createTaskCardActionEffects({
     getTasks: () => [task()],
     canUseAdvancedHistory: () => overrides.advanced ?? true,
@@ -36,6 +37,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
     deleteTask: (index) => calls.push(`delete:${index}`),
     openEdit: (index) => calls.push(`edit:${index}`),
     openHistory: (index) => calls.push(`history:${index}`),
+    getPinnedHistoryTaskIds: () => pinnedHistoryTaskIds,
     openFocusMode: (index, opts) => calls.push(`focus:${index}:${opts?.sourceElement ? "source" : "none"}`),
     toggleCollapse: (index) => calls.push(`collapse:${index}`),
     openTaskExportModal: (index) => calls.push(`export:${index}`),
@@ -68,7 +70,7 @@ function createHarness(overrides: Partial<{ advanced: boolean; social: boolean; 
       timers.push(handler);
     },
   });
-  return { effects, calls, timers, confirmOptions };
+  return { effects, calls, timers, confirmOptions, pinnedHistoryTaskIds };
 }
 
 describe("task card action effects", () => {
@@ -127,6 +129,40 @@ describe("task card action effects", () => {
     expect(harness.effects.handleAction({ action: "editName", taskIndex: 2, taskId: "task-1", sourceElement })).toBe(true);
 
     expect(harness.calls).toEqual(["focus:1:source", "focus:2:source"]);
+  });
+
+  it("flashes the pin instead of hiding history when a pinned Hide Chart control is clicked", () => {
+    const harness = createHarness();
+    harness.pinnedHistoryTaskIds.add("task-1");
+    const pinClasses = new Set<string>();
+    const pinBtn = {
+      offsetWidth: 20,
+      classList: {
+        add: vi.fn((token: string) => pinClasses.add(token)),
+        remove: vi.fn((token: string) => pinClasses.delete(token)),
+      },
+    };
+    const taskCard = {
+      querySelector: (selector: string) => (selector === '[data-history-action="pin"]' ? pinBtn : null),
+    };
+    const sourceElement = {
+      closest: (selector: string) => {
+        if (selector === ".taskHistoryReveal, .historyDrawerReveal") return sourceElement;
+        if (selector === ".task") return taskCard;
+        return null;
+      },
+    } as unknown as HTMLElement;
+
+    expect(harness.effects.handleAction({ action: "history", taskIndex: 0, taskId: "task-1", sourceElement })).toBe(true);
+
+    expect(harness.calls).toEqual(["timeout"]);
+    expect(pinBtn.classList.remove).toHaveBeenCalledWith("isPinnedHideChartFlash");
+    expect(pinBtn.classList.add).toHaveBeenCalledWith("isPinnedHideChartFlash");
+    expect(pinClasses.has("isPinnedHideChartFlash")).toBe(true);
+
+    harness.timers.shift()?.();
+    expect(pinClasses.has("isPinnedHideChartFlash")).toBe(false);
+    expect(harness.calls).toEqual(["timeout"]);
   });
 
   it("confirms unshare and refreshes friends data when the user confirms on friends page", async () => {

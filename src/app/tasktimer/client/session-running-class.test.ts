@@ -5,11 +5,16 @@ import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import type { TaskTimerSessionContext } from "./context";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
+import {
+  TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+  TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT,
+  TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
+  type TimeGoalCompleteXpReplayRequest,
+} from "./xp-award-events";
 
 vi.mock("./interaction-haptics", () => ({
   playCheckpointAlertVibration: vi.fn(),
   playTaskCompleteConfettiHaptic: vi.fn(),
-  playTimeGoalXpCountHaptic: vi.fn(),
 }));
 
 const nativeRuntime = vi.hoisted(() => ({
@@ -22,7 +27,7 @@ vi.mock("../lib/nativeTimerNotification", () => ({
   syncNativeCheckpointAlarms: vi.fn(async () => {}),
 }));
 
-import { playCheckpointAlertVibration, playTimeGoalXpCountHaptic } from "./interaction-haptics";
+import { playCheckpointAlertVibration } from "./interaction-haptics";
 import { createTaskTimerSession } from "./session";
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -83,6 +88,7 @@ type FocusElementStub = ReturnType<typeof createClassList> extends infer ClassLi
       setAttribute: ReturnType<typeof vi.fn>;
       closest: ReturnType<typeof vi.fn>;
       querySelector: ReturnType<typeof vi.fn>;
+      getBoundingClientRect: ReturnType<typeof vi.fn>;
     }
   : never;
 
@@ -100,6 +106,7 @@ function createFocusElementStub(options: { clientWidth?: number; clientHeight?: 
     setAttribute: vi.fn(),
     closest: vi.fn(() => null),
     querySelector: vi.fn(() => null),
+    getBoundingClientRect: vi.fn(() => ({ left: 24, top: 36, width: 120, height: 32 })),
   };
 }
 
@@ -156,6 +163,10 @@ function createCompletionHarness(options?: {
   const openOverlay = vi.fn();
   const closeOverlay = vi.fn();
   const render = vi.fn();
+  const save = vi.fn();
+  const resetTaskStateImmediate = vi.fn();
+  const clearFocusSessionDraft = vi.fn();
+  const setFocusSessionDraft = vi.fn();
   const liveTaskNode = {
     classList: createClassList(["task", "taskRunning"]),
     dataset: { index: "0", taskId: "task-1" },
@@ -173,7 +184,13 @@ function createCompletionHarness(options?: {
     getAttribute: () => null,
   };
   const timeGoalCompleteCloseBtn = createFocusElementStub();
+  const timeGoalCompleteTitle = createFocusElementStub();
   const timeGoalCompleteText = createFocusElementStub();
+  const timeGoalCompleteXpValue = createFocusElementStub();
+  timeGoalCompleteText.querySelector = vi.fn((selector: string) =>
+    selector === "#timeGoalCompleteXpValue" ? timeGoalCompleteXpValue : null
+  );
+  const timeGoalCompleteMeta = createFocusElementStub();
   const timeGoalCompleteNextTasks = createFocusElementStub();
   const timeGoalCompleteNextTaskGrid = createFocusElementStub();
   const handlers = new Map<string, (event?: Event) => unknown>();
@@ -231,7 +248,9 @@ function createCompletionHarness(options?: {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     })),
-    dispatchEvent: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(() => true),
   };
   const documentStub = {
     activeElement: null,
@@ -250,9 +269,10 @@ function createCompletionHarness(options?: {
       focusTaskName: null,
       focusModeScreen: focusModeScreen as unknown as HTMLElement,
       timeGoalCompleteOverlay: timeGoalCompleteOverlay as unknown as HTMLElement,
-      timeGoalCompleteTitle: createFocusElementStub() as unknown as HTMLElement,
+      timeGoalCompleteTitle: timeGoalCompleteTitle as unknown as HTMLElement,
       timeGoalCompleteText: timeGoalCompleteText as unknown as HTMLElement,
-      timeGoalCompleteMeta: createFocusElementStub() as unknown as HTMLElement,
+      timeGoalCompleteXpValue: timeGoalCompleteXpValue as unknown as HTMLElement,
+      timeGoalCompleteMeta: timeGoalCompleteMeta as unknown as HTMLElement,
       timeGoalCompleteCloseBtn: timeGoalCompleteCloseBtn as unknown as HTMLButtonElement,
       timeGoalCompleteLaunchNextBtn: null,
       timeGoalCompleteNextTasks: options?.withNextTaskElements ? timeGoalCompleteNextTasks as unknown as HTMLElement : null,
@@ -285,7 +305,7 @@ function createCompletionHarness(options?: {
     getCurrentAppPage: () => "tasks",
     renderDashboardLiveWidgets: () => {},
     render,
-    save: () => {},
+    save,
     syncRewardSessionTrackerForTask: () => {},
     syncLiveSessionForTask: () => {},
     formatMainTaskElapsedHtml: (elapsedMs: number) => `${elapsedMs}ms`,
@@ -327,13 +347,16 @@ function createCompletionHarness(options?: {
     on: (target: unknown, eventName: string, handler: (event?: Event) => unknown) => {
       if (target === timeGoalCompleteCloseBtn && eventName === "click") handlers.set("timeGoalCompleteCloseBtn:click", handler);
       if (target === timeGoalCompleteText && eventName === "click") handlers.set("timeGoalCompleteText:click", handler);
+      if (target === windowStub) handlers.set(`window:${eventName}`, handler);
     },
     openOverlay,
     closeOverlay,
+    applyAppPage: () => {},
     navigateToAppRoute: () => {},
     normalizedPathname: () => "/tasklaunch",
     savePendingTaskJump: () => {},
     jumpToTaskById: () => {},
+    jumpToTaskAndHighlight: () => {},
     escapeHtmlUI: (value: unknown) => String(value),
     formatTime: (value: number) => String(value),
     formatMainTaskElapsed: (elapsedMs: number) => `${elapsedMs}ms`,
@@ -344,9 +367,9 @@ function createCompletionHarness(options?: {
     startTask: () => {},
     stopTask: () => {},
     resetTask: () => {},
-    resetTaskStateImmediate: () => {},
-    clearFocusSessionDraft: () => {},
-    setFocusSessionDraft: () => {},
+    resetTaskStateImmediate,
+    clearFocusSessionDraft,
+    setFocusSessionDraft,
     syncFocusSessionNotesInput: () => {},
     syncFocusSessionNotesAccordion: () => {},
     getFocusSessionNotesByTaskId: () => ({}),
@@ -392,9 +415,17 @@ function createCompletionHarness(options?: {
     clearTimeout,
     openOverlay,
     timeGoalCompleteOverlay,
+    timeGoalCompleteTitle,
     timeGoalCompleteText,
+    timeGoalCompleteXpValue,
+    timeGoalCompleteCloseBtn,
+    timeGoalCompleteMeta,
     timeGoalCompleteNextTasks,
     timeGoalCompleteNextTaskGrid,
+    save,
+    resetTaskStateImmediate,
+    clearFocusSessionDraft,
+    setFocusSessionDraft,
     audioPlay,
     audioPause,
     audioInstances,
@@ -420,6 +451,11 @@ function createCompletionHarness(options?: {
       if (!handler) throw new Error("timeGoalCompleteText click handler was not registered");
       handler(new Event("click"));
     },
+    triggerTimeGoalCompleteXpReplay: (detail: TimeGoalCompleteXpReplayRequest) => {
+      const handler = handlers.get(`window:${TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT}`);
+      if (!handler) throw new Error("time goal complete XP replay handler was not registered");
+      handler(new CustomEvent(TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT, { detail }));
+    },
   };
 }
 
@@ -438,7 +474,7 @@ function runScheduledTimeoutByDelay(harness: ReturnType<typeof createCompletionH
 }
 
 describe("task timer session tick", () => {
-  it("plays the once-only checkpoint alert twice with a 300ms pause", () => {
+  it("plays the once-only checkpoint alert once", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
       checkpointAlertSoundEnabled: true,
@@ -454,18 +490,14 @@ describe("task timer session tick", () => {
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
       expect(harness.audioInstances[0]?.src).toBe("/checkpoint.mp3");
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(1);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
-
-      runScheduledTimeoutByDelay(harness, 2800);
-      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
     }
   });
 
-  it("vibrates with each of the two foreground checkpoint tones", () => {
+  it("vibrates with the foreground checkpoint tone", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
       checkpointAlertSoundEnabled: true,
@@ -477,9 +509,6 @@ describe("task timer session tick", () => {
       vi.mocked(playCheckpointAlertVibration).mockClear();
       harness.session.tick();
       expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(1);
-
-      runScheduledTimeoutByDelay(harness, 2800);
-      expect(playCheckpointAlertVibration).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
     }
@@ -588,7 +617,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("plays one double-beep alert when multiple checkpoints are reached together", () => {
+  it("plays one checkpoint alert when multiple checkpoints are reached together", () => {
     const harness = createCompletionHarness({
       checkpointAlertSoundEnabled: true,
       taskOverrides: {
@@ -608,9 +637,8 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(3);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
     } finally {
       harness.restoreWindow();
     }
@@ -647,7 +675,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("plays each repeat checkpoint alert cycle twice with a 300ms pause", () => {
+  it("plays each repeat checkpoint alert cycle once", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
       checkpointAlertSoundEnabled: true,
@@ -663,12 +691,12 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(3);
+      expect(harness.windowStub.setTimeout).toHaveBeenCalledTimes(2);
       expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
-      expect(harness.windowStub.setTimeout).toHaveBeenCalledWith(expect.any(Function), 2800);
       expect(harness.windowStub.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
 
-      runScheduledTimeoutByDelay(harness, 2800);
+      if (harness.audioInstances[0]) harness.audioInstances[0].paused = true;
+      runScheduledTimeoutByDelay(harness, 2000);
       expect(harness.audioPlay).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
@@ -742,7 +770,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("acknowledges completion when the completion modal opens", () => {
+  it("persists pending completion when the completion modal opens", () => {
     const harness = createCompletionHarness({ withCheckpoint: true });
 
     try {
@@ -750,7 +778,7 @@ describe("task timer session tick", () => {
 
       expect(harness.openOverlay).toHaveBeenCalled();
       expect(harness.windowStub.localStorage.setItem).toHaveBeenCalledWith(
-        "tasktimer:time-goal-ack",
+        "tasktimer:time-goal",
         expect.stringContaining("task-1")
       );
     } finally {
@@ -832,6 +860,180 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("opens an XP-only task complete modal for a session summary XP replay request", () => {
+    const harness = createCompletionHarness({
+      achievementSoundsEnabled: true,
+      interactionHapticsEnabled: true,
+      reducedMotion: false,
+      withNextTaskElements: true,
+      timeGoalCompleteNextTasksEnabled: true,
+      extraTasks: [
+        task({
+          id: "task-2",
+          name: "Next Focus",
+          timeGoalEnabled: true,
+          timeGoalMinutes: 1,
+          timeGoalPeriod: "day",
+        }),
+      ],
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+
+      harness.triggerTimeGoalCompleteXpReplay({
+        fromXp: 108,
+        toXp: 120,
+        awardedXp: 12,
+        taskId: "task-1",
+        sourceTaskId: "task-1",
+        sourceElementKey: "historyEntrySummaryXpValue",
+        sourceRect: { left: 40, top: 50, width: 70, height: 18 },
+      });
+
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBe("true");
+      expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBe("12");
+      expect(harness.timeGoalCompleteTitle.textContent).toBe("Focus Complete!");
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("12");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
+      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
+      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(true);
+      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toBe("");
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+
+      const pendingAwardEvent = harness.windowStub.dispatchEvent.mock.calls[0]?.[0] as CustomEvent | undefined;
+      expect(pendingAwardEvent?.detail).toMatchObject({
+        fromXp: 108,
+        toXp: 120,
+        awardedXp: 12,
+        sourceModal: "timeGoalComplete",
+        sourceTaskId: "task-1",
+        sourceOverlayId: "timeGoalCompleteOverlay",
+        sourceElementKey: "timeGoalCompleteXpValue",
+        sourceRect: { left: 24, top: 36, width: 120, height: 32 },
+      });
+      expect(harness.save).not.toHaveBeenCalled();
+      expect(harness.resetTaskStateImmediate).not.toHaveBeenCalled();
+      expect(harness.setFocusSessionDraft).not.toHaveBeenCalled();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("closes a replay task complete modal on Claim without resolving task completion", async () => {
+    const harness = createCompletionHarness({
+      withNextTaskElements: true,
+      timeGoalCompleteNextTasksEnabled: true,
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.triggerTimeGoalCompleteXpReplay({
+        fromXp: 108,
+        toXp: 120,
+        awardedXp: 12,
+        taskId: "task-1",
+        sourceTaskId: "task-1",
+        sourceElementKey: "historyEntrySummaryXpValue",
+        sourceRect: { left: 40, top: 50, width: 70, height: 18 },
+      });
+      harness.closeOverlay.mockClear();
+      harness.save.mockClear();
+      harness.resetTaskStateImmediate.mockClear();
+      harness.clearFocusSessionDraft.mockClear();
+      harness.setFocusSessionDraft.mockClear();
+
+      await harness.triggerTimeGoalCompleteClose();
+
+      expect(harness.closeOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBeUndefined();
+      expect(harness.save).not.toHaveBeenCalled();
+      expect(harness.resetTaskStateImmediate).not.toHaveBeenCalled();
+      expect(harness.clearFocusSessionDraft).not.toHaveBeenCalled();
+      expect(harness.setFocusSessionDraft).not.toHaveBeenCalled();
+      expect(harness.completedTask.running).toBe(true);
+      expect(harness.completedTask.accumulatedMs).toBe(120_000);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("requests modal XP delivery on Claim and blocks duplicate Claim while delivery is pending", async () => {
+    const harness = createCompletionHarness({
+      timeGoalModalTaskId: "task-1",
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
+      harness.windowStub.dispatchEvent.mockImplementation((event: Event) => {
+        if (event.type === TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT) {
+          event.preventDefault();
+          return false;
+        }
+        return true;
+      });
+
+      const claimPromise = harness.triggerTimeGoalCompleteClose();
+      await Promise.resolve();
+
+      expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(true);
+      expect(harness.windowStub.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+        })
+      );
+      const claimEvent = harness.windowStub.dispatchEvent.mock.calls.find(
+        ([event]) => (event as Event).type === TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT
+      )?.[0] as CustomEvent | undefined;
+      expect(claimEvent?.detail).toMatchObject({
+        overlayId: "timeGoalCompleteOverlay",
+        awardedXp: 12,
+        sourceElementKey: "timeGoalCompleteXpValue",
+      });
+
+      await harness.triggerTimeGoalCompleteClose();
+      expect(harness.resetTaskStateImmediate).not.toHaveBeenCalled();
+
+      const deliveredHandler = harness.windowStub.addEventListener.mock.calls.find(
+        ([eventName]) => eventName === TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT
+      )?.[1] as (() => void) | undefined;
+      deliveredHandler?.();
+      await claimPromise;
+
+      expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(false);
+      expect(harness.resetTaskStateImmediate).toHaveBeenCalledTimes(1);
+      expect(harness.closeOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("skips modal XP delivery for zero-XP Claim and resolves immediately", async () => {
+    const harness = createCompletionHarness({
+      timeGoalModalTaskId: "task-1",
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "0";
+
+      await harness.triggerTimeGoalCompleteClose();
+
+      expect(harness.windowStub.dispatchEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+        })
+      );
+      expect(harness.resetTaskStateImmediate).toHaveBeenCalledTimes(1);
+      expect(harness.closeOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(false);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("does not start checkpoint flash when flash alerts are disabled", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
@@ -891,7 +1093,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("does not restore a synced completed task without a local pending completion flow", () => {
+  it("restores a synced completed task as an acknowledgement modal without a local pending flow", () => {
     const completedAtMs = Date.now();
     const harness = createCompletionHarness({
       taskOverrides: {
@@ -908,7 +1110,8 @@ describe("task timer session tick", () => {
     try {
       harness.session.maybeRestorePendingTimeGoalFlow();
 
-      expect(harness.openOverlay).not.toHaveBeenCalled();
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.acknowledgement).toBe("true");
     } finally {
       harness.restoreWindow();
     }
@@ -1008,29 +1211,29 @@ describe("task timer session tick", () => {
     const harness = createCompletionHarness({ achievementSoundsEnabled: true, interactionHapticsEnabled: true, reducedMotion: false });
 
     try {
-      vi.mocked(playTimeGoalXpCountHaptic).mockClear();
       harness.session.tick();
       expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBe("0");
-      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
-      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("0");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
       harness.audioPlay.mockClear();
 
-      vi.advanceTimersByTime(2700);
       vi.advanceTimersByTime(1050);
       vi.advanceTimersByTime(500);
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("No XP awarded");
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("0");
       expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.classList.contains("isClaimReady")).toBe(true);
       expect(harness.audioPlay).not.toHaveBeenCalled();
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(false);
-      expect(playTimeGoalXpCountHaptic).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();
     }
   });
 
-  it("replays the task completion xp text animation and reward sound when the text is clicked", () => {
+  it("keeps the static task completion xp text when the text is clicked", () => {
     vi.useFakeTimers();
     const harness = createCompletionHarness({
       achievementSoundsEnabled: true,
@@ -1045,45 +1248,26 @@ describe("task timer session tick", () => {
       harness.timeGoalCompleteOverlay.dataset.awardedXp = "12";
       harness.windowStub.setTimeout.mockClear();
       harness.audioPlay.mockClear();
-      vi.mocked(playTimeGoalXpCountHaptic).mockClear();
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
-      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("12");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(false);
       expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
       expect(harness.audioPlay).not.toHaveBeenCalled();
 
-      vi.advanceTimersByTime(2700);
-
-      expect(harness.timeGoalCompleteText.textContent).not.toBe("You got 0 XP!");
-      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
-      expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(true);
-      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(true);
-      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(1);
-      expect(playTimeGoalXpCountHaptic).toHaveBeenLastCalledWith({
-        isEnabled: expect.any(Function),
-        getIntensity: expect.any(Function),
-      });
-      const hapticOptions = vi.mocked(playTimeGoalXpCountHaptic).mock.calls[0]?.[0];
-      expect(hapticOptions?.isEnabled?.()).toBe(true);
-      expect(hapticOptions?.getIntensity?.()).toBe("low");
-
       vi.advanceTimersByTime(500);
 
-      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
-      expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(true);
-      expect(playTimeGoalXpCountHaptic).toHaveBeenCalledTimes(2);
+      expect(harness.audioPlay).not.toHaveBeenCalled();
+      expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(false);
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.audioPause).toHaveBeenCalledTimes(1);
-      expect(harness.audioInstances[0]?.loop).toBe(false);
-      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.audioPause).not.toHaveBeenCalled();
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
-      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+      expect(harness.audioPlay).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
       vi.useRealTimers();
@@ -1100,8 +1284,9 @@ describe("task timer session tick", () => {
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("Calculating XP...");
-      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(true);
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("12");
+      expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
+      expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
       expect(harness.audioPlay).not.toHaveBeenCalled();
     } finally {
       harness.restoreWindow();
@@ -1119,7 +1304,7 @@ describe("task timer session tick", () => {
 
       harness.triggerTimeGoalCompleteTextClick();
 
-      expect(harness.timeGoalCompleteText.textContent).toBe("");
+      expect(harness.timeGoalCompleteXpValue.textContent).toBe("");
       expect(harness.timeGoalCompleteText.classList.contains("isPlaying")).toBe(false);
       expect(harness.audioPlay).not.toHaveBeenCalled();
     } finally {

@@ -135,6 +135,11 @@
   z-index:0;
 }
 
+#timeGoalCompleteOverlay.isClaimDeliveryActive::before{
+  opacity: 0;
+  backdrop-filter: none;
+}
+
 #signOutConfirmOverlay{
   z-index: 1400;
 }
@@ -5108,6 +5113,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #timeGoalCompleteOverlay .modal{
   position: relative;
   z-index: 2;
+  overflow: hidden;
   background: #0d0f13;
   border-radius: 0;
   padding: 14px 14px 12px;
@@ -5118,7 +5124,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage{
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 5;
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
@@ -5128,13 +5134,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   content: "";
   position: absolute;
   left: 50%;
-  top: 52%;
-  width: 24px;
-  height: 24px;
+  top: 0;
+  width: 120%;
+  height: 84px;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffd84c, transparent 70%);
+  background: linear-gradient(180deg, rgba(255,216,76,.16), transparent 78%);
   opacity: 0;
-  transform: translate(-50%,-50%) scale(.1);
+  transform: translate(-50%,-100%);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompletePrimitiveModal > h2,
+#timeGoalCompleteOverlay .timeGoalCompletePrimitiveBody,
+#timeGoalCompleteOverlay .timeGoalCompletePrimitiveFooter{
+  position: relative;
+  z-index: 2;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying{
@@ -5147,25 +5160,26 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #timeGoalCompleteOverlay .timeGoalConfettiPiece{
   position: absolute;
-  left: 50%;
-  top: 52%;
+  left: var(--start-x);
+  top: -10%;
   width: var(--w);
   height: var(--h);
   border-radius: 2px;
   background: var(--c);
   opacity: 0;
-  transform: translate(-50%, -50%) scale(.2) rotate(var(--rot));
+  transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot));
+  will-change: top, transform, opacity;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
-  animation: timeGoalConfettiBurst 2.4s cubic-bezier(.12,.75,.2,1) 1 both;
+  animation: timeGoalConfettiFall var(--dur, 2.8s) cubic-bezier(.28,.02,.72,1) 1 both;
   animation-delay: var(--d);
 }
 
 #timeGoalCompleteOverlay .timeGoalConfettiDot{
   border-radius: 999px;
-}@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-50%) scale(.1); opacity:.9; }24%{ opacity:.45; }55%,100%{ transform: translate(-50%,-50%) scale(9); opacity:0; }
-}@keyframes timeGoalConfettiBurst{0%{ opacity:0; transform: translate(-50%, -50%) scale(.2) rotate(var(--rot)); }8%{ opacity:1; }62%{ opacity:1; }100%{ opacity:0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(calc(var(--rot) + var(--spin))); }
+}@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-100%); opacity:0; }12%{ opacity:.42; }52%,100%{ transform: translate(-50%, 0); opacity:0; }
+}@keyframes timeGoalConfettiFall{0%{ top:-10%; opacity:0; transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot)); }9%{ top:6%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-a)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-a))); }54%{ top:55%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-b)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-b))); }86%{ opacity:var(--alpha-end, .64); }100%{ top:var(--fall-top, 110%); opacity:0; transform: translate(calc(-50% + var(--drift)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin))); }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -6463,6 +6477,174 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-transform: uppercase;
 }
 
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
+  display: grid !important;
+  align-content: start;
+  padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard{
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 420px);
+  margin: 0 auto 24px;
+  padding: 0;
+  text-align: center;
+  isolation: isolate;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard::before{
+  content: "";
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  z-index: -1;
+  width: min(118%, 490px);
+  height: 220px;
+  background:
+    radial-gradient(circle at 50% 7%, rgba(255, 216, 92, .2), transparent 23%),
+    radial-gradient(circle at 50% 34%, rgba(201, 255, 36, .12), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 74%);
+  opacity: .95;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedalWrap{
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 86px;
+  margin: -8px 0 2px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedalRibbon{
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  width: 188px;
+  height: 28px;
+  border: 1px solid rgba(255, 219, 120, .34);
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(255, 229, 159, .78) 17%, rgba(123, 78, 25, .7) 36%, rgba(35, 17, 8, .78) 50%, rgba(123, 78, 25, .7) 64%, rgba(255, 229, 159, .78) 83%, transparent 92%),
+    linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(0, 0, 0, .24));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .42);
+  transform: translateX(-50%) rotate(-6deg) skewX(-16deg);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedal{
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  border: 2px solid rgba(255, 244, 180, .9);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, .95), rgba(255, 241, 156, .9) 18%, transparent 19%),
+    radial-gradient(circle at 50% 52%, #fff5b8 0 9%, #f6ce55 10% 42%, #b46d17 72%, #6a3808 100%);
+  box-shadow:
+    0 0 0 4px rgba(103, 59, 10, .72),
+    0 0 0 6px rgba(255, 228, 107, .24),
+    0 18px 22px rgba(0, 0, 0, .54),
+    inset 0 0 0 5px rgba(99, 54, 8, .24),
+    inset 0 0 18px rgba(255, 255, 255, .54);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedal::before,
+#timeGoalCompleteOverlay .timeGoalCompleteMedal::after{
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(88, 45, 5, .46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24);
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedal::before{
+  left: 23px;
+  top: 25px;
+  width: 9px;
+  height: 24px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedal::after{
+  right: 23px;
+  top: 25px;
+  width: 9px;
+  height: 24px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteMedalMark{
+  position: relative;
+  z-index: 1;
+  margin-top: 34px;
+  color: rgba(70, 38, 5, .72);
+  font-family: var(--font-orbitron), var(--font-geist-sans), sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardEyebrows{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  color: rgba(185, 194, 205, .7);
+  font-family: var(--font-readable);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardEyebrows span + span{
+  position: relative;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardEyebrows span + span::before{
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(185, 194, 205, .48);
+  transform: translateY(-50%);
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #timeGoalCompleteTitle,
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle{
+  display: block !important;
+  min-height: 0 !important;
+  width: min(100%, 340px);
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f7f8fb !important;
+  font-size: clamp(19px, 4.4vw, 28px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  text-align: center !important;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .78) !important;
+  text-transform: none !important;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardMessage{
+  width: min(100%, 320px);
+  margin: 0;
+  color: rgba(247, 249, 252, .88);
+  font-family: var(--font-readable);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.28;
+}
+
 #timeGoalCompleteOverlay .modalSubtext{
   margin: 0 0 12px;
   color: #c9ff24;
@@ -6861,6 +7043,54 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   justify-content: center;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[hidden]{
+  display: none !important;
+}
+
+#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn.isClaimReady{
+  animation: timeGoalCompleteClaimZoomIn 260ms cubic-bezier(.16,.9,.22,1.18) both;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard #timeGoalCompleteText{
+  min-height: 1.12em;
+  padding-top: 16px;
+  color: #f2f5f8 !important;
+  font-size: 24px !important;
+  letter-spacing: 0 !important;
+  line-height: .98;
+  text-shadow:
+    0 0 10px rgba(255, 226, 88, .54),
+    0 12px 22px rgba(0, 0, 0, .62);
+  white-space: nowrap;
+}
+
+@keyframes timeGoalCompleteClaimZoomIn{
+  0%{
+    opacity: 0;
+    transform: scale(.72);
+    filter: blur(3px) brightness(1.32);
+  }64%{
+    opacity: 1;
+    transform: scale(1.06);
+    filter: blur(0) brightness(1.1);
+  }100%{
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #timeGoalCompleteOverlay #timeGoalCompleteCloseBtn.isClaimReady{
+    animation: none;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
   background: rgba(255,255,255,.01);
@@ -6877,29 +7107,12 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   box-shadow: 0 0 14px rgba(0,220,255,.3);
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn{
-  background: rgba(255,255,255,.01) !important;
-  background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(178,187,196,.46) !important;
-  box-shadow: none !important;
-}
-
 #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
   background: #c9ff24 !important;
   background-image: none !important;
   color: #061006 !important;
   border-color: #c9ff24 !important;
   box-shadow: 0 0 14px rgba(201,255,36,.22);
-}
-
-#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:hover,
-#timeGoalCompleteOverlay #timeGoalCompleteCloseBtn:focus-visible{
-  background: rgba(255,255,255,.05) !important;
-  background-image: none !important;
-  color: #c9ff24 !important;
-  border-color: #c9ff24 !important;
-  box-shadow: 0 0 0 1px rgba(201,255,36,.18) inset !important;
 }
 
 #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
@@ -7799,6 +8012,88 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin-top: 8px;
   color: #8ff6ff;
   font-weight: 700;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementModal{
+  width:min(520px, 100%) !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementBoardLabel{
+  margin:0 0 6px !important;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementSummary{
+  margin:0 0 14px !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTableWrap{
+  margin:14px 0 4px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.035);
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable{
+  display:grid;
+  gap:0;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
+  display:grid;
+  grid-template-columns:52px minmax(0, 1fr) 86px 52px;
+  min-height:42px;
+  padding:0 10px;
+  align-items:center;
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:transparent;
+  color:rgba(238,242,246,.9);
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow:last-child{
+  border-bottom:0;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead{
+  min-height:30px;
+  color:rgba(168,167,167,.9);
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardMovementTableRow.isCurrentUser{
+  background:rgba(201,255,36,.12);
+  color:#fff;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerCell{
+  min-width:0;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerText{
+  min-width:0;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerText strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyInsigniaCell{
+  justify-content:flex-end;
+}
+
+#leaderboardMovementOverlay .confirmBtns{
+  margin-top:16px;
+}
+
+@media (max-width: 520px){
+  #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
+    grid-template-columns:42px minmax(0, 1fr) 72px 40px;
+    padding:0 8px;
+  }
 }
 
 /* Rectangular modal shell alignment. */
@@ -11884,48 +12179,32 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-.xpAwardFxPayloadSmash{
-  animation: xpAwardPayloadSmash 1600ms cubic-bezier(.12,.84,.14,1) forwards;
-}
-
 .xpAwardFxPayloadUnit{
   padding: 3px 7px;
   border-color: rgba(201, 255, 36, 0.74);
   background: rgba(8, 20, 18, 0.92);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28), 0 0 14px rgba(201, 255, 36, 0.22);
   font-size: 0.7rem;
-  animation: xpAwardPayloadUnit 520ms cubic-bezier(.18,.76,.2,1) forwards;
+  animation: xpAwardPayloadUnit 760ms cubic-bezier(.18,.76,.2,1) forwards;
 }
 
-@keyframes xpAwardPayloadSmash{
-  0%{
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(0.82);
-    filter: blur(4px);
-  }
-  12%{
-    opacity: 1;
-    transform: translate3d(-50%, -50%, 0) scale(1);
-    filter: blur(0);
-  }
-  86%{
-    opacity: 1;
-    transform: translate3d(
-      calc(-50% + var(--xp-award-dx, 0px)),
-      calc(-50% + var(--xp-award-dy, 0px)),
-      0
-    ) scale(0.78);
-    filter: blur(0);
-  }
-  100%{
-    opacity: 0;
-    transform: translate3d(
-      calc(-50% + var(--xp-award-dx, 0px)),
-      calc(-50% + var(--xp-award-dy, 0px)),
-      0
-    ) scale(1.24);
-    filter: blur(1px);
-  }
+.xpAwardFxPayloadStar{
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ffd45a;
+  font-family: var(--font-orbitron), Orbitron, "Segoe UI Symbol", "Segoe UI", Arial, sans-serif;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    0 0 5px rgba(255, 244, 176, .86),
+    0 0 12px rgba(255, 184, 46, .62),
+    0 2px 5px rgba(0, 0, 0, .48);
 }
 
 @keyframes xpAwardPayloadUnit{
@@ -11947,6 +12226,14 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
       0
     ) scale(0.42);
     filter: blur(1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .xpAwardFxPayload,
+  .xpAwardFxPayloadUnit{
+    animation: none;
+    opacity: 0;
   }
 }
 
@@ -11999,6 +12286,36 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   letter-spacing: 0 !important;
 }
 
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #timeGoalCompleteTitle{
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
+  display: grid !important;
+  align-content: start !important;
+  padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle{
+  display: block !important;
+  min-height: 0 !important;
+  width: min(100%, 340px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f7f8fb !important;
+  font-size: clamp(19px, 4.4vw, 28px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  justify-content: center !important;
+  text-align: center !important;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .78) !important;
+  text-transform: none !important;
+}
+
 #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmText,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor,
@@ -12013,6 +12330,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-family: var(--font-readable) !important;
   font-size: 13px !important;
   line-height: 1.5 !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
+  display: grid !important;
+  align-content: start !important;
+  padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmBtns,
@@ -12080,5 +12403,66 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     min-width: 0 !important;
     padding-inline: 12px !important;
     white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 640px){
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
+    --history-entry-summary-mobile-top-clearance: calc(44px + var(--safe-top));
+    --history-entry-summary-mobile-bottom-clearance: calc(
+      max(116px, var(--mobile-footer-reserved-space, 82px)) + var(--safe-bottom)
+    );
+    align-items: flex-start !important;
+    padding:
+      var(--history-entry-summary-mobile-top-clearance)
+      calc(8px + var(--safe-right))
+      var(--history-entry-summary-mobile-bottom-clearance)
+      calc(8px + var(--safe-left)) !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal{
+    width: calc(100vw - 16px - var(--safe-left) - var(--safe-right)) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: min(
+      620px,
+      calc(
+        100dvh
+        - var(--history-entry-summary-mobile-top-clearance)
+        - var(--history-entry-summary-mobile-bottom-clearance)
+      )
+    ) !important;
+    max-height: calc(
+      100dvh
+      - var(--history-entry-summary-mobile-top-clearance)
+      - var(--history-entry-summary-mobile-bottom-clearance)
+    ) !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader{
+    min-height: 52px !important;
+    padding: 9px 18px 8px !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
+  #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor{
+    --history-entry-summary-body-pad: 22px;
+    padding: 22px 22px 16px !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter{
+    position: sticky !important;
+    bottom: 0 !important;
+    min-height: 72px !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 14px calc(16px + var(--safe-bottom)) !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
+    min-width: min(154px, 42vw) !important;
+    min-height: 44px !important;
+    padding-inline: 18px !important;
   }
 }

@@ -9,10 +9,9 @@ import {
   richNoteHasMeaningfulText,
   setRichNoteEditorValue,
 } from "./rich-session-notes";
-import { captureXpAwardRectSnapshot, dispatchPendingXpAwardEvent } from "./xp-award-events";
+import { captureXpAwardRectSnapshot, dispatchTimeGoalCompleteXpReplayEvent } from "./xp-award-events";
 
 type HistoryEntrySummaryOwner = "inline" | "manager";
-const CAN_TRIGGER_DEV_XP_REPLAY = process.env.NODE_ENV !== "production";
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
@@ -455,9 +454,9 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     syncCloseLabel();
   }
 
-  function triggerDevXpAward(trigger: HTMLElement | null) {
+  function triggerXpAwardReplay(trigger: HTMLElement | null) {
     const overlay = elements.overlay;
-    if (!CAN_TRIGGER_DEV_XP_REPLAY || typeof window === "undefined") return false;
+    if (typeof window === "undefined") return false;
     if (!overlay || overlay.dataset.historyEntryOwner !== options.owner) return false;
     if (overlay.dataset.historyEntryEditing === "true") return false;
     if (!trigger) return false;
@@ -470,13 +469,12 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const taskId = String(trigger.getAttribute("data-history-summary-task-id") || overlay.dataset.historyEntryTaskId || "").trim();
     const sourceElement = getXpReplaySourceElement(trigger);
 
-    dispatchPendingXpAwardEvent(window, {
+    dispatchTimeGoalCompleteXpReplayEvent(window, {
       fromXp: Math.max(0, currentTotalXp - awardedXp),
       toXp: currentTotalXp,
       awardedXp,
-      sourceModal: "historyEntrySummaryTest",
+      taskId: taskId || null,
       sourceTaskId: taskId || null,
-      sourceOverlayId: "historyEntryNoteOverlay",
       sourceElementKey: sourceElement === trigger ? "historyEntrySummaryXpReplayFallback" : "historyEntrySummaryXpValue",
       sourceRect: captureXpAwardRectSnapshot(sourceElement),
     });
@@ -498,6 +496,6 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     syncInputMirror,
     syncCloseLabel,
     syncEditorUi,
-    triggerDevXpAward,
+    triggerXpAwardReplay,
   };
 }

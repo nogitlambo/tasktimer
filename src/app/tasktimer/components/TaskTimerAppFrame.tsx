@@ -56,7 +56,7 @@ type TaskTimerAppFrameProps = {
     visible: boolean;
     payloads: Array<{
       id: string;
-      text: string;
+      text?: string;
       style: CSSProperties | null;
       className?: string;
     }>;
@@ -631,7 +631,7 @@ export default function TaskTimerAppFrame({
           {xpAwardFx.payloads.map((payload) =>
             payload.style ? (
               <span key={payload.id} className={`xpAwardFxPayload${payload.className ? ` ${payload.className}` : ""}`} style={payload.style}>
-                {payload.text}
+                {payload.text || ""}
               </span>
             ) : null
           )}

@@ -1,5 +1,7 @@
 import { createElement, type ComponentProps, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -141,6 +143,50 @@ describe("TaskTimerAppFrame XP header animation", () => {
     expect(html).toContain('class="appShellHeaderXpValue isAnimatingXpCount"');
     expect(html).not.toContain("taskLaunchTopbarXpMetaLine");
     expect(html).not.toContain("appShellHeaderXpPromotionLabel");
+  });
+
+  it("renders XP award unit payloads through the shared payload layer", () => {
+    const html = renderTaskTimerAppFrameMarkup({
+      xpAwardFx: {
+        visible: true,
+        payloads: [
+          {
+            id: "unit-test-0",
+            text: "*",
+            style: { left: "120px", top: "80px" },
+            className: "xpAwardFxPayloadUnit xpAwardFxPayloadStar",
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain('class="xpAwardFxPayload xpAwardFxPayloadUnit xpAwardFxPayloadStar"');
+    expect(html).toContain("*");
+    expect(html).not.toContain("xpAwardFxShard");
+  });
+});
+
+describe("TaskTimerAppFrame XP award CSS contracts", () => {
+  const shellCss = readFileSync(resolve(__dirname, "../styles/01-shell.css"), "utf8");
+  const overlaysCss = readFileSync(resolve(__dirname, "../styles/04-overlays.css"), "utf8");
+
+  it("keeps the XP award spotlight transparent without applying backdrop blur", () => {
+    const spotlightRule = shellCss.match(/\.xpAwardSpotlightLayer\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+
+    expect(spotlightRule).not.toBe("");
+    expect(spotlightRule).toContain("background:transparent;");
+    expect(spotlightRule).not.toContain("rgba(");
+    expect(spotlightRule).not.toContain("backdrop-filter");
+  });
+
+  it("defines the XP award unit payload animation contract", () => {
+    const unitRule = overlaysCss.match(/\.xpAwardFxPayloadUnit\s*\{([\s\S]*?)\}/)?.[1] ?? "";
+
+    expect(unitRule).toContain("animation: xpAwardPayloadUnit 760ms");
+    expect(overlaysCss).toContain(".xpAwardFxPayloadStar");
+    expect(overlaysCss).toContain("@keyframes xpAwardPayloadUnit");
+    expect(overlaysCss).not.toContain(".xpAwardFxShard");
+    expect(overlaysCss).not.toContain("xpAwardPayloadSmash");
   });
 });
 

@@ -30,10 +30,27 @@ import { RANK_LADDER, getNextRank, getRankForXp, getRewardStreakLength, normaliz
 import type { HistoryByTaskId, HistoryEntry, LiveSessionsByTaskId } from "./types";
 
 export const LEADERBOARD_PROFILE_UPDATED_EVENT = "tasktimer:leaderboardProfileUpdated";
+export const LEADERBOARD_POSITION_CHANGED_EVENT = "tasktimer:leaderboardPositionChanged";
 export const TASKTIMER_OPEN_FRIEND_PROFILE_EVENT = "tasktimer:openFriendProfileFromLeaderboard";
 
 export type OpenFriendProfileFromLeaderboardEventDetail = {
   friendUid: string;
+};
+
+export type LeaderboardMovementBoardId = "global" | "weekly";
+
+export type LeaderboardPositionChangeSnapshot = {
+  boardId: LeaderboardMovementBoardId;
+  boardLabel: string;
+  metricLabel: string;
+  previousRank: number;
+  currentRank: number;
+  rows: WeeklyLeaderboardRow[];
+};
+
+export type LeaderboardPositionChangedEventDetail = {
+  uid: string;
+  changes: LeaderboardPositionChangeSnapshot[];
 };
 
 export type LeaderboardProfile = {
@@ -120,6 +137,7 @@ const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
 const RANK_RIVALS_QUERY_LIMIT = 100;
+const LEADERBOARD_MOVEMENT_NEIGHBOR_QUERY_LIMIT = 10;
 const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
@@ -306,7 +324,7 @@ export function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string
 }
 
 function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {
-  return normalizeRewardProgress(rewards).awardLedger.reduce((sum, entry) => {
+  return rewards.awardLedger.reduce((sum, entry) => {
     const ts = normalizeInt(entry?.ts);
     const xp = normalizeInt(entry?.xp);
     if (!ts || ts < period.startMs || ts > period.endMs || xp <= 0) return sum;
@@ -338,6 +356,19 @@ function dispatchLeaderboardProfileUpdated(uid: string): void {
   if (typeof window === "undefined" || !uid) return;
   try {
     window.dispatchEvent(new CustomEvent(LEADERBOARD_PROFILE_UPDATED_EVENT, { detail: { uid } }));
+  } catch {
+    // Ignore custom-event failures.
+  }
+}
+
+function dispatchLeaderboardPositionChanged(uid: string, changes: LeaderboardPositionChangeSnapshot[]): void {
+  if (typeof window === "undefined" || !uid || !changes.length) return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent<LeaderboardPositionChangedEventDetail>(LEADERBOARD_POSITION_CHANGED_EVENT, {
+        detail: { uid, changes },
+      })
+    );
   } catch {
     // Ignore custom-event failures.
   }
@@ -420,7 +451,7 @@ export function buildLeaderboardMetricsSnapshot(input: {
 }): LeaderboardMetricsSnapshot {
   const nowValue = normalizeInt(input.nowMs || Date.now()) || Date.now();
   const weeklyPeriod = getWeeklyLeaderboardUtcPeriod(nowValue);
-  const rewards = normalizeRewardProgress(input.rewards);
+  const rewards = normalizeRewardProgress(input.rewards, { nowMs: nowValue });
   const projectedHistory = buildProjectedHistory(input.historyByTaskId || {}, input.liveSessionsByTaskId || {});
   const totalFocusMs = Object.values(projectedHistory).reduce((sum, entries) => {
     return (
@@ -443,6 +474,159 @@ export function buildLeaderboardMetricsSnapshot(input: {
   };
 }
 
+function buildOwnLeaderboardProfile(
+  uid: string,
+  identity: LeaderboardIdentityFields,
+  metrics: LeaderboardMetricsSnapshot
+): LeaderboardProfile {
+  const rewardTotalXp = normalizeInt(metrics.rewardTotalXp);
+  return {
+    uid,
+    username: identity.username,
+    displayLabel: identity.displayLabel || identity.username || "User",
+    avatarId: identity.avatarId,
+    avatarCustomSrc: identity.avatarCustomSrc,
+    googlePhotoUrl: identity.googlePhotoUrl,
+    rankThumbnailSrc: identity.rankThumbnailSrc,
+    rewardCurrentRankId: normalizeString(metrics.rewardCurrentRankId, 120) || identity.rewardCurrentRankId || getRankForXp(rewardTotalXp).id,
+    rewardTotalXp,
+    completedTaskCount: normalizeInt(metrics.completedTaskCount),
+    streakDays: normalizeInt(metrics.streakDays),
+    totalFocusMs: normalizeInt(metrics.totalFocusMs),
+    weeklyFocusMs: normalizeInt(metrics.weeklyFocusMs),
+    weeklyXpGain: normalizeInt(metrics.weeklyXpGain),
+    memberSinceMs: identity.memberSinceMs,
+    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+  };
+}
+
+type LeaderboardMovementMetric = {
+  boardId: LeaderboardMovementBoardId;
+  boardLabel: string;
+  metricLabel: string;
+  field: "rewardTotalXp" | "weeklyXpGain";
+};
+
+const LEADERBOARD_MOVEMENT_METRICS: LeaderboardMovementMetric[] = [
+  { boardId: "global", boardLabel: "Global Leaderboard", metricLabel: "Total XP", field: "rewardTotalXp" },
+  { boardId: "weekly", boardLabel: "Weekly Leaderboard", metricLabel: "Weekly XP", field: "weeklyXpGain" },
+];
+
+function metricValue(profile: LeaderboardProfile, metric: LeaderboardMovementMetric): number {
+  return normalizeInt(profile[metric.field]);
+}
+
+function buildLeaderboardMovementRow(profile: LeaderboardProfile, rank: number, currentUid: string): WeeklyLeaderboardRow {
+  return {
+    profile,
+    rank,
+    rankLabel: formatWeeklyRankLabel(rank),
+    playerLabel: getLeaderboardPlayerLabel(profile),
+    isCurrentUser: profile.uid === currentUid,
+    isPinnedCurrentUser: profile.uid === currentUid,
+    isPlaceholder: false,
+    isDummy: false,
+  };
+}
+
+async function loadLeaderboardRankForMetric(metric: LeaderboardMovementMetric, value: number, excludeUid?: string): Promise<number | null> {
+  const db = dbOrNull();
+  if (!db) return null;
+  const snap = await getDocs(query(collection(db, "leaderboardProfiles"), where(metric.field, ">", normalizeInt(value))));
+  const normalizedExcludeUid = String(excludeUid || "").trim();
+  const higherEntries = visibleLeaderboardProfiles(snap.docs.map((row) => asLeaderboardProfile(row))).filter(
+    (profile) => !normalizedExcludeUid || profile.uid !== normalizedExcludeUid
+  );
+  return higherEntries.length + 1;
+}
+
+async function loadClosestLeaderboardNeighbor(input: {
+  metric: LeaderboardMovementMetric;
+  value: number;
+  currentUid: string;
+  direction: "above" | "below";
+}): Promise<WeeklyLeaderboardRow | null> {
+  const db = dbOrNull();
+  if (!db || !input.currentUid) return null;
+  const operator = input.direction === "above" ? ">" : "<";
+  const orderDirection = input.direction === "above" ? "asc" : "desc";
+  const snap = await getDocs(
+    query(
+      collection(db, "leaderboardProfiles"),
+      where(input.metric.field, operator, normalizeInt(input.value)),
+      orderBy(input.metric.field, orderDirection),
+      limit(LEADERBOARD_MOVEMENT_NEIGHBOR_QUERY_LIMIT + EXCLUDED_LEADERBOARD_USERNAMES.size)
+    )
+  );
+  const neighbor = visibleLeaderboardProfiles(snap.docs.map((row) => asLeaderboardProfile(row))).find((profile) => profile.uid !== input.currentUid);
+  if (!neighbor) return null;
+  const neighborRank = await loadLeaderboardRankForMetric(input.metric, metricValue(neighbor, input.metric));
+  if (!neighborRank) return null;
+  return buildLeaderboardMovementRow(neighbor, neighborRank, input.currentUid);
+}
+
+async function loadLeaderboardMovementRows(input: {
+  metric: LeaderboardMovementMetric;
+  currentProfile: LeaderboardProfile;
+  currentRank: number;
+}): Promise<WeeklyLeaderboardRow[]> {
+  const value = metricValue(input.currentProfile, input.metric);
+  const [above, below] = await Promise.all([
+    loadClosestLeaderboardNeighbor({
+      metric: input.metric,
+      value,
+      currentUid: input.currentProfile.uid,
+      direction: "above",
+    }).catch(() => null),
+    loadClosestLeaderboardNeighbor({
+      metric: input.metric,
+      value,
+      currentUid: input.currentProfile.uid,
+      direction: "below",
+    }).catch(() => null),
+  ]);
+  return [above, buildLeaderboardMovementRow(input.currentProfile, input.currentRank, input.currentProfile.uid), below].filter(
+    (row): row is WeeklyLeaderboardRow => !!row
+  );
+}
+
+async function buildLeaderboardPositionChanges(input: {
+  uid: string;
+  previousProfile: LeaderboardProfile | null;
+  currentProfile: LeaderboardProfile;
+}): Promise<LeaderboardPositionChangeSnapshot[]> {
+  if (!input.previousProfile || input.previousProfile.uid !== input.uid) return [];
+  if (isExcludedLeaderboardProfile(input.previousProfile) || isExcludedLeaderboardProfile(input.currentProfile)) return [];
+
+  const changes: LeaderboardPositionChangeSnapshot[] = [];
+  for (const metric of LEADERBOARD_MOVEMENT_METRICS) {
+    const previousValue = metricValue(input.previousProfile, metric);
+    const currentValue = metricValue(input.currentProfile, metric);
+    if (!(currentValue > previousValue)) continue;
+
+    const previousRank = await loadLeaderboardRankForMetric(metric, previousValue, input.uid).catch(() => null);
+    const currentRank = await loadLeaderboardRankForMetric(metric, currentValue, input.uid).catch(() => null);
+    if (!previousRank || !currentRank || previousRank === currentRank) continue;
+
+    const rows = await loadLeaderboardMovementRows({
+      metric,
+      currentProfile: input.currentProfile,
+      currentRank,
+    }).catch(() => []);
+    if (!rows.some((row) => row.isCurrentUser)) continue;
+
+    changes.push({
+      boardId: metric.boardId,
+      boardLabel: metric.boardLabel,
+      metricLabel: metric.metricLabel,
+      previousRank,
+      currentRank,
+      rows,
+    });
+  }
+  return changes;
+}
+
 export async function saveLeaderboardProfile(
   uid: string,
   metrics: LeaderboardMetricsSnapshot,
@@ -456,30 +640,38 @@ export async function saveLeaderboardProfile(
     await deleteDoc(ref);
     return;
   }
+  const shouldDetectPositionChange = options?.dispatchUpdatedEvent !== false;
+  const previousSnap = shouldDetectPositionChange ? await getDoc(ref).catch(() => null) : null;
+  const previousProfile = previousSnap && typeof previousSnap.exists === "function" && previousSnap.exists()
+    ? normalizeLeaderboardProfileRecord(previousSnap.id, previousSnap.data() as Record<string, unknown>)
+    : null;
+  const currentProfile = buildOwnLeaderboardProfile(uid, identity, metrics);
   await setDoc(
     ref,
     {
       uid,
-      username: identity.username,
-      displayLabel: identity.displayLabel,
-      avatarId: identity.avatarId,
-      avatarCustomSrc: identity.avatarCustomSrc,
-      googlePhotoUrl: identity.googlePhotoUrl,
-      rankThumbnailSrc: identity.rankThumbnailSrc,
-      rewardCurrentRankId: normalizeString(metrics.rewardCurrentRankId, 120) || identity.rewardCurrentRankId,
-      rewardTotalXp: normalizeInt(metrics.rewardTotalXp),
-      completedTaskCount: normalizeInt(metrics.completedTaskCount),
-      streakDays: normalizeInt(metrics.streakDays),
-      totalFocusMs: normalizeInt(metrics.totalFocusMs),
-      weeklyFocusMs: normalizeInt(metrics.weeklyFocusMs),
-      weeklyXpGain: normalizeInt(metrics.weeklyXpGain),
-      memberSinceMs: identity.memberSinceMs,
+      username: currentProfile.username,
+      displayLabel: currentProfile.displayLabel,
+      avatarId: currentProfile.avatarId,
+      avatarCustomSrc: currentProfile.avatarCustomSrc,
+      googlePhotoUrl: currentProfile.googlePhotoUrl,
+      rankThumbnailSrc: currentProfile.rankThumbnailSrc,
+      rewardCurrentRankId: currentProfile.rewardCurrentRankId,
+      rewardTotalXp: currentProfile.rewardTotalXp,
+      completedTaskCount: currentProfile.completedTaskCount,
+      streakDays: currentProfile.streakDays,
+      totalFocusMs: currentProfile.totalFocusMs,
+      weeklyFocusMs: currentProfile.weeklyFocusMs,
+      weeklyXpGain: currentProfile.weeklyXpGain,
+      memberSinceMs: currentProfile.memberSinceMs,
       schemaVersion: LEADERBOARD_SCHEMA_VERSION,
       updatedAt: serverTimestamp(),
     },
     { merge: true }
   );
   if (options?.dispatchUpdatedEvent !== false) {
+    const positionChanges = await buildLeaderboardPositionChanges({ uid, previousProfile, currentProfile }).catch(() => []);
+    dispatchLeaderboardPositionChanged(uid, positionChanges);
     dispatchLeaderboardProfileUpdated(uid);
   }
 }

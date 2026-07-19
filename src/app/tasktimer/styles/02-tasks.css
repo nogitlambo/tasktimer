@@ -481,6 +481,36 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   opacity: .64;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryReveal[aria-disabled="true"],
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .historyDrawerReveal[aria-disabled="true"]{
+  cursor: pointer;
+}
+
+@keyframes historyPinnedHideChartFlash{
+  0%, 100%{
+    background: rgba(53,232,255,.16);
+    color: rgba(230,250,255,.98);
+    transform: scale(1);
+    box-shadow: none;
+  }
+  18%, 54%, 90%{
+    background: rgba(53,232,255,.44);
+    color: #ffffff;
+    transform: scale(1.18);
+    box-shadow: 0 0 12px rgba(53,232,255,.54);
+  }
+  36%, 72%{
+    background: rgba(255,255,255,.08);
+    color: rgba(230,250,255,.98);
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .historyPinBtn.isPinnedHideChartFlash{
+  animation: historyPinnedHideChartFlash 1s ease-in-out both;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskHistoryRevealText{
   display: block;
   font-family: Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
@@ -2074,7 +2104,7 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
-  --task-card-bottom-border-color: rgba(255,255,255,.12);
+  --task-card-bottom-border-color: rgba(54,58,64,.88);
   border: 1px solid rgba(255,255,255,.12) !important;
   background: #17191d !important;
   box-shadow: none !important;
@@ -2082,8 +2112,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskRunning) .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task:not(.taskRunning) .taskFaceShellBack{
-  --task-card-bottom-border-color: rgba(255,255,255,.12);
-  border-color: rgba(255,255,255,.12) !important;
+  --task-card-bottom-border-color: rgba(54,58,64,.88);
+  border-color: rgba(54,58,64,.88) !important;
   box-shadow: none !important;
 }
 
@@ -3976,8 +4006,8 @@ body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"]
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellBack{
-  --task-card-bottom-border-color: rgba(255,255,255,.12);
-  --task-card-outline-color: rgba(255,255,255,.12);
+  --task-card-bottom-border-color: rgba(54,58,64,.88);
+  --task-card-outline-color: rgba(54,58,64,.88);
   border-color: transparent !important;
   box-shadow: 0 14px 34px rgba(0,0,0,.28) !important;
 }
@@ -4165,8 +4195,8 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront,
 body[data-theme="lime"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront{
-  --task-card-bottom-border-color: rgba(170,202,220,.78);
-  --task-card-outline-color: rgba(170,202,220,.78);
+  --task-card-bottom-border-color: rgba(54,58,64,.88);
+  --task-card-outline-color: rgba(54,58,64,.88);
   padding: 14px 10px 8px !important;
   border: 1px solid var(--task-card-outline-color) !important;
   border-radius: 6px;

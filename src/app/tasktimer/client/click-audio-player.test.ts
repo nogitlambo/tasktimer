@@ -10,6 +10,7 @@ function makeAudioMock(opts: { readyState?: number } = {}) {
     readyState: opts.readyState ?? 0,
     load: vi.fn(),
     play: vi.fn(),
+    pause: vi.fn(),
     addEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
       const bucket = listeners.get(type) || new Set<EventListenerOrEventListenerObject>();
       bucket.add(listener);
@@ -72,6 +73,33 @@ describe("click audio player", () => {
 
     expect(audioFactory).toHaveBeenCalledTimes(2);
     expect(play).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops active pooled audio and rewinds it", () => {
+    const created: ReturnType<typeof makeAudioMock>[] = [];
+    const AudioMock = vi.fn(function AudioMock(this: unknown) {
+      const audio = makeAudioMock();
+      created.push(audio);
+      return audio;
+    });
+
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("Audio", AudioMock);
+
+    const player = createClickAudioPlayer("/click-secondary.mp3");
+    player.play();
+    player.play();
+    created.forEach((audio) => {
+      audio.currentTime = 3;
+    });
+
+    player.stop();
+
+    expect(created).toHaveLength(3);
+    expect(created[0]?.pause).toHaveBeenCalledTimes(1);
+    expect(created[1]?.pause).toHaveBeenCalledTimes(1);
+    expect(created[2]?.pause).toHaveBeenCalledTimes(1);
+    expect(created.map((audio) => audio.currentTime)).toEqual([0, 0, 0]);
   });
 
   it("reports warmed pooled audio as ready when it already has buffered data", () => {

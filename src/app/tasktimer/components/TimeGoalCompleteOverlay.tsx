@@ -22,23 +22,37 @@ function buildConfettiPieces(): ConfettiPiece[] {
   };
 
   return Array.from({ length: 120 }, (_, index) => {
-    const angle = rand() * Math.PI * 2;
-    const dist = 150 + rand() * 360;
-    const gravity = rand() * 110;
-    const width = 6 + rand() * 24;
-    const height = 6 + rand() * 18;
+    const startX = 5 + rand() * 90;
+    const drift = -34 + rand() * 68;
+    const fallTop = 104 + rand() * 12;
+    const sway = 10 + rand() * 28;
+    const spin = Math.floor(rand() * 520 - 260);
+    const width = 4 + rand() * 13;
+    const height = 6 + rand() * 14;
+    const scale = 0.65 + rand() * 0.55;
+    const opacity = 0.68 + rand() * 0.32;
+    const duration = 2.35 + rand() * 0.75;
     const className = `timeGoalConfettiPiece${index % 11 === 0 ? " timeGoalConfettiStar" : index % 5 === 0 ? " timeGoalConfettiDot" : ""}`;
     return {
       className,
       style: {
-        "--x": `${formatCssNumber(Math.cos(angle) * dist)}px`,
-        "--y": `${formatCssNumber(Math.sin(angle) * dist + gravity)}px`,
+        "--start-x": `${formatCssNumber(startX)}%`,
+        "--drift": `${formatCssNumber(drift)}px`,
+        "--fall-top": `${formatCssNumber(fallTop)}%`,
+        "--sway-a": `${formatCssNumber(sway * 0.28)}px`,
+        "--sway-b": `${formatCssNumber(sway * -0.35)}px`,
         "--w": `${formatCssNumber(width)}px`,
         "--h": `${formatCssNumber(height)}px`,
+        "--scale": formatCssNumber(scale),
+        "--alpha": formatCssNumber(opacity),
+        "--alpha-end": formatCssNumber(opacity * 0.72),
         "--c": colors[Math.floor(rand() * colors.length)],
         "--rot": `${Math.floor(rand() * 360)}deg`,
-        "--spin": `${Math.floor(rand() * 720 - 360)}deg`,
-        "--d": `${formatCssNumber(rand() * 0.22, 4)}s`,
+        "--spin": `${spin}deg`,
+        "--spin-a": `${formatCssNumber(spin * 0.18)}deg`,
+        "--spin-b": `${formatCssNumber(spin * 0.68)}deg`,
+        "--d": `${formatCssNumber(rand() * 0.9, 4)}s`,
+        "--dur": `${formatCssNumber(duration, 4)}s`,
       } as CSSProperties,
     };
   });
@@ -77,23 +91,36 @@ const GOLD_FRAGMENTS = buildGoldFragments();
 export default function TimeGoalCompleteOverlay() {
   return (
     <div className="overlay primitiveSciFiModalOverlay timeGoalCompletePrimitiveOverlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
-      <div className="timeGoalCompleteConfettiStage" id="timeGoalCompleteConfettiStage" aria-hidden="true">
-        {CONFETTI_PIECES.map((piece, index) => (
-          <i className={piece.className} key={index} style={piece.style} />
-        ))}
-      </div>
       <div className="modal timeGoalCompletePrimitiveModal" role="dialog" aria-modal="true" aria-label="Task Complete">
-        <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
+        <div className="timeGoalCompleteConfettiStage" id="timeGoalCompleteConfettiStage" aria-hidden="true">
+          {CONFETTI_PIECES.map((piece, index) => (
+            <i className={piece.className} key={index} style={piece.style} />
+          ))}
+        </div>
         <div className="timeGoalCompletePrimitiveBody">
-          <div className="timeGoalCompleteXpFx" aria-live="polite">
-            <p className="modalSubtext confirmText" id="timeGoalCompleteText">
-              Calculating XP...
-            </p>
-            <span className="timeGoalCompleteGoldFragments" aria-hidden="true">
-              {GOLD_FRAGMENTS.map((fragment, index) => (
-                <i className="timeGoalCompleteGoldFragment" key={index} style={fragment.style} />
-              ))}
-            </span>
+          <div className="timeGoalCompleteRewardCard">
+            <div className="timeGoalCompleteMedalWrap" aria-hidden="true">
+              <span className="timeGoalCompleteMedalRibbon" />
+              <span className="timeGoalCompleteMedal">
+                <span className="timeGoalCompleteMedalMark">XP</span>
+              </span>
+            </div>
+            <div className="timeGoalCompleteRewardEyebrows" aria-hidden="true">
+              <span>Task Reward</span>
+              <span>XP</span>
+            </div>
+            <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
+            <p className="timeGoalCompleteRewardMessage">Congratulations! You completed your task goal.</p>
+            <div className="timeGoalCompleteXpFx" aria-live="polite">
+              <p className="modalSubtext confirmText" id="timeGoalCompleteText">
+                XP Awarded: <span id="timeGoalCompleteXpValue">0</span>
+              </p>
+              <span className="timeGoalCompleteGoldFragments" aria-hidden="true">
+                {GOLD_FRAGMENTS.map((fragment, index) => (
+                  <i className="timeGoalCompleteGoldFragment" key={index} style={fragment.style} />
+                ))}
+              </span>
+            </div>
           </div>
           <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
           <div className="timeGoalCompleteDivider" aria-hidden="true" />
@@ -110,8 +137,9 @@ export default function TimeGoalCompleteOverlay() {
             className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction"
             id="timeGoalCompleteCloseBtn"
             type="button"
+            hidden
           >
-            Close
+            Claim
           </button>
         </div>
       </div>

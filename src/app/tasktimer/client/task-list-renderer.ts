@@ -3,6 +3,7 @@ import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
 import type { DashboardWeekStart } from "../lib/historyChart";
 import { isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
+import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
 
 type TaskListRendererDocument = Pick<Document, "createElement">;
 
@@ -193,6 +194,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const isHistoryPinned = pinnedHistoryTaskIds.has(taskId);
       const taskHistory = taskId ? historyByTaskId?.[taskId] : null;
       const hasTaskHistory = Array.isArray(taskHistory) && taskHistory.length > 0;
+      const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";
       const renderedCard = renderTaskCardHtml({
         task,
         taskId,
@@ -210,7 +212,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
-        isTimeGoalCompleted: isTaskTimeGoalStartLockedForPeriod(
+        isTimeGoalCompleted: isHeldResetPrimaryAction || isTaskTimeGoalStartLockedForPeriod(
           task,
           Date.now(),
           options.getWeekStarting?.() || "mon"
@@ -224,6 +226,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       });
       taskEl.className = renderedCard.className;
       taskEl.innerHTML = renderedCard.html;
+      applyXpAwardButtonLabelOverride(taskEl, taskId);
       options.applyTaskFlipDomState(taskId, taskEl);
       const tileColumnEl = useTileColumns ? tileColumnEls[displayIndex % tileColumnCount] : null;
       (tileColumnEl || taskListEl).appendChild(taskEl);

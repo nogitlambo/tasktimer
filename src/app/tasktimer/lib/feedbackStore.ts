@@ -14,6 +14,8 @@ import {
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 
+import { getApiUrl } from "./apiClient";
+
 export type FeedbackType = "bug" | "general" | "feature";
 export type FeedbackStatus = "open" | "planned" | "in_progress" | "shipped" | "closed";
 
@@ -187,7 +189,7 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
         type: normalizeFeedbackType(input.type),
       });
     }
-    const response = await fetch("/api/feedback", {
+    const response = await fetch(getApiUrl("/api/feedback"), {
       method: "POST",
       credentials: "same-origin",
       headers,
@@ -285,7 +287,7 @@ export async function toggleFeedbackUpvote(
     const uid = normalizeString(uidRaw, 120);
     const authToken = normalizeString(authTokenRaw, 8192);
     if (!feedbackId || !uid) return { ok: false, message: "You must be signed in to vote." };
-    const response = await fetch("/api/feedback", {
+    const response = await fetch(getApiUrl("/api/feedback"), {
       method: "PATCH",
       credentials: "same-origin",
       headers: {

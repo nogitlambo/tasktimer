@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../lib/types";
 import { getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import { buildDisplayedTasks, createTaskListRenderer } from "./task-list-renderer";
+import { clearXpAwardButtonLabelOverride, setXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
 
 type StubElement = {
   tagName: string;
@@ -118,6 +121,15 @@ function createHarness(
 }
 
 describe("task list renderer", () => {
+  it("reapplies active XP countdown labels after task card rerenders", () => {
+    const source = readFileSync(resolve(__dirname, "task-list-renderer.ts"), "utf8");
+
+    expect(source).toContain('import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";');
+    expect(source).toContain('const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";');
+    expect(source).toContain("isTimeGoalCompleted: isHeldResetPrimaryAction || isTaskTimeGoalStartLockedForPeriod(");
+    expect(source).toContain("applyXpAwardButtonLabelOverride(taskEl, taskId);");
+  });
+
   it("sorts displayed tasks by custom, alpha, schedule, and date added order", () => {
     const tasks = [
       task({ id: "late", name: "Zulu", order: 3, createdAtMs: 30, plannedStartByDay: { mon: "14:00" } }),
@@ -338,6 +350,37 @@ describe("task list renderer", () => {
     expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
     expect(renderedTask?.innerHTML).toContain('data-action="start" title="Launch"');
     expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionLaunch");
+  });
+
+  it("renders a held reset override as reset without first producing launch markup", () => {
+    const harness = createHarness({
+      tasks: [
+        task({
+          id: "task-1",
+          name: "Focus",
+          accumulatedMs: 0,
+          running: false,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+      ],
+    });
+
+    try {
+      setXpAwardButtonLabelOverride("task-1", "Reset");
+
+      harness.renderer.renderTasksPage();
+
+      const renderedTask = harness.taskListEl.children[0];
+      expect(renderedTask?.className).toContain("taskCompleted");
+      expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
+      expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
+      expect(renderedTask?.innerHTML).not.toContain("taskPrimaryAction taskPrimaryActionLaunch");
+      expect(renderedTask?.innerHTML).not.toContain('data-action="start" title="Launch"');
+    } finally {
+      clearXpAwardButtonLabelOverride("task-1");
+    }
   });
 
   it("renders goal completion metadata with qualifying history as resettable", () => {

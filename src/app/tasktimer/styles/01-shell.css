@@ -922,8 +922,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXp{
   inset:0;
   z-index:1190;
   pointer-events:none;
-  background:rgba(6, 10, 16, .7);
-  backdrop-filter:blur(1.5px) saturate(.82);
+  background:transparent;
 }
 
 @media (max-width: 980px), (pointer: coarse) and (max-device-width: 1024px){
@@ -933,7 +932,7 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .appShellHeaderXp{
 }
 
 body[data-theme="lime"] .xpAwardSpotlightLayer{
-  background:rgba(10, 12, 6, .72);
+  background:transparent;
 }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchTopbarXpBottomRow{

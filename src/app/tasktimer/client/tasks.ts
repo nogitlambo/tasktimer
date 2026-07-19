@@ -283,6 +283,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     deleteTask: ctx.deleteTask,
     openEdit: ctx.openEdit,
     openHistory,
+    getPinnedHistoryTaskIds: ctx.getPinnedHistoryTaskIds,
     openFocusMode: ctx.openFocusMode,
     toggleCollapse,
     openTaskExportModal: ctx.openTaskExportModal,

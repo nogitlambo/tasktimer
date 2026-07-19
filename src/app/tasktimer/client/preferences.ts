@@ -555,6 +555,11 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function syncInteractionHapticsIntensityUi() {
     const current = ctx.getInteractionHapticsIntensity();
+    if (els.taskInteractionHapticsIntensitySelect) {
+      els.taskInteractionHapticsIntensitySelect.value = current;
+      els.taskInteractionHapticsIntensitySelect.disabled =
+        !isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled();
+    }
     const buttons = [
       els.taskInteractionHapticsIntensityMax,
       els.taskInteractionHapticsIntensityMed,
@@ -1333,6 +1338,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
           normalizeInteractionHapticsIntensity((button as HTMLElement | null)?.dataset.hapticsIntensity)
         );
       });
+    });
+    ctx.on(els.taskInteractionHapticsIntensitySelect, "change", () => {
+      if (!isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled()) {
+        syncInteractionHapticsIntensityUi();
+        return;
+      }
+      applyInteractionHapticsIntensityPreference(
+        normalizeInteractionHapticsIntensity(els.taskInteractionHapticsIntensitySelect?.value)
+      );
     });
     ctx.on(document, "change", (event) => {
       const target = event.target as HTMLInputElement | null;
