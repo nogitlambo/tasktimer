@@ -539,9 +539,22 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     width: auto !important;
     min-height: 56px !important;
     padding: 4px 2px !important;
+    background: #0D0F13 !important;
     border-color: transparent !important;
     border-bottom-color: transparent !important;
     box-shadow: none !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterIconImage{
+    filter:
+      brightness(0) saturate(100%) invert(100%)
+      drop-shadow(0 0 6px rgba(255,255,255,.28)) !important;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn .appFooterIconImage{
+    filter:
+      brightness(0) saturate(100%) invert(91%) sepia(99%) saturate(1041%) hue-rotate(18deg) brightness(104%) contrast(107%)
+      drop-shadow(0 0 8px rgba(201,255,36,.5)) !important;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn::after{
@@ -561,12 +574,14 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn:is(.isOn, :hover, :focus-visible, :active){
+    background: #0D0F13 !important;
     border-left-color: transparent !important;
     border-right-color: transparent !important;
     border-top-color: transparent !important;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn{
+    background: #0D0F13 !important;
     border-bottom-color: transparent !important;
     box-shadow: none !important;
   }

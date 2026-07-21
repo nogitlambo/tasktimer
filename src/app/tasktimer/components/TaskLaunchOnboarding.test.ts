@@ -13,8 +13,6 @@ import {
   ONBOARDING_DOLPHIN_CHRONOTYPE_SUMMARY,
   ONBOARDING_LION_CHRONOTYPE_SUMMARY,
   ONBOARDING_WOLF_CHRONOTYPE_SUMMARY,
-  ONBOARDING_FIRST_TASK_CHOICES,
-  ONBOARDING_FIRST_TASK_CHOICE_PROMPT,
   ONBOARDING_FIRST_TASK_DEFAULT_PLANNED_START_TIME,
   ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD,
   ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT,
@@ -26,6 +24,12 @@ import {
   ONBOARDING_FIRST_TASK_PRESET_NAMES,
   ONBOARDING_FIRST_TASK_PRESET_PARAMETER_LABELS,
   ONBOARDING_FIRST_TASK_PRESET_TIME_GOAL_VALUES,
+  ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT,
+  ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE,
+  ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
+  ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
+  ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT,
+  ONBOARDING_SHOWING_UP_PROGRESS_TITLE,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
@@ -45,12 +49,16 @@ import {
   onboardingChronotypeResultSummary,
   onboardingFirstTaskSelectionTitle,
   onboardingNextStepIndex,
+  onboardingNextStepIndexForPhase,
   onboardingPresetTaskCreatePayload,
   onboardingPresetTaskTimeGoalLabel,
   onboardingProductivityHoursSubtext,
+  shouldShowOnboardingBackAction,
+  onboardingStepIndexAfterTaskCreated,
   onboardingStepIndex,
   resolveOnboardingAvatarId,
   shouldShowOnboardingStepImage,
+  shouldShowOnboardingStepHeading,
   shouldShowOnboardingStepSubtext,
   shouldResetChronotypeChoiceForNavigation,
   onboardingStepPreferencePayload,
@@ -70,6 +78,13 @@ describe("TaskLaunchOnboarding finish action", () => {
   });
 });
 
+describe("TaskLaunchOnboarding Continue action", () => {
+  it("disables the productivity days Continue action until at least one day is selected", () => {
+    expect(isOnboardingContinueDisabled(false, "days", [])).toBe(true);
+    expect(isOnboardingContinueDisabled(false, "days", ["mon"])).toBe(false);
+  });
+});
+
 describe("TaskLaunchOnboarding steps", () => {
   it("keeps productivity hours inside the chronotype result step", () => {
     expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual([
@@ -78,9 +93,12 @@ describe("TaskLaunchOnboarding steps", () => {
       "chronotypeChoice",
       "chronotypeSelection",
       "chronotypeResult",
+      "showingUpProgress",
       "days",
+      "missedDaysProgress",
       "firstTask",
       "firstTaskSelection",
+      "implementationIntentions",
       "push",
     ]);
   });
@@ -196,16 +214,23 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("keeps the productivity-days title after the chronotype result step", () => {
-    expect(onboardingTitle("days", "Avery")).toBe("Productivity Days");
-    expect(onboardingTitle("firstTask", "Avery")).toBe("Let's create your first task");
-    expect(ONBOARDING_FIRST_TASK_CHOICE_PROMPT).toBe(
-      "Do you have a specific task in mind for today, or would you prefer to choose a quick task from a curated list?"
+    expect(onboardingTitle("showingUpProgress", "Avery")).toBe(ONBOARDING_SHOWING_UP_PROGRESS_TITLE);
+    expect(ONBOARDING_SHOWING_UP_PROGRESS_TITLE).toBe("Focus on Showing Up");
+    expect(ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT).toBe(
+      "Some days will produce major progress. Others may only produce a few focused minutes. Both matter, because showing up keeps the habit alive."
     );
-    expect(ONBOARDING_FIRST_TASK_CHOICES.map((choice) => choice.label)).toEqual(["Specific Task", "Select a Task"]);
+    expect(onboardingTitle("days", "Avery")).toBe("Productivity Days");
+    expect(onboardingTitle("missedDaysProgress", "Avery")).toBe(ONBOARDING_MISSED_DAYS_PROGRESS_TITLE);
+    expect(ONBOARDING_MISSED_DAYS_PROGRESS_TITLE).toBe("Missed Days Do Not Erase Progress");
+    expect(ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT).toBe(
+      "A disrupted routine is not a failed routine. Returning after a difficult day is part of building the habit, not proof that you have lost it."
+    );
+    expect(onboardingTitle("firstTask", "Avery")).toBe("Let's add your first task");
     expect(onboardingFirstTaskSelectionTitle("specific")).toBe("Specific Task");
     expect(onboardingFirstTaskSelectionTitle("select")).toBe("Select a Task");
     expect(onboardingTitle("firstTaskSelection", "Avery", "", "specific")).toBe("Specific Task");
     expect(onboardingTitle("firstTaskSelection", "Avery", "", "select")).toBe("Select a Task");
+    expect(onboardingTitle("implementationIntentions", "Avery")).toBe(ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE);
     expect(ONBOARDING_FIRST_TASK_DEFAULT_TYPE).toBe("recurring");
     expect(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE).toBe(2);
     expect(ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT).toBe("minute");
@@ -219,25 +244,56 @@ describe("TaskLaunchOnboarding steps", () => {
 
   it("hides image and subtext content on full-custom steps", () => {
     expect(shouldShowOnboardingStepImage("chronotypeChoice")).toBe(true);
+    expect(shouldShowOnboardingStepHeading("chronotypeChoice")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeChoice")).toBe(false);
     expect(shouldShowOnboardingStepImage("chronotypeSelection")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeSelection")).toBe(false);
     expect(shouldShowOnboardingStepImage("chronotypeResult")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeResult")).toBe(false);
+    expect(shouldShowOnboardingStepImage("showingUpProgress")).toBe(true);
+    expect(shouldShowOnboardingStepHeading("showingUpProgress")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("showingUpProgress")).toBe(false);
+    expect(shouldShowOnboardingStepImage("missedDaysProgress")).toBe(true);
+    expect(shouldShowOnboardingStepHeading("missedDaysProgress")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("missedDaysProgress")).toBe(false);
     expect(shouldShowOnboardingStepImage("firstTask")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("firstTask")).toBe(true);
     expect(shouldShowOnboardingStepImage("firstTaskSelection")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("firstTaskSelection")).toBe(false);
+    expect(shouldShowOnboardingStepImage("implementationIntentions")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("implementationIntentions")).toBe(true);
     expect(shouldShowOnboardingStepImage("push")).toBe(false);
   });
 
   it("routes the first-task branch page back into notifications", () => {
+    expect(onboardingNextStepIndex("chronotypeResult", onboardingStepIndex("chronotypeResult"))).toBe(onboardingStepIndex("showingUpProgress"));
+    expect(onboardingNextStepIndexForPhase("chronotypeResult", onboardingStepIndex("chronotypeResult"), "summary")).toBe(
+      onboardingStepIndex("showingUpProgress")
+    );
+    expect(onboardingNextStepIndexForPhase("chronotypeResult", onboardingStepIndex("chronotypeResult"), "hours")).toBe(onboardingStepIndex("days"));
+    expect(onboardingNextStepIndex("showingUpProgress", onboardingStepIndex("showingUpProgress"))).toBe(onboardingStepIndex("chronotypeResult"));
+    expect(onboardingNextStepIndex("days", onboardingStepIndex("days"))).toBe(onboardingStepIndex("missedDaysProgress"));
+    expect(onboardingNextStepIndex("missedDaysProgress", onboardingStepIndex("missedDaysProgress"))).toBe(onboardingStepIndex("firstTask"));
     expect(onboardingNextStepIndex("firstTask", onboardingStepIndex("firstTask"))).toBe(onboardingStepIndex("firstTask"));
-    expect(onboardingNextStepIndex("firstTaskSelection", onboardingStepIndex("firstTaskSelection"))).toBe(onboardingStepIndex("push"));
+    expect(onboardingNextStepIndex("firstTaskSelection", onboardingStepIndex("firstTaskSelection"))).toBe(
+      onboardingStepIndex("implementationIntentions")
+    );
+    expect(onboardingNextStepIndex("implementationIntentions", onboardingStepIndex("implementationIntentions"))).toBe(onboardingStepIndex("push"));
+    expect(onboardingStepIndexAfterTaskCreated()).toBe(onboardingStepIndex("implementationIntentions"));
+    expect(ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE).toBe("Your brain responds to precision");
+    expect(ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT).toBe(
+      "Vague goals create vague results.\n\nResearch on implementation intentions shows that people who define exactly what they plan to do are two to three times more likely to follow through. You've already taken that first step, which means you're no longer just thinking about change. You're building a clear path towards making it happen."
+    );
     expect(isOnboardingContinueDisabled(false, "firstTask", ["mon"], "")).toBe(true);
     expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", false)).toBe(true);
     expect(isOnboardingContinueDisabled(false, "firstTaskSelection", ["mon"], "", true)).toBe(false);
     expect(isOnboardingContinueReservedHidden("firstTask")).toBe(true);
+  });
+
+  it("removes Back after the onboarding task has been added", () => {
+    expect(shouldShowOnboardingBackAction("firstTaskSelection", onboardingStepIndex("firstTaskSelection"))).toBe(true);
+    expect(shouldShowOnboardingBackAction("implementationIntentions", onboardingStepIndex("implementationIntentions"))).toBe(false);
+    expect(shouldShowOnboardingBackAction("push", onboardingStepIndex("push"))).toBe(true);
   });
 
   it("uses the default task parameters for select-a-task preset creation", () => {
@@ -451,7 +507,7 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "")).toBe(true);
     expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "missing")).toBe(true);
     expect(isOnboardingContinueDisabled(false, "chronotypeSelection", [], "early-riser")).toBe(false);
-    expect(isOnboardingContinueDisabled(false, "days", [], "")).toBe(false);
+    expect(isOnboardingContinueDisabled(false, "days", [], "")).toBe(true);
     expect(isOnboardingContinueDisabled(true, "chronotypeSelection", [], "early-riser")).toBe(true);
     expect(isOnboardingContinueReservedHidden("chronotypeChoice", "")).toBe(false);
     expect(isOnboardingContinueReservedHidden("chronotypeSelection", "")).toBe(true);
@@ -509,6 +565,21 @@ describe("TaskLaunchOnboarding steps", () => {
       nextStepIndex: choiceStepIndex,
       nextChronotypeResultPhase: "summary",
       resetChronotypeChoice: true,
+    });
+  });
+
+  it("routes Back from chronotype productivity hours to the showing-up card", () => {
+    expect(
+      onboardingBackNavigation({
+        activeStep: "chronotypeResult",
+        chronotypeResultPhase: "hours",
+        selectedChronotypeChoiceId: "early-riser",
+        stepIndex: onboardingStepIndex("chronotypeResult"),
+      })
+    ).toEqual({
+      nextStepIndex: onboardingStepIndex("showingUpProgress"),
+      nextChronotypeResultPhase: "summary",
+      resetChronotypeChoice: false,
     });
   });
 

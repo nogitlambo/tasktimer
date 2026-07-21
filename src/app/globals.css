@@ -1697,38 +1697,77 @@ canvas {
   white-space: nowrap;
 }
 
-.landingV2 .landingV2PrimaryBtn,
-.landingV2 .landingV2SecondaryBtn {
+.landingV2 .landingV2PrimaryBtn {
+  position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 50px;
-  padding: 0 24px;
-  border: 1px solid transparent;
-  font-size: 0.72rem;
+  min-width: min(178px, 38vw);
+  min-height: 48px;
+  padding: 0 28px;
+  border: 4px solid #0f1600;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .1),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28);
+  color: #f7f8fb;
+  overflow: hidden;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
   text-decoration: none;
-  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease, opacity 160ms ease;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
+  transition:
+    filter 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.landingV2 .landingV2PrimaryBtn {
-  background: var(--landing-lime);
-  color: var(--landing-ink);
-  font-weight: 700;
+body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
+.landingV2 .landingV2PrimaryBtn.btn-accent {
+  border-color: #0f1600 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  color: #f7f8fb !important;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .1),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
 }
 
-.landingV2 .landingV2SecondaryBtn {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: transparent;
-  color: var(--landing-text);
+.landingV2 .landingV2PrimaryBtn.btn-accent::before,
+.landingV2 .landingV2PrimaryBtn.btn-accent::after {
+  content: none !important;
 }
 
 .landingV2 .landingV2PrimaryBtn:hover,
-.landingV2 .landingV2SecondaryBtn:hover {
+.landingV2 .landingV2PrimaryBtn:focus-visible {
+  filter: brightness(1.12);
   transform: translateY(-1px);
-  opacity: 0.9;
+}
+
+.landingV2 .landingV2PrimaryBtn:active {
+  transform: translateY(3px);
+}
+
+.landingV2 .landingV2PrimaryBtn:focus-visible {
+  outline: 1px solid rgba(126, 243, 255, .95);
+  outline-offset: 6px;
 }
 
 .landingV2 .landingV2Footer {
@@ -1756,11 +1795,12 @@ canvas {
 
 .landingV2 .landingFooterLogo {
   display: block;
-  width: 126px;
-  height: 26px;
+  width: clamp(150px, 17vw, 214px);
+  height: clamp(30px, 7vw, 44px);
   margin-right: 63px;
-  flex: 0 0 126px;
+  flex: 0 0 clamp(150px, 17vw, 214px);
   object-fit: contain;
+  object-position: left center;
   transform: scale(1.5);
   transform-origin: left center;
 }
@@ -2490,7 +2530,8 @@ canvas {
     font-size: clamp(0.92rem, 4.2vw, 1.12rem);
   }
 
-  .landingV2 .landingHeaderLogo {
+  .landingV2 .landingHeaderLogo,
+  .landingV2 .landingFooterLogo {
     width: clamp(128px, 42vw, 166px);
     height: clamp(28px, 7.2vw, 34px);
     flex-basis: clamp(128px, 42vw, 166px);
@@ -2591,12 +2632,9 @@ canvas {
     line-height: 1.48;
   }
 
-  .landingV2 .landingV2PrimaryBtn,
-  .landingV2 .landingV2SecondaryBtn {
+  .landingV2 .landingV2PrimaryBtn {
     min-height: 42px;
     padding: 0 10px;
-    font-size: clamp(0.56rem, 2.35vw, 0.68rem);
-    letter-spacing: 0.1em;
   }
 
   .landingV2 .landingSoonV2Submit {
@@ -2651,8 +2689,7 @@ canvas {
     padding: 20px 18px;
   }
 
-  .landingV2 .landingV2PrimaryBtn,
-  .landingV2 .landingV2SecondaryBtn {
+  .landingV2 .landingV2PrimaryBtn {
     width: 100%;
   }
 
@@ -2722,7 +2759,6 @@ canvas {
   .landingV2 .landingV2Cta,
   .landingV2 .landingV2Actions,
   .landingV2 .landingV2PrimaryBtn,
-  .landingV2 .landingV2SecondaryBtn,
   .landingV2 .landingV2TickerTrack {
     transition: none;
     animation: none;

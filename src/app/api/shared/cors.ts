@@ -7,13 +7,15 @@ const allowedCorsOrigins = new Set([
   "capacitor://localhost",
   "http://localhost",
   "https://localhost",
+  "ionic://localhost",
+  "app://localhost",
 ]);
 
 export function getAuthenticatedApiCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   const headers = new Headers({
     Vary: "Origin",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "POST, PATCH, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Firebase-Auth",
     "Access-Control-Max-Age": "600",
   });

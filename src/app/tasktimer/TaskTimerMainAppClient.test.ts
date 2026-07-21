@@ -87,10 +87,10 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("activeRankPromotion");
   });
 
-  it("auto-advances leaderboard movement modals every three seconds", () => {
-    expect(source).toContain("const LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS = 3_000;");
-    expect(source).toContain("leaderboardMovementTimerRef.current = window.setTimeout");
-    expect(source).toContain("LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS");
+  it("keeps leaderboard movement modals open until user dismissal", () => {
+    expect(source).not.toContain("LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS");
+    expect(source).not.toContain("leaderboardMovementTimerRef");
+    expect(source).not.toContain("setLeaderboardMovementQueue([])");
     expect(source).toContain("setActiveLeaderboardMovement(null)");
   });
 
@@ -134,8 +134,8 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   });
 
   it("keeps modal XP delivery undimmed and emits unit payloads from the XP value", () => {
-    expect(source).toContain("setIsXpAwardSpotlightActive(false);\n      setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, detail.overlayId));");
-    expect(source).toContain("setIsXpAwardSpotlightActive(false);\n      setXpAwardFx({ visible: false, payloads: [] });");
+    expect(source).toMatch(/setIsXpAwardSpotlightActive\(false\);\r?\n\s+setXpAnimationState\(\(current\) => notifyXpAwardOverlayClosed\(current, detail\.overlayId\)\);/);
+    expect(source).toMatch(/setIsXpAwardSpotlightActive\(false\);\r?\n\s+setXpAwardFx\(\{ visible: false, payloads: \[\] \}\);/);
     expect(source).toContain("const sourceRect = sourceElement?.getBoundingClientRect?.() || null;");
     expect(source).toContain("const unitOriginRect = isUsableXpAwardRect(sourceRect) ? sourceRect as DOMRect : activeAward.sourceRect;");
     expect(source).toContain("const style = buildXpPayloadStyle(unitOriginRect, targetRect);");
@@ -144,9 +144,9 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).not.toContain('text: "+1 XP"');
   });
 
-  it("plays a coin-slot style XP sound in sync with each modal XP unit launch", () => {
+  it("plays the XP increase sound in sync with each modal XP unit launch", () => {
     expect(source).toContain('import { createClickAudioPlayer } from "./client/click-audio-player";');
-    expect(source).toContain('const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp-reward.mp3";');
+    expect(source).toContain('const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp_increase.mp3";');
     expect(source).toContain('const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";');
     expect(source).toContain("const xpAwardUnitDeliveryAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_UNIT_DELIVERY_AUDIO_SRC), []);");
     expect(source).toContain("const xpAwardDeliveryDoneAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_DELIVERY_DONE_AUDIO_SRC), []);");
@@ -159,9 +159,10 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.play();");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.warm();");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
-    expect(source).toContain("playXpAwardUnitDeliverySound();\n        setXpAwardFx((current) => ({");
-    expect(source).toContain("addExtraTimer(() => {\n          updateDeliveredXp();\n        }, XP_AWARD_UNIT_FX_DURATION_MS);");
-    expect(source).toContain("playXpAwardDoneSoundOnce();\n          finishAward");
+    expect(source).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+setXpAwardFx\(\(current\) => \(\{/);
+    expect(source).toMatch(/addExtraTimer\(\(\) => \{\r?\n\s+updateDeliveredXp\(\);\r?\n\s+\}, XP_AWARD_UNIT_FX_DURATION_MS\);/);
+    expect(source).toMatch(/playXpAwardDoneSoundOnce\(\);\r?\n\s+finishAward/);
+    expect(source).toMatch(/setModalRemainingXp\(0\);\r?\n\s+xpAwardUnitDeliveryAudioPlayer\.stop\(\);/);
     expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");

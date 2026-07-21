@@ -177,7 +177,6 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
 
 const LEADERBOARD_LOADING_TEXT = "Loading leaderboard standings";
 const LEADERBOARD_LOADING_MIN_MS = 2_000;
-const LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS = 3_000;
 
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
 type LeaderboardView = "global" | "weekly" | "rivals";
@@ -335,7 +334,7 @@ function isUsableXpAwardRect(rect: Pick<DOMRect, "left" | "top" | "width" | "hei
   return !!rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 0 && rect.height > 0;
 }
 
-const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp-reward.mp3";
+const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp_increase.mp3";
 const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
@@ -670,7 +669,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpAnimationStartTimerRef = useRef<number | null>(null);
   const xpAnimationCleanupTimerRef = useRef<number | null>(null);
   const xpAnimationExtraTimersRef = useRef<number[]>([]);
-  const leaderboardMovementTimerRef = useRef<number | null>(null);
   const xpAwardPayloadSeqRef = useRef(0);
   const xpCountAnimationStartedRef = useRef(false);
   const xpAwardUnitDeliveryAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_UNIT_DELIVERY_AUDIO_SRC), []);
@@ -810,21 +808,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }, 0);
     return () => window.clearTimeout(openTimer);
   }, [activeLeaderboardMovement, leaderboardMovementBlocked, leaderboardMovementQueue]);
-
-  useEffect(() => {
-    if (!activeLeaderboardMovement) return undefined;
-    if (leaderboardMovementTimerRef.current != null) window.clearTimeout(leaderboardMovementTimerRef.current);
-    leaderboardMovementTimerRef.current = window.setTimeout(() => {
-      leaderboardMovementTimerRef.current = null;
-      setActiveLeaderboardMovement(null);
-    }, LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS);
-    return () => {
-      if (leaderboardMovementTimerRef.current != null) {
-        window.clearTimeout(leaderboardMovementTimerRef.current);
-        leaderboardMovementTimerRef.current = null;
-      }
-    };
-  }, [activeLeaderboardMovement]);
 
   useEffect(() => {
     const activeAward = xpAnimationState.active;
@@ -1114,6 +1097,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         if (progress >= 1) {
           xpCountAnimationStartedRef.current = false;
           setModalRemainingXp(0);
+          xpAwardUnitDeliveryAudioPlayer.stop();
           if (arrivedParticles >= totalUnits) {
             displayedXpRef.current = endXp;
             setDisplayedXp(endXp);
@@ -1474,12 +1458,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
 
   const closeLeaderboardMovementModal = () => {
-    if (leaderboardMovementTimerRef.current != null) {
-      window.clearTimeout(leaderboardMovementTimerRef.current);
-      leaderboardMovementTimerRef.current = null;
-    }
     setActiveLeaderboardMovement(null);
-    setLeaderboardMovementQueue([]);
   };
 
   const closeLeaderboardPositionModal = () => {

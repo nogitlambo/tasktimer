@@ -20,9 +20,10 @@ describe("Landing", () => {
     expect(html).not.toContain("isLaunchStarting");
     expect(html).toContain('href="/login"');
     expect(html).toContain("Get Started");
-    expect(html).toContain("Watch Demo");
-    expect(html).toContain('href="/landingsoon"');
-    expect(html).toContain("Landing Soon");
+    expect(html).not.toContain("Watch Demo");
+    expect(html).toContain("btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction landingV2PrimaryBtn");
+    expect(html).not.toContain('href="/landingsoon"');
+    expect(html).not.toContain("Landing Soon");
     expect(html).not.toContain("Continue without account");
   });
 
@@ -42,7 +43,7 @@ describe("Landing", () => {
 
   it("adds a scoped 32px gap between the public landing headers and hero text", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-    const publicLandingGapBlock = css.match(/\.landingV2LandingPage,\n\.landingSoonV2 \{[\s\S]*?\n\}/)?.[0] || "";
+    const publicLandingGapBlock = css.match(/\.landingV2LandingPage,\r?\n\.landingSoonV2 \{[\s\S]*?\r?\n\}/)?.[0] || "";
     const heroRule = css.match(/\.landingV2 \.landingV2Hero \{[\s\S]*?\n\}/)?.[0] || "";
     const mobileBlock = css.match(/@media \(max-width: 700px\) \{[\s\S]*?(?=\n@media|\n$)/)?.[0] || "";
 

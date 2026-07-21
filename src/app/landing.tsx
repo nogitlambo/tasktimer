@@ -5,7 +5,6 @@ import AppImg from "../components/AppImg";
 import { useEffect, useRef, useState } from "react";
 import type { LandingProps } from "./landing.types";
 
-const demoHref = "https://drive.google.com/file/d/1RkhUWchVwIlBA62hHnitlnJ4HnWqu-0b/view?usp=drive_link";
 const getStartedHref = "/login";
 const rocketVideoFadeOutMs = 1200;
 const rocketVideoFadeInMs = 2000;
@@ -246,7 +245,6 @@ export default function Landing(props: LandingProps) {
           </Link>
 
           <div className="landingV2FooterLinks">
-            <Link href="/landingsoon">Landing Soon</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/login">Sign In</Link>
           </div>
@@ -265,11 +263,11 @@ export default function Landing(props: LandingProps) {
             </p>
 
             <div className={`landingV2Actions ${showHeroActions ? "isVisible" : ""}`}>
-              <Link href={getStartedHref} className="landingV2PrimaryBtn displayFont">
+              <Link
+                href={getStartedHref}
+                className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction landingV2PrimaryBtn displayFont"
+              >
                 Get Started
-              </Link>
-              <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
-                Watch Demo
               </Link>
             </div>
           </div>
@@ -420,11 +418,11 @@ export default function Landing(props: LandingProps) {
             <em>Make progress easier to start, easier to sustain, and easier to trust</em>
           </h2>
           <div className={`landingV2Actions landingV2ActionsCentered ${showFinalCta ? "isVisible" : ""}`}>
-            <Link href={getStartedHref} className="landingV2PrimaryBtn displayFont">
+            <Link
+              href={getStartedHref}
+              className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction landingV2PrimaryBtn displayFont"
+            >
               Get Started
-            </Link>
-            <Link href={demoHref} className="landingV2SecondaryBtn displayFont">
-              Watch Demo
             </Link>
           </div>
         </section>
@@ -434,7 +432,6 @@ export default function Landing(props: LandingProps) {
             <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingFooterLogo" />
           </Link>
           <div className="landingV2FooterLinks">
-            <Link href="/landingsoon">Landing Soon</Link>
             <Link href="/about">About</Link>
             <Link href="/privacy">Privacy</Link>
           </div>

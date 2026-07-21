@@ -99,26 +99,32 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         </div>
                       </div>
                     </div>
-                    <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard dashboardActivityTaskOverviewCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
-                      <div className="dashboardCardTitle">Task Overview</div>
-                      <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
-                        <svg
-                          className="dashboardTasksCompletedSvg"
-                          id="dashboardTasksCompletedSvg"
-                          viewBox="0 0 380 380"
-                          aria-hidden="true"
-                          focusable="false"
-                        >
-                          <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
-                          <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
-                        </svg>
-                        <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
-                        <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
+                  </section>
+
+                  <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard dashboardActivityTaskOverviewCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
+                    <div className="dashboardPanelLabelRow">
+                      <div className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                        <span>Task Overview</span>
                       </div>
-                      <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
-                      <div className="dashboardSummaryStatus" aria-hidden="true" />
-                      <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
-                    </section>
+                    </div>
+                    <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
+                      <svg
+                        className="dashboardTasksCompletedSvg"
+                        id="dashboardTasksCompletedSvg"
+                        viewBox="0 0 380 380"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
+                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
+                      </svg>
+                      <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
+                      <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
+                    </div>
+                    <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
+                    <div className="dashboardSummaryStatus" aria-hidden="true" />
+                    <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
                   </section>
 
                   <div className="dashboardSupportGrid" aria-label="Dashboard insights">
@@ -242,7 +248,12 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                   <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">
                     <div className="dashboardHeatFlipScene">
                       <div className="dashboardHeatFace dashboardHeatFaceFront" id="dashboardHeatFaceFront" aria-hidden="false">
-                        <div className="dashboardCardTitle">Focus Heatmap</div>
+                        <div className="dashboardPanelLabelRow">
+                          <div className="dashboardCardTitle dashboardPanelTitle">
+                            <span className="dashboardPanelTitleDot dashboardPanelTitleDotHeat" aria-hidden="true" />
+                            <span>Focus Heatmap</span>
+                          </div>
+                        </div>
                         <div className="dashboardHeatHeaderRow">
                           <div className="dashboardHeatMonthLabel" id="dashboardHeatMonthLabel" aria-live="polite" />
                         </div>
@@ -264,7 +275,12 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                       <div className="dashboardHeatFace dashboardHeatFaceBack" id="dashboardHeatFaceBack" aria-hidden="true" inert={true}>
                         <div className="dashboardHeatDetailHead">
                           <div className="dashboardHeatDetailCopy">
-                            <div className="dashboardCardTitle">Focus Heatmap</div>
+                            <div className="dashboardPanelLabelRow">
+                              <div className="dashboardCardTitle dashboardPanelTitle">
+                                <span className="dashboardPanelTitleDot dashboardPanelTitleDotHeat" aria-hidden="true" />
+                                <span>Focus Heatmap</span>
+                              </div>
+                            </div>
                             <p className="modalSubtext" id="dashboardHeatSummaryDate">Select a day to review logged time.</p>
                           </div>
                           <button className="iconBtn dashboardHeatFlipBackBtn" id="dashboardHeatSummaryCloseBtn" type="button" title="Back to heatmap" aria-label="Back to heatmap" aria-expanded="false" data-heatmap-flip="close">

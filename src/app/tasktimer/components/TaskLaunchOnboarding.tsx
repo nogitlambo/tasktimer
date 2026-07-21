@@ -64,9 +64,12 @@ export type StepKey =
   | "chronotypeChoice"
   | "chronotypeSelection"
   | "chronotypeResult"
+  | "showingUpProgress"
   | "days"
+  | "missedDaysProgress"
   | "firstTask"
   | "firstTaskSelection"
+  | "implementationIntentions"
   | "push";
 type OnboardingTimeField = "start" | "end";
 export type ChronotypeResultPhase = "summary" | "hours";
@@ -81,13 +84,7 @@ export const ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT = [
 export const ONBOARDING_CHRONOTYPE_SELECTION_PROMPT = "Which best describes you?";
 export const ONBOARDING_NEUTRAL_BACKGROUND_ACCENT = "rgba(170, 178, 190, .46)";
 export const ONBOARDING_DAYS_BACKGROUND_ACCENT = "rgba(54, 58, 66, .58)";
-export const ONBOARDING_FIRST_TASK_CHOICE_PROMPT =
-  "Do you have a specific task in mind for today, or would you prefer to choose a quick task from a curated list?";
-export const ONBOARDING_FIRST_TASK_CHOICES = [
-  { id: "specific", label: "Specific Task" },
-  { id: "select", label: "Select a Task" },
-] as const;
-export type OnboardingFirstTaskChoiceId = (typeof ONBOARDING_FIRST_TASK_CHOICES)[number]["id"];
+export type OnboardingFirstTaskChoiceId = "specific" | "select";
 export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_VALUE = 2;
 export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_UNIT: TaskTimerOnboardingTimeGoalUnit = "minute";
 export const ONBOARDING_FIRST_TASK_DEFAULT_TIME_GOAL_PERIOD: TaskTimerOnboardingTimeGoalPeriod = "day";
@@ -115,6 +112,15 @@ export const ONBOARDING_FIRST_TASK_PRESET_COLORS: Readonly<Record<string, string
   "Plan next day": TASK_COLOR_PALETTE[2],
 };
 export const ONBOARDING_FIRST_TASK_PRESET_NAMES = ADD_TASK_PRESET_NAMES.filter((presetName) => presetName !== "Brush teeth");
+export const ONBOARDING_SHOWING_UP_PROGRESS_TITLE = "Focus on Showing Up";
+export const ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT =
+  "Some days will produce major progress. Others may only produce a few focused minutes. Both matter, because showing up keeps the habit alive.";
+export const ONBOARDING_MISSED_DAYS_PROGRESS_TITLE = "Missed Days Do Not Erase Progress";
+export const ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT =
+  "A disrupted routine is not a failed routine. Returning after a difficult day is part of building the habit, not proof that you have lost it.";
+export const ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE = "Your brain responds to precision";
+export const ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT =
+  "Vague goals create vague results.\n\nResearch on implementation intentions shows that people who define exactly what they plan to do are two to three times more likely to follow through. You've already taken that first step, which means you're no longer just thinking about change. You're building a clear path towards making it happen.";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
@@ -122,9 +128,12 @@ export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = 
   { key: "chronotypeChoice", title: ONBOARDING_CHRONOTYPE_CHOICE_PROMPT },
   { key: "chronotypeSelection", title: ONBOARDING_CHRONOTYPE_SELECTION_PROMPT },
   { key: "chronotypeResult", title: "Chronotype Result" },
+  { key: "showingUpProgress", title: ONBOARDING_SHOWING_UP_PROGRESS_TITLE },
   { key: "days", title: "Productivity Days" },
-  { key: "firstTask", title: "Let's create your first task" },
+  { key: "missedDaysProgress", title: ONBOARDING_MISSED_DAYS_PROGRESS_TITLE },
+  { key: "firstTask", title: "Let's add your first task" },
   { key: "firstTaskSelection", title: "Specific Task" },
+  { key: "implementationIntentions", title: ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE },
   { key: "push", title: "Notifications" },
 ];
 
@@ -138,9 +147,19 @@ export function onboardingFirstTaskSelectionTitle(choiceId: OnboardingFirstTaskC
 }
 
 export function onboardingNextStepIndex(activeStep: StepKey, stepIndex: number) {
+  if (activeStep === "showingUpProgress") return onboardingStepIndex("chronotypeResult");
   if (activeStep === "firstTask") return stepIndex;
-  if (activeStep === "firstTaskSelection") return onboardingStepIndex("push");
+  if (activeStep === "firstTaskSelection") return onboardingStepIndex("implementationIntentions");
   return Math.min(ONBOARDING_STEPS.length - 1, stepIndex + 1);
+}
+
+export function onboardingNextStepIndexForPhase(activeStep: StepKey, stepIndex: number, chronotypeResultPhase: ChronotypeResultPhase) {
+  if (activeStep === "chronotypeResult" && chronotypeResultPhase === "hours") return onboardingStepIndex("days");
+  return onboardingNextStepIndex(activeStep, stepIndex);
+}
+
+export function onboardingStepIndexAfterTaskCreated() {
+  return onboardingStepIndex("implementationIntentions");
 }
 
 export function shouldResetChronotypeChoiceForNavigation(currentStep: StepKey, nextStep: StepKey) {
@@ -162,7 +181,7 @@ export function onboardingBackNavigation(input: {
 }) {
   if (input.activeStep === "chronotypeResult" && input.chronotypeResultPhase === "hours") {
     return {
-      nextStepIndex: input.stepIndex,
+      nextStepIndex: onboardingStepIndex("showingUpProgress"),
       nextChronotypeResultPhase: "summary" as ChronotypeResultPhase,
       resetChronotypeChoice: false,
     };
@@ -410,6 +429,7 @@ export function isOnboardingContinueDisabled(
   firstTaskDetailsReady = true
 ) {
   if (busy) return true;
+  if (step === "days") return !canContinueOnboardingStep(step, selectedDays, selectedChronotypeChoiceId);
   if (step === "chronotypeSelection") return !canContinueOnboardingStep(step, selectedDays, selectedChronotypeChoiceId);
   if (step === "firstTask") return true;
   if (step === "firstTaskSelection") return !firstTaskDetailsReady;
@@ -543,8 +563,12 @@ function stepIntro(step: StepKey, isNativeRuntime: boolean) {
   if (step === "username") return "Confirm the username people will see in TaskLaunch social surfaces.";
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
+  if (step === "showingUpProgress") return ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT;
   if (step === "days") return "Choose the days that count toward your productivity streaks, rewards, and dashboard insights.";
-  if (step === "firstTask") return ONBOARDING_FIRST_TASK_CHOICE_PROMPT;
+  if (step === "firstTask") {
+    return "These simple tasks are easy to complete for a quick win, while also helping you build positive daily habits and support your mental wellbeing.";
+  }
+  if (step === "implementationIntentions") return ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT;
   void isNativeRuntime;
   return "To receive task reminders and alerts, please enable push notifications.";
 }
@@ -614,6 +638,7 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
     step !== "chronotypeResult" &&
     step !== "firstTask" &&
     step !== "firstTaskSelection" &&
+    step !== "implementationIntentions" &&
     step !== "push"
   );
 }
@@ -621,12 +646,22 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
 export function shouldShowOnboardingStepSubtext(step: StepKey) {
   return (
     step !== "days" &&
+    step !== "showingUpProgress" &&
+    step !== "missedDaysProgress" &&
     step !== "greeting" &&
     step !== "chronotypeChoice" &&
     step !== "chronotypeSelection" &&
     step !== "chronotypeResult" &&
     step !== "firstTaskSelection"
   );
+}
+
+export function shouldShowOnboardingStepHeading(step: StepKey) {
+  return step !== "chronotypeChoice" && step !== "showingUpProgress" && step !== "missedDaysProgress";
+}
+
+export function shouldShowOnboardingBackAction(step: StepKey, stepIndex: number) {
+  return stepIndex > 0 && step !== "implementationIntentions";
 }
 
 type OnboardingCustomPropertyStyle = CSSProperties & {
@@ -1114,7 +1149,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const handleNext = useCallback(async () => {
     const saved = await saveCurrentStep();
     if (!saved) return;
-    const nextIndex = onboardingNextStepIndex(activeStep, stepIndex);
+    const nextIndex = onboardingNextStepIndexForPhase(activeStep, stepIndex, chronotypeResultPhase);
     const nextStep = ONBOARDING_STEPS[nextIndex]?.key || activeStep;
     const advanceToNextStep = () => {
       if (shouldResetChronotypeChoiceForNavigation(activeStep, nextStep)) {
@@ -1125,6 +1160,11 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setStatus("");
     };
     if (activeStep === "chronotypeResult" && chronotypeResultPhase === "summary") {
+      advanceToNextStep();
+      return;
+    }
+    if (activeStep === "showingUpProgress") {
+      setStepIndex(onboardingStepIndex("chronotypeResult"));
       setChronotypeResultPhase("hours");
       setStatus("");
       setError("");
@@ -1140,7 +1180,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setSelectedFirstTaskPresetName(presetName);
       setFirstTaskNameDraft(presetName);
       setFirstTaskDetailsReady(false);
-      setStepIndex(onboardingStepIndex("push"));
+      setStepIndex(onboardingStepIndexAfterTaskCreated());
       setChronotypeResultPhase("summary");
       setStatus("");
       setError("");
@@ -1255,6 +1295,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isChronotypeChoiceStep = activeStep === "chronotypeChoice";
   const isChronotypeSelectionStep = activeStep === "chronotypeSelection";
   const isChronotypeResultStep = activeStep === "chronotypeResult";
+  const isShowingUpProgressStep = activeStep === "showingUpProgress";
+  const isMissedDaysProgressStep = activeStep === "missedDaysProgress";
+  const isAnecdoteStep = isShowingUpProgressStep || isMissedDaysProgressStep;
+  const isImageStoryStep = isChronotypeChoiceStep || isAnecdoteStep;
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
   const selectedChronotypeChoiceIndex = ONBOARDING_CHRONOTYPE_OPTIONS.findIndex((option) => option.id === selectedChronotypeChoiceId);
@@ -1269,6 +1313,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const onboardingContinueReservedHidden =
     isOnboardingContinueReservedHidden(activeStep, selectedChronotypeChoiceId) ||
     (activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" && !firstTaskDetailsReady);
+  const showOnboardingBackAction = shouldShowOnboardingBackAction(activeStep, stepIndex);
   const onboardingBackgroundAccent = onboardingBackgroundAccentForStep(activeStep, selectedChronotypeResult?.accentColor, isChronotypeHoursPhase);
   const onboardingModalStyle = {
     "--onboarding-background-accent": onboardingBackgroundAccent,
@@ -1277,13 +1322,26 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       ? selectedChronotypeResult?.accentColor || ONBOARDING_NEUTRAL_BACKGROUND_ACCENT
       : onboardingBackgroundAccent,
   } as OnboardingCustomPropertyStyle;
+  const anecdoteStepContent = isShowingUpProgressStep
+    ? {
+        title: ONBOARDING_SHOWING_UP_PROGRESS_TITLE,
+        subtext: ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT,
+        imageSrc: "/onboarding/onboarding_showing_up.png",
+        titleId: "onboardingShowingUpProgressTitle",
+      }
+    : {
+        title: ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
+        subtext: ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
+        imageSrc: "/onboarding/onboarding_missed_days.png",
+        titleId: "onboardingMissedDaysProgressTitle",
+      };
 
   return (
     <div className="overlay" id="onboardingOverlay" style={{ display: "flex" }}>
       <div
         className={`modal${isChronotypeSelectionStep ? " onboardingChronotypeSelectionModal" : ""}${
           isChronotypeResultSummaryStep ? " onboardingChronotypeResultSummaryModal" : ""
-        }`}
+        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isChronotypeChoiceStep ? " onboardingChronotypeKnowledgeModal" : ""}`}
         style={onboardingModalStyle}
         role="dialog"
         aria-modal="true"
@@ -1297,7 +1355,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         <div
           className={`onboardingContent${isChronotypeSelectionStep ? " onboardingContentChronotypeSelection" : ""}${
             isChronotypeResultSummaryStep ? " onboardingContentChronotypeResultSummary" : ""
-          }${isChronotypeHoursPhase ? " onboardingContentChronotypeHours" : ""}`}
+          }${isChronotypeHoursPhase ? " onboardingContentChronotypeHours" : ""}${
+            isImageStoryStep ? " onboardingContentAnecdote" : ""
+          }`}
         >
           {activeStep === "username" ? (
             <AppImg
@@ -1309,19 +1369,44 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               aria-hidden="true"
             />
           ) : null}
-          {showStepImage && activeStep === "chronotypeChoice" ? (
-            <div className="onboardingChronotypeChoicePreview" aria-label="Chronotype animals">
-              {ONBOARDING_CHRONOTYPE_OPTIONS.map((option, optionIndex) => (
-                <AppImg
-                  className={`onboardingChronotypeChoicePreviewImage onboardingChronotypeChoicePreviewImage${optionIndex}`}
-                  src={option.thumbnailSrc}
-                  alt={`${option.animal} chronotype`}
-                  width={512}
-                  height={512}
-                  key={option.id}
-                />
-              ))}
-            </div>
+          {showStepImage && isChronotypeChoiceStep ? (
+            <section className="onboardingAnecdoteCard onboardingChronotypeKnowledgeCard" aria-labelledby="onboardingChronotypeKnowledgeTitle">
+              <AppImg
+                className="onboardingChronotypePreview onboardingAnecdoteCardPreview onboardingChronotypeKnowledgePreview"
+                src="/onboarding/onboarding_know_your_chronotype.png"
+                alt=""
+                width={1024}
+                height={1536}
+                aria-hidden="true"
+              />
+              <div className="onboardingAnecdoteTextOverlay onboardingChronotypeKnowledgeTextOverlay">
+                <h2 className="onboardingAnecdoteTitle onboardingChronotypeKnowledgeTitle" id="onboardingChronotypeKnowledgeTitle">
+                  {ONBOARDING_CHRONOTYPE_CHOICE_PROMPT}
+                </h2>
+                <div className="onboardingAnecdoteSubtext onboardingChronotypeKnowledgeSubtext">
+                  {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
+                    <p className="onboardingChronotypeKnowledgeSubtextLine" key={line}>{line}</p>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : showStepImage && isAnecdoteStep ? (
+            <section className="onboardingAnecdoteCard" aria-labelledby={anecdoteStepContent.titleId}>
+              <AppImg
+                className="onboardingChronotypePreview onboardingAnecdoteCardPreview"
+                src={anecdoteStepContent.imageSrc}
+                alt=""
+                width={966}
+                height={1628}
+                aria-hidden="true"
+              />
+              <div className="onboardingAnecdoteTextOverlay">
+                <h2 className="onboardingAnecdoteTitle" id={anecdoteStepContent.titleId}>
+                  {anecdoteStepContent.title}
+                </h2>
+                <p className="onboardingAnecdoteSubtext">{anecdoteStepContent.subtext}</p>
+              </div>
+            </section>
           ) : showStepImage ? (
             <AppImg
               className={`onboardingChronotypePreview${activeStep === "days" ? " onboardingProductivityDaysPreview" : ""}`}
@@ -1456,7 +1541,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 Choose the rhythm that best describes you.
               </p>
             </div>
-          ) : (
+          ) : shouldShowOnboardingStepHeading(activeStep) ? (
             <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
               {isGreetingStep ? (
                 <>
@@ -1474,7 +1559,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 onboardingHeadingText
               )}
             </h2>
-          )}
+          ) : null}
           {isGreetingStep ? (
             <>
               <div
@@ -1487,7 +1572,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               </p>
             </>
           ) : null}
-          {!isGreetingStep && !isChronotypeSelectionStep && (!isChronotypeResultStep || isChronotypeHoursPhase) && activeStep !== "days" ? (
+          {!isGreetingStep &&
+          !isChronotypeChoiceStep &&
+          !isChronotypeSelectionStep &&
+          !isMissedDaysProgressStep &&
+          (!isChronotypeResultStep || isChronotypeHoursPhase) &&
+          activeStep !== "days" ? (
             <div
               className={`onboardingGreetingDivider onboardingDaysDivider${isChronotypeHoursPhase ? " onboardingHoursDivider" : ""}`}
               data-chronotype-summary={isChronotypeHoursPhase ? selectedChronotypeSummary?.animal : undefined}
@@ -1513,16 +1603,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               )}
             </p>
           ) : null}
-          {isChronotypeChoiceStep ? (
-            <div className="onboardingChronotypeChoiceSubtext">
-              {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
-                <p className="modalSubtext onboardingChronotypeChoiceSubtextLine" key={line}>
-                  {line}
-                </p>
-              ))}
-            </div>
-          ) : null}
-
         {activeStep === "username" ? (
           <div className="field modalDropdownField onboardingField onboardingUsernameField">
             <div className="onboardingUsernameRow">
@@ -1624,55 +1704,48 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         ) : null}
 
         {activeStep === "firstTask" ? (
-          <div className="onboardingTaskChoiceGrid" role="group" aria-label={ONBOARDING_FIRST_TASK_CHOICE_PROMPT}>
-            {ONBOARDING_FIRST_TASK_CHOICES.map((choice) => (
-              <button
-                className="onboardingTaskChoiceTile"
-                type="button"
-                key={choice.id}
-                data-onboarding-task-choice={choice.id}
-                data-onboarding-next-action="true"
-                onClick={() => void selectFirstTaskChoice(choice.id)}
-                disabled={onboardingActionsDisabled}
-              >
-                {choice.label}
-              </button>
-            ))}
+          <div className="onboardingFirstTaskPresetGroup">
+            <ul className="onboardingTaskPresetList" aria-label="Curated task presets">
+              {ONBOARDING_FIRST_TASK_PRESET_NAMES.map((presetName) => {
+                const selected = selectedFirstTaskPresetName === presetName;
+                const description = ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS[presetName] || "";
+                const imageSrc = ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS[presetName] || "";
+                const presetColor = ONBOARDING_FIRST_TASK_PRESET_COLORS[presetName] || "#dce775";
+                return (
+                  <li className="onboardingTaskPresetListItem" key={presetName}>
+                    <button
+                      className={`onboardingTaskPresetItem${selected ? " isSelected" : ""}`}
+                      type="button"
+                      aria-pressed={selected}
+                      data-onboarding-preset-task={presetName}
+                      data-onboarding-next-action="true"
+                      style={{ "--onboarding-task-preset-color": presetColor } as OnboardingCustomPropertyStyle}
+                      onClick={() => void selectPresetTask(presetName)}
+                      disabled={onboardingActionsDisabled}
+                    >
+                      {imageSrc ? (
+                        <span className="onboardingTaskPresetImageFrame" aria-hidden="true">
+                          <AppImg className="onboardingTaskPresetImage" src={imageSrc} alt="" width={96} height={96} />
+                        </span>
+                      ) : null}
+                      <span className="onboardingTaskPresetName">{presetName}</span>
+                      <span className="onboardingTaskPresetTimeGoal">{onboardingPresetTaskTimeGoalLabel(presetName)}</span>
+                      {description ? <span className="onboardingTaskPresetDescription">{description}</span> : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              className="onboardingCreateOwnTaskLink"
+              type="button"
+              data-onboarding-task-choice="specific"
+              onClick={() => void selectFirstTaskChoice("specific")}
+              disabled={onboardingActionsDisabled}
+            >
+              Create my own task
+            </button>
           </div>
-        ) : null}
-
-        {activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" ? (
-          <ul className="onboardingTaskPresetList" aria-label="Curated task presets">
-            {ONBOARDING_FIRST_TASK_PRESET_NAMES.map((presetName) => {
-              const selected = selectedFirstTaskPresetName === presetName;
-              const description = ONBOARDING_FIRST_TASK_PRESET_DESCRIPTIONS[presetName] || "";
-              const imageSrc = ONBOARDING_FIRST_TASK_PRESET_IMAGE_SRCS[presetName] || "";
-              const presetColor = ONBOARDING_FIRST_TASK_PRESET_COLORS[presetName] || "#dce775";
-              return (
-                <li className="onboardingTaskPresetListItem" key={presetName}>
-                  <button
-                    className={`onboardingTaskPresetItem${selected ? " isSelected" : ""}`}
-                    type="button"
-                    aria-pressed={selected}
-                    data-onboarding-preset-task={presetName}
-                    data-onboarding-next-action="true"
-                    style={{ "--onboarding-task-preset-color": presetColor } as OnboardingCustomPropertyStyle}
-                    onClick={() => void selectPresetTask(presetName)}
-                    disabled={onboardingActionsDisabled}
-                  >
-                    {imageSrc ? (
-                      <span className="onboardingTaskPresetImageFrame" aria-hidden="true">
-                        <AppImg className="onboardingTaskPresetImage" src={imageSrc} alt="" width={96} height={96} />
-                      </span>
-                    ) : null}
-                    <span className="onboardingTaskPresetName">{presetName}</span>
-                    <span className="onboardingTaskPresetTimeGoal">{onboardingPresetTaskTimeGoalLabel(presetName)}</span>
-                    {description ? <span className="onboardingTaskPresetDescription">{description}</span> : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
         ) : null}
 
         {firstTaskDetailsActive ? (
@@ -1989,7 +2062,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
         </div>
 
         <div className="confirmBtns onboardingActions">
-          {stepIndex > 0 ? (
+          {showOnboardingBackAction ? (
             <button
               className="btn btn-ghost"
               type="button"
@@ -2002,7 +2075,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           ) : null}
           {stepIndex < ONBOARDING_STEPS.length - 1 ? (
             <button
-              className={`btn btn-accent${onboardingContinueReservedHidden ? " onboardingReservedHiddenAction" : ""}`}
+              className={`btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction${
+                onboardingContinueReservedHidden ? " onboardingReservedHiddenAction" : ""
+              }`}
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleNext()}
@@ -2013,7 +2088,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             </button>
           ) : (
             <button
-              className="btn btn-accent"
+              className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction"
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleFinish()}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import HomePageClient from "./HomePageClient";
+import Landing from "./landing";
 import {
   buildPageMetadata,
   jsonLdScript,
@@ -27,7 +27,7 @@ export default function Home() {
           softwareApplicationJsonLd(),
         ])}
       />
-      <HomePageClient />
+      <Landing showTitlePhase={false} showActions={false} />
     </>
   );
 }

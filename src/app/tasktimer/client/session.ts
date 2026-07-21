@@ -585,6 +585,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   const checkpointFlashTimersByTaskId: Record<string, number> = {};
   let timeGoalCompleteAudio: HTMLAudioElement | null = null;
   let timeGoalXpCountAudio: HTMLAudioElement | null = null;
+  const timeGoalCompleteXpRevealPlayer = createClickAudioPlayer("/xp-reward.mp3");
+  let timeGoalCompleteXpRevealTimer: number | null = null;
+  let timeGoalCompleteAudioEndedListener: (() => void) | null = null;
   let activeFocusTransitionClone: HTMLElement | null = null;
   let activeFocusTransitionTimer: number | null = null;
   let focusTransitionSourceTaskId: string | null = null;
@@ -593,6 +596,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let checkpointBeepQueueVibration: boolean[] = [];
   const focusModeStartPlayer = createClickAudioPlayer(FOCUS_MODE_START_AUDIO_SRC);
   const focusModeExitClickPlayer = createClickAudioPlayer(FOCUS_MODE_EXIT_CLICK_AUDIO_SRC);
+
+  function clearTimeGoalCompleteXpRevealTimer() {
+    if (timeGoalCompleteXpRevealTimer == null || typeof window === "undefined") return;
+    window.clearTimeout(timeGoalCompleteXpRevealTimer);
+    timeGoalCompleteXpRevealTimer = null;
+  }
+
+  function setTimeGoalCompleteXpSubtextVisible(visible: boolean) {
+    (els.timeGoalCompleteText as HTMLElement | null)?.classList.toggle("isXpRevealPending", !visible);
+  }
+
+  function revealTimeGoalCompleteXpSubtext(opts?: { playRewardSound?: boolean }) {
+    clearTimeGoalCompleteXpRevealTimer();
+    setTimeGoalCompleteXpSubtextVisible(true);
+    if (opts?.playRewardSound && ctx.getAchievementSoundsEnabled()) {
+      timeGoalCompleteXpRevealPlayer.play();
+    }
+  }
 
   function stopTimeGoalXpCountAudio() {
     if (!timeGoalXpCountAudio) return;
@@ -1491,6 +1512,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteText) {
       showStaticTimeGoalXpAward(els.timeGoalCompleteText as HTMLElement | null, awardedXp);
     }
+    setTimeGoalCompleteXpSubtextVisible(!ctx.getAchievementSoundsEnabled());
     setTimeGoalCompleteClaimReady(true);
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";
@@ -1507,6 +1529,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalCompleteNextTaskGrid();
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
+    else revealTimeGoalCompleteXpSubtext();
     startTimeGoalCompleteConfetti();
     stopTimeGoalXpCountAudio();
     if (awardedXp > 0 && typeof window !== "undefined") {
@@ -1549,6 +1572,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (els.timeGoalCompleteText) {
       showStaticTimeGoalXpAward(els.timeGoalCompleteText as HTMLElement | null, awardedXp);
     }
+    setTimeGoalCompleteXpSubtextVisible(!ctx.getAchievementSoundsEnabled());
     setTimeGoalCompleteClaimReady(true);
     if (els.timeGoalCompleteMeta) {
       els.timeGoalCompleteMeta.textContent = "";
@@ -1558,6 +1582,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     syncTimeGoalCompleteNextTaskGrid();
     ctx.openOverlay(overlay);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
+    else revealTimeGoalCompleteXpSubtext();
     startTimeGoalCompleteConfetti();
     stopTimeGoalXpCountAudio();
     if (typeof window !== "undefined") {
@@ -2548,13 +2573,39 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function playTimeGoalCompleteAudio() {
     const audio = ensureTimeGoalCompleteAudio();
-    if (!audio) return;
+    if (!audio) {
+      revealTimeGoalCompleteXpSubtext({ playRewardSound: ctx.getAchievementSoundsEnabled() });
+      return;
+    }
+    let didReveal = false;
+    const revealAfterCompletionAudio = () => {
+      if (didReveal) return;
+      didReveal = true;
+      audio.removeEventListener("ended", revealAfterCompletionAudio);
+      if (timeGoalCompleteAudioEndedListener === revealAfterCompletionAudio) {
+        timeGoalCompleteAudioEndedListener = null;
+      }
+      revealTimeGoalCompleteXpSubtext({ playRewardSound: true });
+    };
     try {
+      if (timeGoalCompleteAudioEndedListener) {
+        audio.removeEventListener("ended", timeGoalCompleteAudioEndedListener);
+      }
+      timeGoalCompleteAudioEndedListener = revealAfterCompletionAudio;
+      audio.addEventListener("ended", revealAfterCompletionAudio, { once: true });
       audio.currentTime = 0;
       const p = audio.play();
-      if (p && typeof (p as any).catch === "function") (p as any).catch(() => {});
+      if (p && typeof (p as any).catch === "function") (p as any).catch(() => revealAfterCompletionAudio());
+      clearTimeGoalCompleteXpRevealTimer();
+      if (typeof window !== "undefined") {
+        const fallbackMs =
+          Number.isFinite(audio.duration) && audio.duration > 0
+            ? Math.ceil(audio.duration * 1000)
+            : 1800;
+        timeGoalCompleteXpRevealTimer = window.setTimeout(revealAfterCompletionAudio, fallbackMs);
+      }
     } catch {
-      // ignore playback restrictions
+      revealAfterCompletionAudio();
     }
   }
 

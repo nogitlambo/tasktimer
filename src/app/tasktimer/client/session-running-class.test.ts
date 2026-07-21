@@ -202,22 +202,33 @@ function createCompletionHarness(options?: {
   const audioInstances: Array<{
     src: string;
     currentTime: number;
+    duration: number;
     loop: boolean;
     paused: boolean;
+    eventHandlers: Map<string, EventListenerOrEventListenerObject>;
+    addEventListener: ReturnType<typeof vi.fn>;
+    removeEventListener: ReturnType<typeof vi.fn>;
     pause: ReturnType<typeof vi.fn>;
     play: ReturnType<typeof vi.fn>;
   }> = [];
   (globalThis as { Audio?: unknown }).Audio = vi.fn(function AudioStub(src?: string) {
+    const eventHandlers = new Map<string, EventListenerOrEventListenerObject>();
     const audio = {
       src: src || "",
       currentTime: 0,
+      duration: 1.8,
       loop: false,
       paused: true,
       readyState: 4,
       preload: "",
       load: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
+      eventHandlers,
+      addEventListener: vi.fn((type: string, listener: EventListenerOrEventListenerObject) => {
+        eventHandlers.set(type, listener);
+      }),
+      removeEventListener: vi.fn((type: string) => {
+        eventHandlers.delete(type);
+      }),
       pause: vi.fn(() => {
         audio.paused = true;
         return audioPause();
@@ -1201,6 +1212,33 @@ describe("task timer session tick", () => {
       harness.session.tick();
 
       expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBeDefined();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("reveals task completion XP subtext after the completion sound and plays the reward sound", () => {
+    const harness = createCompletionHarness({ achievementSoundsEnabled: true });
+
+    try {
+      harness.session.tick();
+
+      const completionAudio = harness.audioInstances.find((audio) => audio.src === "/task_completed.mp3");
+      expect(completionAudio).toBeDefined();
+      expect(harness.timeGoalCompleteText.classList.contains("isXpRevealPending")).toBe(true);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(1);
+
+      const endedHandler = completionAudio?.eventHandlers.get("ended");
+      expect(endedHandler).toBeDefined();
+      if (typeof endedHandler === "function") {
+        endedHandler(new Event("ended"));
+      } else {
+        endedHandler?.handleEvent(new Event("ended"));
+      }
+
+      expect(harness.timeGoalCompleteText.classList.contains("isXpRevealPending")).toBe(false);
+      expect(harness.audioInstances.some((audio) => audio.src === "/xp-reward.mp3")).toBe(true);
+      expect(harness.audioPlay).toHaveBeenCalledTimes(2);
     } finally {
       harness.restoreWindow();
     }

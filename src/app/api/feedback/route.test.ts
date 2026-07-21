@@ -42,4 +42,22 @@ describe("/api/feedback CORS", () => {
     expect(response.headers.get("access-control-allow-methods")).toContain("POST");
     expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
   });
+
+  it("allows mobile webview origins and PATCH preflight requests", () => {
+    const response = OPTIONS(
+      new Request("https://tasklaunch.app/api/feedback", {
+        method: "OPTIONS",
+        headers: {
+          origin: "ionic://localhost",
+          "access-control-request-method": "PATCH",
+          "access-control-request-headers": "content-type,x-firebase-auth",
+        },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("ionic://localhost");
+    expect(response.headers.get("access-control-allow-methods")).toContain("PATCH");
+    expect(response.headers.get("access-control-allow-headers")).toContain("X-Firebase-Auth");
+  });
 });
