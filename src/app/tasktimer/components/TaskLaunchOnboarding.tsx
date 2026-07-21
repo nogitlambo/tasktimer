@@ -64,7 +64,6 @@ export type StepKey =
   | "chronotypeChoice"
   | "chronotypeSelection"
   | "chronotypeResult"
-  | "showingUpProgress"
   | "days"
   | "missedDaysProgress"
   | "firstTask"
@@ -112,15 +111,12 @@ export const ONBOARDING_FIRST_TASK_PRESET_COLORS: Readonly<Record<string, string
   "Plan next day": TASK_COLOR_PALETTE[2],
 };
 export const ONBOARDING_FIRST_TASK_PRESET_NAMES = ADD_TASK_PRESET_NAMES.filter((presetName) => presetName !== "Brush teeth");
-export const ONBOARDING_SHOWING_UP_PROGRESS_TITLE = "Focus on Showing Up";
-export const ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT =
-  "Some days will produce major progress. Others may only produce a few focused minutes. Both matter, because showing up keeps the habit alive.";
 export const ONBOARDING_MISSED_DAYS_PROGRESS_TITLE = "Missed Days Do Not Erase Progress";
 export const ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT =
   "A disrupted routine is not a failed routine. Returning after a difficult day is part of building the habit, not proof that you have lost it.";
-export const ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE = "Your brain responds to precision";
+export const ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE = "Start Smaller Than You Think";
 export const ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT =
-  "Vague goals create vague results.\n\nResearch on implementation intentions shows that people who define exactly what they plan to do are two to three times more likely to follow through. You've already taken that first step, which means you're no longer just thinking about change. You're building a clear path towards making it happen.";
+  "A five-minute task may feel insignificant, but it creates something motivation rarely provides on its own: momentum. Starting small makes the next step easier.";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
   { key: "username", title: "Username" },
@@ -128,7 +124,6 @@ export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = 
   { key: "chronotypeChoice", title: ONBOARDING_CHRONOTYPE_CHOICE_PROMPT },
   { key: "chronotypeSelection", title: ONBOARDING_CHRONOTYPE_SELECTION_PROMPT },
   { key: "chronotypeResult", title: "Chronotype Result" },
-  { key: "showingUpProgress", title: ONBOARDING_SHOWING_UP_PROGRESS_TITLE },
   { key: "days", title: "Productivity Days" },
   { key: "missedDaysProgress", title: ONBOARDING_MISSED_DAYS_PROGRESS_TITLE },
   { key: "firstTask", title: "Let's add your first task" },
@@ -147,7 +142,6 @@ export function onboardingFirstTaskSelectionTitle(choiceId: OnboardingFirstTaskC
 }
 
 export function onboardingNextStepIndex(activeStep: StepKey, stepIndex: number) {
-  if (activeStep === "showingUpProgress") return onboardingStepIndex("chronotypeResult");
   if (activeStep === "firstTask") return stepIndex;
   if (activeStep === "firstTaskSelection") return onboardingStepIndex("implementationIntentions");
   return Math.min(ONBOARDING_STEPS.length - 1, stepIndex + 1);
@@ -181,7 +175,7 @@ export function onboardingBackNavigation(input: {
 }) {
   if (input.activeStep === "chronotypeResult" && input.chronotypeResultPhase === "hours") {
     return {
-      nextStepIndex: onboardingStepIndex("showingUpProgress"),
+      nextStepIndex: onboardingStepIndex("chronotypeResult"),
       nextChronotypeResultPhase: "summary" as ChronotypeResultPhase,
       resetChronotypeChoice: false,
     };
@@ -563,7 +557,6 @@ function stepIntro(step: StepKey, isNativeRuntime: boolean) {
   if (step === "username") return "Confirm the username people will see in TaskLaunch social surfaces.";
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
   if (step === "chronotypeSelection") return ONBOARDING_CHRONOTYPE_SELECTION_PROMPT;
-  if (step === "showingUpProgress") return ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT;
   if (step === "days") return "Choose the days that count toward your productivity streaks, rewards, and dashboard insights.";
   if (step === "firstTask") {
     return "These simple tasks are easy to complete for a quick win, while also helping you build positive daily habits and support your mental wellbeing.";
@@ -638,7 +631,6 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
     step !== "chronotypeResult" &&
     step !== "firstTask" &&
     step !== "firstTaskSelection" &&
-    step !== "implementationIntentions" &&
     step !== "push"
   );
 }
@@ -646,22 +638,22 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
 export function shouldShowOnboardingStepSubtext(step: StepKey) {
   return (
     step !== "days" &&
-    step !== "showingUpProgress" &&
     step !== "missedDaysProgress" &&
     step !== "greeting" &&
     step !== "chronotypeChoice" &&
     step !== "chronotypeSelection" &&
     step !== "chronotypeResult" &&
-    step !== "firstTaskSelection"
+    step !== "firstTaskSelection" &&
+    step !== "implementationIntentions"
   );
 }
 
 export function shouldShowOnboardingStepHeading(step: StepKey) {
-  return step !== "chronotypeChoice" && step !== "showingUpProgress" && step !== "missedDaysProgress";
+  return step !== "chronotypeChoice" && step !== "missedDaysProgress" && step !== "implementationIntentions";
 }
 
 export function shouldShowOnboardingBackAction(step: StepKey, stepIndex: number) {
-  return stepIndex > 0 && step !== "implementationIntentions";
+  return stepIndex > 0 && step !== "implementationIntentions" && step !== "push";
 }
 
 type OnboardingCustomPropertyStyle = CSSProperties & {
@@ -1160,11 +1152,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setStatus("");
     };
     if (activeStep === "chronotypeResult" && chronotypeResultPhase === "summary") {
-      advanceToNextStep();
-      return;
-    }
-    if (activeStep === "showingUpProgress") {
-      setStepIndex(onboardingStepIndex("chronotypeResult"));
       setChronotypeResultPhase("hours");
       setStatus("");
       setError("");
@@ -1295,9 +1282,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isChronotypeChoiceStep = activeStep === "chronotypeChoice";
   const isChronotypeSelectionStep = activeStep === "chronotypeSelection";
   const isChronotypeResultStep = activeStep === "chronotypeResult";
-  const isShowingUpProgressStep = activeStep === "showingUpProgress";
   const isMissedDaysProgressStep = activeStep === "missedDaysProgress";
-  const isAnecdoteStep = isShowingUpProgressStep || isMissedDaysProgressStep;
+  const isImplementationIntentionsStep = activeStep === "implementationIntentions";
+  const isAnecdoteStep = isMissedDaysProgressStep || isImplementationIntentionsStep;
   const isImageStoryStep = isChronotypeChoiceStep || isAnecdoteStep;
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
@@ -1322,19 +1309,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       ? selectedChronotypeResult?.accentColor || ONBOARDING_NEUTRAL_BACKGROUND_ACCENT
       : onboardingBackgroundAccent,
   } as OnboardingCustomPropertyStyle;
-  const anecdoteStepContent = isShowingUpProgressStep
-    ? {
-        title: ONBOARDING_SHOWING_UP_PROGRESS_TITLE,
-        subtext: ONBOARDING_SHOWING_UP_PROGRESS_SUBTEXT,
-        imageSrc: "/onboarding/onboarding_showing_up.png",
-        titleId: "onboardingShowingUpProgressTitle",
-      }
-    : {
-        title: ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
-        subtext: ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
-        imageSrc: "/onboarding/onboarding_missed_days.png",
-        titleId: "onboardingMissedDaysProgressTitle",
-      };
+  const anecdoteStepContent = {
+    title: isImplementationIntentionsStep ? ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE : ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
+    subtext: isImplementationIntentionsStep ? ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT : ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
+    imageSrc: isImplementationIntentionsStep ? "/onboarding/onboarding_start_small.png" : "/onboarding/onboarding_missed_days.png",
+    titleId: isImplementationIntentionsStep ? "onboardingImplementationIntentionsTitle" : "onboardingMissedDaysProgressTitle",
+  };
 
   return (
     <div className="overlay" id="onboardingOverlay" style={{ display: "flex" }}>
@@ -1391,21 +1371,37 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               </div>
             </section>
           ) : showStepImage && isAnecdoteStep ? (
-            <section className="onboardingAnecdoteCard" aria-labelledby={anecdoteStepContent.titleId}>
+            <section
+              className={`onboardingAnecdoteCard${isImplementationIntentionsStep ? " onboardingStartImageCard" : ""}`}
+              aria-labelledby={anecdoteStepContent.titleId}
+            >
               <AppImg
-                className="onboardingChronotypePreview onboardingAnecdoteCardPreview"
+                className={`onboardingChronotypePreview onboardingAnecdoteCardPreview${
+                  isImplementationIntentionsStep ? " onboardingStartImagePreview" : ""
+                }`}
                 src={anecdoteStepContent.imageSrc}
                 alt=""
-                width={966}
-                height={1628}
+                width={isImplementationIntentionsStep ? 969 : 966}
+                height={isImplementationIntentionsStep ? 1624 : 1628}
                 aria-hidden="true"
               />
-              <div className="onboardingAnecdoteTextOverlay">
-                <h2 className="onboardingAnecdoteTitle" id={anecdoteStepContent.titleId}>
-                  {anecdoteStepContent.title}
-                </h2>
-                <p className="onboardingAnecdoteSubtext">{anecdoteStepContent.subtext}</p>
-              </div>
+              {isImplementationIntentionsStep ? (
+                <div className="onboardingAnecdoteTextOverlay onboardingStartImageTextOverlay">
+                  <h2 className="onboardingAnecdoteTitle onboardingChronotypeKnowledgeTitle onboardingStartImageTitle" id={anecdoteStepContent.titleId}>
+                    {anecdoteStepContent.title}
+                  </h2>
+                  <p className="onboardingAnecdoteSubtext onboardingChronotypeKnowledgeSubtext onboardingStartImageSubtext">
+                    {anecdoteStepContent.subtext}
+                  </p>
+                </div>
+              ) : (
+                <div className="onboardingAnecdoteTextOverlay">
+                  <h2 className="onboardingAnecdoteTitle" id={anecdoteStepContent.titleId}>
+                    {anecdoteStepContent.title}
+                  </h2>
+                  <p className="onboardingAnecdoteSubtext">{anecdoteStepContent.subtext}</p>
+                </div>
+              )}
             </section>
           ) : showStepImage ? (
             <AppImg

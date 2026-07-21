@@ -9145,6 +9145,33 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: 100%;
 }
 
+#onboardingOverlay .onboardingChronotypePreview.onboardingStartImagePreview{
+  aspect-ratio: 969 / 1624;
+}
+
+#onboardingOverlay .onboardingStartImageCard::before{
+  content: none;
+}
+
+#onboardingOverlay .onboardingStartImageTextOverlay{
+  left: clamp(28px, 7vw, 46px);
+  right: clamp(28px, 7vw, 46px);
+  top: clamp(76px, 11dvh, 108px);
+}
+
+#onboardingOverlay .onboardingStartImageTitle{
+  font-size: 36px !important;
+  line-height: 1.18 !important;
+  margin-bottom: 28px !important;
+  max-width: 12ch;
+}
+
+#onboardingOverlay .onboardingStartImageSubtext{
+  font-size: 18px !important;
+  line-height: 1.5 !important;
+  max-width: 26ch;
+}
+
 #onboardingOverlay .modal.onboardingAnecdoteModal{
   align-self: center;
   height: min(92dvh, 760px);
@@ -11940,6 +11967,29 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     object-fit: contain;
     object-position: center center;
     width: 100%;
+  }
+
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingStartImagePreview{
+    object-fit: cover;
+  }
+
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingStartImageTextOverlay{
+    left: clamp(28px, 8vw, 36px);
+    right: clamp(28px, 8vw, 36px);
+    top: calc(env(safe-area-inset-top, 0px) + 78px);
+  }
+
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingStartImageTitle{
+    font-size: clamp(30px, 9.2vw, 39px) !important;
+    line-height: 1.08 !important;
+    margin-bottom: 20px !important;
+    max-width: 11ch;
+  }
+
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingStartImageSubtext{
+    font-size: clamp(16px, 4.5vw, 18px) !important;
+    line-height: 1.38 !important;
+    max-width: 24ch;
   }
 
   #onboardingOverlay .modal.onboardingChronotypeKnowledgeModal .onboardingChronotypeKnowledgeCard{
