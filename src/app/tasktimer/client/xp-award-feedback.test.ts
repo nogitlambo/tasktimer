@@ -7,7 +7,9 @@ vi.mock("./interaction-haptics", () => ({
 import { playInteractionHaptic } from "./interaction-haptics";
 import {
   playXpAwardDeliveryHaptic,
+  shouldPlayRateLimitedXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
+  XP_AWARD_DELIVERY_HAPTIC_MIN_INTERVAL_MS,
 } from "./xp-award-feedback";
 
 describe("xp award feedback", () => {
@@ -34,5 +36,78 @@ describe("xp award feedback", () => {
     playXpAwardDeliveryHaptic({ isEnabled: false, intensity: "max" });
 
     expect(playInteractionHaptic).not.toHaveBeenCalled();
+  });
+
+  it("allows the first rate-limited pulse for an eligible XP delivery", () => {
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 10,
+        endXp: 22,
+        isEnabled: true,
+        totalUnits: 12,
+        nowMs: 1000,
+        lastPlayedAtMs: null,
+      })
+    ).toBe(true);
+  });
+
+  it("skips rate-limited pulses inside the minimum spacing window", () => {
+    expect(XP_AWARD_DELIVERY_HAPTIC_MIN_INTERVAL_MS).toBe(90);
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 10,
+        endXp: 22,
+        isEnabled: true,
+        totalUnits: 12,
+        nowMs: 1089,
+        lastPlayedAtMs: 1000,
+      })
+    ).toBe(false);
+  });
+
+  it("allows rate-limited pulses after the minimum spacing window", () => {
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 10,
+        endXp: 22,
+        isEnabled: true,
+        totalUnits: 12,
+        nowMs: 1090,
+        lastPlayedAtMs: 1000,
+      })
+    ).toBe(true);
+  });
+
+  it("blocks rate-limited pulses when disabled or no XP units will be delivered", () => {
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 10,
+        endXp: 22,
+        isEnabled: false,
+        totalUnits: 12,
+        nowMs: 1000,
+        lastPlayedAtMs: null,
+      })
+    ).toBe(false);
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 10,
+        endXp: 22,
+        isEnabled: true,
+        totalUnits: 0,
+        nowMs: 1000,
+        lastPlayedAtMs: null,
+      })
+    ).toBe(false);
+    expect(
+      shouldPlayRateLimitedXpAwardDeliveryHaptic({
+        startXp: 22,
+        endXp: 22,
+        isEnabled: true,
+        totalUnits: 1,
+        nowMs: 1000,
+        lastPlayedAtMs: null,
+      })
+    ).toBe(false);
   });
 });

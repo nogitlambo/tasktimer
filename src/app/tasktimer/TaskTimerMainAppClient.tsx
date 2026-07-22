@@ -116,6 +116,7 @@ import {
 } from "./client/xp-award-animation";
 import {
   playXpAwardDeliveryHaptic,
+  shouldPlayRateLimitedXpAwardDeliveryHaptic,
   shouldPlayXpAwardDeliveryHaptic,
 } from "./client/xp-award-feedback";
 import { createClickAudioPlayer } from "./client/click-audio-player";
@@ -649,7 +650,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const [leaderboardError, setLeaderboardError] = useState<string | null>("Leaderboard is unavailable in this session.");
   const [selectedLeaderboardProfile, setSelectedLeaderboardProfile] = useState<LeaderboardProfile | null>(null);
   const [leaderboardMovementQueue, setLeaderboardMovementQueue] = useState<LeaderboardPositionChangeSnapshot[]>([]);
-  const [activeLeaderboardMovement, setActiveLeaderboardMovement] = useState<LeaderboardPositionChangeSnapshot | null>(null);
+  const [activeLeaderboardMovementSequence, setActiveLeaderboardMovementSequence] = useState<LeaderboardPositionChangeSnapshot[]>([]);
+  const [activeLeaderboardMovementIndex, setActiveLeaderboardMovementIndex] = useState(0);
   const [weeklyAwardsInfoOpen, setWeeklyAwardsInfoOpen] = useState(false);
   const [leaderboardView, setLeaderboardView] = useState<LeaderboardView>("global");
   const [exitingLeaderboardView, setExitingLeaderboardView] = useState<LeaderboardView | null>(null);
@@ -661,6 +663,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     "uid" | "username" | "displayLabel" | "avatarId" | "avatarCustomSrc" | "googlePhotoUrl"
   > | null>(null);
   const leaderboardLoadSeqRef = useRef(0);
+  const leaderboardMovementQueueRef = useRef<LeaderboardPositionChangeSnapshot[]>([]);
+  const activeLeaderboardMovementSequenceRef = useRef<LeaderboardPositionChangeSnapshot[]>([]);
   const leaderboardSwipeRef = useRef<MobileLeaderboardSwipeState>(getResetMobileLeaderboardSwipeState());
   const suppressLeaderboardSwipeClickRef = useRef(false);
   const displayedXpRef = useRef(displayedXp);
@@ -703,6 +707,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   useEffect(() => {
     displayedXpRef.current = displayedXp;
   }, [displayedXp]);
+
+  useEffect(() => {
+    activeLeaderboardMovementSequenceRef.current = activeLeaderboardMovementSequence;
+  }, [activeLeaderboardMovementSequence]);
 
   useEffect(() => {
     if (!desktopInsigniaUpgrade) return;
@@ -764,7 +772,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const detail = (event as CustomEvent<LeaderboardPositionChangedEventDetail>).detail;
       const changes = Array.isArray(detail?.changes) ? detail.changes.filter((change) => change?.rows?.length) : [];
       if (!changes.length) return;
-      setLeaderboardMovementQueue((current) => current.concat(changes));
+      if (activeLeaderboardMovementSequenceRef.current.length) {
+        setActiveLeaderboardMovementSequence((current) => {
+          const next = current.concat(changes);
+          activeLeaderboardMovementSequenceRef.current = next;
+          return next;
+        });
+        return;
+      }
+      setLeaderboardMovementQueue((current) => {
+        const next = current.concat(changes);
+        leaderboardMovementQueueRef.current = next;
+        return next;
+      });
     };
     const handleOverlayClosed = (event: Event) => {
       const overlayId = String((event as CustomEvent<{ overlayId?: string }>).detail?.overlayId || "").trim();
@@ -801,13 +821,18 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   );
 
   useEffect(() => {
-    if (leaderboardMovementBlocked || activeLeaderboardMovement || !leaderboardMovementQueue.length) return;
+    if (leaderboardMovementBlocked || activeLeaderboardMovementSequence.length || !leaderboardMovementQueue.length) return;
     const openTimer = window.setTimeout(() => {
-      setActiveLeaderboardMovement(leaderboardMovementQueue[0] || null);
-      setLeaderboardMovementQueue((current) => current.slice(1));
+      const nextSequence = leaderboardMovementQueueRef.current;
+      if (!nextSequence.length) return;
+      activeLeaderboardMovementSequenceRef.current = nextSequence;
+      leaderboardMovementQueueRef.current = [];
+      setActiveLeaderboardMovementIndex(0);
+      setActiveLeaderboardMovementSequence(nextSequence);
+      setLeaderboardMovementQueue([]);
     }, 0);
     return () => window.clearTimeout(openTimer);
-  }, [activeLeaderboardMovement, leaderboardMovementBlocked, leaderboardMovementQueue]);
+  }, [activeLeaderboardMovementSequence.length, leaderboardMovementBlocked, leaderboardMovementQueue.length]);
 
   useEffect(() => {
     const activeAward = xpAnimationState.active;
@@ -974,6 +999,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       let arrivedParticles = 0;
       let previousRemaining = targetCountdownXp;
       let didPlayDoneSound = false;
+      let lastDeliveryHapticAtMs: number | null = null;
       setModalRemainingXp(targetCountdownXp);
 
       const playXpAwardDoneSoundOnce = () => {
@@ -1018,10 +1044,32 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAwardUnitDeliveryAudioPlayer.play();
       };
 
+      const playXpAwardUnitDeliveryHaptic = () => {
+        const nowMs = performance.now();
+        if (
+          !shouldPlayRateLimitedXpAwardDeliveryHaptic({
+            startXp,
+            endXp,
+            isEnabled: interactionHapticsEnabled,
+            totalUnits,
+            nowMs,
+            lastPlayedAtMs: lastDeliveryHapticAtMs,
+          })
+        ) {
+          return;
+        }
+        lastDeliveryHapticAtMs = nowMs;
+        playXpAwardDeliveryHaptic({
+          isEnabled: interactionHapticsEnabled,
+          intensity: interactionHapticsIntensity,
+        });
+      };
+
       const launchUnitPayload = () => {
         if (totalUnits <= 0) return;
         if (reducedMotion || !targetRect) {
           playXpAwardUnitDeliverySound();
+          playXpAwardUnitDeliveryHaptic();
           updateDeliveredXp();
           return;
         }
@@ -1030,12 +1078,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         const unitOriginRect = isUsableXpAwardRect(sourceRect) ? sourceRect as DOMRect : activeAward.sourceRect;
         if (!unitOriginRect) {
           playXpAwardUnitDeliverySound();
+          playXpAwardUnitDeliveryHaptic();
           updateDeliveredXp();
           return;
         }
         const style = buildXpPayloadStyle(unitOriginRect, targetRect);
         const id = `modal-unit-${activeAward.sourceOverlayId}-${xpAwardPayloadSeqRef.current++}`;
         playXpAwardUnitDeliverySound();
+        playXpAwardUnitDeliveryHaptic();
         setXpAwardFx((current) => ({
           visible: true,
           payloads: [
@@ -1073,12 +1123,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       countAnimationStartedDuringEffect = true;
       xpCountAnimationStartedRef.current = true;
       setIsXpCountAnimating(true);
-      if (shouldPlayXpAwardDeliveryHaptic(startXp, endXp, interactionHapticsEnabled)) {
-        playXpAwardDeliveryHaptic({
-          isEnabled: interactionHapticsEnabled,
-          intensity: interactionHapticsIntensity,
-        });
-      }
       if (achievementSoundsEnabled) {
         xpAwardUnitDeliveryAudioPlayer.warm();
         xpAwardDeliveryDoneAudioPlayer.warm();
@@ -1456,9 +1500,27 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     ? getLeaderboardInitials(getLeaderboardLabel(hydratedCurrentUserEntry))
     : getLeaderboardInitials(hydratedCurrentUserProfileLabel || "User");
   const currentUserLabel = hydratedCurrentUserEntry ? getLeaderboardLabel(hydratedCurrentUserEntry) : hydratedCurrentUserProfileLabel || "User";
+  const activeLeaderboardMovement = activeLeaderboardMovementSequence[activeLeaderboardMovementIndex] || null;
+  const hasNextLeaderboardMovement = activeLeaderboardMovementIndex < activeLeaderboardMovementSequence.length - 1;
+  const leaderboardMovementSlideStyle = {
+    "--leaderboard-movement-index": activeLeaderboardMovementIndex,
+  } as CSSProperties;
 
   const closeLeaderboardMovementModal = () => {
-    setActiveLeaderboardMovement(null);
+    activeLeaderboardMovementSequenceRef.current = [];
+    leaderboardMovementQueueRef.current = [];
+    setActiveLeaderboardMovementSequence([]);
+    setActiveLeaderboardMovementIndex(0);
+    setLeaderboardMovementQueue([]);
+  };
+
+  const advanceLeaderboardMovementModal = () => {
+    if (!activeLeaderboardMovementSequence.length) return;
+    if (hasNextLeaderboardMovement) {
+      setActiveLeaderboardMovementIndex((current) => Math.min(current + 1, activeLeaderboardMovementSequence.length - 1));
+      return;
+    }
+    closeLeaderboardMovementModal();
   };
 
   const closeLeaderboardPositionModal = () => {
@@ -2083,19 +2145,40 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             <header className="primitiveSciFiModalHeader leaderboardMovementPrimitiveHeader">
               <h2>Position Changed</h2>
             </header>
-            <div className="primitiveSciFiModalBody leaderboardMovementPrimitiveBody">
-              <p className="leaderboardMovementBoardLabel">{activeLeaderboardMovement.boardLabel}</p>
-              <p className="leaderboardMovementSummary">
-                You moved from {formatLeaderboardMovementRank(activeLeaderboardMovement.previousRank)} to{" "}
-                {formatLeaderboardMovementRank(activeLeaderboardMovement.currentRank)}.
-              </p>
-              <LeaderboardMovementTable change={activeLeaderboardMovement} />
+            <div
+              className="primitiveSciFiModalBody leaderboardMovementPrimitiveBody"
+              onClick={advanceLeaderboardMovementModal}
+            >
+              <div className="leaderboardMovementSlideViewport">
+                <div
+                  className="leaderboardMovementSlideTrack"
+                  style={leaderboardMovementSlideStyle}
+                >
+                  {activeLeaderboardMovementSequence.map((change, index) => (
+                    <section
+                      className="leaderboardMovementSlidePanel"
+                      aria-hidden={index === activeLeaderboardMovementIndex ? undefined : true}
+                      key={`${change.boardId}-${change.previousRank}-${change.currentRank}-${index}`}
+                    >
+                      <p className="leaderboardMovementBoardLabel">{change.boardLabel}</p>
+                      <p className="leaderboardMovementSummary">
+                        You moved from {formatLeaderboardMovementRank(change.previousRank)} to{" "}
+                        {formatLeaderboardMovementRank(change.currentRank)}.
+                      </p>
+                      <LeaderboardMovementTable change={change} />
+                    </section>
+                  ))}
+                </div>
+              </div>
             </div>
             <footer className="primitiveSciFiModalFooter leaderboardMovementPrimitiveFooter">
               <button
                 className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction leaderboardMovementPrimitiveAction leaderboardMovementPrimitiveSecondaryAction"
                 type="button"
-                onClick={closeLeaderboardMovementModal}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  closeLeaderboardMovementModal();
+                }}
               >
                 Close
               </button>

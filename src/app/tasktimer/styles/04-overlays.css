@@ -8290,6 +8290,27 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     rgba(8, 14, 19, .74);
 }
 
+#leaderboardMovementOverlay .leaderboardMovementSlideViewport{
+  min-width: 0;
+  overflow: hidden;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementSlideTrack{
+  --leaderboard-movement-index: 0;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  transform: translateX(calc(var(--leaderboard-movement-index) * -100%));
+  transition: transform .34s cubic-bezier(.2, .8, .2, 1);
+  will-change: transform;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementSlidePanel{
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+}
+
 #leaderboardMovementOverlay .leaderboardMovementBoardLabel{
   margin:0 0 6px !important;
   color: rgba(247, 250, 252, .96);
@@ -8491,6 +8512,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
     grid-template-columns:32px minmax(0, 1fr) 62px 30px;
     padding:0 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #leaderboardMovementOverlay .leaderboardMovementSlideTrack{
+    transition: none;
   }
 }
 
@@ -12365,28 +12392,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   position: relative !important;
   box-sizing: border-box !important;
   min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
+  min-height: clamp(54px, 8.3dvh, 74px) !important;
   padding: 0 28px !important;
-  border: 4px solid #020509 !important;
+  border: 4px solid var(--accent) !important;
   border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
+  background: var(--accent) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
+  color: #0d0f13 !important;
   cursor: pointer !important;
   overflow: hidden !important;
   font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
   line-height: 1 !important;
   letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
+  text-shadow: none !important;
   transition:
     filter .16s ease,
     transform .16s ease,
@@ -12394,22 +12414,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]{
-  border-color: #0f1600 !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-  color: #f7f8fb !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-}
-
-#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]{
   background: var(--accent) !important;
   border-color: var(--accent) !important;
   box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
@@ -12419,8 +12423,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   text-shadow: none !important;
 }
 
-#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:hover:not(:disabled),
-#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
+#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:hover:not(:disabled),
+#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
   background: #d9ff4d !important;
   border-color: #d9ff4d !important;
   color: #0d0f13 !important;
@@ -12869,7 +12873,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingActions [data-onboarding-next-action="true"]{
     justify-content: center;
-    min-height: 44px;
+    min-height: clamp(44px, 7.4dvh, 60px);
     width: 100%;
   }
 

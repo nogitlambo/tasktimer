@@ -79,7 +79,9 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
 
   it("queues leaderboard movements and blocks them behind XP and rank UI", () => {
     expect(source).toContain("LEADERBOARD_POSITION_CHANGED_EVENT");
-    expect(source).toContain("setLeaderboardMovementQueue((current) => current.concat(changes))");
+    expect(source).toContain("const next = current.concat(changes);");
+    expect(source).toContain("leaderboardMovementQueueRef.current = next;");
+    expect(source).toContain("activeLeaderboardMovementSequenceRef.current = next;");
     expect(source).toContain("const leaderboardMovementBlocked = Boolean(");
     expect(source).toContain("xpAnimationState.pending ||");
     expect(source).toContain("xpAnimationState.active ||");
@@ -87,17 +89,45 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("activeRankPromotion");
   });
 
-  it("keeps leaderboard movement modals open until user dismissal", () => {
+  it("keeps one leaderboard movement modal open while body clicks advance the sequence", () => {
     expect(source).not.toContain("LEADERBOARD_MOVEMENT_AUTO_ADVANCE_MS");
     expect(source).not.toContain("leaderboardMovementTimerRef");
-    expect(source).not.toContain("setLeaderboardMovementQueue([])");
-    expect(source).toContain("setActiveLeaderboardMovement(null)");
+    expect(source).toContain("const [activeLeaderboardMovementSequence, setActiveLeaderboardMovementSequence] = useState<LeaderboardPositionChangeSnapshot[]>([]);");
+    expect(source).toContain("const [activeLeaderboardMovementIndex, setActiveLeaderboardMovementIndex] = useState(0);");
+    expect(source).toContain("const hasNextLeaderboardMovement = activeLeaderboardMovementIndex < activeLeaderboardMovementSequence.length - 1;");
+    expect(source).toContain("const advanceLeaderboardMovementModal = () => {");
+    expect(source).toContain("setActiveLeaderboardMovementIndex((current) => Math.min(current + 1, activeLeaderboardMovementSequence.length - 1));");
+    expect(source).toContain("onClick={advanceLeaderboardMovementModal}");
+    expect(source).toContain("activeLeaderboardMovementSequence.map((change, index) => (");
+  });
+
+  it("clears the leaderboard movement sequence and queue on backdrop or close", () => {
+    expect(source).toContain("const closeLeaderboardMovementModal = () => {");
+    expect(source).toContain("setActiveLeaderboardMovementSequence([]);");
+    expect(source).toContain("setActiveLeaderboardMovementIndex(0);");
+    expect(source).toContain("setLeaderboardMovementQueue([]);");
+    expect(source).toContain("onClick={closeLeaderboardMovementModal}");
+    expect(source).toContain("event.stopPropagation();");
+    expect(source).toContain("closeLeaderboardMovementModal();");
   });
 
   it("highlights the current user row in the leaderboard movement modal", () => {
     expect(source).toContain("function LeaderboardMovementTable");
     expect(source).toContain('leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}');
     expect(source).toContain("formatLeaderboardMovementMetric(change, row.profile)");
+  });
+
+  it("styles leaderboard movement content as a reduced-motion aware slide track", () => {
+    expect(source).toContain('className="leaderboardMovementSlideViewport"');
+    expect(source).toContain('className="leaderboardMovementSlideTrack"');
+    expect(source).toContain('className="leaderboardMovementSlidePanel"');
+    expect(source).toContain('"--leaderboard-movement-index": activeLeaderboardMovementIndex');
+    expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSlideViewport");
+    expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSlideTrack");
+    expect(overlaysCss).toContain("transform: translateX(calc(var(--leaderboard-movement-index) * -100%));");
+    expect(overlaysCss).toContain("transition: transform .34s cubic-bezier(.2, .8, .2, 1);");
+    expect(overlaysCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(overlaysCss).toContain("transition: none;");
   });
 
   it("styles leaderboard loading text with Orbitron and repeating dots", () => {
@@ -159,13 +189,30 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.play();");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.warm();");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
-    expect(source).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+setXpAwardFx\(\(current\) => \(\{/);
+    expect(source).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+playXpAwardUnitDeliveryHaptic\(\);\r?\n\s+setXpAwardFx\(\(current\) => \(\{/);
     expect(source).toMatch(/addExtraTimer\(\(\) => \{\r?\n\s+updateDeliveredXp\(\);\r?\n\s+\}, XP_AWARD_UNIT_FX_DURATION_MS\);/);
     expect(source).toMatch(/playXpAwardDoneSoundOnce\(\);\r?\n\s+finishAward/);
     expect(source).toMatch(/setModalRemainingXp\(0\);\r?\n\s+xpAwardUnitDeliveryAudioPlayer\.stop\(\);/);
     expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");
+  });
+
+  it("plays rate-limited haptics in sync with each modal XP unit launch", () => {
+    const modalDeliveryStart = source.indexOf("const runModalXpValueDelivery = () => {");
+    const modalDeliveryEnd = source.indexOf("const scheduleUnitPayloadDelivery = () => {", modalDeliveryStart);
+    const modalDeliverySetupEnd = source.indexOf("const startedAt = performance.now();", modalDeliveryStart);
+    const modalUnitLaunchSource = source.slice(modalDeliveryStart, modalDeliveryEnd);
+    const modalDeliverySetupSource = source.slice(modalDeliveryStart, modalDeliverySetupEnd);
+
+    expect(source).toContain("shouldPlayRateLimitedXpAwardDeliveryHaptic");
+    expect(modalUnitLaunchSource).toContain("let lastDeliveryHapticAtMs: number | null = null;");
+    expect(modalUnitLaunchSource).toContain("const playXpAwardUnitDeliveryHaptic = () => {");
+    expect(modalUnitLaunchSource).toContain("lastPlayedAtMs: lastDeliveryHapticAtMs");
+    expect(modalUnitLaunchSource).toContain("lastDeliveryHapticAtMs = nowMs;");
+    expect(modalUnitLaunchSource).toContain("playXpAwardDeliveryHaptic({");
+    expect(modalUnitLaunchSource).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+playXpAwardUnitDeliveryHaptic\(\);/);
+    expect(modalDeliverySetupSource).not.toMatch(/setIsXpCountAnimating\(true\);\r?\n\s+if \(shouldPlayXpAwardDeliveryHaptic\(startXp, endXp, interactionHapticsEnabled\)\)/);
   });
 
   it("counts the task-complete modal XP value down to zero", () => {
