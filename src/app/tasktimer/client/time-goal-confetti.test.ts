@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   finishTimeGoalConfetti,
@@ -71,6 +73,8 @@ function canvasStub() {
 }
 
 describe("time goal confetti", () => {
+  const source = readFileSync(resolve(__dirname, "time-goal-confetti.ts"), "utf8");
+
   it("formats the task complete award text", () => {
     expect(formatTimeGoalAwardText(12)).toBe("You got 12 XP!");
     expect(formatTimeGoalAwardText(0)).toBe("No XP awarded");
@@ -188,7 +192,80 @@ describe("time goal confetti", () => {
     frames[0]?.(16);
 
     expect(context.clearRect).toHaveBeenCalledWith(0, 0, 320, 240);
+    expect(context.translate.mock.calls.some(([x, y]) => Math.abs(Number(x) - 160) > 8 && Number(y) < 120)).toBe(true);
     expect(frames).toHaveLength(2);
+  });
+
+  it("launches canvas confetti from the center before gravity pulls it downward", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const frames: Array<(timestamp: number) => void> = [];
+
+    startTimeGoalConfetti(stage, {
+      requestAnimationFrameFn: (handler) => {
+        frames.push(handler);
+        return frames.length;
+      },
+    });
+
+    frames[0]?.(16);
+    const firstBurstYValues = context.translate.mock.calls.map(([, y]) => Number(y));
+    const firstBurstXValues = context.translate.mock.calls.map(([x]) => Number(x));
+    expect(firstBurstYValues.some((y) => y < 120 && y > 70)).toBe(true);
+    expect(firstBurstXValues.some((x) => x < 150)).toBe(true);
+    expect(firstBurstXValues.some((x) => x > 170)).toBe(true);
+
+    context.translate.mockClear();
+    for (let index = 1; index < 150; index += 1) {
+      frames[index]?.(index * 16);
+    }
+
+    const laterYValues = context.translate.mock.calls.map(([, y]) => Number(y));
+    expect(laterYValues.some((y) => y > 170)).toBe(true);
+  });
+
+  it("uses one canvas particle lifecycle instead of spawning a second top-rain event", () => {
+    expect(source).toContain('type CanvasConfettiPhase = "burst" | "fall" | "done";');
+    expect(source).toContain("TIME_GOAL_CONFETTI_PRESSURE_CONE_MIN");
+    expect(source).toContain("TIME_GOAL_CONFETTI_PRESSURE_CONE_MAX");
+    expect(source).toContain("const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);");
+    expect(source).toContain("const reentryX = wrapTimeGoalConfettiX(projectedX * 0.34");
+    expect(source).toContain('phase: "burst"');
+    expect(source).toContain('particle.phase = "fall";');
+    expect(source).toContain('particle.phase = "done";');
+    expect(source).not.toContain('"pause"');
+    expect(source).not.toContain("pauseTicks");
+    expect(source).not.toContain("const direction = rand() > 0.5 ? 1 : -1;");
+    expect(source).not.toContain("makeTimeGoalCanvasParticle(rand, active.width, active.height, false)");
+    expect(source).not.toContain("particle.y = -20");
+  });
+
+  it("moves canvas particles out of bounds before the same pieces re-enter and fall", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const frames: Array<(timestamp: number) => void> = [];
+
+    startTimeGoalConfetti(stage, {
+      requestAnimationFrameFn: (handler) => {
+        frames.push(handler);
+        return frames.length;
+      },
+    });
+
+    frames[0]?.(16);
+    const earlyCalls = context.translate.mock.calls.map(([x, y]) => ({ x: Number(x), y: Number(y) }));
+    expect(earlyCalls.some(({ x, y }) => x > 120 && x < 200 && y > 70 && y < 130)).toBe(true);
+
+    context.translate.mockClear();
+    for (let index = 1; index < 38; index += 1) frames[index]?.(index * 16);
+    const burstCalls = context.translate.mock.calls.map(([x, y]) => ({ x: Number(x), y: Number(y) }));
+    expect(burstCalls.some(({ x, y }) => x < -20 || x > 340 || y < -20)).toBe(true);
+
+    context.translate.mockClear();
+    for (let index = 38; index < 120; index += 1) frames[index]?.(index * 16);
+    const reentryCalls = context.translate.mock.calls.map(([x, y]) => ({ x: Number(x), y: Number(y) }));
+    expect(reentryCalls.some(({ x, y }) => x >= 0 && x <= 320 && y < 0)).toBe(true);
+    expect(reentryCalls.some(({ x, y }) => x >= 0 && x <= 320 && y > 120)).toBe(true);
   });
 
   it("stops canvas confetti and cancels the animation frame", () => {

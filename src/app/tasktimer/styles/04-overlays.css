@@ -3079,16 +3079,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
-    radial-gradient(circle at 50% 46%, rgba(201, 255, 36, .12), transparent 0 14%, rgba(201, 255, 36, .04) 22%, transparent 56%),
+    radial-gradient(circle at 50% 46%, rgba(201, 255, 36, .2), transparent 0 14%, rgba(201, 255, 36, .08) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 46%,
-      rgba(201, 255, 36, .055) 0deg 7deg,
-      rgba(20, 27, 34, .02) 7deg 15deg
+      rgba(201, 255, 36, .12) 0deg 7deg,
+      rgba(20, 27, 34, .035) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 46%, rgba(255, 220, 90, .08), transparent 36%),
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .05), transparent 34%),
-    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .06), transparent 38%);
-  opacity: .74;
+    radial-gradient(circle at 50% 46%, rgba(255, 220, 90, .13), transparent 36%),
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
+  opacity: .88;
   mix-blend-mode: screen;
 }
 
@@ -5185,13 +5185,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #timeGoalCompleteOverlay .timeGoalConfettiPiece{
   position: absolute;
   left: var(--start-x);
-  top: -10%;
+  top: var(--start-y, 50%);
   width: var(--w);
   height: var(--h);
   border-radius: 2px;
   background: var(--c);
   opacity: 0;
-  transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot));
+  transform: translate(-50%, -50%) scale(.18) rotate(var(--rot));
   will-change: top, transform, opacity;
 }
 
@@ -5207,7 +5207,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #timeGoalCompleteOverlay .timeGoalConfettiDot{
   border-radius: 999px;
 }@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-100%); opacity:0; }12%{ opacity:.42; }52%,100%{ transform: translate(-50%, 0); opacity:0; }
-}@keyframes timeGoalConfettiFall{0%{ top:-14%; opacity:0; transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot)); }8%{ top:0; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-a)), calc(-50% + var(--float-a, -16px))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-a))); }24%{ top:14%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-b)), calc(-50% + var(--float-b, -8px))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-b))); }48%{ top:42%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-c)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-c))); }74%{ top:78%; opacity:var(--alpha-end, .64); transform: translate(calc(-50% + var(--drift-a)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-d))); }100%{ top:var(--fall-top, 118%); opacity:0; transform: translate(calc(-50% + var(--drift)), -35%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin))); }
+}@keyframes timeGoalConfettiFall{0%{ top:var(--start-y, 50%); opacity:0; transform: translate(-50%, -50%) scale(.12) rotate(var(--rot)); }4%{ top:var(--start-y, 50%); opacity:var(--alpha, .9); transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-a))); }15%{ top:var(--start-y, 50%); opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--burst-x-mid)), calc(-50% + var(--burst-y-mid))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-b))); }25%{ top:var(--start-y, 50%); opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-c))); }26%{ top:-18%; opacity:0; transform: translate(calc(-50% + var(--reentry-x)), var(--reentry-y, -96px)) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-c))); }31%{ top:-8%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--reentry-x) + var(--sway-a)), var(--reentry-y, -96px)) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-c))); }68%{ top:82%; opacity:var(--alpha-end, .64); transform: translate(calc(-50% + var(--drift-a) + var(--sway-c)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-d))); }100%{ top:var(--fall-top, 118%); opacity:0; transform: translate(calc(-50% + var(--drift)), -35%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin))); }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -6518,26 +6518,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   gap: 8px;
   width: min(100%, 420px);
   margin: 0 auto 24px;
-  padding: 0;
+  padding: 10px 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(20, 28, 35, .48), rgba(12, 18, 24, .4)),
+    #0d0f13;
+  box-shadow: 0 0 0 1px rgba(160, 190, 210, .08);
   text-align: center;
   isolation: isolate;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteRewardCard::before{
-  content: "";
-  position: absolute;
-  top: 44px;
-  left: 50%;
-  z-index: -1;
-  width: min(118%, 490px);
-  height: 220px;
-  background:
-    radial-gradient(circle at 50% 7%, rgba(255, 216, 92, .2), transparent 23%),
-    radial-gradient(circle at 50% 34%, rgba(201, 255, 36, .12), transparent 35%),
-    linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 74%);
-  opacity: .95;
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteTickWrap{
@@ -7068,12 +7055,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   display: grid;
   gap: 8px;
   margin: 0 0 12px;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteDivider{
-  height: 1px;
-  margin: 0 0 18px;
-  background: linear-gradient(90deg, transparent, rgba(180,188,198,.28), transparent);
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteNextTasks[hidden]{
@@ -12394,19 +12375,26 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   min-width: min(178px, 38vw) !important;
   min-height: clamp(54px, 8.3dvh, 74px) !important;
   padding: 0 28px !important;
-  border: 4px solid var(--accent) !important;
+  border: 4px solid #020509 !important;
   border-radius: 8px !important;
-  background: var(--accent) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
-  color: #0d0f13 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+  color: #f7f8fb !important;
   cursor: pointer !important;
   overflow: hidden !important;
   font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
   line-height: 1 !important;
   letter-spacing: 0 !important;
-  text-shadow: none !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
   transition:
     filter .16s ease,
     transform .16s ease,
@@ -12414,20 +12402,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]{
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
-  color: #0d0f13 !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  text-shadow: none !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:hover:not(:disabled),
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
-  background: #d9ff4d !important;
-  border-color: #d9ff4d !important;
-  color: #0d0f13 !important;
+  border-color: #0f1600 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .28),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
+  color: #f7f8fb !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
 }
 
 #onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:hover:not(:disabled),
@@ -13536,6 +13523,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
       - var(--history-entry-summary-mobile-bottom-clearance)
     ) !important;
     grid-template-rows: auto minmax(0, 1fr) auto !important;
+  }
+
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay[data-history-entry-session-count="1"] .historyEntrySummaryPrimitiveModal{
+    height: auto !important;
+    grid-template-rows: auto minmax(0, auto) auto !important;
   }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader{

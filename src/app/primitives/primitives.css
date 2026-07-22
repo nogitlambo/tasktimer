@@ -232,6 +232,40 @@ body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-accent{
     inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
 }
 
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-ghost:hover:not(:disabled),
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-ghost:focus-visible{
+  border-color: #020509 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  color: rgba(238, 242, 246, .88) !important;
+  box-shadow:
+    0 0 0 1px rgba(184, 207, 224, .1),
+    0 0 14px rgba(184, 207, 224, .2),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn-ghost:hover:not(:disabled),
+body[data-theme="lime"] #app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn-ghost:focus-visible,
+body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:hover:not(:disabled),
+body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:focus-visible{
+  border-color: #020509 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  color: rgba(238, 242, 246, .88) !important;
+  box-shadow:
+    0 0 0 1px rgba(184, 207, 224, .1),
+    0 0 14px rgba(184, 207, 224, .2),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+}
+
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveButtonGrid .btn-warn{
   border-color: #1a0303 !important;
   box-shadow:
@@ -758,6 +792,12 @@ body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-accent{
 
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalSecondaryAction{
   border-color: #020509;
+}
+
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalSecondaryAction:hover,
+:where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalSecondaryAction:focus-visible{
+  border-color: #020509 !important;
+  color: #f7f8fb !important;
 }
 
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalAction::before{

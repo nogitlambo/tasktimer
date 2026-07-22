@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -46,5 +47,18 @@ describe("PrimitiveGallery", () => {
     expect(html).not.toContain("standardModalOverlay");
     expect(html).not.toContain("modalPreviewDropdown");
     expect(html).not.toContain("modalPreviewCheckbox");
+  });
+
+  it("keeps primitive secondary button hover neutral in the lime theme", () => {
+    const css = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain(
+      'body[data-theme="lime"] #app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn-ghost:hover:not(:disabled)'
+    );
+    expect(css).toContain(
+      'body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:focus-visible'
+    );
+    expect(css).toContain("border-color: #020509 !important;");
+    expect(css).toContain("color: rgba(238, 242, 246, .88) !important;");
   });
 });

@@ -4,6 +4,7 @@ import {
   ONBOARDING_CHRONOTYPE_CHOICE_PROMPT,
   ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT,
   ONBOARDING_CHRONOTYPE_OPTIONS,
+  ONBOARDING_CHRONOTYPE_CONTINUE_REVEAL_DELAY_MS,
   ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE,
   ONBOARDING_CHRONOTYPE_SELECTION_PROMPT,
   ONBOARDING_DAYS_BACKGROUND_ACCENT,
@@ -495,6 +496,7 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("blocks continuing from the chronotype selection step until a tile is selected", () => {
+    expect(ONBOARDING_CHRONOTYPE_CONTINUE_REVEAL_DELAY_MS).toBe(360);
     expect(canContinueOnboardingStep("chronotypeChoice", [], "")).toBe(true);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "")).toBe(false);
     expect(canContinueOnboardingStep("chronotypeSelection", [], "missing")).toBe(false);

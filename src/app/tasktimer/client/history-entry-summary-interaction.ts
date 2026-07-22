@@ -322,6 +322,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     overlay.dataset.historyEntryName = editable ? name : "";
     overlay.dataset.historyEntryNote = editable ? note : "";
     overlay.dataset.historyEntryEditing = "false";
+    overlay.dataset.historyEntrySessionCount = String(Array.isArray(entries) ? entries.length : 0);
     if (elements.input) {
       elements.input.dataset.historySummaryTargetKey = editable ? historyTargetKey : "";
       setRichNoteEditorValue(elements.input, editable ? note : "");
@@ -366,6 +367,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       overlay.dataset.historyEntryName = "";
       overlay.dataset.historyEntryNote = "";
       overlay.dataset.historyEntryEditing = "false";
+      overlay.dataset.historyEntrySessionCount = "0";
     }
     if (elements.input) {
       elements.input.dataset.historySummaryTargetKey = "";

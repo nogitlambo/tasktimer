@@ -29,10 +29,13 @@ type XpCountAnimation = {
 const xpCountAnimations = new WeakMap<HTMLElement, XpCountAnimation>();
 
 type ConfettiShape = "rect" | "circle" | "triangle";
+type CanvasConfettiPhase = "burst" | "fall" | "done";
 
 type CanvasConfettiParticle = {
   x: number;
   y: number;
+  phase: CanvasConfettiPhase;
+  ageTicks: number;
   size: number;
   color: string;
   shape: ConfettiShape;
@@ -40,6 +43,14 @@ type CanvasConfettiParticle = {
   rotSpeed: number;
   vy: number;
   vx: number;
+  gravity: number;
+  drag: number;
+  delayTicks: number;
+  reentryX: number;
+  reentryY: number;
+  fallVx: number;
+  fallVy: number;
+  fallGravity: number;
   swing: number;
   swingSpeed: number;
   swingPhase: number;
@@ -66,6 +77,10 @@ const TIME_GOAL_CONFETTI_CANVAS_COLORS = ["#9FE300", "#6EC001", "#F5B94A", "#F4F
 const TIME_GOAL_CONFETTI_CANVAS_SHAPES = ["rect", "circle", "triangle"] as const;
 const TIME_GOAL_CONFETTI_CANVAS_COUNT = 160;
 const TIME_GOAL_CONFETTI_DOM_FINISH_MS = 6500;
+const TIME_GOAL_CONFETTI_PRESSURE_CONE_MIN = Math.PI * 0.16;
+const TIME_GOAL_CONFETTI_PRESSURE_CONE_MAX = Math.PI * 0.84;
+const TIME_GOAL_CONFETTI_CANVAS_OFFSCREEN_MARGIN = 26;
+const TIME_GOAL_CONFETTI_CANVAS_BURST_MAX_TICKS = 34;
 
 function createSeededRandom(seedValue = 91) {
   let seed = seedValue;
@@ -216,19 +231,45 @@ function resizeTimeGoalConfettiCanvas(active: CanvasConfettiAnimation) {
   active.context.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function makeTimeGoalCanvasParticle(rand: () => number, width: number, height: number, burst: boolean): CanvasConfettiParticle {
+function wrapTimeGoalConfettiX(x: number, width: number) {
+  if (width <= 0) return 0;
+  return ((x % width) + width) % width;
+}
+
+function makeTimeGoalCanvasParticle(rand: () => number, width: number, height: number): CanvasConfettiParticle {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const angle = randRange(rand, TIME_GOAL_CONFETTI_PRESSURE_CONE_MIN, TIME_GOAL_CONFETTI_PRESSURE_CONE_MAX);
+  const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);
+  const launchSpeed = randRange(rand, 9.2, 14.8) + pressureBias * randRange(rand, 1.8, 4.4);
+  const launchVx = Math.cos(angle) * launchSpeed;
+  const launchVy = -Math.sin(angle) * launchSpeed;
+  const startX = centerX + randRange(rand, -10, 10);
+  const projectedX = wrapTimeGoalConfettiX(startX + launchVx * randRange(rand, 20, 34), width);
+  const reentryX = wrapTimeGoalConfettiX(projectedX * 0.34 + randRange(rand, 0, width) * 0.66 + randRange(rand, -width * 0.22, width * 0.22), width);
+  const fallVx = randRange(rand, -0.95, 0.95) + launchVx * 0.035;
   return {
-    x: randRange(rand, 0, width),
-    y: burst ? randRange(rand, -height * 0.4, -10) : randRange(rand, -height, 0),
+    x: startX,
+    y: centerY + randRange(rand, -8, 8),
+    phase: "burst",
+    ageTicks: 0,
     size: randRange(rand, 6, 12),
     color: TIME_GOAL_CONFETTI_CANVAS_COLORS[Math.floor(rand() * TIME_GOAL_CONFETTI_CANVAS_COLORS.length)] || "#9FE300",
     shape: TIME_GOAL_CONFETTI_CANVAS_SHAPES[Math.floor(rand() * TIME_GOAL_CONFETTI_CANVAS_SHAPES.length)] || "rect",
     rotation: randRange(rand, 0, Math.PI * 2),
     rotSpeed: randRange(rand, -0.06, 0.06),
-    vy: randRange(rand, 1.6, 3.4),
-    vx: randRange(rand, -0.6, 0.6),
-    swing: randRange(rand, 0.6, 1.6),
-    swingSpeed: randRange(rand, 0.01, 0.025),
+    vy: launchVy,
+    vx: launchVx,
+    gravity: randRange(rand, 0.085, 0.13),
+    drag: randRange(rand, 0.964, 0.982),
+    delayTicks: Math.floor(rand() * 5),
+    reentryX,
+    reentryY: -TIME_GOAL_CONFETTI_CANVAS_OFFSCREEN_MARGIN - randRange(rand, 8, 56),
+    fallVx,
+    fallVy: randRange(rand, 1.15, 2.35),
+    fallGravity: randRange(rand, 0.012, 0.024),
+    swing: randRange(rand, 1.2, 4.8),
+    swingSpeed: randRange(rand, 0.012, 0.036),
     swingPhase: randRange(rand, 0, Math.PI * 2),
     opacity: randRange(rand, 0.85, 1),
   };
@@ -237,8 +278,20 @@ function makeTimeGoalCanvasParticle(rand: () => number, width: number, height: n
 function seedTimeGoalCanvasParticles(active: CanvasConfettiAnimation) {
   const rand = createSeededRandom(91);
   active.particles = Array.from({ length: TIME_GOAL_CONFETTI_CANVAS_COUNT }, () =>
-    makeTimeGoalCanvasParticle(rand, active.width, active.height, true)
+    makeTimeGoalCanvasParticle(rand, active.width, active.height)
   );
+}
+
+function transitionTimeGoalParticleToFall(particle: CanvasConfettiParticle, width: number) {
+  particle.phase = "fall";
+  particle.ageTicks = 0;
+  particle.reentryX = wrapTimeGoalConfettiX(particle.x, width);
+  particle.x = particle.reentryX;
+  particle.y = particle.reentryY;
+  particle.vx = particle.fallVx;
+  particle.vy = particle.fallVy;
+  particle.gravity = particle.fallGravity;
+  particle.drag = 1;
 }
 
 function completeTimeGoalCanvasConfetti(stage: HTMLElement, active: CanvasConfettiAnimation) {
@@ -308,27 +361,42 @@ function startTimeGoalCanvasConfetti(
   canvasConfettiAnimations.set(stage, active);
   stage.classList.add("hasCanvasConfetti");
   stage.dataset.confettiRenderer = "canvas";
-  const rand = createSeededRandom(811);
   const tick = () => {
     if (canvasConfettiAnimations.get(stage) !== active) return;
     resizeTimeGoalConfettiCanvas(active);
     active.context.clearRect(0, 0, active.width, active.height);
     active.tickCount += 1;
     for (const particle of active.particles) {
-      particle.y += particle.vy;
-      particle.x += particle.vx + Math.sin(active.tickCount * particle.swingSpeed + particle.swingPhase) * particle.swing * 0.05;
-      particle.rotation += particle.rotSpeed;
-      if (particle.y > active.height + 20 && active.finishing) {
+      if (particle.phase === "done") continue;
+      if (particle.delayTicks > 0) {
+        particle.delayTicks -= 1;
         continue;
       }
-      if (particle.y > active.height + 20) {
-        Object.assign(particle, makeTimeGoalCanvasParticle(rand, active.width, active.height, false));
-        particle.y = -20;
+      particle.y += particle.vy;
+      const swingScale = particle.phase === "fall" ? 0.18 : 0.08;
+      particle.x += particle.vx + Math.sin(active.tickCount * particle.swingSpeed + particle.swingPhase) * particle.swing * swingScale;
+      particle.vy += particle.gravity;
+      particle.vx *= particle.drag;
+      particle.rotation += particle.rotSpeed;
+      particle.ageTicks += 1;
+      if (
+        particle.phase === "burst" &&
+        (particle.x < -TIME_GOAL_CONFETTI_CANVAS_OFFSCREEN_MARGIN ||
+          particle.x > active.width + TIME_GOAL_CONFETTI_CANVAS_OFFSCREEN_MARGIN ||
+          particle.y < -TIME_GOAL_CONFETTI_CANVAS_OFFSCREEN_MARGIN ||
+          particle.ageTicks > TIME_GOAL_CONFETTI_CANVAS_BURST_MAX_TICKS)
+      ) {
+        transitionTimeGoalParticleToFall(particle, active.width);
+        continue;
+      }
+      if (particle.phase === "fall" && particle.y > active.height + 20) {
+        particle.phase = "done";
+        continue;
       }
       drawTimeGoalCanvasParticle(active.context, particle);
     }
-    if (active.finishing) {
-      active.particles = active.particles.filter((particle) => particle.y <= active.height + 20);
+    if (active.finishing || active.particles.every((particle) => particle.phase === "done")) {
+      active.particles = active.particles.filter((particle) => particle.phase !== "done");
       if (active.particles.length <= 0) {
         completeTimeGoalCanvasConfetti(stage, active);
         return;

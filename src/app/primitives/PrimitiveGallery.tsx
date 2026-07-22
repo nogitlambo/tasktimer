@@ -198,10 +198,10 @@ export default function PrimitiveGallery() {
         <PrimitiveSection
           title="Android splash"
           note="Use the production TaskLaunch logo asset when previewing Android splash screen treatments."
-          code={`<AppImg className="primitiveAndroidSplashLogo" src="/logo/tasklaunch-logo.webp" alt="TaskLaunch logo" />`}
+          code={`<AppImg className="primitiveAndroidSplashLogo" src="/logo/logo_main.png" alt="TaskLaunch logo" />`}
           exampleClassName="primitiveAndroidSplashPanel"
         >
-          <AppImg className="primitiveAndroidSplashLogo" src="/logo/tasklaunch-logo.webp" alt="TaskLaunch logo" />
+          <AppImg className="primitiveAndroidSplashLogo" src="/logo/logo_main.png" alt="TaskLaunch logo" />
         </PrimitiveSection>
 
         <PrimitiveSection

@@ -389,6 +389,9 @@ export const ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE = "That username is alread
 export const ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE = "Please select one option";
 const ONBOARDING_USERNAME_ERROR_ID = "onboardingUsernameError";
 const ONBOARDING_CHRONOTYPE_ERROR_ID = "onboardingChronotypeError";
+export const ONBOARDING_CHRONOTYPE_CONTINUE_REVEAL_DELAY_MS = 360;
+const ONBOARDING_PRIMARY_ACTION_CLASS =
+  "btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction";
 
 export function isOnboardingUsernameTakenError(message: unknown) {
   return String(message || "").trim() === USERNAME_TAKEN_ERROR_MESSAGE;
@@ -705,6 +708,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [usernameConfirmedAtMs, setUsernameConfirmedAtMs] = useState<number | null>(null);
   const [selectedChronotypeChoiceId, setSelectedChronotypeChoiceId] = useState<OnboardingChronotypeChoiceId | "">("");
+  const [chronotypeContinueReady, setChronotypeContinueReady] = useState(false);
   const [productivityDays, setProductivityDays] = useState<DashboardWeekStart[]>([]);
   const [startTime, setStartTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_START_TIME);
   const [endTime, setEndTime] = useState(TASKTIMER_ONBOARDING_DEFAULT_END_TIME);
@@ -734,6 +738,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const profileSyncPromiseRef = useRef<Promise<void> | null>(null);
   const startTimeInputRef = useRef<HTMLInputElement | null>(null);
   const endTimeInputRef = useRef<HTMLInputElement | null>(null);
+  const chronotypeContinueRevealTimerRef = useRef<number | null>(null);
 
   const activeStep = ONBOARDING_STEPS[stepIndex]?.key || "intro";
   const isNativeRuntime = isNativeOrFileRuntime();
@@ -767,6 +772,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     if (activeStep !== "username") setAvatarPickerOpen(false);
     if (activeStep !== "chronotypeResult") setChronotypeResultPhase("summary");
   }, [activeStep, chronotypeResultPhase]);
+
+  useEffect(() => {
+    return () => {
+      if (chronotypeContinueRevealTimerRef.current) window.clearTimeout(chronotypeContinueRevealTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!firstTaskDetailsActive || firstTaskPlannedStartTouched) return;
@@ -1268,6 +1279,14 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   const selectChronotypeChoice = (nextOptionId: OnboardingChronotypeChoiceId) => {
     const nextId = toggleOnboardingChronotypeChoice(selectedChronotypeChoiceId, nextOptionId);
+    if (chronotypeContinueRevealTimerRef.current) window.clearTimeout(chronotypeContinueRevealTimerRef.current);
+    setChronotypeContinueReady(false);
+    if (nextId) {
+      chronotypeContinueRevealTimerRef.current = window.setTimeout(() => {
+        setChronotypeContinueReady(true);
+        chronotypeContinueRevealTimerRef.current = null;
+      }, ONBOARDING_CHRONOTYPE_CONTINUE_REVEAL_DELAY_MS);
+    }
     const nextHours = seedOnboardingChronotypeHours({
       selectedChronotypeChoiceId: nextId,
       currentStartTime: startTime,
@@ -1322,6 +1341,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   );
   const onboardingContinueReservedHidden =
     isOnboardingContinueReservedHidden(activeStep, selectedChronotypeChoiceId) ||
+    (activeStep === "chronotypeSelection" && !chronotypeContinueReady) ||
     (activeStep === "firstTaskSelection" && selectedFirstTaskChoiceId === "select" && !firstTaskDetailsReady);
   const showOnboardingBackAction = shouldShowOnboardingBackAction(activeStep, stepIndex);
   const onboardingBackgroundAccent = onboardingBackgroundAccentForStep(activeStep, selectedChronotypeResult?.accentColor, isChronotypeHoursPhase);
@@ -2153,7 +2173,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           ) : null}
           {stepIndex < ONBOARDING_STEPS.length - 1 ? (
             <button
-              className={`btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction${
+              className={`${ONBOARDING_PRIMARY_ACTION_CLASS}${
                 onboardingContinueReservedHidden ? " onboardingReservedHiddenAction" : ""
               }`}
               type="button"
@@ -2166,7 +2186,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             </button>
           ) : (
             <button
-              className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction"
+              className={ONBOARDING_PRIMARY_ACTION_CLASS}
               type="button"
               data-onboarding-next-action="true"
               onClick={() => void handleFinish()}

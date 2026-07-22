@@ -22,10 +22,15 @@ function buildConfettiPieces(): ConfettiPiece[] {
   };
 
   return Array.from({ length: 120 }, (_, index) => {
-    const startX = 5 + rand() * 90;
-    const drift = -72 + rand() * 144;
+    const angle = Math.PI * (0.16 + rand() * 0.68);
+    const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);
+    const burstDistance = 230 + rand() * 190 + pressureBias * (60 + rand() * 90);
+    const burstX = Math.cos(angle) * burstDistance;
+    const burstY = -Math.sin(angle) * burstDistance;
+    const reentryX = burstX * 0.1 + (-150 + rand() * 300);
+    const drift = reentryX + (-150 + rand() * 300);
     const fallTop = 112 + rand() * 18;
-    const sway = 16 + rand() * 54;
+    const sway = 44 + rand() * 108;
     const spin = Math.floor(rand() * 900 - 450);
     const width = 3 + rand() * 22;
     const height = 4 + rand() * 26;
@@ -36,9 +41,16 @@ function buildConfettiPieces(): ConfettiPiece[] {
     return {
       className,
       style: {
-        "--start-x": `${formatCssNumber(startX)}%`,
+        "--start-x": `${formatCssNumber(50 + (-1.8 + rand() * 3.6))}%`,
+        "--start-y": `${formatCssNumber(50 + (-1.8 + rand() * 3.6))}%`,
+        "--burst-x": `${formatCssNumber(burstX)}px`,
+        "--burst-y": `${formatCssNumber(burstY)}px`,
+        "--burst-x-mid": `${formatCssNumber(burstX * 0.72)}px`,
+        "--burst-y-mid": `${formatCssNumber(burstY * 0.78)}px`,
+        "--reentry-x": `${formatCssNumber(reentryX)}px`,
+        "--reentry-y": `${formatCssNumber(-72 - rand() * 56)}px`,
         "--drift": `${formatCssNumber(drift)}px`,
-        "--drift-a": `${formatCssNumber(drift * 0.72)}px`,
+        "--drift-a": `${formatCssNumber(reentryX + drift * 0.18)}px`,
         "--fall-top": `${formatCssNumber(fallTop)}%`,
         "--sway-a": `${formatCssNumber(sway * (rand() > 0.5 ? 0.28 : -0.28))}px`,
         "--sway-b": `${formatCssNumber(sway * (rand() > 0.5 ? 0.64 : -0.64))}px`,
@@ -57,7 +69,7 @@ function buildConfettiPieces(): ConfettiPiece[] {
         "--spin-b": `${formatCssNumber(spin * 0.52)}deg`,
         "--spin-c": `${formatCssNumber(spin * 0.78)}deg`,
         "--spin-d": `${formatCssNumber(spin * 0.9)}deg`,
-        "--d": `${formatCssNumber(rand() * 1.08, 4)}s`,
+        "--d": `${formatCssNumber(rand() * 0.62, 4)}s`,
         "--dur": `${formatCssNumber(duration, 4)}s`,
       } as CSSProperties,
     };
@@ -131,7 +143,6 @@ export default function TimeGoalCompleteOverlay() {
             </div>
           </div>
           <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
-          <div className="timeGoalCompleteDivider" aria-hidden="true" />
           <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
             <div
               className="timeGoalCompleteNextTaskGrid"

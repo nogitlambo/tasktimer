@@ -38,15 +38,26 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).not.toContain("--star-sweep-x:");
     expect(overlaysCss).not.toContain("--star-delay:");
     expect(overlaysCss).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(overlaysCss).toContain("#timeGoalCompleteOverlay .timeGoalCompleteStarArc{\n    animation: none;");
+    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteStarArc\s*\{\s*animation: none;/);
   });
 
-  it("adds a subtle radial burst behind the task-complete modal content", () => {
+  it("adds a visible radial burst behind the task-complete modal content", () => {
     expect(overlaysCss).toContain("#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after");
     expect(overlaysCss).toContain("repeating-conic-gradient(");
     expect(overlaysCss).toContain("from -5deg at 50% 46%");
-    expect(overlaysCss).toContain("rgba(201, 255, 36, .055) 0deg 7deg");
+    expect(overlaysCss).toContain("rgba(201, 255, 36, .2)");
+    expect(overlaysCss).toContain("rgba(201, 255, 36, .12) 0deg 7deg");
+    expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toContain("mix-blend-mode: screen;");
+  });
+
+  it("lets the reward card block the outer radial beams without its own burst", () => {
+    expect(overlaysCss).toContain("#timeGoalCompleteOverlay .timeGoalCompleteRewardCard");
+    expect(overlaysCss).not.toContain("#timeGoalCompleteOverlay .timeGoalCompleteRewardCard::before");
+    expect(overlaysCss).not.toContain("repeating-conic-gradient(from -18deg at 50% 22%");
+    expect(overlaysCss).toContain("linear-gradient(180deg, rgba(20, 28, 35, .48), rgba(12, 18, 24, .4))");
+    expect(overlaysCss).toContain("#0d0f13;");
+    expect(overlaysCss).toContain("box-shadow: 0 0 0 1px rgba(160, 190, 210, .08);");
   });
 
   it("animates the circled tick with a rubber scale-in effect", () => {
@@ -58,7 +69,7 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("transform: scale(.92);");
     expect(overlaysCss).toContain("transform: scale(1.07);");
     expect(overlaysCss).toContain("transform: scale(1);");
-    expect(overlaysCss).toContain("#timeGoalCompleteOverlay .timeGoalCompleteTickBadge{\n    animation: none;");
+    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteTickBadge\s*\{\s*animation: none;/);
   });
 
   it("reveals awarded XP with a drop and subtle landing bounce", () => {
@@ -85,6 +96,16 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(source).toContain('className="timeGoalCompleteConfettiCanvas"');
     expect(source).toContain("const className = `timeGoalConfettiPiece");
     expect(source).toContain("className={piece.className}");
+    expect(source).not.toContain("const direction = rand() > 0.5 ? 1 : -1;");
+    expect(source).toContain("const angle = Math.PI * (0.16 + rand() * 0.68);");
+    expect(source).toContain("const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);");
+    expect(source).toContain("const burstDistance = 230 + rand() * 190 + pressureBias * (60 + rand() * 90);");
+    expect(source).toContain("const reentryX = burstX * 0.1");
+    expect(source).toContain('"--start-y"');
+    expect(source).toContain('"--burst-x"');
+    expect(source).toContain('"--burst-y"');
+    expect(source).toContain('"--reentry-x"');
+    expect(source).toContain('"--reentry-y"');
     expect(source).toContain("const width = 3 + rand() * 22;");
     expect(source).toContain("const height = 4 + rand() * 26;");
     expect(source).toContain("const duration = 3.45 + rand() * 1.85 + scale * 0.34;");
@@ -92,7 +113,18 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(source).toContain('"--drift-a"');
     expect(overlaysCss).toContain("animation: timeGoalConfettiFall var(--dur, 4.2s)");
     expect(overlaysCss).toContain(".timeGoalCompleteConfettiStage.hasCanvasConfetti .timeGoalConfettiPiece");
-    expect(overlaysCss).toContain("24%{ top:14%;");
-    expect(overlaysCss).toContain("74%{ top:78%;");
+    expect(overlaysCss).toContain("top: var(--start-y, 50%);");
+    expect(overlaysCss).toContain("0%{ top:var(--start-y, 50%);");
+    expect(overlaysCss).toContain("4%{ top:var(--start-y, 50%);");
+    expect(overlaysCss).toContain("15%{ top:var(--start-y, 50%);");
+    expect(overlaysCss).toContain("var(--burst-x-mid)");
+    expect(overlaysCss).toContain("var(--burst-y-mid)");
+    expect(overlaysCss).toContain("25%{ top:var(--start-y, 50%);");
+    expect(overlaysCss).toContain("26%{ top:-18%; opacity:0;");
+    expect(overlaysCss).toContain("var(--reentry-x)");
+    expect(overlaysCss).toContain("var(--reentry-y, -96px)");
+    expect(overlaysCss).toContain("31%{ top:-8%; opacity:var(--alpha, .9);");
+    expect(overlaysCss).toContain("68%{ top:82%;");
+    expect(overlaysCss).not.toContain("26%,39%");
   });
 });
