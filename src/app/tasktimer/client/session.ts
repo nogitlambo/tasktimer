@@ -34,7 +34,7 @@ import {
   dismissNativeCheckpointAlarm,
   syncNativeCheckpointAlarms,
 } from "../lib/nativeTimerNotification";
-import { showStaticTimeGoalXpAward, startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
+import { finishTimeGoalConfetti, showStaticTimeGoalXpAward, startTimeGoalConfetti, stopTimeGoalConfetti } from "./time-goal-confetti";
 import { hasBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 import {
   getFocusDndEnabled,
@@ -604,11 +604,18 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function setTimeGoalCompleteXpSubtextVisible(visible: boolean) {
-    (els.timeGoalCompleteText as HTMLElement | null)?.classList.toggle("isXpRevealPending", !visible);
+    const text = els.timeGoalCompleteText as HTMLElement | null;
+    if (!text) return;
+    text.classList.toggle("isXpRevealPending", !visible);
+    text.classList.remove("isXpRevealDropping");
+    if (!visible) return;
+    void text.offsetWidth;
+    text.classList.add("isXpRevealDropping");
   }
 
   function revealTimeGoalCompleteXpSubtext(opts?: { playRewardSound?: boolean }) {
     clearTimeGoalCompleteXpRevealTimer();
+    finishTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
     setTimeGoalCompleteXpSubtextVisible(true);
     if (opts?.playRewardSound && ctx.getAchievementSoundsEnabled()) {
       timeGoalCompleteXpRevealPlayer.play();
@@ -1625,7 +1632,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   function setTimeGoalCompleteClaimReady(ready: boolean) {
     const button = els.timeGoalCompleteCloseBtn as HTMLButtonElement | null;
     if (!button) return;
+    const overlay = els.timeGoalCompleteOverlay as HTMLElement | null;
+    const awardedXp = Math.max(0, Math.floor(Number(overlay?.dataset.awardedXp || 0) || 0));
     button.hidden = !ready;
+    button.textContent = ready && awardedXp <= 0 ? "Close" : "Claim";
     button.classList.toggle("isClaimReady", ready);
   }
 
@@ -3033,6 +3043,14 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const awardedXp = Math.max(0, Math.floor(Number((els.timeGoalCompleteOverlay as HTMLElement | null)?.dataset.awardedXp || 0) || 0));
         await requestTimeGoalCompleteXpClaimDelivery(awardedXp);
         const task = getActiveTimeGoalModalTask();
+        if (!task && awardedXp <= 0) {
+          stopTimeGoalCompleteConfetti();
+          stopTimeGoalXpCountAudio();
+          clearTaskTimeGoalFlow(claimedTaskId);
+          ctx.setTimeGoalModalTaskId(null);
+          ctx.setTimeGoalModalFrozenElapsedMs(0);
+          return;
+        }
         const shouldExitFocusMode =
           !!task && String(task.id || "").trim() === String(ctx.getFocusModeTaskId() || "").trim();
         if (task) {

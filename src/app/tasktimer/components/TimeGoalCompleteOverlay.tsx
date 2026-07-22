@@ -23,24 +23,28 @@ function buildConfettiPieces(): ConfettiPiece[] {
 
   return Array.from({ length: 120 }, (_, index) => {
     const startX = 5 + rand() * 90;
-    const drift = -34 + rand() * 68;
-    const fallTop = 104 + rand() * 12;
-    const sway = 10 + rand() * 28;
-    const spin = Math.floor(rand() * 520 - 260);
-    const width = 4 + rand() * 13;
-    const height = 6 + rand() * 14;
-    const scale = 0.65 + rand() * 0.55;
+    const drift = -72 + rand() * 144;
+    const fallTop = 112 + rand() * 18;
+    const sway = 16 + rand() * 54;
+    const spin = Math.floor(rand() * 900 - 450);
+    const width = 3 + rand() * 22;
+    const height = 4 + rand() * 26;
+    const scale = 0.42 + rand() * 1.28;
     const opacity = 0.68 + rand() * 0.32;
-    const duration = 2.35 + rand() * 0.75;
+    const duration = 3.45 + rand() * 1.85 + scale * 0.34;
     const className = `timeGoalConfettiPiece${index % 11 === 0 ? " timeGoalConfettiStar" : index % 5 === 0 ? " timeGoalConfettiDot" : ""}`;
     return {
       className,
       style: {
         "--start-x": `${formatCssNumber(startX)}%`,
         "--drift": `${formatCssNumber(drift)}px`,
+        "--drift-a": `${formatCssNumber(drift * 0.72)}px`,
         "--fall-top": `${formatCssNumber(fallTop)}%`,
-        "--sway-a": `${formatCssNumber(sway * 0.28)}px`,
-        "--sway-b": `${formatCssNumber(sway * -0.35)}px`,
+        "--sway-a": `${formatCssNumber(sway * (rand() > 0.5 ? 0.28 : -0.28))}px`,
+        "--sway-b": `${formatCssNumber(sway * (rand() > 0.5 ? 0.64 : -0.64))}px`,
+        "--sway-c": `${formatCssNumber(sway * (rand() > 0.5 ? -0.46 : 0.46))}px`,
+        "--float-a": `${formatCssNumber(-9 - rand() * 16)}px`,
+        "--float-b": `${formatCssNumber(-3 - rand() * 12)}px`,
         "--w": `${formatCssNumber(width)}px`,
         "--h": `${formatCssNumber(height)}px`,
         "--scale": formatCssNumber(scale),
@@ -50,8 +54,10 @@ function buildConfettiPieces(): ConfettiPiece[] {
         "--rot": `${Math.floor(rand() * 360)}deg`,
         "--spin": `${spin}deg`,
         "--spin-a": `${formatCssNumber(spin * 0.18)}deg`,
-        "--spin-b": `${formatCssNumber(spin * 0.68)}deg`,
-        "--d": `${formatCssNumber(rand() * 0.9, 4)}s`,
+        "--spin-b": `${formatCssNumber(spin * 0.52)}deg`,
+        "--spin-c": `${formatCssNumber(spin * 0.78)}deg`,
+        "--spin-d": `${formatCssNumber(spin * 0.9)}deg`,
+        "--d": `${formatCssNumber(rand() * 1.08, 4)}s`,
         "--dur": `${formatCssNumber(duration, 4)}s`,
       } as CSSProperties,
     };
@@ -93,6 +99,7 @@ export default function TimeGoalCompleteOverlay() {
     <div className="overlay primitiveSciFiModalOverlay timeGoalCompletePrimitiveOverlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
       <div className="modal timeGoalCompletePrimitiveModal" role="dialog" aria-modal="true" aria-label="Task Complete">
         <div className="timeGoalCompleteConfettiStage" id="timeGoalCompleteConfettiStage" aria-hidden="true">
+          <canvas className="timeGoalCompleteConfettiCanvas" />
           {CONFETTI_PIECES.map((piece, index) => (
             <i className={piece.className} key={index} style={piece.style} />
           ))}
@@ -100,13 +107,15 @@ export default function TimeGoalCompleteOverlay() {
         <div className="timeGoalCompletePrimitiveBody">
           <div className="timeGoalCompleteRewardCard">
             <div className="timeGoalCompleteTickWrap" aria-hidden="true">
+              <span className="timeGoalCompleteStarArc">
+                <span className="timeGoalCompleteArcStar" />
+                <span className="timeGoalCompleteArcStar" />
+                <span className="timeGoalCompleteArcStar" />
+                <span className="timeGoalCompleteArcStar" />
+              </span>
               <span className="timeGoalCompleteTickBadge">
                 <span className="timeGoalCompleteTickMark" />
               </span>
-            </div>
-            <div className="timeGoalCompleteRewardEyebrows" aria-hidden="true">
-              <span>Task Reward</span>
-              <span>XP</span>
             </div>
             <h2 id="timeGoalCompleteTitle">Task Complete!</h2>
             <p className="timeGoalCompleteRewardMessage">Congratulations! You completed your task goal.</p>

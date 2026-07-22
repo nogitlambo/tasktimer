@@ -23,7 +23,6 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "TaskLaunchTimerNotification")
 public class TaskLaunchTimerNotificationPlugin extends Plugin {
     private static final String RUNNING_TIMER_CHANNEL_ID = "tasklaunch-running-timer";
-    private static final String ACTION_CLOSE_RUNNING_TIMER = "closeRunningTimerNotification";
 
     @PluginMethod
     public void showRunningTimer(PluginCall call) {
@@ -57,20 +56,10 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
         openIntent.putExtra("tasktimerActionId", "default");
         openIntent.putExtra("tasktimerNotificationId", notificationId);
 
-        Intent closeIntent = new Intent(getContext(), TaskLaunchPushActionReceiver.class);
-        closeIntent.putExtra("tasktimerNativeAction", ACTION_CLOSE_RUNNING_TIMER);
-        closeIntent.putExtra("tasktimerNotificationId", notificationId);
-
         PendingIntent openPendingIntent = PendingIntent.getActivity(
             getContext(),
             notificationId,
             openIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-        PendingIntent closePendingIntent = PendingIntent.getBroadcast(
-            getContext(),
-            notificationId + 1,
-            closeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
@@ -83,15 +72,14 @@ public class TaskLaunchTimerNotificationPlugin extends Plugin {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setSilent(true)
-            .setOngoing(true)
-            .setAutoCancel(false)
+            .setOngoing(false)
+            .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(true)
             .setWhen(chronometerBaseMs)
             .setUsesChronometer(true)
             .setChronometerCountDown(false)
-            .setContentIntent(openPendingIntent)
-            .addAction(0, "Close", closePendingIntent);
+            .setContentIntent(openPendingIntent);
 
         NotificationManagerCompat.from(getContext()).notify(notificationId, builder.build());
         TaskLaunchTimeGoalAlarmManager.cancel(getContext(), taskId);

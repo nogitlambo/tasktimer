@@ -1244,6 +1244,8 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getCheckpointAlertSoundEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertSoundEnabled")),
     getCheckpointAlertVibrationEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertVibrationEnabled")),
     getCheckpointAlertFlashEnabled: () => asType<boolean>(args.preferencesState.get("checkpointAlertFlashEnabled")),
+    getCheckpointAlertSoundMode: () =>
+      args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     ...args.editStateBindings,

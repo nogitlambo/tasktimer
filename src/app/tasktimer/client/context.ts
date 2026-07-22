@@ -375,6 +375,7 @@ export type TaskTimerTasksContext = {
   getCheckpointAlertSoundEnabled: () => boolean;
   getCheckpointAlertVibrationEnabled: () => boolean;
   getCheckpointAlertFlashEnabled: () => boolean;
+  getCheckpointAlertSoundMode: () => "once" | "repeat";
   getDynamicColorsEnabled: () => boolean;
   getRewardProgress: () => RewardProgressV1;
   getEditIndex: () => number | null;

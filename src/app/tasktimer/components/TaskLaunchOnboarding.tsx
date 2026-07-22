@@ -59,6 +59,7 @@ type TaskLaunchOnboardingProps = {
 };
 
 export type StepKey =
+  | "intro"
   | "username"
   | "greeting"
   | "chronotypeChoice"
@@ -74,6 +75,24 @@ type OnboardingTimeField = "start" | "end";
 export type ChronotypeResultPhase = "summary" | "hours";
 
 export const ONBOARDING_GREETING_SUBTEXT = "Let's set up your profile around how you work best. A few quick questions will help personalise your experience.";
+
+const ONBOARDING_INTRO_FEATURES = [
+  {
+    id: "track",
+    title: "Track time",
+    description: "Stay focused on what matters, when it matters.",
+  },
+  {
+    id: "momentum",
+    title: "Build momentum",
+    description: "Small wins every day create big change, and visible progress.",
+  },
+  {
+    id: "achieve",
+    title: "Achieve more",
+    description: "Consistency builds confidence, and boosts the reward system.",
+  },
+] as const;
 
 export const ONBOARDING_CHRONOTYPE_CHOICE_PROMPT = "Do you know your chronotype?";
 export const ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT = [
@@ -119,6 +138,7 @@ export const ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT =
   "A five-minute task may feel insignificant, but it creates something motivation rarely provides on its own: momentum. Starting small makes the next step easier.";
 
 export const ONBOARDING_STEPS: ReadonlyArray<{ key: StepKey; title: string }> = [
+  { key: "intro", title: "Intro" },
   { key: "username", title: "Username" },
   { key: "greeting", title: "Greeting" },
   { key: "chronotypeChoice", title: ONBOARDING_CHRONOTYPE_CHOICE_PROMPT },
@@ -576,6 +596,7 @@ export function onboardingTitle(
   selectedChronotypeChoiceId = "",
   selectedFirstTaskChoiceId: OnboardingFirstTaskChoiceId | "" = ""
 ) {
+  if (step === "intro") return "Intro";
   if (step === "username") return "Profile Setup";
   if (step === "greeting") return `Welcome, ${username}`;
   if (step === "chronotypeChoice") return ONBOARDING_CHRONOTYPE_CHOICE_PROMPT;
@@ -637,6 +658,7 @@ export function shouldShowOnboardingStepImage(step: StepKey) {
 
 export function shouldShowOnboardingStepSubtext(step: StepKey) {
   return (
+    step !== "intro" &&
     step !== "days" &&
     step !== "missedDaysProgress" &&
     step !== "greeting" &&
@@ -649,7 +671,7 @@ export function shouldShowOnboardingStepSubtext(step: StepKey) {
 }
 
 export function shouldShowOnboardingStepHeading(step: StepKey) {
-  return step !== "chronotypeChoice" && step !== "missedDaysProgress" && step !== "implementationIntentions";
+  return step !== "intro" && step !== "chronotypeChoice" && step !== "missedDaysProgress" && step !== "implementationIntentions";
 }
 
 export function shouldShowOnboardingBackAction(step: StepKey, stepIndex: number) {
@@ -713,7 +735,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const startTimeInputRef = useRef<HTMLInputElement | null>(null);
   const endTimeInputRef = useRef<HTMLInputElement | null>(null);
 
-  const activeStep = ONBOARDING_STEPS[stepIndex]?.key || "username";
+  const activeStep = ONBOARDING_STEPS[stepIndex]?.key || "intro";
   const isNativeRuntime = isNativeOrFileRuntime();
   const usernameValidation = usernameDraft.trim() ? validateUsername(usernameDraft) : "Username is required.";
   const usernameConfirmed = !!usernameConfirmedAtMs && normalizeUsername(usernameDraft) === normalizeUsername(username);
@@ -1278,6 +1300,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
 
   if (!open) return null;
 
+  const isIntroStep = activeStep === "intro";
   const isGreetingStep = activeStep === "greeting";
   const isChronotypeChoiceStep = activeStep === "chronotypeChoice";
   const isChronotypeSelectionStep = activeStep === "chronotypeSelection";
@@ -1285,7 +1308,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isMissedDaysProgressStep = activeStep === "missedDaysProgress";
   const isImplementationIntentionsStep = activeStep === "implementationIntentions";
   const isAnecdoteStep = isMissedDaysProgressStep || isImplementationIntentionsStep;
-  const isImageStoryStep = isChronotypeChoiceStep || isAnecdoteStep;
+  const isImageStoryStep = isIntroStep || isChronotypeChoiceStep || isAnecdoteStep;
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
   const selectedChronotypeChoiceIndex = ONBOARDING_CHRONOTYPE_OPTIONS.findIndex((option) => option.id === selectedChronotypeChoiceId);
@@ -1321,13 +1344,15 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       <div
         className={`modal${isChronotypeSelectionStep ? " onboardingChronotypeSelectionModal" : ""}${
           isChronotypeResultSummaryStep ? " onboardingChronotypeResultSummaryModal" : ""
-        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isChronotypeChoiceStep ? " onboardingChronotypeKnowledgeModal" : ""}`}
+        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isIntroStep ? " onboardingIntroModal" : ""}${
+          isChronotypeChoiceStep ? " onboardingChronotypeKnowledgeModal" : ""
+        }`}
         style={onboardingModalStyle}
         role="dialog"
         aria-modal="true"
         aria-label="TaskLaunch onboarding"
       >
-        {activeStep !== "username" && !isGreetingStep && !isChronotypeSelectionStep ? (
+        {activeStep !== "intro" && activeStep !== "username" && !isGreetingStep && !isChronotypeSelectionStep ? (
           <button className="onboardingSkipLink" type="button" onClick={() => void closeWithState("dismissed")} disabled={onboardingActionsDisabled}>
             Skip
           </button>
@@ -1349,7 +1374,64 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               aria-hidden="true"
             />
           ) : null}
-          {showStepImage && isChronotypeChoiceStep ? (
+          {showStepImage && isIntroStep ? (
+            <section className="onboardingAnecdoteCard onboardingIntroCard" aria-labelledby="onboardingIntroTitle">
+              <AppImg
+                className="onboardingChronotypePreview onboardingAnecdoteCardPreview onboardingIntroImage"
+                src="/onboarding/onboarding_welcome_clean.png"
+                alt=""
+                width={1024}
+                height={1536}
+                aria-hidden="true"
+              />
+              <div className="onboardingIntroTextOverlay">
+                <AppImg
+                  className="onboardingIntroLogo"
+                  src="/logo/logo_main.png"
+                  alt="TaskLaunch"
+                  width={2731}
+                  height={430}
+                />
+                <h2 className="onboardingIntroTitle" id="onboardingIntroTitle">
+                  Your daily productivity engine
+                </h2>
+                <div className="onboardingIntroDivider" aria-hidden="true" />
+                <div className="onboardingIntroFeatureList" aria-label="TaskLaunch features">
+                  {ONBOARDING_INTRO_FEATURES.map((feature) => (
+                    <div className="onboardingIntroFeature" key={feature.id}>
+                      <span className="onboardingIntroFeatureIcon" aria-hidden="true">
+                        {feature.id === "track" ? (
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <circle cx="12" cy="12" r="7" />
+                            <path d="M12 8v4l3 2" />
+                          </svg>
+                        ) : feature.id === "momentum" ? (
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M5 19h14" />
+                            <path d="M7 16l4-4 3 3 4-7" />
+                            <path d="M15 8h3v3" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <circle cx="12" cy="12" r="7" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 2v3" />
+                            <path d="M12 19v3" />
+                            <path d="M2 12h3" />
+                            <path d="M19 12h3" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="onboardingIntroFeatureCopy">
+                        <strong>{feature.title}</strong>
+                        <span>{feature.description}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : showStepImage && isChronotypeChoiceStep ? (
             <section className="onboardingAnecdoteCard onboardingChronotypeKnowledgeCard" aria-labelledby="onboardingChronotypeKnowledgeTitle">
               <AppImg
                 className="onboardingChronotypePreview onboardingAnecdoteCardPreview onboardingChronotypeKnowledgePreview"
@@ -2080,7 +2162,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               disabled={onboardingContinueDisabled}
               aria-hidden={onboardingContinueReservedHidden || undefined}
             >
-              {isGreetingStep ? "Let's Go!" : "Continue"}
+              {isIntroStep || isGreetingStep ? "Let's Go!" : "Continue"}
             </button>
           ) : (
             <button
@@ -2090,7 +2172,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               onClick={() => void handleFinish()}
               disabled={isOnboardingFinishDisabled(onboardingActionsDisabled)}
             >
-              Finish
+              Continue
             </button>
           )}
         </div>

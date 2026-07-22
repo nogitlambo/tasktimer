@@ -10,7 +10,8 @@ import {
 } from "../lib/timeGoalCompletion";
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTelemetryPlanTier, trackEvent } from "@/lib/firebaseTelemetry";
-import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
+import { buildNativeCheckpointSchedule } from "../lib/nativeCheckpointSchedule";
+import { clearNativeRunningTimerNotification, showNativeRunningTimerNotification, syncNativeCheckpointAlarms } from "../lib/nativeTimerNotification";
 
 type ConfirmOptions = {
   okLabel: string;
@@ -58,6 +59,9 @@ type TaskTimerLifecycleCommandAdapters = {
   getCurrentAppPage: () => string;
   getWeekStarting?: () => DashboardWeekStart;
   getAutoFocusOnTaskLaunchEnabled: () => boolean;
+  getCheckpointAlertSoundEnabled: () => boolean;
+  getCheckpointAlertVibrationEnabled?: () => boolean;
+  getCheckpointAlertSoundMode: () => "once" | "repeat";
   openFocusMode: (index: number) => void;
   save: (opts?: { forceCloudFlush?: boolean }) => void;
   render: () => void;
@@ -126,6 +130,13 @@ export function createTaskTimerLifecycleCommands(options: TaskTimerLifecycleComm
       elapsedBeforeStartMs: previousElapsedMs,
       timeGoalTriggerAtMs: getDailyTimeGoalTriggerAtMs(task, startMs, previousElapsedMs),
     }).catch(() => {});
+    void syncNativeCheckpointAlarms(buildNativeCheckpointSchedule({
+      tasks: [task],
+      soundEnabled: options.getCheckpointAlertSoundEnabled(),
+      vibrationEnabled: options.getCheckpointAlertVibrationEnabled?.() === true,
+      soundMode: options.getCheckpointAlertSoundMode(),
+      nowMs: startMs,
+    })).catch(() => {});
     options.resetCheckpointAlertTracking(task.id);
     persistTaskTimerCommand(taskId);
     void trackEvent("task_started", {

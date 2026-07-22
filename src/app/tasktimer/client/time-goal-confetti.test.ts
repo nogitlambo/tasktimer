@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  finishTimeGoalConfetti,
   formatTimeGoalAwardCountText,
   formatTimeGoalAwardText,
   formatTimeGoalXpAwardedText,
@@ -31,6 +32,42 @@ function elementStub(opts?: { closest?: HTMLElement | null }) {
       contains: (className: string) => classes.has(className),
     },
   } as unknown as HTMLElement;
+}
+
+function canvasStageStub(opts?: { canvas?: HTMLCanvasElement | null }) {
+  const stage = elementStub() as HTMLElement & { querySelector: (selector: string) => HTMLCanvasElement | null };
+  stage.querySelector = (selector: string) => (selector === ".timeGoalCompleteConfettiCanvas" ? opts?.canvas || null : null);
+  return stage;
+}
+
+function canvasStub() {
+  const context = {
+    arc: vi.fn(),
+    beginPath: vi.fn(),
+    clearRect: vi.fn(),
+    closePath: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    lineTo: vi.fn(),
+    moveTo: vi.fn(),
+    restore: vi.fn(),
+    rotate: vi.fn(),
+    save: vi.fn(),
+    setTransform: vi.fn(),
+    translate: vi.fn(),
+    globalAlpha: 1,
+    fillStyle: "",
+  };
+  const canvas = {
+    clientWidth: 320,
+    clientHeight: 240,
+    height: 0,
+    style: {} as CSSStyleDeclaration,
+    width: 0,
+    getBoundingClientRect: () => ({ width: 320, height: 240 }),
+    getContext: (contextType: string) => (contextType === "2d" ? context : null),
+  } as unknown as HTMLCanvasElement;
+  return { canvas, context };
 }
 
 describe("time goal confetti", () => {
@@ -124,6 +161,177 @@ describe("time goal confetti", () => {
 
     expect(stage.classList.contains("isPlaying")).toBe(false);
     expect(stage.dataset.confettiState).toBe("stopped");
+  });
+
+  it("starts canvas confetti when a canvas context is available", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const frames: Array<(timestamp: number) => void> = [];
+
+    expect(
+      startTimeGoalConfetti(stage, {
+        requestAnimationFrameFn: (handler) => {
+          frames.push(handler);
+          return frames.length;
+        },
+      })
+    ).toBe(true);
+
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+    expect(stage.classList.contains("hasCanvasConfetti")).toBe(true);
+    expect(stage.dataset.confettiRenderer).toBe("canvas");
+    expect(canvas.width).toBeGreaterThanOrEqual(320);
+    expect(canvas.height).toBeGreaterThanOrEqual(240);
+    expect(context.setTransform).toHaveBeenCalled();
+    expect(frames).toHaveLength(1);
+
+    frames[0]?.(16);
+
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 320, 240);
+    expect(frames).toHaveLength(2);
+  });
+
+  it("stops canvas confetti and cancels the animation frame", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const cancelAnimationFrameFn = vi.fn();
+
+    startTimeGoalConfetti(stage, {
+      requestAnimationFrameFn: () => "frame-1",
+      cancelAnimationFrameFn,
+    });
+
+    stopTimeGoalConfetti(stage);
+
+    expect(cancelAnimationFrameFn).toHaveBeenCalledWith("frame-1");
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 320, 240);
+    expect(stage.classList.contains("hasCanvasConfetti")).toBe(false);
+    expect(stage.dataset.confettiRenderer).toBeUndefined();
+    expect(stage.dataset.confettiState).toBe("stopped");
+  });
+
+  it("finishes canvas confetti without cancelling the active frame immediately", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const frames: Array<(timestamp: number) => void> = [];
+    const cancelAnimationFrameFn = vi.fn();
+
+    startTimeGoalConfetti(stage, {
+      requestAnimationFrameFn: (handler) => {
+        frames.push(handler);
+        return frames.length;
+      },
+      cancelAnimationFrameFn,
+    });
+
+    expect(finishTimeGoalConfetti(stage)).toBe(true);
+
+    expect(cancelAnimationFrameFn).not.toHaveBeenCalled();
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+    expect(stage.classList.contains("isFinishing")).toBe(true);
+    expect(stage.dataset.confettiState).toBe("finishing");
+
+    frames[0]?.(16);
+
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 320, 240);
+    expect(frames.length).toBeGreaterThan(1);
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+  });
+
+  it("removes canvas particles instead of recycling while finishing and cleans up when drained", () => {
+    const { canvas, context } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+    const frames: Array<(timestamp: number) => void> = [];
+    const cancelAnimationFrameFn = vi.fn();
+
+    startTimeGoalConfetti(stage, {
+      requestAnimationFrameFn: (handler) => {
+        frames.push(handler);
+        return frames.length;
+      },
+      cancelAnimationFrameFn,
+    });
+    finishTimeGoalConfetti(stage);
+
+    for (let index = 0; index < 220 && stage.dataset.confettiState !== "stopped"; index += 1) {
+      frames[index]?.(index * 16);
+    }
+
+    expect(stage.dataset.confettiState).toBe("stopped");
+    expect(stage.classList.contains("isPlaying")).toBe(false);
+    expect(stage.classList.contains("hasCanvasConfetti")).toBe(false);
+    expect(stage.classList.contains("isFinishing")).toBe(false);
+    expect(stage.dataset.confettiRenderer).toBeUndefined();
+    expect(context.clearRect).toHaveBeenCalledWith(0, 0, 320, 240);
+  });
+
+  it("falls back to DOM confetti when the canvas context is unavailable", () => {
+    const stage = canvasStageStub({ canvas: null });
+
+    expect(startTimeGoalConfetti(stage)).toBe(true);
+
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+    expect(stage.classList.contains("hasCanvasConfetti")).toBe(false);
+    expect(stage.dataset.confettiRenderer).toBe("dom");
+  });
+
+  it("finishes DOM fallback confetti with delayed cleanup", () => {
+    const stage = canvasStageStub({ canvas: null });
+    const scheduledHandlers: Array<() => void> = [];
+    const clearTimeoutFn = vi.fn();
+
+    startTimeGoalConfetti(stage);
+
+    expect(
+      finishTimeGoalConfetti(stage, {
+        setTimeoutFn: (handler) => {
+          scheduledHandlers.push(handler);
+          return "finish-timeout";
+        },
+        clearTimeoutFn,
+      })
+    ).toBe(true);
+
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+    expect(stage.classList.contains("isFinishing")).toBe(true);
+    expect(stage.dataset.confettiState).toBe("finishing");
+    expect(scheduledHandlers).toHaveLength(1);
+
+    scheduledHandlers[0]?.();
+
+    expect(clearTimeoutFn).toHaveBeenCalledWith("finish-timeout");
+    expect(stage.classList.contains("isPlaying")).toBe(false);
+    expect(stage.classList.contains("isFinishing")).toBe(false);
+    expect(stage.dataset.confettiState).toBe("stopped");
+    expect(stage.dataset.confettiRenderer).toBeUndefined();
+  });
+
+  it("hard-stops DOM fallback confetti and cancels delayed finish cleanup", () => {
+    const stage = canvasStageStub({ canvas: null });
+    const clearTimeoutFn = vi.fn();
+
+    startTimeGoalConfetti(stage);
+    finishTimeGoalConfetti(stage, {
+      setTimeoutFn: () => "finish-timeout",
+      clearTimeoutFn,
+    });
+    stopTimeGoalConfetti(stage);
+
+    expect(clearTimeoutFn).toHaveBeenCalledWith("finish-timeout");
+    expect(stage.classList.contains("isPlaying")).toBe(false);
+    expect(stage.classList.contains("isFinishing")).toBe(false);
+    expect(stage.dataset.confettiState).toBe("stopped");
+  });
+
+  it("keeps DOM fallback active when reduced motion prevents canvas startup", () => {
+    const { canvas } = canvasStub();
+    const stage = canvasStageStub({ canvas });
+
+    expect(startTimeGoalConfetti(stage, { matchMediaFn: () => ({ matches: true }) })).toBe(true);
+
+    expect(stage.classList.contains("isPlaying")).toBe(true);
+    expect(stage.classList.contains("hasCanvasConfetti")).toBe(false);
+    expect(stage.dataset.confettiRenderer).toBe("dom");
   });
 
   it("finds the confetti stage within the task complete overlay", () => {

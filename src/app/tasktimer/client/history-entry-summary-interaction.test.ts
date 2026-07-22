@@ -373,7 +373,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(mobile.cardInput.placeholder).toBe("Tap to add note");
   });
 
-  it("begins card note editing and turns close into cancel while exposing save-and-close only for non-empty drafts", () => {
+  it("keeps close unchanged for focus-only note editing and turns it into cancel after the draft changes", () => {
     const h = createHarness();
     const { trigger, input } = triggerStub();
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
@@ -381,6 +381,11 @@ describe("createHistoryEntrySummaryInteraction", () => {
       if (selector === ".closePopup") return h.closeBtn;
       if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
       return null;
+    });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector === "[data-history-summary-note-input]") return [input];
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? [input] : [];
+      return [];
     });
 
     expect(h.interaction.beginEdit(trigger)).toBe(true);
@@ -391,15 +396,23 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.focus).toHaveBeenCalledTimes(1);
     expect(h.closeBtn.style.display).toBe("");
     expect(h.closeBtn.hidden).toBe(false);
-    expect(h.closeBtn.textContent).toBe("Cancel");
+    expect(h.closeBtn.textContent).toBe("Close");
     expect(h.cancelBtn.hidden).toBe(true);
     expect(h.saveBtn.hidden).toBe(true);
     expect(h.cancelBtn.style.display).toBe("none");
     expect(h.saveBtn.style.display).toBe("none");
-    expect(h.saveAndCloseBtn.style.display).toBe("");
-    expect(h.saveAndCloseBtn.hidden).toBe(false);
+    expect(h.saveAndCloseBtn.style.display).toBe("none");
+    expect(h.saveAndCloseBtn.hidden).toBe(true);
     expect(input.style.height).toBe("22px");
     expect(input.style.overflowY).toBe("hidden");
+
+    input.innerHTML = "Updated note";
+    input.value = "Updated note";
+    h.interaction.syncInputMirror("Updated note");
+
+    expect(h.closeBtn.textContent).toBe("Cancel");
+    expect(h.saveAndCloseBtn.style.display).toBe("");
+    expect(h.saveAndCloseBtn.hidden).toBe(false);
   });
 
   it("uses a keyed Manager resolver to edit the intended entry when tuples are duplicated", () => {
@@ -469,6 +482,11 @@ describe("createHistoryEntrySummaryInteraction", () => {
       if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
       return null;
     });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector === "[data-history-summary-note-input]") return [input];
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? [input] : [];
+      return [];
+    });
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
     h.interaction.beginEdit(trigger);
 
@@ -499,8 +517,14 @@ describe("createHistoryEntrySummaryInteraction", () => {
       if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? input : null;
       return null;
     });
+    h.overlay.querySelectorAll.mockImplementation((selector: string) => {
+      if (selector === "[data-history-summary-note-input]") return [input];
+      if (selector === ".historyEntrySummaryNoteInput.isEditing") return input.classList.contains("isEditing") ? [input] : [];
+      return [];
+    });
     h.interaction.openSummary("task-1", [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }]);
     h.interaction.beginEdit(trigger);
+    input.innerHTML = "Draft note";
     input.value = "Draft note";
     h.interaction.syncInputMirror("Draft note");
 

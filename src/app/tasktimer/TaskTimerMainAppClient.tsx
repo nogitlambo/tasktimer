@@ -2067,26 +2067,39 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       </TaskTimerAppFrame>
 
       {activeLeaderboardMovement ? (
-        <div className="overlay standardModalOverlay" id="leaderboardMovementOverlay" style={{ display: "flex" }} onClick={closeLeaderboardMovementModal}>
+        <div
+          className="overlay primitiveSciFiModalOverlay leaderboardMovementPrimitiveOverlay"
+          id="leaderboardMovementOverlay"
+          style={{ display: "flex" }}
+          onClick={closeLeaderboardMovementModal}
+        >
           <div
-            className="modal leaderboardMovementModal"
+            className="primitiveSciFiModal leaderboardMovementModal leaderboardMovementPrimitiveModal"
             role="dialog"
             aria-modal="true"
             aria-label="Leaderboard position changed"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2>Position Changed</h2>
-            <p className="modalSubtext leaderboardMovementBoardLabel">{activeLeaderboardMovement.boardLabel}</p>
-            <p className="confirmText leaderboardMovementSummary">
-              You moved from {formatLeaderboardMovementRank(activeLeaderboardMovement.previousRank)} to{" "}
-              {formatLeaderboardMovementRank(activeLeaderboardMovement.currentRank)}.
-            </p>
-            <LeaderboardMovementTable change={activeLeaderboardMovement} />
-            <div className="confirmBtns">
-              <button className="btn btn-ghost modalPreviewSecondaryAction" type="button" onClick={closeLeaderboardMovementModal}>
+            <header className="primitiveSciFiModalHeader leaderboardMovementPrimitiveHeader">
+              <h2>Position Changed</h2>
+            </header>
+            <div className="primitiveSciFiModalBody leaderboardMovementPrimitiveBody">
+              <p className="leaderboardMovementBoardLabel">{activeLeaderboardMovement.boardLabel}</p>
+              <p className="leaderboardMovementSummary">
+                You moved from {formatLeaderboardMovementRank(activeLeaderboardMovement.previousRank)} to{" "}
+                {formatLeaderboardMovementRank(activeLeaderboardMovement.currentRank)}.
+              </p>
+              <LeaderboardMovementTable change={activeLeaderboardMovement} />
+            </div>
+            <footer className="primitiveSciFiModalFooter leaderboardMovementPrimitiveFooter">
+              <button
+                className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction leaderboardMovementPrimitiveAction leaderboardMovementPrimitiveSecondaryAction"
+                type="button"
+                onClick={closeLeaderboardMovementModal}
+              >
                 Close
               </button>
-            </div>
+            </footer>
           </div>
         </div>
       ) : null}

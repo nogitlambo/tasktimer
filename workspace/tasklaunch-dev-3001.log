@@ -1,0 +1,18 @@
+
+> tasklaunch@1.4.7 dev
+> node scripts/ensure-port-free.mjs 3000 && next dev --turbopack -p 3001
+
+[dev] Releasing port 3000 from PID 17280.
+[dev] Port 3000 is free.
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://10.2.0.2:3001
+- Environments: .env.local
+✓ Ready in 635ms
+Creating turbopack project { dir: 'G:\\Apps\\tasklaunch', testMode: true }
+
+ GET /tasklaunch/ 200 in 514ms (next.js: 181ms, application-code: 333ms)
+ GET /manifest.webmanifest 200 in 78ms (next.js: 63ms, application-code: 15ms)
+ GET /login/ 200 in 77ms (next.js: 43ms, application-code: 34ms)
+ GET /manifest.webmanifest 200 in 10ms (next.js: 4ms, application-code: 7ms)
+[?25h

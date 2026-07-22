@@ -241,7 +241,7 @@ export default function Landing(props: LandingProps) {
           className={`landingV2Header landingV2HeaderFooter ${showHeader ? "isVisible" : ""}`}
         >
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
-            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingHeaderLogo" />
+            <AppImg src="/logo/logo_main.png" alt="" className="landingHeaderLogo" />
           </Link>
 
           <div className="landingV2FooterLinks">
@@ -429,7 +429,7 @@ export default function Landing(props: LandingProps) {
 
         <footer className="landingV2Footer">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">
-            <AppImg src="/logo/tasklaunch-logo.webp" alt="" className="landingFooterLogo" />
+            <AppImg src="/logo/logo_main.png" alt="" className="landingFooterLogo" />
           </Link>
           <div className="landingV2FooterLinks">
             <Link href="/about">About</Link>

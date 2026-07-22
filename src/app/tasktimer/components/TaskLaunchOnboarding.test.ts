@@ -70,7 +70,7 @@ import {
 } from "./TaskLaunchOnboarding";
 
 describe("TaskLaunchOnboarding finish action", () => {
-  it("keeps Finish clickable unless onboarding is busy", () => {
+  it("keeps the final onboarding action clickable unless onboarding is busy", () => {
     expect(isOnboardingFinishDisabled(false)).toBe(false);
     expect(isOnboardingFinishDisabled(true)).toBe(true);
   });
@@ -86,6 +86,7 @@ describe("TaskLaunchOnboarding Continue action", () => {
 describe("TaskLaunchOnboarding steps", () => {
   it("keeps productivity hours inside the chronotype result step", () => {
     expect(ONBOARDING_STEPS.map((step) => step.key)).toEqual([
+      "intro",
       "username",
       "greeting",
       "chronotypeChoice",
@@ -101,6 +102,7 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("uses the username greeting for the standalone greeting step", () => {
+    expect(onboardingTitle("intro", "Avery")).toBe("Intro");
     expect(onboardingTitle("username", "Avery")).toBe("Profile Setup");
     expect(onboardingTitle("greeting", "Avery")).toBe("Welcome, Avery");
     expect(ONBOARDING_GREETING_SUBTEXT).toBe("Let's set up your profile around how you work best. A few quick questions will help personalise your experience.");
@@ -235,6 +237,9 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("hides image and subtext content on full-custom steps", () => {
+    expect(shouldShowOnboardingStepImage("intro")).toBe(true);
+    expect(shouldShowOnboardingStepHeading("intro")).toBe(false);
+    expect(shouldShowOnboardingStepSubtext("intro")).toBe(false);
     expect(shouldShowOnboardingStepImage("chronotypeChoice")).toBe(true);
     expect(shouldShowOnboardingStepHeading("chronotypeChoice")).toBe(false);
     expect(shouldShowOnboardingStepSubtext("chronotypeChoice")).toBe(false);
@@ -256,6 +261,7 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("routes the first-task branch page back into notifications", () => {
+    expect(onboardingNextStepIndex("intro", onboardingStepIndex("intro"))).toBe(onboardingStepIndex("username"));
     expect(onboardingNextStepIndex("chronotypeResult", onboardingStepIndex("chronotypeResult"))).toBe(onboardingStepIndex("days"));
     expect(onboardingNextStepIndexForPhase("chronotypeResult", onboardingStepIndex("chronotypeResult"), "summary")).toBe(
       onboardingStepIndex("days")
@@ -280,6 +286,7 @@ describe("TaskLaunchOnboarding steps", () => {
   });
 
   it("removes Back after the onboarding task has been added", () => {
+    expect(shouldShowOnboardingBackAction("intro", onboardingStepIndex("intro"))).toBe(false);
     expect(shouldShowOnboardingBackAction("firstTaskSelection", onboardingStepIndex("firstTaskSelection"))).toBe(true);
     expect(shouldShowOnboardingBackAction("implementationIntentions", onboardingStepIndex("implementationIntentions"))).toBe(false);
     expect(shouldShowOnboardingBackAction("push", onboardingStepIndex("push"))).toBe(false);

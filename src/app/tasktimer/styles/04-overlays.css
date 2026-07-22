@@ -3077,6 +3077,21 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   pointer-events: none;
 }
 
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
+  background:
+    radial-gradient(circle at 50% 46%, rgba(201, 255, 36, .12), transparent 0 14%, rgba(201, 255, 36, .04) 22%, transparent 56%),
+    repeating-conic-gradient(
+      from -5deg at 50% 46%,
+      rgba(201, 255, 36, .055) 0deg 7deg,
+      rgba(20, 27, 34, .02) 7deg 15deg
+    ),
+    radial-gradient(circle at 50% 46%, rgba(255, 220, 90, .08), transparent 36%),
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .05), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .06), transparent 38%);
+  opacity: .74;
+  mix-blend-mode: screen;
+}
+
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader,
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2{
@@ -4581,7 +4596,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top: 0;
   padding: 14px 0 max(14px, var(--safe-bottom));
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255,255,255,.08);
@@ -4624,7 +4639,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay .closePopup{
   order: 1;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 #historyEntryNoteOverlay[data-history-entry-editing="true"] .confirmBtns{
@@ -5158,6 +5173,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   animation: timeGoalConfettiPulse 2.4s ease-out 1 both;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiCanvas{
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 #timeGoalCompleteOverlay .timeGoalConfettiPiece{
   position: absolute;
   left: var(--start-x);
@@ -5171,15 +5195,19 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   will-change: top, transform, opacity;
 }
 
+#timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.hasCanvasConfetti .timeGoalConfettiPiece{
+  display: none;
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteConfettiStage.isPlaying .timeGoalConfettiPiece{
-  animation: timeGoalConfettiFall var(--dur, 2.8s) cubic-bezier(.28,.02,.72,1) 1 both;
+  animation: timeGoalConfettiFall var(--dur, 4.2s) cubic-bezier(.18,.02,.24,1) 1 both;
   animation-delay: var(--d);
 }
 
 #timeGoalCompleteOverlay .timeGoalConfettiDot{
   border-radius: 999px;
 }@keyframes timeGoalConfettiPulse{0%{ transform: translate(-50%,-100%); opacity:0; }12%{ opacity:.42; }52%,100%{ transform: translate(-50%, 0); opacity:0; }
-}@keyframes timeGoalConfettiFall{0%{ top:-10%; opacity:0; transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot)); }9%{ top:6%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-a)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-a))); }54%{ top:55%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-b)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-b))); }86%{ opacity:var(--alpha-end, .64); }100%{ top:var(--fall-top, 110%); opacity:0; transform: translate(calc(-50% + var(--drift)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin))); }
+}@keyframes timeGoalConfettiFall{0%{ top:-14%; opacity:0; transform: translate(-50%, -100%) scale(var(--scale, 1)) rotate(var(--rot)); }8%{ top:0; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-a)), calc(-50% + var(--float-a, -16px))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-a))); }24%{ top:14%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-b)), calc(-50% + var(--float-b, -8px))) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-b))); }48%{ top:42%; opacity:var(--alpha, .9); transform: translate(calc(-50% + var(--sway-c)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-c))); }74%{ top:78%; opacity:var(--alpha-end, .64); transform: translate(calc(-50% + var(--drift-a)), -50%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin-d))); }100%{ top:var(--fall-top, 118%); opacity:0; transform: translate(calc(-50% + var(--drift)), -35%) scale(var(--scale, 1)) rotate(calc(var(--rot) + var(--spin))); }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -6519,10 +6547,76 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   width: 150px;
   height: 112px;
   margin: -14px 0 -2px;
+  overflow: visible;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteStarArc{
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  z-index: 1;
+  width: 280px;
+  height: 86px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) rotate(-34deg);
+  transform-origin: 50% calc(50% + 220px);
+  animation: timeGoalCompleteStarArcIn 2200ms cubic-bezier(.22,.72,.18,1) 760ms both;
+  will-change: transform, opacity, filter;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--star-size, 26px);
+  height: var(--star-size, 26px);
+  opacity: 1;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, .9), rgba(255, 255, 255, .28) 16%, transparent 34%),
+    linear-gradient(135deg, #fff3a5 0%, #ffd45a 30%, #f7a921 62%, #b86b08 100%);
+  clip-path: polygon(50% 0, 61% 34%, 98% 35%, 68% 56%, 79% 91%, 50% 70%, 21% 91%, 32% 56%, 2% 35%, 39% 34%);
+  filter:
+    drop-shadow(0 0 8px rgba(255, 210, 74, .72))
+    drop-shadow(0 7px 9px rgba(0, 0, 0, .34));
+  transform:
+    translate(calc(-50% + var(--star-x, 0px)), calc(-50% + var(--star-y, 0px)))
+    rotate(var(--star-rotate, 0deg))
+    scale(1);
+  transform-origin: center;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(1){
+  --star-size: 36px;
+  --star-x: -125px;
+  --star-y: 32px;
+  --star-rotate: -17deg;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(2){
+  --star-size: 43.5px;
+  --star-x: -86px;
+  --star-y: 8px;
+  --star-rotate: -9deg;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(3){
+  --star-size: 43.5px;
+  --star-x: 86px;
+  --star-y: 8px;
+  --star-rotate: 11deg;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(4){
+  --star-size: 36px;
+  --star-x: 125px;
+  --star-y: 32px;
+  --star-rotate: 18deg;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteTickBadge{
   position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 92px;
@@ -6541,6 +6635,10 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     inset 0 -14px 24px rgba(0, 92, 14, .34),
     inset 0 14px 22px rgba(255, 255, 255, .28);
   overflow: visible;
+  opacity: 0;
+  transform-origin: center;
+  animation: timeGoalCompleteTickRubberIn 620ms cubic-bezier(.18,.92,.22,1) 80ms both;
+  will-change: transform, opacity;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteTickBadge::before{
@@ -6584,6 +6682,38 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   inset: 10px 9px 12px 9px;
   background: linear-gradient(135deg, #bfff68 0%, #7ae000 42%, #22b72c 100%);
   clip-path: polygon(0 55%, 13% 43%, 40% 63%, 84% 3%, 92% 8%, 50% 82%, 40% 88%);
+}
+
+@keyframes timeGoalCompleteStarArcIn{
+  0%{
+    opacity: 0;
+    filter:
+      drop-shadow(0 0 2px rgba(255, 210, 74, .18))
+      drop-shadow(0 7px 9px rgba(0, 0, 0, .22));
+    transform: translateX(-50%) rotate(-34deg);
+  }100%{
+    opacity: 1;
+    transform: translateX(-50%) rotate(0deg);
+  }
+}
+
+@keyframes timeGoalCompleteTickRubberIn{
+  0%{
+    opacity: 0;
+    transform: scale(.22);
+  }58%{
+    opacity: 1;
+    transform: scale(1.24);
+  }76%{
+    opacity: 1;
+    transform: scale(.92);
+  }88%{
+    opacity: 1;
+    transform: scale(1.07);
+  }100%{
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteRewardEyebrows{
@@ -6683,6 +6813,10 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   visibility: hidden;
 }
 
+#timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealDropping{
+  animation: timeGoalXpSubtextDropIn 680ms cubic-bezier(.16,.84,.18,1) 1 both;
+}
+
 #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText{
   animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
@@ -6750,18 +6884,40 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @keyframes timeGoalXpSplashText{
   0%{
     opacity: 0;
-    transform: scale(.18);
-    filter: blur(8px) brightness(1.15);
-  }34%{
+    transform: translateY(-72px) scale(.82);
+    filter: blur(7px) brightness(1.15);
+  }46%{
     opacity: 1;
-    transform: scale(1.82);
-    filter: blur(0) brightness(1.75);
-  }45%{
-    transform: scale(1.28);
-    filter: brightness(1.38);
+    transform: translateY(9px) scale(1.04);
+    filter: blur(0) brightness(1.26);
   }62%{
-    transform: scale(1.06);
-    filter: brightness(1.1);
+    transform: translateY(-5px) scale(.99);
+    filter: brightness(1.12);
+  }78%{
+    transform: translateY(2px) scale(1.01);
+    filter: brightness(1.04);
+  }100%{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: none;
+  }
+}
+
+@keyframes timeGoalXpSubtextDropIn{
+  0%{
+    opacity: 0;
+    transform: scale(2.65);
+    filter: blur(10px) brightness(1.28);
+  }46%{
+    opacity: 1;
+    transform: scale(.9);
+    filter: blur(0) brightness(1.22);
+  }62%{
+    transform: scaleX(1.08) scaleY(.9);
+    filter: brightness(1.14);
+  }78%{
+    transform: scaleX(.98) scaleY(1.04);
+    filter: brightness(1.06);
   }100%{
     opacity: 1;
     transform: scale(1);
@@ -6772,21 +6928,21 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @keyframes timeGoalXpSplashTextHold{
   0%{
     opacity: 0;
-    transform: scale(.18);
-    filter: blur(8px) brightness(1.15);
-  }34%{
+    transform: translateY(-72px) scale(1.12);
+    filter: blur(7px) brightness(1.15);
+  }46%{
     opacity: 1;
-    transform: scale(1.82);
+    transform: translateY(9px) scale(1.92);
     filter: blur(0) brightness(1.75);
-  }45%{
-    transform: scale(1.82);
-    filter: brightness(1.75);
   }62%{
-    transform: scale(1.82);
+    transform: translateY(-5px) scale(1.78);
+    filter: brightness(1.75);
+  }78%{
+    transform: translateY(2px) scale(1.84);
     filter: brightness(1.75);
   }100%{
     opacity: 1;
-    transform: scale(1.82);
+    transform: translateY(0) scale(1.82);
     filter: brightness(1.75);
   }
 }
@@ -6794,21 +6950,21 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 @keyframes timeGoalXpIntervalSplashTextHold{
   0%{
     opacity: 0;
-    transform: scale(.18);
-    filter: blur(8px) brightness(1.15);
-  }34%{
+    transform: translateY(-60px) scale(1.18);
+    filter: blur(6px) brightness(1.15);
+  }46%{
     opacity: 1;
-    transform: scale(1.82);
+    transform: translateY(7px) scale(1.9);
     filter: blur(0) brightness(1.75);
-  }45%{
-    transform: scale(1.82);
-    filter: brightness(1.75);
   }62%{
-    transform: scale(1.82);
+    transform: translateY(-4px) scale(1.79);
+    filter: brightness(1.75);
+  }78%{
+    transform: translateY(2px) scale(1.84);
     filter: brightness(1.75);
   }100%{
     opacity: 1;
-    transform: scale(1.82);
+    transform: translateY(0) scale(1.82);
     filter: brightness(1.75);
   }
 }
@@ -6876,11 +7032,26 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing #timeGoalCompleteText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText,
+  #timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealDropping,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
     animation: none;
     transform: none;
     filter: none;
+    will-change: auto;
+  }
+
+  #timeGoalCompleteOverlay .timeGoalCompleteStarArc{
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%) rotate(0deg);
+    will-change: auto;
+  }
+
+  #timeGoalCompleteOverlay .timeGoalCompleteTickBadge{
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
     will-change: auto;
   }
 
@@ -8016,14 +8187,124 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   font-weight: 700;
 }
 
+#leaderboardMovementOverlay.leaderboardMovementPrimitiveOverlay{
+  padding: max(18px, var(--safe-top)) 14px max(18px, var(--safe-bottom)) !important;
+  background:
+    radial-gradient(circle at 12% 72%, rgba(0, 229, 255, .18), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(128, 255, 64, .16), transparent 26%),
+    rgba(3, 5, 8, .72) !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveModal{
+  position: relative !important;
+  display: grid !important;
+  width: min(720px, calc(100vw - 28px)) !important;
+  min-height: min(420px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom))) !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow: hidden !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  padding: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, .2) !important;
+  border-right: 1px solid rgba(255, 255, 255, .08) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, .82) !important;
+  border-left: 1px solid rgba(255, 255, 255, .08) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .05), transparent 22%, rgba(0, 255, 255, .025) 68%, rgba(188, 255, 80, .07)),
+    #232a31 !important;
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, .7),
+    inset 0 0 0 2px rgba(8, 15, 20, .94),
+    inset 0 0 0 2px rgba(255, 255, 255, .08),
+    inset 0 1px 10px rgba(255, 255, 255, .08) !important;
+  color: #f4f7fb !important;
+  isolation: isolate !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveModal::before{
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .72),
+    inset 0 18px 38px rgba(255, 255, 255, .03);
+  pointer-events: none;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveModal::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
+  pointer-events: none;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveHeader{
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 !important;
+  padding: 10px 36px 8px;
+  border-top: 1px solid rgba(255, 255, 255, .2);
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(0, 0, 0, .82);
+  border-left: 1px solid rgba(255, 255, 255, .08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, .075) 34%, rgba(0, 0, 0, .18) 100%),
+    rgba(22, 29, 37, .96);
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .45),
+    0 2px 0 rgba(255, 255, 255, .06),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .78),
+    inset 0 -9px 16px rgba(0, 0, 0, .28);
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveHeader h2{
+  margin: 0 !important;
+  color: #f7f8fb !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .72) !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveBody{
+  min-height: 0;
+  overflow: auto;
+  padding: 34px 46px 18px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
+    rgba(8, 14, 19, .74);
+}
+
 #leaderboardMovementOverlay .leaderboardMovementBoardLabel{
   margin:0 0 6px !important;
-  text-transform:uppercase;
-  letter-spacing:.08em;
+  color: rgba(247, 250, 252, .96);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementSummary{
   margin:0 0 14px !important;
+  color: rgba(190, 198, 210, .88);
+  font-family: var(--font-readable);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTableWrap{
@@ -8105,6 +8386,105 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #leaderboardMovementOverlay .confirmBtns{
   margin-top:16px;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveFooter{
+  display: flex !important;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center !important;
+  gap: clamp(22px, 5vw, 52px) !important;
+  margin: 0 !important;
+  padding: 22px 36px 24px !important;
+  border-top: 1px solid rgba(190, 207, 218, .3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
+    rgba(12, 18, 24, .92);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, .68),
+    0 -1px 0 rgba(255, 255, 255, .05);
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction{
+  position: relative !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: min(178px, 38vw) !important;
+  min-height: 48px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 28px !important;
+  border: 4px solid #020509 !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+  color: #f7f8fb !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
+  transition:
+    filter .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:hover:not(:disabled),
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:focus-visible:not(:disabled){
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:active:not(:disabled){
+  transform: translateY(3px) !important;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:focus-visible{
+  outline: 1px solid rgba(126, 243, 255, .95) !important;
+  outline-offset: 6px !important;
+}
+
+@media (max-width: 640px){
+  #leaderboardMovementOverlay .leaderboardMovementPrimitiveModal{
+    width: min(100%, calc(100vw - 20px)) !important;
+    min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
+    border-radius: 12px !important;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementPrimitiveModal::before{
+    inset: 6px;
+    border-radius: 8px;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementPrimitiveHeader{
+    min-height: 56px;
+    padding: 9px 20px 7px !important;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementPrimitiveBody{
+    padding: 24px 24px 16px;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementPrimitiveFooter{
+    min-height: 92px;
+    padding: 20px 24px 22px !important;
+  }
 }
 
 @media (max-width: 520px){
@@ -9149,8 +9529,134 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   aspect-ratio: 969 / 1624;
 }
 
+#onboardingOverlay .onboardingChronotypePreview.onboardingIntroImage{
+  animation: none !important;
+  aspect-ratio: 2 / 3;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  object-fit: contain;
+  object-position: center center;
+  transform: none !important;
+}
+
+#onboardingOverlay .onboardingIntroCard{
+  background: #000;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#onboardingOverlay .onboardingIntroCard::before{
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 48%, rgba(0, 0, 0, .18) 64%, rgba(0, 0, 0, .58) 100%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
 #onboardingOverlay .onboardingStartImageCard::before{
   content: none;
+}
+
+#onboardingOverlay .onboardingIntroTextOverlay{
+  bottom: clamp(130px, 18dvh, 168px);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  left: clamp(42px, 7vw, 74px);
+  pointer-events: none;
+  position: absolute;
+  right: clamp(42px, 7vw, 74px);
+  top: clamp(74px, 9dvh, 112px);
+  z-index: 2;
+}
+
+#onboardingOverlay .onboardingIntroLogo{
+  display: block;
+  height: auto;
+  margin: 0 auto clamp(54px, 8dvh, 88px);
+  max-width: min(76%, 500px);
+  object-fit: contain;
+  width: 100%;
+}
+
+#onboardingOverlay .onboardingIntroTitle{
+  color: #fff !important;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.24 !important;
+  margin: 0 0 22px !important;
+  max-width: 12ch;
+  text-align: left !important;
+}
+
+#onboardingOverlay .onboardingIntroDivider{
+  background: linear-gradient(90deg, #b2ff00 0%, rgba(178, 255, 0, .72) 48%, transparent 100%);
+  height: 2px;
+  margin: 0 0 64px;
+  max-width: 180px;
+  width: min(50%, 180px);
+}
+
+#onboardingOverlay .onboardingIntroFeatureList{
+  display: grid;
+  gap: clamp(22px, 4dvh, 34px);
+  margin-top: 0;
+  max-width: 270px;
+}
+
+#onboardingOverlay .onboardingIntroFeature{
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
+#onboardingOverlay .onboardingIntroFeatureIcon{
+  align-items: center;
+  border: 1px solid rgba(178, 255, 0, .94);
+  border-radius: 999px;
+  color: #b2ff00;
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+#onboardingOverlay .onboardingIntroFeatureIcon svg{
+  display: block;
+  fill: none;
+  height: 28px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 28px;
+}
+
+#onboardingOverlay .onboardingIntroFeatureCopy{
+  color: rgba(255, 255, 255, .92);
+  display: grid;
+  font-family: var(--font-readable);
+  gap: 5px;
+  line-height: 1.36;
+  text-align: left;
+}
+
+#onboardingOverlay .onboardingIntroFeatureCopy strong{
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+#onboardingOverlay .onboardingIntroFeatureCopy span{
+  color: rgba(255, 255, 255, .84);
+  font-size: 14px;
 }
 
 #onboardingOverlay .onboardingStartImageTextOverlay{
@@ -9200,13 +9706,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingAnecdoteCard::before{
-  background:
-    linear-gradient(180deg, rgba(1, 8, 10, .82) 0%, rgba(1, 8, 10, .62) 34%, rgba(1, 8, 10, .16) 68%, rgba(1, 8, 10, .42) 100%);
-  content: "";
-  inset: 0;
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
+  content: none;
 }
 
 #onboardingOverlay .onboardingAnecdoteCard .onboardingAnecdoteCardPreview{
@@ -9242,9 +9742,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingChronotypeKnowledgeCard::before{
-  background:
-    linear-gradient(180deg, rgba(1, 8, 10, .34) 0%, rgba(1, 8, 10, .1) 46%, rgba(1, 8, 10, .48) 100%),
-    linear-gradient(90deg, rgba(1, 8, 10, .5) 0%, rgba(1, 8, 10, .18) 58%, rgba(1, 8, 10, .08) 100%);
+  content: none;
 }
 
 #onboardingOverlay .modal.onboardingChronotypeKnowledgeModal{
@@ -9270,6 +9768,25 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   object-fit: cover;
   object-position: center center;
   width: 100%;
+}
+
+@media (max-width: 520px){
+  #onboardingOverlay .modal.onboardingChronotypeKnowledgeModal{
+    height: auto;
+    max-height: min(92dvh, 760px);
+    width: min(100vw - 28px, calc(min(92dvh, 760px) * 2 / 3));
+  }
+
+  #onboardingOverlay .modal.onboardingChronotypeKnowledgeModal .onboardingChronotypeKnowledgeCard{
+    aspect-ratio: 1024 / 1536;
+    height: auto;
+    position: relative;
+  }
+
+  #onboardingOverlay .modal.onboardingChronotypeKnowledgeModal .onboardingChronotypeKnowledgePreview{
+    height: auto;
+    object-fit: contain;
+  }
 }
 
 #onboardingOverlay .onboardingChronotypeKnowledgeTextOverlay{
@@ -9309,6 +9826,27 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   z-index: 4;
 }
 
+#onboardingOverlay .modal.onboardingIntroModal .onboardingActions{
+  bottom: clamp(36px, 6.3dvh, 48px);
+}
+
+#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn{
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
+  color: #0d0f13 !important;
+  min-height: clamp(54px, 8.3dvh, 74px);
+  text-shadow: none !important;
+}
+
+#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn:hover,
+#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn:focus-visible{
+  background: #d9ff4d !important;
+  border-color: #d9ff4d !important;
+  color: #0d0f13 !important;
+  outline: none;
+}
+
 @media (min-width: 521px){
   #onboardingOverlay .modal.onboardingAnecdoteModal{
     left: auto;
@@ -9325,6 +9863,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     object-fit: cover;
     object-position: center center;
     width: 100%;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal{
+    height: min(92dvh, 760px);
+    max-height: min(92dvh, 760px);
+    max-width: min(100vw - 28px, var(--onboarding-desktop-content-width)) !important;
+    width: min(100vw - 28px, var(--onboarding-desktop-content-width)) !important;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroImage{
+    object-fit: contain;
   }
 }
 
@@ -11860,6 +12409,23 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
 }
 
+#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]{
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
+  color: #0d0f13 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:hover:not(:disabled),
+#onboardingOverlay .modal.onboardingIntroModal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
+  background: #d9ff4d !important;
+  border-color: #d9ff4d !important;
+  color: #0d0f13 !important;
+}
+
 #onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:hover:not(:disabled),
 #onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
   filter: brightness(1.12) !important;
@@ -11945,6 +12511,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     width: 100vw !important;
   }
 
+  #onboardingOverlay .modal.onboardingIntroModal{
+    align-self: stretch;
+    height: 100dvh !important;
+    inset: 0 !important;
+    max-height: none !important;
+    max-width: none !important;
+    min-height: 100dvh !important;
+    position: fixed !important;
+    width: 100vw !important;
+  }
+
   #onboardingOverlay .modal.onboardingAnecdoteModal > .onboardingContentAnecdote{
     inset: 0 !important;
     height: 100% !important;
@@ -11954,10 +12531,22 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     width: 100% !important;
   }
 
+  #onboardingOverlay .modal.onboardingIntroModal > .onboardingContentAnecdote{
+    aspect-ratio: auto;
+    height: 100% !important;
+    max-height: none !important;
+    position: absolute !important;
+  }
+
   #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingAnecdoteCard{
     height: 100%;
     margin: 0;
     width: 100%;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingAnecdoteCard{
+    aspect-ratio: auto;
+    height: 100%;
   }
 
   #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingAnecdoteCardPreview{
@@ -11967,6 +12556,68 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     object-fit: contain;
     object-position: center center;
     width: 100%;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroImage{
+    animation: none !important;
+    aspect-ratio: auto;
+    filter: none !important;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    opacity: 1 !important;
+    transform: none !important;
+    width: 100%;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroTextOverlay{
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+    left: clamp(28px, 8vw, 40px);
+    right: clamp(28px, 8vw, 40px);
+    top: calc(env(safe-area-inset-top, 0px) + 48px);
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroLogo{
+    margin-bottom: clamp(44px, 7dvh, 60px);
+    max-width: min(78%, 320px);
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroTitle{
+    font-size: 32px !important;
+    line-height: 1.24 !important;
+    margin-bottom: 22px !important;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroDivider{
+    margin-bottom: 64px;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeatureList{
+    gap: clamp(18px, 3.8dvh, 28px);
+    max-width: 248px;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeature{
+    gap: 14px;
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeatureIcon{
+    height: 44px;
+    width: 44px;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeatureIcon svg{
+    height: 25px;
+    width: 25px;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeatureCopy strong{
+    font-size: 16px;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroFeatureCopy span{
+    font-size: 13px;
   }
 
   #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingStartImagePreview{
@@ -12052,6 +12703,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     right: clamp(16px, 5vw, 28px);
     width: auto !important;
     z-index: 4;
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingActions{
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(18px, 4dvh, 30px));
+    left: clamp(24px, 8vw, 48px);
+    position: fixed;
+    right: clamp(24px, 8vw, 48px);
+  }
+
+  #onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn{
+    min-height: clamp(44px, 7.4dvh, 60px);
   }
 
   #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingActions [data-onboarding-back-action="true"]{
@@ -12188,16 +12850,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
   #onboardingOverlay .onboardingActions{
     align-items: center;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
     flex-direction: column-reverse;
     flex-wrap: nowrap !important;
     gap: 8px !important;
     justify-content: center !important;
-    position: sticky;
-    z-index: 3;
-    bottom: 0;
+    left: clamp(16px, 5vw, 28px);
     flex: 0 0 auto;
-    margin-top: 0;
-    padding: 12px 0 calc(14px + var(--safe-bottom));
+    margin: 0 !important;
+    padding: 0;
+    position: fixed;
+    right: clamp(16px, 5vw, 28px);
+    width: auto !important;
+    z-index: 4;
     background: transparent;
     box-shadow: none;
   }
@@ -12751,7 +13416,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
   --history-entry-summary-body-pad: 46px;
   margin: 0 !important;
-  padding: 46px !important;
+  padding: 0 46px !important;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
     rgba(8, 14, 19, .74) !important;
@@ -12877,7 +13542,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor{
     --history-entry-summary-body-pad: 22px;
-    padding: 22px 22px 16px !important;
+    padding: 0 22px !important;
   }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter{

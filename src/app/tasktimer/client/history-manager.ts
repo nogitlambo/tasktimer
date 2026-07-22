@@ -900,8 +900,12 @@ export function createTaskTimerHistoryManager(ctx: TaskTimerHistoryManagerContex
         if (!closeBtn) return;
         const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
         if (!overlay || overlay.dataset.historyEntryOwner !== "manager") return;
-        if (overlay.dataset.historyEntryEditing === "true") {
+        if (overlay.dataset.historyEntryEditing === "true" && historyEntrySummaryInteraction.hasChangedNoteDraft()) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation?.();
           historyEntrySummaryInteraction.discardDraft();
+          return;
         }
         ctx.closeOverlay(overlay);
       },

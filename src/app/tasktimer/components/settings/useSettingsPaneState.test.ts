@@ -19,6 +19,6 @@ describe("settings navigation", () => {
   it("includes Profile in the desktop nav list", () => {
     const labels = getVisibleSettingsNavItems(true).map((item) => item.label);
 
-    expect(labels).toEqual(["Preferences", "Profile", "Appearance", "Sounds & Alerts", "Notifications", "Help Center", "Data", "About"]);
+    expect(labels).toEqual(["Profile", "Preferences", "Appearance", "Sounds & Alerts", "Notifications", "Help Center", "Data", "About"]);
   });
 });

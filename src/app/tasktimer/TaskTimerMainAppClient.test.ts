@@ -73,8 +73,8 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(frameCloseIndex).toBeGreaterThan(-1);
     expect(overlayIndex).toBeGreaterThan(-1);
     expect(overlayIndex).toBeGreaterThan(frameCloseIndex);
-    expect(source).toContain('className="overlay standardModalOverlay"');
-    expect(source).toContain('className="modal leaderboardMovementModal"');
+    expect(source).toContain('className="overlay primitiveSciFiModalOverlay leaderboardMovementPrimitiveOverlay"');
+    expect(source).toContain('className="primitiveSciFiModal leaderboardMovementModal leaderboardMovementPrimitiveModal"');
   });
 
   it("queues leaderboard movements and blocks them behind XP and rank UI", () => {

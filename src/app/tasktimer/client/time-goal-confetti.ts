@@ -1,4 +1,4 @@
-export const TIME_GOAL_CONFETTI_DURATION_MS = 2700;
+export const TIME_GOAL_CONFETTI_DURATION_MS = 3800;
 export const TIME_GOAL_XP_SPLASH_TEXT_DURATION_MS = 1050;
 export const TIME_GOAL_XP_COUNT_SMALL_DURATION_MS = 500;
 export const TIME_GOAL_XP_COUNT_MEDIUM_DURATION_MS = 1500;
@@ -16,6 +16,7 @@ type TimeoutFn = (handler: () => void, timeout: number) => unknown;
 type ClearTimeoutFn = (handle: unknown) => void;
 type AnimationFrameFn = (handler: (timestamp: number) => void) => unknown;
 type CancelAnimationFrameFn = (handle: unknown) => void;
+type MatchMediaFn = (query: string) => { matches: boolean };
 
 type XpCountAnimation = {
   timeoutHandle: unknown | null;
@@ -26,6 +27,57 @@ type XpCountAnimation = {
 };
 
 const xpCountAnimations = new WeakMap<HTMLElement, XpCountAnimation>();
+
+type ConfettiShape = "rect" | "circle" | "triangle";
+
+type CanvasConfettiParticle = {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  shape: ConfettiShape;
+  rotation: number;
+  rotSpeed: number;
+  vy: number;
+  vx: number;
+  swing: number;
+  swingSpeed: number;
+  swingPhase: number;
+  opacity: number;
+};
+
+type CanvasConfettiAnimation = {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  frameHandle: unknown | null;
+  requestAnimationFrameFn: AnimationFrameFn;
+  cancelAnimationFrameFn: CancelAnimationFrameFn;
+  particles: CanvasConfettiParticle[];
+  tickCount: number;
+  width: number;
+  height: number;
+  dpr: number;
+  finishing: boolean;
+};
+
+const canvasConfettiAnimations = new WeakMap<HTMLElement, CanvasConfettiAnimation>();
+const domConfettiFinishTimers = new WeakMap<HTMLElement, { timeoutHandle: unknown; clearTimeoutFn: ClearTimeoutFn }>();
+const TIME_GOAL_CONFETTI_CANVAS_COLORS = ["#9FE300", "#6EC001", "#F5B94A", "#F4F6F2", "#3E9C8E"] as const;
+const TIME_GOAL_CONFETTI_CANVAS_SHAPES = ["rect", "circle", "triangle"] as const;
+const TIME_GOAL_CONFETTI_CANVAS_COUNT = 160;
+const TIME_GOAL_CONFETTI_DOM_FINISH_MS = 6500;
+
+function createSeededRandom(seedValue = 91) {
+  let seed = seedValue;
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+function randRange(rand: () => number, min: number, max: number) {
+  return rand() * (max - min) + min;
+}
 
 function getTimeGoalXpFx(text: HTMLElement | null | undefined) {
   return (text?.closest(".timeGoalCompleteXpFx") as HTMLElement | null) || text || null;
@@ -139,21 +191,236 @@ export function getTimeGoalXpCueDelaysMs(awardedXp: number): number[] {
   return TIME_GOAL_XP_CUE_DELAYS_MS.filter((delayMs) => delayMs <= durationMs);
 }
 
-export function startTimeGoalConfetti(stage: HTMLElement | null | undefined) {
+function defaultMatchMediaFn(query: string) {
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") return window.matchMedia(query);
+  return { matches: false };
+}
+
+function getTimeGoalConfettiCanvas(stage: HTMLElement) {
+  return (stage.querySelector?.(".timeGoalCompleteConfettiCanvas") as HTMLCanvasElement | null) || null;
+}
+
+function resizeTimeGoalConfettiCanvas(active: CanvasConfettiAnimation) {
+  const rect = active.canvas.getBoundingClientRect?.();
+  const width = Math.max(1, Math.floor(Number(rect?.width || active.canvas.clientWidth || 0) || 0));
+  const height = Math.max(1, Math.floor(Number(rect?.height || active.canvas.clientHeight || 0) || 0));
+  const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+  if (active.width === width && active.height === height && active.dpr === dpr) return;
+  active.width = width;
+  active.height = height;
+  active.dpr = dpr;
+  active.canvas.width = width * dpr;
+  active.canvas.height = height * dpr;
+  active.canvas.style.width = `${width}px`;
+  active.canvas.style.height = `${height}px`;
+  active.context.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function makeTimeGoalCanvasParticle(rand: () => number, width: number, height: number, burst: boolean): CanvasConfettiParticle {
+  return {
+    x: randRange(rand, 0, width),
+    y: burst ? randRange(rand, -height * 0.4, -10) : randRange(rand, -height, 0),
+    size: randRange(rand, 6, 12),
+    color: TIME_GOAL_CONFETTI_CANVAS_COLORS[Math.floor(rand() * TIME_GOAL_CONFETTI_CANVAS_COLORS.length)] || "#9FE300",
+    shape: TIME_GOAL_CONFETTI_CANVAS_SHAPES[Math.floor(rand() * TIME_GOAL_CONFETTI_CANVAS_SHAPES.length)] || "rect",
+    rotation: randRange(rand, 0, Math.PI * 2),
+    rotSpeed: randRange(rand, -0.06, 0.06),
+    vy: randRange(rand, 1.6, 3.4),
+    vx: randRange(rand, -0.6, 0.6),
+    swing: randRange(rand, 0.6, 1.6),
+    swingSpeed: randRange(rand, 0.01, 0.025),
+    swingPhase: randRange(rand, 0, Math.PI * 2),
+    opacity: randRange(rand, 0.85, 1),
+  };
+}
+
+function seedTimeGoalCanvasParticles(active: CanvasConfettiAnimation) {
+  const rand = createSeededRandom(91);
+  active.particles = Array.from({ length: TIME_GOAL_CONFETTI_CANVAS_COUNT }, () =>
+    makeTimeGoalCanvasParticle(rand, active.width, active.height, true)
+  );
+}
+
+function completeTimeGoalCanvasConfetti(stage: HTMLElement, active: CanvasConfettiAnimation) {
+  if (active.frameHandle != null) active.cancelAnimationFrameFn(active.frameHandle);
+  active.frameHandle = null;
+  active.context.clearRect(0, 0, active.width, active.height);
+  canvasConfettiAnimations.delete(stage);
+  stage.classList.remove("isPlaying");
+  stage.classList.remove("hasCanvasConfetti");
+  stage.classList.remove("isFinishing");
+  if (stage.dataset.confettiRenderer === "canvas") delete stage.dataset.confettiRenderer;
+  stage.dataset.confettiState = "stopped";
+}
+
+function drawTimeGoalCanvasParticle(context: CanvasRenderingContext2D, particle: CanvasConfettiParticle) {
+  context.save();
+  context.translate(particle.x, particle.y);
+  context.rotate(particle.rotation);
+  context.globalAlpha = particle.opacity;
+  context.fillStyle = particle.color;
+  if (particle.shape === "rect") {
+    context.fillRect(-particle.size / 2, -particle.size / 3.2, particle.size, particle.size / 1.6);
+  } else if (particle.shape === "circle") {
+    context.beginPath();
+    context.arc(0, 0, particle.size / 2.4, 0, Math.PI * 2);
+    context.fill();
+  } else {
+    context.beginPath();
+    context.moveTo(0, -particle.size / 2);
+    context.lineTo(particle.size / 2, particle.size / 2);
+    context.lineTo(-particle.size / 2, particle.size / 2);
+    context.closePath();
+    context.fill();
+  }
+  context.restore();
+}
+
+function startTimeGoalCanvasConfetti(
+  stage: HTMLElement,
+  opts?: {
+    requestAnimationFrameFn?: AnimationFrameFn;
+    cancelAnimationFrameFn?: CancelAnimationFrameFn;
+    matchMediaFn?: MatchMediaFn;
+  }
+) {
+  const matchMediaFn = opts?.matchMediaFn || defaultMatchMediaFn;
+  if (matchMediaFn("(prefers-reduced-motion: reduce)").matches) return false;
+  const canvas = getTimeGoalConfettiCanvas(stage);
+  const context = canvas?.getContext?.("2d");
+  if (!canvas || !context) return false;
+  stopTimeGoalCanvasConfetti(stage);
+  const active: CanvasConfettiAnimation = {
+    canvas,
+    context,
+    frameHandle: null,
+    requestAnimationFrameFn: opts?.requestAnimationFrameFn || defaultRequestAnimationFrameFn,
+    cancelAnimationFrameFn: opts?.cancelAnimationFrameFn || defaultCancelAnimationFrameFn,
+    particles: [],
+    tickCount: 0,
+    width: 0,
+    height: 0,
+    dpr: 0,
+    finishing: false,
+  };
+  resizeTimeGoalConfettiCanvas(active);
+  seedTimeGoalCanvasParticles(active);
+  canvasConfettiAnimations.set(stage, active);
+  stage.classList.add("hasCanvasConfetti");
+  stage.dataset.confettiRenderer = "canvas";
+  const rand = createSeededRandom(811);
+  const tick = () => {
+    if (canvasConfettiAnimations.get(stage) !== active) return;
+    resizeTimeGoalConfettiCanvas(active);
+    active.context.clearRect(0, 0, active.width, active.height);
+    active.tickCount += 1;
+    for (const particle of active.particles) {
+      particle.y += particle.vy;
+      particle.x += particle.vx + Math.sin(active.tickCount * particle.swingSpeed + particle.swingPhase) * particle.swing * 0.05;
+      particle.rotation += particle.rotSpeed;
+      if (particle.y > active.height + 20 && active.finishing) {
+        continue;
+      }
+      if (particle.y > active.height + 20) {
+        Object.assign(particle, makeTimeGoalCanvasParticle(rand, active.width, active.height, false));
+        particle.y = -20;
+      }
+      drawTimeGoalCanvasParticle(active.context, particle);
+    }
+    if (active.finishing) {
+      active.particles = active.particles.filter((particle) => particle.y <= active.height + 20);
+      if (active.particles.length <= 0) {
+        completeTimeGoalCanvasConfetti(stage, active);
+        return;
+      }
+    }
+    active.frameHandle = active.requestAnimationFrameFn(tick);
+  };
+  active.frameHandle = active.requestAnimationFrameFn(tick);
+  return true;
+}
+
+function stopTimeGoalCanvasConfetti(stage: HTMLElement | null | undefined) {
+  if (!stage) return;
+  const active = canvasConfettiAnimations.get(stage);
+  if (!active) return;
+  completeTimeGoalCanvasConfetti(stage, active);
+}
+
+function clearDomConfettiFinishTimer(stage: HTMLElement | null | undefined) {
+  if (!stage) return;
+  const active = domConfettiFinishTimers.get(stage);
+  if (!active) return;
+  active.clearTimeoutFn(active.timeoutHandle);
+  domConfettiFinishTimers.delete(stage);
+}
+
+function completeTimeGoalDomConfetti(stage: HTMLElement) {
+  clearDomConfettiFinishTimer(stage);
+  stage.classList.remove("isPlaying");
+  stage.classList.remove("isFinishing");
+  stage.dataset.confettiState = "stopped";
+  if (stage.dataset.confettiRenderer === "dom") delete stage.dataset.confettiRenderer;
+}
+
+export function startTimeGoalConfetti(
+  stage: HTMLElement | null | undefined,
+  opts?: {
+    requestAnimationFrameFn?: AnimationFrameFn;
+    cancelAnimationFrameFn?: CancelAnimationFrameFn;
+    matchMediaFn?: MatchMediaFn;
+  }
+) {
   if (!stage) return false;
   if (stage.dataset.confettiState === "playing") return false;
+  clearDomConfettiFinishTimer(stage);
+  stopTimeGoalCanvasConfetti(stage);
   stage.classList.remove("isPlaying");
+  stage.classList.remove("isFinishing");
   stage.dataset.confettiState = "stopped";
   void stage.offsetWidth;
   stage.classList.add("isPlaying");
   stage.dataset.confettiState = "playing";
+  if (!startTimeGoalCanvasConfetti(stage, opts)) {
+    stage.classList.remove("hasCanvasConfetti");
+    stage.dataset.confettiRenderer = "dom";
+  }
   return true;
 }
 
 export function stopTimeGoalConfetti(stage: HTMLElement | null | undefined) {
   if (!stage) return;
+  clearDomConfettiFinishTimer(stage);
+  stopTimeGoalCanvasConfetti(stage);
   stage.classList.remove("isPlaying");
+  stage.classList.remove("isFinishing");
   stage.dataset.confettiState = "stopped";
+  if (stage.dataset.confettiRenderer === "dom") delete stage.dataset.confettiRenderer;
+}
+
+export function finishTimeGoalConfetti(
+  stage: HTMLElement | null | undefined,
+  opts?: {
+    setTimeoutFn?: TimeoutFn;
+    clearTimeoutFn?: ClearTimeoutFn;
+  }
+) {
+  if (!stage || stage.dataset.confettiState !== "playing") return false;
+  const activeCanvas = canvasConfettiAnimations.get(stage);
+  stage.classList.add("isFinishing");
+  stage.dataset.confettiState = "finishing";
+  if (activeCanvas) {
+    activeCanvas.finishing = true;
+    return true;
+  }
+  clearDomConfettiFinishTimer(stage);
+  const setTimeoutFn = opts?.setTimeoutFn || defaultSetTimeoutFn;
+  const clearTimeoutFn = opts?.clearTimeoutFn || defaultClearTimeoutFn;
+  const timeoutHandle = setTimeoutFn(() => {
+    completeTimeGoalDomConfetti(stage);
+  }, TIME_GOAL_CONFETTI_DOM_FINISH_MS);
+  domConfettiFinishTimers.set(stage, { timeoutHandle, clearTimeoutFn });
+  return true;
 }
 
 export function getTimeGoalConfettiStage(overlay: HTMLElement | null | undefined) {

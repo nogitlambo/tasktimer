@@ -7,6 +7,7 @@ import {
 import {
   getRichNoteEditorValue,
   richNoteHasMeaningfulText,
+  sanitizeRichNoteHtml,
   setRichNoteEditorValue,
 } from "./rich-session-notes";
 import { captureXpAwardRectSnapshot, dispatchTimeGoalCompleteXpReplayEvent } from "./xp-award-events";
@@ -221,6 +222,17 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       .filter((draft): draft is HistoryEntrySummaryNoteDraft => !!draft);
   }
 
+  function hasChangedNoteDraft() {
+    return getEditedInputs().some((input) => {
+      if (input.dataset.historySummaryDraftChanged === "true") return true;
+      const identity = readDraftIdentity(input);
+      if (!identity) return false;
+      const savedNote = String(input.dataset.historySummarySavedNote || "").trim();
+      const draftNote = getRichNoteEditorValue(input).trim();
+      return draftNote !== savedNote;
+    });
+  }
+
   function collapseActiveInlineNoteInput() {
     const input = getActiveInput();
     if (!input) return false;
@@ -243,10 +255,12 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const saveAndCloseBtn = elements.saveAndCloseBtn;
     const closeBtn = getCloseButton();
     if (!overlay || !saveAndCloseBtn) return;
+    const hasChangedDraft = hasChangedNoteDraft();
     const shouldShowSaveAndClose = overlay.dataset.historyEntryOwner === "inline"
       && overlay.dataset.historyEntryEditing === "true"
+      && hasChangedDraft
       && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
-    if (closeBtn) closeBtn.textContent = overlay.dataset.historyEntryEditing === "true" ? "Cancel" : "Close";
+    if (closeBtn) closeBtn.textContent = overlay.dataset.historyEntryEditing === "true" && hasChangedDraft ? "Cancel" : "Close";
     setButtonVisible(saveAndCloseBtn, shouldShowSaveAndClose);
   }
 
@@ -435,6 +449,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       delete input.dataset.historySummaryMs;
       delete input.dataset.historySummaryName;
       delete input.dataset.historySummarySavedNote;
+      delete input.dataset.historySummaryDraftChanged;
       resetInlineNoteAutosize(input);
     });
     syncEditorUi(false);
@@ -449,8 +464,13 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
 
   function syncInputMirror(value: string) {
     const nextValue = String(value || "");
+    const activeInput = getActiveInput();
+    if (activeInput) {
+      const savedNote = String(activeInput.dataset.historySummarySavedNote || "").trim();
+      activeInput.dataset.historySummaryDraftChanged = sanitizeRichNoteHtml(nextValue).trim() !== savedNote ? "true" : "false";
+    }
     if (elements.input) setRichNoteEditorValue(elements.input, nextValue);
-    autosizeInlineNoteInput(getActiveInput());
+    autosizeInlineNoteInput(activeInput);
     syncCloseLabel();
   }
 
@@ -489,6 +509,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     beginEdit,
     cancelEdit,
     discardDraft,
+    hasChangedNoteDraft,
     getActiveInputValue,
     getEditedNoteDrafts,
     collapseActiveInlineNoteInput,

@@ -1045,6 +1045,28 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("closes a zero-XP completion modal even when no active task is bound", async () => {
+    const harness = createCompletionHarness();
+
+    try {
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "0";
+
+      await harness.triggerTimeGoalCompleteClose();
+
+      expect(harness.windowStub.dispatchEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+        })
+      );
+      expect(harness.resetTaskStateImmediate).not.toHaveBeenCalled();
+      expect(harness.closeOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteCloseBtn.disabled).toBe(false);
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("does not start checkpoint flash when flash alerts are disabled", () => {
     const harness = createCompletionHarness({
       withCheckpoint: true,
@@ -1254,6 +1276,7 @@ describe("task timer session tick", () => {
       expect(harness.timeGoalCompleteXpValue.textContent).toBe("0");
       expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.textContent).toBe("Close");
       harness.audioPlay.mockClear();
 
       vi.advanceTimersByTime(1050);
@@ -1262,6 +1285,7 @@ describe("task timer session tick", () => {
       expect(harness.timeGoalCompleteXpValue.textContent).toBe("0");
       expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
+      expect(harness.timeGoalCompleteCloseBtn.textContent).toBe("Close");
       expect(harness.timeGoalCompleteCloseBtn.classList.contains("isClaimReady")).toBe(true);
       expect(harness.audioPlay).not.toHaveBeenCalled();
       expect(harness.timeGoalCompleteText.classList.contains("isIntervalSplashing")).toBe(false);
@@ -2312,6 +2336,24 @@ describe("task timer session tick", () => {
     expect(progressRule).not.toContain("50% - var(--focus-inner-inset)");
     expect(progressRule).not.toContain("transparent 69%, #fff 70%, #fff 89%, transparent 90%");
     expect(progressRule).not.toContain("transparent 78%, #000 79%, #000 88%, transparent 89%");
+  });
+
+  it("lets task-complete confetti finish before revealing the XP award text", () => {
+    const source = readFileSync("src/app/tasktimer/client/session.ts", "utf8").replace(/\r\n/g, "\n");
+    const revealHelper = source.match(/function revealTimeGoalCompleteXpSubtext\(opts\?: \{ playRewardSound\?: boolean \}\) \{[\s\S]*?\n  \}/)?.[0] ?? "";
+
+    expect(revealHelper).not.toBe("");
+    expect(source).toContain("import { finishTimeGoalConfetti,");
+    expect(revealHelper.indexOf("clearTimeGoalCompleteXpRevealTimer();")).toBeGreaterThan(-1);
+    expect(revealHelper.indexOf("finishTimeGoalConfetti(")).toBeGreaterThan(
+      revealHelper.indexOf("clearTimeGoalCompleteXpRevealTimer();")
+    );
+    expect(revealHelper.indexOf("finishTimeGoalConfetti(")).toBeLessThan(
+      revealHelper.indexOf("setTimeGoalCompleteXpSubtextVisible(true);")
+    );
+    expect(revealHelper).not.toContain("stopTimeGoalCompleteConfetti();");
+    expect(source).toContain('text.classList.remove("isXpRevealDropping");');
+    expect(source).toContain('text.classList.add("isXpRevealDropping");');
   });
 
   it("keeps Focus Mode dial stopped, running, and progress states visually distinct", () => {

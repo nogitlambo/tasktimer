@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const TIMER_NOTIFICATION_CACHE_KEY = "__taskLaunchTimerNotificationPlugin";
+const androidTimerNotificationPluginPath = resolve(
+  process.cwd(),
+  "android/app/src/main/java/com/tasklaunch/app/TaskLaunchTimerNotificationPlugin.java",
+);
 
 function clearTimerNotificationPluginCache() {
   delete (globalThis as typeof globalThis & Record<string, unknown>)[TIMER_NOTIFICATION_CACHE_KEY];
@@ -162,5 +168,19 @@ describe("native timer notification bridge", () => {
     expect(syncCheckpointAlarms).toHaveBeenCalledWith({
       alarms: [expect.objectContaining({ soundEnabled: false, vibrationEnabled: true })],
     });
+  });
+
+  it("keeps running timer notifications dismissible only by tap or swipe", () => {
+    const source = readFileSync(androidTimerNotificationPluginPath, "utf8");
+    const builderStart = source.indexOf("NotificationCompat.Builder builder = new NotificationCompat.Builder");
+    const notifyCall = source.indexOf("NotificationManagerCompat.from(getContext()).notify(notificationId, builder.build());");
+    expect(builderStart).toBeGreaterThan(-1);
+    expect(notifyCall).toBeGreaterThan(builderStart);
+
+    const builderSource = source.slice(builderStart, notifyCall);
+    expect(builderSource).toContain(".setOngoing(false)");
+    expect(builderSource).toContain(".setAutoCancel(true)");
+    expect(builderSource).toContain(".setContentIntent(openPendingIntent)");
+    expect(builderSource).not.toContain(".addAction(");
   });
 });

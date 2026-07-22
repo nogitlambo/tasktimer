@@ -2007,7 +2007,7 @@
 #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveBody{
   min-height: 0;
   overflow: auto;
-  padding: 28px 36px;
+  padding: 0 4px;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
     rgba(8, 14, 19, .74);
@@ -2101,7 +2101,7 @@
   }
 
   #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveBody{
-    padding: 22px 18px;
+    padding: 0 4px;
   }
 
   #sharedTaskSummaryModal .sharedTaskSummaryPrimitiveFooter{
@@ -2166,7 +2166,7 @@
 #sharedTaskSummaryModal .sharedTaskImportPromptText{
   margin: 0;
   color: #fff;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 12px;
   line-height: 1.45;
   text-align: left;
@@ -2231,7 +2231,7 @@
 #sharedTaskSummaryModal .sharedTaskSettingsRow dd{
   margin: 0;
   color: rgba(238, 242, 246, 0.95);
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 12px;
   line-height: 1.35;
   overflow-wrap: anywhere;

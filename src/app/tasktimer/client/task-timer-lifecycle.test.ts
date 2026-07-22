@@ -15,6 +15,9 @@ vi.mock("../lib/nativeTimerNotification", () => ({
       nativeTimerNotificationMock.calls.push(`show-native-trigger:${input.taskId}:${input.timeGoalTriggerAtMs}`);
     }
   }),
+  syncNativeCheckpointAlarms: vi.fn(async (alarms: Array<{ taskId: string; checkpointKey: string; triggerAtMs: number; soundEnabled: boolean; vibrationEnabled: boolean; soundMode: string }>) => {
+    nativeTimerNotificationMock.calls.push(`sync-checkpoints:${alarms.map((alarm) => `${alarm.taskId}:${alarm.checkpointKey}:${alarm.triggerAtMs}:${alarm.soundEnabled ? "sound" : "silent"}:${alarm.vibrationEnabled ? "vibe" : "still"}:${alarm.soundMode}`).join("|")}`);
+  }),
   clearNativeRunningTimerNotification: vi.fn(async (taskId: string) => {
     nativeTimerNotificationMock.calls.push(`clear-native:${taskId}`);
   }),
@@ -79,6 +82,9 @@ function createHarness(
     syncFocusSessionNotesAccordion: (taskId) => calls.push(`sync-focus-accordion:${taskId}`),
     getCurrentAppPage: () => overrides.appPage || "tasks",
     getAutoFocusOnTaskLaunchEnabled: () => overrides.autoFocus ?? false,
+    getCheckpointAlertSoundEnabled: () => true,
+    getCheckpointAlertVibrationEnabled: () => false,
+    getCheckpointAlertSoundMode: () => "once",
     openFocusMode: (index) => calls.push(`open-focus:${index}`),
     save: (opts) => calls.push(`save:${opts?.forceCloudFlush === true ? "force" : "queued"}`),
     render: () => calls.push("render"),
@@ -117,6 +123,7 @@ describe("task timer lifecycle", () => {
       "open-reward:task-1:123",
       "upsert-live:task-1:0:0:force",
       "show-native:task-1:123:0",
+      "sync-checkpoints:",
       "reset-checkpoint:task-1",
       "save:force",
       "sync-shared:task-1",
@@ -143,6 +150,28 @@ describe("task timer lifecycle", () => {
 
     expect(harness.calls).toContain("show-native:task-1:1000:30000");
     expect(harness.calls).toContain("show-native-trigger:task-1:31000");
+  });
+
+  it("schedules native checkpoint alarms immediately when a task starts", () => {
+    const harness = createHarness({
+      nowMs: 1_000,
+      tasks: [
+        task({
+          accumulatedMs: 5 * 60_000,
+          milestonesEnabled: true,
+          milestoneTimeUnit: "minute",
+          checkpointSoundEnabled: true,
+          milestones: [
+            { id: "cp-10", hours: 10, description: "", alertsEnabled: true },
+            { id: "cp-20", hours: 20, description: "", alertsEnabled: true },
+          ],
+        }),
+      ],
+    });
+
+    harness.lifecycle.startTask(0);
+
+    expect(harness.calls).toContain("sync-checkpoints:task-1:600:301000:sound:still:once|task-1:1200:901000:sound:still:once");
   });
 
   it("does not start a current-period goal-completed task when today's goal history is missing", () => {
@@ -584,6 +613,9 @@ describe("task timer lifecycle", () => {
       syncFocusSessionNotesAccordion: () => {},
       getCurrentAppPage: () => "tasks",
       getAutoFocusOnTaskLaunchEnabled: () => false,
+      getCheckpointAlertSoundEnabled: () => true,
+      getCheckpointAlertVibrationEnabled: () => false,
+      getCheckpointAlertSoundMode: () => "once",
       openFocusMode: () => {},
       save: () => {},
       render: () => {},
@@ -648,6 +680,9 @@ describe("task timer lifecycle", () => {
       syncFocusSessionNotesAccordion: () => {},
       getCurrentAppPage: () => "tasks",
       getAutoFocusOnTaskLaunchEnabled: () => false,
+      getCheckpointAlertSoundEnabled: () => true,
+      getCheckpointAlertVibrationEnabled: () => false,
+      getCheckpointAlertSoundMode: () => "once",
       openFocusMode: () => {},
       save: () => {},
       render: () => {},

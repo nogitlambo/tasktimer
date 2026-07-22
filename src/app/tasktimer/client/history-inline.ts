@@ -1769,8 +1769,13 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         if (!closeBtn) return;
         const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
         if (!overlay || overlay.dataset.historyEntryOwner !== "inline") return;
-        if (overlay.dataset.historyEntryEditing === "true") {
+        if (overlay.dataset.historyEntryEditing === "true" && historyEntrySummaryInteraction.hasChangedNoteDraft()) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
           historyEntrySummaryInteraction.discardDraft();
+          refreshHistoryEntryNoteOverlayPosition();
+          return;
         }
         closeHistoryEntryNoteOverlay();
       },
