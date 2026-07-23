@@ -1845,14 +1845,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             <p
               className={`modalSubtext${isChronotypeHoursPhase ? " onboardingHoursSubtext" : ""}${
                 activeStep === "push" ? " onboardingNotificationsSubtext" : ""
-              }${activeStep === "push" ? " onboardingPushSubtext" : ""}${
-                activeStep === "username" ? " onboardingUsernameSubtext" : ""
-              }`}
+              }${activeStep === "push" ? " onboardingPushSubtext" : ""}`}
               key={`onboarding-subtext-${activeStep}`}
             >
-              {activeStep === "username" ? (
-                "Please choose an avatar and set a username for your profile:"
-              ) : isChronotypeHoursPhase ? (
+              {isChronotypeHoursPhase ? (
                 productivityHoursIntroSubtext
               ) : (
                 stepIntro(activeStep, isNativeRuntime)
