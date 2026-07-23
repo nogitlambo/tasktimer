@@ -9608,24 +9608,28 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width: min(100%, 520px);
 }
 
-#onboardingOverlay .onboardingProfileSetupImage{
-  aspect-ratio: 837 / 1002;
-  display: block;
-  height: auto;
-  margin: 0 auto 12px;
-  max-height: min(26dvh, 210px);
-  object-fit: contain;
-  width: min(100%, 176px);
-}
-
 #onboardingOverlay .onboardingChronotypePreview.onboardingProductivityDaysPreview{
   aspect-ratio: 1967 / 799;
-  background: #0d0f13;
+  background:
+    linear-gradient(135deg, #32363c 0%, #20242a 34%, #12151a 68%, #07080b 100%);
   filter:
     drop-shadow(0 12px 22px rgba(0, 0, 0, .26))
     drop-shadow(0 0 18px rgba(201, 255, 36, .08));
   -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
   mask-image: radial-gradient(ellipse 74% 78% at 50% 50%, #000 58%, rgba(0, 0, 0, .9) 70%, rgba(0, 0, 0, .58) 84%, transparent 100%);
+}
+
+#onboardingOverlay .modal.onboardingProductivityDaysModal > .onboardingContent{
+  padding-top: 0 !important;
+}
+
+#onboardingOverlay .modal.onboardingProductivityDaysModal{
+  justify-content: flex-start;
+  padding-top: clamp(18px, 3vh, 32px) !important;
+}
+
+#onboardingOverlay .modal.onboardingProductivityDaysModal .onboardingChronotypePreview.onboardingProductivityDaysPreview{
+  margin-top: 0;
 }
 
 #onboardingOverlay .onboardingChronotypePreview.onboardingAnecdoteCardPreview{
@@ -9636,6 +9640,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   object-fit: contain;
   object-position: center center;
   width: 100%;
+}
+
+#onboardingOverlay .onboardingChronotypePreview.onboardingMissedDaysPreview{
+  object-position: center center;
 }
 
 #onboardingOverlay .onboardingChronotypePreview.onboardingStartImagePreview{
@@ -9659,6 +9667,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   pointer-events: none;
   position: absolute;
   z-index: 1;
+}
+
+#onboardingOverlay .onboardingProfileSetupCard{
+  background:
+    linear-gradient(128deg, rgba(255, 255, 255, .12) 0%, transparent 21%),
+    linear-gradient(212deg, rgba(172, 184, 196, .18) 0%, transparent 28%),
+    linear-gradient(145deg, #30343a 0%, #1f2227 31%, #111318 62%, #08090c 100%);
+}
+
+#onboardingOverlay .onboardingProfileSetupCard::before{
+  background:
+    linear-gradient(90deg, rgba(7, 8, 11, .82) 0%, rgba(12, 13, 17, .56) 48%, rgba(30, 33, 38, .16) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .08) 0%, transparent 24%, rgba(0, 0, 0, .58) 100%);
 }
 
 #onboardingOverlay .onboardingStartImageCard::before{
@@ -9724,6 +9745,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroDivider{
   animation: onboardingIntroDividerReveal 560ms ease-out 120ms both;
+}
+
+#onboardingOverlay .onboardingMissedDaysDivider{
+  margin: 0 0 18px;
+  max-width: 160px;
+  width: min(48%, 160px);
+}
+
+#onboardingOverlay #onboardingMissedDaysProgressTitle{
+  margin-bottom: 0 !important;
+  padding-bottom: 32px;
 }
 
 #onboardingOverlay .onboardingIntroFeatureList{
@@ -9808,6 +9840,50 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin: 0;
   max-width: 28ch;
   text-align: left;
+}
+
+#onboardingOverlay .onboardingProfileSetupTextOverlay{
+  pointer-events: auto;
+}
+
+#onboardingOverlay .onboardingProfileSetupSubtext{
+  margin-bottom: 28px !important;
+}
+
+#onboardingOverlay .modal.onboardingIntroModal .onboardingProfileSetupSubtext{
+  animation-delay: 980ms;
+}
+
+#onboardingOverlay .modal.onboardingIntroModal .onboardingProfileSetupTextOverlay .onboardingUsernameField{
+  animation: onboardingIntroFeatureReveal 520ms cubic-bezier(.22, 0, .18, 1) 1300ms both;
+  max-width: 360px;
+}
+
+#onboardingOverlay .onboardingProfileSetupTextOverlay .onboardingUsernameRow{
+  justify-content: flex-start;
+}
+
+#onboardingOverlay .onboardingProfileSetupTextOverlay .onboardingAvatarFrame{
+  background: rgba(13, 15, 19, .42);
+  border: 1px solid rgba(178, 255, 0, .94);
+  border-radius: 999px;
+  height: 58px;
+  width: 58px;
+}
+
+#onboardingOverlay .onboardingProfileSetupTextOverlay .onboardingAvatarFrameBtn:hover .onboardingAvatarFrame,
+#onboardingOverlay .onboardingProfileSetupTextOverlay .onboardingAvatarFrameBtn:focus-visible .onboardingAvatarFrame{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(201, 255, 36, .34);
+  outline: 1px solid rgba(201, 255, 36, .72);
+  outline-offset: 3px;
+}
+
+#onboardingOverlay .onboardingProfileSetupTextOverlay .onboardingAvatarPicker{
+  justify-content: start;
+  margin-left: 0;
+  margin-right: 0;
+  max-width: 300px;
 }
 
 #onboardingOverlay .modal.onboardingIntroModal .onboardingActions [data-onboarding-next-action="true"]{
@@ -10172,6 +10248,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     linear-gradient(135deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)),
     rgba(170, 178, 190, .11) !important;
   border: 1px solid rgba(170, 178, 190, .5) !important;
+  border-radius: 12px !important;
   box-shadow: 0 16px 32px rgba(0, 0, 0, .22) !important;
   color: rgba(238, 242, 246, .9) !important;
   display: flex;
@@ -10972,12 +11049,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay .onboardingChronotypeTile{
+  --onboarding-chronotype-tile-radius: 12px;
   align-items: center;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)),
     rgba(26, 27, 32, .58);
   border: 1px solid rgba(170, 178, 190, .34) !important;
-  border-radius: 0 !important;
+  border-radius: var(--onboarding-chronotype-tile-radius) !important;
   color: rgba(238, 242, 246, .9);
   cursor: pointer;
   display: grid;
@@ -11173,6 +11251,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingChronotypeTile{
   --accent: var(--onboarding-chronotype-accent, #c9ff24);
+  --onboarding-chronotype-tile-radius: 12px;
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   backdrop-filter: blur(18px) saturate(140%);
   background:
@@ -11180,7 +11259,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 17%, transparent) 0%, transparent 34%),
     rgba(9, 17, 21, .66);
   border: 1px solid rgba(196, 210, 224, .28) !important;
-  border-radius: 0 !important;
+  border-radius: var(--onboarding-chronotype-tile-radius) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .18),
     inset 0 -1px 0 rgba(255, 255, 255, .04),
@@ -11205,7 +11284,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .2), transparent 28%),
     radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .12), transparent 26%);
-  border-radius: 0;
+  border-radius: calc(var(--onboarding-chronotype-tile-radius) - 1px);
   content: "";
   inset: 1px;
   opacity: .48;
@@ -11857,6 +11936,32 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
+@keyframes onboardingUsernameSuccessTickReveal{
+  0%{
+    opacity: 0;
+    transform: translateY(-50%) scale(.62);
+  }
+  62%{
+    opacity: 1;
+    transform: translateY(-50%) scale(1.12);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes onboardingUsernameConflictMarkReveal{
+  0%{
+    opacity: 0;
+    transform: translateY(-50%) scale(.72);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   #onboardingOverlay .onboardingGreetingTitle,
   #onboardingOverlay .onboardingGreetingStepTitle,
@@ -12090,27 +12195,29 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #onboardingOverlay #onboardingUsernameInput{
-  background: #fff !important;
-  border: 0 !important;
+  background: transparent !important;
+  border: 1px solid rgba(220, 226, 232, .56) !important;
+  border-radius: 8px;
   box-shadow: none !important;
-  color: #000 !important;
+  color: #fff !important;
   display: block;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   font-size: 15.12px;
   max-width: 100%;
   outline: none !important;
+  padding: 7px 34px;
   text-align: center;
   width: calc(20ch + 22px);
 }
 
 #onboardingOverlay #onboardingUsernameInput::placeholder{
-  color: rgba(0,0,0,.45);
+  color: rgba(255,255,255,.48);
 }
 
 #onboardingOverlay #onboardingUsernameInput:hover,
 #onboardingOverlay #onboardingUsernameInput:focus,
 #onboardingOverlay #onboardingUsernameInput:focus-visible{
-  border: 0 !important;
+  border: 1px solid rgba(220, 226, 232, .72) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -12135,6 +12242,52 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .onboardingUsernameInputStack{
   min-width: 0;
+  position: relative;
+}
+
+#onboardingOverlay .onboardingUsernameSuccessTick,
+#onboardingOverlay .onboardingUsernameConflictMark{
+  align-items: center;
+  display: inline-flex;
+  height: 22px;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+  right: 8px;
+  top: 17px;
+  transform: translateY(-50%);
+  width: 22px;
+}
+
+#onboardingOverlay .onboardingUsernameSuccessTick{
+  animation: onboardingUsernameSuccessTickReveal 220ms cubic-bezier(.2, .9, .24, 1.18) both;
+  color: #7cff6b;
+}
+
+#onboardingOverlay .onboardingUsernameConflictMark{
+  animation: onboardingUsernameConflictMarkReveal 160ms ease-out both;
+  color: #ff4f5f;
+}
+
+#onboardingOverlay .onboardingUsernameSuccessTick svg,
+#onboardingOverlay .onboardingUsernameConflictMark svg{
+  display: block;
+  fill: none;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 18px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #onboardingOverlay .onboardingUsernameSuccessTick,
+  #onboardingOverlay .onboardingUsernameConflictMark{
+    animation: none;
+    opacity: 1;
+    transform: translateY(-50%);
+  }
 }
 
 #onboardingOverlay .onboardingAvatarFrameBtn{
@@ -12748,6 +12901,17 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     width: 100%;
   }
 
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingMissedDaysCard{
+    min-height: 100dvh;
+  }
+
+  #onboardingOverlay .modal.onboardingAnecdoteModal .onboardingMissedDaysPreview{
+    height: 100dvh;
+    max-height: none;
+    object-fit: cover;
+    width: 100%;
+  }
+
   #onboardingOverlay .modal.onboardingIntroModal .onboardingIntroTextOverlay{
     bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
     left: clamp(28px, 8vw, 40px);
@@ -13269,7 +13433,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
   #onboardingOverlay .onboardingChronotypeTile{
-    border-radius: 0 !important;
+    border-radius: var(--onboarding-chronotype-tile-radius) !important;
     gap: 9px;
     grid-template-columns: 78px minmax(0, 1fr);
     min-height: 112px;

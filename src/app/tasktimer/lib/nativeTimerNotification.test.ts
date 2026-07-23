@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -6,6 +6,10 @@ const TIMER_NOTIFICATION_CACHE_KEY = "__taskLaunchTimerNotificationPlugin";
 const androidTimerNotificationPluginPath = resolve(
   process.cwd(),
   "android/app/src/main/java/com/tasklaunch/app/TaskLaunchTimerNotificationPlugin.java",
+);
+const androidCheckpointAlarmServicePath = resolve(
+  process.cwd(),
+  "android/app/src/main/java/com/tasklaunch/app/TaskLaunchCheckpointAlarmService.java",
 );
 
 function clearTimerNotificationPluginCache() {
@@ -182,5 +186,17 @@ describe("native timer notification bridge", () => {
     expect(builderSource).toContain(".setAutoCancel(true)");
     expect(builderSource).toContain(".setContentIntent(openPendingIntent)");
     expect(builderSource).not.toContain(".addAction(");
+  });
+
+  it("uses a packaged public asset for native checkpoint alarm playback", () => {
+    const source = readFileSync(androidCheckpointAlarmServicePath, "utf8");
+    const assetPaths = Array.from(source.matchAll(/getAssets\(\)\.openFd\("([^"]+)"\)/g))
+      .map((match) => match[1])
+      .filter(Boolean);
+
+    expect(assetPaths).toContain("public/checkpoint.mp3");
+    assetPaths.forEach((assetPath) => {
+      expect(existsSync(resolve(process.cwd(), assetPath))).toBe(true);
+    });
   });
 });

@@ -87,7 +87,7 @@ public class TaskLaunchCheckpointAlarmService extends Service {
     private void playTone() {
         stopPlayer();
         try {
-            AssetFileDescriptor descriptor = getAssets().openFd("public/checkpoint_tone.wav");
+            AssetFileDescriptor descriptor = getAssets().openFd("public/checkpoint.mp3");
             player = new MediaPlayer();
             player.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)

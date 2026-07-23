@@ -390,11 +390,20 @@ export const ONBOARDING_CHRONOTYPE_REQUIRED_MESSAGE = "Please select one option"
 const ONBOARDING_USERNAME_ERROR_ID = "onboardingUsernameError";
 const ONBOARDING_CHRONOTYPE_ERROR_ID = "onboardingChronotypeError";
 export const ONBOARDING_CHRONOTYPE_CONTINUE_REVEAL_DELAY_MS = 360;
+export const ONBOARDING_USERNAME_SUCCESS_TICK_MS = 650;
 const ONBOARDING_PRIMARY_ACTION_CLASS =
   "btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction";
 
 export function isOnboardingUsernameTakenError(message: unknown) {
   return String(message || "").trim() === USERNAME_TAKEN_ERROR_MESSAGE;
+}
+
+export function shouldShowOnboardingUsernameConflictMark(message: unknown) {
+  return isOnboardingUsernameTakenError(message);
+}
+
+export function shouldDelayOnboardingUsernameSuccess(step: StepKey, saved: boolean) {
+  return step === "username" && saved;
 }
 
 export function resolveOnboardingAvatarId(
@@ -733,12 +742,16 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [usernameInlineError, setUsernameInlineError] = useState("");
+  const [usernameConflictMarkVisible, setUsernameConflictMarkVisible] = useState(false);
+  const [usernameSuccessTickVisible, setUsernameSuccessTickVisible] = useState(false);
   const openRef = useRef(false);
+  const mountedRef = useRef(false);
   const avatarSavePromiseRef = useRef<Promise<void> | null>(null);
   const profileSyncPromiseRef = useRef<Promise<void> | null>(null);
   const startTimeInputRef = useRef<HTMLInputElement | null>(null);
   const endTimeInputRef = useRef<HTMLInputElement | null>(null);
   const chronotypeContinueRevealTimerRef = useRef<number | null>(null);
+  const usernameSuccessTickSequenceRef = useRef(0);
 
   const activeStep = ONBOARDING_STEPS[stepIndex]?.key || "intro";
   const isNativeRuntime = isNativeOrFileRuntime();
@@ -763,6 +776,35 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     openRef.current = open;
   }, [open]);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      usernameSuccessTickSequenceRef.current += 1;
+    };
+  }, []);
+
+  const clearUsernameSuccessTick = useCallback(() => {
+    usernameSuccessTickSequenceRef.current += 1;
+    setUsernameSuccessTickVisible(false);
+  }, []);
+
+  const clearUsernameConflictMark = useCallback(() => {
+    setUsernameConflictMarkVisible(false);
+  }, []);
+
+  const showUsernameSuccessTick = useCallback(async () => {
+    const sequence = usernameSuccessTickSequenceRef.current + 1;
+    usernameSuccessTickSequenceRef.current = sequence;
+    setUsernameSuccessTickVisible(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, ONBOARDING_USERNAME_SUCCESS_TICK_MS);
+    });
+    if (!mountedRef.current || usernameSuccessTickSequenceRef.current !== sequence) return false;
+    setUsernameSuccessTickVisible(false);
+    return true;
+  }, []);
+
   const resetChronotypeResultPhase = useCallback(() => {
     setChronotypeResultPhase("summary");
   }, []);
@@ -770,8 +812,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   useEffect(() => {
     if (activeStep !== "chronotypeResult" || chronotypeResultPhase !== "hours") setVisibleTimeFallback(null);
     if (activeStep !== "username") setAvatarPickerOpen(false);
+    if (activeStep !== "username") clearUsernameSuccessTick();
+    if (activeStep !== "username") clearUsernameConflictMark();
     if (activeStep !== "chronotypeResult") setChronotypeResultPhase("summary");
-  }, [activeStep, chronotypeResultPhase]);
+  }, [activeStep, chronotypeResultPhase, clearUsernameConflictMark, clearUsernameSuccessTick]);
 
   useEffect(() => {
     return () => {
@@ -840,10 +884,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setStatus("");
       setError("");
       setUsernameInlineError("");
+      clearUsernameConflictMark();
+      clearUsernameSuccessTick();
       avatarSavePromiseRef.current = null;
       profileSyncPromiseRef.current = null;
     },
-    [isNativeRuntime, preferences, resetChronotypeResultPhase]
+    [clearUsernameConflictMark, clearUsernameSuccessTick, isNativeRuntime, preferences, resetChronotypeResultPhase]
   );
 
   const refreshForUser = useCallback(
@@ -1034,6 +1080,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setError(validation);
       setUsernameInlineError("");
       setUsernameConfirmedAtMs(null);
+      clearUsernameConflictMark();
+      clearUsernameSuccessTick();
       alertUsernameError(validation);
       return false;
     }
@@ -1042,6 +1090,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       setError(message);
       setUsernameInlineError("");
       setUsernameConfirmedAtMs(null);
+      clearUsernameConflictMark();
+      clearUsernameSuccessTick();
       alertUsernameError(message);
       return false;
     }
@@ -1051,6 +1101,8 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     setUsernameInlineError("");
     setStatus("");
     setUsernameConfirmedAtMs(null);
+    clearUsernameConflictMark();
+    clearUsernameSuccessTick();
     try {
       if (normalizeUsername(nextUsername) !== normalizeUsername(username)) {
         const result = await updateAliasFlow(uid, username, nextUsername);
@@ -1074,11 +1126,14 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Unable to update username right now.");
       setUsernameConfirmedAtMs(null);
-      if (isOnboardingUsernameTakenError(message)) {
+      clearUsernameSuccessTick();
+      if (shouldShowOnboardingUsernameConflictMark(message)) {
         setError("");
         setUsernameInlineError(ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE);
+        setUsernameConflictMarkVisible(true);
         return false;
       }
+      clearUsernameConflictMark();
       setError(message);
       setUsernameInlineError("");
       alertUsernameError(message);
@@ -1086,7 +1141,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
     } finally {
       setBusy(false);
     }
-  }, [queueOnboardingProfileSync, queueSelectedOnboardingAvatarSave, saveSelectedOnboardingAvatar, uid, username, usernameDraft]);
+  }, [clearUsernameConflictMark, clearUsernameSuccessTick, queueOnboardingProfileSync, queueSelectedOnboardingAvatarSave, saveSelectedOnboardingAvatar, uid, username, usernameDraft]);
 
   const handlePushToggle = useCallback(
     async (nextEnabled: boolean) => {
@@ -1174,6 +1229,10 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const handleNext = useCallback(async () => {
     const saved = await saveCurrentStep();
     if (!saved) return;
+    if (shouldDelayOnboardingUsernameSuccess(activeStep, saved)) {
+      const tickCompleted = await showUsernameSuccessTick();
+      if (!tickCompleted) return;
+    }
     const nextIndex = onboardingNextStepIndexForPhase(activeStep, stepIndex, chronotypeResultPhase);
     const nextStep = ONBOARDING_STEPS[nextIndex]?.key || activeStep;
     const advanceToNextStep = () => {
@@ -1191,7 +1250,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       return;
     }
     advanceToNextStep();
-  }, [activeStep, chronotypeResultPhase, saveCurrentStep, selectedChronotypeChoiceId, stepIndex]);
+  }, [activeStep, chronotypeResultPhase, saveCurrentStep, selectedChronotypeChoiceId, showUsernameSuccessTick, stepIndex]);
 
   const selectPresetTask = useCallback(
     async (presetName: string) => {
@@ -1324,10 +1383,12 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isChronotypeChoiceStep = activeStep === "chronotypeChoice";
   const isChronotypeSelectionStep = activeStep === "chronotypeSelection";
   const isChronotypeResultStep = activeStep === "chronotypeResult";
+  const isProductivityDaysStep = activeStep === "days";
   const isMissedDaysProgressStep = activeStep === "missedDaysProgress";
   const isImplementationIntentionsStep = activeStep === "implementationIntentions";
   const isAnecdoteStep = isMissedDaysProgressStep || isImplementationIntentionsStep;
-  const isImageStoryStep = isIntroStep || isGreetingStep || isChronotypeChoiceStep || isAnecdoteStep;
+  const isProfileSetupStep = activeStep === "username";
+  const isImageStoryStep = isIntroStep || isProfileSetupStep || isGreetingStep || isChronotypeChoiceStep || isAnecdoteStep;
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
   const selectedChronotypeChoiceIndex = ONBOARDING_CHRONOTYPE_OPTIONS.findIndex((option) => option.id === selectedChronotypeChoiceId);
@@ -1364,7 +1425,9 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       <div
         className={`modal${isChronotypeSelectionStep ? " onboardingChronotypeSelectionModal" : ""}${
           isChronotypeResultSummaryStep ? " onboardingChronotypeResultSummaryModal" : ""
-        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isIntroStep || isGreetingStep ? " onboardingIntroModal" : ""}${
+        }${isProductivityDaysStep ? " onboardingProductivityDaysModal" : ""}${
+          isImageStoryStep ? " onboardingAnecdoteModal" : ""
+        }${isIntroStep || isProfileSetupStep || isGreetingStep ? " onboardingIntroModal" : ""}${
           isChronotypeChoiceStep ? " onboardingChronotypeKnowledgeModal" : ""
         }`}
         style={onboardingModalStyle}
@@ -1384,17 +1447,93 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             isImageStoryStep ? " onboardingContentAnecdote" : ""
           }`}
         >
-          {activeStep === "username" ? (
-            <AppImg
-              className="onboardingProfileSetupImage"
-              src="/onboarding/profile_setup.png"
-              alt=""
-              width={837}
-              height={1002}
-              aria-hidden="true"
-            />
-          ) : null}
-          {showStepImage && isIntroStep ? (
+          {isProfileSetupStep ? (
+            <section className="onboardingAnecdoteCard onboardingIntroCard onboardingProfileSetupCard" aria-labelledby="onboardingProfileSetupTitle">
+              <div className="onboardingIntroTextOverlay onboardingProfileSetupTextOverlay">
+                <h2 className="onboardingIntroTitle onboardingProfileSetupTitle" id="onboardingProfileSetupTitle">
+                  {onboardingHeadingText}
+                </h2>
+                <div className="onboardingIntroDivider onboardingProfileSetupDivider" aria-hidden="true" />
+                <p className="modalSubtext onboardingIntroWelcomeSubtext onboardingProfileSetupSubtext">
+                  Please choose an avatar and set a username for your profile:
+                </p>
+                <div className="field modalDropdownField onboardingField onboardingUsernameField">
+                  <div className="onboardingUsernameRow">
+                    <button
+                      className="onboardingAvatarFrameBtn"
+                      type="button"
+                      aria-label="Choose avatar"
+                      aria-expanded={avatarPickerOpen}
+                      onClick={() => setAvatarPickerOpen((open) => !open)}
+                    >
+                      <span className="onboardingAvatarFrame">
+                        {selectedAvatar ? <AppImg className="onboardingAvatarImage" src={selectedAvatar.src} alt={`${selectedAvatar.label} avatar`} /> : null}
+                      </span>
+                    </button>
+                    <div className="onboardingUsernameInputStack">
+                      <input
+                        id="onboardingUsernameInput"
+                        className="onboardingTextInput"
+                        type="text"
+                        aria-label="Username"
+                        value={usernameDraft}
+                        onChange={(event) => {
+                          setUsernameDraft(event.target.value);
+                          setUsernameConfirmedAtMs(null);
+                          setStatus("");
+                          setError("");
+                          setUsernameInlineError("");
+                          clearUsernameConflictMark();
+                          clearUsernameSuccessTick();
+                        }}
+                        maxLength={20}
+                        aria-describedby={usernameInlineError ? ONBOARDING_USERNAME_ERROR_ID : undefined}
+                        aria-invalid={!!usernameValidation || !!usernameInlineError}
+                      />
+                      {usernameSuccessTickVisible ? (
+                        <span className="onboardingUsernameSuccessTick" aria-hidden="true">
+                          <svg viewBox="0 0 16 16" focusable="false">
+                            <path d="M3.25 8.15 6.35 11.2 12.9 4.8" />
+                          </svg>
+                        </span>
+                      ) : usernameConflictMarkVisible ? (
+                        <span className="onboardingUsernameConflictMark" aria-hidden="true">
+                          <svg viewBox="0 0 16 16" focusable="false">
+                            <path d="M4.25 4.25 11.75 11.75" />
+                            <path d="M11.75 4.25 4.25 11.75" />
+                          </svg>
+                        </span>
+                      ) : null}
+                      {usernameInlineError ? (
+                        <p className="onboardingUsernameInlineError" id={ONBOARDING_USERNAME_ERROR_ID}>
+                          {usernameInlineError}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {avatarPickerOpen ? (
+                    <div className="onboardingAvatarPicker" role="list" aria-label="Available avatars">
+                      {AVATAR_CATALOG.map((avatar) => (
+                        <button
+                          className={`onboardingAvatarOption${avatar.id === selectedAvatarId ? " isSelected" : ""}`}
+                          type="button"
+                          key={avatar.id}
+                          aria-label={`Select ${avatar.label} avatar`}
+                          aria-pressed={avatar.id === selectedAvatarId}
+                          onClick={() => {
+                            setSelectedAvatarId(avatar.id);
+                            setAvatarPickerOpen(false);
+                          }}
+                        >
+                          <AppImg className="onboardingAvatarOptionImage" src={avatar.src} alt="" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          ) : showStepImage && isIntroStep ? (
             <section className="onboardingAnecdoteCard onboardingIntroCard" aria-labelledby="onboardingIntroTitle">
               <div className="onboardingIntroTextOverlay">
                 <AppImg
@@ -1500,11 +1639,15 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
             </section>
           ) : showStepImage && isAnecdoteStep ? (
             <section
-              className={`onboardingAnecdoteCard${isImplementationIntentionsStep ? " onboardingStartImageCard" : ""}`}
+              className={`onboardingAnecdoteCard${isMissedDaysProgressStep ? " onboardingMissedDaysCard" : ""}${
+                isImplementationIntentionsStep ? " onboardingStartImageCard" : ""
+              }`}
               aria-labelledby={anecdoteStepContent.titleId}
             >
               <AppImg
                 className={`onboardingChronotypePreview onboardingAnecdoteCardPreview${
+                  isMissedDaysProgressStep ? " onboardingMissedDaysPreview" : ""
+                }${
                   isImplementationIntentionsStep ? " onboardingStartImagePreview" : ""
                 }`}
                 src={anecdoteStepContent.imageSrc}
@@ -1527,6 +1670,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                   <h2 className="onboardingAnecdoteTitle" id={anecdoteStepContent.titleId}>
                     {anecdoteStepContent.title}
                   </h2>
+                  <div className="onboardingIntroDivider onboardingMissedDaysDivider" aria-hidden="true" />
                   <p className="onboardingAnecdoteSubtext">{anecdoteStepContent.subtext}</p>
                 </div>
               )}
@@ -1697,7 +1841,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               aria-hidden="true"
             />
           ) : null}
-          {showStepSubtext ? (
+          {showStepSubtext && !isProfileSetupStep ? (
             <p
               className={`modalSubtext${isChronotypeHoursPhase ? " onboardingHoursSubtext" : ""}${
                 activeStep === "push" ? " onboardingNotificationsSubtext" : ""
@@ -1715,67 +1859,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               )}
             </p>
           ) : null}
-        {activeStep === "username" ? (
-          <div className="field modalDropdownField onboardingField onboardingUsernameField">
-            <div className="onboardingUsernameRow">
-              <button
-                className="onboardingAvatarFrameBtn"
-                type="button"
-                aria-label="Choose avatar"
-                aria-expanded={avatarPickerOpen}
-                onClick={() => setAvatarPickerOpen((open) => !open)}
-              >
-                <span className="onboardingAvatarFrame">
-                  {selectedAvatar ? <AppImg className="onboardingAvatarImage" src={selectedAvatar.src} alt={`${selectedAvatar.label} avatar`} /> : null}
-                </span>
-              </button>
-              <div className="onboardingUsernameInputStack">
-                <input
-                  id="onboardingUsernameInput"
-                  className="onboardingTextInput"
-                  type="text"
-                  aria-label="Username"
-                  value={usernameDraft}
-                  onChange={(event) => {
-                    setUsernameDraft(event.target.value);
-                    setUsernameConfirmedAtMs(null);
-                    setStatus("");
-                    setError("");
-                    setUsernameInlineError("");
-                  }}
-                  maxLength={20}
-                  aria-describedby={usernameInlineError ? ONBOARDING_USERNAME_ERROR_ID : undefined}
-                  aria-invalid={!!usernameValidation || !!usernameInlineError}
-                />
-                {usernameInlineError ? (
-                  <p className="onboardingUsernameInlineError" id={ONBOARDING_USERNAME_ERROR_ID}>
-                    {usernameInlineError}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            {avatarPickerOpen ? (
-              <div className="onboardingAvatarPicker" role="list" aria-label="Available avatars">
-                {AVATAR_CATALOG.map((avatar) => (
-                  <button
-                    className={`onboardingAvatarOption${avatar.id === selectedAvatarId ? " isSelected" : ""}`}
-                    type="button"
-                    key={avatar.id}
-                    aria-label={`Select ${avatar.label} avatar`}
-                    aria-pressed={avatar.id === selectedAvatarId}
-                    onClick={() => {
-                      setSelectedAvatarId(avatar.id);
-                      setAvatarPickerOpen(false);
-                    }}
-                  >
-                    <AppImg className="onboardingAvatarOptionImage" src={avatar.src} alt="" />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
         {isChronotypeSelectionStep ? (
           <div
             className={`onboardingChronotypeTileGrid${

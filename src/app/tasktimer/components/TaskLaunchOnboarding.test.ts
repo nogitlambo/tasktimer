@@ -30,6 +30,7 @@ import {
   ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
   ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
   ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE,
+  ONBOARDING_USERNAME_SUCCESS_TICK_MS,
   ONBOARDING_STEPS,
   canContinueOnboardingStep,
   chronotypeChoiceAfterNavigation,
@@ -39,6 +40,8 @@ import {
   isOnboardingContinueDisabled,
   isOnboardingContinueReservedHidden,
   isOnboardingFinishDisabled,
+  shouldDelayOnboardingUsernameSuccess,
+  shouldShowOnboardingUsernameConflictMark,
   normalizeOnboardingProductivityDays,
   onboardingBackgroundAccentForStep,
   onboardingBackNavigation,
@@ -81,6 +84,13 @@ describe("TaskLaunchOnboarding Continue action", () => {
   it("disables the productivity days Continue action until at least one day is selected", () => {
     expect(isOnboardingContinueDisabled(false, "days", [])).toBe(true);
     expect(isOnboardingContinueDisabled(false, "days", ["mon"])).toBe(false);
+  });
+
+  it("delays advancement only after a successful username confirmation", () => {
+    expect(ONBOARDING_USERNAME_SUCCESS_TICK_MS).toBe(650);
+    expect(shouldDelayOnboardingUsernameSuccess("username", true)).toBe(true);
+    expect(shouldDelayOnboardingUsernameSuccess("username", false)).toBe(false);
+    expect(shouldDelayOnboardingUsernameSuccess("greeting", true)).toBe(false);
   });
 });
 
@@ -660,6 +670,11 @@ describe("TaskLaunchOnboarding steps", () => {
     expect(isOnboardingUsernameTakenError(" That username is already taken. ")).toBe(true);
     expect(isOnboardingUsernameTakenError("Unable to update your username right now.")).toBe(false);
     expect(ONBOARDING_USERNAME_TAKEN_INLINE_MESSAGE).toBe("That username is already taken. Try another one.");
+  });
+
+  it("shows the conflict field marker only for taken usernames", () => {
+    expect(shouldShowOnboardingUsernameConflictMark("That username is already taken.")).toBe(true);
+    expect(shouldShowOnboardingUsernameConflictMark("Unable to update your username right now.")).toBe(false);
   });
 
   it("prefers a saved catalog avatar before falling back to random selection", () => {
