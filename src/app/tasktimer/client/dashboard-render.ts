@@ -20,13 +20,14 @@ import {
 import { formatTime, formatTwo, nowMs } from "../lib/time";
 import { normalizeTaskStatusState, type Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
+import { normalizeOptimalProductivityDays, timestampIsInOptimalProductivityDays } from "../lib/productivityPeriod";
 import type { TaskTimerDashboardRenderContext } from "./context";
 import type { DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
 import { buildMomentumDriverMessages, buildMomentumSummaryMessage } from "./dashboard-card-momentum";
 import { buildDashboardTasksCompletedModel } from "./dashboard-card-tasks-completed";
 import { buildDashboardTasksCompletedLabelLayout } from "./dashboard-card-tasks-completed-layout";
-import { buildDashboardTodayHoursModel, classifyDashboardTodayTrendIcon, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
+import { buildDashboardTodayHoursModel, formatDashboardTodayHoursDeltaText } from "./dashboard-card-today-hours";
 import {
   buildDashboardActivityOverviewModel,
   type DashboardActivityOverviewModel,
@@ -276,33 +277,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (deltaPct > 0) indicatorEl.classList.add("positive");
     else if (deltaPct < 0) indicatorEl.classList.add("negative");
     else indicatorEl.classList.add("neutral");
-    return deltaPct;
-  }
-
-  function applyDashboardTodayTrendIcon(indicatorEl: HTMLElement | null, currentMs: number, previousMs: number, opts?: { minBaselineMs?: number }) {
-    if (!indicatorEl) return null;
-    const deltaPct = applyDashboardTrendIndicator(indicatorEl, currentMs, previousMs, {
-      minBaselineMs: opts?.minBaselineMs,
-      showDirectionalArrow: false,
-    });
-    indicatorEl.classList.remove("dashboardTodayTrendIcon", "trendUp", "trendUpRight", "trendRight", "trendDownRight", "trendDown");
-    indicatorEl.removeAttribute("title");
-    indicatorEl.removeAttribute("aria-label");
-    indicatorEl.setAttribute("aria-hidden", "true");
-    if (deltaPct == null) return null;
-
-    const icon = classifyDashboardTodayTrendIcon(deltaPct);
-    const trendSummary = `${deltaPct > 0 ? "+" : ""}${deltaPct}% versus this time yesterday.`;
-    indicatorEl.classList.add("dashboardTodayTrendIcon", icon.className);
-    indicatorEl.setAttribute("title", trendSummary);
-    indicatorEl.setAttribute("aria-label", `${icon.label}: ${trendSummary}`);
-    indicatorEl.setAttribute("aria-hidden", "false");
-    indicatorEl.innerHTML = `
-      <svg class="dashboardTodayTrendIconSvg" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-        <path d="M12 19V5" />
-        <path d="M6 11l6-6 6 6" />
-      </svg>
-    `;
     return deltaPct;
   }
 
@@ -878,6 +852,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
     const prevWeekEndMs = weekStartMs;
     const prevWeekStartMs = prevWeekEndMs - 7 * 86400000;
+    const optimalProductivityDays = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task?.timeGoalEnabled) return false;
       const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
@@ -897,6 +872,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         return entrySum + ms;
       }, 0);
     }, 0);
+    const productivityDayLoggedMs = goalTasks.reduce((sum, task) => {
+      const taskId = String(task.id || "").trim();
+      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
+      return sum + entries.reduce((entrySum, entry: any) => {
+        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
+        const ms = Math.max(0, Number(entry?.ms) || 0);
+        if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue || ms <= 0) return entrySum;
+        if (!timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) return entrySum;
+        return entrySum + ms;
+      }, 0);
+    }, 0);
     let hasFullPriorWeekHistory = false;
     const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
       const taskId = String(task.id || "").trim();
@@ -905,8 +891,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
         const ms = Math.max(0, Number(entry?.ms) || 0);
         if (ms <= 0) return entrySum;
-        if (Number.isFinite(ts) && ts <= prevWeekStartMs) hasFullPriorWeekHistory = true;
+        if (Number.isFinite(ts) && ts <= prevWeekStartMs && timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) hasFullPriorWeekHistory = true;
         if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
+        if (!timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) return entrySum;
         return entrySum + ms;
       }, 0);
     }, 0);
@@ -914,14 +901,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (!isDashboardTaskActivelyRunning(task)) return sum;
       return sum + Math.max(0, ctx.getElapsedMs(task));
     }, 0);
+    const productivityDayComparisonMs =
+      productivityDayLoggedMs + (timestampIsInOptimalProductivityDays(nowValue, optimalProductivityDays) ? runningMs : 0);
     const projectedMs = loggedMs + runningMs;
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
     if (trendIndicatorEl) {
       if (hasFullPriorWeekHistory && prevWeekLoggedMs > 0) {
         trendIndicatorEl.style.display = "";
-        applyDashboardTrendIndicator(trendIndicatorEl, loggedMs, prevWeekLoggedMs, {
-          showDirectionalArrow: getDashboardFilteredTasks().some((task) => isDashboardTaskActivelyRunning(task)),
+        applyDashboardTrendIndicator(trendIndicatorEl, productivityDayComparisonMs, prevWeekLoggedMs, {
+          showDirectionalArrow: false,
+          minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
         });
       } else {
         trendIndicatorEl.style.display = "none";
@@ -1883,6 +1873,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       historyByTaskId: ctx.getHistoryByTaskId(),
       nowMs: nowMs(),
       trendMinBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       getElapsedMs: (task) => ctx.getElapsedMs(task),
       isTaskRunning: (task) => isDashboardTaskActivelyRunning(task),
       normalizeHistoryTimestampMs: (value) => ctx.normalizeHistoryTimestampMs(value),
@@ -1890,7 +1881,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
     if (titleEl) titleEl.textContent = "Today";
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
-    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
+    const trendDeltaPct = applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.previousProductivityDaySameTimeMs : 0, {
       minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
       showDirectionalArrow: todayHoursModel.showDirectionalTrendArrow,
     });
@@ -1916,7 +1907,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const cardEl = trendIndicatorEl?.closest(".dashboardWeekHoursCard") as HTMLElement | null;
     if (cardEl) {
       const trendSummary =
-        trendDeltaPct == null ? "Trend unavailable versus this time yesterday." : `${trendDeltaPct > 0 ? "+" : ""}${trendDeltaPct}% versus this time yesterday.`;
+        trendDeltaPct == null ? "Trend unavailable versus previous productivity day." : `${trendDeltaPct > 0 ? "+" : ""}${trendDeltaPct}% versus previous productivity day.`;
       cardEl.setAttribute("aria-label", `Today's logged time. ${trendSummary}`);
     }
     if (!deltaEl) return;
@@ -1942,14 +1933,16 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       historyByTaskId: ctx.getHistoryByTaskId(),
       nowMs: nowMs(),
       trendMinBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      optimalProductivityDays: ctx.getOptimalProductivityDays(),
       getElapsedMs: (task) => ctx.getElapsedMs(task),
       isTaskRunning: (task) => isDashboardTaskActivelyRunning(task),
       normalizeHistoryTimestampMs: (value) => ctx.normalizeHistoryTimestampMs(value),
     });
 
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
-    applyDashboardTodayTrendIcon(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.yesterdaySameTimeMs : 0, {
+    applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.previousProductivityDaySameTimeMs : 0, {
       minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
+      showDirectionalArrow: false,
     });
     applyDashboardGoalProgressUi({
       progressBarEl,

@@ -1327,7 +1327,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const isMissedDaysProgressStep = activeStep === "missedDaysProgress";
   const isImplementationIntentionsStep = activeStep === "implementationIntentions";
   const isAnecdoteStep = isMissedDaysProgressStep || isImplementationIntentionsStep;
-  const isImageStoryStep = isIntroStep || isChronotypeChoiceStep || isAnecdoteStep;
+  const isImageStoryStep = isIntroStep || isGreetingStep || isChronotypeChoiceStep || isAnecdoteStep;
   const isChronotypeHoursPhase = isChronotypeResultStep && chronotypeResultPhase === "hours";
   const isChronotypeResultSummaryStep = isChronotypeResultStep && chronotypeResultPhase === "summary" && !!selectedChronotypeSummary;
   const selectedChronotypeChoiceIndex = ONBOARDING_CHRONOTYPE_OPTIONS.findIndex((option) => option.id === selectedChronotypeChoiceId);
@@ -1364,7 +1364,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
       <div
         className={`modal${isChronotypeSelectionStep ? " onboardingChronotypeSelectionModal" : ""}${
           isChronotypeResultSummaryStep ? " onboardingChronotypeResultSummaryModal" : ""
-        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isIntroStep ? " onboardingIntroModal" : ""}${
+        }${isImageStoryStep ? " onboardingAnecdoteModal" : ""}${isIntroStep || isGreetingStep ? " onboardingIntroModal" : ""}${
           isChronotypeChoiceStep ? " onboardingChronotypeKnowledgeModal" : ""
         }`}
         style={onboardingModalStyle}
@@ -1396,14 +1396,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
           ) : null}
           {showStepImage && isIntroStep ? (
             <section className="onboardingAnecdoteCard onboardingIntroCard" aria-labelledby="onboardingIntroTitle">
-              <AppImg
-                className="onboardingChronotypePreview onboardingAnecdoteCardPreview onboardingIntroImage"
-                src="/onboarding/onboarding_welcome_clean.png"
-                alt=""
-                width={1024}
-                height={1536}
-                aria-hidden="true"
-              />
               <div className="onboardingIntroTextOverlay">
                 <AppImg
                   className="onboardingIntroLogo"
@@ -1451,24 +1443,58 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 </div>
               </div>
             </section>
+          ) : isGreetingStep ? (
+            <section className="onboardingAnecdoteCard onboardingIntroCard onboardingWelcomeCard" aria-labelledby="onboardingWelcomeTitle">
+              <div className="onboardingIntroTextOverlay onboardingWelcomeTextOverlay">
+                <h2 className="onboardingIntroTitle onboardingWelcomeTitle" id="onboardingWelcomeTitle">
+                  <span className="onboardingGreetingStepLead">Welcome,</span>
+                  <span className="onboardingGreetingStepAlias">{onboardingGreetingName}</span>
+                </h2>
+                <div className="onboardingIntroDivider onboardingWelcomeDivider" aria-hidden="true" />
+                <p className="modalSubtext onboardingIntroWelcomeSubtext">{ONBOARDING_GREETING_SUBTEXT}</p>
+              </div>
+            </section>
           ) : showStepImage && isChronotypeChoiceStep ? (
             <section className="onboardingAnecdoteCard onboardingChronotypeKnowledgeCard" aria-labelledby="onboardingChronotypeKnowledgeTitle">
-              <AppImg
-                className="onboardingChronotypePreview onboardingAnecdoteCardPreview onboardingChronotypeKnowledgePreview"
-                src="/onboarding/onboarding_know_your_chronotype.png"
-                alt=""
-                width={1024}
-                height={1536}
-                aria-hidden="true"
-              />
               <div className="onboardingAnecdoteTextOverlay onboardingChronotypeKnowledgeTextOverlay">
                 <h2 className="onboardingAnecdoteTitle onboardingChronotypeKnowledgeTitle" id="onboardingChronotypeKnowledgeTitle">
                   {ONBOARDING_CHRONOTYPE_CHOICE_PROMPT}
                 </h2>
+                <div className="onboardingIntroDivider onboardingChronotypeKnowledgeDivider" aria-hidden="true" />
                 <div className="onboardingAnecdoteSubtext onboardingChronotypeKnowledgeSubtext">
                   {ONBOARDING_CHRONOTYPE_CHOICE_SUBTEXT.map((line) => (
                     <p className="onboardingChronotypeKnowledgeSubtextLine" key={line}>{line}</p>
                   ))}
+                </div>
+                <div className="onboardingChronotypeKnowledgeAnimalRow" aria-label="Chronotype animals">
+                  <AppImg
+                    className="onboardingChronotypeKnowledgeAnimal"
+                    src="/onboarding/chronotype_lion.webp"
+                    alt="Lion chronotype"
+                    width={512}
+                    height={512}
+                  />
+                  <AppImg
+                    className="onboardingChronotypeKnowledgeAnimal"
+                    src="/onboarding/chronotype_bear.webp"
+                    alt="Bear chronotype"
+                    width={512}
+                    height={512}
+                  />
+                  <AppImg
+                    className="onboardingChronotypeKnowledgeAnimal"
+                    src="/onboarding/chronotype_dolphin.webp"
+                    alt="Dolphin chronotype"
+                    width={512}
+                    height={512}
+                  />
+                  <AppImg
+                    className="onboardingChronotypeKnowledgeAnimal"
+                    src="/onboarding/chronotype_wolf.webp"
+                    alt="Wolf chronotype"
+                    width={512}
+                    height={512}
+                  />
                 </div>
               </div>
             </section>
@@ -1639,7 +1665,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 Choose the rhythm that best describes you.
               </p>
             </div>
-          ) : shouldShowOnboardingStepHeading(activeStep) ? (
+          ) : !isGreetingStep && shouldShowOnboardingStepHeading(activeStep) ? (
             <h2 className={`onboardingGreetingTitle${isGreetingStep ? " onboardingGreetingStepTitle" : ""}`} key={`onboarding-heading-${activeStep}`}>
               {isGreetingStep ? (
                 <>
@@ -1657,18 +1683,6 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
                 onboardingHeadingText
               )}
             </h2>
-          ) : null}
-          {isGreetingStep ? (
-            <>
-              <div
-                className="onboardingGreetingDivider onboardingGreetingStepDivider"
-                key={`onboarding-divider-${activeStep}`}
-                aria-hidden="true"
-              />
-              <p className="modalSubtext onboardingGreetingStepSubtext" key={`onboarding-subtext-${activeStep}`}>
-                {ONBOARDING_GREETING_SUBTEXT}
-              </p>
-            </>
           ) : null}
           {!isGreetingStep &&
           !isChronotypeChoiceStep &&
@@ -2182,7 +2196,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               disabled={onboardingContinueDisabled}
               aria-hidden={onboardingContinueReservedHidden || undefined}
             >
-              {isIntroStep || isGreetingStep ? "Let's Go!" : "Continue"}
+              {isIntroStep ? "Let's Go!" : "Continue"}
             </button>
           ) : (
             <button

@@ -815,6 +815,7 @@
 
 .friendSharedTaskCard{
   min-width: 0;
+  border-radius: 6px;
 }
 
 .friendSharedTaskCard.isJumpCard{
@@ -1370,6 +1371,8 @@
 }
 
 .friendSharedTaskChartBars{
+  --friend-shared-task-chart-depth-x: 6px;
+  --friend-shared-task-chart-depth-y: 5px;
   position:relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1378,7 +1381,8 @@
   min-height: 80px;
   border-left: 1px solid rgba(188, 214, 230, 0.18);
   border-bottom: 1px solid rgba(188, 214, 230, 0.18);
-  padding: 0 0 0 5px;
+  padding: var(--friend-shared-task-chart-depth-y) var(--friend-shared-task-chart-depth-x) 0 5px;
+  overflow: visible;
 }
 
 .friendSharedTaskChart.isGoalScale .friendSharedTaskChartYAxis{
@@ -1402,20 +1406,88 @@
   align-items: end;
   min-width: 0;
   height: 100%;
+  overflow: visible;
 }
 
 .friendSharedTaskChartBar{
+  --friend-shared-task-chart-front-top: var(--accent, #35e8ff);
+  --friend-shared-task-chart-front-mid: rgba(141, 255, 107, 0.84);
+  --friend-shared-task-chart-front-bottom: rgba(83, 178, 81, 0.72);
+  --friend-shared-task-chart-side: rgba(47, 103, 58, 0.82);
+  --friend-shared-task-chart-top: rgba(186, 255, 164, 0.92);
+  position: relative;
   display: block;
-  width: 100%;
+  width: calc(100% - var(--friend-shared-task-chart-depth-x));
   min-height: 0;
   height: var(--friend-shared-task-chart-bar, 0%);
-  background: linear-gradient(180deg, var(--accent, #35e8ff), rgba(141, 255, 107, 0.58));
-  border: 1px solid rgba(141, 255, 107, 0.34);
-  box-shadow: 0 0 10px rgba(141, 255, 107, 0.12);
+  margin-right: var(--friend-shared-task-chart-depth-x);
+  isolation: isolate;
 }
 
 .friendSharedTaskChartBar.isActive{
   min-height: 2px;
+}
+
+.friendSharedTaskChartBar:not(.isActive) > span{
+  display: none;
+}
+
+.friendSharedTaskChartBarShadow,
+.friendSharedTaskChartBarSide,
+.friendSharedTaskChartBarFront,
+.friendSharedTaskChartBarTop{
+  position: absolute;
+  pointer-events: none;
+}
+
+.friendSharedTaskChartBarShadow{
+  left: max(1px, calc(var(--friend-shared-task-chart-depth-x) * .3));
+  right: calc(var(--friend-shared-task-chart-depth-x) * -1.65);
+  bottom: calc(var(--friend-shared-task-chart-depth-y) * -.55);
+  z-index: -1;
+  height: max(4px, calc(var(--friend-shared-task-chart-depth-y) * 1.05));
+  background: rgba(0, 0, 0, .36);
+  filter: blur(4px);
+  transform: skewX(-52deg);
+  transform-origin: 0 100%;
+}
+
+.friendSharedTaskChartBarFront{
+  inset: 0;
+  z-index: 2;
+  border: 1px solid rgba(141, 255, 107, 0.34);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .18) 0 3px, transparent 3px),
+    linear-gradient(
+      180deg,
+      var(--friend-shared-task-chart-front-top),
+      var(--friend-shared-task-chart-front-mid) 24%,
+      rgba(141, 255, 107, 0.76) 72%,
+      var(--friend-shared-task-chart-front-bottom)
+    );
+  box-shadow: 0 0 10px rgba(141, 255, 107, 0.12);
+}
+
+.friendSharedTaskChartBarSide{
+  left: 100%;
+  top: calc(var(--friend-shared-task-chart-depth-y) * -1);
+  bottom: var(--friend-shared-task-chart-depth-y);
+  z-index: 1;
+  width: var(--friend-shared-task-chart-depth-x);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 18%),
+    var(--friend-shared-task-chart-side);
+  clip-path: polygon(0 var(--friend-shared-task-chart-depth-y), 100% 0, 100% 100%, 0 100%);
+}
+
+.friendSharedTaskChartBarTop{
+  left: 0;
+  right: calc(var(--friend-shared-task-chart-depth-x) * -1);
+  bottom: 100%;
+  z-index: 3;
+  height: var(--friend-shared-task-chart-depth-y);
+  background: linear-gradient(135deg, var(--friend-shared-task-chart-top), rgba(141, 255, 107, .78));
+  clip-path: polygon(0 100%, var(--friend-shared-task-chart-depth-x) 0, 100% 0, calc(100% - var(--friend-shared-task-chart-depth-x)) 100%);
 }
 
 .friendSharedTaskChartXAxis{

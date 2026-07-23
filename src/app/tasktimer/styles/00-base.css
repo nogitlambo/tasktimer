@@ -972,35 +972,71 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 .switch{
-  width:39px;
-  height:21px;
-  min-width:39px;
-  border-radius: 0;
-  background: #1a1b20;
-  border:1px solid #1a1b20;
+  width:37px;
+  height:20px;
+  min-width:37px;
+  border-radius: 6px;
+  background: rgba(226,231,252,.82);
+  border:1px solid rgba(255,255,255,.72);
+  box-shadow:
+    0 6px 12px rgba(9,11,20,.24),
+    inset 0 1px 0 rgba(255,255,255,.72),
+    inset 0 -1px 0 rgba(120,130,170,.12);
   position:relative;
   cursor:pointer;
+  overflow:hidden;
+  transition:.18s background, .18s border-color, .18s box-shadow, .18s opacity;
+}
+
+.switch::before{
+  content:"OFF";
+  position:absolute;
+  inset:0 5px 0 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(99,89,166,.88);
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height:1;
+  pointer-events:none;
+  transition:.18s color;
 }
 
 .switch::after{
   content:"";
-  width:18px;
-  height:18px;
-  border-radius: 0;
-  background: rgba(255,255,255,.85);
+  width:16px;
+  height:16px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.96);
+  box-shadow:
+    0 4px 9px rgba(78,89,132,.20),
+    inset 0 1px 0 rgba(255,255,255,.88);
   position:absolute;
   top:1px; left:1px;
-  transition:.15s left, .15s background;
+  transition:.18s left, .18s background, .18s box-shadow;
 }
 
-.switch.on{ background: rgba(201,255,36,.22); border-color: #c9ff24; }
+.switch.on{
+  background: #c9ff24;
+  border-color: #c9ff24;
+}
 
-.switch.on::after{ left:19px; background: var(--accent); }
+.switch.on::before{
+  content:"ON";
+  color: rgba(91,78,166,.96);
+}
+
+.switch.on::after{ left:18px; background: rgba(255,255,255,.98); }
 
 .switch:disabled,
 .switch[aria-disabled="true"],
 .toggleRow.isDisabled .switch{
-  border-color: #a8a7a7;
+  border-color: rgba(168,167,167,.48);
+  opacity:.56;
+  cursor:not-allowed;
 }
 
 .milestones{
@@ -3297,23 +3333,28 @@ body[data-theme="lime"] .btn-warn:focus-visible{
 }
 
 body[data-theme="lime"] .switch{
-  border-color: #1a1b20 !important;
-  background: #1a1b20 !important;
+  border-color: rgba(255,255,255,.72) !important;
+  background: rgba(226,231,252,.82) !important;
 }
 
 body[data-theme="lime"] .switch.on{
   border-color: #c9ff24 !important;
-  background: rgba(201,255,36,.22) !important;
+  background: #c9ff24 !important;
+  box-shadow:
+    0 6px 12px rgba(9,11,20,.24),
+    0 0 9px rgba(201,255,36,.16),
+    inset 0 1px 0 rgba(255,255,255,.78),
+    inset 0 -1px 0 rgba(120,130,170,.12) !important;
 }
 
 body[data-theme="lime"] .switch.on::after{
-  background: #c9ff24 !important;
+  background: rgba(255,255,255,.98) !important;
 }
 
 body[data-theme="lime"] .switch:disabled,
 body[data-theme="lime"] .switch[aria-disabled="true"],
 body[data-theme="lime"] .toggleRow.isDisabled .switch{
-  border-color: #a8a7a7 !important;
+  border-color: rgba(168,167,167,.48) !important;
 }
 
 body[data-theme="lime"] .appFooterNav{

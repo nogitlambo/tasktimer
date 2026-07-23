@@ -275,6 +275,7 @@ function createRenderHarness(
     includeHeaderXpCard?: boolean;
     mobileViewport?: boolean;
     weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+    optimalProductivityDays?: Array<"sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat">;
     dashboardPreviousWeekVisible?: boolean;
   }
 ) {
@@ -352,7 +353,7 @@ function createRenderHarness(
     getHistoryByTaskId: () => options?.historyByTaskId || {},
     getDeletedTaskMeta: () => ({}),
     getWeekStarting: () => options?.weekStarting || "mon",
-    getOptimalProductivityDays: () => ["mon", "wed", "fri"],
+    getOptimalProductivityDays: () => options?.optimalProductivityDays || ["mon", "wed", "fri"],
     getDashboardPreviousWeekVisible: () => options?.dashboardPreviousWeekVisible !== false,
     getDashboardTimelineDensity: () => "medium",
     setDashboardTimelineDensity: () => {},
@@ -723,6 +724,38 @@ describe("dashboard week-start alignment", () => {
     }
   });
 
+  it("compares the Activity weekly trend using only selected productivity days", () => {
+    useFixedNow();
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 300 })],
+      {
+        weekStarting: "mon",
+        optimalProductivityDays: ["mon", "wed", "fri"],
+        historyByTaskId: {
+          focus: [
+            { ts: new Date(2026, 4, 1, 9).getTime(), name: "Focus", ms: 15 * 60000 },
+            { ts: new Date(2026, 4, 4, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+            { ts: new Date(2026, 4, 5, 9).getTime(), name: "Focus", ms: 300 * 60000 },
+            { ts: new Date(2026, 4, 6, 9).getTime(), name: "Focus", ms: 40 * 60000 },
+            { ts: new Date(2026, 4, 11, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+            { ts: new Date(2026, 4, 12, 9).getTime(), name: "Focus", ms: 300 * 60000 },
+            { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderAll();
+
+      expect(harness.byId.get("dashboardActivityWeeklyTrendIndicator")?.textContent).toBe("+20%");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("7h 0m");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("100% of weekly goal");
+    } finally {
+      harness.restore();
+    }
+  });
+
   it("keeps Today summaries scoped to the local calendar day", () => {
     useFixedNow();
     const harness = createRenderHarness(
@@ -743,8 +776,8 @@ describe("dashboard week-start alignment", () => {
 
       expect(harness.byId.get("dashboardTodayHoursValue")?.textContent).toBe("30m");
       expect(harness.byId.get("dashboardActivityTodayHoursValue")?.textContent).toBe("30m");
-      expect(harness.byId.get("dashboardTodayHoursDelta")?.textContent).toBe("-30m vs this time yesterday");
-      expect(harness.byId.get("dashboardActivityTodayHoursDelta")?.textContent).toBe("-30m vs this time yesterday");
+      expect(harness.byId.get("dashboardTodayHoursDelta")?.textContent).toBe("+30m vs previous productivity day");
+      expect(harness.byId.get("dashboardActivityTodayHoursDelta")?.textContent).toBe("+30m vs previous productivity day");
     } finally {
       harness.restore();
     }

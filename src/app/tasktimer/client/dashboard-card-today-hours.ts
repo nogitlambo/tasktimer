@@ -1,10 +1,17 @@
 import { localDayKey } from "../lib/history";
+import {
+  localDayToDashboardWeekStart,
+  normalizeOptimalProductivityDays,
+  type OptimalProductivityDays,
+} from "../lib/productivityPeriod";
 import type { HistoryByTaskId, Task } from "../lib/types";
 
 export type DashboardTodayHoursModel = {
   todayMs: number;
   todayLoggedMs: number;
   todayInProgressMs: number;
+  previousProductivityDaySameTimeMs: number;
+  previousProductivityDaySameTimeEntryCount: number;
   yesterdaySameTimeMs: number;
   yesterdaySameTimeEntryCount: number;
   totalDailyGoalMs: number;
@@ -38,6 +45,7 @@ export function buildDashboardTodayHoursModel(options: {
   historyByTaskId: HistoryByTaskId;
   nowMs: number;
   trendMinBaselineMs: number;
+  optimalProductivityDays?: OptimalProductivityDays;
   getElapsedMs: (task: Task) => number;
   isTaskRunning: (task: Task) => boolean;
   normalizeHistoryTimestampMs: (value: unknown) => number;
@@ -47,12 +55,18 @@ export function buildDashboardTodayHoursModel(options: {
   todayStartDate.setHours(0, 0, 0, 0);
   const todayStartMs = todayStartDate.getTime();
   const elapsedTodayMs = Math.max(0, nowValue - todayStartMs);
-  const yesterdayStartMs = todayStartMs - 86400000;
-  const yesterdaySameTimeCutoffMs = yesterdayStartMs + elapsedTodayMs;
   const todayKey = localDayKey(nowValue);
-  const yesterdayDate = new Date(nowValue);
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayKey = localDayKey(yesterdayDate.getTime());
+  const productivityDays = normalizeOptimalProductivityDays(options.optimalProductivityDays);
+  let previousProductivityDayStartMs = todayStartMs - 86400000;
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const candidateStartMs = todayStartMs - offset * 86400000;
+    if (productivityDays.includes(localDayToDashboardWeekStart(candidateStartMs))) {
+      previousProductivityDayStartMs = candidateStartMs;
+      break;
+    }
+  }
+  const previousProductivityDaySameTimeCutoffMs = previousProductivityDayStartMs + elapsedTodayMs;
+  const previousProductivityDayKey = localDayKey(previousProductivityDayStartMs);
   const filteredTasks = Array.isArray(options.tasks) ? options.tasks : [];
   const includedTaskIds = new Set(
     filteredTasks.map((task) => String(task?.id || "").trim()).filter(Boolean),
@@ -69,8 +83,8 @@ export function buildDashboardTodayHoursModel(options: {
   );
 
   let todayLoggedMs = 0;
-  let yesterdaySameTimeMs = 0;
-  let yesterdaySameTimeEntryCount = 0;
+  let previousProductivityDaySameTimeMs = 0;
+  let previousProductivityDaySameTimeEntryCount = 0;
   includedTaskIds.forEach((taskId) => {
     const entries = Array.isArray(options.historyByTaskId?.[taskId])
       ? options.historyByTaskId[taskId]
@@ -82,11 +96,11 @@ export function buildDashboardTodayHoursModel(options: {
       const entryDayKey = localDayKey(ts);
       if (entryDayKey === todayKey) todayLoggedMs += ms;
       else if (
-        entryDayKey === yesterdayKey &&
-        ts <= yesterdaySameTimeCutoffMs
+        entryDayKey === previousProductivityDayKey &&
+        ts <= previousProductivityDaySameTimeCutoffMs
       ) {
-        yesterdaySameTimeMs += ms;
-        yesterdaySameTimeEntryCount += 1;
+        previousProductivityDaySameTimeMs += ms;
+        previousProductivityDaySameTimeEntryCount += 1;
       }
     });
   });
@@ -148,8 +162,10 @@ export function buildDashboardTodayHoursModel(options: {
     todayMs,
     todayLoggedMs,
     todayInProgressMs,
-    yesterdaySameTimeMs,
-    yesterdaySameTimeEntryCount,
+    previousProductivityDaySameTimeMs,
+    previousProductivityDaySameTimeEntryCount,
+    yesterdaySameTimeMs: previousProductivityDaySameTimeMs,
+    yesterdaySameTimeEntryCount: previousProductivityDaySameTimeEntryCount,
     totalDailyGoalMs,
     dailyGoalLoggedMs,
     dailyGoalInProgressMs,
@@ -158,8 +174,8 @@ export function buildDashboardTodayHoursModel(options: {
     dailyGoalProgressPct,
     dailyGoalProjectedPct,
     hasUsableTrendBaseline:
-      yesterdaySameTimeEntryCount > 0 &&
-      yesterdaySameTimeMs >= Math.max(0, options.trendMinBaselineMs),
+      previousProductivityDaySameTimeEntryCount > 0 &&
+      previousProductivityDaySameTimeMs >= Math.max(0, options.trendMinBaselineMs),
     showDirectionalTrendArrow: filteredTasks.some((task) =>
       options.isTaskRunning(task),
     ),
@@ -167,38 +183,39 @@ export function buildDashboardTodayHoursModel(options: {
 }
 
 export function formatDashboardTodayHoursDeltaText(
-  model: Pick<DashboardTodayHoursModel, "todayMs" | "yesterdaySameTimeMs">,
+  model: Pick<DashboardTodayHoursModel, "todayMs"> & Partial<Pick<DashboardTodayHoursModel, "previousProductivityDaySameTimeMs" | "yesterdaySameTimeMs">>,
   formatDuration: (ms: number) => string,
 ) {
-  if (model.todayMs <= 0 && model.yesterdaySameTimeMs <= 0) {
+  const previousMs = model.previousProductivityDaySameTimeMs ?? model.yesterdaySameTimeMs ?? 0;
+  if (model.todayMs <= 0 && previousMs <= 0) {
     return { text: "No time logged today", sentiment: "neutral" as const };
   }
-  if (model.yesterdaySameTimeMs <= 0) {
+  if (previousMs <= 0) {
     if (model.todayMs > 0) {
       return {
-        text: `+${formatDuration(model.todayMs)} vs this time yesterday`,
+        text: `+${formatDuration(model.todayMs)} vs previous productivity day`,
         sentiment: "positive" as const,
       };
     }
     return {
-      text: "Same as this time yesterday",
+      text: "Same as previous productivity day",
       sentiment: "neutral" as const,
     };
   }
 
-  const deltaMs = model.todayMs - model.yesterdaySameTimeMs;
+  const deltaMs = model.todayMs - previousMs;
   const deltaText = formatDuration(Math.abs(deltaMs));
   if (deltaMs > 0) {
     return {
-      text: `+${deltaText} vs this time yesterday`,
+      text: `+${deltaText} vs previous productivity day`,
       sentiment: "positive" as const,
     };
   }
   if (deltaMs < 0) {
     return {
-      text: `-${deltaText} vs this time yesterday`,
+      text: `-${deltaText} vs previous productivity day`,
       sentiment: "negative" as const,
     };
   }
-  return { text: "Same as this time yesterday", sentiment: "neutral" as const };
+  return { text: "Same as previous productivity day", sentiment: "neutral" as const };
 }

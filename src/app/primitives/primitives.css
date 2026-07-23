@@ -530,6 +530,7 @@ body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:fo
 
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveDashboardCard{
   width: min(320px, 100%);
+  border-radius: 6px;
 }
 
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveDashboardCard .dashboardCardTitle{

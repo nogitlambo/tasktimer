@@ -1312,36 +1312,13 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch{
-  width:39px;
-  height:21px;
-  min-width:39px;
-  border-radius:0;
-  border-color: #1a1b20 !important;
-  background: #1a1b20 !important;
-}
-
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch::after{
-  width:18px;
-  height:18px;
-  border-radius:0;
-  top:1px;
-  left:1px;
-}
-
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch.on{
-  background: rgba(201,255,36,.22) !important;
-  border-color: #c9ff24 !important;
-}
-
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch.on::after{
-  left:19px;
-  background: #c9ff24 !important;
+  flex:0 0 auto;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch:disabled,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch[aria-disabled="true"],
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .toggleRow.isDisabled .switch{
-  border-color: #a8a7a7 !important;
+  opacity:.56;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineFooter{
@@ -3513,7 +3490,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarFrameBtn{
   display: block;
-  border-radius: 0 !important;
+  border-radius: 50% !important;
   clip-path: none !important;
   overflow: hidden !important;
 }
@@ -3522,23 +3499,24 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   width: 116px !important;
   height: 116px !important;
   margin: 0;
-  border-radius: 0 !important;
-  border: 0 !important;
-  background: transparent;
-  box-shadow: none !important;
+  border-radius: 50% !important;
+  border: 5px solid rgba(251,255,224,.88) !important;
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 0 0 6px rgba(219,255,79,.08) !important;
   clip-path: none !important;
+  overflow: hidden !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarImage,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarPlaceholderInner{
-  border-radius: 0 !important;
+  border-radius: 50% !important;
   clip-path: none !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarFrameBtn *,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarPlaceholder *,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardHeaderProfile > .settingsAccountIdCardAvatarDock .accountAvatarImage{
-  border-radius: 0 !important;
+  border-radius: 50% !important;
   clip-path: none !important;
 }
 
@@ -3550,7 +3528,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   object-fit: contain;
   object-position: center;
   display: block;
-  padding: 6px;
+  padding: 0;
   background: linear-gradient(180deg, rgba(12,18,28,.82), rgba(7,10,18,.94));
   box-sizing: border-box;
 }

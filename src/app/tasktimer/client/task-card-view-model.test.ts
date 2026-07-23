@@ -69,6 +69,20 @@ describe("task card view model", () => {
     expect(rendered.html).toContain("Write &lt;docs&gt;");
   });
 
+  it("renders inline history range controls from the current view state", () => {
+    const rendered = renderCard({
+      showHistory: true,
+      historyRevealPhase: "open",
+      historyRangeDays: 14,
+      historyRangeMode: "day",
+    });
+
+    expect(rendered.html).toContain('class="switch historyRangeToggle on"');
+    expect(rendered.html).toContain('aria-checked="true" data-history-range-toggle="true"');
+    expect(rendered.html).toContain('data-history-range-mode="entries" aria-pressed="false"');
+    expect(rendered.html).toContain('data-history-range-mode="day" aria-pressed="true"');
+  });
+
   it("renders back-face task menu actions with full labels", () => {
     const rendered = renderCard();
 

@@ -500,7 +500,12 @@ export function renderSharedTaskWeeklyChart(
       return `<div class="friendSharedTaskChartBarSlot" title="${escapeHtmlUI(`${label}: ${duration}`)}" aria-label="${escapeHtmlUI(
         `${label}: ${duration}`
       )}">
-                      <span class="${barClass}" style="--friend-shared-task-chart-bar: ${heightPct}%"></span>
+                      <span class="${barClass}" style="--friend-shared-task-chart-bar: ${heightPct}%">
+                        <span class="friendSharedTaskChartBarShadow" aria-hidden="true"></span>
+                        <span class="friendSharedTaskChartBarSide" aria-hidden="true"></span>
+                        <span class="friendSharedTaskChartBarFront" aria-hidden="true"></span>
+                        <span class="friendSharedTaskChartBarTop" aria-hidden="true"></span>
+                      </span>
                     </div>`;
     })
     .join("");

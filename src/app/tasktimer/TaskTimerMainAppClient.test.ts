@@ -111,10 +111,14 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("closeLeaderboardMovementModal();");
   });
 
-  it("highlights the current user row in the leaderboard movement modal", () => {
+  it("animates and highlights rows in the leaderboard movement modal", () => {
     expect(source).toContain("function LeaderboardMovementTable");
+    expect(source).toContain("const movementRows = change.movementRows?.length ? change.movementRows : change.rows;");
+    expect(source).toContain('"--leaderboard-movement-from-index": previousIndex');
+    expect(source).toContain('"--leaderboard-movement-to-index": index');
     expect(source).toContain('leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}');
     expect(source).toContain("formatLeaderboardMovementMetric(change, row.profile)");
+    expect(source).toContain("leaderboardMovementSkippedRows");
   });
 
   it("styles leaderboard movement content as a reduced-motion aware slide track", () => {
@@ -126,7 +130,12 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSlideTrack");
     expect(overlaysCss).toContain("transform: translateX(calc(var(--leaderboard-movement-index) * -100%));");
     expect(overlaysCss).toContain("transition: transform .34s cubic-bezier(.2, .8, .2, 1);");
+    expect(overlaysCss).toContain("@keyframes leaderboardMovementRowSettle");
+    expect(overlaysCss).toContain("animation: leaderboardMovementRowSettle .72s cubic-bezier(.16, .86, .22, 1) .12s both;");
+    expect(overlaysCss).toContain("var(--leaderboard-movement-row-height)");
     expect(overlaysCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardMovementTableRow");
+    expect(overlaysCss).toContain("animation: none;");
     expect(overlaysCss).toContain("transition: none;");
   });
 

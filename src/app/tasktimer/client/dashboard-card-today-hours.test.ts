@@ -59,8 +59,8 @@ describe("dashboard today hours card module", () => {
     expect(model.todayLoggedMs).toBe(30 * 60 * 1000);
     expect(model.todayInProgressMs).toBe(15 * 60 * 1000);
     expect(model.todayMs).toBe(45 * 60 * 1000);
-    expect(model.yesterdaySameTimeMs).toBe(20 * 60 * 1000);
-    expect(model.yesterdaySameTimeEntryCount).toBe(1);
+    expect(model.previousProductivityDaySameTimeMs).toBe(20 * 60 * 1000);
+    expect(model.previousProductivityDaySameTimeEntryCount).toBe(1);
     expect(model.hasUsableTrendBaseline).toBe(true);
     expect(model.totalDailyGoalMs).toBe(90 * 60 * 1000);
     expect(model.dailyGoalLoggedMs).toBe(30 * 60 * 1000);
@@ -72,6 +72,83 @@ describe("dashboard today hours card module", () => {
     expect(model.showDirectionalTrendArrow).toBe(true);
   });
 
+  it("compares Monday to the previous selected productivity day", () => {
+    const nowMs = new Date(2026, 4, 18, 12).getTime();
+    const previousFridayBeforeCutoffMs = new Date(2026, 4, 15, 11).getTime();
+    const previousFridayAfterCutoffMs = new Date(2026, 4, 15, 13).getTime();
+    const previousSundayMs = new Date(2026, 4, 17, 11).getTime();
+
+    const model = buildDashboardTodayHoursModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [
+          { ts: nowMs - 1000, name: "Focus", ms: 45 * 60000 },
+          { ts: previousFridayBeforeCutoffMs, name: "Focus", ms: 30 * 60000 },
+          { ts: previousFridayAfterCutoffMs, name: "Focus", ms: 60 * 60000 },
+          { ts: previousSundayMs, name: "Focus", ms: 90 * 60000 },
+        ],
+      },
+      nowMs,
+      trendMinBaselineMs: 15 * 60 * 1000,
+      optimalProductivityDays: ["mon", "wed", "fri"],
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.todayMs).toBe(45 * 60000);
+    expect(model.previousProductivityDaySameTimeMs).toBe(30 * 60000);
+    expect(model.previousProductivityDaySameTimeEntryCount).toBe(1);
+    expect(model.hasUsableTrendBaseline).toBe(true);
+  });
+
+  it("preserves yesterday comparison when all days are productivity days", () => {
+    const nowMs = new Date(2026, 4, 18, 12).getTime();
+
+    const model = buildDashboardTodayHoursModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [
+          { ts: nowMs - 1000, name: "Focus", ms: 45 * 60000 },
+          { ts: new Date(2026, 4, 17, 11).getTime(), name: "Focus", ms: 30 * 60000 },
+          { ts: new Date(2026, 4, 15, 11).getTime(), name: "Focus", ms: 90 * 60000 },
+        ],
+      },
+      nowMs,
+      trendMinBaselineMs: 15 * 60 * 1000,
+      optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.previousProductivityDaySameTimeMs).toBe(30 * 60000);
+    expect(model.hasUsableTrendBaseline).toBe(true);
+  });
+
+  it("marks the previous productivity day baseline unavailable when it is below the minimum", () => {
+    const nowMs = new Date(2026, 4, 18, 12).getTime();
+
+    const model = buildDashboardTodayHoursModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [
+          { ts: nowMs - 1000, name: "Focus", ms: 45 * 60000 },
+          { ts: new Date(2026, 4, 15, 11).getTime(), name: "Focus", ms: 10 * 60000 },
+        ],
+      },
+      nowMs,
+      trendMinBaselineMs: 15 * 60 * 1000,
+      optimalProductivityDays: ["mon", "wed", "fri"],
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.previousProductivityDaySameTimeMs).toBe(10 * 60000);
+    expect(model.hasUsableTrendBaseline).toBe(false);
+  });
+
   it("formats delta text and sentiment for the render layer", () => {
     const formatted = formatDashboardTodayHoursDeltaText(
       { todayMs: 45 * 60 * 1000, yesterdaySameTimeMs: 30 * 60 * 1000 },
@@ -79,7 +156,7 @@ describe("dashboard today hours card module", () => {
     );
 
     expect(formatted).toEqual({
-      text: "+15m vs this time yesterday",
+      text: "+15m vs previous productivity day",
       sentiment: "positive",
     });
   });

@@ -969,6 +969,13 @@ describe("groups friends list shared task counts", () => {
     expect(promptActionRule).toContain("justify-content: center;");
   });
 
+  it("applies slightly curved corners to friend shared task cards", () => {
+    const css = readFileSync("src/app/tasktimer/styles/08-friends.css", "utf8").replace(/\r\n/g, "\n");
+    const sharedTaskCardRules = Array.from(css.matchAll(/\.friendSharedTaskCard\{[\s\S]*?\n\}/g)).map((match) => match[0]);
+
+    expect(sharedTaskCardRules.some((rule) => rule.includes("border-radius: 6px;"))).toBe(true);
+  });
+
   it("switches checkpoint timeline scrolling on only when marker-proximate labels would detach", () => {
     const normalDesktop = getSharedTaskCheckpointTimelineLayouts([16.7, 50, 83.3], [29, 50, 50], 720);
     const closeMobile = getSharedTaskCheckpointTimelineLayouts([0.6, 1.1, 1.7], [22, 22, 22], 360);

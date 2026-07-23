@@ -19,7 +19,7 @@ type TaskListRendererOptions = {
   setCurrentTileColumnCount: (value: number) => void;
   getOpenHistoryTaskIds: () => Set<string>;
   getPinnedHistoryTaskIds: () => Set<string>;
-  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null; revealTimer?: number | null }>;
+  getHistoryViewByTaskId: () => Record<string, { revealPhase?: "openingSpace" | "opening" | "closing" | "closingSpace" | "open" | null; revealTimer?: number | null; rangeDays?: 7 | 14; rangeMode?: "entries" | "day" }>;
   pruneInactiveHistoryTasks?: (activeTaskIds: Set<string>) => boolean;
   syncTaskFlipStatesForVisibleTasks: (activeTaskIds: Set<string>) => void;
   applyTaskFlipDomState: (taskId: string, taskEl?: HTMLElement | null) => void;
@@ -206,6 +206,8 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         checkpointRepeatActiveTaskId: options.checkpointRepeatActiveTaskId(),
         checkpointFlashActive: options.isCheckpointFlashActive(taskId),
         historyRevealPhase,
+        historyRangeDays: historyState?.rangeDays,
+        historyRangeMode: historyState?.rangeMode,
         showHistory,
         isHistoryPinned,
         canUseAdvancedHistory: options.canUseAdvancedHistory(),

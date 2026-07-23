@@ -59,6 +59,8 @@ type RenderTaskCardOptions = {
   checkpointRepeatActiveTaskId: string | null | undefined;
   checkpointFlashActive: boolean;
   historyRevealPhase: TaskHistoryRevealPhase;
+  historyRangeDays?: 7 | 14;
+  historyRangeMode?: "entries" | "day";
   showHistory: boolean;
   isHistoryPinned: boolean;
   canUseAdvancedHistory: boolean;
@@ -370,16 +372,22 @@ export function renderTaskProgressHtml(
 function renderTaskHistoryInlineHtml({
   taskName,
   historyRevealPhase,
+  historyRangeDays,
+  historyRangeMode,
   isHistoryPinned,
   canUseAdvancedHistory,
   escapeHtml,
 }: {
   taskName: string;
   historyRevealPhase: TaskHistoryRevealPhase;
+  historyRangeDays?: 7 | 14;
+  historyRangeMode?: "entries" | "day";
   isHistoryPinned: boolean;
   canUseAdvancedHistory: boolean;
   escapeHtml: (value: string) => string;
 }) {
+  const is14DayRange = historyRangeDays === 14;
+  const isDayMode = historyRangeMode === "day";
   return `
           <section class="historyInline historyInlineMotion${historyRevealPhase === "openingSpace" ? " isOpeningSpace" : ""}${historyRevealPhase === "opening" ? " isOpening" : ""}${historyRevealPhase === "closing" ? " isClosing" : ""}${historyRevealPhase === "closingSpace" ? " isClosingSpace" : ""}${historyRevealPhase === "open" ? " isOpen" : ""}" aria-label="History for ${escapeHtml(taskName)}">
               <div class="historyTop">
@@ -397,12 +405,12 @@ function renderTaskHistoryInlineHtml({
               <div class="historyRangeInfo">
                 <div class="historyMeta historyRangeText">&nbsp;</div>
                 <div class="historyRangeToggleRow" aria-label="History range">
-                  <button class="switch historyRangeToggle" type="button" role="switch" aria-checked="false" data-history-range-toggle="true"></button>
+                  <button class="switch historyRangeToggle${is14DayRange ? " on" : ""}" type="button" role="switch" aria-checked="${is14DayRange ? "true" : "false"}" data-history-range-toggle="true"></button>
                   <div class="taskScreenPillGroup historyRangeModeGroup" role="group" aria-label="History display mode">
-                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab isOn" type="button" data-history-range-mode="entries" aria-pressed="true">
+                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab${isDayMode ? "" : " isOn"}" type="button" data-history-range-mode="entries" aria-pressed="${isDayMode ? "false" : "true"}">
                       <span class="taskScreenHeaderBtnText">Entries</span>
                     </button>
-                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab" type="button" data-history-range-mode="day" aria-pressed="false">
+                    <button class="taskScreenPill taskScreenHeaderBtn historyRangeModeTab${isDayMode ? " isOn" : ""}" type="button" data-history-range-mode="day" aria-pressed="${isDayMode ? "true" : "false"}">
                       <span class="taskScreenHeaderBtnText">Day</span>
                     </button>
                   </div>
@@ -427,6 +435,8 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     checkpointRepeatActiveTaskId,
     checkpointFlashActive,
     historyRevealPhase,
+    historyRangeDays,
+    historyRangeMode,
     showHistory,
     isHistoryPinned,
     canUseAdvancedHistory,
@@ -472,6 +482,8 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     ? renderTaskHistoryInlineHtml({
         taskName: task.name,
         historyRevealPhase,
+        historyRangeDays,
+        historyRangeMode,
         isHistoryPinned,
         canUseAdvancedHistory,
         escapeHtml,
@@ -544,7 +556,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
             <div class="taskBack">
               <div class="taskBackHead">
                 <div class="taskBackTitle">${escapeHtml(task.name)}</div>
-                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&#8594;</button>
+                <button class="iconBtn taskFlipBtn taskFlipBackBtn" type="button" data-task-flip="close" title="Back to task" aria-label="Back to task" aria-expanded="false">&gt;</button>
               </div>
               <div class="taskBackActions">
                 <button class="taskMenuItem" data-action="edit" title="Edit" type="button">${renderTaskBackActionTile("Edit", escapeHtml, "/icons/icons_default/settings.webp")}</button>

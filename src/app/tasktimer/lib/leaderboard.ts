@@ -46,6 +46,9 @@ export type LeaderboardPositionChangeSnapshot = {
   previousRank: number;
   currentRank: number;
   rows: WeeklyLeaderboardRow[];
+  movementRows: WeeklyLeaderboardRow[];
+  movementRowsTruncated: boolean;
+  skippedMovementRowCount: number;
 };
 
 export type LeaderboardPositionChangedEventDetail = {
@@ -137,7 +140,7 @@ const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
 const RANK_RIVALS_QUERY_LIMIT = 100;
-const LEADERBOARD_MOVEMENT_NEIGHBOR_QUERY_LIMIT = 10;
+const LEADERBOARD_MOVEMENT_CROSSED_ROW_LIMIT = 10;
 const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const avatarSrcById = AVATAR_CATALOG.reduce<Record<string, string>>((acc, avatar) => {
@@ -540,54 +543,46 @@ async function loadLeaderboardRankForMetric(metric: LeaderboardMovementMetric, v
   return higherEntries.length + 1;
 }
 
-async function loadClosestLeaderboardNeighbor(input: {
+async function loadLeaderboardMovementRows(input: {
   metric: LeaderboardMovementMetric;
-  value: number;
-  currentUid: string;
-  direction: "above" | "below";
-}): Promise<WeeklyLeaderboardRow | null> {
+  previousValue: number;
+  currentValue: number;
+  currentProfile: LeaderboardProfile;
+  previousRank: number;
+  currentRank: number;
+}): Promise<{
+  rows: WeeklyLeaderboardRow[];
+  truncated: boolean;
+  skippedCount: number;
+}> {
   const db = dbOrNull();
-  if (!db || !input.currentUid) return null;
-  const operator = input.direction === "above" ? ">" : "<";
-  const orderDirection = input.direction === "above" ? "asc" : "desc";
+  const currentUserRow = buildLeaderboardMovementRow(input.currentProfile, input.currentRank, input.currentProfile.uid);
+  const crossedRowCount = Math.max(0, Math.abs(input.previousRank - input.currentRank));
+  if (!db || !input.currentProfile.uid || !crossedRowCount) {
+    return { rows: [currentUserRow], truncated: false, skippedCount: 0 };
+  }
+
   const snap = await getDocs(
     query(
       collection(db, "leaderboardProfiles"),
-      where(input.metric.field, operator, normalizeInt(input.value)),
-      orderBy(input.metric.field, orderDirection),
-      limit(LEADERBOARD_MOVEMENT_NEIGHBOR_QUERY_LIMIT + EXCLUDED_LEADERBOARD_USERNAMES.size)
+      where(input.metric.field, ">", normalizeInt(input.previousValue)),
+      where(input.metric.field, "<=", normalizeInt(input.currentValue)),
+      orderBy(input.metric.field, "desc"),
+      limit(LEADERBOARD_MOVEMENT_CROSSED_ROW_LIMIT + EXCLUDED_LEADERBOARD_USERNAMES.size)
     )
   );
-  const neighbor = visibleLeaderboardProfiles(snap.docs.map((row) => asLeaderboardProfile(row))).find((profile) => profile.uid !== input.currentUid);
-  if (!neighbor) return null;
-  const neighborRank = await loadLeaderboardRankForMetric(input.metric, metricValue(neighbor, input.metric));
-  if (!neighborRank) return null;
-  return buildLeaderboardMovementRow(neighbor, neighborRank, input.currentUid);
-}
-
-async function loadLeaderboardMovementRows(input: {
-  metric: LeaderboardMovementMetric;
-  currentProfile: LeaderboardProfile;
-  currentRank: number;
-}): Promise<WeeklyLeaderboardRow[]> {
-  const value = metricValue(input.currentProfile, input.metric);
-  const [above, below] = await Promise.all([
-    loadClosestLeaderboardNeighbor({
-      metric: input.metric,
-      value,
-      currentUid: input.currentProfile.uid,
-      direction: "above",
-    }).catch(() => null),
-    loadClosestLeaderboardNeighbor({
-      metric: input.metric,
-      value,
-      currentUid: input.currentProfile.uid,
-      direction: "below",
-    }).catch(() => null),
-  ]);
-  return [above, buildLeaderboardMovementRow(input.currentProfile, input.currentRank, input.currentProfile.uid), below].filter(
-    (row): row is WeeklyLeaderboardRow => !!row
+  const crossedProfiles = visibleLeaderboardProfiles(snap.docs.map((row) => asLeaderboardProfile(row)))
+    .filter((profile) => profile.uid !== input.currentProfile.uid)
+    .slice(0, LEADERBOARD_MOVEMENT_CROSSED_ROW_LIMIT);
+  const crossedRows = crossedProfiles.map((profile, index) =>
+    buildLeaderboardMovementRow(profile, input.currentRank + index + 1, input.currentProfile.uid)
   );
+  const skippedCount = Math.max(0, crossedRowCount - crossedRows.length);
+  return {
+    rows: [currentUserRow, ...crossedRows],
+    truncated: skippedCount > 0,
+    skippedCount,
+  };
 }
 
 async function buildLeaderboardPositionChanges(input: {
@@ -608,12 +603,15 @@ async function buildLeaderboardPositionChanges(input: {
     const currentRank = await loadLeaderboardRankForMetric(metric, currentValue, input.uid).catch(() => null);
     if (!previousRank || !currentRank || previousRank === currentRank) continue;
 
-    const rows = await loadLeaderboardMovementRows({
+    const movement = await loadLeaderboardMovementRows({
       metric,
+      previousValue,
+      currentValue,
       currentProfile: input.currentProfile,
+      previousRank,
       currentRank,
-    }).catch(() => []);
-    if (!rows.some((row) => row.isCurrentUser)) continue;
+    }).catch(() => ({ rows: [], truncated: false, skippedCount: 0 }));
+    if (!movement.rows.some((row) => row.isCurrentUser)) continue;
 
     changes.push({
       boardId: metric.boardId,
@@ -621,7 +619,10 @@ async function buildLeaderboardPositionChanges(input: {
       metricLabel: metric.metricLabel,
       previousRank,
       currentRank,
-      rows,
+      rows: movement.rows,
+      movementRows: movement.rows,
+      movementRowsTruncated: movement.truncated,
+      skippedMovementRowCount: movement.skippedCount,
     });
   }
   return changes;

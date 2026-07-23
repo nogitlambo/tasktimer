@@ -61,4 +61,14 @@ describe("PrimitiveGallery", () => {
     expect(css).toContain("border-color: #020509 !important;");
     expect(css).toContain("color: rgba(238, 242, 246, .88) !important;");
   });
+
+  it("applies slightly curved corners to the primitive shared card", () => {
+    const css = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
+
+    const sharedCardRule = css.match(
+      /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveDashboardCard\{[\s\S]*?\n\}/
+    )?.[0] || "";
+
+    expect(sharedCardRule).toContain("border-radius: 6px;");
+  });
 });

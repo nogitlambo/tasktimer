@@ -468,35 +468,60 @@ function LeaderboardMovementTable({
 }: {
   change: LeaderboardPositionChangeSnapshot;
 }) {
+  const movementRows = change.movementRows?.length ? change.movementRows : change.rows;
+  const isMovingUp = change.currentRank < change.previousRank;
+  const isMovingDown = change.currentRank > change.previousRank;
+  const lastRowIndex = Math.max(0, movementRows.length - 1);
+
   return (
     <div className="leaderboardMovementTableWrap">
-      <div className="leaderboardWeeklyTable leaderboardMovementTable" role="table" aria-label={`${change.boardLabel} position change`}>
+      <div
+        className={`leaderboardWeeklyTable leaderboardMovementTable${isMovingUp ? " isMovingUp" : ""}${isMovingDown ? " isMovingDown" : ""}`}
+        role="table"
+        aria-label={`${change.boardLabel} position change`}
+      >
         <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
           <span role="columnheader">Pos</span>
           <span role="columnheader">User</span>
           <span role="columnheader">{change.metricLabel}</span>
           <span role="columnheader">Rank</span>
         </div>
-        {change.rows.map((row) => (
-          <div
-            className={`leaderboardWeeklyTableRow leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}`}
-            role="row"
-            key={`${change.boardId}-${row.profile.uid}-${row.rank}`}
-          >
-            <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
-            <span className="leaderboardWeeklyPlayerCell" role="cell">
-              <LeaderboardAvatar profile={row.profile} small />
-              <span className="leaderboardWeeklyPlayerText">
-                <strong>{row.playerLabel}</strong>
+        {movementRows.map((row, index) => {
+          const previousIndex = row.isCurrentUser
+            ? (isMovingUp ? lastRowIndex : isMovingDown ? 0 : index)
+            : (isMovingUp ? Math.max(0, index - 1) : isMovingDown ? Math.min(lastRowIndex, index + 1) : index);
+          const rowStyle = {
+            "--leaderboard-movement-from-index": previousIndex,
+            "--leaderboard-movement-to-index": index,
+          } as CSSProperties;
+
+          return (
+            <div
+              className={`leaderboardWeeklyTableRow leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}`}
+              role="row"
+              key={`${change.boardId}-${row.profile.uid}-${row.rank}`}
+              style={rowStyle}
+            >
+              <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
+              <span className="leaderboardWeeklyPlayerCell" role="cell">
+                <LeaderboardAvatar profile={row.profile} small />
+                <span className="leaderboardWeeklyPlayerText">
+                  <strong>{row.playerLabel}</strong>
+                </span>
               </span>
-            </span>
-            <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardMovementMetric(change, row.profile)}</span>
-            <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-              <LeaderboardRankInsignia profile={row.profile} />
-            </span>
-          </div>
-        ))}
+              <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardMovementMetric(change, row.profile)}</span>
+              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+                <LeaderboardRankInsignia profile={row.profile} />
+              </span>
+            </div>
+          );
+        })}
       </div>
+      {change.movementRowsTruncated && change.skippedMovementRowCount > 0 ? (
+        <p className="leaderboardMovementSkippedRows">
+          {new Intl.NumberFormat().format(change.skippedMovementRowCount)} crossed rows skipped
+        </p>
+      ) : null}
     </div>
   );
 }

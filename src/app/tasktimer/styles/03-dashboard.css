@@ -308,7 +308,7 @@
 }
 
 .dashboardActivitySummaryMini .dashboardSummaryFoot{
-  font-family:var(--font-geist-mono);
+  font-family:var(--font-readable);
   font-size:13px;
   min-height:18px;
 }
@@ -763,7 +763,7 @@ body[data-theme="lime"] .dashboardActivityGoalLine{
 }
 
 .dashboardSummaryFoot{
-  font-family:var(--font-geist-mono);
+  font-family:var(--font-readable);
   font-size:13px;
 }
 
@@ -6034,7 +6034,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSummaryCard .dashboardSummaryFoot span{
   min-height: 14px;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 13px;
   line-height: 1.18;
 }
@@ -6498,7 +6498,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardSummaryFoot{
-    font-family: var(--font-geist-mono) !important;
+    font-family: var(--font-readable) !important;
     font-size: 13px !important;
   }
 

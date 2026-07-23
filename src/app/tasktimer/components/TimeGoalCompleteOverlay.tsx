@@ -9,6 +9,8 @@ type GoldFragment = {
   style: CSSProperties;
 };
 
+const CELEBRATION_RIBBONS = Array.from({ length: 5 });
+
 function formatCssNumber(value: number, digits = 3): string {
   return Number(value.toFixed(digits)).toString();
 }
@@ -118,6 +120,11 @@ export default function TimeGoalCompleteOverlay() {
         </div>
         <div className="timeGoalCompletePrimitiveBody">
           <div className="timeGoalCompleteRewardCard">
+            <span className="timeGoalCompleteRibbonRail" aria-hidden="true">
+              {CELEBRATION_RIBBONS.map((_, index) => (
+                <span className="timeGoalCompleteRibbon" key={index} />
+              ))}
+            </span>
             <div className="timeGoalCompleteTickWrap" aria-hidden="true">
               <span className="timeGoalCompleteStarArc">
                 <span className="timeGoalCompleteArcStar" />

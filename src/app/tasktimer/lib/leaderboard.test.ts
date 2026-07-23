@@ -790,9 +790,7 @@ describe("saveLeaderboardProfile", () => {
     firestoreMocks.getDocs
       .mockResolvedValueOnce(querySnap([docSnap("blocked-1", blockedProfile), docSnap("uid-2", belowProfile), docSnap("uid-3", oldAboveProfile), docSnap("uid-global", currentProfile)]))
       .mockResolvedValueOnce(querySnap([docSnap("uid-global", currentProfile)]))
-      .mockResolvedValueOnce(querySnap([]))
-      .mockResolvedValueOnce(querySnap([docSnap("blocked-1", blockedProfile), docSnap("uid-2", belowProfile)]))
-      .mockResolvedValueOnce(querySnap([docSnap("uid-global", currentProfile)]));
+      .mockResolvedValueOnce(querySnap([docSnap("uid-global", currentProfile), docSnap("blocked-1", blockedProfile), docSnap("uid-2", belowProfile), docSnap("uid-3", oldAboveProfile)]));
 
     await saveLeaderboardProfile("uid-global", {
       rewardCurrentRankId: "operator",
@@ -813,11 +811,69 @@ describe("saveLeaderboardProfile", () => {
       previousRank: 3,
       currentRank: 1,
     });
-    expect(events[0]?.detail.changes[0]?.rows.map((row) => row.profile.uid)).toEqual(["uid-global", "uid-2"]);
+    expect(events[0]?.detail.changes[0]).toMatchObject({
+      movementRowsTruncated: false,
+      skippedMovementRowCount: 0,
+    });
+    expect(events[0]?.detail.changes[0]?.movementRows.map((row) => row.profile.uid)).toEqual(["uid-global", "uid-2", "uid-3"]);
+    expect(events[0]?.detail.changes[0]?.rows.map((row) => row.profile.uid)).toEqual(["uid-global", "uid-2", "uid-3"]);
     expect(events[0]?.detail.changes[0]?.rows.find((row) => row.profile.uid === "uid-global")).toMatchObject({
       isCurrentUser: true,
       rank: 1,
     });
+    expect(events[0]?.detail.changes[0]?.rows.find((row) => row.profile.uid === "uid-2")).toMatchObject({
+      rank: 2,
+    });
+  });
+
+  it("caps crossed leaderboard movement rows and reports skipped rows", async () => {
+    const events = captureLeaderboardPositionEvents();
+    const previousProfile = createProfile({ uid: "uid-big-jump", username: "pilot", rewardTotalXp: 100, weeklyXpGain: 10 });
+    const currentProfile = createProfile({ uid: "uid-big-jump", username: "pilot", rewardTotalXp: 500, weeklyXpGain: 10 });
+    const crossedProfiles = Array.from({ length: 12 }, (_, index) =>
+      createProfile({
+        uid: `crossed-${index + 1}`,
+        username: `crossed_${index + 1}`,
+        rewardTotalXp: 490 - index * 10,
+        weeklyXpGain: 1,
+      })
+    );
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(docSnap("uid-big-jump", previousProfile));
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap(crossedProfiles.map((profile) => docSnap(profile.uid, profile))))
+      .mockResolvedValueOnce(querySnap([]))
+      .mockResolvedValueOnce(querySnap(crossedProfiles.map((profile) => docSnap(profile.uid, profile))));
+
+    await saveLeaderboardProfile("uid-big-jump", {
+      rewardCurrentRankId: "operator",
+      rewardTotalXp: 500,
+      completedTaskCount: 8,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyFocusMs: 15_000,
+      weeklyXpGain: 10,
+    });
+
+    const change = events[0]?.detail.changes[0];
+    expect(change).toMatchObject({
+      boardId: "global",
+      previousRank: 13,
+      currentRank: 1,
+      movementRowsTruncated: true,
+      skippedMovementRowCount: 2,
+    });
+    expect(change?.movementRows).toHaveLength(11);
+    expect(change?.movementRows.map((row) => row.profile.uid)).toEqual([
+      "uid-big-jump",
+      ...crossedProfiles.slice(0, 10).map((profile) => profile.uid),
+    ]);
   });
 
   it("dispatches global and weekly movements in leaderboard order", async () => {
@@ -836,14 +892,10 @@ describe("saveLeaderboardProfile", () => {
     firestoreMocks.getDocs
       .mockResolvedValueOnce(querySnap([docSnap("global-below", globalBelowProfile), docSnap("uid-queue", currentProfile)]))
       .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
-      .mockResolvedValueOnce(querySnap([]))
-      .mockResolvedValueOnce(querySnap([docSnap("global-below", globalBelowProfile)]))
-      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile), docSnap("global-below", globalBelowProfile)]))
       .mockResolvedValueOnce(querySnap([docSnap("weekly-below", weeklyBelowProfile), docSnap("uid-queue", currentProfile)]))
       .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]))
-      .mockResolvedValueOnce(querySnap([]))
-      .mockResolvedValueOnce(querySnap([docSnap("weekly-below", weeklyBelowProfile)]))
-      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile)]));
+      .mockResolvedValueOnce(querySnap([docSnap("uid-queue", currentProfile), docSnap("weekly-below", weeklyBelowProfile)]));
 
     await saveLeaderboardProfile("uid-queue", {
       rewardCurrentRankId: "operator",
@@ -857,7 +909,7 @@ describe("saveLeaderboardProfile", () => {
 
     expect(events[0]?.detail.changes.map((change) => change.boardId)).toEqual(["global", "weekly"]);
     expect(events[0]?.detail.changes.map((change) => change.currentRank)).toEqual([1, 1]);
-    expect(events[0]?.detail.changes[1]?.rows.map((row) => row.profile.uid)).toEqual(["uid-queue", "weekly-below"]);
+    expect(events[0]?.detail.changes[1]?.movementRows.map((row) => row.profile.uid)).toEqual(["uid-queue", "weekly-below"]);
   });
 
   it("does not dispatch a movement when XP increases without a rank position change", async () => {
