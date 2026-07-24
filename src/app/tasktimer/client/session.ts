@@ -76,6 +76,7 @@ import {
 } from "../lib/sessionNoteAttachments";
 import {
   clearXpAwardButtonLabelOverride,
+  getXpAwardButtonLabelOverride,
   setXpAwardButtonLabelOverride,
 } from "./xp-award-button-label-override";
 
@@ -1435,7 +1436,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function isTaskTimeGoalLockedForCurrentPeriod(task: Task | null | undefined, atMs = nowMs()) {
-    return isTaskTimeGoalStartLockedByHistoryForPeriod(task, ctx.getHistoryByTaskId(), atMs, ctx.getWeekStarting());
+    return isTaskTimeGoalStartLockedForPeriod(task, atMs, ctx.getWeekStarting());
   }
 
   function isFinalizedGoalCompletionAwaitingAcknowledgement(task: Task | null | undefined) {
@@ -1698,6 +1699,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (queuedCompletion) {
       openTimeGoalCompleteModal(queuedCompletion.task, queuedCompletion.completion.elapsedMs || getTaskElapsedMs(queuedCompletion.task), {
         acknowledgement: true,
+        awardPreview: queuedCompletion.completion.awardPreview,
       });
       return;
     }
@@ -2829,7 +2831,10 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const i = parseInt((node as HTMLElement).dataset.index || "0", 10);
         const task = tasks[i];
         if (!task) return;
+        const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
+        const isCompletedForCurrentPeriod = isHeldResetPrimaryAction || isTaskTimeGoalLockedForCurrentPeriod(task);
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
+        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
@@ -2840,7 +2845,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         const primaryActionBtn = node.querySelector('.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') as HTMLButtonElement | null;
         if (primaryActionBtn) {
           let primaryActionState: TaskPrimaryActionState = "launch";
-          if (isTaskTimeGoalLockedForCurrentPeriod(task)) {
+          if (isCompletedForCurrentPeriod) {
             primaryActionState = "reset";
           } else if (task.running) {
             primaryActionState = "stop";

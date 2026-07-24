@@ -55,4 +55,30 @@ describe("pending time-goal completions", () => {
 
     expect(loadPendingTimeGoalCompletions("queue")).toEqual([]);
   });
+
+  it("preserves a captured XP award preview for restored completion modals", () => {
+    enqueuePendingTimeGoalCompletion("queue", {
+      taskId: "task-1",
+      periodKey: "2026-05-02",
+      completedAtMs: 1000,
+      elapsedMs: 60_000,
+      awardPreview: {
+        fromXp: 10,
+        toXp: 40,
+        awardedXp: 30,
+      },
+    });
+
+    expect(loadPendingTimeGoalCompletions("queue")).toEqual([{
+      taskId: "task-1",
+      periodKey: "2026-05-02",
+      completedAtMs: 1000,
+      elapsedMs: 60_000,
+      awardPreview: {
+        fromXp: 10,
+        toXp: 40,
+        awardedXp: 30,
+      },
+    }]);
+  });
 });

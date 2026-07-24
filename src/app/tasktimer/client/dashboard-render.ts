@@ -20,7 +20,7 @@ import {
 import { formatTime, formatTwo, nowMs } from "../lib/time";
 import { normalizeTaskStatusState, type Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
-import { normalizeOptimalProductivityDays, timestampIsInOptimalProductivityDays } from "../lib/productivityPeriod";
+import { localDayToDashboardWeekStart, normalizeOptimalProductivityDays, timestampIsInOptimalProductivityDays } from "../lib/productivityPeriod";
 import type { TaskTimerDashboardRenderContext } from "./context";
 import type { DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
@@ -520,7 +520,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       if (opts?.interactive) rowEl.setAttribute("data-dashboard-momentum-driver", row.key);
       else rowEl.removeAttribute("data-dashboard-momentum-driver");
 
-      const rowText = `${row.label}: ${row.roundedScore}/${row.max}`;
+      const applyRowText = (textEl: HTMLElement) => {
+        textEl.textContent = "";
+        const labelEl = document.createElement("span");
+        labelEl.className = "dashboardMomentumDriverLabel";
+        labelEl.textContent = row.label;
+        const valueEl = document.createElement("b");
+        valueEl.className = "dashboardMomentumDriverValue";
+        valueEl.textContent = `${row.roundedScore} / ${row.max}`;
+        textEl.appendChild(labelEl);
+        textEl.appendChild(valueEl);
+      };
       if (opts?.interactive) {
         let buttonEl = rowEl.querySelector(".dashboardMomentumDriverButton") as HTMLButtonElement | null;
         let textEl = rowEl.querySelector(".dashboardMomentumDriverText") as HTMLSpanElement | null;
@@ -540,7 +550,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         }
         buttonEl.setAttribute("data-dashboard-momentum-driver", row.key);
         buttonEl.setAttribute("aria-pressed", row.key === opts?.selectedKey ? "true" : "false");
-        textEl.textContent = rowText;
+        applyRowText(textEl);
       } else {
         let textEl = rowEl.querySelector(".dashboardMomentumDriverText") as HTMLSpanElement | null;
         if (!textEl || textEl.parentElement !== rowEl) {
@@ -549,7 +559,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           textEl.className = "dashboardMomentumDriverText";
           rowEl.appendChild(textEl);
         }
-        textEl.textContent = rowText;
+        applyRowText(textEl);
       }
     });
   }
@@ -1234,8 +1244,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
   function getDashboardActivityChartView(model: DashboardActivityOverviewModel) {
     const mobile = isDashboardActivityMobileChart();
-    const previousDays = model.days.slice(0, 7);
-    const days = model.days.slice(7, 14);
+    const productivityDays = new Set(normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()));
+    const filterProductivityDays = (days: DashboardActivityOverviewModel["days"]) =>
+      days.filter((day) => productivityDays.has(localDayToDashboardWeekStart(day.startMs)));
+    const previousDays = filterProductivityDays(model.days.slice(0, 7));
+    const days = filterProductivityDays(model.days.slice(7, 14));
     const maxVisibleDailyMs = [...days, ...previousDays].reduce((max, day) => Math.max(max, day.totalMs), 0);
     return {
       mobile,
@@ -1254,49 +1267,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return chart.bottom - ratio * (chart.bottom - chart.top);
   }
 
-  function parseDashboardActivitySvgColor(color: string) {
-    const normalized = String(color || "").trim();
-    const rgbMatch = normalized.match(/^rgba?\(\s*([.\d]+)\s*,\s*([.\d]+)\s*,\s*([.\d]+)/i);
-    if (rgbMatch) {
-      return {
-        r: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[1]) || 0))),
-        g: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[2]) || 0))),
-        b: Math.max(0, Math.min(255, Math.round(Number(rgbMatch[3]) || 0))),
-      };
-    }
-
-    const hexMatch = normalized.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hexMatch) {
-      const raw = hexMatch[1];
-      const hex = raw.length === 3 ? raw.split("").map((part) => `${part}${part}`).join("") : raw;
-      return {
-        r: Number.parseInt(hex.slice(0, 2), 16),
-        g: Number.parseInt(hex.slice(2, 4), 16),
-        b: Number.parseInt(hex.slice(4, 6), 16),
-      };
-    }
-
-    return { r: 217, g: 255, b: 89 };
-  }
-
-  function shadeDashboardActivitySvgColor(color: string, amount: number) {
-    const source = parseDashboardActivitySvgColor(color);
-    const mix = amount >= 0 ? 255 : 0;
-    const weight = Math.max(-1, Math.min(1, amount));
-    const channel = (value: number) => Math.max(0, Math.min(255, Math.round(value + (mix - value) * Math.abs(weight))));
-    return `rgb(${channel(source.r)}, ${channel(source.g)}, ${channel(source.b)})`;
-  }
-
-  function setDashboardActivityPolygonPoints(element: SVGPolygonElement, points: Array<[number, number]>) {
-    element.setAttribute("points", points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" "));
-  }
-
   function renderDashboardActivityAxes(model: DashboardActivityOverviewModel) {
     const axisEl = (els as any).dashboardActivityXAxis as HTMLElement | null;
     const yAxisEl = (els as any).dashboardActivityYAxis as HTMLElement | null;
     const view = getDashboardActivityChartView(model);
     if (axisEl) {
       const currentDayKey = localDayKey(nowMs());
+      axisEl.style.setProperty("--dashboard-activity-visible-days", String(Math.max(1, view.days.length)));
       axisEl.innerHTML = view.days
         .map(
           (day) => {
@@ -1307,10 +1284,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         .join("");
     }
     if (yAxisEl) {
-      const half = Math.round(view.maxChartMs / 2);
-      yAxisEl.innerHTML = [view.maxChartMs, half, 0]
-        .map((ms) => `<span>${ctx.escapeHtmlUI(formatDashboardDurationShort(ms))}</span>`)
-        .join("");
+      yAxisEl.innerHTML = "";
     }
   }
 
@@ -1319,30 +1293,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const previousBarsEl = (els as any).dashboardActivityPreviousBars as SVGGElement | null;
     const barsEl = (els as any).dashboardActivityBars as SVGGElement | null;
     const goalLineEl = (els as any).dashboardActivityGoalLine as SVGLineElement | null;
+    const goalLabelEl = document.getElementById("dashboardActivityGoalLabel") as unknown as SVGTextElement | null;
     const chart = dashboardActivityChartBounds;
     const svgNs = "http://www.w3.org/2000/svg";
     const view = getDashboardActivityChartView(model);
-    const hasPreviousWeekData = view.previousDays.some((day) => day.totalMs > 0);
-
     if (chartGridEl) {
       chartGridEl.innerHTML = "";
-      [chart.top, (chart.top + chart.bottom) / 2, chart.bottom].forEach((y) => {
-        const line = document.createElementNS(svgNs, "line");
-        line.setAttribute("class", "dashboardActivityGridLine");
-        line.setAttribute("x1", String(chart.left));
-        line.setAttribute("x2", String(chart.right));
-        line.setAttribute("y1", y.toFixed(1));
-        line.setAttribute("y2", y.toFixed(1));
-        chartGridEl.appendChild(line);
-      });
     }
 
     if (previousBarsEl) {
       previousBarsEl.innerHTML = "";
+      const hasPreviousWeekData = view.previousDays.some((day) => day.totalMs > 0);
       previousBarsEl.style.display = hasPreviousWeekData && ctx.getDashboardPreviousWeekVisible() ? "" : "none";
       if (view.previousDays.length > 0) {
         const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
-        const barWidth = Math.min(84, slotWidth * 0.82);
+        const barWidth = Math.min(60, slotWidth * 0.58);
         view.previousDays.forEach((day, index) => {
           const height = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
           const slotX = chart.left + index * slotWidth;
@@ -1355,6 +1320,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           rect.setAttribute("width", barWidth.toFixed(1));
           rect.setAttribute("height", height.toFixed(1));
           rect.setAttribute("rx", "5");
+          rect.setAttribute("fill", "url(#dashboardActivityPreviousBarGradient)");
           rect.setAttribute(
             "aria-label",
             `Previous week ${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
@@ -1369,19 +1335,33 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const defs = document.createElementNS(svgNs, "defs");
       defs.setAttribute("class", "dashboardActivityBarDefs");
       barsEl.appendChild(defs);
+      const previousGradient = document.createElementNS(svgNs, "linearGradient");
+      previousGradient.setAttribute("id", "dashboardActivityPreviousBarGradient");
+      previousGradient.setAttribute("x1", "0");
+      previousGradient.setAttribute("x2", "0");
+      previousGradient.setAttribute("y1", "0");
+      previousGradient.setAttribute("y2", "1");
+      [
+        ["0", "rgba(139, 158, 190, .58)"],
+        [".18", "rgba(105, 124, 156, .46)"],
+        [".74", "rgba(60, 76, 104, .28)"],
+        ["1", "rgba(37, 50, 72, .2)"],
+      ].forEach(([offset, stopColor]) => {
+        const stop = document.createElementNS(svgNs, "stop");
+        stop.setAttribute("offset", offset);
+        stop.setAttribute("stop-color", stopColor);
+        previousGradient.appendChild(stop);
+      });
+      defs.appendChild(previousGradient);
       const slotWidth = (chart.right - chart.left) / Math.max(1, view.days.length);
-      const columnDepthX = Math.max(5, Math.min(10, slotWidth * 0.1));
-      const columnDepthY = Math.max(4, Math.min(8, columnDepthX * 0.72));
-      const barWidth = Math.min(76, slotWidth * 0.74);
+      const barWidth = Math.min(52, slotWidth * 0.48);
       view.days.forEach((day, index) => {
-        const maxColumnHeight = Math.max(3, chart.bottom - chart.top - columnDepthY);
+        const maxColumnHeight = Math.max(3, chart.bottom - chart.top);
         const rawHeight = day.totalMs > 0 ? Math.max(3, chart.bottom - getDashboardActivityY(day.totalMs, view.maxChartMs)) : 0;
         const height = Math.min(maxColumnHeight, rawHeight);
         const slotX = chart.left + index * slotWidth;
-        const x = slotX + (slotWidth - barWidth - columnDepthX) / 2;
+        const x = slotX + (slotWidth - barWidth) / 2;
         const y = chart.bottom - height;
-        const rightX = x + barWidth;
-        const bottomY = y + height;
         const gradientId = `dashboardActivityBarGradient-${index}`;
         const gradient = document.createElementNS(svgNs, "linearGradient");
         gradient.setAttribute("id", gradientId);
@@ -1390,10 +1370,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         gradient.setAttribute("y1", "0");
         gradient.setAttribute("y2", "1");
         [
-          ["0", shadeDashboardActivitySvgColor(day.activityBarColor, 0.32)],
-          [".16", shadeDashboardActivitySvgColor(day.activityBarColor, 0.12)],
-          [".72", day.activityBarColor],
-          ["1", shadeDashboardActivitySvgColor(day.activityBarColor, -0.18)],
+          ["0", "#ffb56f"],
+          [".18", "#ff9148"],
+          [".7", "#d96a2f"],
+          ["1", "#8d3f22"],
         ].forEach(([offset, stopColor]) => {
           const stop = document.createElementNS(svgNs, "stop");
           stop.setAttribute("offset", offset);
@@ -1408,26 +1388,15 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           "aria-label",
           `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
         );
-        const shadow = document.createElementNS(svgNs, "polygon");
-        shadow.setAttribute("class", "dashboardActivityBarShadow");
-        setDashboardActivityPolygonPoints(shadow, [
-          [x + columnDepthX * 0.35, bottomY],
-          [rightX + columnDepthX, bottomY - columnDepthY],
-          [Math.min(chart.right, rightX + columnDepthX * 1.7), Math.min(chart.bottom, bottomY - columnDepthY + columnDepthY * 0.72)],
-          [Math.min(chart.right, x + columnDepthX * 1.25), Math.min(chart.bottom, bottomY + columnDepthY * 0.72)],
-        ]);
-        group.appendChild(shadow);
 
-        const side = document.createElementNS(svgNs, "polygon");
-        side.setAttribute("class", "dashboardActivityBarSide");
-        side.setAttribute("fill", shadeDashboardActivitySvgColor(day.activityBarColor, -0.42));
-        setDashboardActivityPolygonPoints(side, [
-          [rightX, y],
-          [rightX + columnDepthX, y - columnDepthY],
-          [rightX + columnDepthX, bottomY - columnDepthY],
-          [rightX, bottomY],
-        ]);
-        group.appendChild(side);
+        const glow = document.createElementNS(svgNs, "rect");
+        glow.setAttribute("class", "dashboardActivityBarGlow");
+        glow.setAttribute("x", (x - 2).toFixed(1));
+        glow.setAttribute("y", (y - 2).toFixed(1));
+        glow.setAttribute("width", (barWidth + 4).toFixed(1));
+        glow.setAttribute("height", (height + 4).toFixed(1));
+        glow.setAttribute("rx", "7");
+        group.appendChild(glow);
 
         const rect = document.createElementNS(svgNs, "rect");
         rect.setAttribute("class", "dashboardActivityBar");
@@ -1435,29 +1404,19 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         rect.setAttribute("y", y.toFixed(1));
         rect.setAttribute("width", barWidth.toFixed(1));
         rect.setAttribute("height", height.toFixed(1));
-        rect.setAttribute("rx", "0");
+        rect.setAttribute("rx", "5");
         rect.setAttribute("fill", `url(#${gradientId})`);
         rect.setAttribute("data-dashboard-activity-color", day.activityBarColor);
         group.appendChild(rect);
 
-        const highlight = document.createElementNS(svgNs, "rect");
-        highlight.setAttribute("class", "dashboardActivityBarHighlight");
-        highlight.setAttribute("x", (x + 1).toFixed(1));
-        highlight.setAttribute("y", (y + 1).toFixed(1));
-        highlight.setAttribute("width", Math.max(1, Math.min(3, Math.floor(barWidth * 0.14))).toFixed(1));
-        highlight.setAttribute("height", Math.max(1, height - 2).toFixed(1));
-        group.appendChild(highlight);
-
-        const top = document.createElementNS(svgNs, "polygon");
-        top.setAttribute("class", "dashboardActivityBarTop");
-        top.setAttribute("fill", shadeDashboardActivitySvgColor(day.activityBarColor, 0.34));
-        setDashboardActivityPolygonPoints(top, [
-          [x, y],
-          [x + columnDepthX, y - columnDepthY],
-          [rightX + columnDepthX, y - columnDepthY],
-          [rightX, y],
-        ]);
-        group.appendChild(top);
+        const sheen = document.createElementNS(svgNs, "rect");
+        sheen.setAttribute("class", "dashboardActivityBarSheen");
+        sheen.setAttribute("x", (x + 2).toFixed(1));
+        sheen.setAttribute("y", (y + 2).toFixed(1));
+        sheen.setAttribute("width", Math.max(0, barWidth - 4).toFixed(1));
+        sheen.setAttribute("height", Math.max(0, Math.min(height * 0.48, 34)).toFixed(1));
+        sheen.setAttribute("rx", "4");
+        group.appendChild(sheen);
         barsEl.appendChild(group);
       });
     }
@@ -1470,6 +1429,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       goalLineEl.setAttribute("y1", y.toFixed(1));
       goalLineEl.setAttribute("y2", y.toFixed(1));
       goalLineEl.style.display = showGoal ? "" : "none";
+      if (goalLabelEl) {
+        goalLabelEl.setAttribute("x", String(chart.right));
+        goalLabelEl.setAttribute("y", Math.max(chart.top + 10, y - 8).toFixed(1));
+        const compactGoalLabel = formatDashboardDurationShort(model.dailyPaceTargetMs).replace(/\s+0m$/i, "");
+        goalLabelEl.textContent = showGoal ? `${compactGoalLabel} GOAL` : "";
+        goalLabelEl.style.display = showGoal ? "" : "none";
+      }
     }
   }
 
@@ -2703,6 +2669,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       weekdaysEl.innerHTML = getDashboardWeekdayLabels(weekStarting).map((label) => `<span>${ctx.escapeHtmlUI(label)}</span>`).join("");
     }
 
+    const productivityDays = new Set(normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays()));
     const byDayMs = new Map<string, number>();
     const historyByDayMs = new Map<string, number>();
     const includedTaskIds = getDashboardIncludedTaskIds();
@@ -2745,6 +2712,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         continue;
       }
       const key = localDayKey(dayDate.getTime());
+      const productivityClass = productivityDays.has(localDayToDashboardWeekStart(dayDate.getTime()))
+        ? ""
+        : " isNonProductivityDay";
       const dayMs = Math.max(0, byDayMs.get(key) || 0);
       const ratio = maxDayMs > 0 ? Math.max(0, Math.min(1, dayMs / maxDayMs)) : 0;
       const activityLevel = dayMs <= 0 ? "none" : `level-${Math.max(1, Math.min(5, Math.ceil(ratio * 5)))}`;
@@ -2754,12 +2724,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       const hasHistoryEntries = (historyByDayMs.get(key) || 0) > 0;
       html.push(
         hasHistoryEntries
-          ? `<button class="dashboardHeatDayCell isActive isInteractive" type="button" data-activity-level="${activityLevel}" data-heatmap-flip="open" data-heat-date="${ctx.escapeHtmlUI(
+          ? `<button class="dashboardHeatDayCell isActive isInteractive${productivityClass}" type="button" data-activity-level="${activityLevel}" data-heatmap-flip="open" data-heat-date="${ctx.escapeHtmlUI(
               key
             )}" data-heat-date-label="${ctx.escapeHtmlUI(dateText)}" role="gridcell" aria-label="${ctx.escapeHtmlUI(aria)}" title="${ctx.escapeHtmlUI(
               aria
             )}"><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></button>`
-          : `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${ctx.escapeHtmlUI(
+          : `<span class="dashboardHeatDayCell${dayMs > 0 ? " isActive" : ""}${productivityClass}" data-activity-level="${activityLevel}" role="gridcell" aria-label="${ctx.escapeHtmlUI(
               aria
             )}" title="${ctx.escapeHtmlUI(aria)}"><span class="dashboardHeatDayNum">${dayDate.getDate()}</span></span>`
       );

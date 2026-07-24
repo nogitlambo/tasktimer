@@ -18,6 +18,12 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
               >
                 <div className="dashboardGrid dashboardIntegratedPanel">
                   <section className="dashboardCard dashboardActivityOverviewCard" data-dashboard-id="activity-overview" data-dashboard-label="Activity Overview" aria-label="Activity overview">
+                    <div className="dashboardPanelLabelRow dashboardActivityOverviewTitleRow">
+                      <div className="dashboardCardTitle dashboardPanelTitle">
+                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTime" aria-hidden="true" />
+                        <span>Time Tracked</span>
+                      </div>
+                    </div>
                     <div className="dashboardActivityOverviewHead">
                       <aside className="dashboardActivitySummaryStack" aria-label="Today and weekly summaries">
                         <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">
@@ -92,6 +98,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             <g id="dashboardActivityPreviousBars" />
                             <g id="dashboardActivityBars" />
                             <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
+                            <text className="dashboardActivityGoalLabel" id="dashboardActivityGoalLabel" x="0" y="0" aria-hidden="true" />
                           </svg>
                           <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
                           <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
@@ -101,37 +108,14 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                     </div>
                   </section>
 
-                  <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard dashboardActivityTaskOverviewCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
-                    <div className="dashboardPanelLabelRow">
-                      <div className="dashboardCardTitle dashboardPanelTitle">
-                        <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
-                        <span>Task Overview</span>
-                      </div>
-                    </div>
-                    <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
-                      <svg
-                        className="dashboardTasksCompletedSvg"
-                        id="dashboardTasksCompletedSvg"
-                        viewBox="0 0 380 380"
-                        aria-hidden="true"
-                        focusable="false"
-                      >
-                        <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
-                        <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
-                      </svg>
-                      <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
-                      <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
-                    </div>
-                    <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
-                    <div className="dashboardSummaryStatus" aria-hidden="true" />
-                    <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
-                  </section>
-
                   <div className="dashboardSupportGrid" aria-label="Dashboard insights">
 
                     <section className="dashboardCard dashboardMomentumCard" data-dashboard-id="momentum" aria-label="Momentum overview">
                       <div className="dashboardMomentumTitleRow">
-                        <div className="dashboardCardTitle">Momentum</div>
+                        <div className="dashboardCardTitle dashboardPanelTitle">
+                          <span className="dashboardPanelTitleDot dashboardPanelTitleDotMomentum" aria-hidden="true" />
+                          <span>Momentum</span>
+                        </div>
                       </div>
                       <div className="dashboardMomentumMainSection">
                         <div className="dashboardMomentumDialWrap">
@@ -232,10 +216,10 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                       </div>
                       <section className="dashboardMomentumDriversSection dashboardMomentumDriversTextSection" aria-label="Momentum Drivers">
                         <ul className="dashboardMomentumDrivers dashboardMomentumDriverTextList" id="dashboardMomentumDrivers" aria-live="polite">
-                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Recent activity: 0/25</span></li>
-                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Consistency: 0/45</span></li>
-                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Weekly Progress: 0/20</span></li>
-                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText">Live Bonus: 0/10</span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText"><span className="dashboardMomentumDriverLabel">Recent activity</span><b className="dashboardMomentumDriverValue">0 / 30</b></span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText"><span className="dashboardMomentumDriverLabel">Consistency</span><b className="dashboardMomentumDriverValue">0 / 30</b></span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText"><span className="dashboardMomentumDriverLabel">Weekly Progress</span><b className="dashboardMomentumDriverValue">0 / 35</b></span></li>
+                          <li className="dashboardMomentumDriver"><span className="dashboardMomentumDriverText"><span className="dashboardMomentumDriverLabel">Live Bonus</span><b className="dashboardMomentumDriverValue">0 / 5</b></span></li>
                         </ul>
                       </section>
                       <section className="dashboardMomentumFooterBand" aria-label="Momentum insight">
@@ -243,6 +227,32 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                           Momentum combines recent activity, consistency, weekly progress, and live bonus into a single score.
                         </p>
                       </section>
+                    </section>
+
+                    <section className="dashboardCard dashboardSummaryCard dashboardStatCard dashboardTasksCompletedCard dashboardActivityTaskOverviewCard" data-dashboard-id="tasks-completed" aria-label="Task completion">
+                      <div className="dashboardPanelLabelRow">
+                        <div className="dashboardCardTitle dashboardPanelTitle">
+                          <span className="dashboardPanelTitleDot dashboardPanelTitleDotTask" aria-hidden="true" />
+                          <span>Task Overview</span>
+                        </div>
+                      </div>
+                      <div className="dashboardTasksCompletedChart" id="dashboardTasksCompletedTicks" role="img" aria-label="Daily task completion status">
+                        <svg
+                          className="dashboardTasksCompletedSvg"
+                          id="dashboardTasksCompletedSvg"
+                          viewBox="0 0 380 380"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <circle className="dashboardTasksCompletedTrack" cx="190" cy="190" r="88" pathLength="100" />
+                          <line className="dashboardTasksCompletedNeedle" id="dashboardTasksCompletedNeedle" x1="190" y1="136" x2="190" y2="112" />
+                        </svg>
+                        <div className="dashboardTasksCompletedCenter" id="dashboardTasksCompletedCenter" aria-hidden="true" />
+                        <div className="dashboardTasksCompletedLabels" id="dashboardTasksCompletedLabels" aria-hidden="true" />
+                      </div>
+                      <div className="dashboardSummaryProgress dashboardSummaryProgressSpacer" aria-hidden="true" />
+                      <div className="dashboardSummaryStatus" aria-hidden="true" />
+                      <div className="dashboardDelta dashboardSummaryFoot" id="dashboardTasksCompletedMeta" style={{ display: "none" }} />
                     </section>
 
                   <section className="dashboardCard dashboardHeatCard" data-dashboard-id="heatmap" id="dashboardHeatCard" aria-label="Activity heatmap">

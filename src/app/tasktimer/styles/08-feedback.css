@@ -2,7 +2,7 @@
 /* Extracted from the transitional tasktimer tail so Feedback now has a dedicated owner file. */
 
 #app[aria-label="TaskLaunch Feedback"] .feedbackPageLayout{
-  width: min(1180px, calc(100% - 24px));
+  width: min(1920px, calc(100% - 24px));
   margin: 0 auto;
 }
 

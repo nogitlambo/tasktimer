@@ -1042,6 +1042,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           endXp,
           arrivedParticles,
         });
+        if (!xpCountAnimationStartedRef.current) {
+          countAnimationStartedDuringEffect = true;
+          xpCountAnimationStartedRef.current = true;
+          setIsXpCountAnimating(true);
+        }
         displayedXpRef.current = nextXp;
         setDisplayedXp(nextXp);
         if (arrivedParticles >= totalUnits) {
@@ -1145,9 +1150,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         return;
       }
 
-      countAnimationStartedDuringEffect = true;
-      xpCountAnimationStartedRef.current = true;
-      setIsXpCountAnimating(true);
       if (achievementSoundsEnabled) {
         xpAwardUnitDeliveryAudioPlayer.warm();
         xpAwardDeliveryDoneAudioPlayer.warm();

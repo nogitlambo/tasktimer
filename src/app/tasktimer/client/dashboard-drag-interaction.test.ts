@@ -96,10 +96,9 @@ function makeDashboardContext() {
   };
 
   appendCard("activity-overview", grid);
-  const activityOverview = cardsById.get("activity-overview")!;
   grid.appendChild(supportGrid);
-  appendCard("tasks-completed", activityOverview);
   appendCard("momentum", grid);
+  appendCard("tasks-completed", grid);
   appendCard("heatmap", grid);
 
   const originalDocument = globalThis.document;
@@ -196,14 +195,14 @@ describe("dashboard drag interaction guards", () => {
     expect(isDashboardCardSizeOptionAllowed("half", "heatmap")).toBe(false);
   });
 
-  it("normalizes support panels without moving Task Overview out of Activity Overview", () => {
+  it("normalizes support panel ownership and order", () => {
     const harness = makeDashboardContext();
 
     try {
       harness.dashboard.applyDashboardOrder(["heatmap", "momentum"]);
       harness.dashboard.applyDashboardCardVisibility();
 
-      ["momentum", "heatmap"].forEach((cardId) => {
+      ["momentum", "tasks-completed", "heatmap"].forEach((cardId) => {
         const card = harness.cardsById.get(cardId);
         expect(card?.parentElement).toBe(harness.supportGrid);
         expect(card?.hidden).toBe(false);
@@ -216,17 +215,11 @@ describe("dashboard drag interaction guards", () => {
         expect(card?.style["grid-row"]).toBeUndefined();
         expect(card?.style["grid-row-start"]).toBeUndefined();
       });
-      const taskOverview = harness.cardsById.get("tasks-completed");
-      expect(taskOverview?.parentElement).toBe(harness.cardsById.get("activity-overview"));
-      expect(taskOverview?.hidden).toBe(false);
-      expect(taskOverview?.getAttribute("aria-hidden")).toBe("false");
-      expect(taskOverview?.getAttribute("data-dashboard-size")).toBeNull();
-      expect(taskOverview?.getAttribute("draggable")).toBeNull();
-      expect(taskOverview?.dataset.dashboardCol).toBeUndefined();
-      expect(taskOverview?.dataset.dashboardRow).toBeUndefined();
-      expect(taskOverview?.style["grid-column"]).toBeUndefined();
-      expect(taskOverview?.style["grid-row"]).toBeUndefined();
-      expect(taskOverview?.style["grid-row-start"]).toBeUndefined();
+      expect(harness.supportGrid.children.map((child) => child.id)).toEqual([
+        "momentum",
+        "tasks-completed",
+        "heatmap",
+      ]);
       expect(harness.cardsById.get("activity-overview")?.parentElement).toBe(harness.grid);
     } finally {
       harness.restore();

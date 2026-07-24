@@ -1,5 +1,7 @@
 .arcadeShell {
   min-height: 100dvh;
+  max-width: 1920px;
+  margin-inline: auto;
   padding: 24px;
   background: #0d0f13;
   color: #f5f7fb;

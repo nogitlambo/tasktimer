@@ -207,6 +207,21 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");
   });
 
+  it("starts the app top bar XP count animation when modal unit XP is delivered", () => {
+    const modalDeliveryStart = source.indexOf("const runModalXpValueDelivery = () => {");
+    const updateDeliveredStart = source.indexOf("const updateDeliveredXp = () => {", modalDeliveryStart);
+    const updateDeliveredEnd = source.indexOf("const removePayload = (id: string) => {", updateDeliveredStart);
+    const scheduleDeliveryStart = source.indexOf("scheduleUnitPayloadDelivery();", modalDeliveryStart);
+    const beforeScheduleDelivery = source.slice(updateDeliveredEnd, scheduleDeliveryStart);
+    const updateDeliveredSource = source.slice(updateDeliveredStart, updateDeliveredEnd);
+
+    expect(updateDeliveredSource).toContain("if (!xpCountAnimationStartedRef.current) {");
+    expect(updateDeliveredSource).toContain("countAnimationStartedDuringEffect = true;");
+    expect(updateDeliveredSource).toContain("xpCountAnimationStartedRef.current = true;");
+    expect(updateDeliveredSource).toContain("setIsXpCountAnimating(true);");
+    expect(beforeScheduleDelivery).not.toContain("setIsXpCountAnimating(true);");
+  });
+
   it("plays rate-limited haptics in sync with each modal XP unit launch", () => {
     const modalDeliveryStart = source.indexOf("const runModalXpValueDelivery = () => {");
     const modalDeliveryEnd = source.indexOf("const scheduleUnitPayloadDelivery = () => {", modalDeliveryStart);

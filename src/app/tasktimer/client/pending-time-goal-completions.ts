@@ -3,6 +3,13 @@ export type PendingTimeGoalCompletion = {
   periodKey: string;
   completedAtMs: number;
   elapsedMs: number;
+  awardPreview?: PendingTimeGoalCompletionAwardPreview;
+};
+
+export type PendingTimeGoalCompletionAwardPreview = {
+  fromXp: number;
+  toXp: number;
+  awardedXp: number;
 };
 
 function normalizeEntry(input: unknown): PendingTimeGoalCompletion | null {
@@ -13,7 +20,24 @@ function normalizeEntry(input: unknown): PendingTimeGoalCompletion | null {
   const completedAtMs = Math.max(0, Math.floor(Number(entry.completedAtMs || 0) || 0));
   const elapsedMs = Math.max(0, Math.floor(Number(entry.elapsedMs || 0) || 0));
   if (!taskId || !periodKey || completedAtMs <= 0 || elapsedMs <= 0) return null;
-  return { taskId, periodKey, completedAtMs, elapsedMs };
+  const awardPreview = normalizeAwardPreview(entry.awardPreview);
+  return {
+    taskId,
+    periodKey,
+    completedAtMs,
+    elapsedMs,
+    ...(awardPreview ? { awardPreview } : {}),
+  };
+}
+
+function normalizeAwardPreview(input: unknown): PendingTimeGoalCompletionAwardPreview | null {
+  if (!input || typeof input !== "object") return null;
+  const preview = input as Record<string, unknown>;
+  const fromXp = Math.max(0, Math.floor(Number(preview.fromXp || 0) || 0));
+  const toXp = Math.max(fromXp, Math.floor(Number(preview.toXp || 0) || 0));
+  const awardedXp = Math.max(0, Math.floor(Number(preview.awardedXp || 0) || 0));
+  if (awardedXp <= 0 && toXp <= fromXp) return null;
+  return { fromXp, toXp, awardedXp };
 }
 
 function readRawQueue(storageKey: string | null | undefined): PendingTimeGoalCompletion[] {

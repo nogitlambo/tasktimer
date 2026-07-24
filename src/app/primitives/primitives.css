@@ -1,6 +1,8 @@
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface){
   width: 100%;
+  max-width: 1920px;
   min-height: 100dvh;
+  margin-inline: auto;
   background: #0d0f13;
   color: var(--text);
 }

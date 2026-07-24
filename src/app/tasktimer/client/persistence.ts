@@ -5,6 +5,7 @@ import type { TaskTimerAppPageOptions } from "./context";
 import { applyLiveSessionsToTasksWithCompletions } from "./live-session-task-state";
 import { reconcileResumePendingTasks } from "./resume-pending-reset";
 import { createFocusSessionDrafts, createLocalStorageFocusSessionDraftStorage } from "./focus-session-drafts";
+import { normalizeRewardProgress, type RewardProgressV1 } from "../lib/rewards";
 import { enqueuePendingTimeGoalCompletion } from "./pending-time-goal-completions";
 import { clearNativeRunningTimerNotification } from "../lib/nativeTimerNotification";
 
@@ -113,6 +114,7 @@ type CreateTaskTimerPersistenceOptions = {
   maybeRepairHistoryNotesInCloudAfterHydrate?: () => void;
   jumpToTaskById: (taskId: string) => void;
   maybeRestorePendingTimeGoalFlow: () => void;
+  getRewardProgress?: () => RewardProgressV1;
   normalizeLoadedTask?: (task: Task) => void;
   nowMs?: () => number;
 };
@@ -152,12 +154,29 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     const resetResult = reconcileResumePendingTasks(tasksWithLiveSessions, nowValue);
     options.setTasks(tasksWithLiveSessions);
     liveSessionResult.closedAppDailyTimeGoalCompletions.forEach((completion) => {
-      enqueuePendingTimeGoalCompletion(options.pendingTimeGoalCompletionsKey || "", completion);
       const completedTask = tasksWithLiveSessions.find((row) => String(row.id || "").trim() === completion.taskId);
       if (!completedTask) return;
+      const rewardProgressBefore = options.getRewardProgress ? normalizeRewardProgress(options.getRewardProgress()) : null;
       options.finalizeLiveSession?.(completedTask, {
         elapsedMs: completion.elapsedMs,
         completedAtMs: completion.completedAtMs,
+      });
+      const rewardProgressAfter = options.getRewardProgress ? normalizeRewardProgress(options.getRewardProgress()) : null;
+      const awardedXp =
+        rewardProgressBefore && rewardProgressAfter
+          ? Math.max(0, Math.floor(Number(rewardProgressAfter.totalXpPrecise - rewardProgressBefore.totalXpPrecise) || 0))
+          : 0;
+      enqueuePendingTimeGoalCompletion(options.pendingTimeGoalCompletionsKey || "", {
+        ...completion,
+        ...(rewardProgressBefore && rewardProgressAfter && awardedXp > 0
+          ? {
+              awardPreview: {
+                fromXp: rewardProgressBefore.totalXp,
+                toXp: rewardProgressAfter.totalXp,
+                awardedXp,
+              },
+            }
+          : {}),
       });
       void clearNativeRunningTimerNotification(completion.taskId).catch(() => {});
     });

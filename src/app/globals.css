@@ -98,10 +98,10 @@ body.landingRoute {
   width: 100%;
   flex: 1 0 auto;
   align-self: stretch;
-  margin: 0;
-  max-width: none;
+  margin: 0 auto;
+  max-width: 1920px;
   isolation: isolate;
-  --web-sign-in-bg-image: url("/landing_feature_wide-768.webp");
+  --web-sign-in-bg-image: url("/landing_feature_wide-1440.webp");
   --web-sign-in-bg-position: right top;
   --web-sign-in-bg-width: max(100vw, 177.8svh);
   --web-sign-in-bg-right: 0px;
@@ -258,6 +258,7 @@ body.webSignInNativeRoute .webSignInPage {
   justify-content: center;
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
   background: transparent;
   color: rgba(248, 250, 252, 0.96);
   font-family: var(--font-display-ui);
@@ -700,11 +701,12 @@ canvas {
   --landing-copy-gap: clamp(24px, 7svh, 90px);
   --landing-action-gap: clamp(24px, 7svh, 90px);
   --landing-feature-bg: url("/landing_feature_wide-768.webp");
-  --landing-feature-position: right top;
+  --landing-feature-position: center top;
   --landing-feature-size: 100% auto;
   --landing-feature-width: clamp(900px, 100vw, 2048px);
   --landing-feature-height: clamp(506px, 56.25vw, 1152px);
-  --landing-feature-right: 0px;
+  --landing-feature-right: 50%;
+  --landing-feature-translate-x: 50%;
   --landing-feature-start-opacity: 0;
   --landing-feature-visible-opacity: 0.9;
   --landing-hero-title-size: clamp(3.25rem, 5.833vw, 5.25rem);
@@ -740,6 +742,7 @@ canvas {
   width: var(--landing-feature-width);
   pointer-events: none;
   opacity: var(--landing-feature-start-opacity);
+  transform: translateX(var(--landing-feature-translate-x));
   transition: opacity 2s ease;
   background: var(--landing-feature-bg) var(--landing-feature-position) / var(--landing-feature-size) no-repeat;
   display: none;
@@ -761,6 +764,7 @@ canvas {
   object-fit: cover;
   object-position: var(--landing-feature-position);
   opacity: var(--landing-feature-start-opacity);
+  transform: translateX(var(--landing-feature-translate-x));
   filter: brightness(1);
   pointer-events: none;
   transition: opacity 2s ease, filter 480ms ease;
@@ -817,7 +821,8 @@ canvas {
   z-index: 1;
   width: 100%;
   min-height: 100svh;
-  margin: 0;
+  max-width: 1920px;
+  margin: 0 auto;
 }
 
 .landingV2 .landingV2Header {
@@ -841,6 +846,10 @@ canvas {
 .landingV2 .landingV2Header.isVisible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.landingV2LandingPage .landingV2Header {
+  background: transparent;
 }
 
 .landingV2 .landingV2HeaderFooter {
@@ -2039,8 +2048,8 @@ body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
 }
 
 .privacyLandingPage .landingV2Shell {
-  width: min(100%, 1024px);
-  max-width: 1024px;
+  width: min(100%, 1920px);
+  max-width: 1920px;
   margin-inline: auto;
   text-align: left;
 }
@@ -2728,6 +2737,7 @@ body[data-theme="lime"] .landingV2 .landingV2PrimaryBtn.btn-accent,
     --landing-feature-width: 100vw;
     --landing-feature-height: 100svh;
     --landing-feature-right: 0px;
+    --landing-feature-translate-x: 0px;
     background: #000;
   }
 

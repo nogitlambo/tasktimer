@@ -72,18 +72,26 @@ class ElementStub {
     return child;
   }
 
-  querySelector(selector: string) {
+  querySelector(selector: string): ElementStub | null {
     if (selector.startsWith(".")) {
       const className = selector.slice(1);
-      return this.children.find((child) => child.className.split(/\s+/).includes(className)) ?? null;
+      const directMatch = this.children.find((child) => child.className.split(/\s+/).includes(className));
+      if (directMatch) return directMatch;
+      for (const child of this.children) {
+        const nestedMatch: ElementStub | null = child.querySelector(selector);
+        if (nestedMatch) return nestedMatch;
+      }
     }
     return null;
   }
 
-  querySelectorAll(selector: string) {
+  querySelectorAll(selector: string): ElementStub[] {
     if (selector.startsWith(".")) {
       const className = selector.slice(1);
-      return this.children.filter((child) => child.className.split(/\s+/).includes(className));
+      return this.children.flatMap((child): ElementStub[] => {
+        const matches = child.className.split(/\s+/).includes(className) ? [child] : [];
+        return [...matches, ...child.querySelectorAll(selector)];
+      });
     }
     return [];
   }
@@ -178,6 +186,7 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
   register("dashboardActivityGoalLine");
+  register("dashboardActivityGoalLabel");
   register("dashboardActivityYAxis");
   register("dashboardActivityXAxis");
   register("dashboardActivityEmpty");
@@ -436,7 +445,7 @@ afterEach(() => {
 });
 
 describe("dashboard activity overview card", () => {
-  it("renders one x-axis label for each current-week day on desktop", () => {
+  it("renders one x-axis label for each preferred productivity day on desktop", () => {
     const harness = createRenderHarness([]);
 
     try {
@@ -445,18 +454,43 @@ describe("dashboard activity overview card", () => {
       const axisDayCount = axisHtml.match(/class="dashboardActivityAxisDay/g)?.length || 0;
       const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const firstBar = getActivityBarFront(bars[0]);
-      const lastBar = getActivityBarFront(bars[6]);
+      const lastBar = getActivityBarFront(bars[2]);
 
-      expect(axisDayCount).toBe(7);
-      expect(bars).toHaveLength(7);
-      expect(Number.parseFloat(String(firstBar?.getAttribute("width") || "0"))).toBeGreaterThan(60);
+      expect(axisDayCount).toBe(3);
+      expect(axisHtml).toContain(">Mon<");
+      expect(axisHtml).toContain(">Wed<");
+      expect(axisHtml).toContain(">Fri<");
+      expect(harness.byId.get("dashboardActivityXAxis")?.style["--dashboard-activity-visible-days"]).toBe("3");
+      expect(bars).toHaveLength(3);
+      expect(Number.parseFloat(String(firstBar?.getAttribute("width") || "0"))).toBeLessThan(60);
       expect(Number.parseFloat(String(firstBar?.getAttribute("x") || "0"))).toBeGreaterThan(90);
-      expect(Number.parseFloat(String(lastBar?.getAttribute("x") || "0"))).toBeGreaterThan(600);
-      expect(getActivityBarPart(bars[0], "dashboardActivityBarShadow")).not.toBeNull();
-      expect(getActivityBarPart(bars[0], "dashboardActivityBarSide")).not.toBeNull();
-      expect(getActivityBarPart(bars[0], "dashboardActivityBarTop")).not.toBeNull();
-      expect(getActivityBarPart(bars[0], "dashboardActivityBarHighlight")).not.toBeNull();
+      expect(Number.parseFloat(String(lastBar?.getAttribute("x") || "0"))).toBeGreaterThan(500);
+      expect(firstBar?.getAttribute("rx")).toBe("5");
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarShadow")).toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarSide")).toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarTop")).toBeNull();
+      expect(getActivityBarPart(bars[0], "dashboardActivityBarHighlight")).toBeNull();
       expect(firstBar?.getAttribute("fill")).toMatch(/^url\(#dashboardActivityBarGradient-0\)$/);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("orders preferred productivity days from the configured week start", () => {
+    const harness = createRenderHarness([], {
+      weekStarting: "sun",
+      optimalProductivityDays: ["sat", "sun"],
+    });
+
+    try {
+      harness.renderActivityOverview();
+      const axisHtml = harness.byId.get("dashboardActivityXAxis")?.innerHTML || "";
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+
+      expect(axisHtml.indexOf(">Sun<")).toBeGreaterThanOrEqual(0);
+      expect(axisHtml.indexOf(">Sat<")).toBeGreaterThan(axisHtml.indexOf(">Sun<"));
+      expect(harness.byId.get("dashboardActivityXAxis")?.style["--dashboard-activity-visible-days"]).toBe("2");
+      expect(bars).toHaveLength(2);
     } finally {
       harness.restore();
     }
@@ -469,6 +503,7 @@ describe("dashboard activity overview card", () => {
     const harness = createRenderHarness(
       [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
       {
+        optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
         historyByTaskId: {
           focus: [
             { ts: weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
@@ -524,6 +559,7 @@ describe("dashboard activity overview card", () => {
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(3);
     } finally {
       harness.restore();
     }
@@ -549,18 +585,20 @@ describe("dashboard activity overview card", () => {
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(3);
     } finally {
       harness.restore();
     }
   });
 
-  it("renders current week with previous-week ghost bars on mobile", () => {
+  it("renders current week with previous-week ghost bars and no y-axis labels on mobile", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
     const harness = createRenderHarness(
       [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
       {
+        optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
         mobileViewport: true,
         historyByTaskId: {
           focus: [
@@ -585,7 +623,7 @@ describe("dashboard activity overview card", () => {
       expect(bars).toHaveLength(7);
       expect(previousBars?.style.display).toBe("");
       expect(previousBars?.children).toHaveLength(7);
-      expect(yAxisHtml).toContain("3h");
+      expect(yAxisHtml).toBe("");
       expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
       expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
       expect(ghostBar?.getAttribute("class")).toBe("dashboardActivityPreviousBar");
@@ -602,6 +640,7 @@ describe("dashboard activity overview card", () => {
     const harness = createRenderHarness(
       [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
       {
+        optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
         historyByTaskId: {
           focus: [
             { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
@@ -617,6 +656,7 @@ describe("dashboard activity overview card", () => {
       const firstBar = getActivityBarFront(bars[0]);
       const secondBar = getActivityBarFront(bars[1]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
+      const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(bars).toHaveLength(7);
@@ -624,6 +664,8 @@ describe("dashboard activity overview card", () => {
       expect(secondBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
       expect(goalLine?.style.display).toBe("");
+      expect(goalLabel?.style.display).toBe("");
+      expect(goalLabel?.textContent).toBe("2h GOAL");
       expect(previousBars?.style.display).toBe("none");
       expect(previousBars?.children).toHaveLength(7);
     } finally {

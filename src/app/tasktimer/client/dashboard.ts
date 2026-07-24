@@ -16,6 +16,7 @@ const DASHBOARD_PANEL_REGISTRY = [
 
 const DASHBOARD_SUPPORT_PANEL_IDS = [
   "momentum",
+  "tasks-completed",
   "heatmap",
 ] as const;
 
@@ -124,7 +125,7 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
       const panel = document.querySelector(
         `#appPageDashboard [data-dashboard-id="${panelId}"]`
       ) as HTMLElement | null;
-      if (!panel || panel.parentElement === supportGrid) return;
+      if (!panel) return;
       supportGrid.appendChild(panel);
     });
   }

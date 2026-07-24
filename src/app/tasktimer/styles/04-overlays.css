@@ -3044,6 +3044,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
+    radial-gradient(circle at 50% 46%, rgba(255, 246, 162, .24) 0 12%, rgba(201, 255, 36, .13) 22%, rgba(201, 255, 36, .045) 42%, transparent 66%),
     radial-gradient(circle at 50% 46%, rgba(201, 255, 36, .2), transparent 0 14%, rgba(201, 255, 36, .08) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 46%,
@@ -3055,6 +3056,20 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
   opacity: .88;
   mix-blend-mode: screen;
+  animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
+  will-change: opacity, filter;
+}
+
+@keyframes timeGoalCompleteCenterGlow{
+  0%{
+    opacity: .86;
+    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
+  }100%{
+    opacity: .98;
+    filter:
+      drop-shadow(0 0 28px rgba(201, 255, 36, .26))
+      drop-shadow(0 0 52px rgba(255, 220, 90, .14));
+  }
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2,
@@ -7124,6 +7139,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
   #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
     display: none;
+  }
+
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
+    animation: none;
+    filter: none;
+    opacity: .88;
+    will-change: auto;
   }
 }
 

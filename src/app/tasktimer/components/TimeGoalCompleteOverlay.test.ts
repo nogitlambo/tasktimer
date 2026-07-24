@@ -45,10 +45,14 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after");
     expect(overlaysCss).toContain("repeating-conic-gradient(");
     expect(overlaysCss).toContain("from -5deg at 50% 46%");
+    expect(overlaysCss).toContain("rgba(255, 246, 162, .24) 0 12%");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .2)");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .12) 0deg 7deg");
     expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toContain("mix-blend-mode: screen;");
+    expect(overlaysCss).toContain("animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;");
+    expect(overlaysCss).toContain("@keyframes timeGoalCompleteCenterGlow");
+    expect(overlaysCss).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/);
   });
 
   it("lets the reward card block the outer radial beams without its own burst", () => {

@@ -1591,6 +1591,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       taskCollectionBindings,
       historyUiState,
       focusState,
+      rewardState,
       runtimeDestroyed: () => runtime.destroyed,
       getCurrentUid: () => getCurrentTaskTimerUid(),
       pendingTaskJumpMemory: () => cacheRuntimeState.get("pendingTaskJumpMemory"),

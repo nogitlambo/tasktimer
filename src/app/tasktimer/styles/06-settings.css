@@ -33,7 +33,7 @@ body[data-route-root="settings"]::-webkit-scrollbar{
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]),
 #app[aria-label="TaskLaunch History Manager"]{
   width: 100%;
-  max-width: 1625px;
+  max-width: 1920px;
   margin-left: auto;
   margin-right: auto;
   background: #0d0f13 !important;

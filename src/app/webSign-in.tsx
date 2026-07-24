@@ -126,7 +126,7 @@ export default function WebSignIn(props: WebSignInProps) {
                             aria-expanded={showEmailLoginForm ? "true" : "false"}
                             disabled={authBusy || showEmailLoginForm}
                             tabIndex={showEmailLoginForm ? -1 : undefined}
-                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center rounded-none"
+                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary self-center"
                           >
                             <span className="webSignInAuthButtonIcon" aria-hidden="true">
                               <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
@@ -172,7 +172,7 @@ export default function WebSignIn(props: WebSignInProps) {
                             onClick={onGoogleSignIn}
                             disabled={authBusy || showEmailLoginForm}
                             tabIndex={showEmailLoginForm ? -1 : undefined}
-                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary webSignInGoogleButton self-center rounded-none"
+                            className="webSignInAuthButton webSignInAuthButtonStandard webSignInAuthButtonPrimary webSignInGoogleButton self-center"
                           >
                             <span className="webSignInAuthButtonIcon" aria-hidden="true">
                               <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
@@ -207,7 +207,7 @@ export default function WebSignIn(props: WebSignInProps) {
                             onClick={onToggleEmailLoginForm}
                             disabled={authBusy || !showEmailLoginForm}
                             tabIndex={showEmailLoginForm ? undefined : -1}
-                            className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
+                            className="webSignInAuthButton webSignInAuthButtonCompact"
                           >
                             Cancel
                           </button>
@@ -216,7 +216,7 @@ export default function WebSignIn(props: WebSignInProps) {
                             onClick={onSendEmailLink}
                             disabled={!showEmailLoginForm || !canSendEmailLink}
                             tabIndex={showEmailLoginForm ? undefined : -1}
-                            className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton rounded-none"
+                            className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton"
                           >
                             Send Link
                           </button>
@@ -230,7 +230,7 @@ export default function WebSignIn(props: WebSignInProps) {
                           type="button"
                           onClick={onCompleteEmailLink}
                           disabled={!canCompleteEmailLink}
-                          className="webSignInAuthButton webSignInAuthButtonCompact rounded-none"
+                          className="webSignInAuthButton webSignInAuthButtonCompact"
                         >
                           Complete Sign-In
                         </button>

@@ -1,6 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HistoryByTaskId, LiveSessionsByTaskId, Task } from "../lib/types";
+import { normalizeRewardProgress } from "../lib/rewards";
 import { createTaskTimerPersistence } from "./persistence";
+import { loadPendingTimeGoalCompletions } from "./pending-time-goal-completions";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -23,9 +25,22 @@ function createHarness(
   nowValue = new Date(2026, 4, 3, 8).getTime(),
   initialLiveSessions: LiveSessionsByTaskId = {}
 ) {
+  const localStorageValues = new Map<string, string>();
+  vi.stubGlobal("window", {
+    localStorage: {
+      getItem: (key: string) => localStorageValues.get(key) || null,
+      setItem: (key: string, value: string) => {
+        localStorageValues.set(key, value);
+      },
+      removeItem: (key: string) => {
+        localStorageValues.delete(key);
+      },
+    },
+  });
   let tasks: Task[] = [];
   let history: HistoryByTaskId = {};
   let liveSessions: LiveSessionsByTaskId = initialLiveSessions;
+  let rewardProgress = normalizeRewardProgress({ totalXp: 10, totalXpPrecise: 10, completedSessions: 1 });
   const saveTasks = vi.fn();
   const finalizeLiveSession = vi.fn((entry: Task, opts?: { elapsedMs?: number; completedAtMs?: number }) => {
     const taskId = String(entry.id || "");
@@ -47,6 +62,12 @@ function createHarness(
     const nextLiveSessions = { ...liveSessions };
     delete nextLiveSessions[taskId];
     liveSessions = nextLiveSessions;
+    rewardProgress = normalizeRewardProgress({
+      ...rewardProgress,
+      totalXp: 40,
+      totalXpPrecise: 40,
+      completedSessions: 2,
+    });
   });
   const syncSharedTaskSummariesForTasks = vi.fn(async () => undefined);
   const api = createTaskTimerPersistence({
@@ -73,6 +94,7 @@ function createHarness(
       saveCleanedSnapshot: () => {},
     },
     focusSessionNotesKey: "test:focus-notes",
+    pendingTimeGoalCompletionsKey: "test:pending-completions",
     pendingTaskJumpKey: "test:pending-jump",
     getTasks: () => tasks,
     setTasks: (value) => {
@@ -145,6 +167,7 @@ function createHarness(
     syncSharedTaskSummariesForTasks,
     jumpToTaskById: () => {},
     maybeRestorePendingTimeGoalFlow: () => {},
+    getRewardProgress: () => rewardProgress,
     normalizeLoadedTask: () => {},
     nowMs: () => nowValue,
   });
@@ -153,6 +176,7 @@ function createHarness(
     getTasks: () => tasks,
     getHistory: () => history,
     getLiveSessions: () => liveSessions,
+    getPendingCompletions: () => loadPendingTimeGoalCompletions("test:pending-completions"),
     saveTasks,
     finalizeLiveSession,
     syncSharedTaskSummariesForTasks,
@@ -160,6 +184,10 @@ function createHarness(
 }
 
 describe("task timer persistence resume-pending cleanup", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("keeps stale stopped resumable tasks available during task snapshot load", () => {
     const harness = createHarness([
       task({ accumulatedMs: 30_000, hasStarted: true, resumePendingSinceDayKey: "2026-05-02" }),
@@ -196,6 +224,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     const startedAtMs = new Date(2026, 4, 2, 22, 0, 0).getTime();
     const updatedAtMs = startedAtMs + 30 * 60_000;
     const nowValue = startedAtMs + 3 * 60 * 60_000;
+    const completedAtMs = startedAtMs + 60 * 60_000;
     const harness = createHarness(
       [
         task({
@@ -226,13 +255,13 @@ describe("task timer persistence resume-pending cleanup", () => {
       running: false,
       startMs: null,
       timeGoalCompletedDayKey: "2026-05-02",
-      timeGoalCompletedAtMs: startedAtMs,
+      timeGoalCompletedAtMs: completedAtMs,
       timeGoalCompletedReason: "goal",
       timeGoalCompletedElapsedMs: 60 * 60_000,
     });
     expect(harness.getHistory()["task-1"]).toEqual([
       {
-        ts: startedAtMs,
+        ts: completedAtMs,
         name: "Focus",
         ms: 60 * 60_000,
         note: "closed app note",
@@ -242,8 +271,19 @@ describe("task timer persistence resume-pending cleanup", () => {
     expect(harness.getLiveSessions()).toEqual({});
     expect(harness.finalizeLiveSession).toHaveBeenCalledWith(harness.getTasks()[0], {
       elapsedMs: 60 * 60_000,
-      completedAtMs: startedAtMs,
+      completedAtMs,
     });
+    expect(harness.getPendingCompletions()).toEqual([{
+      taskId: "task-1",
+      periodKey: "2026-05-02",
+      completedAtMs,
+      elapsedMs: 60 * 60_000,
+      awardPreview: {
+        fromXp: 10,
+        toXp: 40,
+        awardedXp: 30,
+      },
+    }]);
     expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
     expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
   });
@@ -253,6 +293,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     const updatedAtMs = startedAtMs + 7 * 60_000;
     const nowValue = startedAtMs + 15 * 60_000;
     const goalMs = 10 * 60_000;
+    const completedAtMs = startedAtMs + goalMs;
     const harness = createHarness(
       [
         task({
@@ -282,13 +323,13 @@ describe("task timer persistence resume-pending cleanup", () => {
       running: false,
       startMs: null,
       timeGoalCompletedDayKey: "2026-05-02",
-      timeGoalCompletedAtMs: startedAtMs,
+      timeGoalCompletedAtMs: completedAtMs,
       timeGoalCompletedReason: "goal",
       timeGoalCompletedElapsedMs: goalMs,
     });
     expect(harness.getHistory()["task-1"]).toEqual([
       {
-        ts: startedAtMs,
+        ts: completedAtMs,
         name: "Focus",
         ms: goalMs,
         sessionId: "session-10m",
@@ -296,7 +337,7 @@ describe("task timer persistence resume-pending cleanup", () => {
     ]);
     expect(harness.finalizeLiveSession).toHaveBeenCalledWith(harness.getTasks()[0], {
       elapsedMs: goalMs,
-      completedAtMs: startedAtMs,
+      completedAtMs,
     });
   });
 });

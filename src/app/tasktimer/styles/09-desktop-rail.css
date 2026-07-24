@@ -1007,7 +1007,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
 
   .wrap{
     width: 100%;
-    max-width: none;
+    max-width: 1920px;
+    margin-inline: auto;
     height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
     border: 0 !important;
     box-shadow: none !important;
@@ -1027,7 +1028,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     --flat-panel-hover: rgba(255,255,255,.055);
     --flat-accent: rgba(112,219,238,.92);
     width: 100%;
-    max-width: none;
+    max-width: 1920px;
+    margin-inline: auto;
     height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
     background: var(--flat-shell-bg) !important;
     border: 0 !important;

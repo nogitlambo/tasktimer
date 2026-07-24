@@ -118,6 +118,7 @@ type CreatePersistenceOptionsArgs = {
   };
   historyUiState: MutableStore;
   focusState: MutableStore;
+  rewardState: MutableStore;
   runtimeDestroyed: () => boolean;
   getCurrentUid: () => string;
   pendingTaskJumpMemory: () => string | null;
@@ -1083,6 +1084,7 @@ export function createTaskTimerPersistenceContext(
     maybeRepairHistoryNotesInCloudAfterHydrate: args.maybeRepairHistoryNotesInCloudAfterHydrate,
     jumpToTaskById: args.jumpToTaskById,
     maybeRestorePendingTimeGoalFlow: args.maybeRestorePendingTimeGoalFlow,
+    getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     normalizeLoadedTask: args.normalizeLoadedTask,
     nowMs: Date.now,
   };
