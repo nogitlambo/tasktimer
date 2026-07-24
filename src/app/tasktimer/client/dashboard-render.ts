@@ -833,7 +833,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       projectedLabel: "projected if running tasks are logged",
     });
     if (progressTextEl) {
+      progressTextEl.classList.remove("positive", "negative");
       progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal` : "No weekly time goals enabled";
+      if (totalGoalMs > 0) {
+        progressTextEl.classList.add(progressPct >= 100 ? "positive" : "negative");
+      }
     }
     const cardEl = trendIndicatorEl?.closest(".dashboardWeeklyGoalsCard") as HTMLElement | null;
     if (cardEl) {
@@ -950,7 +954,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       projectedLabel: "projected if running tasks are logged",
     });
     if (progressTextEl) {
+      progressTextEl.classList.remove("positive", "negative");
       progressTextEl.textContent = totalGoalMs > 0 ? `${progressPct}% of weekly goal` : "No weekly time goals enabled";
+      if (totalGoalMs > 0) {
+        progressTextEl.classList.add(progressPct >= 100 ? "positive" : "negative");
+      }
     }
   }
 
@@ -1430,8 +1438,8 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       goalLineEl.setAttribute("y2", y.toFixed(1));
       goalLineEl.style.display = showGoal ? "" : "none";
       if (goalLabelEl) {
-        goalLabelEl.setAttribute("x", String(chart.right));
-        goalLabelEl.setAttribute("y", Math.max(chart.top + 10, y - 8).toFixed(1));
+        goalLabelEl.setAttribute("x", String(chart.left - 10));
+        goalLabelEl.setAttribute("y", Math.max(chart.top + 10, Math.min(chart.bottom - 8, y)).toFixed(1));
         const compactGoalLabel = formatDashboardDurationShort(model.dailyPaceTargetMs).replace(/\s+0m$/i, "");
         goalLabelEl.textContent = showGoal ? `${compactGoalLabel} GOAL` : "";
         goalLabelEl.style.display = showGoal ? "" : "none";
@@ -1906,10 +1914,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     });
 
     if (valueEl) valueEl.textContent = formatDashboardDurationShort(todayHoursModel.todayMs);
-    applyDashboardTrendIndicator(trendIndicatorEl, todayHoursModel.todayMs, todayHoursModel.hasUsableTrendBaseline ? todayHoursModel.previousProductivityDaySameTimeMs : 0, {
-      minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
-      showDirectionalArrow: false,
-    });
+    if (trendIndicatorEl) {
+      trendIndicatorEl.style.display = "none";
+      trendIndicatorEl.textContent = "";
+      trendIndicatorEl.classList.remove("positive", "negative", "neutral");
+    }
     applyDashboardGoalProgressUi({
       progressBarEl,
       progressFillEl,

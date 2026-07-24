@@ -28,11 +28,24 @@ import { buildImportedSharedTask, hasImportedSharedTask } from "../lib/sharedTas
 import { normalizeTaskColor } from "../lib/taskColors";
 import { checkpointValueToSliderSeconds, formatCheckpointSliderLabel, type CheckpointSliderUnit } from "./checkpoint-slider";
 import type { TaskTimerGroupsContext } from "./context";
-import { hideOverlay, showOverlay } from "./overlay-visibility";
+import {
+  getMobileSwipeCloseDragY,
+  getResetMobileSwipeCloseState,
+  getStartMobileSwipeCloseState,
+  getUpdatedMobileSwipeCloseState,
+  shouldCloseFromMobileSwipe,
+  type MobileSwipeCloseState,
+} from "../components/mobileSwipeClose";
+import { hideOverlay, isOverlayVisible, showOverlay } from "./overlay-visibility";
 
 type GroupsBusyResult<T> =
   | { ok: true; value: T; timedOut: false }
   | { ok: false; message: string; timedOut: boolean; error?: unknown };
+
+const FRIEND_REQUEST_SHEET_BREAKPOINT_QUERY = "(max-width: 980px)";
+const FRIEND_REQUEST_SHEET_SWIPE_START_ZONE_PX = 78;
+const FRIEND_REQUEST_SHEET_SWIPE_CLOSE_THRESHOLD_PX = 70;
+const FRIEND_REQUEST_SHEET_CLOSE_MS = 280;
 
 type GroupsSnapshotLoaders = {
   loadIncomingRequests: typeof loadIncomingRequests;
@@ -631,6 +644,46 @@ export async function loadGroupsSnapshotForUid(uid: string, loaders: GroupsSnaps
 
 export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   const { els } = ctx;
+  let friendRequestSheetSwipeCloseState: MobileSwipeCloseState = getResetMobileSwipeCloseState();
+  let friendRequestSheetCloseTimer: number | null = null;
+
+  function isFriendRequestMobileSheetViewport() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia(FRIEND_REQUEST_SHEET_BREAKPOINT_QUERY).matches;
+  }
+
+  function getFriendRequestSheetPanel() {
+    return els.friendRequestModal?.querySelector?.(".friendRequestMobileSheet") as HTMLElement | null;
+  }
+
+  function resetFriendRequestSheetSwipeClose() {
+    friendRequestSheetSwipeCloseState = getResetMobileSwipeCloseState();
+    const panel = getFriendRequestSheetPanel();
+    panel?.style?.removeProperty?.("--friend-request-sheet-drag-y");
+    panel?.classList?.remove?.("isDragging");
+  }
+
+  function setFriendRequestSheetDragY(dragY: number) {
+    const panel = getFriendRequestSheetPanel();
+    panel?.style?.setProperty?.("--friend-request-sheet-drag-y", `${-Math.max(0, dragY)}px`);
+  }
+
+  function setFriendRequestSheetOpenState() {
+    const overlay = els.friendRequestModal as HTMLElement | null;
+    if (!overlay || !isFriendRequestMobileSheetViewport()) return;
+    if (friendRequestSheetCloseTimer != null) {
+      window.clearTimeout(friendRequestSheetCloseTimer);
+      friendRequestSheetCloseTimer = null;
+    }
+    overlay.classList.remove("isMobileSheetClosing");
+    resetFriendRequestSheetSwipeClose();
+    const showOpenState = () => overlay.classList.add("isMobileSheetOpen");
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(showOpenState);
+      return;
+    }
+    window.setTimeout(showOpenState, 0);
+  }
   let friendProfileCloseTimer: number | null = null;
   let friendProfileOpenTimer: number | null = null;
 
@@ -663,6 +716,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       return;
     }
     showOverlay(els.friendRequestModal as HTMLElement | null);
+    setFriendRequestSheetOpenState();
     if (els.friendRequestEmailInput) els.friendRequestEmailInput.value = "";
     setFriendRequestModalStatus("");
     window.setTimeout(() => {
@@ -675,8 +729,53 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function closeFriendRequestModal() {
-    hideOverlay(els.friendRequestModal as HTMLElement | null);
+    const overlay = els.friendRequestModal as HTMLElement | null;
+    resetFriendRequestSheetSwipeClose();
+    if (overlay && isFriendRequestMobileSheetViewport() && isOverlayVisible(overlay)) {
+      if (friendRequestSheetCloseTimer != null) window.clearTimeout(friendRequestSheetCloseTimer);
+      overlay.classList.remove("isMobileSheetOpen");
+      overlay.classList.add("isMobileSheetClosing");
+      friendRequestSheetCloseTimer = window.setTimeout(() => {
+        hideOverlay(overlay);
+        overlay.classList.remove("isMobileSheetClosing");
+        friendRequestSheetCloseTimer = null;
+      }, FRIEND_REQUEST_SHEET_CLOSE_MS);
+    } else {
+      hideOverlay(overlay);
+      overlay?.classList?.remove?.("isMobileSheetOpen", "isMobileSheetClosing");
+    }
     setFriendRequestModalStatus("");
+  }
+
+  function startFriendRequestSheetSwipe(pointerId: number | null, clientX: number, clientY: number, panel: HTMLElement) {
+    resetFriendRequestSheetSwipeClose();
+    if (!isFriendRequestMobileSheetViewport()) return;
+    const panelRect = panel.getBoundingClientRect();
+    const isInBottomZone = panelRect.bottom - clientY <= FRIEND_REQUEST_SHEET_SWIPE_START_ZONE_PX;
+    if (!isInBottomZone) return;
+    friendRequestSheetSwipeCloseState = getStartMobileSwipeCloseState(pointerId, clientX, clientY);
+    panel.classList.add("isDragging");
+  }
+
+  function updateFriendRequestSheetSwipe(pointerId: number | null, clientX: number, clientY: number, event?: { preventDefault?: () => void }) {
+    const swipeClose = friendRequestSheetSwipeCloseState;
+    if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId !== pointerId) return;
+    friendRequestSheetSwipeCloseState = getUpdatedMobileSwipeCloseState(swipeClose, pointerId, clientX, clientY);
+    const dragY = getMobileSwipeCloseDragY(friendRequestSheetSwipeCloseState, "up");
+    if (dragY <= 0) return;
+    event?.preventDefault?.();
+    setFriendRequestSheetDragY(dragY);
+  }
+
+  function endFriendRequestSheetSwipe(pointerId: number | null) {
+    const swipeClose = friendRequestSheetSwipeCloseState;
+    if (swipeClose.pointerId !== pointerId) return;
+    if (shouldCloseFromMobileSwipe(swipeClose, FRIEND_REQUEST_SHEET_SWIPE_CLOSE_THRESHOLD_PX, "up")) {
+      friendRequestSheetSwipeCloseState.consumed = true;
+      closeFriendRequestModal();
+      return;
+    }
+    resetFriendRequestSheetSwipeClose();
   }
 
   function setFriendRequestModalStatus(message: string, tone: "error" | "success" | "info" = "info") {
@@ -2279,6 +2378,61 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     ctx.on(els.friendRequestModal, "click", (e: any) => {
       if (e?.target === els.friendRequestModal) closeFriendRequestModal();
     });
+    ctx.on(els.friendRequestModal, "pointerdown", (e: any) => {
+      if (e?.button !== 0) return;
+      const panel = e?.target?.closest?.(".friendRequestMobileSheet") as HTMLElement | null;
+      if (!panel) return;
+      startFriendRequestSheetSwipe(e?.pointerId ?? null, Number(e?.clientX || 0), Number(e?.clientY || 0), panel);
+      if (!friendRequestSheetSwipeCloseState.active) return;
+      try {
+        panel.setPointerCapture?.(e.pointerId);
+      } catch {
+        // Ignore pointer capture failures on older embedded browsers.
+      }
+    });
+    ctx.on(els.friendRequestModal, "pointermove", (e: any) => {
+      updateFriendRequestSheetSwipe(e?.pointerId ?? null, Number(e?.clientX || 0), Number(e?.clientY || 0), e);
+    });
+    ctx.on(els.friendRequestModal, "pointerup", (e: any) => {
+      endFriendRequestSheetSwipe(e?.pointerId ?? null);
+    });
+    ctx.on(els.friendRequestModal, "pointercancel", (e: any) => {
+      endFriendRequestSheetSwipe(e?.pointerId ?? null);
+    });
+    ctx.on(els.friendRequestModal, "touchstart", (e: any) => {
+      resetFriendRequestSheetSwipeClose();
+      if (!e?.touches || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const panel = e?.target?.closest?.(".friendRequestMobileSheet") as HTMLElement | null;
+      if (!panel) return;
+      startFriendRequestSheetSwipe(touch.identifier ?? null, Number(touch.clientX || 0), Number(touch.clientY || 0), panel);
+    });
+    ctx.on(els.friendRequestModal, "touchmove", (e: any) => {
+      const swipeClose = friendRequestSheetSwipeCloseState;
+      if (!swipeClose.active || swipeClose.consumed || swipeClose.pointerId == null || !e?.touches) return;
+      const touch = Array.from(e.touches).find((currentTouch: any) => currentTouch.identifier === swipeClose.pointerId) as any;
+      if (!touch) return;
+      updateFriendRequestSheetSwipe(touch.identifier ?? null, Number(touch.clientX || 0), Number(touch.clientY || 0), e);
+    });
+    ctx.on(els.friendRequestModal, "touchend", (e: any) => {
+      const swipeClose = friendRequestSheetSwipeCloseState;
+      if (swipeClose.pointerId == null || !e?.changedTouches) return;
+      const touch = Array.from(e.changedTouches).find((currentTouch: any) => currentTouch.identifier === swipeClose.pointerId) as any;
+      if (!touch) return;
+      endFriendRequestSheetSwipe(touch.identifier ?? null);
+    });
+    ctx.on(els.friendRequestModal, "touchcancel", (e: any) => {
+      const swipeClose = friendRequestSheetSwipeCloseState;
+      if (swipeClose.pointerId == null || !e?.changedTouches) return;
+      const touch = Array.from(e.changedTouches).find((currentTouch: any) => currentTouch.identifier === swipeClose.pointerId) as any;
+      if (!touch) return;
+      endFriendRequestSheetSwipe(touch.identifier ?? null);
+    });
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Escape" && isOverlayVisible(els.friendRequestModal as HTMLElement | null)) closeFriendRequestModal();
+      });
+    }
     ctx.on(els.friendProfileCloseBtn, "click", (e: any) => {
       e?.preventDefault?.();
       closeFriendProfileModal();

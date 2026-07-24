@@ -44,4 +44,15 @@ describe("mobile swipe close gesture", () => {
     expect(getMobileSwipeCloseDragY(state)).toBe(69);
     expect(shouldCloseFromMobileSwipe(state, 70)).toBe(false);
   });
+
+  it("supports upward swipe close gestures for top sheets", () => {
+    const started = getStartMobileSwipeCloseState(7, 120, 120);
+    const draggedUp = getUpdatedMobileSwipeCloseState(started, 7, 124, 48);
+    const draggedDown = getUpdatedMobileSwipeCloseState(started, 7, 124, 170);
+
+    expect(getMobileSwipeCloseDragY(draggedUp, "up")).toBe(72);
+    expect(shouldCloseFromMobileSwipe(draggedUp, 70, "up")).toBe(true);
+    expect(getMobileSwipeCloseDragY(draggedDown, "up")).toBe(0);
+    expect(shouldCloseFromMobileSwipe(draggedDown, 70, "up")).toBe(false);
+  });
 });

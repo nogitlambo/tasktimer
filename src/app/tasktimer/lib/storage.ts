@@ -72,6 +72,10 @@ const PENDING_LIVE_SESSION_SYNC_KEY = `${STORAGE_KEY}:pendingLiveSessionSync`;
 const PENDING_PREFERENCES_SYNC_KEY = `${STORAGE_KEY}:pendingPreferencesSync`;
 const ACTIVE_UID_KEY = `${STORAGE_KEY}:activeUid`;
 export const HISTORY_SAVE_WORKING_EVENT = "tasktimer:history-save-working";
+export type LeaderboardProfileSyncReason = "task-complete-xp-claim";
+export type SaveCloudPreferencesOptions = {
+  leaderboardSyncReason?: LeaderboardProfileSyncReason;
+};
 const HISTORY_SAVE_FULL_SYNC_MIN_VISIBLE_MS = 600;
 let historySaveWorkingActiveCount = 0;
 let historySaveWorkingShownAtMs = 0;
@@ -248,6 +252,7 @@ let suppressedHistoryCloudWriteCount = 0;
 let suppressedLiveSessionCloudWriteCount = 0;
 let inFlightLeaderboardProfileSync: Promise<void> | null = null;
 let queuedLeaderboardProfileSync = false;
+let queuedLeaderboardProfileSyncReason: LeaderboardProfileSyncReason | null = null;
 let leaderboardProfileSyncTimer: number | null = null;
 let lastSuccessfulLeaderboardProfileSignature = "";
 let lastQueuedDashboardSyncSignature = "";
@@ -1315,6 +1320,7 @@ export function clearScopedStorageState(): void {
   queuedLiveSessionUpsertsByTaskId.clear();
   queuedLiveSessionClears.clear();
   inFlightLeaderboardProfileSync = null;
+  queuedLeaderboardProfileSyncReason = null;
   cachedTasks = [];
   cachedHistory = {};
   cachedLiveSessions = {};
@@ -1334,6 +1340,7 @@ export function clearScopedStorageState(): void {
   suppressedHistoryCloudWriteCount = 0;
   suppressedLiveSessionCloudWriteCount = 0;
   queuedLeaderboardProfileSync = false;
+  queuedLeaderboardProfileSyncReason = null;
   lastSuccessfulLeaderboardProfileSignature = "";
   if (queuedTaskCloudFlushTimer != null && typeof window !== "undefined") {
     window.clearTimeout(queuedTaskCloudFlushTimer);
@@ -1399,6 +1406,7 @@ export function resetVolatileWorkspaceStateForAuthChange(): void {
   queuedLiveSessionClears.clear();
   inFlightLeaderboardProfileSync = null;
   queuedLeaderboardProfileSync = false;
+  queuedLeaderboardProfileSyncReason = null;
   cachedTasks = [];
   cachedHistory = {};
   cachedLiveSessions = {};
@@ -1639,26 +1647,33 @@ function leaderboardProfileSyncSignature() {
 function flushQueuedLeaderboardProfileSync(uid: string): void {
   if (currentUserIsAnonymous()) {
     queuedLeaderboardProfileSync = false;
+    queuedLeaderboardProfileSyncReason = null;
     return;
   }
   if (inFlightLeaderboardProfileSync || !queuedLeaderboardProfileSync) return;
   const signature = leaderboardProfileSyncSignature();
   if (signature === lastSuccessfulLeaderboardProfileSignature) {
     queuedLeaderboardProfileSync = false;
+    queuedLeaderboardProfileSyncReason = null;
     return;
   }
+  const syncReason = queuedLeaderboardProfileSyncReason;
   queuedLeaderboardProfileSync = false;
+  queuedLeaderboardProfileSyncReason = null;
   const syncPromise = (async () => {
     const snapshot = buildLeaderboardMetricsSnapshot({
       historyByTaskId: cachedHistory || {},
       liveSessionsByTaskId: cachedLiveSessions || {},
       rewards: cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS,
     });
-    await saveLeaderboardProfile(uid, snapshot);
+    await saveLeaderboardProfile(uid, snapshot, {
+      dispatchUpdatedEvent: syncReason === "task-complete-xp-claim",
+    });
     lastSuccessfulLeaderboardProfileSignature = signature;
   })()
     .catch(() => {
       queuedLeaderboardProfileSync = true;
+      if (syncReason) queuedLeaderboardProfileSyncReason = syncReason;
     })
     .finally(() => {
       inFlightLeaderboardProfileSync = null;
@@ -1667,10 +1682,11 @@ function flushQueuedLeaderboardProfileSync(uid: string): void {
   inFlightLeaderboardProfileSync = syncPromise;
 }
 
-function scheduleLeaderboardProfileSync(uidRaw?: string): void {
+function scheduleLeaderboardProfileSync(uidRaw?: string, opts?: { reason?: LeaderboardProfileSyncReason }): void {
   const uid = String(uidRaw || currentUid() || "").trim();
   if (!uid || currentUserIsAnonymous()) return;
   queuedLeaderboardProfileSync = true;
+  if (opts?.reason === "task-complete-xp-claim") queuedLeaderboardProfileSyncReason = opts.reason;
   if (leaderboardProfileSyncTimer != null || inFlightLeaderboardProfileSync) return;
   leaderboardProfileSyncTimer = window.setTimeout(() => {
     leaderboardProfileSyncTimer = null;
@@ -2024,7 +2040,7 @@ function enqueueLiveSessionClear(
   scheduleCloudQueueFlush("liveSessions", uid, flushQueuedLiveSessionSync, opts);
 }
 
-export function saveCloudPreferences(prefs: UserPreferencesV1) {
+export function saveCloudPreferences(prefs: UserPreferencesV1, opts?: SaveCloudPreferencesOptions) {
   cachedPreferences = normalizePreferenceSnapshot(prefs);
   const uid = currentUid();
   cachedPreferencesUid = uid;
@@ -2040,7 +2056,7 @@ export function saveCloudPreferences(prefs: UserPreferencesV1) {
   queuedPreferencesSyncUid = uid;
   debugLogCloudQueue("preferences", "enqueue", { uid });
   flushQueuedCloudPreferences(uid);
-  scheduleLeaderboardProfileSync(uid);
+  scheduleLeaderboardProfileSync(uid, { reason: opts?.leaderboardSyncReason });
 }
 
 export function saveCloudDashboard(dashboard: NonNullable<typeof cachedDashboard>) {

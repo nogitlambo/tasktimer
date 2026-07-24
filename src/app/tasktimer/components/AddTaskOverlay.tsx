@@ -200,10 +200,10 @@ export default function AddTaskOverlay() {
             </div>
           </form>
           <div className="footerBtns addTaskFooterBtns">
-            <button className="btn btn-ghost" id="addTaskCancelBtn" type="button">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction addTaskPrimitiveAction addTaskPrimitiveSecondaryAction" id="addTaskCancelBtn" type="button">
               Cancel
             </button>
-            <button className="btn btn-accent" id="addTaskConfirmBtn" type="submit" form="addTaskForm">
+            <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction addTaskPrimitiveAction addTaskPrimitivePrimaryAction" id="addTaskConfirmBtn" type="submit" form="addTaskForm">
               Create
             </button>
           </div>

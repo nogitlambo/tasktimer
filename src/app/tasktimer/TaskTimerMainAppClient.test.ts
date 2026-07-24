@@ -17,6 +17,20 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(overlayIndex).toBeGreaterThan(frameCloseIndex);
   });
 
+  it("renders the Add Task overlay inside the desktop app frame with Edit Task", () => {
+    const frameOpenIndex = source.indexOf("<TaskTimerAppFrame");
+    const frameCloseIndex = source.indexOf("</TaskTimerAppFrame>");
+    const addOverlayIndex = source.indexOf("<AddTaskOverlay />");
+    const editOverlayIndex = source.indexOf("<EditTaskOverlay />");
+
+    expect(frameOpenIndex).toBeGreaterThan(-1);
+    expect(frameCloseIndex).toBeGreaterThan(-1);
+    expect(addOverlayIndex).toBeGreaterThan(frameOpenIndex);
+    expect(addOverlayIndex).toBeLessThan(frameCloseIndex);
+    expect(editOverlayIndex).toBeGreaterThan(frameOpenIndex);
+    expect(editOverlayIndex).toBeLessThan(frameCloseIndex);
+  });
+
   it("renders the leaderboard user summary reveal wrapper and entrance class", () => {
     expect(source).toContain('className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"');
     expect(source).toContain('className="friendUserSummaryBorderTrace"');
@@ -41,7 +55,7 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
 
   it("routes friend leaderboard table rows through the Friend Info event", () => {
     expect(source).toContain("friendUidSet={leaderboardFriendUidSet}");
-    expect(source).toContain('isFriend ? " isFriend" : ""');
+    expect(source).toContain('className: isFriend ? "isFriend" : ""');
     expect(source).not.toContain("leaderboardFriendBadge");
     expect(source).toContain("TASKTIMER_OPEN_FRIEND_PROFILE_EVENT");
     expect(source).toContain("setSelectedLeaderboardProfile(profile)");
@@ -112,12 +126,20 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   });
 
   it("animates and highlights rows in the leaderboard movement modal", () => {
+    expect(source).toContain("function LeaderboardSharedTableContent");
+    expect(source).toContain("function LeaderboardSharedTableCells");
     expect(source).toContain("function LeaderboardMovementTable");
     expect(source).toContain("const movementRows = change.movementRows?.length ? change.movementRows : change.rows;");
+    expect(source).toContain('className="leaderboardWeeklyTableWrap leaderboardMovementTableWrap"');
+    expect(source).toContain('className="leaderboardSharedTablePanel leaderboardMovementSharedTablePanel"');
+    expect(source).toContain("<LeaderboardSharedTableContent");
+    expect(source).toContain('as: "div"');
+    expect(source).toContain("rankBeforeMetric");
     expect(source).toContain('"--leaderboard-movement-from-index": previousIndex');
     expect(source).toContain('"--leaderboard-movement-to-index": index');
-    expect(source).toContain('leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}');
-    expect(source).toContain("formatLeaderboardMovementMetric(change, row.profile)");
+    expect(source).toContain('className: "leaderboardMovementTableRow"');
+    expect(source).toContain('className={rowClassName}');
+    expect(source).toContain("formatMetric={(profile) => formatLeaderboardMovementMetric(change, profile)}");
     expect(source).toContain("leaderboardMovementSkippedRows");
   });
 
@@ -128,11 +150,15 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain('"--leaderboard-movement-index": activeLeaderboardMovementIndex');
     expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSlideViewport");
     expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSlideTrack");
+    expect(overlaysCss).toContain("height:100%;");
+    expect(overlaysCss).toContain("flex:1 1 auto;");
     expect(overlaysCss).toContain("transform: translateX(calc(var(--leaderboard-movement-index) * -100%));");
     expect(overlaysCss).toContain("transition: transform .34s cubic-bezier(.2, .8, .2, 1);");
     expect(overlaysCss).toContain("@keyframes leaderboardMovementRowSettle");
     expect(overlaysCss).toContain("animation: leaderboardMovementRowSettle .72s cubic-bezier(.16, .86, .22, 1) .12s both;");
     expect(overlaysCss).toContain("var(--leaderboard-movement-row-height)");
+    expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementSharedTablePanel");
+    expect(overlaysCss).toContain("grid-template-columns:100px minmax(240px, 1.5fr) minmax(110px, .8fr) minmax(110px, .75fr);");
     expect(overlaysCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(overlaysCss).toContain("#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardMovementTableRow");
     expect(overlaysCss).toContain("animation: none;");
@@ -160,6 +186,45 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(sharedPanelTextRule).toContain("align-items:center;");
     expect(sharedPanelTextRule).toContain("justify-content:center;");
     expect(sharedPanelTextRule).toContain("text-align:center;");
+  });
+
+  it("reveals global and weekly podium avatars with a first-second-third coin spin", () => {
+    expect(source).toContain("function LeaderboardPodiumDeck");
+    expect(source).toContain("rows={orderedWeeklyPodiumRows}");
+    expect(source).toContain("rows={orderedGlobalPodiumRows}");
+    expect(friendsCss).toContain("#leaderboardGlobalPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("#leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("@keyframes leaderboardPodiumCoinReveal");
+    expect(friendsCss).toContain("animation:leaderboardPodiumCoinReveal 1.5s linear both;");
+    expect(friendsCss).toContain("transform:translateZ(0) rotateY(88deg) scale(.96);");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("animation-delay:120ms;");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard2 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("animation-delay:520ms;");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("animation-delay:920ms;");
+  });
+
+  it("shows rank insignia instead of usernames on podium cards", () => {
+    expect(source).toContain('className="leaderboardWeeklyPodiumRankInsignia"');
+    expect(source).toContain("<LeaderboardRankInsignia profile={row.profile} />");
+    expect(source).not.toContain('className="leaderboardWeeklyPodiumUsername"');
+    expect(source).not.toContain("{getLeaderboardUsernameLabel(row.profile)}");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumRankInsignia");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumRankInsignia .leaderboardRankInsignia");
+  });
+
+  it("keeps the weekly countdown above the podium crown", () => {
+    const weeklyOverlayRules = Array.from(
+      friendsCss.matchAll(/#app\[aria-label="TaskLaunch App"\] #leaderboardWeeklyPanel \.leaderboardWeeklyPeriodOverlay\s*\{([\s\S]*?)\}/g)
+    ).map((match) => match[1] ?? "");
+
+    expect(weeklyOverlayRules.some((rule) => rule.includes("top:8px;"))).toBe(true);
+    expect(weeklyOverlayRules.some((rule) => rule.includes("background:transparent;"))).toBe(true);
+    expect(weeklyOverlayRules.some((rule) => rule.includes("border:0;"))).toBe(true);
+    expect(weeklyOverlayRules.some((rule) => rule.includes("box-shadow:none;"))).toBe(true);
+    expect(friendsCss).toContain("font-size:clamp(13px, 1.05vw, 17px);");
+    expect(friendsCss).toContain("font-size:clamp(11px, 3.2vw, 13px);");
   });
 
   it("delivers task-complete XP from the modal XP value after Claim", () => {

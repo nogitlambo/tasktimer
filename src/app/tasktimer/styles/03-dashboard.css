@@ -8730,6 +8730,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   line-height:1.35 !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryFoot.positive{
+  color:#47ffb5 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryFoot.negative{
+  color:#ff6b6b !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardGoalProgressWrap{
   width:200px !important;
   max-width:100% !important;
@@ -8861,6 +8869,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   font-weight:700 !important;
   letter-spacing:0 !important;
   text-anchor:end !important;
+  dominant-baseline:middle !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityBar{
@@ -9158,7 +9167,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard{
-    grid-column:1 / span 2 !important;
+    grid-column:1 / 3 !important;
     grid-row:1 !important;
     align-self:stretch !important;
   }
@@ -9215,8 +9224,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardHeatCard{
-    grid-column:2 / span 2 !important;
+    grid-column:2 !important;
     grid-row:2 !important;
     align-self:stretch !important;
+    min-height:340px !important;
+    height:auto !important;
   }
 }

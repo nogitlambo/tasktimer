@@ -4,7 +4,8 @@ export default function FriendsOverlays() {
   return (
     <>
       <div className="overlay primitiveSciFiModalOverlay friendRequestPrimitiveOverlay" id="friendRequestModal" style={{ display: "none" }}>
-        <div className="primitiveSciFiModal friendRequestPrimitiveModal" role="dialog" aria-modal="true" aria-label="Send Friend Request">
+        <div className="primitiveSciFiModal friendRequestPrimitiveModal friendRequestMobileSheet" role="dialog" aria-modal="true" aria-label="Send Friend Request">
+          <div className="friendRequestMobileSheetHandle" aria-hidden="true" />
           <header className="primitiveSciFiModalHeader friendRequestPrimitiveHeader">
             <h2>Send Friend Request</h2>
           </header>

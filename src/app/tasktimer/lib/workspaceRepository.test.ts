@@ -284,4 +284,21 @@ describe("TaskTimer Workspace preferences persistence", () => {
     expect(storageMocks.saveCloudPreferences).toHaveBeenCalledTimes(1);
     expect(storageMocks.saveCloudPreferences).toHaveBeenCalledWith(next);
   });
+
+  it("forwards leaderboard sync metadata for preference updates that opt in", () => {
+    const cached = buildDefaultUserPreferences(100);
+    storageMocks.loadCachedPreferences.mockReturnValue(cached);
+    const persistence = createTaskTimerWorkspacePreferencesPersistence(createTaskTimerWorkspaceRepository(), {
+      now: () => 150,
+    });
+
+    const next = persistence.update(
+      { autoFocusOnTaskLaunchEnabled: true },
+      { leaderboardSyncReason: "task-complete-xp-claim" }
+    );
+
+    expect(storageMocks.saveCloudPreferences).toHaveBeenCalledWith(next, {
+      leaderboardSyncReason: "task-complete-xp-claim",
+    });
+  });
 });

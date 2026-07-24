@@ -666,6 +666,9 @@ describe("dashboard activity overview card", () => {
       expect(goalLine?.style.display).toBe("");
       expect(goalLabel?.style.display).toBe("");
       expect(goalLabel?.textContent).toBe("2h GOAL");
+      expect(goalLine?.getAttribute("x1")).toBe("84");
+      expect(goalLine?.getAttribute("x2")).toBe("692");
+      expect(Number(goalLabel?.getAttribute("x"))).toBeLessThan(Number(goalLine?.getAttribute("x1")));
       expect(previousBars?.style.display).toBe("none");
       expect(previousBars?.children).toHaveLength(7);
     } finally {
@@ -761,6 +764,10 @@ describe("dashboard week-start alignment", () => {
       expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("2h 30m");
       expect(harness.byId.get("dashboardWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("63% of weekly goal");
+      expect(harness.byId.get("dashboardWeeklyGoalsProgressText")?.classList.contains("negative")).toBe(true);
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.classList.contains("negative")).toBe(true);
+      expect(harness.byId.get("dashboardActivityTodayTrendIndicator")?.style.display).toBe("none");
+      expect(harness.byId.get("dashboardActivityTodayTrendIndicator")?.textContent).toBe("");
     } finally {
       harness.restore();
     }
@@ -793,6 +800,7 @@ describe("dashboard week-start alignment", () => {
       expect(harness.byId.get("dashboardActivityWeeklyTrendIndicator")?.textContent).toBe("+20%");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("7h 0m");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("100% of weekly goal");
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.classList.contains("positive")).toBe(true);
     } finally {
       harness.restore();
     }

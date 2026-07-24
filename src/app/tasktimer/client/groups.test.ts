@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   approveFriendRequest,
   cancelOutgoingFriendRequest,
@@ -52,6 +52,11 @@ vi.mock("../lib/friendsStore", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe("loadGroupsSnapshotForUid", () => {
@@ -1100,6 +1105,228 @@ describe("groups friends list shared task counts", () => {
     });
 
     expect(sharedByYouTitle).toBe("Shared by you | 1");
+  });
+});
+
+describe("friend request modal mobile sheet behavior", () => {
+  function makeClassList() {
+    const classes = new Set<string>();
+    return {
+      add: vi.fn((...tokens: string[]) => tokens.forEach((token) => classes.add(token))),
+      remove: vi.fn((...tokens: string[]) => tokens.forEach((token) => classes.delete(token))),
+      toggle: vi.fn((token: string, force?: boolean) => {
+        const next = force ?? !classes.has(token);
+        if (next) classes.add(token);
+        else classes.delete(token);
+        return next;
+      }),
+      contains: (token: string) => classes.has(token),
+    };
+  }
+
+  function makeStyle() {
+    const props = new Map<string, string>();
+    return {
+      display: "none",
+      setProperty: vi.fn((name: string, value: string) => props.set(name, value)),
+      removeProperty: vi.fn((name: string) => props.delete(name)),
+      getPropertyValue: (name: string) => props.get(name) || "",
+    };
+  }
+
+  function makeModalHarness() {
+    vi.useFakeTimers();
+    const originalWindow = globalThis.window;
+    const windowHandlers = new Map<string, (event: unknown) => void>();
+    globalThis.window = {
+      matchMedia: vi.fn(() => ({ matches: true })),
+      requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
+        callback(0);
+        return 1;
+      }),
+      setTimeout,
+      clearTimeout,
+      addEventListener: vi.fn((event: string, handler: (event: unknown) => void) => {
+        windowHandlers.set(event, handler);
+      }),
+    } as unknown as Window & typeof globalThis;
+
+    const panelStyle = makeStyle();
+    const panel = {
+      id: "friendRequestPanel",
+      classList: makeClassList(),
+      style: panelStyle,
+      getBoundingClientRect: vi.fn(() => ({ top: 0, bottom: 360 })),
+      setPointerCapture: vi.fn(),
+    };
+    const overlay = {
+      id: "friendRequestModal",
+      classList: makeClassList(),
+      style: makeStyle(),
+      getAttribute: vi.fn(() => null),
+      querySelector: vi.fn((selector: string) => (selector === ".friendRequestMobileSheet" ? panel : null)),
+    };
+    const emailInput = {
+      id: "friendRequestEmailInput",
+      value: "friend@example.com",
+      focus: vi.fn(),
+    };
+    const status = {
+      id: "friendRequestModalStatus",
+      textContent: "Previous status",
+      style: makeStyle(),
+    };
+    const cancelBtn = { id: "friendRequestCancelBtn" };
+    const sendBtn = { id: "friendRequestSendBtn", disabled: false };
+    const openBtn = { id: "openFriendRequestModalBtn" };
+    const handlers = new Map<string, (event: unknown) => void>();
+    const ctx = {
+      els: {
+        commandCenterGroupsAlertBadge: null,
+        footerTest2AlertBadge: null,
+        friendProfileCloseBtn: null,
+        friendProfileDeleteBtn: null,
+        friendProfileModal: null,
+        friendRequestCancelBtn: cancelBtn,
+        friendRequestEmailInput: emailInput,
+        friendRequestModal: overlay,
+        friendRequestModalStatus: status,
+        friendRequestSendBtn: sendBtn,
+        groupsFriendsList: null,
+        groupsIncomingRequestsList: null,
+        groupsOutgoingRequestsList: null,
+        groupsSharedByYouList: null,
+        openFriendRequestModalBtn: openBtn,
+        shareTaskCancelBtn: null,
+        shareTaskConfirmBtn: null,
+        shareTaskModal: null,
+        shareTaskScopeSelect: null,
+        sharedTaskSummaryBody: null,
+        sharedTaskSummaryCloseBtn: null,
+        sharedTaskSummaryModal: null,
+        sharedTaskSummaryTitle: null,
+      },
+      on: (el: { id?: string } | null, event: string, handler: (event: unknown) => void) => {
+        if (!el?.id) return;
+        handlers.set(`${el.id}:${event}`, handler);
+      },
+      getCurrentUid: () => "user-a",
+      getGroupsLoading: () => false,
+      hasEntitlement: () => true,
+      showUpgradePrompt: vi.fn(),
+      showActionConfirmation: vi.fn(),
+      getCurrentPlan: () => "pro",
+      getGroupsIncomingRequests: () => [],
+      getGroupsOutgoingRequests: () => [],
+      getGroupsFriendships: () => [],
+      getGroupsSharedSummaries: () => [],
+      getOwnSharedSummaries: () => [],
+      getOpenFriendSharedTaskUids: () => new Set<string>(),
+      getFriendProfileCacheByUid: () => ({}),
+      getActiveFriendProfileName: () => "",
+      getActiveFriendProfileUid: () => null,
+      getShareTaskIndex: () => null,
+      getShareTaskMode: () => "share",
+      getShareTaskTaskId: () => null,
+      getTasks: () => [],
+      getWeekStarting: () => "mon",
+      getFriendAvatarSrcById: vi.fn(() => ""),
+      buildFriendInitialAvatarDataUrl: vi.fn(() => ""),
+      getFriendAvatarSrc: vi.fn(() => ""),
+      getMergedFriendProfile: vi.fn(() => ({ alias: "Friend" })),
+      escapeHtmlUI: (value: unknown) => String(value ?? ""),
+      fillBackgroundForPct: vi.fn(() => ""),
+      normalizeHistoryTimestampMs: (value: unknown) => Number(value || 0),
+      jumpToTaskById: vi.fn(),
+      confirm: vi.fn(),
+      closeConfirm: vi.fn(),
+    };
+
+    const groups = createTaskTimerGroups(ctx as unknown as TaskTimerGroupsContext);
+    groups.registerGroupsEvents();
+
+    return {
+      groups,
+      handlers,
+      windowHandlers,
+      overlay,
+      panel,
+      emailInput,
+      status,
+      restoreWindow: () => {
+        globalThis.window = originalWindow;
+      },
+    };
+  }
+
+  it("opens as a mobile sheet and clears stale email and status", () => {
+    const harness = makeModalHarness();
+    try {
+      harness.groups.openFriendRequestModal();
+
+      expect(harness.overlay.style.display).toBe("flex");
+      expect(harness.overlay.classList.contains("isMobileSheetOpen")).toBe(true);
+      expect(harness.emailInput.value).toBe("");
+      expect(harness.status.textContent).toBe("");
+      expect(harness.status.style.display).toBe("none");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("closes from Cancel, backdrop click, and Escape", () => {
+    const harness = makeModalHarness();
+    try {
+      harness.groups.openFriendRequestModal();
+      harness.handlers.get("friendRequestCancelBtn:click")?.({ preventDefault: vi.fn() });
+      expect(harness.overlay.classList.contains("isMobileSheetClosing")).toBe(true);
+      vi.advanceTimersByTime(280);
+      expect(harness.overlay.style.display).toBe("none");
+
+      harness.groups.openFriendRequestModal();
+      harness.handlers.get("friendRequestModal:click")?.({ target: harness.overlay });
+      vi.advanceTimersByTime(280);
+      expect(harness.overlay.style.display).toBe("none");
+
+      harness.groups.openFriendRequestModal();
+      harness.windowHandlers.get("keydown")?.({ key: "Escape" });
+      vi.advanceTimersByTime(280);
+      expect(harness.overlay.style.display).toBe("none");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("closes after a mobile swipe up from the sheet top zone", () => {
+    const harness = makeModalHarness();
+    try {
+      const pointerTarget = {
+        closest: (selector: string) => (selector === ".friendRequestMobileSheet" ? harness.panel : null),
+      };
+
+      harness.groups.openFriendRequestModal();
+      harness.handlers.get("friendRequestModal:pointerdown")?.({
+        button: 0,
+        pointerId: 7,
+        clientX: 120,
+        clientY: 340,
+        target: pointerTarget,
+      });
+      harness.handlers.get("friendRequestModal:pointermove")?.({
+        pointerId: 7,
+        clientX: 120,
+        clientY: 264,
+        preventDefault: vi.fn(),
+      });
+
+      expect(harness.panel.style.getPropertyValue("--friend-request-sheet-drag-y")).toBe("-76px");
+      harness.handlers.get("friendRequestModal:pointerup")?.({ pointerId: 7 });
+      expect(harness.overlay.classList.contains("isMobileSheetClosing")).toBe(true);
+      vi.advanceTimersByTime(280);
+      expect(harness.overlay.style.display).toBe("none");
+    } finally {
+      harness.restoreWindow();
+    }
   });
 });
 

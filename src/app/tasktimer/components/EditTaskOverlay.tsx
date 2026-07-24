@@ -189,10 +189,10 @@ export default function EditTaskOverlay() {
             </div>
           </div>
           <div className="footerBtns">
-            <button className="btn btn-ghost" id="cancelEditBtn" type="button">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction editTaskPrimitiveAction editTaskPrimitiveSecondaryAction" id="cancelEditBtn" type="button">
               Cancel
             </button>
-            <button className="btn btn-accent" id="saveEditBtn" type="button">
+            <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction editTaskPrimitiveAction editTaskPrimitivePrimaryAction" id="saveEditBtn" type="button">
               Save
             </button>
           </div>

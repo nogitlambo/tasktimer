@@ -602,7 +602,10 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     }
     const nextAward = applyPendingTimeGoalXpAward(ctx.getRewardProgress(), taskId);
     ctx.setRewardProgress(nextAward.next);
-    persistRewardProgress(nextAward.next);
+    ctx.preferencesPersistence.update(
+      { rewards: nextAward.next },
+      { leaderboardSyncReason: "task-complete-xp-claim" }
+    );
     const authUid = ctx.currentUid();
     if (authUid) {
       void ctx

@@ -29,7 +29,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         <section className="dashboardActivitySummaryMini" aria-label="Today's logged time">
                           <div className="dashboardActivitySummaryTop">
                             <div className="dashboardCardTitle" id="dashboardActivityTodayTitle">Today</div>
-                            <div className="dashboardTrendIndicator" id="dashboardActivityTodayTrendIndicator" aria-hidden="true">--</div>
+                            <div className="dashboardTrendIndicator" id="dashboardActivityTodayTrendIndicator" aria-hidden="true" style={{ display: "none" }} />
                           </div>
                           <div className="dashboardBigValue" id="dashboardActivityTodayHoursValue">0m</div>
                           <div className="dashboardGoalProgressWrap">

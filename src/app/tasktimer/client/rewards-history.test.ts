@@ -43,6 +43,7 @@ function createHarness(
     },
   };
   let cloudPreferencesCache: UserPreferencesV1 | null = null;
+  const preferenceUpdateOptions: Array<Parameters<TaskTimerRewardsHistoryContext["preferencesPersistence"]["update"]>[1]> = [];
   const defaultPreferences = buildDefaultUserPreferences(1);
   const elapsedMs = overrides.elapsedMs ?? MIN_REWARD_ELIGIBLE_SESSION_MS;
 
@@ -71,7 +72,8 @@ function createHarness(
     preferencesPersistence: {
       loadCached: () => cloudPreferencesCache,
       loadResolved: () => cloudPreferencesCache || defaultPreferences,
-      update: (mutation) => {
+      update: (mutation, options) => {
+        preferenceUpdateOptions.push(options);
         cloudPreferencesCache = {
           ...(cloudPreferencesCache || defaultPreferences),
           ...mutation,
@@ -128,6 +130,7 @@ function createHarness(
     },
     getRewardProgress: () => rewardProgress,
     getRewardSessionTrackersByTaskId: () => rewardSessionTrackersByTaskId,
+    preferenceUpdateOptions,
   };
 }
 
@@ -228,6 +231,7 @@ describe("task timer rewards history", () => {
     expect(harness.getRewardProgress().completedSessions).toBe(1);
     expect(harness.getRewardProgress().pendingTimeGoalXp.byTaskId["task-1"]).toBeUndefined();
     expect(harness.calls).toContain("sync-profile:unranked:1");
+    expect(harness.preferenceUpdateOptions).toContainEqual({ leaderboardSyncReason: "task-complete-xp-claim" });
   });
 
   it("combines pending XP with the final resumed time-goal increment", () => {

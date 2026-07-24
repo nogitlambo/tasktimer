@@ -8,6 +8,8 @@ export type MobileSwipeCloseState = {
   consumed: boolean;
 };
 
+export type MobileSwipeCloseDirection = "down" | "up";
+
 export const MOBILE_SWIPE_CLOSE_INITIAL_STATE: MobileSwipeCloseState = {
   active: false,
   pointerId: null,
@@ -34,9 +36,10 @@ export function getStartMobileSwipeCloseState(pointerId: number | null, startX: 
   };
 }
 
-export function getMobileSwipeCloseDragY(state: MobileSwipeCloseState) {
+export function getMobileSwipeCloseDragY(state: MobileSwipeCloseState, direction: MobileSwipeCloseDirection = "down") {
   if (!state.active) return 0;
-  return Math.max(0, state.currentY - state.startY);
+  const deltaY = state.currentY - state.startY;
+  return Math.max(0, direction === "up" ? -deltaY : deltaY);
 }
 
 export function getUpdatedMobileSwipeCloseState(
@@ -54,14 +57,19 @@ export function getUpdatedMobileSwipeCloseState(
   };
 }
 
-export function isMobileSwipeCloseDirectionValid(state: MobileSwipeCloseState) {
+export function isMobileSwipeCloseDirectionValid(state: MobileSwipeCloseState, direction: MobileSwipeCloseDirection = "down") {
   if (!state.active) return false;
 
   const dx = state.currentX - state.startX;
   const dy = state.currentY - state.startY;
-  return dy > 0 && dy > Math.abs(dx);
+  const directionalDy = direction === "up" ? -dy : dy;
+  return directionalDy > 0 && directionalDy > Math.abs(dx);
 }
 
-export function shouldCloseFromMobileSwipe(state: MobileSwipeCloseState, thresholdPx: number) {
-  return isMobileSwipeCloseDirectionValid(state) && getMobileSwipeCloseDragY(state) >= thresholdPx;
+export function shouldCloseFromMobileSwipe(
+  state: MobileSwipeCloseState,
+  thresholdPx: number,
+  direction: MobileSwipeCloseDirection = "down"
+) {
+  return isMobileSwipeCloseDirectionValid(state, direction) && getMobileSwipeCloseDragY(state, direction) >= thresholdPx;
 }

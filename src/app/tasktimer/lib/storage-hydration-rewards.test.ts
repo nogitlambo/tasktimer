@@ -1224,7 +1224,48 @@ describe("hydrateStorageFromCloud reward reconciliation", () => {
     });
     await flushPendingCloudWrites();
 
-    expect(leaderboardMocks.saveLeaderboardProfile).toHaveBeenCalledWith("uid-1", expect.any(Object));
+    expect(leaderboardMocks.saveLeaderboardProfile).toHaveBeenCalledWith("uid-1", expect.any(Object), {
+      dispatchUpdatedEvent: false,
+    });
+  });
+
+  it("does not allow leaderboard movement dispatch for untagged preference syncs", async () => {
+    saveCloudPreferences({
+      ...buildDefaultCloudPreferences(),
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 10,
+        totalXpPrecise: 10,
+      },
+      updatedAtMs: Date.now(),
+    });
+
+    await flushPendingCloudWrites();
+
+    expect(leaderboardMocks.saveLeaderboardProfile).toHaveBeenCalledWith("uid-1", expect.any(Object), {
+      dispatchUpdatedEvent: false,
+    });
+  });
+
+  it("allows leaderboard movement dispatch for task-complete XP claim preference syncs", async () => {
+    saveCloudPreferences(
+      {
+        ...buildDefaultCloudPreferences(),
+        rewards: {
+          ...DEFAULT_REWARD_PROGRESS,
+          totalXp: 10,
+          totalXpPrecise: 10,
+        },
+        updatedAtMs: Date.now(),
+      },
+      { leaderboardSyncReason: "task-complete-xp-claim" }
+    );
+
+    await flushPendingCloudWrites();
+
+    expect(leaderboardMocks.saveLeaderboardProfile).toHaveBeenCalledWith("uid-1", expect.any(Object), {
+      dispatchUpdatedEvent: true,
+    });
   });
 
   it("throttles queued task retries after a failed cloud write", async () => {

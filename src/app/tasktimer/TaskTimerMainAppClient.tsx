@@ -231,6 +231,11 @@ function getLeaderboardLabel(profile: LeaderboardProfile): string {
   return String(profile.username || profile.displayLabel || "User").trim() || "User";
 }
 
+function getLeaderboardUsernameLabel(profile: LeaderboardProfile): string {
+  const rawLabel = String(profile.username || profile.displayLabel || "username").trim() || "username";
+  return rawLabel.startsWith("@") ? rawLabel : `@${rawLabel}`;
+}
+
 function labelFromUser(user: User | null) {
   const email = String(user?.email || "").trim() || user?.providerData
     ?.map((provider) => String(provider.email || "").trim())
@@ -352,11 +357,196 @@ function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardPro
   );
 }
 
+function LeaderboardPodiumDeck({
+  rows,
+  ariaLabel,
+  formatMetric,
+  onOpenProfile,
+}: {
+  rows: WeeklyLeaderboardRow[];
+  ariaLabel: string;
+  formatMetric: (profile: LeaderboardProfile) => string;
+  onOpenProfile: (profile: LeaderboardProfile) => void;
+}) {
+  return (
+    <div className="leaderboardWeeklyPodiumDeck" aria-label={ariaLabel}>
+      {rows.map((row) => (
+        <button
+          className={`leaderboardWeeklyPodiumCard leaderboardWeeklyPodiumCard${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
+          type="button"
+          key={row.profile.uid}
+          disabled={row.isPlaceholder || row.isDummy}
+          aria-disabled={row.isPlaceholder || row.isDummy}
+          data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
+          onClick={() => {
+            if (!row.isPlaceholder && !row.isDummy) onOpenProfile(row.profile);
+          }}
+        >
+          <span className="leaderboardWeeklyPodiumAvatarWrap">
+            {row.rank === 1 ? (
+              <span className="leaderboardWeeklyPodiumCrown" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            ) : null}
+            <span className="leaderboardWeeklyPodiumAvatarFlipGroup" aria-hidden="true">
+              {row.isPlaceholder ? (
+                <span className="leaderboardWeeklyPodiumAvatarPlaceholder" />
+              ) : (
+                <span className="leaderboardWeeklyPodiumAvatarFrame">
+                  <LeaderboardAvatar profile={row.profile} />
+                </span>
+              )}
+              <span className="leaderboardWeeklyPodiumBadge">{row.rank}</span>
+            </span>
+          </span>
+          <span className="leaderboardWeeklyPodiumText">
+            <strong className="leaderboardWeeklyPodiumName">{row.playerLabel}</strong>
+            {row.isPlaceholder ? null : <span className="leaderboardWeeklyPodiumXp">{formatMetric(row.profile)}</span>}
+            {row.isPlaceholder ? null : (
+              <span className="leaderboardWeeklyPodiumRankInsignia" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+                <LeaderboardRankInsignia profile={row.profile} />
+              </span>
+            )}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SignedOutPrompt({ message }: { message: string }) {
   return (
     <div className="signedOutPagePrompt">
       <span>{message}</span>{" "}
       <Link href="/login">Sign In</Link>.
+    </div>
+  );
+}
+
+type LeaderboardSharedTableRowProps = {
+  as?: "button" | "div";
+  key: string;
+  className?: string;
+  style?: CSSProperties;
+  disabled?: boolean;
+  ariaDisabled?: boolean;
+  profileOpenUid?: string;
+  onClick?: () => void;
+};
+
+function LeaderboardSharedTableCells({
+  row,
+  rankBeforeMetric,
+  formatMetric,
+}: {
+  row: WeeklyLeaderboardRow;
+  rankBeforeMetric: boolean;
+  formatMetric: (profile: LeaderboardProfile) => string;
+}) {
+  return (
+    <>
+      <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
+      <span className="leaderboardWeeklyPlayerCell" role="cell">
+        {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
+        <span className="leaderboardWeeklyPlayerText">
+          <strong>{row.playerLabel}</strong>
+        </span>
+      </span>
+      {rankBeforeMetric ? (
+        <>
+          <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+            {row.isPlaceholder ? null : <LeaderboardRankInsignia profile={row.profile} />}
+          </span>
+          <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
+        </>
+      ) : (
+        <>
+          <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
+          <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
+            {row.isPlaceholder ? null : <LeaderboardRankInsignia profile={row.profile} />}
+          </span>
+        </>
+      )}
+    </>
+  );
+}
+
+function LeaderboardSharedTableContent({
+  rows,
+  metricHeader,
+  ariaLabel,
+  className = "",
+  rankBeforeMetric = false,
+  formatMetric,
+  getRowProps,
+}: {
+  rows: WeeklyLeaderboardRow[];
+  metricHeader: string;
+  ariaLabel: string;
+  className?: string;
+  rankBeforeMetric?: boolean;
+  formatMetric: (profile: LeaderboardProfile) => string;
+  getRowProps: (row: WeeklyLeaderboardRow, index: number) => LeaderboardSharedTableRowProps;
+}) {
+  return (
+    <div className={`leaderboardWeeklyTable${className ? ` ${className}` : ""}`} role="table" aria-label={ariaLabel}>
+      <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
+        <span role="columnheader">Pos</span>
+        <span role="columnheader">User</span>
+        {rankBeforeMetric ? (
+          <>
+            <span role="columnheader">Rank</span>
+            <span role="columnheader">{metricHeader}</span>
+          </>
+        ) : (
+          <>
+            <span role="columnheader">{metricHeader}</span>
+            <span role="columnheader">Rank</span>
+          </>
+        )}
+      </div>
+      {rows.map((row, index) => {
+        const rowProps = getRowProps(row, index);
+        const rowClassName = `leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}${rowProps.className ? ` ${rowProps.className}` : ""}`;
+        const cells = (
+          <LeaderboardSharedTableCells
+            row={row}
+            rankBeforeMetric={rankBeforeMetric}
+            formatMetric={formatMetric}
+          />
+        );
+
+        if (rowProps.as === "div") {
+          return (
+            <div
+              className={rowClassName}
+              role="row"
+              key={rowProps.key}
+              style={rowProps.style}
+            >
+              {cells}
+            </div>
+          );
+        }
+
+        return (
+          <button
+            className={rowClassName}
+            role="row"
+            type="button"
+            key={rowProps.key}
+            style={rowProps.style}
+            disabled={rowProps.disabled}
+            aria-disabled={rowProps.ariaDisabled}
+            data-leaderboard-profile-open={rowProps.profileOpenUid}
+            onClick={rowProps.onClick}
+          >
+            {cells}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -383,81 +573,36 @@ function LeaderboardSharedTable({
   return (
     <div className={`leaderboardWeeklyTableWrap${className ? ` ${className}` : ""}`}>
       <div className="leaderboardSharedTablePanel">
-        <div className="leaderboardWeeklyTable" role="table" aria-label={ariaLabel}>
-          <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-            <span role="columnheader">Pos</span>
-            <span role="columnheader">User</span>
-            {rankBeforeMetric ? (
-              <>
-                <span role="columnheader">Rank</span>
-                <span role="columnheader">{metricHeader}</span>
-              </>
-            ) : (
-              <>
-                <span role="columnheader">{metricHeader}</span>
-                <span role="columnheader">Rank</span>
-              </>
-            )}
-          </div>
-          {rows.map((row) => {
+        <LeaderboardSharedTableContent
+          rows={rows}
+          metricHeader={metricHeader}
+          ariaLabel={ariaLabel}
+          rankBeforeMetric={rankBeforeMetric}
+          formatMetric={formatMetric}
+          getRowProps={(row) => {
             const isFriend = !row.isPlaceholder && !row.isDummy && friendUidSet.has(row.profile.uid);
 
-            return (
-              <button
-                className={`leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}${isFriend ? " isFriend" : ""}`}
-                role="row"
-                type="button"
-                key={`${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`}
-                disabled={row.isPlaceholder || row.isDummy}
-                aria-disabled={row.isPlaceholder || row.isDummy}
-                data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                onClick={() => {
-                  if (row.isPlaceholder || row.isDummy) return;
-                  if (isFriend) {
-                    window.dispatchEvent(
-                      new CustomEvent<OpenFriendProfileFromLeaderboardEventDetail>(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, {
-                        detail: { friendUid: row.profile.uid },
-                      })
-                    );
-                    return;
-                  }
-                  onOpenProfile(row.profile);
-                }}
-              >
-                <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
-                <span className="leaderboardWeeklyPlayerCell" role="cell">
-                  {row.isPlaceholder ? null : <LeaderboardAvatar profile={row.profile} small />}
-                  <span className="leaderboardWeeklyPlayerText">
-                    <strong>{row.playerLabel}</strong>
-                  </span>
-                </span>
-                {rankBeforeMetric ? (
-                  <>
-                    <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-                      {row.isPlaceholder ? null : (
-                        <>
-                          <LeaderboardRankInsignia profile={row.profile} />
-                        </>
-                      )}
-                    </span>
-                    <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="leaderboardWeeklyTimeCell" role="cell">{row.isPlaceholder ? "" : formatMetric(row.profile)}</span>
-                    <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-                      {row.isPlaceholder ? null : (
-                        <>
-                          <LeaderboardRankInsignia profile={row.profile} />
-                        </>
-                      )}
-                    </span>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
+            return {
+              key: `${row.isCurrentUser ? "current" : "ranked"}-${row.profile.uid}`,
+              className: isFriend ? "isFriend" : "",
+              disabled: row.isPlaceholder || row.isDummy,
+              ariaDisabled: row.isPlaceholder || row.isDummy,
+              profileOpenUid: row.isPlaceholder || row.isDummy ? undefined : row.profile.uid,
+              onClick: () => {
+                if (row.isPlaceholder || row.isDummy) return;
+                if (isFriend) {
+                  window.dispatchEvent(
+                    new CustomEvent<OpenFriendProfileFromLeaderboardEventDetail>(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, {
+                      detail: { friendUid: row.profile.uid },
+                    })
+                  );
+                  return;
+                }
+                onOpenProfile(row.profile);
+              },
+            };
+          }}
+        />
       </div>
     </div>
   );
@@ -474,48 +619,31 @@ function LeaderboardMovementTable({
   const lastRowIndex = Math.max(0, movementRows.length - 1);
 
   return (
-    <div className="leaderboardMovementTableWrap">
-      <div
-        className={`leaderboardWeeklyTable leaderboardMovementTable${isMovingUp ? " isMovingUp" : ""}${isMovingDown ? " isMovingDown" : ""}`}
-        role="table"
-        aria-label={`${change.boardLabel} position change`}
-      >
-        <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-          <span role="columnheader">Pos</span>
-          <span role="columnheader">User</span>
-          <span role="columnheader">{change.metricLabel}</span>
-          <span role="columnheader">Rank</span>
-        </div>
-        {movementRows.map((row, index) => {
-          const previousIndex = row.isCurrentUser
-            ? (isMovingUp ? lastRowIndex : isMovingDown ? 0 : index)
-            : (isMovingUp ? Math.max(0, index - 1) : isMovingDown ? Math.min(lastRowIndex, index + 1) : index);
-          const rowStyle = {
-            "--leaderboard-movement-from-index": previousIndex,
-            "--leaderboard-movement-to-index": index,
-          } as CSSProperties;
+    <div className="leaderboardWeeklyTableWrap leaderboardMovementTableWrap">
+      <div className="leaderboardSharedTablePanel leaderboardMovementSharedTablePanel">
+        <LeaderboardSharedTableContent
+          rows={movementRows}
+          metricHeader={change.metricLabel}
+          ariaLabel={`${change.boardLabel} position change`}
+          className={`leaderboardMovementTable${isMovingUp ? " isMovingUp" : ""}${isMovingDown ? " isMovingDown" : ""}`}
+          rankBeforeMetric
+          formatMetric={(profile) => formatLeaderboardMovementMetric(change, profile)}
+          getRowProps={(row, index) => {
+            const previousIndex = row.isCurrentUser
+              ? (isMovingUp ? lastRowIndex : isMovingDown ? 0 : index)
+              : (isMovingUp ? Math.max(0, index - 1) : isMovingDown ? Math.min(lastRowIndex, index + 1) : index);
 
-          return (
-            <div
-              className={`leaderboardWeeklyTableRow leaderboardMovementTableRow${row.isCurrentUser ? " isCurrentUser" : ""}`}
-              role="row"
-              key={`${change.boardId}-${row.profile.uid}-${row.rank}`}
-              style={rowStyle}
-            >
-              <span className="leaderboardWeeklyRankCell" role="cell">{row.rank || ""}</span>
-              <span className="leaderboardWeeklyPlayerCell" role="cell">
-                <LeaderboardAvatar profile={row.profile} small />
-                <span className="leaderboardWeeklyPlayerText">
-                  <strong>{row.playerLabel}</strong>
-                </span>
-              </span>
-              <span className="leaderboardWeeklyTimeCell" role="cell">{formatLeaderboardMovementMetric(change, row.profile)}</span>
-              <span className="leaderboardWeeklyInsigniaCell" role="cell" aria-label={`${getLeaderboardRankLabel(row.profile)} insignia`}>
-                <LeaderboardRankInsignia profile={row.profile} />
-              </span>
-            </div>
-          );
-        })}
+            return {
+              as: "div",
+              key: `${change.boardId}-${row.profile.uid}-${row.rank}`,
+              className: "leaderboardMovementTableRow",
+              style: {
+                "--leaderboard-movement-from-index": previousIndex,
+                "--leaderboard-movement-to-index": index,
+              } as CSSProperties,
+            };
+          }}
+        />
       </div>
       {change.movementRowsTruncated && change.skippedMovementRowCount > 0 ? (
         <p className="leaderboardMovementSkippedRows">
@@ -1489,6 +1617,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank]
   );
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
+  const orderedWeeklyPodiumRows = [2, 1, 3].map((rank) => weeklyPodiumRows.find((row) => row.rank === rank)).filter((row): row is WeeklyLeaderboardRow => Boolean(row));
   const weeklyTableRows = weeklyRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasWeeklyRows = weeklyRows.length > 0;
   const weeklyPeriodRemainingLabel = formatWeeklyLeaderboardTimeRemaining(leaderboardClockMs);
@@ -1500,6 +1629,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     });
   }, [hydratedCurrentUserEntry, hydratedTopEntries, leaderboardData.currentUserRank]);
   const globalPodiumRows = globalRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
+  const orderedGlobalPodiumRows = [2, 1, 3].map((rank) => globalPodiumRows.find((row) => row.rank === rank)).filter((row): row is WeeklyLeaderboardRow => Boolean(row));
   const globalTableRows = globalRows.filter((row) => row.rank && row.rank >= 4 && row.rank <= 8);
   const hasGlobalRows = globalRows.length > 0;
   const rankRivalLadder = useMemo(
@@ -1761,41 +1891,19 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           >
             ?
           </button>
-          <div className="leaderboardGlobalStage" aria-label={`Weekly ladder. Time remaining ${weeklyPeriodRemainingLabel}.`}>
+          <div className="leaderboardGlobalStage leaderboardWeeklyPodiumStage" aria-label={`Weekly ladder. Time remaining ${weeklyPeriodRemainingLabel}.`}>
             <div className="leaderboardWeeklyPeriodOverlay" aria-label={`Week ends in ${weeklyPeriodRemainingLabel}.`}>
               <span className="leaderboardWeeklyPeriodTitle">Week ends in:</span>
               <span className="leaderboardWeeklyPeriodCountdown">{weeklyPeriodRemainingLabel}</span>
             </div>
-            {leaderboardState === "ready" && hasWeeklyRows ? weeklyPodiumRows.map((row) => (
-              <button
-                className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                type="button"
-                key={row.profile.uid}
-                disabled={row.isPlaceholder || row.isDummy}
-                aria-disabled={row.isPlaceholder || row.isDummy}
-                data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                onClick={() => {
-                  if (!row.isPlaceholder && !row.isDummy) openWeeklyLeaderboardProfile(row.profile);
-                }}
-              >
-                <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
-                <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
-                <span className="leaderboardGlobalPodiumAvatarSlot">
-                  {row.isPlaceholder ? null : (
-                    <span className="leaderboardGlobalPodiumAvatarDrop">
-                      <LeaderboardAvatar profile={row.profile} />
-                      <LeaderboardRankInsignia profile={row.profile} />
-                      <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
-                    </span>
-                  )}
-                </span>
-                <span className="leaderboardGlobalPodiumText">
-                  <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
-                  <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                  {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardTrend(row.profile.weeklyXpGain)}</span>}
-                </span>
-              </button>
-            )) : null}
+            {leaderboardState === "ready" && hasWeeklyRows ? (
+              <LeaderboardPodiumDeck
+                rows={orderedWeeklyPodiumRows}
+                ariaLabel="Weekly top three podium"
+                formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
+                onOpenProfile={openWeeklyLeaderboardProfile}
+              />
+            ) : null}
           </div>
           {leaderboardState === "ready" && hasWeeklyRows ? (
             <LeaderboardSharedTable
@@ -1857,40 +1965,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       >
         {leaderboardState === "ready" && hasGlobalRows ? (
           <>
-            <div className="leaderboardGlobalStage" aria-label="Global ladder. Top XP earners of all time.">
-              <div className="leaderboardGlobalTitleOverlay" aria-hidden="true">
-                <span className="leaderboardGlobalTitle">Global Leaderboard</span>
-              </div>
-              {globalPodiumRows.map((row) => (
-                <button
-                  className={`leaderboardGlobalPodiumHotspot leaderboardGlobalPodiumHotspot${row.rank}${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}`}
-                  type="button"
-                  key={row.profile.uid}
-                  disabled={row.isPlaceholder || row.isDummy}
-                  aria-disabled={row.isPlaceholder || row.isDummy}
-                  data-leaderboard-profile-open={row.isPlaceholder || row.isDummy ? undefined : row.profile.uid}
-                  onClick={() => {
-                    if (!row.isPlaceholder && !row.isDummy) openLeaderboardProfile(row.profile);
-                  }}
-                >
-                  <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumAvatarMask" aria-hidden="true" />
-                  <span className="leaderboardGlobalBackdropMask leaderboardGlobalPodiumTextMask" aria-hidden="true" />
-                  <span className="leaderboardGlobalPodiumAvatarSlot">
-                    {row.isPlaceholder ? null : (
-                      <span className="leaderboardGlobalPodiumAvatarDrop">
-                        <LeaderboardAvatar profile={row.profile} />
-                        <LeaderboardRankInsignia profile={row.profile} />
-                        <span className="leaderboardGlobalPodiumThruster" aria-hidden="true" />
-                      </span>
-                    )}
-                  </span>
-                  <span className="leaderboardGlobalPodiumText">
-                    <span className="leaderboardGlobalPodiumRank">{row.rankLabel}</span>
-                    <strong className="leaderboardGlobalPodiumName">{row.playerLabel}</strong>
-                    {row.isPlaceholder ? null : <span className="leaderboardGlobalPodiumXp">{formatLeaderboardXp(row.profile.rewardTotalXp)}</span>}
-                  </span>
-                </button>
-              ))}
+            <div className="leaderboardGlobalStage leaderboardWeeklyPodiumStage leaderboardGlobalPodiumStage" aria-label="Global ladder. Top XP earners of all time.">
+              <LeaderboardPodiumDeck
+                rows={orderedGlobalPodiumRows}
+                ariaLabel="Global top three podium"
+                formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
+                onOpenProfile={openLeaderboardProfile}
+              />
             </div>
 
             <LeaderboardSharedTable
@@ -2153,6 +2234,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         </div>
 
         <EditTaskOverlay />
+        <AddTaskOverlay />
       </TaskTimerAppFrame>
 
       {activeLeaderboardMovement ? (
@@ -2303,7 +2385,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         </div>
       ) : null}
 
-      <AddTaskOverlay />
       <TaskManualEntryOverlay />
       <InfoOverlays />
       <ElapsedPadOverlay />

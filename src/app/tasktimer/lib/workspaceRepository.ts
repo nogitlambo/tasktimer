@@ -27,6 +27,7 @@ import {
   resetVolatileWorkspaceStateForAuthChange,
   saveCloudDashboard,
   saveCloudPreferences,
+  type SaveCloudPreferencesOptions,
   saveCloudTaskUi,
   saveDeletedMeta,
   flushPendingCloudWrites,
@@ -66,6 +67,7 @@ export type TaskTimerWorkspaceRepository = ReturnType<typeof createTaskTimerWork
 export type TaskTimerWorkspaceHistoryPersistence = ReturnType<typeof createTaskTimerWorkspaceHistoryPersistence>;
 
 export type TaskTimerPreferenceMutation = Partial<Omit<UserPreferencesV1, "schemaVersion" | "updatedAtMs">>;
+export type TaskTimerPreferenceUpdateOptions = SaveCloudPreferencesOptions;
 
 export type TaskTimerWorkspacePreferencesPersistence = ReturnType<typeof createTaskTimerWorkspacePreferencesPersistence>;
 
@@ -156,7 +158,7 @@ export function createTaskTimerWorkspacePreferencesPersistence(
     return loadCached() || normalize(repository.buildDefaultPreferences());
   }
 
-  function update(mutation: TaskTimerPreferenceMutation): UserPreferencesV1 {
+  function update(mutation: TaskTimerPreferenceMutation, updateOptions?: TaskTimerPreferenceUpdateOptions): UserPreferencesV1 {
     const current = loadResolved();
     const requestedNow = Number(now());
     const safeNow = Number.isFinite(requestedNow) && requestedNow > 0 ? Math.floor(requestedNow) : 0;
@@ -167,7 +169,8 @@ export function createTaskTimerWorkspacePreferencesPersistence(
       schemaVersion: 1,
       updatedAtMs,
     });
-    repository.savePreferences(next);
+    if (updateOptions) repository.savePreferences(next, updateOptions);
+    else repository.savePreferences(next);
     return next;
   }
 
@@ -232,7 +235,8 @@ export function createTaskTimerWorkspaceRepository() {
     saveDeletedMeta: (meta: DeletedTaskMeta) => saveDeletedMeta(meta),
     loadCachedPreferences: (): UserPreferencesV1 | null => loadCachedPreferences(),
     subscribeCachedPreferences: (listener: (prefs: UserPreferencesV1 | null) => void) => subscribeCachedPreferences(listener),
-    savePreferences: (prefs: UserPreferencesV1) => saveCloudPreferences(prefs),
+    savePreferences: (prefs: UserPreferencesV1, opts?: SaveCloudPreferencesOptions) =>
+      opts ? saveCloudPreferences(prefs, opts) : saveCloudPreferences(prefs),
     loadCachedDashboard: (): DashboardConfig | null => loadCachedDashboard(),
     primeDashboardCacheFromShadow: () => primeDashboardCacheFromShadow(),
     saveDashboard: (dashboard: DashboardConfig) => saveCloudDashboard(dashboard),

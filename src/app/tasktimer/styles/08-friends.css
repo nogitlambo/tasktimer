@@ -245,6 +245,20 @@
     gap: 16px !important;
     padding: 22px !important;
   }
+
+  #friendProfileModal.friendProfilePrimitiveOverlay .friendProfilePrimitiveFooter{
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 18px !important;
+  }
+
+  #friendProfileModal.friendProfilePrimitiveOverlay .friendProfilePrimitiveFooter .friendProfilePrimitiveAction{
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 178px !important;
+    padding: 0 12px !important;
+  }
 }
 
 #friendRequestModal .primitiveSciFiModal{
@@ -517,6 +531,133 @@
     min-height: 46px !important;
     padding: 0 24px !important;
     border-width: 4px !important;
+  }
+}
+
+@media (max-width: 980px){
+  #friendRequestModal.friendRequestPrimitiveOverlay{
+    inset: 0 !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    width: auto !important;
+    height: auto !important;
+    padding: var(--safe-top) 0 0 !important;
+    overflow: hidden !important;
+    overscroll-behavior: contain !important;
+    background: transparent !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition:
+      opacity .24s ease,
+      visibility 0s linear .28s !important;
+    z-index: 1300 !important;
+  }
+
+  #friendRequestModal.friendRequestPrimitiveOverlay::before{
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    background: rgba(0,0,0,.55) !important;
+    backdrop-filter: blur(6px) !important;
+    pointer-events: none !important;
+  }
+
+  #friendRequestModal.friendRequestPrimitiveOverlay.isMobileSheetOpen,
+  #friendRequestModal.friendRequestPrimitiveOverlay.isMobileSheetClosing{
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  #friendRequestModal.friendRequestPrimitiveOverlay.isMobileSheetOpen{
+    opacity: 1 !important;
+    transition:
+      opacity .24s ease,
+      visibility 0s linear 0s !important;
+  }
+
+  #friendRequestModal.friendRequestPrimitiveOverlay.isMobileSheetClosing{
+    opacity: 0 !important;
+  }
+
+  #friendRequestModal .friendRequestMobileSheet{
+    position: relative !important;
+    z-index: 1 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: 50dvh !important;
+    height: 50dvh !important;
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom)) !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 0 14px 14px !important;
+    transform: translateY(calc(-100% - 24px)) !important;
+    transition: transform .28s cubic-bezier(.22,1,.36,1) !important;
+    will-change: transform !important;
+  }
+
+  #friendRequestModal.isMobileSheetOpen .friendRequestMobileSheet{
+    transform: translateY(var(--friend-request-sheet-drag-y, 0px)) !important;
+  }
+
+  #friendRequestModal .friendRequestMobileSheet.isDragging{
+    transition: none !important;
+  }
+
+  #friendRequestModal .friendRequestMobileSheetHandle{
+    position: absolute !important;
+    top: auto !important;
+    bottom: 9px !important;
+    left: 50% !important;
+    z-index: 3 !important;
+    display: block !important;
+    width: 42px !important;
+    height: 4px !important;
+    border-radius: 999px !important;
+    background: rgba(170,178,190,.72) !important;
+    transform: translateX(-50%) !important;
+    touch-action: none !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModal::before{
+    content: none !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModal::after{
+    content: none !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModalHeader{
+    min-height: 52px !important;
+    padding: 14px 20px 12px !important;
+    border-top: 0 !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModalHeader h2{
+    font-size: 16px !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModalBody{
+    min-height: 0 !important;
+    overflow: auto !important;
+    padding: 22px 20px 18px !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModalFooter{
+    min-height: 0 !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 16px 20px calc(32px + var(--safe-bottom)) !important;
+  }
+
+  #friendRequestModal .primitiveSciFiModalAction{
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 46px !important;
+    padding: 0 12px !important;
   }
 }
 
@@ -5328,7 +5469,7 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   position:relative;
   grid-column: span 12;
   --leaderboard-global-table-reserve:238px;
-  --leaderboard-global-stage-height:max(0px, calc(100% - var(--leaderboard-global-table-reserve)));
+  --leaderboard-global-stage-height:max(0px, calc(75% - 179px));
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -5356,8 +5497,356 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   aspect-ratio:1448 / 798;
   margin:0 auto;
   overflow:hidden;
-  background:url("/leaderboard/leaderboard_podium.webp") center top / 100% 100% no-repeat;
+  background:transparent;
   isolation:isolate;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  margin-top:-8px;
+  padding:112px clamp(18px, 5vw, 54px) clamp(16px, 3.5vw, 34px);
+  background:#151827;
+  box-sizing:border-box;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
+  z-index:3;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,246,162,.18) 0 11%, rgba(201,255,36,.1) 22%, rgba(201,255,36,.035) 42%, transparent 66%),
+    radial-gradient(circle at 50% 42%, rgba(201,255,36,.16), transparent 0 14%, rgba(201,255,36,.065) 22%, transparent 56%),
+    repeating-conic-gradient(
+      from -5deg at 50% 42%,
+      rgba(201,255,36,.1) 0deg 7deg,
+      rgba(20,27,34,.03) 7deg 15deg
+    ),
+    radial-gradient(circle at 50% 42%, rgba(255,220,90,.1), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
+  opacity:.78;
+  mix-blend-mode:screen;
+  animation:timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
+  will-change:opacity, filter;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::before{
+  background:
+    radial-gradient(circle at 50% 42%, rgba(162,246,255,.18) 0 11%, rgba(53,232,255,.1) 22%, rgba(53,232,255,.035) 42%, transparent 66%),
+    radial-gradient(circle at 50% 42%, rgba(53,232,255,.16), transparent 0 14%, rgba(53,232,255,.065) 22%, transparent 56%),
+    repeating-conic-gradient(
+      from -5deg at 50% 42%,
+      rgba(53,232,255,.1) 0deg 7deg,
+      rgba(20,27,34,.03) 7deg 15deg
+    ),
+    radial-gradient(circle at 50% 42%, rgba(90,220,255,.1), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumDeck{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(0, .96fr) minmax(0, 1.16fr) minmax(0, .96fr);
+  align-items:end;
+  width:min(100%, 710px);
+  margin:0 auto;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  min-width:0;
+  height:clamp(166px, 25vw, 214px);
+  padding:clamp(50px, 8vw, 66px) clamp(10px, 2.4vw, 20px) clamp(18px, 2.4vw, 26px);
+  border:0;
+  border-radius:18px 18px 0 0;
+  background:#24283d;
+  color:#f8fbff;
+  font:inherit;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 18px 34px rgba(0,0,0,.24);
+  box-sizing:border-box;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1{
+  z-index:2;
+  height:clamp(214px, 32vw, 292px);
+  padding-top:clamp(76px, 10.5vw, 104px);
+  background:#292d44;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard:focus-visible{
+  z-index:4;
+  outline:2px solid rgba(103,235,255,.95);
+  outline-offset:4px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard.isPlaceholder,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard.isDummy{
+  cursor:default;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarWrap{
+  position:absolute;
+  left:50%;
+  top:0;
+  display:grid;
+  place-items:center;
+  width:clamp(86px, 13vw, 112px);
+  height:clamp(86px, 13vw, 112px);
+  transform:translate(-50%, -50%);
+  perspective:520px;
+  transform-style:preserve-3d;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarWrap{
+  width:clamp(112px, 16vw, 150px);
+  height:clamp(112px, 16vw, 150px);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarFlipGroup{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  transform-origin:center center;
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  will-change:transform, opacity;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarFrame,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarPlaceholder{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border:5px solid #16bdf5;
+  border-radius:999px;
+  background:#151827;
+  box-shadow:0 12px 22px rgba(0,0,0,.36);
+  box-sizing:border-box;
+  transform-origin:center center;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFlipGroup,
+#app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFlipGroup{
+  animation:leaderboardPodiumCoinReveal 1.5s linear both;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFlipGroup{
+  animation-delay:120ms;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard2 .leaderboardWeeklyPodiumAvatarFlipGroup{
+  animation-delay:520ms;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarFlipGroup{
+  animation-delay:920ms;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFrame,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarPlaceholder{
+  border-color:#ffae00;
+  border-width:6px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarFrame,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarPlaceholder{
+  border-color:#16d66d;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarFrame .leaderboardAvatar{
+  width:100%;
+  height:100%;
+  margin:0;
+  border:0;
+  border-radius:999px;
+  box-shadow:none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarPlaceholder::before{
+  content:"";
+  width:42%;
+  height:42%;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown{
+  position:absolute;
+  left:50%;
+  top:calc(clamp(112px, 16vw, 150px) * -.44);
+  z-index:3;
+  width:clamp(44px, 6vw, 62px);
+  height:clamp(32px, 4.5vw, 45px);
+  transform:translateX(-50%);
+  filter:drop-shadow(0 7px 8px rgba(0,0,0,.42));
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown::before{
+  content:"";
+  position:absolute;
+  left:8%;
+  right:8%;
+  bottom:10%;
+  height:70%;
+  background:#ffae00;
+  clip-path:polygon(0 30%, 24% 58%, 50% 0, 76% 58%, 100% 30%, 88% 100%, 12% 100%);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown::after{
+  content:"";
+  position:absolute;
+  left:20%;
+  right:20%;
+  bottom:0;
+  height:18%;
+  border-radius:999px;
+  background:#ffae00;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown span{
+  position:absolute;
+  z-index:2;
+  top:4%;
+  width:10px;
+  max-width:18%;
+  aspect-ratio:1;
+  border-radius:999px;
+  background:#ffae00;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown span:nth-child(1){
+  left:0;
+  top:24%;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown span:nth-child(2){
+  left:50%;
+  transform:translateX(-50%);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown span:nth-child(3){
+  right:0;
+  top:24%;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumBadge{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  width:clamp(27px, 4.3vw, 38px);
+  height:clamp(31px, 4.9vw, 42px);
+  color:#ffffff;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(11px, 1.65vw, 16px);
+  font-weight:900;
+  line-height:1;
+  transform:translate(-50%, 42%);
+  clip-path:polygon(50% 0, 100% 18%, 100% 70%, 50% 100%, 0 70%, 0 18%);
+  background:#13bff5;
+  box-shadow:0 8px 12px rgba(0,0,0,.34);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumBadge{
+  background:#ffae00;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumBadge{
+  background:#16d66d;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumText{
+  display:grid;
+  justify-items:center;
+  align-content:start;
+  gap:clamp(7px, 1.2vw, 12px);
+  width:100%;
+  min-width:0;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumName,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumXp,
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankInsignia{
+  display:block;
+  max-width:100%;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumName{
+  color:#f8fbff;
+  font-family:var(--font-readable), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(15px, 2.2vw, 22px);
+  font-weight:700;
+  letter-spacing:0;
+  line-height:1.1;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumXp{
+  color:#13bff5;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(18px, 3vw, 27px);
+  font-weight:900;
+  letter-spacing:0;
+  line-height:1;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumXp{
+  color:#ffae00;
+  font-size:clamp(22px, 3.6vw, 32px);
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumXp{
+  color:#16d66d;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumUsername{
+  color:rgba(248,251,255,.58);
+  font-family:var(--font-readable), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  font-size:clamp(11px, 1.45vw, 14px);
+  font-weight:500;
+  letter-spacing:0;
+  line-height:1.2;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankInsignia{
+  display:grid;
+  place-items:center;
+  width:clamp(30px, 4.6vw, 42px);
+  height:clamp(30px, 4.6vw, 42px);
+  margin-top:clamp(1px, .3vw, 3px);
+  overflow:visible;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankInsignia .leaderboardRankInsignia{
+  width:100%;
+  height:100%;
 }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage{
@@ -5374,7 +5863,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   position:absolute;
   z-index:1;
   left:50%;
-  top:3.8%;
+  top:24px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -5396,6 +5885,12 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
   flex-direction:column;
   gap:4px;
+  top:8px;
+  min-height:auto;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{
@@ -5413,7 +5908,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
   color:#fff;
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size:clamp(16px, 1.32vw, 21px);
+  font-size:clamp(13px, 1.05vw, 17px);
   font-weight:800;
   letter-spacing:0;
   line-height:1.15;
@@ -5826,6 +6321,193 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   }
 }
 
+@keyframes leaderboardPodiumCoinReveal{
+  0%{
+    opacity:0;
+    transform:translateZ(0) rotateY(88deg) scale(.96);
+  }
+
+  2.778%{
+    opacity:.05;
+    transform:translateZ(0) rotateY(87.98deg) scale(.96);
+  }
+
+  5.556%{
+    opacity:.1;
+    transform:translateZ(0) rotateY(87.86deg) scale(.9601);
+  }
+
+  8.333%{
+    opacity:.15;
+    transform:translateZ(0) rotateY(87.55deg) scale(.9602);
+  }
+
+  11.111%{
+    opacity:.2;
+    transform:translateZ(0) rotateY(86.99deg) scale(.9605);
+  }
+
+  13.889%{
+    opacity:.25;
+    transform:translateZ(0) rotateY(86.11deg) scale(.9609);
+  }
+
+  16.667%{
+    opacity:.3;
+    transform:translateZ(0) rotateY(84.88deg) scale(.9614);
+  }
+
+  19.444%{
+    opacity:.35;
+    transform:translateZ(0) rotateY(83.27deg) scale(.9621);
+  }
+
+  22.222%{
+    opacity:.4;
+    transform:translateZ(0) rotateY(81.28deg) scale(.9631);
+  }
+
+  25%{
+    opacity:.45;
+    transform:translateZ(0) rotateY(78.89deg) scale(.9641);
+  }
+
+  27.778%{
+    opacity:.5;
+    transform:translateZ(0) rotateY(76.12deg) scale(.9654);
+  }
+
+  30.556%{
+    opacity:.55;
+    transform:translateZ(0) rotateY(73deg) scale(.9668);
+  }
+
+  33.333%{
+    opacity:.6;
+    transform:translateZ(0) rotateY(69.53deg) scale(.9684);
+  }
+
+  36.111%{
+    opacity:.65;
+    transform:translateZ(0) rotateY(65.77deg) scale(.9701);
+  }
+
+  38.889%{
+    opacity:.7;
+    transform:translateZ(0) rotateY(61.74deg) scale(.9719);
+  }
+
+  41.667%{
+    opacity:.75;
+    transform:translateZ(0) rotateY(57.5deg) scale(.9739);
+  }
+
+  44.444%{
+    opacity:.8;
+    transform:translateZ(0) rotateY(53.09deg) scale(.9759);
+  }
+
+  47.222%{
+    opacity:.85;
+    transform:translateZ(0) rotateY(48.57deg) scale(.9779);
+  }
+
+  50%{
+    opacity:.9;
+    transform:translateZ(0) rotateY(44deg) scale(.98);
+  }
+
+  52.778%{
+    opacity:.95;
+    transform:translateZ(0) rotateY(39.43deg) scale(.9821);
+  }
+
+  55.556%{
+    opacity:1;
+    transform:translateZ(0) rotateY(34.91deg) scale(.9841);
+  }
+
+  58.333%{
+    opacity:1;
+    transform:translateZ(0) rotateY(30.5deg) scale(.9861);
+  }
+
+  61.111%{
+    opacity:1;
+    transform:translateZ(0) rotateY(26.26deg) scale(.9881);
+  }
+
+  63.889%{
+    opacity:1;
+    transform:translateZ(0) rotateY(22.23deg) scale(.9899);
+  }
+
+  66.667%{
+    opacity:1;
+    transform:translateZ(0) rotateY(18.47deg) scale(.9916);
+  }
+
+  69.444%{
+    opacity:1;
+    transform:translateZ(0) rotateY(15deg) scale(.9932);
+  }
+
+  72.222%{
+    opacity:1;
+    transform:translateZ(0) rotateY(11.88deg) scale(.9946);
+  }
+
+  75%{
+    opacity:1;
+    transform:translateZ(0) rotateY(9.11deg) scale(.9959);
+  }
+
+  77.778%{
+    opacity:1;
+    transform:translateZ(0) rotateY(6.72deg) scale(.9969);
+  }
+
+  80.556%{
+    opacity:1;
+    transform:translateZ(0) rotateY(4.73deg) scale(.9979);
+  }
+
+  83.333%{
+    opacity:1;
+    transform:translateZ(0) rotateY(3.12deg) scale(.9986);
+  }
+
+  86.111%{
+    opacity:1;
+    transform:translateZ(0) rotateY(1.89deg) scale(.9991);
+  }
+
+  88.889%{
+    opacity:1;
+    transform:translateZ(0) rotateY(1.01deg) scale(.9995);
+  }
+
+  91.667%{
+    opacity:1;
+    transform:translateZ(0) rotateY(.45deg) scale(.9998);
+  }
+
+  94.444%{
+    opacity:1;
+    transform:translateZ(0) rotateY(.14deg) scale(.9999);
+  }
+
+  97.222%{
+    opacity:1;
+    transform:translateZ(0) rotateY(.02deg) scale(1);
+  }
+
+  100%{
+    opacity:1;
+    transform:translateZ(0) rotateY(0deg) scale(1);
+  }
+}
+
 @keyframes leaderboardPodiumThruster{
   0%, 100%{
     opacity:.92;
@@ -5937,11 +6619,21 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
 }
 
 @media (prefers-reduced-motion: reduce){
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::before{
+    animation:none;
+  }
+
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarSlot{
     animation:none;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumAvatarDrop{
+    opacity:1;
+    transform:none;
+    animation:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarFlipGroup{
     opacity:1;
     transform:none;
     animation:none;
@@ -6551,6 +7243,86 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     aspect-ratio:1448 / 798;
   }
 
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage{
+    width:calc(100% + 16px);
+    max-width:none;
+    margin-left:-8px;
+    margin-right:-8px;
+    margin-top:-8px;
+    padding:104px 12px 18px;
+    background:#151827;
+    background-size:auto;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumDeck{
+    width:100%;
+    grid-template-columns:minmax(0, .94fr) minmax(0, 1.12fr) minmax(0, .94fr);
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard{
+    height:176px;
+    padding:50px 8px 18px;
+    border-radius:13px 13px 0 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1{
+    height:220px;
+    padding-top:72px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarWrap{
+    width:74px;
+    height:74px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarWrap{
+    width:96px;
+    height:96px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarFrame,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumAvatarPlaceholder{
+    border-width:4px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFrame,
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarPlaceholder{
+    border-width:5px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCrown{
+    top:-42px;
+    width:46px;
+    height:34px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumBadge{
+    width:28px;
+    height:32px;
+    font-size:11px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumText{
+    gap:8px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumName{
+    font-size:13px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumXp{
+    font-size:16px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumXp{
+    font-size:19px;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumRankInsignia{
+    width:28px;
+    height:28px;
+  }
+
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay,
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardRivalsTitleOverlay,
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalTitleOverlay{
@@ -6560,8 +7332,12 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     padding:6px 10px;
   }
 
+  #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodOverlay{
+    top:8px;
+  }
+
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodCountdown{
-    font-size:clamp(13px, 3.9vw, 16px);
+    font-size:clamp(11px, 3.2vw, 13px);
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyPeriodTitle{

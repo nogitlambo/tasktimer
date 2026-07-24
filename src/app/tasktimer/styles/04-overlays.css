@@ -967,6 +967,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   transition-duration: .56s, .56s;
 }
 
+@media (min-width: 981px){
+#addTaskOverlay .modal{
+    transform: translateY(18px);
+  }
+}
+
 #addTaskOverlay .editTaskModalFrame,
 #addTaskOverlay .addTaskFooterBtns,
 #addTaskOverlay .editTaskColorPopover{
@@ -1019,6 +1025,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   transform: translateX(-72px);
   transition-duration: .3s, .3s;
   transition-delay: .18s, .18s;
+}
+
+@media (min-width: 981px){
+#addTaskOverlay.isClosing .modal{
+    transform: translateY(18px);
+  }
 }
 
 #addTaskOverlay.isClosing .editTaskModalFrame,
@@ -7944,6 +7956,108 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     0 0 16px rgba(201,255,36,.2) !important;
 }
 
+#editOverlay .footerBtns .primitiveSciFiModalAction,
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction{
+  position: relative !important;
+  box-sizing: border-box !important;
+  min-width: min(178px, 38vw) !important;
+  min-height: 48px !important;
+  padding: 0 28px !important;
+  border: 4px solid #020509 !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .22),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(184, 207, 224, .4),
+    inset 0 12px 18px rgba(255, 255, 255, .045),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+  color: #f7f8fb !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
+  transition:
+    filter .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalAction:hover:not(:disabled),
+#editOverlay .footerBtns .primitiveSciFiModalAction:focus-visible:not(:disabled),
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction:hover:not(:disabled),
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction:focus-visible:not(:disabled){
+  filter: brightness(1.12) !important;
+  transform: translateY(-1px) !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalAction:active:not(:disabled),
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction:active:not(:disabled){
+  transform: translateY(3px) !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalAction:focus-visible,
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction:focus-visible{
+  outline: 1px solid rgba(126, 243, 255, .95) !important;
+  outline-offset: 6px !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalAction::before,
+#editOverlay .footerBtns .primitiveSciFiModalAction::after,
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction::before,
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction::after{
+  content: none !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalPrimaryAction,
+#addTaskOverlay .footerBtns .primitiveSciFiModalPrimaryAction{
+  border-color: #0f1600 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
+    #0b1319 !important;
+  box-shadow:
+    0 0 0 1px rgba(201, 255, 36, .28),
+    0 0 14px rgba(201, 255, 36, .34),
+    0 10px 14px rgba(0, 0, 0, .72),
+    inset 0 0 0 3px rgba(201, 255, 36, .72),
+    inset 0 12px 18px rgba(255, 255, 255, .08),
+    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
+  color: #f7f8fb !important;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalSecondaryAction,
+#addTaskOverlay .footerBtns .primitiveSciFiModalSecondaryAction{
+  border-color: #020509 !important;
+}
+
+#editOverlay .footerBtns .primitiveSciFiModalAction:disabled,
+#addTaskOverlay .footerBtns .primitiveSciFiModalAction:disabled{
+  cursor: not-allowed !important;
+  filter: grayscale(.42) brightness(.68) !important;
+  opacity: .48 !important;
+  transform: none !important;
+  box-shadow:
+    0 2px 0 rgba(180, 206, 226, .1),
+    0 8px 12px rgba(0, 0, 0, .58),
+    inset 0 0 0 3px rgba(184, 207, 224, .24),
+    inset 0 12px 18px rgba(255, 255, 255, .026),
+    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #editOverlay .footerBtns .primitiveSciFiModalAction,
+  #addTaskOverlay .footerBtns .primitiveSciFiModalAction{
+    transition: none !important;
+  }
+}
+
 /* Migrated from tasktimer.css tail: overlay and confirm authority rules. */
 #editOverlay .field input,
 #editOverlay .field select,
@@ -8366,8 +8480,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #leaderboardMovementOverlay .leaderboardMovementPrimitiveBody{
+  display:flex;
+  flex-direction:column;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: 34px 46px 18px;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
@@ -8375,7 +8491,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #leaderboardMovementOverlay .leaderboardMovementSlideViewport{
+  flex:1 1 auto;
+  height:100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -8383,16 +8502,22 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   --leaderboard-movement-index: 0;
   display: flex;
   width: 100%;
+  height:100%;
   min-width: 0;
+  min-height:0;
+  align-items:stretch;
   transform: translateX(calc(var(--leaderboard-movement-index) * -100%));
   transition: transform .34s cubic-bezier(.2, .8, .2, 1);
   will-change: transform;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementSlidePanel{
+  display:flex;
+  flex-direction:column;
   flex: 0 0 100%;
   width: 100%;
   min-width: 0;
+  min-height:0;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementBoardLabel{
@@ -8413,30 +8538,86 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTableWrap{
+  flex:1 1 auto;
+  min-height:0;
   margin:14px 0 4px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.035);
+  overflow-x:auto;
+  overflow-y:hidden;
+  border:0;
+  background:transparent;
+  display:flex;
+  flex-direction:column;
+  justify-content:stretch;
+  width:100%;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementSharedTablePanel{
+  --leaderboard-shared-table-corner:14px;
+  --leaderboard-shared-table-border:rgba(255,255,255,.14);
+  position:relative;
+  flex:1 1 auto;
+  min-width:650px;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  padding:16px 18px 18px;
+  border:0;
+  border-radius:0;
+  clip-path:polygon(var(--leaderboard-shared-table-corner) 0, calc(100% - var(--leaderboard-shared-table-corner)) 0, 100% var(--leaderboard-shared-table-corner), 100% calc(100% - var(--leaderboard-shared-table-corner)), calc(100% - var(--leaderboard-shared-table-corner)) 100%, var(--leaderboard-shared-table-corner) 100%, 0 calc(100% - var(--leaderboard-shared-table-corner)), 0 var(--leaderboard-shared-table-corner));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  box-sizing:border-box;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementSharedTablePanel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:
+    linear-gradient(var(--leaderboard-shared-table-border), var(--leaderboard-shared-table-border)) top center / calc(100% - (var(--leaderboard-shared-table-corner) * 2)) 1px no-repeat,
+    linear-gradient(var(--leaderboard-shared-table-border), var(--leaderboard-shared-table-border)) bottom center / calc(100% - (var(--leaderboard-shared-table-corner) * 2)) 1px no-repeat,
+    linear-gradient(var(--leaderboard-shared-table-border), var(--leaderboard-shared-table-border)) left center / 1px calc(100% - (var(--leaderboard-shared-table-corner) * 2)) no-repeat,
+    linear-gradient(var(--leaderboard-shared-table-border), var(--leaderboard-shared-table-border)) right center / 1px calc(100% - (var(--leaderboard-shared-table-corner) * 2)) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% + .75px), transparent calc(50% + .75px)) top left / var(--leaderboard-shared-table-corner) var(--leaderboard-shared-table-corner) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% + .75px), transparent calc(50% + .75px)) top right / var(--leaderboard-shared-table-corner) var(--leaderboard-shared-table-corner) no-repeat,
+    linear-gradient(45deg, transparent calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% + .75px), transparent calc(50% + .75px)) bottom left / var(--leaderboard-shared-table-corner) var(--leaderboard-shared-table-corner) no-repeat,
+    linear-gradient(135deg, transparent calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% + .75px), transparent calc(50% + .75px)) bottom right / var(--leaderboard-shared-table-corner) var(--leaderboard-shared-table-corner) no-repeat;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable{
   --leaderboard-movement-row-height: 38px;
   display:grid;
+  flex:1 1 auto;
+  align-content:start;
   gap:0;
-  min-width:0;
+  min-width:650px;
+  width:100%;
+  min-height:100%;
+  margin:0;
+  overflow:hidden;
+  border:0;
+  border-radius:0;
+  background:rgba(0,0,0,.16);
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
   display:grid;
-  grid-template-columns:38px minmax(0, 1fr) 70px 34px;
-  min-height:var(--leaderboard-movement-row-height);
-  padding:0 8px;
+  grid-template-columns:100px minmax(240px, 1.5fr) minmax(110px, .8fr) minmax(110px, .75fr);
   align-items:center;
-  border:0;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  background:transparent;
-  color:rgba(238,242,246,.9);
+  gap:0;
   min-width:0;
+  width:100%;
+  min-height:var(--leaderboard-movement-row-height);
+  padding:0;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.09);
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  text-align:left;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardMovementTableRow{
@@ -8452,13 +8633,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead{
   min-height:28px;
-  color:rgba(168,167,167,.9);
+  border-top:0;
+  background:rgba(255,255,255,.025);
+  color:rgba(188,214,230,.78);
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardMovementTableRow.isCurrentUser{
   z-index: 2;
-  background:rgba(201,255,36,.12);
-  color:#fff;
+  background:rgba(103,255,159,.08);
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyPlayerCell{
@@ -8470,6 +8657,22 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  padding:0 12px;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead > span{
+  font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
+  text-align:left;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead > span:nth-child(3){
+  justify-self:center;
+  text-align:center;
+}
+
+#leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead > span:nth-child(4){
+  justify-self:stretch;
+  text-align:center;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardAvatarSmall{
@@ -8611,10 +8814,30 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 }
 
 @media (max-width: 520px){
+  #leaderboardMovementOverlay .leaderboardMovementSharedTablePanel{
+    min-width:0;
+    padding:8px 6px;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementTable{
+    min-width:0;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableHead{
+    display:none;
+  }
+
   #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow{
     --leaderboard-movement-row-height: 38px;
-    grid-template-columns:32px minmax(0, 1fr) 62px 30px;
-    padding:0 6px;
+    grid-template-columns:42px minmax(0, 1fr) minmax(58px, max-content) minmax(86px, max-content);
+    gap:1px;
+    min-height:0;
+    padding:4px 0;
+    justify-items:start;
+  }
+
+  #leaderboardMovementOverlay .leaderboardMovementTable .leaderboardWeeklyTableRow > span{
+    padding:0;
   }
 }
 
