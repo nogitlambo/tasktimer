@@ -6632,6 +6632,19 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   padding: 10px 0;
 }
 
+#taskCheckpointAlarmPermissionRow .settingsPreferenceControlCopy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#taskCheckpointAlarmPermissionRow .switch {
+  flex: 0 0 auto;
+}
+
+#taskCheckpointAlarmPermissionRow #taskCheckpointAlarmPermissionBtn {
+  flex: 0 0 auto;
+}
+
 .settingsPermissionRow.isHidden,
 .settingsPermissionRow .isHidden {
   display: none;

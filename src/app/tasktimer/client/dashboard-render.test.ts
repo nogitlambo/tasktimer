@@ -440,6 +440,12 @@ function getActivityBarPart(group: ElementStub | undefined, className: string) {
   return (group?.children || []).find((child) => child.getAttribute("class") === className) || null;
 }
 
+function getActivityGradientStopColors(container: ElementStub | undefined, gradientId: string) {
+  const defs = (container?.children || []).find((child) => child.getAttribute("class") === "dashboardActivityBarDefs");
+  const gradient = (defs?.children || []).find((child) => child.getAttribute("id") === gradientId);
+  return (gradient?.children || []).map((child) => child.getAttribute("stop-color"));
+}
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -653,6 +659,7 @@ describe("dashboard activity overview card", () => {
     try {
       harness.renderActivityOverview();
       const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const barsContainer = harness.byId.get("dashboardActivityBars");
       const firstBar = getActivityBarFront(bars[0]);
       const secondBar = getActivityBarFront(bars[1]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
@@ -663,6 +670,18 @@ describe("dashboard activity overview card", () => {
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(255,140,0)");
       expect(secondBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
+      expect(getActivityGradientStopColors(barsContainer, "dashboardActivityBarGradient-0")).toEqual([
+        "#ffb56f",
+        "#ff9148",
+        "#d96a2f",
+        "#8d3f22",
+      ]);
+      expect(getActivityGradientStopColors(barsContainer, "dashboardActivityBarGradient-1")).toEqual([
+        "#9dff5f",
+        "#47ffb5",
+        "#0cf57f",
+        "#078f4f",
+      ]);
       expect(goalLine?.style.display).toBe("");
       expect(goalLabel?.style.display).toBe("");
       expect(goalLabel?.textContent).toBe("2h GOAL");
@@ -827,7 +846,7 @@ describe("dashboard week-start alignment", () => {
       expect(harness.byId.get("dashboardTodayHoursValue")?.textContent).toBe("30m");
       expect(harness.byId.get("dashboardActivityTodayHoursValue")?.textContent).toBe("30m");
       expect(harness.byId.get("dashboardTodayHoursDelta")?.textContent).toBe("+30m vs previous productivity day");
-      expect(harness.byId.get("dashboardActivityTodayHoursDelta")?.textContent).toBe("+30m vs previous productivity day");
+      expect(harness.byId.get("dashboardActivityTodayHoursDelta")?.textContent).toBe("+30m vs prev productivity day");
     } finally {
       harness.restore();
     }
@@ -1140,6 +1159,65 @@ describe("weekly goals dashboard card", () => {
 });
 
 describe("dashboard completed card", () => {
+  it("keeps desktop Activity Overview to one integrated grid column", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+    const desktopOrderCss = css.slice(css.indexOf("/* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview, Focus Heatmap. */"));
+    const activityOverviewRule =
+      desktopOrderCss.match(
+        /@media \(min-width: 981px\)\{[\s\S]*?\.dashboardIntegratedPanel > \.dashboardActivityOverviewCard\{[\s\S]*?\n  \}/
+      )?.[0] || "";
+
+    expect(activityOverviewRule).toContain("grid-column:1 !important;");
+    expect(activityOverviewRule).not.toContain("grid-column:1 / 3 !important;");
+  });
+
+  it("keeps mobile activity summaries side by side with state-colored progress fills", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+    const narrowSummaryRule =
+      css.match(
+        /@media \(max-width: 420px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel \.dashboardActivitySummaryStack\{[\s\S]*?\n  \}/
+      )?.[0] || "";
+
+    expect(narrowSummaryRule).toContain("grid-template-columns:repeat(2, minmax(0, 1fr)) !important;");
+    expect(narrowSummaryRule).not.toContain("grid-template-columns:minmax(0, 1fr) !important;");
+    expect(css).toContain(
+      ".dashboardActivitySummaryMini:has(.dashboardSummaryFoot.positive) .dashboardGoalProgressFill{\n  background:linear-gradient(90deg, #47ffb5, #9dff5f) !important;"
+    );
+    expect(css).toContain(
+      ".dashboardActivitySummaryMini:has(.dashboardSummaryFoot.negative) .dashboardGoalProgressFill{\n  background:linear-gradient(90deg, #ff6b6b, #ff8a5f) !important;"
+    );
+  });
+
+  it("keeps the mobile Task Overview panel on the shared dashboard panel chrome", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+    const referenceCss = css.slice(css.indexOf("/* Activity Overview and Momentum reference redesign. */"));
+    const sharedPanelRule =
+      referenceCss.match(
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const sharedPanelTopLineRule =
+      referenceCss.match(
+        /body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard::before,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard::before\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const mobileSharedPanelRule =
+      referenceCss.match(
+        /@media \(max-width: 640px\)\{\n\s+body\[data-app-page="dashboard"\] #app\[aria-label="TaskLaunch App"\] #appPageDashboard \.dashboardIntegratedPanel > \.dashboardActivityOverviewCard,\n[\s\S]*?\.dashboardSupportGrid > \.dashboardHeatCard\{[\s\S]*?\n  \}/
+      )?.[0] || "";
+
+    expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
+    expect(sharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
+    expect(sharedPanelRule).toContain("border-radius:18px !important;");
+    expect(referenceCss).toContain("--dashboard-reference-panel-bg-top:#0d0f13;");
+    expect(referenceCss).toContain("--dashboard-reference-panel-bg-bottom:#0d0f13;");
+    expect(sharedPanelRule).toContain("background:linear-gradient(180deg, var(--dashboard-reference-panel-bg-top), var(--dashboard-reference-panel-bg-bottom)) !important;");
+    expect(sharedPanelTopLineRule).toContain(".dashboardSupportGrid > .dashboardHeatCard::before{");
+    expect(sharedPanelTopLineRule).toContain("background:linear-gradient(90deg, transparent, var(--dashboard-reference-border-strong), transparent) !important;");
+    expect(referenceCss).toContain("background:linear-gradient(180deg, #0d0f13 0%, #0d0f13 100%) !important;");
+    expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardTasksCompletedCard,");
+    expect(mobileSharedPanelRule).toContain(".dashboardSupportGrid > .dashboardHeatCard{");
+    expect(mobileSharedPanelRule).toContain("border-radius:16px !important;");
+  });
+
   it("uses panel-background strokes for rendered donut cut lines and non-empty base ring", () => {
     const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
 
@@ -1774,6 +1852,34 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children[0]?.getAttribute("aria-label")).toBe("Extremely Long Deep Work Task: Not complete");
       expect(connectorEls).toHaveLength(2);
       expect(centerEl?.innerHTML).toContain("0%");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("keeps shortened task labels close to their connector lines", () => {
+    const tasks = [
+      task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+      task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
+    ];
+    const harness = createRenderHarness(tasks);
+
+    try {
+      ElementStub.labelRectOverride = (element) => element.className.split(/\s+/).includes("dashboardTasksCompletedLabel")
+        ? element.className.split(/\s+/).includes("isMicro")
+          ? { left: 250, top: 128, right: 304, bottom: 152, width: 54, height: 24 }
+          : { left: 170, top: 170, right: 230, bottom: 200, width: 60, height: 30 }
+        : null;
+
+      harness.render();
+      const labelsEl = harness.byId.get("dashboardTasksCompletedLabels");
+      const label = labelsEl?.children[0];
+      const labelX = Number.parseFloat(String(label?.style.left || "0"));
+      const labelY = Number.parseFloat(String(label?.style.top || "0"));
+      const labelDistance = Math.hypot(labelX - 190, labelY - 190);
+
+      expect(label?.className).toContain("isMicro");
+      expect(labelDistance).toBeCloseTo(126, 0);
     } finally {
       harness.restore();
     }

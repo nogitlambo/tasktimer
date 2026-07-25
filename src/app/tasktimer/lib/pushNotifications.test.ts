@@ -133,6 +133,11 @@ async function setupPushModule(options: SetupOptions = {}) {
       }),
     },
     dispatchEvent: vi.fn(),
+    Capacitor: options.nativeRuntime === true
+      ? {
+          isNativePlatform: () => true,
+        }
+      : undefined,
   });
   vi.stubGlobal("document", {
     visibilityState: "visible",
@@ -274,6 +279,38 @@ describe("pushNotifications web registration", () => {
         ],
       ])
     );
+  });
+
+  it("routes native friend request notification taps to Friends before the app shell is ready", async () => {
+    const { mod, pushNotifications } = await setupPushModule({
+      nativeRuntime: true,
+    });
+
+    await mod.syncTaskTimerPushNotificationsEnabled({ mobileEnabled: true, webEnabled: false });
+    const actionHandler = pushNotifications.addListener.mock.calls.find(
+      ([eventName]) => eventName === "pushNotificationActionPerformed"
+    )?.[1];
+
+    actionHandler?.({
+      actionId: "tap",
+      notification: {
+        data: {
+          route: "/friends",
+          requestId: "pending:sender-1:receiver-1",
+          type: "friendRequest",
+        },
+      },
+    });
+
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.objectContaining({
+          route: "/friends",
+          taskId: "",
+        }),
+      })
+    );
+    expect(window.location.href).toBe("/friends/index.html");
   });
 
   it("can enable native mobile push on a later attempt when denied permission becomes promptable", async () => {

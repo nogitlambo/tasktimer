@@ -580,6 +580,7 @@ export function buildTimeGoalCompleteNextTaskOptions(
 }
 
 export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
+  const TIME_GOAL_COMPLETE_CONFETTI_START_DELAY_MS = 500;
   const { els, runtime } = ctx;
   const { sharedTasks } = ctx;
   const getDeferredQueue = () => ctx.getDeferredFocusModeTimeGoalModals();
@@ -588,6 +589,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   let timeGoalXpCountAudio: HTMLAudioElement | null = null;
   const timeGoalCompleteXpRevealPlayer = createClickAudioPlayer("/xp-reward.mp3");
   let timeGoalCompleteXpRevealTimer: number | null = null;
+  let timeGoalCompleteConfettiStartTimer: number | null = null;
   let timeGoalCompleteAudioEndedListener: (() => void) | null = null;
   let activeFocusTransitionClone: HTMLElement | null = null;
   let activeFocusTransitionTimer: number | null = null;
@@ -604,6 +606,12 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     timeGoalCompleteXpRevealTimer = null;
   }
 
+  function clearTimeGoalCompleteConfettiStartTimer() {
+    if (timeGoalCompleteConfettiStartTimer == null || typeof window === "undefined") return;
+    window.clearTimeout(timeGoalCompleteConfettiStartTimer);
+    timeGoalCompleteConfettiStartTimer = null;
+  }
+
   function setTimeGoalCompleteXpSubtextVisible(visible: boolean) {
     const text = els.timeGoalCompleteText as HTMLElement | null;
     if (!text) return;
@@ -616,6 +624,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
   function revealTimeGoalCompleteXpSubtext(opts?: { playRewardSound?: boolean }) {
     clearTimeGoalCompleteXpRevealTimer();
+    clearTimeGoalCompleteConfettiStartTimer();
     finishTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
     setTimeGoalCompleteXpSubtextVisible(true);
     if (opts?.playRewardSound && ctx.getAchievementSoundsEnabled()) {
@@ -1220,7 +1229,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     ].join("");
   }
 
-  function startTimeGoalCompleteConfetti() {
+  function playTimeGoalCompleteConfetti() {
     const started = startTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
     if (!started) return;
     playTaskCompleteConfettiHaptic({
@@ -1229,7 +1238,20 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     });
   }
 
+  function startTimeGoalCompleteConfetti() {
+    clearTimeGoalCompleteConfettiStartTimer();
+    if (typeof window === "undefined") {
+      playTimeGoalCompleteConfetti();
+      return;
+    }
+    timeGoalCompleteConfettiStartTimer = window.setTimeout(() => {
+      timeGoalCompleteConfettiStartTimer = null;
+      playTimeGoalCompleteConfetti();
+    }, TIME_GOAL_COMPLETE_CONFETTI_START_DELAY_MS);
+  }
+
   function stopTimeGoalCompleteConfetti() {
+    clearTimeGoalCompleteConfettiStartTimer();
     stopTimeGoalConfetti(els.timeGoalCompleteConfettiStage as HTMLElement | null);
   }
 

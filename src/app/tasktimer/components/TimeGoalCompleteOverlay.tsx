@@ -23,7 +23,7 @@ function buildConfettiPieces(): ConfettiPiece[] {
     return seed / 4294967296;
   };
 
-  return Array.from({ length: 120 }, (_, index) => {
+  return Array.from({ length: 60 }, (_, index) => {
     const angle = Math.PI * (0.16 + rand() * 0.68);
     const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);
     const burstDistance = 230 + rand() * 190 + pressureBias * (60 + rand() * 90);

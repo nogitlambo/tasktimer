@@ -323,7 +323,14 @@ export function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string
   const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
   const seconds = totalSeconds % 60;
   const pad = (value: number) => String(value).padStart(2, "0");
-  return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+  return [
+    days > 0 ? `${days}d` : null,
+    hours > 0 ? `${pad(hours)}h` : null,
+    minutes > 0 ? `${pad(minutes)}m` : null,
+    `${pad(seconds)}s`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {

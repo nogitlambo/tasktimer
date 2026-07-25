@@ -88,6 +88,7 @@ type CapAppPlugin = {
 };
 
 type CapacitorWindowShape = Window & {
+  __tasktimerPendingPushReady?: boolean;
   Capacitor?: {
     isNativePlatform?: () => boolean;
     registerPlugin?: (name: string) => CapAppPlugin;
@@ -226,8 +227,14 @@ function getTaskTimerRootPath() {
 }
 
 function resolveTaskTimerTasksRoute() {
+  return resolveTaskTimerAppRoute("/tasklaunch");
+}
+
+function resolveTaskTimerAppRoute(routeRaw: unknown) {
   if (typeof window === "undefined") return "/tasklaunch";
-  const rootPath = getTaskTimerRootPath();
+  const rawRoute = String(routeRaw || "").trim();
+  const routePath = rawRoute.startsWith("/") ? rawRoute.split("#")[0]?.split("?")[0] || "" : "";
+  const normalizedRoute = routePath.replace(/\/index\.html$/i, "").replace(/\/+$/, "") || getTaskTimerRootPath();
   const cap = (window as CapacitorWindowShape).Capacitor;
   const isNativeCapacitorRuntime = !!(
     cap &&
@@ -237,8 +244,16 @@ function resolveTaskTimerTasksRoute() {
   const currentPath = window.location.pathname || "";
   const usesExportedHtmlPaths =
     window.location.protocol === "file:" || /\.html$/i.test(currentPath) || isNativeCapacitorRuntime;
-  if (!usesExportedHtmlPaths) return rootPath;
-  return `${rootPath.replace(/\/+$/, "")}/index.html`;
+  if (!usesExportedHtmlPaths) return normalizedRoute;
+  return `${normalizedRoute.replace(/\/+$/, "")}/index.html`;
+}
+
+function isCurrentTaskTimerAppRoute(routeRaw: unknown) {
+  if (typeof window === "undefined") return true;
+  const routePath = String(routeRaw || "").trim().split("#")[0]?.split("?")[0] || "";
+  const normalizedRoute = routePath.replace(/\/index\.html$/i, "").replace(/\/+$/, "") || "/tasklaunch";
+  const currentPath = (window.location.pathname || "").replace(/\/index\.html$/i, "").replace(/\/+$/, "") || "/tasklaunch";
+  return currentPath === normalizedRoute;
 }
 
 function getCapAppPlugin() {
@@ -643,6 +658,10 @@ async function enableTaskTimerPushRuntime(): Promise<boolean> {
       window.dispatchEvent(new CustomEvent(PENDING_PUSH_TASK_EVENT, { detail }));
     } catch {
       // Ignore custom event failures.
+    }
+    if (route === "/friends" && !(window as CapacitorWindowShape).__tasktimerPendingPushReady && !isCurrentTaskTimerAppRoute(route)) {
+      window.location.href = resolveTaskTimerAppRoute(route);
+      return;
     }
     if (
       route === "/tasklaunch" &&

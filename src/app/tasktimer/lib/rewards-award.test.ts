@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  awardDailyOpenReward,
   awardCompletedSessionXp,
   buildRankLadderSummary,
+  DAILY_OPEN_REWARD_XP,
   DEFAULT_REWARD_PROGRESS,
   getRankForXp,
+  isDailyOpenRewardEligible,
   MIN_REWARD_ELIGIBLE_SESSION_MS,
   RANK_LADDER,
   normalizeRewardProgress,
@@ -429,6 +432,77 @@ describe("awardCompletedSessionXp", () => {
     expect(result.amount).toBe(2.85);
     expect(result.next.totalXpPrecise).toBe(2.85);
     expect(result.next.totalXp).toBe(2);
+  });
+});
+
+describe("awardDailyOpenReward", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("awards ten XP on the first app open claim for a local day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 5, 10, 0, 0, 0));
+
+    const result = awardDailyOpenReward(DEFAULT_REWARD_PROGRESS, Date.now());
+
+    expect(result.amount).toBe(DAILY_OPEN_REWARD_XP);
+    expect(result.next.totalXp).toBe(10);
+    expect(result.next.totalXpPrecise).toBe(10);
+    expect(result.next.lastDailyRewardAwardedAtMs).toBe(Date.now());
+    expect(result.next.awardLedger.at(-1)).toMatchObject({
+      reason: "dailyOpen",
+      taskId: null,
+      xp: DAILY_OPEN_REWARD_XP,
+      baseXp: DAILY_OPEN_REWARD_XP,
+      multiplier: 1,
+      eligibleMs: 0,
+      sourceKey: "dailyOpen:2026-05-05",
+    });
+  });
+
+  it("does not award twice for the same local day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 5, 10, 0, 0, 0));
+
+    const first = awardDailyOpenReward(DEFAULT_REWARD_PROGRESS, Date.now()).next;
+    const second = awardDailyOpenReward(first, Date.now() + 60 * 60 * 1000);
+
+    expect(second.amount).toBe(0);
+    expect(second.next.totalXp).toBe(10);
+    expect(second.next.awardLedger.filter((entry) => entry.reason === "dailyOpen")).toHaveLength(1);
+  });
+
+  it("awards again on the next local day without backfilling missed days", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 5, 10, 0, 0, 0));
+
+    const first = awardDailyOpenReward(DEFAULT_REWARD_PROGRESS, Date.now()).next;
+    const threeDaysLater = new Date(2026, 4, 8, 10, 0, 0, 0).getTime();
+    vi.setSystemTime(new Date(threeDaysLater));
+    const second = awardDailyOpenReward(first, threeDaysLater);
+
+    expect(second.amount).toBe(DAILY_OPEN_REWARD_XP);
+    expect(second.next.totalXp).toBe(20);
+    expect(second.next.awardLedger.filter((entry) => entry.reason === "dailyOpen")).toHaveLength(2);
+    expect(second.next.awardLedger.at(-1)?.sourceKey).toBe("dailyOpen:2026-05-08");
+  });
+
+  it("normalizes missing daily reward timestamps to null", () => {
+    expect(normalizeRewardProgress({ ...DEFAULT_REWARD_PROGRESS, lastDailyRewardAwardedAtMs: undefined }).lastDailyRewardAwardedAtMs).toBeNull();
+  });
+
+  it("reports eligibility from the last awarded local day", () => {
+    const sameDayMorning = new Date(2026, 4, 5, 10, 0, 0, 0).getTime();
+    const sameDayEvening = new Date(2026, 4, 5, 18, 0, 0, 0).getTime();
+    const nextDay = new Date(2026, 4, 6, 10, 0, 0, 0).getTime();
+    const previous = normalizeRewardProgress({
+      ...DEFAULT_REWARD_PROGRESS,
+      lastDailyRewardAwardedAtMs: sameDayMorning,
+    });
+
+    expect(isDailyOpenRewardEligible(previous, sameDayEvening)).toBe(false);
+    expect(isDailyOpenRewardEligible(previous, nextDay)).toBe(true);
   });
 });
 

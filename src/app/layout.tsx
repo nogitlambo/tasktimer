@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import NativeAppUpdateGate from "./NativeAppUpdateGate";
+import NativeEmailLinkRedirectBootstrap from "./auth/NativeEmailLinkRedirectBootstrap";
 import { Orbitron } from "next/font/google";
 import TelemetryBootstrap from "./TelemetryBootstrap";
 import ThemeBootstrap from "./ThemeBootstrap";
@@ -76,6 +77,7 @@ export default function RootLayout({
       >
         <ThemeBootstrap />
         <NativeAppUpdateGate />
+        <NativeEmailLinkRedirectBootstrap />
         <TelemetryBootstrap />
         {children}
       </body>

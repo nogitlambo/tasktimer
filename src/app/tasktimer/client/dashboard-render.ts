@@ -71,6 +71,9 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   const DASHBOARD_COMPLETED_LABEL_MAX_WIDTH = 96;
   const DASHBOARD_COMPLETED_LABEL_COMPACT_WIDTH = 72;
   const DASHBOARD_COMPLETED_LABEL_MICRO_WIDTH = 54;
+  const DASHBOARD_COMPLETED_LABEL_ORBIT_RADIUS = 146;
+  const DASHBOARD_COMPLETED_LABEL_COMPACT_ORBIT_RADIUS = 136;
+  const DASHBOARD_COMPLETED_LABEL_MICRO_ORBIT_RADIUS = 126;
 
   function formatDashboardCompletedDashPct(value: number) {
     const rounded = Number(value.toFixed(3));
@@ -1377,12 +1380,21 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         gradient.setAttribute("x2", "0");
         gradient.setAttribute("y1", "0");
         gradient.setAttribute("y2", "1");
-        [
-          ["0", "#ffb56f"],
-          [".18", "#ff9148"],
-          [".7", "#d96a2f"],
-          ["1", "#8d3f22"],
-        ].forEach(([offset, stopColor]) => {
+        const gradientStops =
+          model.hasGoal && (day.activityProgressPct || 0) >= 100
+            ? [
+                ["0", "#9dff5f"],
+                [".18", "#47ffb5"],
+                [".7", "#0cf57f"],
+                ["1", "#078f4f"],
+              ]
+            : [
+                ["0", "#ffb56f"],
+                [".18", "#ff9148"],
+                [".7", "#d96a2f"],
+                ["1", "#8d3f22"],
+              ];
+        gradientStops.forEach(([offset, stopColor]) => {
           const stop = document.createElementNS(svgNs, "stop");
           stop.setAttribute("offset", offset);
           stop.setAttribute("stop-color", stopColor);
@@ -1694,6 +1706,11 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       let finalLabelLayoutByKey = new Map<string, ReturnType<typeof buildDashboardTasksCompletedLabelLayout>[number]>();
 
       for (const labelMode of labelModes) {
+        const labelOrbitRadius = labelMode === "full"
+          ? DASHBOARD_COMPLETED_LABEL_ORBIT_RADIUS
+          : labelMode === "compact"
+            ? DASHBOARD_COMPLETED_LABEL_COMPACT_ORBIT_RADIUS
+            : DASHBOARD_COMPLETED_LABEL_MICRO_ORBIT_RADIUS;
         const labelEntries = positionedSliceEntries.map((entry) => {
           const maxWidth = labelMode === "full"
             ? DASHBOARD_COMPLETED_LABEL_MAX_WIDTH
@@ -1724,7 +1741,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
           slicePct: entry.slicePct,
           labelWidth: entry.labelWidth,
           labelHeight: entry.labelHeight,
-        })));
+        })), { labelOrbitRadius });
         const labelLayoutByKey = new Map(labelLayouts.map((layout) => [layout.key, layout]));
 
         labelsEl.innerHTML = "";
@@ -1941,7 +1958,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (!deltaEl) return;
     const delta = formatDashboardTodayHoursDeltaText(todayHoursModel, formatDashboardDurationShort);
     deltaEl.classList.remove("positive", "negative");
-    deltaEl.textContent = delta.text;
+    deltaEl.textContent = delta.text.replace("previous productivity day", "prev productivity day");
     if (delta.sentiment === "positive") deltaEl.classList.add("positive");
     else if (delta.sentiment === "negative") deltaEl.classList.add("negative");
   }

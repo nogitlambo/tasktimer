@@ -1,0 +1,125 @@
+
+> tasklaunch@1.5.1 dev:turbo
+> next dev --turbopack
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.2.0.2:3000
+- Environments: .env.local
+✓ Ready in 627ms
+Creating turbopack project { dir: 'G:\\Apps\\tasklaunch', testMode: true }
+
+○ Compiling /tasklaunch ...
+ GET /primitives/ 200 in 5.2s (next.js: 4.7s, application-code: 473ms)
+ GET /tasklaunch/ 200 in 5.2s (next.js: 5.0s, application-code: 168ms)
+ GET /manifest.webmanifest 200 in 442ms (next.js: 425ms, application-code: 18ms)
+ GET /manifest.webmanifest 200 in 14ms (next.js: 6ms, application-code: 8ms)
+ POST /api/account/sync-identity/ 200 in 3.6s (next.js: 1379ms, application-code: 2.2s)
+ GET /tasklaunch/ 200 in 55ms (next.js: 9ms, application-code: 46ms)
+ GET /tasklaunch/ 200 in 36ms (next.js: 4ms, application-code: 32ms)
+ POST /api/account/sync-identity/ 200 in 842ms (next.js: 5ms, application-code: 837ms)
+ POST /api/account/sync-identity/ 200 in 716ms (next.js: 3ms, application-code: 713ms)
+ POST /api/account/sync-identity/ 200 in 713ms (next.js: 3ms, application-code: 709ms)
+✓ Compiled in 172ms
+ GET /primitives/ 200 in 83ms (next.js: 50ms, application-code: 33ms)
+ GET /manifest.webmanifest 200 in 38ms (next.js: 29ms, application-code: 9ms)
+ GET /dashboard/ 200 in 656ms (next.js: 624ms, application-code: 31ms)
+ GET /manifest.webmanifest 200 in 11ms (next.js: 4ms, application-code: 6ms)
+✓ Compiled in 1319ms
+✓ Compiled in 681ms
+ POST /api/account/sync-identity/ 200 in 776ms (next.js: 34ms, application-code: 742ms)
+ POST /api/account/sync-identity/ 200 in 710ms (next.js: 3ms, application-code: 707ms)
+✓ Compiled in 640ms
+ GET /settings/ 200 in 1208ms (next.js: 856ms, application-code: 351ms)
+ GET /manifest.webmanifest 200 in 20ms (next.js: 9ms, application-code: 11ms)
+ POST /api/account/sync-identity/ 200 in 724ms (next.js: 4ms, application-code: 719ms)
+ POST /api/account/sync-identity/ 200 in 711ms (next.js: 3ms, application-code: 709ms)
+ POST /api/account/sync-identity/ 200 in 705ms (next.js: 2ms, application-code: 702ms)
+ GET /tasklaunch/?page=dashboard 200 in 387ms (next.js: 76ms, application-code: 311ms)
+ GET /manifest.webmanifest 200 in 10ms (next.js: 3ms, application-code: 7ms)
+ POST /api/account/sync-identity/ 200 in 724ms (next.js: 3ms, application-code: 721ms)
+ GET /login/ 200 in 541ms (next.js: 455ms, application-code: 87ms)
+ GET /login/ 200 in 539ms (next.js: 472ms, application-code: 67ms)
+ GET /manifest.webmanifest 200 in 10ms (next.js: 4ms, application-code: 7ms)
+ GET /login/ 200 in 40ms (next.js: 10ms, application-code: 30ms)
+ GET /manifest.webmanifest 200 in 11ms (next.js: 3ms, application-code: 7ms)
+ POST /api/auth/email-link/ 200 in 2.6s (next.js: 223ms, application-code: 2.4s)
+✓ Compiled in 301ms
+ GET /login/ 200 in 854ms (next.js: 190ms, application-code: 664ms)
+ GET /login/ 200 in 352ms (next.js: 43ms, application-code: 309ms)
+ GET /login/ 200 in 307ms (next.js: 46ms, application-code: 261ms)
+ GET /login/ 200 in 309ms (next.js: 25ms, application-code: 284ms)
+ GET /login/ 200 in 42ms (next.js: 6ms, application-code: 36ms)
+ GET /login/ 200 in 310ms (next.js: 241ms, application-code: 69ms)
+ GET /manifest.webmanifest 200 in 56ms (next.js: 47ms, application-code: 8ms)
+ GET /login/ 200 in 375ms (next.js: 5ms, application-code: 370ms)
+✓ Compiled in 164ms
+ GET /login/?emailLink=https%3A%2F%2Ftasktimer-prod.firebaseapp.com%2F__%2Fauth%2Faction%3FapiKey%3DAIzaSyCHB089fgIoxbba_Q-YciQx96TzVpZQMww%26mode%3DsignIn%26oobCode%3DQGgjKw8pwmGYv4QfKKDU3UecbP-0ajTTr6duZz2mLt4AAAGfm4M4iA%26continueUrl%3Dhttp%3A%2F%2Flocalhost%3A3000%2Flogin%2F%26lang%3Den 200 in 60ms (next.js: 8ms, application-code: 52ms)
+ GET /manifest.webmanifest 200 in 12ms (next.js: 5ms, application-code: 7ms)
+ GET /tasklaunch/ 200 in 159ms (next.js: 123ms, application-code: 36ms)
+ GET /tasklaunch/ 200 in 334ms (next.js: 5ms, application-code: 329ms)
+ POST /api/account/sync-identity/ 200 in 1450ms (next.js: 38ms, application-code: 1412ms)
+ GET /manifest.webmanifest 200 in 9ms (next.js: 3ms, application-code: 6ms)
+ POST /api/account/sync-identity/ 200 in 817ms (next.js: 3ms, application-code: 814ms)
+ POST /api/account/claim-username/ 200 in 2.3s (next.js: 159ms, application-code: 2.1s)
+ GET /manifest.webmanifest 200 in 7ms (next.js: 3ms, application-code: 4ms)
+ GET /tasklaunch/ 200 in 98ms (next.js: 69ms, application-code: 30ms)
+ GET /manifest.webmanifest 200 in 169ms (next.js: 144ms, application-code: 25ms)
+ POST /api/account/claim-username/ 200 in 2.3s (next.js: 20ms, application-code: 2.3s)
+ POST /api/account/sync-identity/ 200 in 752ms (next.js: 31ms, application-code: 721ms)
+ POST /api/account/sync-identity/ 200 in 697ms (next.js: 3ms, application-code: 694ms)
+ POST /api/account/sync-identity/ 200 in 694ms (next.js: 3ms, application-code: 691ms)
+ POST /api/account/sync-identity/ 200 in 590ms (next.js: 4ms, application-code: 586ms)
+✓ Compiled in 1148ms
+ POST /api/account/sync-identity/ 200 in 735ms (next.js: 4ms, application-code: 731ms)
+ GET /tasklaunch/ 200 in 395ms (next.js: 5ms, application-code: 390ms)
+ GET /manifest.webmanifest 200 in 8ms (next.js: 3ms, application-code: 4ms)
+ POST /api/account/sync-identity/ 200 in 793ms (next.js: 2ms, application-code: 791ms)
+ POST /api/account/sync-identity/ 200 in 752ms (next.js: 6ms, application-code: 746ms)
+✓ Compiled in 906ms
+ POST /api/account/sync-identity/ 200 in 719ms (next.js: 3ms, application-code: 715ms)
+ GET /tasklaunch/ 200 in 52ms (next.js: 6ms, application-code: 46ms)
+ GET /manifest.webmanifest 200 in 14ms (next.js: 6ms, application-code: 7ms)
+ POST /api/account/sync-identity/ 200 in 727ms (next.js: 2ms, application-code: 724ms)
+ GET /tasklaunch/ 200 in 41ms (next.js: 4ms, application-code: 36ms)
+ POST /api/account/sync-identity/ 200 in 1091ms (next.js: 4ms, application-code: 1087ms)
+ GET /manifest.webmanifest 200 in 12ms (next.js: 6ms, application-code: 6ms)
+ POST /api/account/sync-identity/ 200 in 843ms (next.js: 3ms, application-code: 840ms)
+ GET /tasklaunch/ 200 in 54ms (next.js: 6ms, application-code: 49ms)
+ POST /api/account/sync-identity/ 200 in 263ms (next.js: 4ms, application-code: 259ms)
+ GET /manifest.webmanifest 200 in 21ms (next.js: 6ms, application-code: 15ms)
+ POST /api/account/sync-identity/ 200 in 731ms (next.js: 2ms, application-code: 728ms)
+ GET /tasklaunch/ 200 in 55ms (next.js: 6ms, application-code: 49ms)
+ POST /api/account/sync-identity/ 200 in 234ms (next.js: 5ms, application-code: 230ms)
+ GET /manifest.webmanifest 200 in 10ms (next.js: 3ms, application-code: 7ms)
+✓ Compiled in 825ms
+ POST /api/account/sync-identity/ 200 in 902ms (next.js: 3ms, application-code: 900ms)
+✓ Compiled in 1141ms
+ POST /api/account/sync-identity/ 200 in 719ms (next.js: 4ms, application-code: 715ms)
+ POST /api/account/sync-identity/ 200 in 715ms (next.js: 3ms, application-code: 712ms)
+ GET /tasklaunch/ 200 in 46ms (next.js: 10ms, application-code: 36ms)
+ GET /manifest.webmanifest 200 in 11ms (next.js: 3ms, application-code: 7ms)
+ POST /api/account/sync-identity/ 200 in 719ms (next.js: 3ms, application-code: 716ms)
+✓ Compiled in 282ms
+ GET /dashboard/ 200 in 164ms (next.js: 105ms, application-code: 58ms)
+ GET /manifest.webmanifest 200 in 66ms (next.js: 54ms, application-code: 12ms)
+ GET /dashboard/ 200 in 536ms (next.js: 6ms, application-code: 530ms)
+ GET /manifest.webmanifest 200 in 11ms (next.js: 4ms, application-code: 7ms)
+ POST /api/account/sync-identity/ 200 in 763ms (next.js: 39ms, application-code: 723ms)
+ POST /api/account/sync-identity/ 200 in 760ms (next.js: 5ms, application-code: 755ms)
+✓ Compiled in 179ms
+ GET /dashboard/ 200 in 435ms (next.js: 79ms, application-code: 356ms)
+ GET /dashboard/ 200 in 311ms (next.js: 6ms, application-code: 305ms)
+ GET /dashboard/ 200 in 282ms (next.js: 3ms, application-code: 279ms)
+ GET /manifest.webmanifest 200 in 49ms (next.js: 41ms, application-code: 8ms)
+ POST /api/account/sync-identity/ 200 in 788ms (next.js: 34ms, application-code: 754ms)
+✓ Compiled in 851ms
+ POST /api/friends/requests/ 200 in 2.4s (next.js: 291ms, application-code: 2.1s)
+ POST /api/friends/requests/ 200 in 2.3s (next.js: 5ms, application-code: 2.3s)
+✓ Compiled in 705ms
+ POST /api/account/sync-identity/ 200 in 792ms (next.js: 7ms, application-code: 785ms)
+✓ Compiled in 168ms
+ GET /leaderboards/ 200 in 1303ms (next.js: 922ms, application-code: 380ms)
+ GET /leaderboards/ 200 in 1305ms (next.js: 959ms, application-code: 346ms)
+ GET /manifest.webmanifest 200 in 44ms (next.js: 35ms, application-code: 8ms)
+ POST /api/account/sync-identity/ 200 in 824ms (next.js: 49ms, application-code: 775ms)

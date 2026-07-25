@@ -1,0 +1,107 @@
+[browser] ./src/app/tasktimer/tasktimer.css
+Error evaluating Node.js code
+CssSyntaxError: tailwindcss: G:\Apps\tasklaunch\src\app\tasktimer\tasktimer.css:1:1: Missing opening {
+    [at Input.error (turbopack:///[project]/node_modules/postcss/lib/input.js:135:16)]
+    [at Root.error (turbopack:///[project]/node_modules/postcss/lib/node.js:146:32)]
+    [at Object.Once (G:\Apps\tasklaunch\node_modules\@tailwindcss\postcss\dist\index.js:10:6911)]
+    [at async LazyResult.runAsync (turbopack:///[project]/node_modules/postcss/lib/lazy-result.js:293:11)]
+    [at async transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:34)]
+    [at async run (turbopack:///[turbopack-node]/child_process/evaluate.ts:89:23)]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/tasktimer/tasktimer.css [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Server Component]
+    ./src/app/tasktimer/TaskTimerMainAppPage.tsx [Server Component]
+    ./src/app/tasklaunch/page.tsx [Server Component] 
+    at handleErrors (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+    at processMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2843:28)
+    at <unknown> (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2688:13)
+    at WebSocket.handleMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2333:17) (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+[browser] ./src/app/tasktimer/tasktimer.css
+Error evaluating Node.js code
+CssSyntaxError: tailwindcss: G:\Apps\tasklaunch\src\app\tasktimer\tasktimer.css:1:1: Missing opening {
+    [at Input.error (turbopack:///[project]/node_modules/postcss/lib/input.js:135:16)]
+    [at Root.error (turbopack:///[project]/node_modules/postcss/lib/node.js:146:32)]
+    [at Object.Once (G:\Apps\tasklaunch\node_modules\@tailwindcss\postcss\dist\index.js:10:6911)]
+    [at async LazyResult.runAsync (turbopack:///[project]/node_modules/postcss/lib/lazy-result.js:293:11)]
+    [at async transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:34)]
+    [at async run (turbopack:///[turbopack-node]/child_process/evaluate.ts:89:23)]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/tasktimer/tasktimer.css [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Server Component]
+    ./src/app/tasktimer/TaskTimerMainAppPage.tsx [Server Component]
+    ./src/app/tasklaunch/page.tsx [Server Component] 
+    at handleErrors (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+    at processMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2843:28)
+    at <unknown> (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2688:13)
+    at WebSocket.handleMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2333:17) (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+[browser] ./src/app/tasktimer/tasktimer.css
+Error evaluating Node.js code
+CssSyntaxError: tailwindcss: G:\Apps\tasklaunch\src\app\tasktimer\tasktimer.css:1:1: Missing opening {
+    [at Input.error (turbopack:///[project]/node_modules/postcss/lib/input.js:135:16)]
+    [at Root.error (turbopack:///[project]/node_modules/postcss/lib/node.js:146:32)]
+    [at Object.Once (G:\Apps\tasklaunch\node_modules\@tailwindcss\postcss\dist\index.js:10:6911)]
+    [at async LazyResult.runAsync (turbopack:///[project]/node_modules/postcss/lib/lazy-result.js:293:11)]
+    [at async transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:34)]
+    [at async run (turbopack:///[turbopack-node]/child_process/evaluate.ts:89:23)]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/tasktimer/tasktimer.css [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Client Component Browser]
+    ./src/app/tasktimer/TaskTimerMainAppClient.tsx [Server Component]
+    ./src/app/tasktimer/TaskTimerMainAppPage.tsx [Server Component]
+    ./src/app/tasklaunch/page.tsx [Server Component] 
+    at handleErrors (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+    at processMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2843:28)
+    at <unknown> (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2688:13)
+    at WebSocket.handleMessage (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2333:17) (file://G:/Apps/tasklaunch/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2782:21)
+[browser] [tasktimer-cloud] Saved task with compatibility fallback {
+  databaseRowKeys: [
+    [32m'id'[39m,
+    [32m'name'[39m,
+    [32m'order'[39m,
+    [32m'collapsed'[39m,
+    [32m'color'[39m,
+    [32m'accumulatedMs'[39m,
+    [32m'running'[39m,
+    [32m'startMs'[39m,
+    [32m'hasStarted'[39m,
+    [32m'checkpointsEnabled'[39m,
+    [32m'checkpointTimeUnit'[39m,
+    [32m'checkpoints'[39m,
+    [32m'checkpointSoundEnabled'[39m,
+    [32m'checkpointSoundMode'[39m,
+    [32m'presetIntervalsEnabled'[39m,
+    [32m'presetIntervalValue'[39m,
+    [32m'presetIntervalLastCheckpointId'[39m,
+    [32m'presetIntervalNextSeq'[39m,
+    [32m'timeGoalEnabled'[39m,
+    [32m'timeGoalValue'[39m,
+    [32m'timeGoalUnit'[39m,
+    [32m'timeGoalPeriod'[39m,
+    [32m'timeGoalMinutes'[39m,
+    [32m'timeGoalCompletedDayKey'[39m,
+    [32m'timeGoalCompletedWeekKey'[39m,
+    [32m'timeGoalCompletedAtMs'[39m,
+    [32m'timeGoalCompletedReason'[39m,
+    [32m'timeGoalCompletedElapsedMs'[39m,
+    [32m'plannedStartDay'[39m,
+    [32m'plannedStartTime'[39m,
+    [32m'plannedStartByDay'[39m,
+    [32m'plannedStartOpenEnded'[39m,
+    [32m'plannedStartPushRemindersEnabled'[39m,
+    [32m'finalCheckpointAction'[39m
+  ],
+  taskId: [32m'ed6df6be584ae861'[39m,
+  uid: [32m'JH9t2fvxQFhYkHrpj8U0uE4Tj2E3'[39m
+} (src/app/tasktimer/lib/cloudStore.ts:1727:23)
+[browser] [2026-07-25T23:09:23.274Z]  @firebase/analytics: Failed to fetch this Firebase app's measurement ID from the server. Falling back to the measurement ID G-Z5N5YGG09P provided in the "measurementId" field in the local Firebase config. [Failed to fetch]
+⚠ Fast Refresh had to perform a full reload when ./src/app/tasktimer/client/dashboard-render.ts [app-client] (ecmascript) <locals> changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/app/tasktimer/lib/leaderboard.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+⚠ Fast Refresh had to perform a full reload when ./src/app/tasktimer/lib/pushNotifications.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload

@@ -49,6 +49,6 @@ describe("sendAuthSignInEmail", () => {
         html: expect.stringContaining("Sign in to TaskLaunch"),
       })
     );
-    expect(mocks.sendMail.mock.calls[0]?.[0].html).toContain('src="https://tasklaunch.app/logo/tasklaunch-logo.webp"');
+    expect(mocks.sendMail.mock.calls[0]?.[0].html).toContain('src="https://tasklaunch.app/logo/logo_main.png"');
   });
 });

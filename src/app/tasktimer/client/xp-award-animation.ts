@@ -11,7 +11,7 @@ export type PendingXpAward = {
   fromXp: number;
   toXp: number;
   awardedXp: number;
-  sourceModal: "timeGoalComplete" | "resetConfirm" | "historyEntrySummaryTest";
+  sourceModal: "timeGoalComplete" | "dailyReward" | "resetConfirm" | "historyEntrySummaryTest";
   sourceTaskId: string | null;
   sourceOverlayId: string;
   sourceElementKey: string;
@@ -152,4 +152,19 @@ export function getDisplayedXpAfterParticleArrival(opts: {
   const endXp = Math.max(startXp, Math.floor(Number(opts.endXp) || 0));
   const arrivedParticles = Math.max(0, Math.floor(Number(opts.arrivedParticles) || 0));
   return Math.min(endXp, startXp + arrivedParticles);
+}
+
+export function getDisplayedXpForModalCountdown(opts: {
+  startXp: number;
+  endXp: number;
+  targetCountdownXp: number;
+  remainingXp: number;
+}): number {
+  const startXp = Math.max(0, Math.floor(Number(opts.startXp) || 0));
+  const endXp = Math.max(startXp, Math.floor(Number(opts.endXp) || 0));
+  const targetCountdownXp = Math.max(0, Math.floor(Number(opts.targetCountdownXp) || 0));
+  const remainingXp = Math.max(0, Math.floor(Number(opts.remainingXp) || 0));
+  if (targetCountdownXp <= 0) return endXp;
+  const deliveredXp = Math.min(endXp - startXp, Math.max(0, targetCountdownXp - remainingXp));
+  return Math.min(endXp, startXp + deliveredXp);
 }

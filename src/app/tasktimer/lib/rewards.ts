@@ -3,13 +3,21 @@ import { startOfCurrentWeekMs, type DashboardWeekStart } from "./historyChart";
 import { computeMomentumSnapshot } from "./momentum";
 import type { HistoryByTaskId, HistoryEntry, Task } from "./types";
 
-export type RewardReason = "launch" | "session" | "dailyConsistency" | "streakBonus" | "weeklyGoal60" | "weeklyGoal100";
+export type RewardReason =
+  | "launch"
+  | "session"
+  | "dailyConsistency"
+  | "dailyOpen"
+  | "streakBonus"
+  | "weeklyGoal60"
+  | "weeklyGoal100";
 
 export type RewardProgressV1 = {
   totalXp: number;
   totalXpPrecise: number;
   currentRankId: string;
   lastAwardedAt: number | null;
+  lastDailyRewardAwardedAtMs: number | null;
   completedSessions: number;
   awardLedger: RewardLedgerEntry[];
   pendingTimeGoalXp: PendingTimeGoalXpState;
@@ -124,6 +132,7 @@ export const QUALIFIED_DAY_MIN_TOTAL_MS = 30 * 60 * 1000;
 export const QUALIFIED_DAY_MIN_SESSION_COUNT = 2;
 export const QUALIFIED_DAY_MIN_SPAN_MS = 2 * 60 * 60 * 1000;
 export const DAILY_CONSISTENCY_XP = 3;
+export const DAILY_OPEN_REWARD_XP = 10;
 export const MID_STREAK_BONUS_XP = 2;
 export const HIGH_STREAK_BONUS_XP = 4;
 export const WEEKLY_GOAL_60_XP = 4;
@@ -141,6 +150,7 @@ export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
   totalXpPrecise: 0,
   currentRankId: "unranked",
   lastAwardedAt: null,
+  lastDailyRewardAwardedAtMs: null,
   completedSessions: 0,
   awardLedger: [],
   pendingTimeGoalXp: { byTaskId: {} },
@@ -245,6 +255,11 @@ export function normalizeRewardProgress(input: unknown, options: { nowMs?: numbe
   const completedSessions = Math.max(0, Math.floor(Number(obj.completedSessions || 0) || 0));
   const lastAwardedAtRaw = Number(obj.lastAwardedAt || 0);
   const lastAwardedAt = Number.isFinite(lastAwardedAtRaw) && lastAwardedAtRaw > 0 ? Math.floor(lastAwardedAtRaw) : null;
+  const lastDailyRewardAwardedAtMsRaw = Number(obj.lastDailyRewardAwardedAtMs || 0);
+  const lastDailyRewardAwardedAtMs =
+    Number.isFinite(lastDailyRewardAwardedAtMsRaw) && lastDailyRewardAwardedAtMsRaw > 0
+      ? Math.floor(lastDailyRewardAwardedAtMsRaw)
+      : null;
   const awardLedger = normalizeAwardLedger(obj.awardLedger, normalizationNowMs);
   const resolvedRank = getRankForXp(totalXp);
   const rawRankId = String(obj.currentRankId || "").trim();
@@ -253,6 +268,7 @@ export function normalizeRewardProgress(input: unknown, options: { nowMs?: numbe
     totalXpPrecise,
     completedSessions,
     lastAwardedAt,
+    lastDailyRewardAwardedAtMs,
     awardLedger,
     pendingTimeGoalXp: normalizePendingTimeGoalXpState(obj.pendingTimeGoalXp, normalizationNowMs),
     currentRankId: rawRankId && rawRankId === resolvedRank.id ? rawRankId : resolvedRank.id,
@@ -321,6 +337,7 @@ function normalizeAwardLedger(input: unknown, normalizationNowMs = Date.now()): 
 
 function normalizeRewardReason(value: unknown): RewardReason {
   if (value === "dailyConsistency") return "dailyConsistency";
+  if (value === "dailyOpen") return "dailyOpen";
   if (value === "streakBonus") return "streakBonus";
   if (value === "weeklyGoal60") return "weeklyGoal60";
   if (value === "weeklyGoal100") return "weeklyGoal100";
@@ -338,6 +355,7 @@ function buildLegacySourceKey(
   index: number
 ): string {
   if (reason === "dailyConsistency") return `legacy:daily:${dayKey}:${ts}:${xp}:${index}`;
+  if (reason === "dailyOpen") return `legacy:dailyOpen:${dayKey}:${ts}:${xp}:${index}`;
   if (reason === "launch") return `legacy:launch:${taskId || "none"}:${ts}:${xp}:${index}`;
   return `legacy:${reason}:${taskId || "none"}:${ts}:${eligibleMs}:${xp}:${index}`;
 }
@@ -423,6 +441,7 @@ function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], 
     totalXpPrecise: nextTotalXpPrecise,
     currentRankId: nextRank.id,
     lastAwardedAt,
+    lastDailyRewardAwardedAtMs: previous.lastDailyRewardAwardedAtMs,
     completedSessions: Math.max(0, previous.completedSessions + completedSessionsDelta),
     awardLedger: nextLedger,
     pendingTimeGoalXp: previous.pendingTimeGoalXp,
@@ -797,6 +816,40 @@ export function awardDailyConsistencyBonus(
   );
 }
 
+export function isDailyOpenRewardEligible(progressRaw: unknown, awardedAtRaw: number): boolean {
+  const progress = normalizeRewardProgress(progressRaw);
+  const awardedAt = Math.max(0, Math.floor(Number(awardedAtRaw || 0) || 0)) || Date.now();
+  const lastAwardedAt = progress.lastDailyRewardAwardedAtMs;
+  if (!lastAwardedAt) return true;
+  return localDayKey(lastAwardedAt) !== localDayKey(awardedAt);
+}
+
+export function awardDailyOpenReward(progress: RewardProgressV1, awardedAtRaw: number): RewardAwardResult {
+  const previous = normalizeRewardProgress(progress);
+  const awardedAt = clampAwardTimestamp(previous, awardedAtRaw);
+  if (!awardedAt) return awardEntries(previous, [], 0);
+  const dayKey = localDayKey(awardedAt);
+  if (previous.lastDailyRewardAwardedAtMs && localDayKey(previous.lastDailyRewardAwardedAtMs) === dayKey) {
+    return awardEntries(previous, [], 0);
+  }
+  const existingSources = getExistingSourceKeys(previous);
+  const sourceKey = `dailyOpen:${dayKey}`;
+  const award = awardEntries(
+    previous,
+    existingSources.has(sourceKey)
+      ? []
+      : [buildBonusLedgerEntry("dailyOpen", awardedAt, DAILY_OPEN_REWARD_XP, 1, sourceKey)],
+    0
+  );
+  return {
+    ...award,
+    next: {
+      ...award.next,
+      lastDailyRewardAwardedAtMs: awardedAt,
+    },
+  };
+}
+
 export function awardWeeklyGoalBonuses(
   progress: RewardProgressV1,
   historyByTaskId: HistoryByTaskId,
@@ -990,6 +1043,7 @@ export function buildRewardProgressForRankSelection(progress: RewardProgressV1, 
     totalXp: rank.minXp,
     totalXpPrecise: rank.minXp,
     currentRankId: rank.id,
+    lastDailyRewardAwardedAtMs: base.lastDailyRewardAwardedAtMs,
   };
 }
 
@@ -1083,6 +1137,7 @@ export function reconcileRewardProgressWithHistory(context: {
     totalXpPrecise,
     currentRankId: getRankForXp(totalXp).id,
     lastAwardedAt,
+    lastDailyRewardAwardedAtMs: current.lastDailyRewardAwardedAtMs,
     completedSessions: Math.max(current.completedSessions, rebuilt.completedSessions),
     awardLedger: mergedLedger,
     pendingTimeGoalXp: current.pendingTimeGoalXp,

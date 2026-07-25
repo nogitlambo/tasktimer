@@ -76,6 +76,20 @@ describe("dashboard task overview label layout", () => {
     expectNoRectOverlaps(layouts);
   });
 
+  it("keeps default labels close to their connector endpoints", () => {
+    const layouts = buildDashboardTasksCompletedLabelLayout([
+      { key: "top", sliceStartPct: 0, slicePct: 10 },
+      { key: "right", sliceStartPct: 25, slicePct: 10 },
+      { key: "bottom", sliceStartPct: 50, slicePct: 10 },
+      { key: "left", sliceStartPct: 75, slicePct: 10 },
+    ]);
+
+    layouts.forEach((layout) => {
+      expect(distanceFromCenter({ x: layout.labelX, y: layout.labelY })).toBeCloseTo(146, 5);
+    });
+    expect(areDashboardTasksCompletedLabelsSafe(layouts)).toBe(true);
+  });
+
   it("rotates the circular label slots toward their owned slice midpoints", () => {
     const layouts = buildDashboardTasksCompletedLabelLayout([
       { key: "a", sliceStartPct: 17, slicePct: 6 },

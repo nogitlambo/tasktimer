@@ -230,11 +230,24 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   it("delivers task-complete XP from the modal XP value after Claim", () => {
     expect(source).toContain("TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT");
     expect(source).toContain("event.preventDefault();");
-    expect(source).toContain('document.getElementById("timeGoalCompleteXpValue")');
-    expect(source).toContain('if (sourceElement?.id === "timeGoalCompleteXpValue")');
+    expect(source).toContain('document.getElementById(activeAward.sourceElementKey)');
+    expect(source).toContain('sourceElement?.id === "timeGoalCompleteXpValue" || sourceElement?.id === "dailyRewardXpValue"');
     expect(source).toContain('id = `modal-unit-${activeAward.sourceOverlayId}-${xpAwardPayloadSeqRef.current++}`');
-    expect(source).toContain('if (activeAward.sourceModal === "timeGoalComplete")');
+    expect(source).toContain('if (activeAward.sourceModal === "timeGoalComplete" || activeAward.sourceModal === "dailyReward")');
     expect(source).toContain("runModalXpValueDelivery();");
+  });
+
+  it("opens and claims the daily reward through the shared modal XP delivery path", () => {
+    expect(source).toContain("isDailyOpenRewardEligible");
+    expect(source).toContain("openDailyRewardOverlay(document)");
+    expect(source).toContain("awardDailyOpenReward(currentProgress, awardedAt)");
+    expect(source).toContain('sourceModal: "dailyReward"');
+    expect(source).toContain('sourceOverlayId: "dailyRewardOverlay"');
+    expect(source).toContain('sourceElementKey: "dailyRewardXpValue"');
+    expect(source).toContain("TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT");
+    expect(source).toContain("TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT");
+    expect(source).toContain("dispatchDailyRewardXpClaimEvent");
+    expect(source).toContain("closeDailyRewardOverlay(document)");
   });
 
   it("keeps modal XP delivery undimmed and emits unit payloads from the XP value", () => {
@@ -264,27 +277,28 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer.warm();");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
     expect(source).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+playXpAwardUnitDeliveryHaptic\(\);\r?\n\s+setXpAwardFx\(\(current\) => \(\{/);
-    expect(source).toMatch(/addExtraTimer\(\(\) => \{\r?\n\s+updateDeliveredXp\(\);\r?\n\s+\}, XP_AWARD_UNIT_FX_DURATION_MS\);/);
+    expect(source).toMatch(/addExtraTimer\(\(\) => \{\r?\n\s+markPayloadArrived\(\);\r?\n\s+\}, XP_AWARD_UNIT_FX_DURATION_MS\);/);
     expect(source).toMatch(/playXpAwardDoneSoundOnce\(\);\r?\n\s+finishAward/);
-    expect(source).toMatch(/setModalRemainingXp\(0\);\r?\n\s+xpAwardUnitDeliveryAudioPlayer\.stop\(\);/);
+    expect(source).toMatch(/xpAwardUnitDeliveryAudioPlayer\.stop\(\);\r?\n\s+playXpAwardDoneSoundOnce\(\);/);
     expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");
   });
 
-  it("starts the app top bar XP count animation when modal unit XP is delivered", () => {
+  it("counts the app top bar XP up in sync with modal XP countdown", () => {
     const modalDeliveryStart = source.indexOf("const runModalXpValueDelivery = () => {");
-    const updateDeliveredStart = source.indexOf("const updateDeliveredXp = () => {", modalDeliveryStart);
-    const updateDeliveredEnd = source.indexOf("const removePayload = (id: string) => {", updateDeliveredStart);
+    const animationStart = source.indexOf("countAnimationStartedDuringEffect = true;", modalDeliveryStart);
     const scheduleDeliveryStart = source.indexOf("scheduleUnitPayloadDelivery();", modalDeliveryStart);
-    const beforeScheduleDelivery = source.slice(updateDeliveredEnd, scheduleDeliveryStart);
-    const updateDeliveredSource = source.slice(updateDeliveredStart, updateDeliveredEnd);
+    const tickStart = source.indexOf("const tick = (nowValue: number) => {", modalDeliveryStart);
+    const tickEnd = source.indexOf("xpAnimationFrameRef.current = window.requestAnimationFrame(tick);", tickStart);
+    const animationSetupSource = source.slice(animationStart, scheduleDeliveryStart);
+    const tickSource = source.slice(tickStart, tickEnd);
 
-    expect(updateDeliveredSource).toContain("if (!xpCountAnimationStartedRef.current) {");
-    expect(updateDeliveredSource).toContain("countAnimationStartedDuringEffect = true;");
-    expect(updateDeliveredSource).toContain("xpCountAnimationStartedRef.current = true;");
-    expect(updateDeliveredSource).toContain("setIsXpCountAnimating(true);");
-    expect(beforeScheduleDelivery).not.toContain("setIsXpCountAnimating(true);");
+    expect(animationSetupSource).toContain("countAnimationStartedDuringEffect = true;");
+    expect(animationSetupSource).toContain("xpCountAnimationStartedRef.current = true;");
+    expect(animationSetupSource).toContain("setIsXpCountAnimating(true);");
+    expect(tickSource).toContain("getDisplayedXpForModalCountdown({");
+    expect(tickSource).toContain("remainingXp: nextRemaining");
   });
 
   it("plays rate-limited haptics in sync with each modal XP unit launch", () => {

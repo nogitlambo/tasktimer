@@ -1091,10 +1091,11 @@ describe("buildLeaderboardMetricsSnapshot", () => {
     );
   });
 
-  it("formats the weekly leaderboard time remaining as a fixed countdown", () => {
+  it("formats the weekly leaderboard time remaining without zero-value day, hour, or minute segments", () => {
     expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-07T00:00:00.999Z"))).toBe("6d 23h 59m 59s");
-    expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-13T20:55:54.999Z"))).toBe("0d 03h 04m 05s");
-    expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-13T23:59:59.999Z"))).toBe("0d 00h 00m 00s");
+    expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-13T20:55:54.999Z"))).toBe("03h 04m 05s");
+    expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-13T23:55:54.999Z"))).toBe("04m 05s");
+    expect(formatWeeklyLeaderboardTimeRemaining(Date.parse("2026-06-13T23:59:59.999Z"))).toBe("00s");
   });
 
   it("derives completed task count from reward completed sessions", () => {

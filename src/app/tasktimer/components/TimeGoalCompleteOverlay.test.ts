@@ -38,16 +38,21 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).not.toContain("--star-sweep-x:");
     expect(overlaysCss).not.toContain("--star-delay:");
     expect(overlaysCss).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteStarArc\s*\{\s*animation: none;/);
+    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteStarArc,\s*#dailyRewardOverlay \.timeGoalCompleteStarArc\s*\{\s*animation: none;/);
   });
 
   it("adds a visible radial burst behind the task-complete modal content", () => {
     expect(overlaysCss).toContain("#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after");
+    expect(overlaysCss).not.toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{\s*background:/,
+    );
     expect(overlaysCss).toContain("repeating-conic-gradient(");
     expect(overlaysCss).toContain("from -5deg at 50% 46%");
     expect(overlaysCss).toContain("rgba(255, 246, 162, .24) 0 12%");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .2)");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .12) 0deg 7deg");
+    expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
+    expect(overlaysCss).toContain("rgba(219, 178, 255, .28) 0 12%");
     expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toContain("mix-blend-mode: screen;");
     expect(overlaysCss).toContain("animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;");
@@ -66,6 +71,7 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
 
   it("animates the circled tick with a rubber scale-in effect", () => {
     expect(overlaysCss).toContain("#timeGoalCompleteOverlay .timeGoalCompleteTickBadge");
+    expect(overlaysCss).not.toContain("#dailyRewardOverlay .timeGoalCompleteTickBadge");
     expect(overlaysCss).toContain("animation: timeGoalCompleteTickRubberIn 620ms");
     expect(overlaysCss).toContain("@keyframes timeGoalCompleteTickRubberIn");
     expect(overlaysCss).toContain("transform: scale(.22);");
@@ -73,7 +79,7 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("transform: scale(.92);");
     expect(overlaysCss).toContain("transform: scale(1.07);");
     expect(overlaysCss).toContain("transform: scale(1);");
-    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteTickBadge\s*\{\s*animation: none;/);
+    expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteTickBadge,\s*#dailyRewardOverlay \.dailyRewardBoxImage\s*\{\s*animation: none;/);
   });
 
   it("reveals awarded XP with a drop and subtle landing bounce", () => {

@@ -145,9 +145,13 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
               </SettingsDownwardSelect>
             </div>
             <div className="settingsPermissionRow isHidden" id="taskCheckpointAlarmPermissionRow">
-              <span className="settingsPreferenceControlHelp" id="taskCheckpointAlarmPermissionStatus" aria-live="polite">
-                Background alarm access is required on Android.
-              </span>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Background Checkpoint Alerts</span>
+                <span className="settingsPreferenceControlHelp" id="taskCheckpointAlarmPermissionStatus" aria-live="polite">
+                  Background alarm access is required on Android.
+                </span>
+              </div>
+              <button className="switch on" id="taskCheckpointAlarmPermissionToggle" type="button" role="switch" aria-checked="true" />
               <button className="btn btn-ghost small" id="taskCheckpointAlarmPermissionBtn" type="button">
                 Open Android Settings
               </button>

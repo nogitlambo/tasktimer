@@ -2892,7 +2892,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
   display: grid !important;
   width: min(820px, calc(100vw - 28px)) !important;
   max-width: min(820px, calc(100vw - 28px)) !important;
@@ -3000,7 +3001,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
   position: relative !important;
   display: grid !important;
   width: min(820px, calc(100vw - 28px)) !important;
@@ -3028,7 +3030,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal::before,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::before,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before{
   content: "";
   position: absolute;
   inset: 8px;
@@ -3043,7 +3046,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal::after,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::after,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   content: "";
   position: absolute;
   inset: 0;
@@ -3066,6 +3070,24 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     radial-gradient(circle at 50% 46%, rgba(255, 220, 90, .13), transparent 36%),
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
     radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
+  opacity: .88;
+  mix-blend-mode: screen;
+  animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
+  will-change: opacity, filter;
+}
+
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
+  background:
+    radial-gradient(circle at 50% 46%, rgba(219, 178, 255, .28) 0 12%, rgba(177, 84, 255, .18) 22%, rgba(132, 54, 255, .08) 42%, transparent 66%),
+    radial-gradient(circle at 50% 46%, rgba(187, 92, 255, .24), transparent 0 14%, rgba(159, 68, 255, .12) 22%, transparent 56%),
+    repeating-conic-gradient(
+      from -5deg at 50% 46%,
+      rgba(176, 73, 255, .16) 0deg 7deg,
+      rgba(24, 18, 38, .04) 7deg 15deg
+    ),
+    radial-gradient(circle at 50% 46%, rgba(255, 112, 244, .13), transparent 36%),
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
+    radial-gradient(circle at 78% 44%, rgba(180, 145, 255, .09), transparent 38%);
   opacity: .88;
   mix-blend-mode: screen;
   animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
@@ -3230,20 +3252,24 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:hover:not(:disabled),
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:focus-visible:not(:disabled),
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:hover:not(:disabled),
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible:not(:disabled){
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible:not(:disabled),
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:hover:not(:disabled),
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible:not(:disabled){
   filter: brightness(1.12) !important;
   transform: translateY(-1px) !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:active:not(:disabled),
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:active:not(:disabled),
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:active:not(:disabled){
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:active:not(:disabled),
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:active:not(:disabled){
   transform: translateY(3px) !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:focus-visible,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:focus-visible,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible{
   outline: 1px solid rgba(126, 243, 255, .95) !important;
   outline-offset: 6px !important;
 }
@@ -3253,13 +3279,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction::before,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction::after,
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::before,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::after{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::after,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::before,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::after{
   content: none !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitivePrimaryAction,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitivePrimaryAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
   border-color: #0f1600 !important;
   box-shadow:
     0 0 0 1px rgba(201, 255, 36, .28),
@@ -3273,7 +3302,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 @media (max-width: 640px){
   #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
     width: min(100%, calc(100vw - 20px)) !important;
     min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
     border-radius: 12px !important;
@@ -3281,14 +3311,16 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
   #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal::before,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::before,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before{
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before{
     inset: 6px;
     border-radius: 8px;
   }
 
   #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2{
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2{
     min-height: 56px;
     padding: 9px 20px 7px !important;
   }
@@ -3296,13 +3328,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmText,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
     padding: 34px 24px 18px !important;
   }
 
   #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmBtns,
   #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter{
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter{
     min-height: 92px;
     flex-wrap: wrap;
     gap: 16px !important;
@@ -6497,13 +6531,15 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-transform: uppercase;
 }
 
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
   display: grid !important;
   align-content: start;
   padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRewardCard{
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard,
+#dailyRewardOverlay .timeGoalCompleteRewardCard{
   position: relative;
   display: grid;
   justify-items: center;
@@ -6519,19 +6555,22 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   isolation: isolate;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRewardCard > :not(.timeGoalCompleteRibbonRail){
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard > :not(.timeGoalCompleteRibbonRail),
+#dailyRewardOverlay .timeGoalCompleteRewardCard > :not(.timeGoalCompleteRibbonRail){
   position: relative;
   z-index: 1;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbonRail{
+#timeGoalCompleteOverlay .timeGoalCompleteRibbonRail,
+#dailyRewardOverlay .timeGoalCompleteRibbonRail{
   position: absolute;
   inset: -20px -24px;
   z-index: 0;
   pointer-events: none;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon{
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon,
+#dailyRewardOverlay .timeGoalCompleteRibbon{
   position: absolute;
   display: block;
   width: var(--ribbon-w, 58px);
@@ -6553,7 +6592,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   animation: timeGoalCompleteRibbonPop 520ms cubic-bezier(.18,.92,.2,1) var(--ribbon-delay, 180ms) both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(1){
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(1),
+#dailyRewardOverlay .timeGoalCompleteRibbon:nth-child(1){
   --ribbon-color: #ff3b72;
   --ribbon-glow: rgba(255, 59, 114, .34);
   --ribbon-rotate: -18deg;
@@ -6563,7 +6603,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   top: 20px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(2){
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(2),
+#dailyRewardOverlay .timeGoalCompleteRibbon:nth-child(2){
   --ribbon-color: #ffd21e;
   --ribbon-glow: rgba(255, 210, 30, .34);
   --ribbon-w: 46px;
@@ -6573,7 +6614,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   top: 2px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(3){
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(3),
+#dailyRewardOverlay .timeGoalCompleteRibbon:nth-child(3){
   --ribbon-color: #35e8ff;
   --ribbon-glow: rgba(53, 232, 255, .34);
   --ribbon-w: 50px;
@@ -6583,7 +6625,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   top: 72px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(4){
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(4),
+#dailyRewardOverlay .timeGoalCompleteRibbon:nth-child(4){
   --ribbon-color: #22c55e;
   --ribbon-glow: rgba(34, 197, 94, .32);
   --ribbon-w: 52px;
@@ -6593,7 +6636,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   bottom: 54px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(5){
+#timeGoalCompleteOverlay .timeGoalCompleteRibbon:nth-child(5),
+#dailyRewardOverlay .timeGoalCompleteRibbon:nth-child(5){
   --ribbon-color: #b56cff;
   --ribbon-glow: rgba(181, 108, 255, .32);
   --ribbon-w: 44px;
@@ -6625,7 +6669,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteTickWrap{
+#timeGoalCompleteOverlay .timeGoalCompleteTickWrap,
+#dailyRewardOverlay .timeGoalCompleteTickWrap{
   position: relative;
   display: grid;
   place-items: center;
@@ -6635,7 +6680,12 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   overflow: visible;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteStarArc{
+#dailyRewardOverlay .timeGoalCompleteTickWrap{
+  margin: 2px 0 14px;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteStarArc,
+#dailyRewardOverlay .timeGoalCompleteStarArc{
   position: absolute;
   left: 50%;
   top: 4px;
@@ -6650,7 +6700,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteArcStar{
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar,
+#dailyRewardOverlay .timeGoalCompleteArcStar{
   position: absolute;
   left: 50%;
   top: 50%;
@@ -6671,28 +6722,32 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   transform-origin: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(1){
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(1),
+#dailyRewardOverlay .timeGoalCompleteArcStar:nth-child(1){
   --star-size: 36px;
   --star-x: -125px;
   --star-y: 32px;
   --star-rotate: -17deg;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(2){
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(2),
+#dailyRewardOverlay .timeGoalCompleteArcStar:nth-child(2){
   --star-size: 43.5px;
   --star-x: -86px;
   --star-y: 8px;
   --star-rotate: -9deg;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(3){
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(3),
+#dailyRewardOverlay .timeGoalCompleteArcStar:nth-child(3){
   --star-size: 43.5px;
   --star-x: 86px;
   --star-y: 8px;
   --star-rotate: 11deg;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(4){
+#timeGoalCompleteOverlay .timeGoalCompleteArcStar:nth-child(4),
+#dailyRewardOverlay .timeGoalCompleteArcStar:nth-child(4){
   --star-size: 36px;
   --star-x: 125px;
   --star-y: 32px;
@@ -6830,7 +6885,9 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #timeGoalCompleteTitle,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #dailyRewardTitle,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #dailyRewardTitle{
   display: block !important;
   min-height: 0 !important;
   width: min(100%, 340px);
@@ -6848,7 +6905,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-transform: none !important;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRewardMessage{
+#timeGoalCompleteOverlay .timeGoalCompleteRewardMessage,
+#dailyRewardOverlay .timeGoalCompleteRewardMessage{
   width: min(100%, 320px);
   margin: 0;
   color: rgba(247, 249, 252, .88);
@@ -6858,7 +6916,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   line-height: 1.28;
 }
 
-#timeGoalCompleteOverlay .modalSubtext{
+#timeGoalCompleteOverlay .modalSubtext,
+#dailyRewardOverlay .modalSubtext{
   margin: 0 0 12px;
   color: #c9ff24;
   font-family: var(--font-geist-sans);
@@ -6866,7 +6925,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-align: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx,
+#dailyRewardOverlay .timeGoalCompleteXpFx{
   position: relative;
   isolation: isolate;
   display: grid;
@@ -6875,7 +6935,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   overflow: visible;
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteText{
+#timeGoalCompleteOverlay #timeGoalCompleteText,
+#dailyRewardOverlay #dailyRewardText{
   position: relative;
   z-index: 2;
   margin: 0;
@@ -6894,42 +6955,51 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealPending{
+#timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealPending,
+#dailyRewardOverlay #dailyRewardText.isXpRevealPending{
   visibility: hidden;
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealDropping{
+#timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealDropping,
+#dailyRewardOverlay #dailyRewardText.isXpRevealDropping{
   animation: timeGoalXpSubtextDropIn 680ms cubic-bezier(.16,.84,.18,1) 1 both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isPlaying #dailyRewardText{
   animation: timeGoalXpSplashText 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isCalculating #dailyRewardText{
   animation: timeGoalXpCalculatingTextPulse 920ms ease-in-out infinite;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying.isCounting #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying.isCounting #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isPlaying.isCounting #dailyRewardText{
   animation-name: timeGoalXpSplashTextHold;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting:not(.isPlaying) #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting:not(.isPlaying) #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isCounting:not(.isPlaying) #dailyRewardText{
   animation: none;
   opacity: 1;
   transform: scale(1.82);
   filter: brightness(1.75);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting.isIntervalSplashing #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting.isIntervalSplashing #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isCounting.isIntervalSplashing #dailyRewardText{
   animation: timeGoalXpIntervalSplashTextHold 1050ms cubic-bezier(.16,.92,.18,1) 1 both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isCountComplete #dailyRewardText{
   animation: timeGoalXpCountCompleteText 260ms cubic-bezier(.18,.84,.26,1) 1 both;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
+#timeGoalCompleteOverlay .timeGoalCompleteGoldFragments,
+#dailyRewardOverlay .timeGoalCompleteGoldFragments{
   position: absolute;
   left: 50%;
   top: 50%;
@@ -6940,7 +7010,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   transform: translate(-50%, -50%);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteGoldFragment{
+#timeGoalCompleteOverlay .timeGoalCompleteGoldFragment,
+#dailyRewardOverlay .timeGoalCompleteGoldFragment{
   position: absolute;
   left: 0;
   top: 0;
@@ -6956,12 +7027,14 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment{
   animation: timeGoalXpGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
   animation-delay: var(--fd);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
+#timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment,
+#dailyRewardOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
   animation: timeGoalXpIntervalGoldFragmentSplash 1050ms cubic-bezier(.13,.72,.22,1) 1 both;
   animation-delay: var(--fd);
 }
@@ -7113,21 +7186,31 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
 @media (prefers-reduced-motion: reduce){
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying #timeGoalCompleteText,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isPlaying #dailyRewardText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCounting #timeGoalCompleteText,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isCounting #dailyRewardText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCountComplete #timeGoalCompleteText,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isCountComplete #dailyRewardText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing #timeGoalCompleteText,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isIntervalSplashing #dailyRewardText,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isCalculating #timeGoalCompleteText,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isCalculating #dailyRewardText,
   #timeGoalCompleteOverlay #timeGoalCompleteText.isXpRevealDropping,
+  #dailyRewardOverlay #dailyRewardText.isXpRevealDropping,
   #timeGoalCompleteOverlay .timeGoalCompleteRibbon,
+  #dailyRewardOverlay .timeGoalCompleteRibbon,
   #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
-  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isPlaying .timeGoalCompleteGoldFragment,
+  #timeGoalCompleteOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment,
+  #dailyRewardOverlay .timeGoalCompleteXpFx.isIntervalSplashing .timeGoalCompleteGoldFragment{
     animation: none;
     transform: none;
     filter: none;
     will-change: auto;
   }
 
-  #timeGoalCompleteOverlay .timeGoalCompleteRibbon{
+  #timeGoalCompleteOverlay .timeGoalCompleteRibbon,
+  #dailyRewardOverlay .timeGoalCompleteRibbon{
     opacity: 1;
     transform:
       translate(var(--ribbon-x, 0), var(--ribbon-y, 0))
@@ -7135,25 +7218,35 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
       scale(1);
   }
 
-  #timeGoalCompleteOverlay .timeGoalCompleteStarArc{
+  #timeGoalCompleteOverlay .timeGoalCompleteStarArc,
+  #dailyRewardOverlay .timeGoalCompleteStarArc{
     animation: none;
     opacity: 1;
     transform: translateX(-50%) rotate(0deg);
     will-change: auto;
   }
 
-  #timeGoalCompleteOverlay .timeGoalCompleteTickBadge{
+  #timeGoalCompleteOverlay .timeGoalCompleteTickBadge,
+  #dailyRewardOverlay .dailyRewardBoxImage{
     animation: none;
     opacity: 1;
     transform: scale(1);
     will-change: auto;
   }
 
-  #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments{
+  #timeGoalCompleteOverlay .timeGoalCompleteGoldFragments,
+  #dailyRewardOverlay .timeGoalCompleteGoldFragments{
     display: none;
   }
 
   #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
+    animation: none;
+    filter: none;
+    opacity: .88;
+    will-change: auto;
+  }
+
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
     animation: none;
     filter: none;
     opacity: .88;
@@ -7301,17 +7394,20 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   line-height: 1.45;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid,
+#dailyRewardOverlay .timeGoalCompleteActionGrid{
   justify-content: center;
   margin-top: 4px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn{
   min-width: 132px;
   justify-content: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[hidden]{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn[hidden],
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn[hidden]{
   display: none !important;
 }
 
@@ -7321,7 +7417,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   will-change: transform, opacity, filter;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteRewardCard #timeGoalCompleteText{
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard #timeGoalCompleteText,
+#dailyRewardOverlay .timeGoalCompleteRewardCard #dailyRewardText{
   min-height: 1.12em;
   padding-top: 16px;
   color: #f2f5f8 !important;
@@ -7332,6 +7429,10 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
     0 0 10px rgba(255, 226, 88, .54),
     0 12px 22px rgba(0, 0, 0, .62);
   white-space: nowrap;
+}
+
+#timeGoalCompleteOverlay .timeGoalCompleteRewardCard #timeGoalCompleteText{
+  color: #ffd45a !important;
 }
 
 @keyframes timeGoalCompleteClaimZoomIn{
@@ -7360,7 +7461,9 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
   background: rgba(255,255,255,.01);
   color: var(--text);
   border: 1px solid rgba(160,232,255,.28);
@@ -7368,7 +7471,9 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn:hover,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
   background: linear-gradient(180deg, var(--accent3), var(--accent));
   color: #04131c;
   border-color: rgba(53,232,255,.55);
@@ -8336,13 +8441,15 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   color: #ff4d4d;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid,
+#dailyRewardOverlay .timeGoalCompleteActionGrid{
   display: flex;
   gap: 10px;
   justify-content: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn{
+#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
+#dailyRewardOverlay .timeGoalCompleteActionGrid .btn{
   width: auto;
   min-width: 132px;
   flex: 0 0 auto;
@@ -8477,6 +8584,24 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   line-height: 1.1 !important;
   letter-spacing: 0 !important;
   text-shadow: 0 2px 3px rgba(0, 0, 0, .72) !important;
+}
+
+#dailyRewardOverlay .dailyRewardBoxImage{
+  position: relative;
+  top: -24px;
+  z-index: 2;
+  display: block;
+  width: 144px;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  opacity: 0;
+  transform-origin: 50% 72%;
+  animation: timeGoalCompleteTickRubberIn 620ms cubic-bezier(.18,.92,.22,1) 80ms both;
+  filter:
+    drop-shadow(0 18px 22px rgba(0, 0, 0, .5))
+    drop-shadow(0 0 20px rgba(255, 213, 55, .18));
+  will-change: transform, opacity;
 }
 
 #leaderboardMovementOverlay .leaderboardMovementPrimitiveBody{
@@ -13975,7 +14100,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal{
   display: grid !important;
   width: min(820px, calc(100vw - 28px)) !important;
   max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
@@ -14000,7 +14126,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2{
   min-height: 64px !important;
   margin: 0 !important;
   padding: 10px 36px 8px !important;
@@ -14018,18 +14145,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   letter-spacing: 0 !important;
 }
 
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #timeGoalCompleteTitle{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #timeGoalCompleteTitle,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > #dailyRewardTitle{
   justify-content: center !important;
   text-align: center !important;
 }
 
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
   display: grid !important;
   align-content: start !important;
   padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
 }
 
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #timeGoalCompleteTitle,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompleteRewardCard > #dailyRewardTitle{
   display: block !important;
   min-height: 0 !important;
   width: min(100%, 340px) !important;
@@ -14051,7 +14181,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmText,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveBody{
   --history-entry-summary-body-pad: 46px;
   margin: 0 !important;
   padding: 0 46px !important;
@@ -14064,7 +14195,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   line-height: 1.5 !important;
 }
 
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal .timeGoalCompletePrimitiveBody{
   display: grid !important;
   align-content: start !important;
   padding: clamp(34px, 6vw, 52px) clamp(28px, 7vw, 58px) 22px !important;
@@ -14072,7 +14204,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmBtns,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveFooter{
   display: flex !important;
   min-height: 96px !important;
   justify-content: center !important;
@@ -14087,7 +14220,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction{
   min-width: min(178px, 38vw) !important;
   min-height: 48px !important;
   padding: 0 28px !important;
@@ -14110,7 +14244,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitivePrimaryAction,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitivePrimaryAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
   border-color: #0f1600 !important;
   box-shadow:
     0 0 0 1px rgba(201, 255, 36, .28),

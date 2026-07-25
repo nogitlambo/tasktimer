@@ -1,4 +1,5 @@
 import ConfirmOverlay from "./ConfirmOverlay";
+import DailyRewardOverlay from "./DailyRewardOverlay";
 import TimeGoalCompleteOverlay from "./TimeGoalCompleteOverlay";
 
 export default function GlobalTaskAlerts() {
@@ -6,6 +7,7 @@ export default function GlobalTaskAlerts() {
     <>
       <ConfirmOverlay />
       <TimeGoalCompleteOverlay />
+      <DailyRewardOverlay />
     </>
   );
 }

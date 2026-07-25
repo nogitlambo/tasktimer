@@ -59,7 +59,7 @@ const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   labelHeight: 30,
   labelGap: 5,
   ringOuterRadius: 104,
-  labelOrbitRadius: 148,
+  labelOrbitRadius: 146,
 };
 
 const DEFAULT_LABEL_SAFETY_PADDING = 1;

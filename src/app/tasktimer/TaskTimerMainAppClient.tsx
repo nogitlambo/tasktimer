@@ -88,8 +88,11 @@ import {
 import { loadFriendships } from "./lib/friendsStore";
 import {
   buildRewardsHeaderViewModel,
+  awardDailyOpenReward,
   DEFAULT_REWARD_PROGRESS,
+  DAILY_OPEN_REWARD_XP,
   getRankForXp,
+  isDailyOpenRewardEligible,
   normalizeRewardProgress,
 } from "./lib/rewards";
 import {
@@ -103,7 +106,7 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAwardFromOverlayState,
-  getDisplayedXpAfterParticleArrival,
+  getDisplayedXpForModalCountdown,
   getTaskButtonXpAwardCountdownDurationMs,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
@@ -122,16 +125,25 @@ import {
 import { createClickAudioPlayer } from "./client/click-audio-player";
 import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity } from "./lib/interactionHapticsIntensity";
 import {
+  captureXpAwardRectSnapshot,
+  dispatchDailyRewardXpClaimEvent,
+  dispatchOverlayClosedEvent,
+  dispatchPendingXpAwardEvent,
   TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
+  TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT,
+  TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT,
   TASKTIMER_OVERLAY_CLOSED_EVENT,
   TASKTIMER_PENDING_XP_AWARD_EVENT,
   TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT,
+  type DailyRewardXpClaimRequest,
   type TimeGoalCompleteXpClaimRequest,
 } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
 import {
   buildRankPromotionTestPayload,
+  dispatchRankPromotionEvent,
   TASKTIMER_RANK_PROMOTION_EVENT,
+  getRankPromotion,
   hasBlockingPromotionXpAnimation,
   hasBlockingPromotionOverlay,
   startRankPromotionCelebration,
@@ -774,6 +786,57 @@ function isXpAwardSourceOverlayVisible(overlayId: string): boolean | undefined {
   return overlay.style.display !== "none" && overlay.getAttribute("aria-hidden") !== "true";
 }
 
+function localDayKeyForTimestamp(value: number): string {
+  const date = new Date(Math.max(0, Math.floor(Number(value) || 0)) || Date.now());
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function isOverlayElementVisible(overlay: Element | null | undefined): boolean {
+  if (!overlay) return false;
+  const node = overlay as HTMLElement;
+  if (node.getAttribute("aria-hidden") === "true") return false;
+  if (node.style.display === "none") return false;
+  if (typeof getComputedStyle === "function") return getComputedStyle(node).display !== "none";
+  return node.style.display !== "none";
+}
+
+export function hasBlockingDailyRewardOverlay(documentRef: Pick<Document, "querySelectorAll"> | null | undefined): boolean {
+  if (!documentRef) return false;
+  return Array.from(documentRef.querySelectorAll(".overlay")).some((overlay) => {
+    const node = overlay as HTMLElement;
+    if (String(node.id || "") === "dailyRewardOverlay") return false;
+    return isOverlayElementVisible(node);
+  });
+}
+
+function openDailyRewardOverlay(documentRef: Document): void {
+  const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
+  const claimBtn = documentRef.getElementById("dailyRewardClaimBtn") as HTMLButtonElement | null;
+  const xpValue = documentRef.getElementById("dailyRewardXpValue") as HTMLElement | null;
+  const text = documentRef.getElementById("dailyRewardText") as HTMLElement | null;
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  overlay.setAttribute("aria-hidden", "false");
+  overlay.dataset.awardedXp = String(DAILY_OPEN_REWARD_XP);
+  if (xpValue) xpValue.textContent = String(DAILY_OPEN_REWARD_XP);
+  if (text) text.innerHTML = `XP Awarded: <span id="dailyRewardXpValue">${DAILY_OPEN_REWARD_XP}</span>`;
+  if (claimBtn) {
+    claimBtn.disabled = false;
+    claimBtn.textContent = "Claim";
+  }
+}
+
+function closeDailyRewardOverlay(documentRef: Document): void {
+  const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
+  if (!overlay) return;
+  overlay.style.display = "none";
+  overlay.setAttribute("aria-hidden", "true");
+  delete overlay.dataset.awardedXp;
+}
+
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -821,6 +884,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const leaderboardSwipeRef = useRef<MobileLeaderboardSwipeState>(getResetMobileLeaderboardSwipeState());
   const suppressLeaderboardSwipeClickRef = useRef(false);
   const displayedXpRef = useRef(displayedXp);
+  const rewardProgressRef = useRef(rewardProgress);
+  const dailyRewardPromptedDayKeyRef = useRef<string | null>(null);
+  const [dailyRewardRetrySeq, setDailyRewardRetrySeq] = useState(0);
   const previousActiveAwardRef = useRef<PendingXpAward | null>(null);
   const xpAnimationFrameRef = useRef<number | null>(null);
   const xpAnimationStartTimerRef = useRef<number | null>(null);
@@ -862,6 +928,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, [displayedXp]);
 
   useEffect(() => {
+    rewardProgressRef.current = rewardProgress;
+  }, [rewardProgress]);
+
+  useEffect(() => {
     activeLeaderboardMovementSequenceRef.current = activeLeaderboardMovementSequence;
   }, [activeLeaderboardMovementSequence]);
 
@@ -891,6 +961,89 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setInteractionHapticsIntensity(normalizeInteractionHapticsIntensity(prefs?.interactionHapticsIntensity));
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !cachedPreferences || typeof document === "undefined" || typeof window === "undefined") return;
+    const nowValue = Date.now();
+    const dayKey = localDayKeyForTimestamp(nowValue);
+    if (dailyRewardPromptedDayKeyRef.current === dayKey) return;
+    if (!isDailyOpenRewardEligible(cachedPreferences.rewards || DEFAULT_REWARD_PROGRESS, nowValue)) return;
+    if (hasBlockingDailyRewardOverlay(document)) {
+      const retryTimer = window.setTimeout(() => setDailyRewardRetrySeq((current) => current + 1), 1000);
+      return () => window.clearTimeout(retryTimer);
+    }
+    dailyRewardPromptedDayKeyRef.current = dayKey;
+    openDailyRewardOverlay(document);
+  }, [cachedPreferences, dailyRewardRetrySeq, isAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    const claimBtn = document.getElementById("dailyRewardClaimBtn") as HTMLButtonElement | null;
+    if (!claimBtn) return;
+
+    const requestDailyRewardXpClaimDelivery = async (awardedXpRaw: unknown) => {
+      const awardedXp = Math.max(0, Math.floor(Number(awardedXpRaw) || 0));
+      if (awardedXp <= 0) return;
+      const sourceElement =
+        (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||
+        (document.getElementById("dailyRewardText") as HTMLElement | null);
+      await new Promise<void>((resolve) => {
+        const handledByApp = !dispatchDailyRewardXpClaimEvent(window, {
+          overlayId: "dailyRewardOverlay",
+          awardedXp,
+          sourceElementKey: "dailyRewardXpValue",
+          sourceRect: captureXpAwardRectSnapshot(sourceElement),
+        });
+        if (!handledByApp) {
+          resolve();
+          return;
+        }
+        let fallbackTimer: number | null = null;
+        const handleDelivered = () => {
+          if (fallbackTimer != null) window.clearTimeout(fallbackTimer);
+          window.removeEventListener(TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
+          resolve();
+        };
+        fallbackTimer = window.setTimeout(handleDelivered, 3400);
+        window.addEventListener(TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT, handleDelivered);
+      });
+    };
+
+    const handleClaim = async () => {
+      if (claimBtn.disabled) return;
+      const currentProgress = normalizeRewardProgress(preferencesPersistence.loadResolved().rewards || rewardProgressRef.current);
+      const awardedAt = Date.now();
+      const award = awardDailyOpenReward(currentProgress, awardedAt);
+      const awardedXp = Math.max(0, Math.floor(Number(award.amount || 0) || 0));
+      claimBtn.disabled = true;
+      claimBtn.textContent = awardedXp > 0 ? "Claiming..." : "Close";
+      if (awardedXp > 0) {
+        const sourceElement =
+          (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||
+          (document.getElementById("dailyRewardText") as HTMLElement | null);
+        const nextPreferences = preferencesPersistence.update({ rewards: award.next });
+        setRewardProgress(normalizeRewardProgress(nextPreferences.rewards));
+        const promotion = getRankPromotion(award.previous.currentRankId, award.next.currentRankId);
+        if (promotion) dispatchRankPromotionEvent(window, promotion);
+        dispatchPendingXpAwardEvent(window, {
+          fromXp: award.previous.totalXp,
+          toXp: award.next.totalXp,
+          awardedXp,
+          sourceModal: "dailyReward",
+          sourceTaskId: null,
+          sourceOverlayId: "dailyRewardOverlay",
+          sourceElementKey: "dailyRewardXpValue",
+          sourceRect: captureXpAwardRectSnapshot(sourceElement),
+        });
+        await requestDailyRewardXpClaimDelivery(awardedXp);
+      }
+      closeDailyRewardOverlay(document);
+      dispatchOverlayClosedEvent(window, "dailyRewardOverlay");
+    };
+
+    claimBtn.addEventListener("click", handleClaim);
+    return () => claimBtn.removeEventListener("click", handleClaim);
   }, []);
 
   useEffect(() => {
@@ -944,10 +1097,18 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (!overlayId) return;
       setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, overlayId));
       setPromotionOverlayRetrySeq((current) => current + 1);
+      setDailyRewardRetrySeq((current) => current + 1);
     };
     const handleTimeGoalXpClaim = (event: Event) => {
       const detail = (event as CustomEvent<TimeGoalCompleteXpClaimRequest>).detail;
       if (!detail || String(detail.overlayId || "").trim() !== "timeGoalCompleteOverlay") return;
+      event.preventDefault();
+      setIsXpAwardSpotlightActive(false);
+      setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, detail.overlayId));
+    };
+    const handleDailyRewardXpClaim = (event: Event) => {
+      const detail = (event as CustomEvent<DailyRewardXpClaimRequest>).detail;
+      if (!detail || String(detail.overlayId || "").trim() !== "dailyRewardOverlay") return;
       event.preventDefault();
       setIsXpAwardSpotlightActive(false);
       setXpAnimationState((current) => notifyXpAwardOverlayClosed(current, detail.overlayId));
@@ -957,12 +1118,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     window.addEventListener(LEADERBOARD_POSITION_CHANGED_EVENT, handleLeaderboardMovement as EventListener);
     window.addEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
     window.addEventListener(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, handleTimeGoalXpClaim as EventListener);
+    window.addEventListener(TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT, handleDailyRewardXpClaim as EventListener);
     return () => {
       window.removeEventListener(TASKTIMER_RANK_PROMOTION_EVENT, handleRankPromotion as EventListener);
       window.removeEventListener(TASKTIMER_PENDING_XP_AWARD_EVENT, handlePendingAward as EventListener);
       window.removeEventListener(LEADERBOARD_POSITION_CHANGED_EVENT, handleLeaderboardMovement as EventListener);
       window.removeEventListener(TASKTIMER_OVERLAY_CLOSED_EVENT, handleOverlayClosed as EventListener);
       window.removeEventListener(TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT, handleTimeGoalXpClaim as EventListener);
+      window.removeEventListener(TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT, handleDailyRewardXpClaim as EventListener);
     };
   }, []);
 
@@ -1030,6 +1193,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         setXpAnimationState((current) => clearActiveXpAward(current));
         if (activeAward.sourceModal === "timeGoalComplete") {
           window.dispatchEvent(new CustomEvent(TASKTIMER_TIME_GOAL_COMPLETE_XP_CLAIM_DELIVERED_EVENT));
+        } else if (activeAward.sourceModal === "dailyReward") {
+          window.dispatchEvent(new CustomEvent(TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT));
         }
       }, delayMs);
     };
@@ -1124,11 +1289,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const getSourceElement = () =>
         typeof document === "undefined"
           ? null
-          : (document.getElementById("timeGoalCompleteXpValue") as HTMLElement | null) ||
-            (document.getElementById("timeGoalCompleteText") as HTMLElement | null);
+          : (document.getElementById(activeAward.sourceElementKey) as HTMLElement | null) ||
+            (document.getElementById(activeAward.sourceModal === "dailyReward" ? "dailyRewardText" : "timeGoalCompleteText") as HTMLElement | null);
       const setModalRemainingXp = (xp: number) => {
         const sourceElement = getSourceElement();
-        if (sourceElement?.id === "timeGoalCompleteXpValue") {
+        if (sourceElement?.id === "timeGoalCompleteXpValue" || sourceElement?.id === "dailyRewardXpValue") {
           sourceElement.textContent = String(Math.max(0, Math.floor(Number(xp) || 0)));
         } else if (sourceElement) {
           sourceElement.textContent = `XP Awarded: ${Math.max(0, Math.floor(Number(xp) || 0))}`;
@@ -1151,6 +1316,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const countdownDurationMs = getTaskButtonXpAwardCountdownDurationMs(targetCountdownXp);
       let arrivedParticles = 0;
       let previousRemaining = targetCountdownXp;
+      let didCountdownFinish = false;
+      let didFinishAward = false;
       let didPlayDoneSound = false;
       let lastDeliveryHapticAtMs: number | null = null;
       setModalRemainingXp(targetCountdownXp);
@@ -1162,29 +1329,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAwardDeliveryDoneAudioPlayer.play();
       };
 
-      const updateDeliveredXp = () => {
+      const finishModalAwardWhenReady = () => {
+        if (didFinishAward || !didCountdownFinish || arrivedParticles < totalUnits) return;
+        didFinishAward = true;
+        displayedXpRef.current = endXp;
+        setDisplayedXp(endXp);
+        setIsXpCountAnimating(false);
+        xpAwardUnitDeliveryAudioPlayer.stop();
+        playXpAwardDoneSoundOnce();
+        finishAward(reducedMotion ? 80 : 180);
+      };
+
+      const markPayloadArrived = () => {
         if (arrivedParticles >= totalUnits) return;
         arrivedParticles += 1;
-        const nextXp = getDisplayedXpAfterParticleArrival({
-          startXp,
-          endXp,
-          arrivedParticles,
-        });
-        if (!xpCountAnimationStartedRef.current) {
-          countAnimationStartedDuringEffect = true;
-          xpCountAnimationStartedRef.current = true;
-          setIsXpCountAnimating(true);
-        }
-        displayedXpRef.current = nextXp;
-        setDisplayedXp(nextXp);
-        if (arrivedParticles >= totalUnits) {
-          displayedXpRef.current = endXp;
-          setDisplayedXp(endXp);
-          setIsXpCountAnimating(false);
-          xpAwardUnitDeliveryAudioPlayer.stop();
-          playXpAwardDoneSoundOnce();
-          finishAward(reducedMotion ? 80 : 180);
-        }
+        finishModalAwardWhenReady();
       };
 
       const removePayload = (id: string) => {
@@ -1228,7 +1387,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         if (reducedMotion || !targetRect) {
           playXpAwardUnitDeliverySound();
           playXpAwardUnitDeliveryHaptic();
-          updateDeliveredXp();
+          markPayloadArrived();
           return;
         }
         const sourceElement = getSourceElement();
@@ -1237,7 +1396,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         if (!unitOriginRect) {
           playXpAwardUnitDeliverySound();
           playXpAwardUnitDeliveryHaptic();
-          updateDeliveredXp();
+          markPayloadArrived();
           return;
         }
         const style = buildXpPayloadStyle(unitOriginRect, targetRect);
@@ -1257,7 +1416,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           ],
         }));
         addExtraTimer(() => {
-          updateDeliveredXp();
+          markPayloadArrived();
         }, XP_AWARD_UNIT_FX_DURATION_MS);
         addExtraTimer(() => removePayload(id), XP_AWARD_UNIT_FX_DURATION_MS + 120);
       };
@@ -1282,6 +1441,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAwardUnitDeliveryAudioPlayer.warm();
         xpAwardDeliveryDoneAudioPlayer.warm();
       }
+      countAnimationStartedDuringEffect = true;
+      xpCountAnimationStartedRef.current = true;
+      setIsXpCountAnimating(true);
       scheduleUnitPayloadDelivery();
       const startedAt = performance.now();
 
@@ -1293,16 +1455,23 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           previousRemaining = nextRemaining;
           setModalRemainingXp(nextRemaining);
         }
+        const nextDisplayedXp = getDisplayedXpForModalCountdown({
+          startXp,
+          endXp,
+          targetCountdownXp,
+          remainingXp: nextRemaining,
+        });
+        if (nextDisplayedXp !== displayedXpRef.current) {
+          displayedXpRef.current = nextDisplayedXp;
+          setDisplayedXp(nextDisplayedXp);
+        }
         if (progress >= 1) {
+          didCountdownFinish = true;
           xpCountAnimationStartedRef.current = false;
           setModalRemainingXp(0);
-          xpAwardUnitDeliveryAudioPlayer.stop();
-          if (arrivedParticles >= totalUnits) {
-            displayedXpRef.current = endXp;
-            setDisplayedXp(endXp);
-            setIsXpCountAnimating(false);
-            finishAward(reducedMotion ? 80 : 180);
-          }
+          displayedXpRef.current = endXp;
+          setDisplayedXp(endXp);
+          finishModalAwardWhenReady();
           return;
         }
         xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
@@ -1311,7 +1480,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       xpAnimationFrameRef.current = window.requestAnimationFrame(tick);
     };
 
-    if (activeAward.sourceModal === "timeGoalComplete") {
+    if (activeAward.sourceModal === "timeGoalComplete" || activeAward.sourceModal === "dailyReward") {
       runModalXpValueDelivery();
     } else {
       runDirectDelivery();

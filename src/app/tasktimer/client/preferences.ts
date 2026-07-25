@@ -747,8 +747,21 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     const sequence = ++checkpointAlarmPermissionSyncSeq;
     const nativeAndroid = isNativeAndroidCheckpointAlarmRuntime();
     const hasNativeCheckpointAlert = ctx.getCheckpointAlertSoundEnabled() || ctx.getCheckpointAlertVibrationEnabled();
-    els.taskCheckpointAlarmPermissionRow?.classList.toggle("isHidden", !nativeAndroid || !hasNativeCheckpointAlert);
-    if (!nativeAndroid || !hasNativeCheckpointAlert) return;
+    els.taskCheckpointAlarmPermissionRow?.classList.toggle("isHidden", !nativeAndroid);
+    if (!nativeAndroid) return;
+    ctx.toggleSwitchElement(els.taskCheckpointAlarmPermissionToggle as HTMLElement | null, hasNativeCheckpointAlert);
+    if (els.taskCheckpointAlarmPermissionToggle) {
+      (els.taskCheckpointAlarmPermissionToggle as HTMLButtonElement).disabled = false;
+      els.taskCheckpointAlarmPermissionToggle.setAttribute("aria-disabled", "false");
+      els.taskCheckpointAlarmPermissionToggle.title = "";
+    }
+    if (!hasNativeCheckpointAlert) {
+      if (els.taskCheckpointAlarmPermissionStatus) {
+        els.taskCheckpointAlarmPermissionStatus.textContent = "Background checkpoint alerts are off.";
+      }
+      els.taskCheckpointAlarmPermissionBtn?.classList.add("isHidden");
+      return;
+    }
     const status = await getNativeCheckpointAlarmPermissionStatus().catch(() => null);
     if (sequence !== checkpointAlarmPermissionSyncSeq || !status) return;
     const ready = status.exactAlarmGranted && status.notificationsGranted;
@@ -768,6 +781,19 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       await openNativeCheckpointAlarmPermissionSettings().catch(() => {});
     }
     await syncCheckpointAlarmPermissionUi();
+  }
+
+  function applyBackgroundCheckpointAlertsPreference(nextEnabled: boolean) {
+    if (nextEnabled) {
+      ctx.setCheckpointAlertSoundEnabledState(true);
+      if (isNativeAndroidCheckpointAlarmRuntime()) void requestCheckpointAlarmPermissions();
+    } else {
+      ctx.setCheckpointAlertSoundEnabledState(false);
+      ctx.setCheckpointAlertVibrationEnabledState(false);
+      ctx.stopCheckpointRepeatAlert();
+    }
+    syncTaskSettingsUi();
+    persistInlineTaskSettingsImmediate();
   }
 
   function saveCheckpointAlertBehaviourSettings() {
@@ -1317,6 +1343,15 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         ctx.setCheckpointAlertFlashEnabledState(!ctx.getCheckpointAlertFlashEnabled());
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskCheckpointAlarmPermissionToggle,
+      row: els.taskCheckpointAlarmPermissionRow,
+      ignoreSelector: "#taskCheckpointAlarmPermissionToggle, #taskCheckpointAlarmPermissionBtn",
+      handleToggle: () => {
+        applyBackgroundCheckpointAlertsPreference(!(ctx.getCheckpointAlertSoundEnabled() || ctx.getCheckpointAlertVibrationEnabled()));
       },
     });
     ctx.on(els.taskCheckpointSoundModeSelect, "change", () => {

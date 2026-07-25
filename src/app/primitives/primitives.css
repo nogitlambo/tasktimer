@@ -684,8 +684,8 @@ body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:fo
 :where(#app[aria-label="TaskLaunch Primitives"], #app.primitiveSurface) .primitiveSciFiModalHeader h2{
   margin: 0;
   color: #f7f8fb;
-  font-family: var(--font-geist-sans), var(--font-readable);
-  font-size: 18px;
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: 0;

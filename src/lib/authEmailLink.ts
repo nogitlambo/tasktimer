@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 const DEFAULT_FROM = "TaskLaunch <support@tasklaunch.app>";
 const EMAIL_SUBJECT = "Sign in to TaskLaunch";
-const LOGO_URL = "https://tasklaunch.app/logo/tasklaunch-logo.webp";
+const LOGO_URL = "https://tasklaunch.app/logo/logo_main.png";
 
 function asString(value: unknown, maxLength = 0) {
   const normalized = typeof value === "string" ? value.trim() : "";
