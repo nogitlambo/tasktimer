@@ -355,6 +355,7 @@ function isUsableXpAwardRect(rect: Pick<DOMRect, "left" | "top" | "width" | "hei
 const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp_increase.mp3";
 const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
 const DAILY_REWARD_AUDIO_SRC = "/daily_reward.mp3";
+const DAILY_REWARD_CLAIMED_DAY_STORAGE_KEY = "taskticker_tasks_v1:dailyRewardClaimedDay";
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
   const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
@@ -795,6 +796,43 @@ function localDayKeyForTimestamp(value: number): string {
   return `${y}-${m}-${d}`;
 }
 
+function getDailyRewardClaimedDayStorageKey(uidRaw: string): string {
+  const uid = String(uidRaw || "").trim();
+  return uid ? `${DAILY_REWARD_CLAIMED_DAY_STORAGE_KEY}:${uid}` : "";
+}
+
+function getCurrentDailyRewardUid(): string {
+  return String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+}
+
+function readDailyRewardClaimedDayKey(uidRaw: string): string {
+  if (typeof window === "undefined") return "";
+  const storageKey = getDailyRewardClaimedDayStorageKey(uidRaw);
+  if (!storageKey) return "";
+  try {
+    return String(window.localStorage.getItem(storageKey) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function markDailyRewardClaimedForDay(uidRaw: string, dayKeyRaw: string): void {
+  const dayKey = String(dayKeyRaw || "").trim();
+  if (typeof window === "undefined" || !dayKey) return;
+  const storageKey = getDailyRewardClaimedDayStorageKey(uidRaw);
+  if (!storageKey) return;
+  try {
+    window.localStorage.setItem(storageKey, dayKey);
+  } catch {
+    // The canonical reward progress still prevents duplicate XP when storage is unavailable.
+  }
+}
+
+function isDailyRewardMarkedClaimedForDay(uidRaw: string, dayKeyRaw: string): boolean {
+  const dayKey = String(dayKeyRaw || "").trim();
+  return !!dayKey && readDailyRewardClaimedDayKey(uidRaw) === dayKey;
+}
+
 function isOverlayElementVisible(overlay: Element | null | undefined): boolean {
   if (!overlay) return false;
   const node = overlay as HTMLElement;
@@ -819,6 +857,7 @@ function openDailyRewardOverlay(documentRef: Document): void {
   const xpValue = documentRef.getElementById("dailyRewardXpValue") as HTMLElement | null;
   const text = documentRef.getElementById("dailyRewardText") as HTMLElement | null;
   if (!overlay) return;
+  overlay.classList.remove("isClaimDeliveryActive");
   overlay.style.display = "flex";
   overlay.setAttribute("aria-hidden", "false");
   overlay.dataset.awardedXp = String(DAILY_OPEN_REWARD_XP);
@@ -833,6 +872,7 @@ function openDailyRewardOverlay(documentRef: Document): void {
 function closeDailyRewardOverlay(documentRef: Document): void {
   const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
   if (!overlay) return;
+  overlay.classList.remove("isClaimDeliveryActive");
   overlay.style.display = "none";
   overlay.setAttribute("aria-hidden", "true");
   delete overlay.dataset.awardedXp;
@@ -969,8 +1009,17 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     if (!isAuthenticated || !cachedPreferences || typeof document === "undefined" || typeof window === "undefined") return;
     const nowValue = Date.now();
     const dayKey = localDayKeyForTimestamp(nowValue);
+    const dailyRewardUid = getCurrentDailyRewardUid();
     if (dailyRewardPromptedDayKeyRef.current === dayKey) return;
-    if (!isDailyOpenRewardEligible(cachedPreferences.rewards || DEFAULT_REWARD_PROGRESS, nowValue)) return;
+    if (isDailyRewardMarkedClaimedForDay(dailyRewardUid, dayKey)) {
+      dailyRewardPromptedDayKeyRef.current = dayKey;
+      return;
+    }
+    if (!isDailyOpenRewardEligible(cachedPreferences.rewards || DEFAULT_REWARD_PROGRESS, nowValue)) {
+      markDailyRewardClaimedForDay(dailyRewardUid, dayKey);
+      dailyRewardPromptedDayKeyRef.current = dayKey;
+      return;
+    }
     if (hasBlockingDailyRewardOverlay(document)) {
       const retryTimer = window.setTimeout(() => setDailyRewardRetrySeq((current) => current + 1), 1000);
       return () => window.clearTimeout(retryTimer);
@@ -988,9 +1037,11 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     const requestDailyRewardXpClaimDelivery = async (awardedXpRaw: unknown) => {
       const awardedXp = Math.max(0, Math.floor(Number(awardedXpRaw) || 0));
       if (awardedXp <= 0) return;
+      const overlay = document.getElementById("dailyRewardOverlay") as HTMLElement | null;
       const sourceElement =
         (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||
         (document.getElementById("dailyRewardText") as HTMLElement | null);
+      overlay?.classList.add("isClaimDeliveryActive");
       await new Promise<void>((resolve) => {
         const handledByApp = !dispatchDailyRewardXpClaimEvent(window, {
           overlayId: "dailyRewardOverlay",
@@ -1017,10 +1068,13 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       if (claimBtn.disabled) return;
       const currentProgress = normalizeRewardProgress(preferencesPersistence.loadResolved().rewards || rewardProgressRef.current);
       const awardedAt = Date.now();
+      const claimedDayKey = localDayKeyForTimestamp(awardedAt);
+      const dailyRewardUid = getCurrentDailyRewardUid();
       const award = awardDailyOpenReward(currentProgress, awardedAt);
       const awardedXp = Math.max(0, Math.floor(Number(award.amount || 0) || 0));
       claimBtn.disabled = true;
       claimBtn.textContent = awardedXp > 0 ? "Claiming..." : "Close";
+      markDailyRewardClaimedForDay(dailyRewardUid, claimedDayKey);
       if (awardedXp > 0) {
         const sourceElement =
           (document.getElementById("dailyRewardXpValue") as HTMLElement | null) ||

@@ -3,9 +3,20 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const rulesPath = resolve(process.cwd(), "firestore.rules");
+const indexesPath = resolve(process.cwd(), "firestore.indexes.json");
 
 function readRules() {
   return readFileSync(rulesPath, "utf8");
+}
+
+function readIndexes() {
+  return JSON.parse(readFileSync(indexesPath, "utf8")) as {
+    indexes: Array<{
+      collectionGroup: string;
+      queryScope: string;
+      fields: Array<{ fieldPath: string; order: string }>;
+    }>;
+  };
 }
 
 function leaderboardProfilesRuleBlock(rules: string) {
@@ -57,6 +68,28 @@ describe("firestore leaderboard profile rules", () => {
 
     expect(block).toContain('"completedTaskCount"');
     expect(block).toContain("request.resource.data.completedTaskCount is int");
+  });
+
+  it("requires weekly period fields for rollover-scoped weekly metrics", () => {
+    const block = functionBlock(readRules(), "isLeaderboardProfileDoc");
+
+    expect(block).toContain('"weeklyPeriodStartMs"');
+    expect(block).toContain('"weeklyPeriodEndMs"');
+    expect(block).toContain('(!("weeklyPeriodStartMs" in request.resource.data) || request.resource.data.weeklyPeriodStartMs is int)');
+    expect(block).toContain('(!("weeklyPeriodEndMs" in request.resource.data) || request.resource.data.weeklyPeriodEndMs is int)');
+  });
+
+  it("defines the weekly period leaderboard index", () => {
+    const indexes = readIndexes();
+
+    expect(indexes.indexes).toContainEqual({
+      collectionGroup: "leaderboardProfiles",
+      queryScope: "COLLECTION",
+      fields: [
+        { fieldPath: "weeklyPeriodStartMs", order: "ASCENDING" },
+        { fieldPath: "weeklyXpGain", order: "DESCENDING" },
+      ],
+    });
   });
 
   it("denies known test usernames at write time", () => {

@@ -5555,6 +5555,32 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
 }
 
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:42%;
+  z-index:1;
+  width:220%;
+  aspect-ratio:1;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,246,162,.16) 0 8%, rgba(201,255,36,.095) 18%, rgba(201,255,36,.035) 34%, transparent 62%);
+  opacity:.12;
+  mix-blend-mode:screen;
+  transform:translate3d(-50%,-50%,0) scale(.46);
+  transform-origin:center;
+  animation:leaderboardPodiumCenterGlowBreathe 3.8s ease-in-out infinite both;
+  backface-visibility:hidden;
+  contain:paint;
+  will-change:transform, opacity;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after{
+  background:
+    radial-gradient(circle at 50% 50%, rgba(162,246,255,.16) 0 8%, rgba(53,232,255,.095) 18%, rgba(53,232,255,.035) 34%, transparent 62%);
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumDeck{
   position:relative;
   z-index:2;
@@ -6623,8 +6649,26 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   }
 }
 
+@keyframes leaderboardPodiumCenterGlowBreathe{
+  0%, 100%{
+    opacity:.09;
+    transform:translate3d(-50%,-50%,0) scale(.44);
+  }
+
+  50%{
+    opacity:.16;
+    transform:translate3d(-50%,-50%,0) scale(.52);
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::before{
+    animation:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after{
+    opacity:.12;
+    transform:translate3d(-50%,-50%,0) scale(.48);
     animation:none;
   }
 
@@ -7391,6 +7435,40 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     background:transparent;
     box-shadow:none;
     pointer-events:none;
+  }
+
+  #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after{
+    content:"";
+    left:50%;
+    right:auto;
+    top:42%;
+    bottom:auto;
+    z-index:1;
+    width:240%;
+    aspect-ratio:1;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255,246,162,.2) 0 8%, rgba(201,255,36,.12) 18%, rgba(201,255,36,.045) 35%, transparent 64%);
+    opacity:.13;
+    mix-blend-mode:screen;
+    transform:translate3d(-50%,-50%,0) scale(.46);
+    transform-origin:center;
+    animation:leaderboardPodiumCenterGlowBreathe 3.8s ease-in-out infinite both;
+    backface-visibility:hidden;
+    contain:paint;
+    will-change:transform, opacity;
+  }
+
+  #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after{
+    background:
+      radial-gradient(circle at 50% 50%, rgba(162,246,255,.2) 0 8%, rgba(53,232,255,.12) 18%, rgba(53,232,255,.045) 35%, transparent 64%);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after{
+      opacity:.12;
+      transform:translate3d(-50%,-50%,0) scale(.48);
+      animation:none;
+    }
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalPodiumText{

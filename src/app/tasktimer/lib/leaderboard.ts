@@ -71,6 +71,8 @@ export type LeaderboardProfile = {
   totalFocusMs: number;
   weeklyFocusMs: number;
   weeklyXpGain: number;
+  weeklyPeriodStartMs?: number;
+  weeklyPeriodEndMs?: number;
   memberSinceMs: number | null;
   schemaVersion: 1;
 };
@@ -83,6 +85,8 @@ type LeaderboardMetricsSnapshot = {
   totalFocusMs: number;
   weeklyFocusMs: number;
   weeklyXpGain: number;
+  weeklyPeriodStartMs: number;
+  weeklyPeriodEndMs: number;
 };
 
 export type LeaderboardScreenData = {
@@ -139,6 +143,7 @@ type LeaderboardIdentityFields = Pick<
 const LEADERBOARD_SCHEMA_VERSION = 1;
 const LEADERBOARD_IDENTITY_CACHE_TTL_MS = 60_000;
 const WEEKLY_LEADERBOARD_DISPLAY_LIMIT = 10;
+const WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT = 8;
 const RANK_RIVALS_QUERY_LIMIT = 100;
 const LEADERBOARD_MOVEMENT_CROSSED_ROW_LIMIT = 10;
 const EXCLUDED_LEADERBOARD_USERNAMES = new Set(["codexemaillin_yixnc2", "codexemaillinktest"]);
@@ -214,6 +219,8 @@ function normalizeLeaderboardProfileRecord(id: string, raw: Record<string, unkno
     totalFocusMs: normalizeInt(raw.totalFocusMs),
     weeklyFocusMs: normalizeInt(raw.weeklyFocusMs),
     weeklyXpGain: normalizeInt(raw.weeklyXpGain),
+    weeklyPeriodStartMs: normalizeInt(raw.weeklyPeriodStartMs),
+    weeklyPeriodEndMs: normalizeInt(raw.weeklyPeriodEndMs),
     memberSinceMs: normalizeOptionalTimestampMs(raw.memberSinceMs),
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
   };
@@ -246,6 +253,10 @@ function docsFromSettledQuery<T extends { docs: QueryDocumentSnapshot[] }>(
 
 function sizeFromSettledQuery<T extends { size: number }>(result: PromiseSettledResult<T>): number | null {
   return result.status === "fulfilled" ? result.value.size : null;
+}
+
+function valueFromSettled<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === "fulfilled" ? result.value : null;
 }
 
 function buildProjectedHistory(historyByTaskId: HistoryByTaskId, liveSessionsByTaskId: LiveSessionsByTaskId): HistoryByTaskId {
@@ -481,6 +492,8 @@ export function buildLeaderboardMetricsSnapshot(input: {
     totalFocusMs,
     weeklyFocusMs,
     weeklyXpGain: sumWeeklyXpGain(rewards, weeklyPeriod),
+    weeklyPeriodStartMs: weeklyPeriod.startMs,
+    weeklyPeriodEndMs: weeklyPeriod.endMs,
   };
 }
 
@@ -490,6 +503,9 @@ function buildOwnLeaderboardProfile(
   metrics: LeaderboardMetricsSnapshot
 ): LeaderboardProfile {
   const rewardTotalXp = normalizeInt(metrics.rewardTotalXp);
+  const weeklyPeriod = getWeeklyLeaderboardUtcPeriod();
+  const weeklyPeriodStartMs = normalizeInt(metrics.weeklyPeriodStartMs) || weeklyPeriod.startMs;
+  const weeklyPeriodEndMs = normalizeInt(metrics.weeklyPeriodEndMs) || weeklyPeriod.endMs;
   return {
     uid,
     username: identity.username,
@@ -505,6 +521,8 @@ function buildOwnLeaderboardProfile(
     totalFocusMs: normalizeInt(metrics.totalFocusMs),
     weeklyFocusMs: normalizeInt(metrics.weeklyFocusMs),
     weeklyXpGain: normalizeInt(metrics.weeklyXpGain),
+    weeklyPeriodStartMs,
+    weeklyPeriodEndMs,
     memberSinceMs: identity.memberSinceMs,
     schemaVersion: LEADERBOARD_SCHEMA_VERSION,
   };
@@ -515,11 +533,12 @@ type LeaderboardMovementMetric = {
   boardLabel: string;
   metricLabel: string;
   field: "rewardTotalXp" | "weeklyXpGain";
+  weeklyPeriodScoped?: boolean;
 };
 
 const LEADERBOARD_MOVEMENT_METRICS: LeaderboardMovementMetric[] = [
   { boardId: "global", boardLabel: "Global Leaderboard", metricLabel: "Total XP", field: "rewardTotalXp" },
-  { boardId: "weekly", boardLabel: "Weekly Leaderboard", metricLabel: "Weekly XP", field: "weeklyXpGain" },
+  { boardId: "weekly", boardLabel: "Weekly Leaderboard", metricLabel: "Weekly XP", field: "weeklyXpGain", weeklyPeriodScoped: true },
 ];
 
 function metricValue(profile: LeaderboardProfile, metric: LeaderboardMovementMetric): number {
@@ -542,7 +561,11 @@ function buildLeaderboardMovementRow(profile: LeaderboardProfile, rank: number, 
 async function loadLeaderboardRankForMetric(metric: LeaderboardMovementMetric, value: number, excludeUid?: string): Promise<number | null> {
   const db = dbOrNull();
   if (!db) return null;
-  const snap = await getDocs(query(collection(db, "leaderboardProfiles"), where(metric.field, ">", normalizeInt(value))));
+  const currentWeeklyPeriodStartMs = getWeeklyLeaderboardUtcPeriod().startMs;
+  const constraints = metric.weeklyPeriodScoped
+    ? [where("weeklyPeriodStartMs", "==", currentWeeklyPeriodStartMs), where(metric.field, ">", normalizeInt(value))]
+    : [where(metric.field, ">", normalizeInt(value))];
+  const snap = await getDocs(query(collection(db, "leaderboardProfiles"), ...constraints));
   const normalizedExcludeUid = String(excludeUid || "").trim();
   const higherEntries = visibleLeaderboardProfiles(snap.docs.map((row) => asLeaderboardProfile(row))).filter(
     (profile) => !normalizedExcludeUid || profile.uid !== normalizedExcludeUid
@@ -568,10 +591,13 @@ async function loadLeaderboardMovementRows(input: {
   if (!db || !input.currentProfile.uid || !crossedRowCount) {
     return { rows: [currentUserRow], truncated: false, skippedCount: 0 };
   }
+  const currentWeeklyPeriodStartMs = getWeeklyLeaderboardUtcPeriod().startMs;
+  const periodConstraints = input.metric.weeklyPeriodScoped ? [where("weeklyPeriodStartMs", "==", currentWeeklyPeriodStartMs)] : [];
 
   const snap = await getDocs(
     query(
       collection(db, "leaderboardProfiles"),
+      ...periodConstraints,
       where(input.metric.field, ">", normalizeInt(input.previousValue)),
       where(input.metric.field, "<=", normalizeInt(input.currentValue)),
       orderBy(input.metric.field, "desc"),
@@ -671,6 +697,8 @@ export async function saveLeaderboardProfile(
       totalFocusMs: currentProfile.totalFocusMs,
       weeklyFocusMs: currentProfile.weeklyFocusMs,
       weeklyXpGain: currentProfile.weeklyXpGain,
+      weeklyPeriodStartMs: currentProfile.weeklyPeriodStartMs,
+      weeklyPeriodEndMs: currentProfile.weeklyPeriodEndMs,
       memberSinceMs: currentProfile.memberSinceMs,
       schemaVersion: LEADERBOARD_SCHEMA_VERSION,
       updatedAt: serverTimestamp(),
@@ -794,6 +822,50 @@ function sortLeaderboardRows(rows: WeeklyLeaderboardRow[]): WeeklyLeaderboardRow
     if (left.isPlaceholder !== right.isPlaceholder) return left.isPlaceholder ? 1 : -1;
     return String(left.profile.uid).localeCompare(String(right.profile.uid));
   });
+}
+
+function isCurrentWeeklyProfile(profile: LeaderboardProfile, currentWeeklyPeriodStartMs: number): boolean {
+  return normalizeInt(profile.weeklyPeriodStartMs) === normalizeInt(currentWeeklyPeriodStartMs);
+}
+
+function hasCurrentWeeklyXp(profile: LeaderboardProfile, currentWeeklyPeriodStartMs: number): boolean {
+  return isCurrentWeeklyProfile(profile, currentWeeklyPeriodStartMs) && normalizeInt(profile.weeklyXpGain) > 0;
+}
+
+function buildWeeklyPlaceholderProfile(rank: number, currentWeeklyPeriodStartMs: number): LeaderboardProfile {
+  const period = getWeeklyLeaderboardUtcPeriod(currentWeeklyPeriodStartMs);
+  return {
+    uid: `weekly-placeholder-${rank}`,
+    username: null,
+    displayLabel: "Vacant",
+    avatarId: null,
+    avatarCustomSrc: null,
+    googlePhotoUrl: null,
+    rankThumbnailSrc: null,
+    rewardCurrentRankId: getRankForXp(0).id,
+    rewardTotalXp: 0,
+    completedTaskCount: 0,
+    streakDays: 0,
+    totalFocusMs: 0,
+    weeklyFocusMs: 0,
+    weeklyXpGain: 0,
+    weeklyPeriodStartMs: period.startMs,
+    weeklyPeriodEndMs: period.endMs,
+    memberSinceMs: null,
+    schemaVersion: LEADERBOARD_SCHEMA_VERSION,
+  };
+}
+
+function buildWeeklyPlaceholderRow(rank: number, currentWeeklyPeriodStartMs: number): WeeklyLeaderboardRow {
+  return {
+    profile: buildWeeklyPlaceholderProfile(rank, currentWeeklyPeriodStartMs),
+    rank,
+    rankLabel: formatWeeklyRankLabel(rank),
+    playerLabel: "Vacant",
+    isCurrentUser: false,
+    isPlaceholder: true,
+    isDummy: false,
+  };
 }
 
 function getRankScope(profile: LeaderboardProfile | null | undefined): { id: string } | null {
@@ -1029,10 +1101,17 @@ export function buildWeeklyLeaderboardRows(input: {
   weeklyEntries: LeaderboardProfile[];
   currentUserEntry: LeaderboardProfile | null;
   currentUserWeeklyRank: number | null;
+  currentWeeklyPeriodStartMs?: number;
 }): WeeklyLeaderboardRow[] {
-  const currentUserEntry = isExcludedLeaderboardProfile(input.currentUserEntry) ? null : input.currentUserEntry;
+  const currentWeeklyPeriodStartMs = normalizeInt(input.currentWeeklyPeriodStartMs || getWeeklyLeaderboardUtcPeriod().startMs);
+  const currentUserEntry =
+    isExcludedLeaderboardProfile(input.currentUserEntry) || !input.currentUserEntry || !hasCurrentWeeklyXp(input.currentUserEntry, currentWeeklyPeriodStartMs)
+      ? null
+      : input.currentUserEntry;
   const currentUid = String(currentUserEntry?.uid || "").trim();
-  const sortedEntries = sortWeeklyEntries(visibleLeaderboardProfiles(input.weeklyEntries || [])).slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
+  const sortedEntries = sortWeeklyEntries(
+    visibleLeaderboardProfiles(input.weeklyEntries || []).filter((profile) => hasCurrentWeeklyXp(profile, currentWeeklyPeriodStartMs))
+  ).slice(0, WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT);
   const rows = sortedEntries.map((profile, index): WeeklyLeaderboardRow => {
     const isCurrentUser = !!currentUid && profile.uid === currentUid;
     const rank = index + 1;
@@ -1047,19 +1126,38 @@ export function buildWeeklyLeaderboardRows(input: {
     };
   });
 
-  if (!currentUserEntry || rows.some((row) => row.profile.uid === currentUserEntry.uid)) {
-    return sortLeaderboardRows(rows);
+  if (currentUserEntry && !rows.some((row) => row.profile.uid === currentUserEntry.uid)) {
+    const currentRank =
+      input.currentUserWeeklyRank && input.currentUserWeeklyRank > 0
+        ? input.currentUserWeeklyRank
+        : rows.filter((row) => normalizeInt(row.profile.weeklyXpGain) > normalizeInt(currentUserEntry.weeklyXpGain)).length + 1;
+    if (currentRank <= WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT) {
+      rows.splice(Math.max(0, currentRank - 1), 0, {
+        profile: currentUserEntry,
+        rank: currentRank,
+        rankLabel: formatWeeklyRankLabel(currentRank),
+        playerLabel: getLeaderboardPlayerLabel(currentUserEntry),
+        isCurrentUser: true,
+        isPlaceholder: false,
+        isDummy: false,
+      });
+      rows.splice(WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT);
+    }
   }
 
-  const visibleRows = sortLeaderboardRows(rows);
-  return [
-    ...visibleRows,
-    createCurrentUserLeaderboardRow(currentUserEntry, {
-      rank: input.currentUserWeeklyRank,
-      metric: "weeklyXp",
-      visibleRows,
-    }),
-  ];
+  const rowByRank = new Map<number, WeeklyLeaderboardRow>();
+  sortLeaderboardRows(rows).forEach((row, index) => {
+    const rank = row.rank && row.rank > 0 ? row.rank : index + 1;
+    if (rank > WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT || rowByRank.has(rank)) return;
+    row.rank = rank;
+    row.rankLabel = formatWeeklyRankLabel(rank);
+    rowByRank.set(rank, row);
+  });
+
+  return Array.from({ length: WEEKLY_LEADERBOARD_VISIBLE_RANK_COUNT }, (_, index) => {
+    const rank = index + 1;
+    return rowByRank.get(rank) || buildWeeklyPlaceholderRow(rank, currentWeeklyPeriodStartMs);
+  });
 }
 
 function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, identity: LeaderboardIdentityFields | null): LeaderboardProfile {
@@ -1096,24 +1194,30 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
 
   const ownIdentity = await loadOwnLeaderboardIdentity(currentUid).catch(() => null);
   const profiles = collection(db, "leaderboardProfiles");
+  const currentWeeklyPeriodStartMs = getWeeklyLeaderboardUtcPeriod().startMs;
   const leaderboardQueryLimit = WEEKLY_LEADERBOARD_DISPLAY_LIMIT + EXCLUDED_LEADERBOARD_USERNAMES.size;
   const risingQueryLimit = 3 + EXCLUDED_LEADERBOARD_USERNAMES.size;
-  const [topSnap, risingSnap, weeklySnap, currentUserSnap] = await Promise.all([
+  const [topResult, risingResult, weeklyResult, currentUserResult] = await Promise.allSettled([
     getDocs(query(profiles, orderBy("rewardTotalXp", "desc"), limit(leaderboardQueryLimit))),
-    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(risingQueryLimit))),
-    getDocs(query(profiles, orderBy("weeklyXpGain", "desc"), limit(leaderboardQueryLimit))),
+    getDocs(query(profiles, where("weeklyPeriodStartMs", "==", currentWeeklyPeriodStartMs), orderBy("weeklyXpGain", "desc"), limit(risingQueryLimit))),
+    getDocs(query(profiles, where("weeklyPeriodStartMs", "==", currentWeeklyPeriodStartMs), orderBy("weeklyXpGain", "desc"), limit(leaderboardQueryLimit))),
     getDoc(doc(db, "leaderboardProfiles", currentUid)),
   ]);
+  const topDocs = docsFromSettledQuery(topResult);
+  const risingDocs = docsFromSettledQuery(risingResult);
+  const weeklyDocs = docsFromSettledQuery(weeklyResult);
+  const currentUserSnap = valueFromSettled(currentUserResult);
 
-  const topEntries = visibleLeaderboardProfiles(topSnap.docs
+  const topEntries = visibleLeaderboardProfiles(topDocs
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
     .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
-  const weeklyEntries = visibleLeaderboardProfiles(weeklySnap.docs
+  const weeklyEntries = visibleLeaderboardProfiles(weeklyDocs
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs))
     .slice(0, WEEKLY_LEADERBOARD_DISPLAY_LIMIT);
-  const currentUserEntry = currentUserSnap.exists()
+  const currentUserEntry = currentUserSnap?.exists()
     ? normalizeLeaderboardProfileRecord(currentUserSnap.id, currentUserSnap.data() as Record<string, unknown>)
     : null;
   const currentUserEntryWithIdentity = currentUserEntry ? applyOwnIdentity(currentUserEntry, currentUid, ownIdentity) : null;
@@ -1122,11 +1226,11 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     return {
       topEntries,
       risingEntries: filterCurrentUid(
-        risingSnap.docs
+        risingDocs
           .map((row) => asLeaderboardProfile(row))
           .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)),
         currentUid
-      ).slice(0, 3),
+      ).filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs)).slice(0, 3),
       rivalEntries: [],
       weeklyEntries,
       currentUserEntry: null,
@@ -1171,18 +1275,22 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
           )
         )
       : getDocs(query(profiles, where("rewardTotalXp", ">", currentUserEntryWithIdentity.rewardTotalXp))),
-    getDocs(query(profiles, where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain))),
+    getDocs(query(
+      profiles,
+      where("weeklyPeriodStartMs", "==", currentWeeklyPeriodStartMs),
+      where("weeklyXpGain", ">", currentUserEntryWithIdentity.weeklyXpGain)
+    )),
   ]);
   const higherXpSize = sizeFromSettledQuery(higherXpResult);
   const higherRivalSize = sizeFromSettledQuery(higherRivalResult);
   const higherWeeklySize = sizeFromSettledQuery(higherWeeklyResult);
 
   const risingEntries = filterCurrentUid(
-    risingSnap.docs
+    risingDocs
       .map((row) => asLeaderboardProfile(row))
       .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)),
     currentUid
-  ).slice(0, 3);
+  ).filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs)).slice(0, 3);
   const higherXpEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherXpResult)
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
@@ -1202,6 +1310,7 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
   const higherWeeklyEntries = visibleLeaderboardProfiles(docsFromSettledQuery(higherWeeklyResult)
     .map((row) => asLeaderboardProfile(row))
     .map((row) => (row ? applyOwnIdentity(row, currentUid, ownIdentity) : null)))
+    .filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs))
     .filter((row) => row.uid !== currentUid);
   const currentUserGapToNextXp =
     aboveEntries.length > 0 ? Math.max(0, aboveEntries[0]!.rewardTotalXp - currentUserEntryWithIdentity.rewardTotalXp) : null;
@@ -1215,8 +1324,11 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     currentUserRank: higherXpSize == null ? null : higherXpEntries.length + 1,
     currentUserGapToNextXp,
     currentUserRivalRank: higherRivalSize == null ? null : higherRivalEntries.length + 1,
-    currentUserWeeklyEntry: currentUserEntryWithIdentity,
-    currentUserWeeklyRank: higherWeeklySize == null ? null : higherWeeklyEntries.length + 1,
+    currentUserWeeklyEntry: hasCurrentWeeklyXp(currentUserEntryWithIdentity, currentWeeklyPeriodStartMs) ? currentUserEntryWithIdentity : null,
+    currentUserWeeklyRank:
+      higherWeeklySize == null || !hasCurrentWeeklyXp(currentUserEntryWithIdentity, currentWeeklyPeriodStartMs)
+        ? null
+        : higherWeeklyEntries.length + 1,
   };
 }
 

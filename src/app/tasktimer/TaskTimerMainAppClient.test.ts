@@ -192,17 +192,56 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("function LeaderboardPodiumDeck");
     expect(source).toContain("rows={orderedWeeklyPodiumRows}");
     expect(source).toContain("rows={orderedGlobalPodiumRows}");
-    expect(friendsCss).toContain("#leaderboardGlobalPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFrame");
-    expect(friendsCss).toContain("#leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain("#leaderboardGlobalPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFlipGroup");
+    expect(friendsCss).toContain("#leaderboardWeeklyPanel.leaderboardCardEnter .leaderboardWeeklyPodiumAvatarFlipGroup");
     expect(friendsCss).toContain("@keyframes leaderboardPodiumCoinReveal");
     expect(friendsCss).toContain("animation:leaderboardPodiumCoinReveal 1.5s linear both;");
     expect(friendsCss).toContain("transform:translateZ(0) rotateY(88deg) scale(.96);");
-    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard1 .leaderboardWeeklyPodiumAvatarFlipGroup");
     expect(friendsCss).toContain("animation-delay:120ms;");
-    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard2 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard2 .leaderboardWeeklyPodiumAvatarFlipGroup");
     expect(friendsCss).toContain("animation-delay:520ms;");
-    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarFrame");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard3 .leaderboardWeeklyPodiumAvatarFlipGroup");
     expect(friendsCss).toContain("animation-delay:920ms;");
+  });
+
+  it("pulses the weekly and global podium radial burst outward from center", () => {
+    expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage"');
+    expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage leaderboardGlobalPodiumStage"');
+    expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after");
+    expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after");
+    expect(friendsCss).toContain("@keyframes leaderboardPodiumCenterGlowBreathe");
+    expect(friendsCss).toContain("animation:leaderboardPodiumCenterGlowBreathe 3.8s ease-in-out infinite both;");
+    const podiumGlowRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\n\}/
+    )?.[1] ?? "";
+    expect(podiumGlowRule).not.toBe("");
+    expect(friendsCss).toContain("left:50%;");
+    expect(friendsCss).toContain("top:42%;");
+    expect(friendsCss).toContain("width:220%;");
+    expect(friendsCss).toContain("transform-origin:center;");
+    expect(friendsCss).toContain("transform:translate3d(-50%,-50%,0) scale(.46);");
+    expect(friendsCss).toContain("backface-visibility:hidden;");
+    expect(friendsCss).toContain("will-change:transform, opacity;");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.16)");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.16)");
+    expect(podiumGlowRule).not.toContain("conic-gradient(");
+    expect(friendsCss).toContain(".leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after");
+    expect(friendsCss).toContain("width:240%;");
+    expect(friendsCss).not.toContain("@keyframes leaderboardPodiumCenterPulseMobile");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.2)");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.2)");
+    expect(friendsCss).toContain("opacity:.09;");
+    expect(friendsCss).toContain("transform:translate3d(-50%,-50%,0) scale(.52);");
+    expect(friendsCss).not.toContain("filter:blur(.45px);");
+
+    const reducedMotionRule = Array.from(
+      friendsCss.matchAll(/#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\}/g)
+    ).map((match) => match[1] ?? "").find((rule) => rule.includes("animation:none;")) ?? "";
+    expect(reducedMotionRule).not.toBe("");
+    expect(reducedMotionRule).toContain("opacity:.12;");
+    expect(reducedMotionRule).toContain("transform:translate3d(-50%,-50%,0) scale(.48);");
+    expect(reducedMotionRule).toContain("animation:none;");
   });
 
   it("shows rank insignia instead of usernames on podium cards", () => {
@@ -239,8 +278,11 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
 
   it("opens and claims the daily reward through the shared modal XP delivery path", () => {
     expect(source).toContain("isDailyOpenRewardEligible");
+    expect(source).toContain("isDailyRewardMarkedClaimedForDay(dailyRewardUid, dayKey)");
+    expect(source).toContain("markDailyRewardClaimedForDay(dailyRewardUid, dayKey)");
     expect(source).toContain("openDailyRewardOverlay(document)");
     expect(source).toContain("awardDailyOpenReward(currentProgress, awardedAt)");
+    expect(source).toContain("markDailyRewardClaimedForDay(dailyRewardUid, claimedDayKey)");
     expect(source).toContain('sourceModal: "dailyReward"');
     expect(source).toContain('sourceOverlayId: "dailyRewardOverlay"');
     expect(source).toContain('sourceElementKey: "dailyRewardXpValue"');

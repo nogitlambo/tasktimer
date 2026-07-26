@@ -28,6 +28,7 @@ import {
 } from "./cloudStore";
 import {
   buildLeaderboardMetricsSnapshot,
+  getWeeklyLeaderboardUtcPeriod,
   saveLeaderboardProfile,
 } from "./leaderboard";
 import {
@@ -1638,6 +1639,7 @@ function leaderboardProfileSyncSignature() {
       history: cachedHistory || {},
       liveSessions: cachedLiveSessions || {},
       rewards: normalizeRewardProgress(cachedPreferences?.rewards || DEFAULT_REWARD_PROGRESS),
+      weeklyPeriodStartMs: getWeeklyLeaderboardUtcPeriod().startMs,
     });
   } catch {
     return String(Date.now());

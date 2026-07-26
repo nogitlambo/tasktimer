@@ -135,7 +135,8 @@
   z-index:0;
 }
 
-#timeGoalCompleteOverlay.isClaimDeliveryActive::before{
+#timeGoalCompleteOverlay.isClaimDeliveryActive::before,
+#dailyRewardOverlay.isClaimDeliveryActive::before{
   opacity: 0;
   backdrop-filter: none;
 }

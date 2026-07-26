@@ -217,6 +217,8 @@ Allowed fields (`isLeaderboardProfileDoc`):
 - `totalFocusMs: int`
 - `weeklyFocusMs: int`
 - `weeklyXpGain: int`
+- `weeklyPeriodStartMs: int`
+- `weeklyPeriodEndMs: int`
 - `updatedAt: timestamp`
 - `schemaVersion: int`
 
@@ -235,7 +237,8 @@ Notes:
 
 - This collection intentionally excludes private fields such as `email`.
 - `rewardTotalXp` is the primary global ranking field.
-- `weeklyXpGain` powers the “Rising this week” leaderboard panel.
+- `weeklyXpGain` powers the "Rising this week" leaderboard panel.
+- `weeklyPeriodStartMs` scopes weekly ranking data to the current UTC leaderboard week; profiles from previous weeks are ignored by weekly queries.
 - `totalFocusMs` and `streakDays` are derived from finalized history plus any active live session.
 - Deleted-account UIDs are denied at the rules layer so late client writes cannot recreate public leaderboard rows.
 - Known internal test usernames are denied at the leaderboard write layer and filtered from reads.

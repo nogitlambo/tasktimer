@@ -33,6 +33,7 @@ const cloudStoreMocks = vi.hoisted(() => ({
 
 const leaderboardMocks = vi.hoisted(() => ({
   buildLeaderboardMetricsSnapshot: vi.fn(() => ({})),
+  getWeeklyLeaderboardUtcPeriod: vi.fn(() => ({ startMs: 1_770_000_000_000, endMs: 1_770_604_799_999 })),
   saveLeaderboardProfile: vi.fn(() => Promise.resolve()),
 }));
 

@@ -170,7 +170,6 @@ const els = {
   dashboardActivityTodayHoursProjectionFill: documentRef.getElementById("dashboardActivityTodayHoursProjectionFill"),
   dashboardActivityTodayHoursProgressFill: documentRef.getElementById("dashboardActivityTodayHoursProgressFill"),
   dashboardActivityTodayHoursDelta: documentRef.getElementById("dashboardActivityTodayHoursDelta"),
-  dashboardActivityWeeklyTrendIndicator: documentRef.getElementById("dashboardActivityWeeklyTrendIndicator"),
   dashboardActivityWeeklyGoalsValue: documentRef.getElementById("dashboardActivityWeeklyGoalsValue"),
   dashboardActivityWeeklyGoalsMeta: documentRef.getElementById("dashboardActivityWeeklyGoalsMeta"),
   dashboardActivityWeeklyGoalsProgressBar: documentRef.getElementById("dashboardActivityWeeklyGoalsProgressBar"),

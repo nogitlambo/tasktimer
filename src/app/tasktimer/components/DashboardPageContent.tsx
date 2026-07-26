@@ -60,7 +60,6 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                         <section className="dashboardActivitySummaryMini" aria-label="Weekly logged time and time goal progress">
                           <div className="dashboardActivitySummaryTop">
                             <div className="dashboardCardTitle">This Week</div>
-                            <div className="dashboardTrendIndicator" id="dashboardActivityWeeklyTrendIndicator" aria-hidden="true">--</div>
                           </div>
                           <div className="dashboardBigValue" id="dashboardActivityWeeklyGoalsValue">0m</div>
                           <div className="dashboardGoalProgressWrap">

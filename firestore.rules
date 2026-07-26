@@ -177,6 +177,8 @@ service cloud.firestore {
         "totalFocusMs",
         "weeklyFocusMs",
         "weeklyXpGain",
+        "weeklyPeriodStartMs",
+        "weeklyPeriodEndMs",
         "memberSinceMs",
         "updatedAt",
         "schemaVersion"
@@ -196,6 +198,8 @@ service cloud.firestore {
       && request.resource.data.totalFocusMs is int
       && request.resource.data.weeklyFocusMs is int
       && request.resource.data.weeklyXpGain is int
+      && (!("weeklyPeriodStartMs" in request.resource.data) || request.resource.data.weeklyPeriodStartMs is int)
+      && (!("weeklyPeriodEndMs" in request.resource.data) || request.resource.data.weeklyPeriodEndMs is int)
       && (!("memberSinceMs" in request.resource.data) || request.resource.data.memberSinceMs == null || request.resource.data.memberSinceMs is int)
       && request.resource.data.updatedAt is timestamp
       && request.resource.data.schemaVersion is int;

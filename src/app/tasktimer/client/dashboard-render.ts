@@ -20,7 +20,7 @@ import {
 import { formatTime, formatTwo, nowMs } from "../lib/time";
 import { normalizeTaskStatusState, type Task } from "../lib/types";
 import { normalizeTaskColor } from "../lib/taskColors";
-import { localDayToDashboardWeekStart, normalizeOptimalProductivityDays, timestampIsInOptimalProductivityDays } from "../lib/productivityPeriod";
+import { localDayToDashboardWeekStart, normalizeOptimalProductivityDays } from "../lib/productivityPeriod";
 import type { TaskTimerDashboardRenderContext } from "./context";
 import type { DashboardMomentumDriverKey, DashboardTimelineDensity } from "./types";
 export { buildMomentumDriverMessages, buildMomentumSummaryMessage, getPrimaryMomentumDriverKey } from "./dashboard-card-momentum";
@@ -862,14 +862,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const projectionFillEl = (els as any).dashboardActivityWeeklyGoalsProjectionFill as HTMLElement | null;
     const progressFillEl = (els as any).dashboardActivityWeeklyGoalsProgressFill as HTMLElement | null;
     const progressTextEl = (els as any).dashboardActivityWeeklyGoalsProgressText as HTMLElement | null;
-    const trendIndicatorEl = (els as any).dashboardActivityWeeklyTrendIndicator as HTMLElement | null;
     const historyByTaskId = ctx.getHistoryByTaskId();
 
     const nowValue = nowMs();
     const weekStartMs = startOfCurrentWeekMs(nowValue, ctx.getWeekStarting());
-    const prevWeekEndMs = weekStartMs;
-    const prevWeekStartMs = prevWeekEndMs - 7 * 86400000;
-    const optimalProductivityDays = normalizeOptimalProductivityDays(ctx.getOptimalProductivityDays());
     const goalTasks = getDashboardFilteredTasks().filter((task) => {
       if (!task?.timeGoalEnabled) return false;
       const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
@@ -889,53 +885,13 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         return entrySum + ms;
       }, 0);
     }, 0);
-    const productivityDayLoggedMs = goalTasks.reduce((sum, task) => {
-      const taskId = String(task.id || "").trim();
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      return sum + entries.reduce((entrySum, entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (!Number.isFinite(ts) || ts < weekStartMs || ts > nowValue || ms <= 0) return entrySum;
-        if (!timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) return entrySum;
-        return entrySum + ms;
-      }, 0);
-    }, 0);
-    let hasFullPriorWeekHistory = false;
-    const prevWeekLoggedMs = goalTasks.reduce((sum, task) => {
-      const taskId = String(task.id || "").trim();
-      const entries = Array.isArray(historyByTaskId?.[taskId]) ? historyByTaskId[taskId] : [];
-      return sum + entries.reduce((entrySum, entry: any) => {
-        const ts = ctx.normalizeHistoryTimestampMs(entry?.ts);
-        const ms = Math.max(0, Number(entry?.ms) || 0);
-        if (ms <= 0) return entrySum;
-        if (Number.isFinite(ts) && ts <= prevWeekStartMs && timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) hasFullPriorWeekHistory = true;
-        if (!Number.isFinite(ts) || ts < prevWeekStartMs || ts >= prevWeekEndMs) return entrySum;
-        if (!timestampIsInOptimalProductivityDays(ts, optimalProductivityDays)) return entrySum;
-        return entrySum + ms;
-      }, 0);
-    }, 0);
     const runningMs = goalTasks.reduce((sum, task) => {
       if (!isDashboardTaskActivelyRunning(task)) return sum;
       return sum + Math.max(0, ctx.getElapsedMs(task));
     }, 0);
-    const productivityDayComparisonMs =
-      productivityDayLoggedMs + (timestampIsInOptimalProductivityDays(nowValue, optimalProductivityDays) ? runningMs : 0);
     const projectedMs = loggedMs + runningMs;
     const progressPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((loggedMs / totalGoalMs) * 100))) : 0;
     const projectedPct = totalGoalMs > 0 ? Math.max(0, Math.min(100, Math.round((projectedMs / totalGoalMs) * 100))) : 0;
-    if (trendIndicatorEl) {
-      if (hasFullPriorWeekHistory && prevWeekLoggedMs > 0) {
-        trendIndicatorEl.style.display = "";
-        applyDashboardTrendIndicator(trendIndicatorEl, productivityDayComparisonMs, prevWeekLoggedMs, {
-          showDirectionalArrow: false,
-          minBaselineMs: DASHBOARD_TREND_MIN_BASELINE_MS,
-        });
-      } else {
-        trendIndicatorEl.style.display = "none";
-        trendIndicatorEl.textContent = "";
-        trendIndicatorEl.classList.remove("positive", "negative", "neutral");
-      }
-    }
     if (valueEl) valueEl.textContent = formatDashboardDurationWithMinutes(loggedMs);
     if (metaEl) {
       metaEl.textContent = "";

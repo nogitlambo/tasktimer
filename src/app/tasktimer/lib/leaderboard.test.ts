@@ -55,6 +55,11 @@ import {
 } from "./leaderboard";
 import { DEFAULT_REWARD_PROGRESS, getRankThumbnailDescriptor } from "./rewards";
 
+const TEST_WEEK_PERIOD = getWeeklyLeaderboardUtcPeriod(Date.now());
+const TEST_WEEK_START_MS = TEST_WEEK_PERIOD.startMs;
+const TEST_WEEK_END_MS = TEST_WEEK_PERIOD.endMs;
+const PREVIOUS_TEST_WEEK_START_MS = TEST_WEEK_START_MS - 7 * 24 * 60 * 60 * 1000;
+
 function createProfile(overrides: Partial<LeaderboardProfile> = {}): LeaderboardProfile {
   return {
     uid: "user-1",
@@ -71,6 +76,8 @@ function createProfile(overrides: Partial<LeaderboardProfile> = {}): Leaderboard
     totalFocusMs: 0,
     weeklyFocusMs: 0,
     weeklyXpGain: 0,
+    weeklyPeriodStartMs: TEST_WEEK_START_MS,
+    weeklyPeriodEndMs: TEST_WEEK_END_MS,
     memberSinceMs: null,
     schemaVersion: 1,
     ...overrides,
@@ -252,9 +259,11 @@ describe("buildWeeklyLeaderboardRows", () => {
       ],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
-    expect(rows.map((row) => row.profile.uid)).toEqual(["visible"]);
+    expect(rows.filter((row) => !row.isPlaceholder).map((row) => row.profile.uid)).toEqual(["visible"]);
+    expect(rows).toHaveLength(8);
   });
 
   it("orders weekly leaderboard rows by weekly XP gain", () => {
@@ -266,15 +275,17 @@ describe("buildWeeklyLeaderboardRows", () => {
       ],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
     expect(rows.slice(0, 3).map((row) => row.profile.uid)).toEqual(["high", "mid", "low"]);
     expect(rows.slice(0, 3).map((row) => row.rankLabel)).toEqual(["#1", "#2", "#3"]);
-    expect(rows).toHaveLength(3);
-    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
+    expect(rows).toHaveLength(8);
+    expect(rows.slice(0, 3).every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
+    expect(rows.slice(3).every((row) => row.isPlaceholder)).toBe(true);
   });
 
-  it("pins the current user with their actual rank when they are outside the weekly board", () => {
+  it("does not pin the current user when they have zero current-week XP", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 240 }),
@@ -282,24 +293,26 @@ describe("buildWeeklyLeaderboardRows", () => {
       ],
       currentUserEntry: createProfile({ uid: "me", username: "me", weeklyXpGain: 0 }),
       currentUserWeeklyRank: 12,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
-    expectPinnedCurrentRank(rows, 12);
-    expect(rows).toHaveLength(3);
+    expect(rows.some((row) => row.isCurrentUser)).toBe(false);
+    expect(rows).toHaveLength(8);
     expect(rows.filter((row) => !row.isPlaceholder && !row.isDummy && !row.isCurrentUser).map((row) => row.profile.uid)).toEqual(["top-1", "top-2"]);
   });
 
-  it("keeps an out-of-top-ten current user available for the weekly table", () => {
+  it("returns vacant rows on an empty weekly board", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [],
-      currentUserEntry: createProfile({ uid: "me", username: "me", weeklyXpGain: 0 }),
-      currentUserWeeklyRank: 12,
+      currentUserEntry: null,
+      currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
-    const rowsForTable = tableRows(rows);
 
-    expect(rowsForTable).toHaveLength(1);
-    expect(rowsForTable.filter((row) => row.isDummy)).toHaveLength(0);
-    expectPinnedCurrentRank(rows, 12);
+    expect(rows).toHaveLength(8);
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(rows.every((row) => row.isPlaceholder && !row.isDummy)).toBe(true);
+    expect(rows.every((row) => row.playerLabel === "Vacant")).toBe(true);
   });
 
   it("does not duplicate the current user when they are already ranked in the weekly top entries", () => {
@@ -312,6 +325,7 @@ describe("buildWeeklyLeaderboardRows", () => {
       ],
       currentUserEntry: currentUser,
       currentUserWeeklyRank: 2,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
     expect(rows.slice(0, 3).map((row) => row.profile.uid)).toEqual(["top-1", "me", "top-3"]);
@@ -324,17 +338,37 @@ describe("buildWeeklyLeaderboardRows", () => {
     expect(rows.filter((row) => row.profile.uid === "me")).toHaveLength(1);
   });
 
-  it("returns no rows on an empty weekly board", () => {
+  it("excludes stale profiles from a prior weekly period", () => {
     const rows = buildWeeklyLeaderboardRows({
-      weeklyEntries: [],
+      weeklyEntries: [
+        createProfile({ uid: "stale", username: "stale", weeklyXpGain: 500, weeklyPeriodStartMs: PREVIOUS_TEST_WEEK_START_MS }),
+        createProfile({ uid: "current", username: "current", weeklyXpGain: 100 }),
+      ],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
-    expect(rows).toEqual([]);
+    expect(rows.filter((row) => !row.isPlaceholder).map((row) => row.profile.uid)).toEqual(["current"]);
+    expect(rows).toHaveLength(8);
   });
 
-  it("keeps partial weekly boards partial", () => {
+  it("excludes current-week profiles with zero XP gain", () => {
+    const rows = buildWeeklyLeaderboardRows({
+      weeklyEntries: [
+        createProfile({ uid: "zero", username: "zero", weeklyXpGain: 0 }),
+        createProfile({ uid: "positive", username: "positive", weeklyXpGain: 10 }),
+      ],
+      currentUserEntry: null,
+      currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
+    });
+
+    expect(rows.filter((row) => !row.isPlaceholder).map((row) => row.profile.uid)).toEqual(["positive"]);
+    expect(rows.filter((row) => row.isPlaceholder)).toHaveLength(7);
+  });
+
+  it("fills partial weekly boards with vacant placeholders", () => {
     const rows = buildWeeklyLeaderboardRows({
       weeklyEntries: [
         createProfile({ uid: "top-1", username: "top_1", weeklyXpGain: 260 }),
@@ -342,12 +376,13 @@ describe("buildWeeklyLeaderboardRows", () => {
       ],
       currentUserEntry: null,
       currentUserWeeklyRank: null,
+      currentWeeklyPeriodStartMs: TEST_WEEK_START_MS,
     });
 
     expect(rows[0]?.isPlaceholder).toBe(false);
     expect(rows[1]?.isPlaceholder).toBe(false);
-    expect(rows).toHaveLength(2);
-    expect(rows.every((row) => !row.isDummy && !row.isPlaceholder)).toBe(true);
+    expect(rows).toHaveLength(8);
+    expect(rows.slice(2).every((row) => row.isPlaceholder && !row.isDummy)).toBe(true);
   });
 });
 
@@ -769,6 +804,56 @@ describe("loadLeaderboardScreenData", () => {
     expect(result.currentUserRivalRank).toBeNull();
     expect(result.currentUserWeeklyRank).toBe(2);
   });
+
+  it("returns global leaderboard data when current-week weekly queries need a missing index", async () => {
+    const currentProfile = createProfile({
+      uid: "uid-weekly-index",
+      username: "pilot",
+      displayLabel: "pilot",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 120,
+      completedTaskCount: 7,
+      streakDays: 2,
+      totalFocusMs: 60_000,
+      weeklyXpGain: 20,
+    });
+    const peerProfile = createProfile({
+      uid: "uid-2",
+      username: "peer",
+      displayLabel: "peer",
+      rewardCurrentRankId: "initiate",
+      rewardTotalXp: 220,
+      streakDays: 3,
+      totalFocusMs: 120_000,
+      weeklyXpGain: 30,
+    });
+    const currentDoc = docSnap("uid-weekly-index", currentProfile);
+    const peerDoc = docSnap("uid-2", peerProfile);
+
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDocs.mockReset();
+    firestoreMocks.getDoc
+      .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
+      .mockResolvedValueOnce(currentDoc);
+    firestoreMocks.getDocs
+      .mockResolvedValueOnce(querySnap([peerDoc, currentDoc]))
+      .mockRejectedValueOnce(new Error("missing weekly index"))
+      .mockRejectedValueOnce(new Error("missing weekly index"))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc, currentDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]))
+      .mockResolvedValueOnce(querySnap([peerDoc]));
+
+    const result = await loadLeaderboardScreenData("uid-weekly-index");
+
+    expect(result.topEntries.map((entry) => entry.uid)).toEqual(["uid-2", "uid-weekly-index"]);
+    expect(result.weeklyEntries).toEqual([]);
+    expect(result.risingEntries).toEqual([]);
+    expect(result.currentUserEntry?.uid).toBe("uid-weekly-index");
+    expect(result.currentUserRank).toBe(2);
+    expect(result.currentUserWeeklyEntry?.uid).toBe("uid-weekly-index");
+  });
 });
 
 describe("saveLeaderboardProfile", () => {
@@ -829,7 +914,6 @@ describe("saveLeaderboardProfile", () => {
   it("caps crossed leaderboard movement rows and reports skipped rows", async () => {
     const events = captureLeaderboardPositionEvents();
     const previousProfile = createProfile({ uid: "uid-big-jump", username: "pilot", rewardTotalXp: 100, weeklyXpGain: 10 });
-    const currentProfile = createProfile({ uid: "uid-big-jump", username: "pilot", rewardTotalXp: 500, weeklyXpGain: 10 });
     const crossedProfiles = Array.from({ length: 12 }, (_, index) =>
       createProfile({
         uid: `crossed-${index + 1}`,
@@ -885,6 +969,7 @@ describe("saveLeaderboardProfile", () => {
 
     firestoreMocks.getDoc.mockReset();
     firestoreMocks.getDocs.mockReset();
+    firestoreMocks.where.mockClear();
     firestoreMocks.getDoc
       .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
       .mockResolvedValueOnce({ exists: () => false, get: vi.fn() })
@@ -910,6 +995,21 @@ describe("saveLeaderboardProfile", () => {
     expect(events[0]?.detail.changes.map((change) => change.boardId)).toEqual(["global", "weekly"]);
     expect(events[0]?.detail.changes.map((change) => change.currentRank)).toEqual([1, 1]);
     expect(events[0]?.detail.changes[1]?.movementRows.map((row) => row.profile.uid)).toEqual(["uid-queue", "weekly-below"]);
+    expect(firestoreMocks.where.mock.calls.filter(([field]) => field === "weeklyPeriodStartMs")).toHaveLength(3);
+    expect(firestoreMocks.getDocs.mock.calls[3]?.[0]).toMatchObject({
+      constraints: expect.arrayContaining([
+        { type: "where", field: "weeklyPeriodStartMs", op: "==", value: TEST_WEEK_START_MS },
+        { type: "where", field: "weeklyXpGain", op: ">", value: 10 },
+      ]),
+    });
+    expect(firestoreMocks.getDocs.mock.calls[5]?.[0]).toMatchObject({
+      constraints: expect.arrayContaining([
+        { type: "where", field: "weeklyPeriodStartMs", op: "==", value: TEST_WEEK_START_MS },
+        { type: "where", field: "weeklyXpGain", op: ">", value: 10 },
+        { type: "where", field: "weeklyXpGain", op: "<=", value: 90 },
+        { type: "orderBy", field: "weeklyXpGain", direction: "desc" },
+      ]),
+    });
   });
 
   it("does not dispatch a movement when XP increases without a rank position change", async () => {
@@ -965,6 +1065,8 @@ describe("saveLeaderboardProfile", () => {
         totalFocusMs: 60_000,
         weeklyFocusMs: 15_000,
         weeklyXpGain: 20,
+        weeklyPeriodStartMs: TEST_WEEK_START_MS,
+        weeklyPeriodEndMs: TEST_WEEK_END_MS,
         completedTaskCount: 7,
         schemaVersion: 1,
       }),
@@ -1074,6 +1176,8 @@ describe("buildLeaderboardMetricsSnapshot", () => {
     expect(snapshot.totalFocusMs).toBe(100 * 60 * 1000);
     expect(snapshot.weeklyFocusMs).toBe(50 * 60 * 1000);
     expect(snapshot.weeklyXpGain).toBe(50);
+    expect(snapshot.weeklyPeriodStartMs).toBe(weekStartTs);
+    expect(snapshot.weeklyPeriodEndMs).toBe(weekEndTs);
   });
 
   it("formats the weekly leaderboard UTC period label with compact dates", () => {

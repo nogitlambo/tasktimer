@@ -27,6 +27,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "leaderboardProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "weeklyPeriodStartMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "weeklyXpGain",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -198,7 +198,6 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityTodayHoursProjectionFill");
   register("dashboardActivityTodayHoursProgressFill");
   register("dashboardActivityTodayHoursDelta");
-  register("dashboardActivityWeeklyTrendIndicator");
   register("dashboardActivityWeeklyGoalsValue");
   register("dashboardActivityWeeklyGoalsMeta");
   register("dashboardActivityWeeklyGoalsProgressBar");
@@ -337,7 +336,6 @@ function createRenderHarness(
       dashboardActivityTodayHoursProjectionFill: byId.get("dashboardActivityTodayHoursProjectionFill"),
       dashboardActivityTodayHoursProgressFill: byId.get("dashboardActivityTodayHoursProgressFill"),
       dashboardActivityTodayHoursDelta: byId.get("dashboardActivityTodayHoursDelta"),
-      dashboardActivityWeeklyTrendIndicator: byId.get("dashboardActivityWeeklyTrendIndicator"),
       dashboardActivityWeeklyGoalsValue: byId.get("dashboardActivityWeeklyGoalsValue"),
       dashboardActivityWeeklyGoalsMeta: byId.get("dashboardActivityWeeklyGoalsMeta"),
       dashboardActivityWeeklyGoalsProgressBar: byId.get("dashboardActivityWeeklyGoalsProgressBar"),
@@ -792,7 +790,7 @@ describe("dashboard week-start alignment", () => {
     }
   });
 
-  it("compares the Activity weekly trend using only selected productivity days", () => {
+  it("does not render a top percentage stat in the Activity weekly summary", () => {
     useFixedNow();
     const harness = createRenderHarness(
       [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 300 })],
@@ -816,7 +814,7 @@ describe("dashboard week-start alignment", () => {
     try {
       harness.renderAll();
 
-      expect(harness.byId.get("dashboardActivityWeeklyTrendIndicator")?.textContent).toBe("+20%");
+      expect(harness.byId.has("dashboardActivityWeeklyTrendIndicator")).toBe(false);
       expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe("7h 0m");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.textContent).toBe("100% of weekly goal");
       expect(harness.byId.get("dashboardActivityWeeklyGoalsProgressText")?.classList.contains("positive")).toBe(true);
