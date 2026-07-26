@@ -12,6 +12,7 @@ type TaskTimerStorageKeys = {
   TASK_VIEW_KEY: string;
   TASK_ORDER_BY_KEY: string;
   DYNAMIC_COLORS_KEY: string;
+  FULL_COLOR_TASK_CARDS_KEY: string;
   MOBILE_PUSH_ALERTS_KEY: string;
   WEB_PUSH_ALERTS_KEY: string;
   INTERACTION_CLICK_SOUND_KEY: string;
@@ -46,6 +47,7 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     TASK_VIEW_KEY: `${storageKey}:taskView`,
     TASK_ORDER_BY_KEY: `${storageKey}:taskOrderBy`,
     DYNAMIC_COLORS_KEY: `${storageKey}:dynamicColorsEnabled`,
+    FULL_COLOR_TASK_CARDS_KEY: `${storageKey}:fullColorTaskCardsEnabled`,
     MOBILE_PUSH_ALERTS_KEY: `${storageKey}:mobilePushAlertsEnabled`,
     WEB_PUSH_ALERTS_KEY: `${storageKey}:webPushAlertsEnabled`,
     INTERACTION_CLICK_SOUND_KEY: `${storageKey}:interactionClickSoundEnabled`,
@@ -86,6 +88,7 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     taskView: "tile",
     taskOrderBy: "custom",
     dynamicColorsEnabled: true,
+    fullColorTaskCardsEnabled: false,
     autoFocusOnTaskLaunchEnabled: false,
     timeGoalCompleteNextTasksEnabled: false,
     dashboardPreviousWeekVisible: true,

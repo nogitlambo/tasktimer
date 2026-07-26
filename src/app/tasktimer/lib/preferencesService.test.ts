@@ -10,6 +10,7 @@ const storageKeys = {
   STARTUP_MODULE_KEY: "taskticker_tasks_v1:startupModule",
   TASK_VIEW_KEY: "taskticker_tasks_v1:taskView",
   TASK_ORDER_BY_KEY: "taskticker_tasks_v1:taskOrderBy",
+  FULL_COLOR_TASK_CARDS_KEY: "taskticker_tasks_v1:fullColorTaskCardsEnabled",
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "taskticker_tasks_v1:autoFocusOnTaskLaunchEnabled",
   TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: "taskticker_tasks_v1:timeGoalCompleteNextTasksEnabled",
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
@@ -34,6 +35,7 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
     taskView: "tile" as const,
     taskOrderBy: "custom" as const,
     dynamicColorsEnabled: true,
+    fullColorTaskCardsEnabled: false,
     autoFocusOnTaskLaunchEnabled: false,
     timeGoalCompleteNextTasksEnabled: false,
     dashboardPreviousWeekVisible: true,
@@ -363,6 +365,45 @@ describe("createTaskTimerPreferencesService", () => {
     expect(preferencesPersistence.update).toHaveBeenCalledWith(
       expect.objectContaining({ dashboardPreviousWeekVisible: false })
     );
+  });
+
+  it("defaults full color task cards off", () => {
+    expect(createService().loadFullColorTaskCardsEnabled()).toBe(false);
+  });
+
+  it("loads full color task cards from local storage before auth", () => {
+    window.localStorage.setItem(storageKeys.FULL_COLOR_TASK_CARDS_KEY, "true");
+
+    expect(createService().loadFullColorTaskCardsEnabled()).toBe(true);
+  });
+
+  it("loads full color task cards from cloud preferences", () => {
+    expect(
+      createService({
+        currentUid: "uid-2",
+        cachedPreferences: { ...buildDefaultPreferences(), fullColorTaskCardsEnabled: true },
+      }).loadFullColorTaskCardsEnabled()
+    ).toBe(true);
+  });
+
+  it("persists full color task cards in preference snapshots", () => {
+    const preferencesPersistence = createPreferencesPersistence();
+    const service = createTaskTimerPreferencesService({
+      storageKeys,
+      preferencesPersistence,
+      currentUid: () => "",
+      syncOwnFriendshipProfile: vi.fn(),
+    });
+
+    const snapshot = service.buildSnapshot({
+      ...buildDefaultPreferences(),
+      weekStarting: "mon",
+      fullColorTaskCardsEnabled: true,
+    });
+    service.persistSnapshot(snapshot);
+
+    expect(localStorageMap.get(storageKeys.FULL_COLOR_TASK_CARDS_KEY)).toBe("true");
+    expect(preferencesPersistence.update).toHaveBeenCalledWith(expect.objectContaining({ fullColorTaskCardsEnabled: true }));
   });
 
   it("loads date added task order values from cloud and local storage", () => {

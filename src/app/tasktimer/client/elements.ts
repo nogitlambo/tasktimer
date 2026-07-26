@@ -290,6 +290,8 @@ const els = {
   taskFocusDndAccessBtn: documentRef.getElementById("taskFocusDndAccessBtn") as HTMLButtonElement | null,
   taskDynamicColorsToggleRow: documentRef.getElementById("taskDynamicColorsToggleRow"),
   taskDynamicColorsToggle: documentRef.getElementById("taskDynamicColorsToggle"),
+  taskFullColorCardsToggleRow: documentRef.getElementById("taskFullColorCardsToggleRow"),
+  taskFullColorCardsToggle: documentRef.getElementById("taskFullColorCardsToggle"),
   taskMobilePushAlertsToggleRow: documentRef.getElementById("taskMobilePushAlertsToggleRow"),
   taskMobilePushAlertsToggle: documentRef.getElementById("taskMobilePushAlertsToggle"),
   taskWebPushAlertsToggleRow: documentRef.getElementById("taskWebPushAlertsToggleRow"),

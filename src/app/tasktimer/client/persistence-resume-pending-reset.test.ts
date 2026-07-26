@@ -142,6 +142,7 @@ function createHarness(
     loadTimeGoalCompleteNextTasksSetting: () => {},
     loadDashboardPreviousWeekSetting: () => {},
     loadDynamicColorsSetting: () => {},
+    loadFullColorTaskCardsSetting: () => {},
     loadInteractionClickSoundSetting: () => {},
     loadAchievementSoundsSetting: () => {},
     loadInteractionHapticsSetting: () => {},

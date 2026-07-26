@@ -19,6 +19,7 @@ const storageKeys = {
   AUTO_FOCUS_ON_TASK_LAUNCH_KEY: "taskticker_tasks_v1:autoFocusOnTaskLaunchEnabled",
   TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: "taskticker_tasks_v1:timeGoalCompleteNextTasksEnabled",
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: "taskticker_tasks_v1:dashboardPreviousWeekVisible",
+  FULL_COLOR_TASK_CARDS_KEY: "taskticker_tasks_v1:fullColorTaskCardsEnabled",
   MOBILE_PUSH_ALERTS_KEY: "taskticker_tasks_v1:mobilePushAlertsEnabled",
   WEB_PUSH_ALERTS_KEY: "taskticker_tasks_v1:webPushAlertsEnabled",
   INTERACTION_CLICK_SOUND_KEY: "taskticker_tasks_v1:interactionClickSoundEnabled",
@@ -66,6 +67,7 @@ class FakeElement {
   textContent = "";
   value = "";
   private attributes = new Map<string, string>();
+  private listeners = new Map<string, Listener[]>();
 
   constructor(
     public id: string,
@@ -96,7 +98,23 @@ class FakeElement {
 
   focus() {}
 
-  addEventListener() {}
+  addEventListener(type: string, listener: Listener) {
+    this.listeners.set(type, [...(this.listeners.get(type) || []), listener]);
+  }
+
+  dispatch(type: string) {
+    (this.listeners.get(type) || []).forEach((listener) =>
+      listener({
+        target: this,
+        type,
+        preventDefault: () => {},
+      } as unknown as Parameters<Listener>[0])
+    );
+  }
+
+  listenerCount(type: string) {
+    return this.listeners.get(type)?.length || 0;
+  }
 
   hasAttribute(name: string) {
     return this.attributes.has(name);
@@ -202,6 +220,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     timeGoalCompleteNextTasksEnabled: boolean;
     dashboardPreviousWeekVisible: boolean;
     dynamicColorsEnabled: boolean;
+    fullColorTaskCardsEnabled: boolean;
     mobilePushAlertsEnabled: boolean;
     webPushAlertsEnabled: boolean;
     interactionClickSoundEnabled: boolean;
@@ -226,6 +245,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     timeGoalCompleteNextTasksEnabled: false,
     dashboardPreviousWeekVisible: true,
     dynamicColorsEnabled: true,
+    fullColorTaskCardsEnabled: false,
     mobilePushAlertsEnabled: false,
     webPushAlertsEnabled: false,
     interactionClickSoundEnabled: true,
@@ -255,6 +275,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
   vi.stubGlobal("document", fakeDocument);
   vi.stubGlobal("window", windowStub);
   vi.stubGlobal("localStorage", localStorageStub);
+  vi.stubGlobal("Element", FakeElement);
   vi.stubGlobal("CustomEvent", class CustomEventStub<T = unknown> {
     detail?: T;
 
@@ -314,6 +335,10 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     getDynamicColorsEnabled: () => state.dynamicColorsEnabled,
     setDynamicColorsEnabledState: (value) => {
       state.dynamicColorsEnabled = value;
+    },
+    getFullColorTaskCardsEnabled: () => state.fullColorTaskCardsEnabled,
+    setFullColorTaskCardsEnabledState: (value) => {
+      state.fullColorTaskCardsEnabled = value;
     },
     getMobilePushAlertsEnabled: () => state.mobilePushAlertsEnabled,
     setMobilePushAlertsEnabledState: (value) => {
@@ -557,6 +582,36 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(dayInputs.every((input) => input.checked)).toBe(true);
     expect(state.optimalProductivityDays).toEqual(["sun", "mon", "tue", "wed", "thu", "fri", "sat"]);
     expect(localStorageStub.get(storageKeys.OPTIMAL_PRODUCTIVITY_DAYS_KEY)).toBe("sun,mon,tue,wed,thu,fri,sat");
+  });
+
+  it("loads full color task cards as off by default and persists the toggle without changing dynamic colors", () => {
+    let row: FakeElement | null = null;
+    let toggle: FakeElement | null = null;
+    const { localStorageStub, preferences, saveCloudPreferences, state, render } = createHarness({
+      setupEls: (fakeDocument) => {
+        row = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggleRow"));
+        toggle = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggle", ["switch"]));
+        row.appendChild(toggle);
+        return {
+          taskFullColorCardsToggleRow: row,
+          taskFullColorCardsToggle: toggle,
+        };
+      },
+    });
+
+    preferences.loadFullColorTaskCardsSetting();
+    expect(state.fullColorTaskCardsEnabled).toBe(false);
+    expect(state.dynamicColorsEnabled).toBe(true);
+
+    expect(row?.listenerCount("click")).toBeGreaterThan(0);
+    row?.dispatch("click");
+
+    expect(state.fullColorTaskCardsEnabled).toBe(true);
+    expect(state.dynamicColorsEnabled).toBe(true);
+    expect(toggle).not.toBeNull();
+    expect(localStorageStub.get(storageKeys.FULL_COLOR_TASK_CARDS_KEY)).toBe("true");
+    expect(saveCloudPreferences).toHaveBeenLastCalledWith(expect.objectContaining({ fullColorTaskCardsEnabled: true }));
+    expect(render).toHaveBeenCalled();
   });
 
   it("syncs already-loaded preferences into controls when the preferences pane becomes active", () => {

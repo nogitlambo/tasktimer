@@ -112,6 +112,7 @@ function createHarness(
     hasFriends: () => true,
     isTaskSharedByOwner: () => false,
     getDynamicColorsEnabled: () => false,
+    getFullColorTaskCardsEnabled: () => false,
     getModeColor: () => "#00ffff",
     fillBackgroundForPct: (pct) => `pct-${pct}`,
     escapeHtml: (value) => String(value).replaceAll("<", "&lt;").replaceAll(">", "&gt;"),

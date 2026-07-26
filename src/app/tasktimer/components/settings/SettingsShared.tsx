@@ -40,6 +40,7 @@ function SettingsNavTile({
     >
       <AppImg className="settingsMenuItemIcon settingsNavItemIcon" src={icon} alt="" aria-hidden="true" />
       <span className="settingsNavRowText">{label}</span>
+      <span className="settingsNavArrow" aria-hidden="true" />
     </button>
   );
 }

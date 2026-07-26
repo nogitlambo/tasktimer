@@ -40,6 +40,7 @@ function renderCard(overrides: Partial<Parameters<typeof renderTaskCardHtml>[0]>
     isTimeGoalCompleted: false,
     hasTaskHistory: false,
     dynamicColorsEnabled: false,
+    fullColorTaskCardsEnabled: false,
     modeColor: "#00ffff",
     fillBackgroundForPct: (pct) => `pct-${pct}`,
     escapeHtml: (value) => value.replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
@@ -381,6 +382,24 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="history"');
     expect(rendered.html).toContain('class="btn btn-accent small taskPrimaryAction taskPrimaryActionLaunch"');
     expect(rendered.html).toContain('data-action="start" title="Launch" aria-label="Launch"');
+  });
+
+  it("renders assigned task colors as the card surface when full color task cards are enabled", () => {
+    const rendered = renderCard({ fullColorTaskCardsEnabled: true });
+
+    expect(rendered.html).toContain("taskFaceShellFront taskFullColorCard");
+    expect(rendered.html).toContain('style="--task-history-tab-border-gap:160px;--task-color:#33aaff"');
+    expect(rendered.html).not.toContain('class="taskColorPill"');
+  });
+
+  it("keeps invalid assigned task colors on the default card surface", () => {
+    const rendered = renderCard({
+      task: baseTask({ color: "not-a-color" }),
+      fullColorTaskCardsEnabled: true,
+    });
+
+    expect(rendered.html).not.toContain("taskFullColorCard");
+    expect(rendered.html).not.toContain('class="taskColorPill"');
   });
 
   it("keeps the front history tab border gap from being overdrawn by the back face", () => {

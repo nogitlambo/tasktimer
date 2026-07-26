@@ -144,6 +144,7 @@ type CreatePersistenceOptionsArgs = {
   loadTimeGoalCompleteNextTasksSetting: () => void;
   loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
+  loadFullColorTaskCardsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
   loadInteractionHapticsSetting: () => void;
@@ -919,6 +920,10 @@ export function createTaskTimerPreferencesContext(
     setDynamicColorsEnabledState: (value) => {
       args.preferencesState.set("dynamicColorsEnabled", value);
     },
+    getFullColorTaskCardsEnabled: () => args.preferencesState.get("fullColorTaskCardsEnabled") === true,
+    setFullColorTaskCardsEnabledState: (value) => {
+      args.preferencesState.set("fullColorTaskCardsEnabled", value);
+    },
     getMobilePushAlertsEnabled: () => asType<boolean>(args.preferencesState.get("mobilePushAlertsEnabled")),
     setMobilePushAlertsEnabledState: (value) => {
       args.preferencesState.set("mobilePushAlertsEnabled", value);
@@ -1058,6 +1063,7 @@ export function createTaskTimerPersistenceContext(
     loadTimeGoalCompleteNextTasksSetting: args.loadTimeGoalCompleteNextTasksSetting,
     loadDashboardPreviousWeekSetting: args.loadDashboardPreviousWeekSetting,
     loadDynamicColorsSetting: args.loadDynamicColorsSetting,
+    loadFullColorTaskCardsSetting: args.loadFullColorTaskCardsSetting,
     loadInteractionClickSoundSetting: args.loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting: args.loadAchievementSoundsSetting,
     loadInteractionHapticsSetting: args.loadInteractionHapticsSetting,
@@ -1249,6 +1255,7 @@ export function createTaskTimerTasksContext(args: CreateTasksOptionsArgs): Param
     getCheckpointAlertSoundMode: () =>
       args.preferencesState.get("checkpointAlertSoundMode") === "repeat" ? "repeat" : "once",
     getDynamicColorsEnabled: () => asType<boolean>(args.preferencesState.get("dynamicColorsEnabled")),
+    getFullColorTaskCardsEnabled: () => args.preferencesState.get("fullColorTaskCardsEnabled") === true,
     getRewardProgress: () => asType<RewardProgressV1>(args.rewardState.get("rewardProgress")),
     ...args.editStateBindings,
     getCheckpointAutoResetDirty: args.checkpointAutoResetDirty,

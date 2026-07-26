@@ -88,6 +88,7 @@ type CreateTaskTimerPersistenceOptions = {
   loadTimeGoalCompleteNextTasksSetting: () => void;
   loadDashboardPreviousWeekSetting: () => void;
   loadDynamicColorsSetting: () => void;
+  loadFullColorTaskCardsSetting: () => void;
   loadInteractionClickSoundSetting: () => void;
   loadAchievementSoundsSetting: () => void;
   loadInteractionHapticsSetting: () => void;
@@ -349,6 +350,7 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadTimeGoalCompleteNextTasksSetting();
     options.loadDashboardPreviousWeekSetting();
     options.loadDynamicColorsSetting();
+    options.loadFullColorTaskCardsSetting();
     options.loadInteractionClickSoundSetting();
     options.loadAchievementSoundsSetting();
     options.loadInteractionHapticsSetting();

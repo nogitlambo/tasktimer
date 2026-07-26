@@ -137,6 +137,7 @@ describe("createTaskTimerRuntimeComposition", () => {
       taskView: "tile",
       taskOrderBy: "custom",
       dynamicColorsEnabled: true,
+      fullColorTaskCardsEnabled: false,
       autoFocusOnTaskLaunchEnabled: false,
       timeGoalCompleteNextTasksEnabled: false,
       dashboardPreviousWeekVisible: true,

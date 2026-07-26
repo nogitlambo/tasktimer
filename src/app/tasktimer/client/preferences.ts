@@ -154,6 +154,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       timeGoalCompleteNextTasksEnabled: ctx.getTimeGoalCompleteNextTasksEnabled(),
       dashboardPreviousWeekVisible: ctx.getDashboardPreviousWeekVisible(),
       dynamicColorsEnabled: ctx.getDynamicColorsEnabled(),
+      fullColorTaskCardsEnabled: ctx.getFullColorTaskCardsEnabled(),
       mobilePushAlertsEnabled: ctx.getMobilePushAlertsEnabled(),
       webPushAlertsEnabled: ctx.getWebPushAlertsEnabled(),
       interactionClickSoundEnabled: ctx.getInteractionClickSoundEnabled(),
@@ -407,6 +408,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     ctx.toggleSwitchElement(els.timeGoalCompleteNextTasksToggle as HTMLElement | null, ctx.getTimeGoalCompleteNextTasksEnabled());
     ctx.toggleSwitchElement(els.dashboardPreviousWeekToggle as HTMLElement | null, ctx.getDashboardPreviousWeekVisible());
     ctx.toggleSwitchElement(els.taskDynamicColorsToggle as HTMLElement | null, ctx.getDynamicColorsEnabled());
+    ctx.toggleSwitchElement(els.taskFullColorCardsToggle as HTMLElement | null, ctx.getFullColorTaskCardsEnabled());
     ctx.toggleSwitchElement(els.taskMobilePushAlertsToggle as HTMLElement | null, ctx.getMobilePushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskWebPushAlertsToggle as HTMLElement | null, ctx.getWebPushAlertsEnabled());
     ctx.toggleSwitchElement(els.taskInteractionClickSoundToggle as HTMLElement | null, ctx.getInteractionClickSoundEnabled());
@@ -498,6 +500,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
 
   function loadDynamicColorsSetting() {
     ctx.setDynamicColorsEnabledState(preferenceService.loadDynamicColorsEnabled());
+  }
+
+  function loadFullColorTaskCardsSetting() {
+    ctx.setFullColorTaskCardsEnabledState(preferenceService.loadFullColorTaskCardsEnabled());
   }
 
   function loadInteractionClickSoundSetting() {
@@ -663,6 +669,10 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   }
 
   function saveDynamicColorsSetting() {
+    persistPreferencesToCloud();
+  }
+
+  function saveFullColorTaskCardsSetting() {
     persistPreferencesToCloud();
   }
 
@@ -1090,6 +1100,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     saveAutoFocusOnTaskLaunchSetting();
     saveTimeGoalCompleteNextTasksSetting();
     saveDynamicColorsSetting();
+    saveFullColorTaskCardsSetting();
     saveMobilePushAlertsSetting();
     saveAchievementSoundsSetting();
     saveCheckpointAlertSettings();
@@ -1248,6 +1259,17 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         if (!requireAdvancedTaskConfig("Dynamic colors")) return;
         ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
+        syncTaskSettingsUi();
+        persistInlineTaskSettingsImmediate();
+      },
+    });
+    bindToggleRow({
+      on: ctx.on,
+      control: els.taskFullColorCardsToggle,
+      row: els.taskFullColorCardsToggleRow,
+      ignoreSelector: "#taskFullColorCardsToggle",
+      handleToggle: () => {
+        ctx.setFullColorTaskCardsEnabledState(!ctx.getFullColorTaskCardsEnabled());
         syncTaskSettingsUi();
         persistInlineTaskSettingsImmediate();
       },
@@ -1437,6 +1459,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       saveTimeGoalCompleteNextTasksSetting();
       saveDashboardPreviousWeekSetting();
       saveDynamicColorsSetting();
+      saveFullColorTaskCardsSetting();
       saveMobilePushAlertsSetting();
       saveInteractionClickSoundSetting();
       saveInteractionHapticsSetting();
@@ -1485,11 +1508,13 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     isSwitchOn: ctx.isSwitchOn,
     syncTaskSettingsUi,
     loadDynamicColorsSetting,
+    loadFullColorTaskCardsSetting,
     loadInteractionClickSoundSetting,
     loadAchievementSoundsSetting,
     loadInteractionHapticsSetting,
     loadMobilePushAlertsSetting,
     saveDynamicColorsSetting,
+    saveFullColorTaskCardsSetting,
     saveInteractionClickSoundSetting,
     saveAchievementSoundsSetting,
     saveInteractionHapticsSetting,

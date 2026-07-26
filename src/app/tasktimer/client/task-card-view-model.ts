@@ -70,6 +70,7 @@ type RenderTaskCardOptions = {
   isTimeGoalCompleted: boolean;
   hasTaskHistory: boolean;
   dynamicColorsEnabled: boolean;
+  fullColorTaskCardsEnabled: boolean;
   modeColor: string;
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: string) => string;
@@ -446,6 +447,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     isTimeGoalCompleted,
     hasTaskHistory,
     dynamicColorsEnabled,
+    fullColorTaskCardsEnabled,
     modeColor,
     fillBackgroundForPct,
     escapeHtml,
@@ -465,9 +467,13 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     (historyRevealPhase === "closingSpace" ? " taskHistoryClosingSpace" : "") +
     (historyRevealPhase === "open" ? " taskHistoryOpen" : "");
   const taskColor = normalizeTaskColor(task.color);
-  const taskColorPillHtml = taskColor
+  const useFullColorCard = fullColorTaskCardsEnabled && !!taskColor;
+  const taskColorPillHtml = taskColor && !useFullColorCard
     ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${escapeHtml(taskColor)}"></span>`
     : "";
+  const taskFaceShellFrontStyle =
+    `--task-history-tab-border-gap:${TASK_HISTORY_TAB_BORDER_GAP_PX}px` +
+    (useFullColorCard ? `;--task-color:${escapeHtml(taskColor)}` : "");
   const progressModel = buildTaskProgressModel({
     milestones: sortedMilestones,
     elapsedSec,
@@ -530,7 +536,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     html: `
         <div class="taskFlipScene">
           <div class="taskFace taskFaceFront">
-            <div class="taskFaceShell taskFaceShellFront" style="--task-history-tab-border-gap:${TASK_HISTORY_TAB_BORDER_GAP_PX}px">
+            <div class="taskFaceShell taskFaceShellFront${useFullColorCard ? " taskFullColorCard" : ""}" style="${taskFaceShellFrontStyle}">
             ${
               hasCheckpointRepeatForTask
                 ? '<button class="iconBtn checkpointMuteBtn" data-action="muteCheckpointAlert" title="Mute checkpoint alert" aria-label="Mute checkpoint alert">&#128276;</button>'

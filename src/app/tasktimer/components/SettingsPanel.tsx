@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { createFeedbackItem, type FeedbackType } from "../lib/feedbackStore";
 import { SettingsNav } from "./settings/SettingsShared";
 import { SettingsAccountPane } from "./settings/SettingsAccountPane";
 import { SettingsAppearancePane } from "./settings/SettingsAppearancePane";
@@ -24,6 +26,12 @@ const EMPTY_FEEDBACK: SettingsFeedbackState = {
   type: "",
   details: "",
 };
+
+function buildSettingsFeedbackTitle(feedback: SettingsFeedbackState) {
+  const details = feedback.details.trim().replace(/\s+/g, " ");
+  if (!details) return "";
+  return details.length > 120 ? `${details.slice(0, 117)}...` : details;
+}
 
 const SETTINGS_DETAIL_TITLES: Partial<Record<SettingsPaneKey, string>> = {
   general: "Profile",
@@ -67,12 +75,75 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
     setAuthStatus: accountState.setAuthStatus,
   });
   const [feedback, setFeedback] = useState<SettingsFeedbackState>(EMPTY_FEEDBACK);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState("");
+  const [feedbackError, setFeedbackError] = useState("");
 
   const canSubmitFeedback = useMemo(() => {
     const feedbackEmail = feedback.anonymous ? feedback.email : feedback.email || accountState.authUserEmail || "";
     const isValidFeedbackEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail.trim());
-    return (feedback.anonymous || isValidFeedbackEmail) && !!feedback.type && feedback.details.trim().length > 0;
-  }, [accountState.authUserEmail, feedback]);
+    return !feedbackSubmitting && (feedback.anonymous || isValidFeedbackEmail) && !!feedback.type && feedback.details.trim().length > 0;
+  }, [accountState.authUserEmail, feedback, feedbackSubmitting]);
+
+  const handleSubmitFeedback = useCallback(async () => {
+    if (feedbackSubmitting) return;
+    const feedbackEmail = feedback.anonymous ? "" : String(feedback.email || accountState.authUserEmail || "").trim();
+    const auth = getFirebaseAuthClient();
+    const currentUser = auth?.currentUser || null;
+    const uid = String(currentUser?.uid || accountState.authUserUid || "").trim();
+    const type = String(feedback.type || "").trim() as FeedbackType;
+    const title = buildSettingsFeedbackTitle(feedback);
+    const details = feedback.details.trim();
+    if (!uid) {
+      setFeedbackStatus("");
+      setFeedbackError("You must be signed in to submit feedback.");
+      return;
+    }
+    if (!feedback.anonymous && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackEmail)) {
+      setFeedbackStatus("");
+      setFeedbackError("Enter a valid email address before submitting feedback.");
+      return;
+    }
+    if (type !== "bug" && type !== "feature" && type !== "general") {
+      setFeedbackStatus("");
+      setFeedbackError("Select a feedback type before submitting.");
+      return;
+    }
+    if (!details || !title) {
+      setFeedbackStatus("");
+      setFeedbackError("Enter feedback details before submitting.");
+      return;
+    }
+    setFeedbackSubmitting(true);
+    setFeedbackStatus("");
+    setFeedbackError("");
+    try {
+      const idToken = await currentUser?.getIdToken();
+      const result = await createFeedbackItem({
+        authToken: idToken || "",
+        ownerUid: uid,
+        authorDisplayName: accountState.account.authUserAlias || null,
+        authorEmail: feedback.anonymous ? null : feedbackEmail,
+        authorRankThumbnailSrc: null,
+        authorCurrentRankId: null,
+        isAnonymous: feedback.anonymous,
+        type,
+        title,
+        details,
+      });
+      if (!result.ok) {
+        setFeedbackError(result.message);
+        return;
+      }
+      setFeedback(EMPTY_FEEDBACK);
+      setFeedbackStatus("Feedback submitted successfully.");
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : "Could not submit feedback.";
+      setFeedbackError(message);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  }, [accountState.account.authUserAlias, accountState.authUserEmail, accountState.authUserUid, feedback, feedbackSubmitting]);
 
   const activeDetailTitle = paneState.activePane ? SETTINGS_DETAIL_TITLES[paneState.activePane] || "Settings" : "Settings";
   const activeDetailSubtitle = paneState.activePane ? SETTINGS_DETAIL_SUBTITLES[paneState.activePane] || "" : "";
@@ -150,6 +221,10 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
             feedback={{ ...feedback, email: feedback.anonymous ? feedback.email : feedback.email || accountState.authUserEmail || "" }}
             setFeedback={setFeedback}
             canSubmitFeedback={canSubmitFeedback}
+            feedbackSubmitting={feedbackSubmitting}
+            feedbackStatus={feedbackStatus}
+            feedbackError={feedbackError}
+            onSubmitFeedback={handleSubmitFeedback}
           />
           <SettingsDataPane active={paneState.activePane === "data"} exiting={paneState.exitingPane === "data"} />
         </div>

@@ -354,6 +354,7 @@ function isUsableXpAwardRect(rect: Pick<DOMRect, "left" | "top" | "width" | "hei
 
 const XP_AWARD_UNIT_DELIVERY_AUDIO_SRC = "/xp_increase.mp3";
 const XP_AWARD_DELIVERY_DONE_AUDIO_SRC = "/xp_increase_done.mp3";
+const DAILY_REWARD_AUDIO_SRC = "/daily_reward.mp3";
 
 function LeaderboardAvatar({ profile, small = false }: { profile: LeaderboardProfile; small?: boolean }) {
   const avatarSrc = getLeaderboardAvatarRenderSrc(profile);
@@ -896,6 +897,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   const xpCountAnimationStartedRef = useRef(false);
   const xpAwardUnitDeliveryAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_UNIT_DELIVERY_AUDIO_SRC), []);
   const xpAwardDeliveryDoneAudioPlayer = useMemo(() => createClickAudioPlayer(XP_AWARD_DELIVERY_DONE_AUDIO_SRC), []);
+  const dailyRewardAudioPlayer = useMemo(() => createClickAudioPlayer(DAILY_REWARD_AUDIO_SRC), []);
   const effectiveDisplayedXp = xpAnimationState.pending || xpAnimationState.active ? displayedXp : rewardProgress.totalXp;
   const clearXpAwardExtraTimers = useCallback(() => {
     xpAnimationExtraTimersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -975,7 +977,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     }
     dailyRewardPromptedDayKeyRef.current = dayKey;
     openDailyRewardOverlay(document);
-  }, [cachedPreferences, dailyRewardRetrySeq, isAuthenticated]);
+    if (achievementSoundsEnabled) dailyRewardAudioPlayer.play();
+  }, [achievementSoundsEnabled, cachedPreferences, dailyRewardAudioPlayer, dailyRewardRetrySeq, isAuthenticated]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;

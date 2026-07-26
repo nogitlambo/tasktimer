@@ -190,6 +190,7 @@ describe("saveTask Firestore planned start payloads", () => {
       startupModule: "friends",
       taskOrderBy: "dateAddedDesc",
       dynamicColorsEnabled: false,
+      fullColorTaskCardsEnabled: true,
       rewards: {
         totalXp: 10,
         completedSessions: 1,
@@ -245,6 +246,7 @@ describe("saveTask Firestore planned start payloads", () => {
       expect.objectContaining({
         weekStarting: "sun",
         autoFocusOnTaskLaunchEnabled: false,
+        fullColorTaskCardsEnabled: true,
         updatedAtMs: 0,
       })
     );
@@ -261,6 +263,7 @@ describe("saveTask Firestore planned start payloads", () => {
     expect(findSetDocWrite("users/user-1/preferences/v1")).toEqual(
       expect.objectContaining({
         startupModule: "dashboard",
+        fullColorTaskCardsEnabled: false,
         updatedAtMs: 123,
       })
     );

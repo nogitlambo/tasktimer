@@ -85,6 +85,7 @@ export type TaskTimerMutableState = {
   taskView: "list" | "tile";
   taskOrderBy: TaskOrderBy;
   dynamicColorsEnabled: boolean;
+  fullColorTaskCardsEnabled: boolean;
   autoFocusOnTaskLaunchEnabled: boolean;
   timeGoalCompleteNextTasksEnabled: boolean;
   dashboardPreviousWeekVisible: boolean;

@@ -248,6 +248,9 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("TASKTIMER_DAILY_REWARD_XP_CLAIM_DELIVERED_EVENT");
     expect(source).toContain("dispatchDailyRewardXpClaimEvent");
     expect(source).toContain("closeDailyRewardOverlay(document)");
+    expect(source).toContain('const DAILY_REWARD_AUDIO_SRC = "/daily_reward.mp3";');
+    expect(source).toContain("const dailyRewardAudioPlayer = useMemo(() => createClickAudioPlayer(DAILY_REWARD_AUDIO_SRC), []);");
+    expect(source).toMatch(/openDailyRewardOverlay\(document\);\r?\n\s+if \(achievementSoundsEnabled\) dailyRewardAudioPlayer\.play\(\);/);
   });
 
   it("keeps modal XP delivery undimmed and emits unit payloads from the XP value", () => {

@@ -33,6 +33,17 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
               </button>
             </div>
           </div>
+          <div className="toggleRow" id="taskFullColorCardsToggleRow">
+            <span>Use full color task cards</span>
+            <button
+              className="switch"
+              id="taskFullColorCardsToggle"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Use full color task cards"
+            />
+          </div>
         </section>
       </div>
     </SettingsDetailPane>

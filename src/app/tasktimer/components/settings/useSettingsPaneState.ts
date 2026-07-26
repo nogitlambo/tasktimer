@@ -100,8 +100,8 @@ export function getSettingsNavItems(): SettingsNavItem[] {
     { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
     { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
     { key: "sounds", label: "Sounds & Alerts", icon: "/icons/icons_default/sounds.webp" },
-    { key: "notifications", label: "Notifications", icon: "/Settings.svg" },
-    { key: "help", label: "Help Center", icon: "/About.svg", id: "commandCenterHelpCenterBtn" },
+    { key: "notifications", label: "Notifications", icon: "/icons/icons_default/toast.webp" },
+    { key: "help", label: "Help Center", icon: "/icons/icons_default/question.webp", id: "commandCenterHelpCenterBtn" },
     { key: "data", label: "Data", icon: "/History_Manager.svg" },
     { key: "about", label: "About", icon: "/About.svg" },
   ];

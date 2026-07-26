@@ -33,6 +33,7 @@ function createScheduleRenderContext(weekStarting: "sun" | "mon" | "tue" | "wed"
     getOptimalProductivityStartTime: () => "09:00",
     getOptimalProductivityEndTime: () => "17:00",
     getOptimalProductivityDays: () => ["mon", "wed"],
+    getFullColorTaskCardsEnabled: () => false,
   } as unknown) as Parameters<typeof buildTaskTimerScheduleGridHtml>[0];
 }
 
@@ -161,6 +162,65 @@ describe("schedule render", () => {
     expect(html).toContain('class="taskColorPill"');
     expect(html).not.toContain("scheduleTaskCardRecurringBadge");
     expect(html).not.toContain("hasRecurringBadge");
+  });
+
+  it("renders assigned task colors as the schedule block surface when full color task cards are enabled", () => {
+    const ctx = createScheduleRenderContext("mon");
+    ctx.getFullColorTaskCardsEnabled = () => true;
+    ctx.scheduleRuntime.buildViewModel = () => ({
+      scheduled: [
+        {
+          task: {
+            id: "task-1",
+            name: "Full Color Task",
+            order: 1,
+            color: "#3f51b5",
+            timeGoalEnabled: true,
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+          } as Task,
+          day: "mon",
+          startMinutes: 8 * 60,
+          durationMinutes: 60,
+        },
+      ],
+      unscheduled: [],
+    });
+
+    const html = buildTaskTimerScheduleGridHtml(ctx);
+
+    expect(html).toContain("scheduleTaskCard scheduleTaskCardFullColor");
+    expect(html).toContain("height:88px;--task-color:#3f51b5");
+    expect(html).not.toContain('class="taskColorPill"');
+  });
+
+  it("keeps invalid assigned task colors on the default schedule block surface", () => {
+    const ctx = createScheduleRenderContext("mon");
+    ctx.getFullColorTaskCardsEnabled = () => true;
+    ctx.scheduleRuntime.buildViewModel = () => ({
+      scheduled: [
+        {
+          task: {
+            id: "task-1",
+            name: "Invalid Color Task",
+            order: 1,
+            color: "not-a-color",
+            timeGoalEnabled: true,
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+          } as Task,
+          day: "mon",
+          startMinutes: 8 * 60,
+          durationMinutes: 60,
+        },
+      ],
+      unscheduled: [],
+    });
+
+    const html = buildTaskTimerScheduleGridHtml(ctx);
+
+    expect(html).not.toContain("scheduleTaskCardFullColor");
+    expect(html).not.toContain('class="taskColorPill"');
   });
 
   it("highlights mobile day tabs for selected optimal productivity days", () => {

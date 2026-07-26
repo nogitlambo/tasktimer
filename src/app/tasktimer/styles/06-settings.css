@@ -5272,17 +5272,25 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile{
     width:100% !important;
-    min-height:44px !important;
+    min-height:58px !important;
     aspect-ratio:auto !important;
     flex-direction:row !important;
     align-items:center !important;
-    justify-content:center !important;
-    gap:8px !important;
-    padding:10px 16px !important;
-    text-align:center !important;
+    justify-content:flex-start !important;
+    gap:12px !important;
+    padding:10px 8px 10px 8px !important;
+    text-align:left !important;
     text-transform:none;
-    letter-spacing:.08em;
+    letter-spacing:0;
+    border-radius:0 !important;
+    border:0 !important;
+    border-bottom:1px solid rgba(255,255,255,.09) !important;
+    clip-path:none !important;
     box-shadow:none !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child{
+    border-bottom-color:transparent !important;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
@@ -5299,12 +5307,68 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     display:none;
   }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile .settingsNavItemIcon{
+    display:block !important;
+    flex:0 0 42px !important;
+    width:42px !important;
+    height:42px !important;
+    max-width:42px !important;
+    max-height:42px !important;
+    margin:0 !important;
+    padding:9px !important;
+    border-radius:50% !important;
+    background:transparent !important;
+    background-image:none !important;
+    box-shadow:none !important;
+    filter:brightness(0) invert(1) !important;
+    object-fit:contain;
+  }
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile .settingsNavRowText{
-    flex:0 1 auto !important;
-    text-align:center !important;
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    margin:0 !important;
+    text-align:left !important;
     font-family:var(--font-orbitron) !important;
     font-size:12px;
     line-height:1.15;
+    letter-spacing:0;
+    white-space:nowrap !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover .settingsNavRowText,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible .settingsNavRowText{
+    font-size:12px;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavArrow{
+    position:relative;
+    flex:0 0 14px;
+    width:14px;
+    height:14px;
+    margin-left:auto;
+    opacity:.82;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavArrow::before,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavArrow::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    right:1px;
+    width:8px;
+    height:1.5px;
+    border-radius:999px;
+    background:rgba(255,255,255,.86);
+    transform-origin:right center;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavArrow::before{
+    transform:translateY(-50%) rotate(45deg);
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavArrow::after{
+    transform:translateY(-50%) rotate(-45deg);
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout:not(.isMobileDetailOpen) .settingsDetailPanel{
@@ -6464,7 +6528,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span:not(.settingsMenuItemHelper){
   width:100%;
-  text-align:left !important;
+  text-align:center !important;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > .settingsMenuItemHelper{
@@ -6474,6 +6538,30 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   line-height:1.35 !important;
   letter-spacing:0 !important;
   color:rgba(218,229,236,.86) !important;
+  text-align:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataList{
+  align-items:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText{
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText:has(.settingsMenuItemHelper){
+  align-items:center !important;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
+  text-align:center !important;
 }
 
 @media (max-width: 980px){

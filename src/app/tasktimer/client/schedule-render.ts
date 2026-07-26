@@ -33,6 +33,7 @@ type TaskTimerScheduleRenderContext = {
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
   getOptimalProductivityDays: () => OptimalProductivityDays;
+  getFullColorTaskCardsEnabled: () => boolean;
 };
 
 type ProductivityHighlightSegment = {
@@ -114,12 +115,15 @@ export function buildTaskTimerScheduleGridHtml(ctx: TaskTimerScheduleRenderConte
           const metaText = `${formatScheduleMinutes(entry.startMinutes)} | ${formatScheduleDurationMinutes(entry.durationMinutes)}`;
           const shortClass = entry.durationMinutes < 30 ? " isShort" : "";
           const taskColor = normalizeTaskColor(entry.task.color);
-          const taskColorPill = taskColor
+          const useFullColorCard = ctx.getFullColorTaskCardsEnabled() && !!taskColor;
+          const fullColorClass = useFullColorCard ? " scheduleTaskCardFullColor" : "";
+          const taskColorStyle = useFullColorCard ? `;--task-color:${ctx.escapeHtmlUI(taskColor)}` : "";
+          const taskColorPill = taskColor && !useFullColorCard
             ? `<span class="taskColorPill" aria-label="Task color" style="--task-color:${ctx.escapeHtmlUI(taskColor)}"></span>`
             : "";
-          return `<div class="scheduleTaskCard${shortClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
+          return `<div class="scheduleTaskCard${shortClass}${fullColorClass}" ${isMobileLayout ? "" : 'draggable="true"'} data-schedule-task-id="${ctx.escapeHtmlUI(
             String(entry.task.id || "")
-          )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px">
+          )}" data-schedule-task-day="${day}" style="top:${topPx}px;height:${heightPx}px${taskColorStyle}">
             <div class="scheduleTaskCardTopRow">
               <span class="scheduleTaskCardName">${ctx.escapeHtmlUI(entry.task.name || "Task")}</span>
               ${taskColorPill}

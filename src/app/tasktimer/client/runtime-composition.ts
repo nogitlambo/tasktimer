@@ -99,6 +99,7 @@ export function createTaskTimerRuntimeComposition(
     taskView: "tile",
     taskOrderBy: initialState.taskOrderBy,
     dynamicColorsEnabled: initialState.dynamicColorsEnabled,
+    fullColorTaskCardsEnabled: initialState.fullColorTaskCardsEnabled,
     autoFocusOnTaskLaunchEnabled: initialState.autoFocusOnTaskLaunchEnabled,
     timeGoalCompleteNextTasksEnabled: initialState.timeGoalCompleteNextTasksEnabled,
     dashboardPreviousWeekVisible: initialState.dashboardPreviousWeekVisible,

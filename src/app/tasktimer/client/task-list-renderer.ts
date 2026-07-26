@@ -41,6 +41,7 @@ type TaskListRendererOptions = {
   hasFriends: () => boolean;
   isTaskSharedByOwner: (taskId: string) => boolean;
   getDynamicColorsEnabled: () => boolean;
+  getFullColorTaskCardsEnabled: () => boolean;
   getModeColor: (mode: "mode1") => string;
   fillBackgroundForPct: (pct: number) => string;
   escapeHtml: (value: unknown) => string;
@@ -221,6 +222,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         ),
         hasTaskHistory,
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
+        fullColorTaskCardsEnabled: options.getFullColorTaskCardsEnabled(),
         modeColor: options.getModeColor("mode1"),
         fillBackgroundForPct: options.fillBackgroundForPct,
         escapeHtml: options.escapeHtml,

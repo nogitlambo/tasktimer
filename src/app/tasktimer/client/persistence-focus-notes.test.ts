@@ -132,6 +132,7 @@ function createHarness(overrides?: {
     loadTimeGoalCompleteNextTasksSetting: () => {},
     loadDashboardPreviousWeekSetting: () => {},
     loadDynamicColorsSetting: () => {},
+    loadFullColorTaskCardsSetting: () => {},
     loadInteractionClickSoundSetting: () => {},
     loadAchievementSoundsSetting: () => {},
     loadInteractionHapticsSetting: () => {},

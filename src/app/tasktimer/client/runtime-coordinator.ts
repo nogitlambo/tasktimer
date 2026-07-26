@@ -29,6 +29,7 @@ type CreateTaskTimerRuntimeCoordinatorOptions = {
   getOptimalProductivityStartTime: () => string;
   getOptimalProductivityEndTime: () => string;
   getOptimalProductivityDays: () => OptimalProductivityDays;
+  getFullColorTaskCardsEnabled: () => boolean;
   renderTasksPage: () => void;
   getHistoryByTaskId: () => HistoryByTaskId;
   getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
@@ -351,6 +352,7 @@ export function createTaskTimerRuntimeCoordinator(options: CreateTaskTimerRuntim
       getOptimalProductivityStartTime: options.getOptimalProductivityStartTime,
       getOptimalProductivityEndTime: options.getOptimalProductivityEndTime,
       getOptimalProductivityDays: options.getOptimalProductivityDays,
+      getFullColorTaskCardsEnabled: options.getFullColorTaskCardsEnabled,
     });
     const resolvedScroller = resolveScheduleScrollContainer(options.els.scheduleGridScroller, options.els.scheduleGrid);
     if (!(pendingScheduleEntryScroll || scheduleOpenFocusLockActive()) || !resolvedScroller) return;

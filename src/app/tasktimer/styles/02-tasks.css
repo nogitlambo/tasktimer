@@ -2762,6 +2762,16 @@ body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch Ap
   color:#fbffe3;
 }
 
+body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.scheduleTaskCardFullColor,
+body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleTaskCard.scheduleTaskCardFullColor{
+  border-color: color-mix(in srgb, var(--task-color) 62%, rgba(255,255,255,.12));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--task-color) 38%, #111418 62%), color-mix(in srgb, var(--task-color) 22%, #070a0d 78%));
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.24),
+    0 0 12px color-mix(in srgb, var(--task-color) 24%, transparent);
+}
+
 body[data-theme="lime"][data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageSchedule .scheduleProductivityHighlightBand{
   background:
     linear-gradient(180deg, rgba(103,255,159,.22), rgba(103,255,159,.12)),
@@ -4278,6 +4288,18 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
     inset 0 0 0 3px color-mix(in srgb, var(--task-color) 76%, #fff 24%),
     0 0 16px color-mix(in srgb, var(--task-color) 58%, transparent),
     0 0 0 1px rgba(0,0,0,.78);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront.taskFullColorCard{
+  --task-card-bottom-border-color: color-mix(in srgb, var(--task-color) 58%, #1b2228 42%);
+  --task-card-outline-color: color-mix(in srgb, var(--task-color) 64%, #161b20 36%);
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--task-color) 24%, transparent) 0%, transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--task-color) 34%, #080b0e 66%), color-mix(in srgb, var(--task-color) 18%, #05080b 82%)) !important;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.4),
+    0 0 18px color-mix(in srgb, var(--task-color) 34%, transparent),
+    inset 0 0 26px rgba(0,0,0,.56) !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn{

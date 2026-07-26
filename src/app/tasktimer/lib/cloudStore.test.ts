@@ -53,6 +53,7 @@ describe("normalizeUserPreferencesDocument", () => {
     expect(normalizedLegacyDocument.updatedAtMs).toBe(0);
     expect(buildDefaultUserPreferences(nowMs).autoFocusOnTaskLaunchEnabled).toBe(false);
     expect(buildDefaultUserPreferences(nowMs).timeGoalCompleteNextTasksEnabled).toBe(false);
+    expect(buildDefaultUserPreferences(nowMs).fullColorTaskCardsEnabled).toBe(false);
   });
 
   it.each([
@@ -64,6 +65,7 @@ describe("normalizeUserPreferencesDocument", () => {
     ["taskView", "list", "tile"],
     ["taskOrderBy", "dateAddedDesc", "dateAddedDesc"],
     ["dynamicColorsEnabled", false, false],
+    ["fullColorTaskCardsEnabled", true, true],
     ["autoFocusOnTaskLaunchEnabled", true, true],
     ["timeGoalCompleteNextTasksEnabled", true, true],
     ["dashboardPreviousWeekVisible", false, false],

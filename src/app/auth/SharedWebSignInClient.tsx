@@ -36,6 +36,7 @@ import { handOffEmailLink, listenForEmailLinkHandoff } from "./emailLinkHandoff"
 import { sendSignInLinkEmail } from "./emailLinkClient";
 import { getEmailLinkSignInErrorMessage } from "./emailLinkSignInError";
 import { extractWrappedEmailSignInLink } from "./emailLinkUrl";
+import { buildNativeEmailLinkHandoffUrl, shouldAttemptNativeEmailLinkHandoff } from "./nativeEmailLinkRedirect";
 
 const EMAIL_LINK_STORAGE_KEY = "tasktimer:authEmailLinkPendingEmail";
 const workspaceRepository = createTaskTimerWorkspaceRepository();
@@ -427,6 +428,23 @@ export default function SharedWebSignInClient({
             setAuthError("");
             setAuthStatus("Sign-in continued in your original tab.");
             window.setTimeout(() => window.close(), 100);
+            return;
+          }
+          const nativeHandoffUrl = buildNativeEmailLinkHandoffUrl(href, window.navigator.userAgent || "");
+          if (nativeHandoffUrl) {
+            setAuthBusy(true);
+            setAuthError("");
+            setAuthStatus("Opening TaskLaunch to complete sign-in...");
+            window.location.assign(nativeHandoffUrl);
+            window.setTimeout(() => {
+              if (cancelled) return;
+              if (
+                !shouldAttemptNativeEmailLinkHandoff(window.location.href, window.navigator.userAgent || "") ||
+                document.visibilityState === "visible"
+              ) {
+                void completeEmailLinkSignIn(window.location.href, { source: "local" });
+              }
+            }, 1800);
             return;
           }
         }

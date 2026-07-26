@@ -3028,6 +3028,13 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   isolation: isolate !important;
 }
 
+#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal{
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  grid-template-rows: auto auto auto !important;
+}
+
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal::before,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::before,
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::before,
@@ -9474,10 +9481,11 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   position: relative !important;
   display: grid !important;
   width: min(820px, calc(100vw - 28px)) !important;
-  min-height: min(460px, calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom))) !important;
+  min-height: 0 !important;
   max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
-  overflow: hidden !important;
-  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  grid-template-rows: auto auto auto auto auto auto !important;
   padding: 0 !important;
   border-top: 1px solid rgba(255, 255, 255, .2) !important;
   border-right: 1px solid rgba(255, 255, 255, .08) !important;
@@ -9524,7 +9532,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   position: relative;
   z-index: 2;
   display: flex;
-  min-height: 64px;
+  min-height: 54px;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -9554,9 +9562,9 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .confirmText{
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   margin: 0 !important;
-  padding: 58px 46px 18px;
+  padding: 20px 46px 18px;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, .38), transparent 28%, rgba(255, 255, 255, .025) 78%, rgba(0, 0, 0, .2)),
     rgba(8, 14, 19, .74);
@@ -9579,12 +9587,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .confirmBtns{
   display: flex !important;
-  min-height: 96px;
+  min-height: 0;
   align-items: center;
   justify-content: center !important;
   gap: clamp(22px, 5vw, 52px) !important;
   margin-top: 0 !important;
-  padding: 22px 36px 24px;
+  padding: 16px 36px 18px;
   border-top: 1px solid rgba(190, 207, 218, .3);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
@@ -9601,7 +9609,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 @media (max-width: 640px){
   #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .modal{
     width: min(100%, calc(100vw - 20px)) !important;
-    min-height: min(420px, calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom))) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 28px - var(--safe-top) - var(--safe-bottom)) !important;
     border-radius: 12px !important;
   }
 
@@ -9611,12 +9620,12 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
   #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) #confirmTitle{
-    min-height: 56px;
+    min-height: 48px;
     padding: 9px 20px 7px;
   }
 
   #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .confirmText{
-    padding: 34px 24px 18px;
+    padding: 18px 24px 16px;
   }
 
   #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) #confirmChkRow,
@@ -9628,10 +9637,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
   #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .confirmBtns{
-    min-height: 92px;
+    min-height: 0;
     flex-wrap: wrap;
     gap: 16px !important;
-    padding: 22px;
+    padding: 16px 22px 18px;
   }
 }
 
@@ -14124,6 +14133,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   clip-path: none !important;
 }
 
+#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal{
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  grid-template-rows: auto auto auto !important;
+}
+
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader,
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal > h2,
@@ -14216,6 +14232,19 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .24)),
     rgba(12, 18, 24, .92) !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal > h2{
+  min-height: 54px !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .confirmText{
+  padding: 20px 46px 18px !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .confirmBtns{
+  min-height: 0 !important;
+  padding: 16px 36px 18px !important;
 }
 
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction,

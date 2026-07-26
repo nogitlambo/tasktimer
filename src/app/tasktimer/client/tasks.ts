@@ -129,6 +129,7 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     hasFriends: () => ctx.getGroupsFriendships().length > 0,
     isTaskSharedByOwner: ctx.isTaskSharedByOwner,
     getDynamicColorsEnabled: ctx.getDynamicColorsEnabled,
+    getFullColorTaskCardsEnabled: ctx.getFullColorTaskCardsEnabled,
     getModeColor: ctx.getModeColor,
     fillBackgroundForPct: ctx.fillBackgroundForPct,
     escapeHtml: ctx.escapeHtmlUI,
