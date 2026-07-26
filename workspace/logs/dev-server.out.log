@@ -123,3 +123,14 @@ Creating turbopack project { dir: 'G:\\Apps\\tasklaunch', testMode: true }
  GET /leaderboards/ 200 in 1305ms (next.js: 959ms, application-code: 346ms)
  GET /manifest.webmanifest 200 in 44ms (next.js: 35ms, application-code: 8ms)
  POST /api/account/sync-identity/ 200 in 824ms (next.js: 49ms, application-code: 775ms)
+ GET /settings/ 200 in 431ms (next.js: 105ms, application-code: 326ms)
+ GET /manifest.webmanifest 200 in 9ms (next.js: 3ms, application-code: 6ms)
+ POST /api/account/sync-identity/ 200 in 784ms (next.js: 2ms, application-code: 782ms)
+ POST /api/account/sync-identity/ 200 in 970ms (next.js: 3ms, application-code: 967ms)
+ GET /tasklaunch/?page=dashboard 200 in 361ms (next.js: 84ms, application-code: 277ms)
+ GET /manifest.webmanifest 200 in 9ms (next.js: 4ms, application-code: 5ms)
+ POST /api/account/sync-identity/ 200 in 742ms (next.js: 4ms, application-code: 738ms)
+✓ Compiled in 160ms
+ GET /friends/ 200 in 562ms (next.js: 523ms, application-code: 40ms)
+ GET /manifest.webmanifest 200 in 59ms (next.js: 47ms, application-code: 12ms)
+[?25h

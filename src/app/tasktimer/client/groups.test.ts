@@ -489,6 +489,8 @@ describe("groups friends list shared task counts", () => {
   it("renders the shared count meta without an empty status when a friend has zero shared tasks", () => {
     const { html } = renderFriendsList([]);
 
+    expect(html).toContain('data-has-shared-tasks="false"');
+    expect(html).not.toContain('data-has-shared-tasks="false" open');
     expect(html).toContain('class="friendIdentityMeta"');
     expect(html).toContain("Sharing 0 tasks");
     expect(html).not.toContain("No tasks shared with you.");
@@ -498,6 +500,7 @@ describe("groups friends list shared task counts", () => {
   it("keeps the shared count meta when a friend has shared tasks", () => {
     const { html } = renderFriendsList([makeSharedSummary()]);
 
+    expect(html).toContain('data-has-shared-tasks="true"');
     expect(html).toContain('class="friendIdentityMeta"');
     expect(html).toContain('<span class="friendIdentityDivider" aria-hidden="true">|</span>');
     expect(html).toContain('<span class="friendIdentityMeta">Sharing 1 tasks</span>');

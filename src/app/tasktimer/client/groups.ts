@@ -1726,6 +1726,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const details = node as HTMLDetailsElement;
       const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
       if (!friendUid) return;
+      if (details.getAttribute("data-has-shared-tasks") !== "true") {
+        details.open = false;
+        openIds.delete(friendUid);
+        return;
+      }
       if (details.open) openIds.add(friendUid);
       else openIds.delete(friendUid);
     });
@@ -1739,7 +1744,24 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       const details = node as HTMLDetailsElement;
       const friendUid = String(details.getAttribute("data-friend-uid") || "").trim();
       if (!friendUid) return;
+      const summary = details.querySelector("summary.friendIdentityRow") as HTMLElement | null;
+      const preventEmptyToggle = (event: Event) => {
+        if (details.getAttribute("data-has-shared-tasks") === "true") return;
+        event.preventDefault();
+        details.open = false;
+        openIds.delete(friendUid);
+      };
+      summary?.addEventListener("click", preventEmptyToggle);
+      summary?.addEventListener("keydown", (event) => {
+        const key = (event as KeyboardEvent).key;
+        if (key === "Enter" || key === " ") preventEmptyToggle(event);
+      });
       details.addEventListener("toggle", () => {
+        if (details.getAttribute("data-has-shared-tasks") !== "true") {
+          details.open = false;
+          openIds.delete(friendUid);
+          return;
+        }
         if (details.open) openIds.add(friendUid);
         else openIds.delete(friendUid);
       });
@@ -2067,8 +2089,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
         const taskCount = row.summaries.length;
         const sharedCountLabel = `Sharing ${taskCount} tasks`;
         const sharedCountMetaHtml = `<span class="friendIdentityMeta">${ctx.escapeHtmlUI(sharedCountLabel)}</span>`;
+        const hasSharedTasks = taskCount > 0;
         return `<div class="friendEntryWrap">
-          <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}"${row.isOpen ? " open" : ""}>
+          <details class="friendSharedTasksDetails" data-friend-uid="${ctx.escapeHtmlUI(row.friendUid)}" data-has-shared-tasks="${hasSharedTasks ? "true" : "false"}"${
+            row.isOpen && hasSharedTasks ? " open" : ""
+          }>
             <summary class="settingsDetailNote friendIdentityRow">
               <button class="friendIdentityBtn friendAvatarButton" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}" aria-label="Open ${ctx.escapeHtmlUI(row.alias)} profile">
                 <span class="friendAvatar friendIdentityAvatarWrap" aria-hidden="true">
