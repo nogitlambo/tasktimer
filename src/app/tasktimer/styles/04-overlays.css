@@ -3080,8 +3080,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
   opacity: .88;
   mix-blend-mode: screen;
-  animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
-  will-change: opacity, filter;
+  transform-origin: 50% 46%;
+  animation: timeGoalCompleteWheelGlow 24s linear infinite;
+  will-change: transform, opacity, filter;
 }
 
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
@@ -3111,6 +3112,25 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     filter:
       drop-shadow(0 0 28px rgba(201, 255, 36, .26))
       drop-shadow(0 0 52px rgba(255, 220, 90, .14));
+  }
+}
+
+@keyframes timeGoalCompleteWheelGlow{
+  0%{
+    opacity: .86;
+    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
+    transform: rotate(0deg);
+  }
+  50%{
+    opacity: .98;
+    filter:
+      drop-shadow(0 0 28px rgba(201, 255, 36, .26))
+      drop-shadow(0 0 52px rgba(255, 220, 90, .14));
+  }
+  100%{
+    opacity: .86;
+    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
+    transform: rotate(360deg);
   }
 }
 
@@ -7441,6 +7461,11 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
 #timeGoalCompleteOverlay .timeGoalCompleteRewardCard #timeGoalCompleteText{
   color: #ffd45a !important;
+}
+
+#dailyRewardOverlay .timeGoalCompleteRewardCard #dailyRewardText.XPRewardText{
+  color: gold !important;
+  font-size: 32px !important;
 }
 
 @keyframes timeGoalCompleteClaimZoomIn{

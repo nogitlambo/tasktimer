@@ -21,6 +21,7 @@ import {
   createTaskTimerGroups,
   getFriendRequestActionCompleteStatus,
   getFriendProfileOpenUidFromTarget,
+  getSharedTaskDisplayStatus,
   getSharedTaskGoalMetrics,
   getSharedTaskCheckpointTimelineLayouts,
   loadGroupsSnapshotForUid,
@@ -2190,6 +2191,39 @@ describe("shared task info metrics", () => {
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+
+  it("derives friend shared task status labels from today's goal progress", () => {
+    expect(getSharedTaskDisplayStatus({ timerState: "stopped", dailyGoalMs: 60 * 60_000, todayLoggedMs: 0 })).toMatchObject({
+      label: "Not Complete",
+      stateKey: "notComplete",
+      className: "friendSharedTaskState isNotComplete",
+    });
+    expect(getSharedTaskDisplayStatus({ timerState: "stopped", dailyGoalMs: 60 * 60_000, todayLoggedMs: 30 * 60_000 })).toMatchObject({
+      label: "Stopped (50% complete)",
+      stateKey: "stopped",
+      className: "friendSharedTaskState isStopped",
+    });
+    expect(getSharedTaskDisplayStatus({ timerState: "running", dailyGoalMs: 60 * 60_000, todayLoggedMs: 30 * 60_000 })).toMatchObject({
+      label: "In Progress (50% complete)",
+      stateKey: "running",
+      className: "friendSharedTaskState isRunning",
+    });
+    expect(getSharedTaskDisplayStatus({ timerState: "stopped", dailyGoalMs: 60 * 60_000, todayLoggedMs: 60 * 60_000 })).toMatchObject({
+      label: "Done",
+      stateKey: "done",
+      className: "friendSharedTaskState isDone",
+    });
+    expect(getSharedTaskDisplayStatus({ timerState: "stopped", dailyGoalMs: null, todayLoggedMs: 30 * 60_000 })).toMatchObject({
+      label: "Stopped",
+      stateKey: "stopped",
+      className: "friendSharedTaskState isStopped",
+    });
+    expect(getSharedTaskDisplayStatus({ timerState: "running", dailyGoalMs: null, todayLoggedMs: 30 * 60_000 })).toMatchObject({
+      label: "In Progress",
+      stateKey: "running",
+      className: "friendSharedTaskState isRunning",
+    });
+  });
 
   it("formats daily and weekly goals with explicit periods and logged time rows without Created", () => {
     expect(getSharedTaskGoalMetrics({ timeGoalEnabled: true, timeGoalPeriod: "day", timeGoalMinutes: 60 })).toEqual({

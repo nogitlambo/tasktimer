@@ -13,6 +13,10 @@ describe("DailyRewardOverlay", () => {
     expect(source).toContain('id="dailyRewardTitle"');
     expect(source).toContain('id="dailyRewardText"');
     expect(source).toContain('id="dailyRewardXpValue"');
+    expect(source).toContain('className="modalSubtext XPRewardText"');
+    expect(source).not.toContain('className="modalSubtext confirmText"');
+    expect(source).toContain('<span id="dailyRewardXpValue">10</span> XP');
+    expect(source).not.toContain("XP Awarded:");
     expect(source).toContain('id="dailyRewardClaimBtn"');
     expect(source).not.toContain('id="timeGoalCompleteOverlay"');
     expect(source).not.toContain('id="timeGoalCompleteXpValue"');
@@ -70,6 +74,9 @@ describe("DailyRewardOverlay", () => {
     expect(overlaysCss).toContain("width: 144px;");
     expect(overlaysCss).toContain("animation: timeGoalCompleteTickRubberIn 620ms");
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay #timeGoalCompleteText,\s*#dailyRewardOverlay #dailyRewardText\{/);
+    expect(overlaysCss).toContain("#dailyRewardOverlay .timeGoalCompleteRewardCard #dailyRewardText.XPRewardText{");
+    expect(overlaysCss).toContain("color: gold !important;");
+    expect(overlaysCss).toContain("font-size: 32px !important;");
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteActionGrid,\s*#dailyRewardOverlay \.timeGoalCompleteActionGrid\{/);
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveFooter,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveFooter\{/);
   });

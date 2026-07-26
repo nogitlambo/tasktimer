@@ -277,11 +277,13 @@ service cloud.firestore {
         "schemaVersion",
         "order",
         "widgets",
+        "activityGoalSnapshotsByDay",
         "updatedAt"
       ])
       && (!("schemaVersion" in request.resource.data) || request.resource.data.schemaVersion is int)
       && (!("order" in request.resource.data) || request.resource.data.order is list)
       && (!("widgets" in request.resource.data) || request.resource.data.widgets is map)
+      && (!("activityGoalSnapshotsByDay" in request.resource.data) || request.resource.data.activityGoalSnapshotsByDay is map)
       && (!("updatedAt" in request.resource.data) || request.resource.data.updatedAt is timestamp);
     }
 

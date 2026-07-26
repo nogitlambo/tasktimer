@@ -291,6 +291,8 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("dispatchDailyRewardXpClaimEvent");
     expect(source).toContain("closeDailyRewardOverlay(document)");
     expect(source).toContain('const DAILY_REWARD_AUDIO_SRC = "/daily_reward.mp3";');
+    expect(source).toContain('return `<span id="dailyRewardXpValue">${Math.max(0, Math.floor(Number(xp) || 0))}</span> XP`;');
+    expect(source).toContain("if (text) text.innerHTML = formatDailyRewardXpHtml(DAILY_OPEN_REWARD_XP);");
     expect(source).toContain("const dailyRewardAudioPlayer = useMemo(() => createClickAudioPlayer(DAILY_REWARD_AUDIO_SRC), []);");
     expect(source).toMatch(/openDailyRewardOverlay\(document\);\r?\n\s+if \(achievementSoundsEnabled\) dailyRewardAudioPlayer\.play\(\);/);
   });

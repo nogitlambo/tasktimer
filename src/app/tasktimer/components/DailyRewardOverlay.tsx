@@ -62,8 +62,8 @@ export default function DailyRewardOverlay() {
             <h2 id="dailyRewardTitle">Daily Reward!</h2>
             <p className="timeGoalCompleteRewardMessage dailyRewardMessage">Welcome back. Here&apos;s your daily reward for showing up.</p>
             <div className="timeGoalCompleteXpFx dailyRewardXpFx" aria-live="polite">
-              <p className="modalSubtext confirmText" id="dailyRewardText">
-                XP Awarded: <span id="dailyRewardXpValue">10</span>
+              <p className="modalSubtext XPRewardText" id="dailyRewardText">
+                <span id="dailyRewardXpValue">10</span> XP
               </p>
               <span className="timeGoalCompleteGoldFragments dailyRewardGoldFragments" aria-hidden="true">
                 {GOLD_FRAGMENTS.map((fragment, index) => (

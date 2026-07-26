@@ -1468,8 +1468,16 @@
   color: var(--accent, #35e8ff);
 }
 
+.friendSharedTaskState.isDone{
+  color: #9cff57;
+}
+
 .friendSharedTaskState.isStopped{
   color: #ff4d4d;
+}
+
+.friendSharedTaskState.isNotComplete{
+  color: rgba(188, 214, 230, 0.74);
 }
 
 .friendSharedTaskMeta{

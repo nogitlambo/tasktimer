@@ -219,6 +219,57 @@ describe("dashboard activity overview model", () => {
     expect(model.days[9]?.activityBarColor).toBe(fillBackgroundForPct(150));
   });
 
+  it("keeps saved past-day targets while current goals apply today and forward", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 18, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+          { ts: new Date(2026, 4, 19, 9).getTime(), name: "Focus", ms: 120 * 60000 },
+          { ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 180 * 60000 },
+        ],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      activityGoalSnapshotsByDay: {
+        "2026-05-18": 60 * 60000,
+        "2026-05-19": 120 * 60000,
+      },
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.dailyPaceTargetMs).toBe(180 * 60000);
+    expect(model.days[7]?.goalTargetMs).toBe(60 * 60000);
+    expect(model.days[8]?.goalTargetMs).toBe(120 * 60000);
+    expect(model.days[9]?.goalTargetMs).toBe(180 * 60000);
+    expect(model.days[7]?.activityProgressPct).toBe(100);
+    expect(model.days[8]?.activityProgressPct).toBe(100);
+    expect(model.days[9]?.activityProgressPct).toBe(100);
+  });
+
+  it("uses the current daily pace for past days without saved targets", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })],
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 18, 9).getTime(), name: "Focus", ms: 60 * 60000 }],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      activityGoalSnapshotsByDay: {},
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.dailyPaceTargetMs).toBe(120 * 60000);
+    expect(model.days[7]?.goalTargetMs).toBe(120 * 60000);
+    expect(model.days[7]?.activityProgressPct).toBe(50);
+  });
+
   it("falls back to the dominant task color when no weekly goal exists", () => {
     const model = buildDashboardActivityOverviewModel({
       tasks: [
@@ -238,6 +289,7 @@ describe("dashboard activity overview model", () => {
     });
 
     expect(model.dailyPaceTargetMs).toBe(0);
+    expect(model.days[7]?.goalTargetMs).toBe(0);
     expect(model.days[7]?.activityProgressPct).toBeNull();
     expect(model.days[7]?.activityBarColor).toBe("#00e5ff");
   });

@@ -285,6 +285,7 @@ function createRenderHarness(
     weekStarting?: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
     optimalProductivityDays?: Array<"sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat">;
     dashboardPreviousWeekVisible?: boolean;
+    activityGoalSnapshotsByDay?: Record<string, number>;
   }
 ) {
   const { byId, documentRef, headerXpCard, topbarXp } = createDocumentHarness({ includeHeaderXpCard: options?.includeHeaderXpCard });
@@ -362,6 +363,10 @@ function createRenderHarness(
     getWeekStarting: () => options?.weekStarting || "mon",
     getOptimalProductivityDays: () => options?.optimalProductivityDays || ["mon", "wed", "fri"],
     getDashboardPreviousWeekVisible: () => options?.dashboardPreviousWeekVisible !== false,
+    getActivityGoalSnapshotsByDay: () => options?.activityGoalSnapshotsByDay || {},
+    setActivityGoalSnapshotsByDay: (value) => {
+      if (options) options.activityGoalSnapshotsByDay = value;
+    },
     getDashboardTimelineDensity: () => "medium",
     setDashboardTimelineDensity: () => {},
     getDashboardWidgetHasRenderedData: () => ({
@@ -442,6 +447,11 @@ function getActivityGradientStopColors(container: ElementStub | undefined, gradi
   const defs = (container?.children || []).find((child) => child.getAttribute("class") === "dashboardActivityBarDefs");
   const gradient = (defs?.children || []).find((child) => child.getAttribute("id") === gradientId);
   return (gradient?.children || []).map((child) => child.getAttribute("stop-color"));
+}
+
+function getActivityGoalSegments(container: ElementStub | undefined) {
+  const group = (container?.children || []).find((child) => child.getAttribute("class") === "dashboardActivityGoalSegments");
+  return group?.children.filter((child) => String(child.getAttribute("class") || "").includes("dashboardActivityGoalSegment")) || [];
 }
 
 afterEach(() => {
@@ -663,6 +673,7 @@ describe("dashboard activity overview card", () => {
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
+      const goalSegments = getActivityGoalSegments(barsContainer);
 
       expect(bars).toHaveLength(7);
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(255,140,0)");
@@ -686,8 +697,42 @@ describe("dashboard activity overview card", () => {
       expect(goalLine?.getAttribute("x1")).toBe("84");
       expect(goalLine?.getAttribute("x2")).toBe("692");
       expect(Number(goalLabel?.getAttribute("x"))).toBeLessThan(Number(goalLine?.getAttribute("x1")));
+      expect(goalSegments.length).toBeGreaterThan(0);
+      expect(new Set(goalSegments.map((segment) => segment.getAttribute("y1"))).size).toBe(1);
       expect(previousBars?.style.display).toBe("none");
       expect(previousBars?.children).toHaveLength(7);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("renders historical goal segments at saved per-day targets", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const tasks = [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })];
+    const harness = createRenderHarness(tasks, {
+      optimalProductivityDays: ["mon", "tue", "wed"],
+      activityGoalSnapshotsByDay: {
+        "2026-05-18": 60 * 60000,
+        "2026-05-19": 120 * 60000,
+      },
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 18, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+          { ts: new Date(2026, 4, 19, 9).getTime(), name: "Focus", ms: 120 * 60000 },
+          { ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 180 * 60000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderActivityOverview();
+      const goalSegments = getActivityGoalSegments(harness.byId.get("dashboardActivityBars"));
+      const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
+
+      expect(goalSegments).toHaveLength(3);
+      expect(new Set(goalSegments.map((segment) => segment.getAttribute("y1"))).size).toBe(3);
+      expect(goalLabel?.textContent).toBe("3h GOAL");
     } finally {
       harness.restore();
     }
@@ -713,9 +758,11 @@ describe("dashboard activity overview card", () => {
       const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const firstBar = getActivityBarFront(bars[0]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
+      const goalSegments = getActivityGoalSegments(harness.byId.get("dashboardActivityBars"));
 
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("#00e5ff");
       expect(goalLine?.style.display).toBe("none");
+      expect(goalSegments).toHaveLength(0);
     } finally {
       harness.restore();
     }

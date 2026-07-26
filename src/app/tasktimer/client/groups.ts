@@ -74,6 +74,10 @@ type SharedTaskCardSummary = {
   focusTrend7dMs?: number[];
 };
 
+type SharedTaskStatusSummary = SharedTaskCardSummary & {
+  timerState?: "running" | "stopped";
+};
+
 type SharedTaskHistoryEntryLike = {
   ts?: unknown;
   ms?: unknown;
@@ -160,6 +164,42 @@ export function formatSharedTaskWeekPercent(summary: SharedTaskCardSummary): str
   if (!(weekGoalMs && weekGoalMs > 0)) return "No goal";
   const weekLoggedMs = Math.max(0, Number(summary.weekLoggedMs || 0));
   return `${Math.max(0, Math.min(100, Math.round((weekLoggedMs / weekGoalMs) * 100)))}%`;
+}
+
+export function getSharedTaskDisplayStatus(summary: SharedTaskStatusSummary) {
+  const timerStateKey = String(summary.timerState || "stopped").toLowerCase() === "running" ? "running" : "stopped";
+  const isRunning = timerStateKey === "running";
+  const dailyGoalMs = summary.dailyGoalMs == null ? null : Math.max(0, Math.floor(Number(summary.dailyGoalMs || 0)));
+  const todayLoggedMs = Math.max(0, Math.floor(Number(summary.todayLoggedMs || 0)));
+  const hasDailyGoal = !!(dailyGoalMs && dailyGoalMs > 0);
+  const progressPct = hasDailyGoal ? Math.max(0, Math.min(100, Math.round((todayLoggedMs / dailyGoalMs) * 100))) : null;
+
+  if (hasDailyGoal && todayLoggedMs >= dailyGoalMs) {
+    return {
+      label: "Done",
+      stateKey: "done",
+      className: "friendSharedTaskState isDone",
+    };
+  }
+  if (todayLoggedMs <= 0 && !isRunning) {
+    return {
+      label: "Not Complete",
+      stateKey: "notComplete",
+      className: "friendSharedTaskState isNotComplete",
+    };
+  }
+  if (isRunning) {
+    return {
+      label: progressPct == null ? "In Progress" : `In Progress (${progressPct}% complete)`,
+      stateKey: "running",
+      className: "friendSharedTaskState isRunning",
+    };
+  }
+  return {
+    label: progressPct == null ? "Stopped" : `Stopped (${progressPct}% complete)`,
+    stateKey: "stopped",
+    className: "friendSharedTaskState isStopped",
+  };
 }
 
 function formatCompactDurationForSharedCard(msRaw: number): string {
@@ -1802,13 +1842,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     </section>`;
   }
 
-  function getFriendSharedTaskTimerState(entry: SharedTaskSummary) {
-    const timerState = String(entry.timerState || "stopped").toLowerCase() === "running" ? "Running" : "Stopped";
-    const timerStateKey = timerState.toLowerCase() === "running" ? "running" : "stopped";
-    const timerStateClass = timerStateKey === "running" ? "friendSharedTaskState isRunning" : "friendSharedTaskState isStopped";
-    return { timerState, timerStateKey, timerStateClass };
-  }
-
   function getSharedTaskOwnerLabel(ownerUidRaw: string) {
     const ownerUid = String(ownerUidRaw || "").trim();
     if (!ownerUid) return "Unknown";
@@ -1913,7 +1946,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
   }
 
   function renderFriendSharedTaskSummaryContent(entry: SharedTaskSummary, opts?: { modal?: boolean }) {
-    const { timerState, timerStateClass } = getFriendSharedTaskTimerState(entry);
+    const status = getSharedTaskDisplayStatus(entry);
     const modalClass = opts?.modal ? " isModalSummary" : "";
     const settingsHint = opts?.modal ? "" : renderFriendSharedTaskSettingsHint(entry);
     const importPrompt = opts?.modal ? renderSharedTaskImportPrompt(entry) : "";
@@ -1922,7 +1955,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       <div class="friendSharedTaskInfo">
         ${renderFriendSharedTaskTitle(entry.taskName, entry.taskColor)}
         ${renderSharedTaskOwnerMeta(entry, opts)}
-        <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Status:</span> <span class="${timerStateClass}">${ctx.escapeHtmlUI(timerState)}</span></div>
+        <div class="friendSharedTaskMeta"><span class="friendSharedTaskMetaLabel">Status:</span> <span class="${status.className}">${ctx.escapeHtmlUI(status.label)}</span></div>
         ${renderSharedTaskMetricRows(entry, ctx.escapeHtmlUI)}
         ${settingsHint}
       </div>
@@ -1955,7 +1988,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
     if (els.sharedTaskSummaryTitle) els.sharedTaskSummaryTitle.textContent = "Shared Task Summary";
     if (els.sharedTaskSummaryBody) {
       els.sharedTaskSummaryBody.innerHTML = `<div class="dashboardCard friendSharedTaskCard sharedTaskSummaryCard friendSharedTaskCardState-${ctx.escapeHtmlUI(
-        getFriendSharedTaskTimerState(entry).timerStateKey
+        getSharedTaskDisplayStatus(entry).stateKey
       )}">${renderFriendSharedTaskSummaryContent(entry, { modal: true })}</div>`;
     }
     showOverlay(els.sharedTaskSummaryModal as HTMLElement | null);
@@ -2075,10 +2108,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       .map((row) => {
         const summaryHtml = row.summaries
           .map((entry) => {
-            const { timerStateKey } = getFriendSharedTaskTimerState(entry);
+            const { stateKey } = getSharedTaskDisplayStatus(entry);
             const taskName = String(entry.taskName || "").trim() || "Shared Task";
             return `<div class="dashboardCard friendSharedTaskCard isSummaryCard friendSharedTaskCardState-${ctx.escapeHtmlUI(
-              timerStateKey
+              stateKey
             )}" role="button" tabindex="0" data-shared-task-summary-id="${ctx.escapeHtmlUI(entry.shareDocId)}" title="Open shared task summary" aria-label="Open shared task summary for ${ctx.escapeHtmlUI(
               taskName
             )}">

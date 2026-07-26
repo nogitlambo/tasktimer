@@ -55,8 +55,15 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("rgba(219, 178, 255, .28) 0 12%");
     expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toContain("mix-blend-mode: screen;");
-    expect(overlaysCss).toContain("animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;");
+    expect(overlaysCss).toContain("transform-origin: 50% 46%;");
+    expect(overlaysCss).toContain("animation: timeGoalCompleteWheelGlow 24s linear infinite;");
+    expect(overlaysCss).toContain("will-change: transform, opacity, filter;");
     expect(overlaysCss).toContain("@keyframes timeGoalCompleteCenterGlow");
+    expect(overlaysCss).toContain("@keyframes timeGoalCompleteWheelGlow");
+    expect(overlaysCss).toContain("transform: rotate(0deg);");
+    expect(overlaysCss).toContain("transform: rotate(360deg);");
+    expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
+    expect(overlaysCss).toContain("animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;");
     expect(overlaysCss).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/);
   });
 

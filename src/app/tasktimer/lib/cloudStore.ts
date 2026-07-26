@@ -91,6 +91,7 @@ export type UserPreferencesV1 = {
 export type DashboardConfig = {
   order: string[];
   widgets?: Record<string, unknown>;
+  activityGoalSnapshotsByDay?: Record<string, number>;
 };
 
 export type TaskUiConfig = {
@@ -1161,6 +1162,17 @@ function asTaskUi(input: unknown): TaskUiConfig | null {
   };
 }
 
+function normalizeActivityGoalSnapshotsByDay(input: unknown): Record<string, number> | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const next = Object.entries(input as Record<string, unknown>).reduce<Record<string, number>>((out, [key, value]) => {
+    const dayKey = String(key || "").trim();
+    const ms = Math.max(0, Math.floor(Number(value) || 0));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dayKey) && Number.isFinite(ms)) out[dayKey] = ms;
+    return out;
+  }, {});
+  return Object.keys(next).length ? next : undefined;
+}
+
 function mapTaskFromFirestore(taskId: string, raw: Record<string, unknown>): Task {
   const row: Record<string, unknown> = { ...raw };
   row.id = typeof row.id === "string" && row.id ? row.id : taskId;
@@ -1598,6 +1610,7 @@ export async function loadUserWorkspace(uid: string): Promise<WorkspaceSnapshot>
           dashboardSnap.get("widgets") && typeof dashboardSnap.get("widgets") === "object"
             ? (dashboardSnap.get("widgets") as Record<string, unknown>)
             : undefined,
+        activityGoalSnapshotsByDay: normalizeActivityGoalSnapshotsByDay(dashboardSnap.get("activityGoalSnapshotsByDay")),
       }
     : null;
 
@@ -2253,6 +2266,7 @@ export async function saveDashboard(uid: string, cfg: DashboardConfig): Promise<
     {
       order: Array.isArray(cfg.order) ? cfg.order : [],
       widgets: cfg.widgets || {},
+      activityGoalSnapshotsByDay: cfg.activityGoalSnapshotsByDay || {},
       updatedAt: serverTimestamp(),
       schemaVersion: 1,
     },
@@ -2269,6 +2283,7 @@ export async function loadDashboard(uid: string): Promise<DashboardConfig | null
   return {
     order: Array.isArray(data.order) ? (data.order as string[]) : [],
     widgets: data.widgets && typeof data.widgets === "object" ? (data.widgets as Record<string, unknown>) : undefined,
+    activityGoalSnapshotsByDay: normalizeActivityGoalSnapshotsByDay(data.activityGoalSnapshotsByDay),
   };
 }
 

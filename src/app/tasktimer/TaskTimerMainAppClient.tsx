@@ -851,6 +851,10 @@ export function hasBlockingDailyRewardOverlay(documentRef: Pick<Document, "query
   });
 }
 
+function formatDailyRewardXpHtml(xp: number): string {
+  return `<span id="dailyRewardXpValue">${Math.max(0, Math.floor(Number(xp) || 0))}</span> XP`;
+}
+
 function openDailyRewardOverlay(documentRef: Document): void {
   const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
   const claimBtn = documentRef.getElementById("dailyRewardClaimBtn") as HTMLButtonElement | null;
@@ -862,7 +866,7 @@ function openDailyRewardOverlay(documentRef: Document): void {
   overlay.setAttribute("aria-hidden", "false");
   overlay.dataset.awardedXp = String(DAILY_OPEN_REWARD_XP);
   if (xpValue) xpValue.textContent = String(DAILY_OPEN_REWARD_XP);
-  if (text) text.innerHTML = `XP Awarded: <span id="dailyRewardXpValue">${DAILY_OPEN_REWARD_XP}</span>`;
+  if (text) text.innerHTML = formatDailyRewardXpHtml(DAILY_OPEN_REWARD_XP);
   if (claimBtn) {
     claimBtn.disabled = false;
     claimBtn.textContent = "Claim";
@@ -1353,7 +1357,10 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         if (sourceElement?.id === "timeGoalCompleteXpValue" || sourceElement?.id === "dailyRewardXpValue") {
           sourceElement.textContent = String(Math.max(0, Math.floor(Number(xp) || 0)));
         } else if (sourceElement) {
-          sourceElement.textContent = `XP Awarded: ${Math.max(0, Math.floor(Number(xp) || 0))}`;
+          sourceElement.textContent =
+            activeAward.sourceModal === "dailyReward"
+              ? `${Math.max(0, Math.floor(Number(xp) || 0))} XP`
+              : `XP Awarded: ${Math.max(0, Math.floor(Number(xp) || 0))}`;
         }
       };
       let targetRect: DOMRect | null = null;

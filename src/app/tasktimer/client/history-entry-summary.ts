@@ -8,6 +8,7 @@ const NOT_TRACKED_TEXT = "Not tracked";
 const NO_SESSION_NOTE_TEXT = "No session note.";
 const DESKTOP_EMPTY_NOTE_PLACEHOLDER = "Click to add note";
 const MOBILE_EMPTY_NOTE_PLACEHOLDER = "Tap to add note";
+const XP_AWARD_TIMESTAMP_MATCH_TOLERANCE_MS = 60_000;
 
 type HistoryEntrySummarySource = {
   taskId?: unknown;
@@ -200,12 +201,20 @@ function deriveXpEarned(entry: HistoryEntrySummarySource, taskId: string, reward
   const awardedAt = normalizeTimestamp(entry?.ts);
   const ledger = Array.isArray(rewardProgress?.awardLedger) ? rewardProgress.awardLedger : null;
   if (!normalizedTaskId || awardedAt <= 0 || !ledger) return null;
-  const matchingEntries = ledger.filter((award) => {
+  const exactEntries = ledger.filter((award) => {
     const awardTs = normalizeTimestamp(award?.ts);
     if (awardTs !== awardedAt) return false;
     if (award?.reason === "session") return String(award?.taskId || "").trim() === normalizedTaskId;
     return true;
   });
+  const matchingEntries = exactEntries.length
+    ? exactEntries
+    : ledger.filter((award) => {
+        if (award?.reason !== "session") return false;
+        if (String(award?.taskId || "").trim() !== normalizedTaskId) return false;
+        const awardTs = normalizeTimestamp(award?.ts);
+        return Math.abs(awardTs - awardedAt) <= XP_AWARD_TIMESTAMP_MATCH_TOLERANCE_MS;
+      });
   const totalXp = matchingEntries.reduce((sum, award) => sum + Math.max(0, Number(award?.xp || 0) || 0), 0);
   return totalXp > 0 ? totalXp : 0;
 }

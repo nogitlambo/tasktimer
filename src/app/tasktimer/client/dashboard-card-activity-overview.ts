@@ -39,6 +39,7 @@ export type DashboardActivityOverviewDay = {
   previousWeekCumulativeMs: number;
   activityBarColor: string;
   activityProgressPct: number | null;
+  goalTargetMs: number;
   taskRows: DashboardActivityOverviewTaskRow[];
   sessions: DashboardActivityOverviewSession[];
 };
@@ -93,6 +94,7 @@ export function buildDashboardActivityOverviewModel(options: {
   deletedTaskMeta: DeletedTaskMeta;
   weekStarting: DashboardWeekStart;
   nowMs: number;
+  activityGoalSnapshotsByDay?: Record<string, number>;
   getElapsedMs: (task: Task) => number;
   isTaskRunning: (task: Task) => boolean;
   normalizeHistoryTimestampMs: (value: unknown) => number;
@@ -134,6 +136,7 @@ export function buildDashboardActivityOverviewModel(options: {
       previousWeekCumulativeMs: 0,
       activityBarColor: DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR,
       activityProgressPct: null,
+      goalTargetMs: 0,
       taskRows: [],
       sessions: [],
     };
@@ -194,6 +197,8 @@ export function buildDashboardActivityOverviewModel(options: {
 
   const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
   const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
+  const todayKey = localDayKey(options.nowMs);
+  const snapshots = options.activityGoalSnapshotsByDay || {};
   let cumulativeMs = 0;
   days.forEach((day) => {
     cumulativeMs += day.totalMs;
@@ -219,8 +224,11 @@ export function buildDashboardActivityOverviewModel(options: {
       if (right.totalMs !== left.totalMs) return right.totalMs - left.totalMs;
       return left.taskName.localeCompare(right.taskName);
     });
-    if (dailyPaceTargetMs > 0) {
-      const progressPct = (day.totalMs / dailyPaceTargetMs) * 100;
+    const snapshotGoalMs = Math.max(0, Math.floor(Number(snapshots[day.key]) || 0));
+    const goalTargetMs = dailyPaceTargetMs > 0 && day.key < todayKey && snapshotGoalMs > 0 ? snapshotGoalMs : dailyPaceTargetMs;
+    day.goalTargetMs = goalTargetMs;
+    if (goalTargetMs > 0) {
+      const progressPct = (day.totalMs / goalTargetMs) * 100;
       day.activityProgressPct = progressPct;
       day.activityBarColor = fillBackgroundForPct(progressPct);
     } else {

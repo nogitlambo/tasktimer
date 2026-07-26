@@ -188,6 +188,25 @@ describe("history entry summary", () => {
     expect(html).toContain('class="historyEntrySummaryValue" data-history-summary-xp-source="true" data-history-summary-action="trigger-xp-award" data-history-summary-xp="8" data-history-summary-task-id="task-1">8</div>');
   });
 
+  it("matches session XP when a history timestamp drifts slightly from the award timestamp", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
+      rewardProgress: {
+        ...DEFAULT_REWARD_PROGRESS,
+        awardLedger: [rewardLedgerEntry({ ts: 1_717_200_000_000, xp: 12, taskId: "task-1" })],
+      },
+      entries: [{ taskId: "task-1", ts: 1_717_200_000_250, ms: 180_000, name: "Focus" }],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    expect(payload?.sessions[0]?.xpEarned).toBe(12);
+    expect(payload?.sessions[0]?.xpText).toBe("12");
+  });
+
   it("renders the note section after the time goal and XP metrics", () => {
     const html = renderSummary(task({ timeGoalEnabled: true, timeGoalValue: 3, timeGoalUnit: "minute", timeGoalPeriod: "day", timeGoalMinutes: 3 }));
     const metricsIndex = html.indexOf("historyEntrySummaryGrid");

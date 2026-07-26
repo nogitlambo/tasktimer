@@ -637,6 +637,10 @@ type CreateDashboardRenderOptionsArgs = {
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
   openHistoryEntryNoteOverlay: (taskId: string, entries: unknown[]) => void;
+  getCloudDashboardCache: () => unknown;
+  setCloudDashboardCache: (value: unknown) => void;
+  loadCachedDashboard: () => unknown;
+  saveCloudDashboard: (value: unknown) => void;
   hasEntitlement: Parameters<typeof createTaskTimerDashboardRender>[0]["hasEntitlement"];
   getCurrentPlan: Parameters<typeof createTaskTimerDashboardRender>[0]["getCurrentPlan"];
 };
@@ -1559,6 +1563,24 @@ export function createTaskTimerDashboardRenderContext(
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     getOptimalProductivityDays: () => asType<Parameters<typeof createTaskTimerDashboardRender>[0]["getOptimalProductivityDays"] extends () => infer T ? T : never>(args.preferencesState.get("optimalProductivityDays")),
     getDashboardPreviousWeekVisible: () => args.preferencesState.get("dashboardPreviousWeekVisible") !== false,
+    getActivityGoalSnapshotsByDay: () => {
+      const cached = args.getCloudDashboardCache();
+      const loaded = cached && typeof cached === "object" ? cached : args.loadCachedDashboard();
+      const snapshots = loaded && typeof loaded === "object" ? (loaded as { activityGoalSnapshotsByDay?: unknown }).activityGoalSnapshotsByDay : null;
+      return snapshots && typeof snapshots === "object" ? asType<Record<string, number>>(snapshots) : {};
+    },
+    setActivityGoalSnapshotsByDay: (value) => {
+      const cached = args.getCloudDashboardCache();
+      const loaded = cached && typeof cached === "object" ? cached : args.loadCachedDashboard();
+      const dashboard = loaded && typeof loaded === "object" ? asType<{ order?: unknown; widgets?: unknown }>(loaded) : {};
+      const nextDashboard = {
+        order: Array.isArray(dashboard.order) ? dashboard.order : [],
+        widgets: dashboard.widgets && typeof dashboard.widgets === "object" ? asType<Record<string, unknown>>(dashboard.widgets) : undefined,
+        activityGoalSnapshotsByDay: value,
+      };
+      args.setCloudDashboardCache(nextDashboard);
+      args.saveCloudDashboard(nextDashboard);
+    },
     getDashboardTimelineDensity: () => asType<DashboardTimelineDensity>(args.dashboardUiState.get("dashboardTimelineDensity")),
     setDashboardTimelineDensity: (value) => args.dashboardUiState.set("dashboardTimelineDensity", value),
     getDashboardWidgetHasRenderedData: () => args.dashboardWidgetHasRenderedData,

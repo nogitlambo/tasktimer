@@ -681,6 +681,15 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       getModeColor: (mode) => getModeColor(mode),
       addRangeMsToLocalDayMap: (dayMap, startMs, endMs) => addRangeMsToLocalDayMap(dayMap, startMs, endMs, localDayKey),
       openHistoryEntryNoteOverlay: (taskId, entries) => historyInlineApi?.openHistoryEntryNoteOverlay(taskId, entries),
+      getCloudDashboardCache: () => cacheRuntimeState.get("cloudDashboardCache"),
+      setCloudDashboardCache: (value: unknown) => {
+        cacheRuntimeState.set("cloudDashboardCache", value as DashboardConfig | null);
+      },
+      loadCachedDashboard: workspaceRepository.loadCachedDashboard,
+      saveCloudDashboard: (value: unknown) => {
+        const nextDashboard = value as DashboardConfig | null;
+        if (nextDashboard) workspaceRepository.saveDashboard(nextDashboard);
+      },
       hasEntitlement,
       getCurrentPlan,
     },

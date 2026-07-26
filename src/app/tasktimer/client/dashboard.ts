@@ -98,7 +98,11 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     delete widgets.cardPlacements;
     delete widgets.cardSizes;
     delete widgets.cardVisibility;
-    const nextDashboard = { order: [] as string[], widgets };
+    const snapshots =
+      dashboard && typeof (dashboard as { activityGoalSnapshotsByDay?: unknown }).activityGoalSnapshotsByDay === "object"
+        ? ((dashboard as { activityGoalSnapshotsByDay?: Record<string, number> }).activityGoalSnapshotsByDay || {})
+        : {};
+    const nextDashboard = { order: [] as string[], widgets, activityGoalSnapshotsByDay: snapshots };
     ctx.setCloudDashboardCache(nextDashboard);
     ctx.saveCloudDashboard(nextDashboard);
   }

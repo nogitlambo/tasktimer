@@ -1193,16 +1193,62 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
   }
 
   function getDashboardActivityOverviewModel() {
+    const snapshots = syncDashboardActivityGoalSnapshots();
     return buildDashboardActivityOverviewModel({
       tasks: ctx.getTasks(),
       historyByTaskId: ctx.getHistoryByTaskId(),
       deletedTaskMeta: ctx.getDeletedTaskMeta(),
       weekStarting: ctx.getWeekStarting(),
       nowMs: nowMs(),
+      activityGoalSnapshotsByDay: snapshots,
       getElapsedMs: ctx.getElapsedMs,
       isTaskRunning: isDashboardTaskActivelyRunning,
       normalizeHistoryTimestampMs: ctx.normalizeHistoryTimestampMs,
     });
+  }
+
+  function getDashboardActivityCurrentDailyPaceTargetMs() {
+    const tasks = ctx.getTasks();
+    const totalGoalMs = tasks.reduce((sum, task) => {
+      if (!task?.timeGoalEnabled) return sum;
+      const goalMinutes = Math.max(0, Number(task.timeGoalMinutes || 0));
+      if (!(goalMinutes > 0)) return sum;
+      if (task.timeGoalPeriod === "day") return sum + goalMinutes * 7 * 60000;
+      if (task.timeGoalPeriod === "week") return sum + goalMinutes * 60000;
+      return sum;
+    }, 0);
+    return totalGoalMs > 0 ? totalGoalMs / 7 : 0;
+  }
+
+  function normalizeDashboardActivityGoalSnapshots(input: Record<string, number> | null | undefined, nowValue: number) {
+    const minDayMs = nowValue - 35 * 86400000;
+    return Object.entries(input || {}).reduce<Record<string, number>>((out, [key, value]) => {
+      const dayKey = String(key || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return out;
+      const dayMs = new Date(`${dayKey}T00:00:00`).getTime();
+      if (!Number.isFinite(dayMs) || dayMs < minDayMs) return out;
+      const ms = Math.max(0, Math.floor(Number(value) || 0));
+      if (Number.isFinite(ms) && ms > 0) out[dayKey] = ms;
+      return out;
+    }, {});
+  }
+
+  function syncDashboardActivityGoalSnapshots() {
+    const nowValue = nowMs();
+    const todayKey = localDayKey(nowValue);
+    const currentDailyPaceTargetMs = getDashboardActivityCurrentDailyPaceTargetMs();
+    const snapshots = normalizeDashboardActivityGoalSnapshots(ctx.getActivityGoalSnapshotsByDay(), nowValue);
+    if (currentDailyPaceTargetMs > 0) {
+      snapshots[todayKey] = currentDailyPaceTargetMs;
+    } else {
+      delete snapshots[todayKey];
+    }
+    const previous = normalizeDashboardActivityGoalSnapshots(ctx.getActivityGoalSnapshotsByDay(), nowValue);
+    const changed =
+      Object.keys(snapshots).length !== Object.keys(previous).length ||
+      Object.entries(snapshots).some(([key, value]) => previous[key] !== value);
+    if (changed) ctx.setActivityGoalSnapshotsByDay(snapshots);
+    return snapshots;
   }
 
   function isDashboardActivityMobileChart() {
@@ -1217,11 +1263,12 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const previousDays = filterProductivityDays(model.days.slice(0, 7));
     const days = filterProductivityDays(model.days.slice(7, 14));
     const maxVisibleDailyMs = [...days, ...previousDays].reduce((max, day) => Math.max(max, day.totalMs), 0);
+    const maxVisibleGoalMs = days.reduce((max, day) => Math.max(max, day.goalTargetMs), 0);
     return {
       mobile,
       days,
       previousDays,
-      maxChartMs: Math.max(model.dailyPaceTargetMs, maxVisibleDailyMs, 60 * 60000),
+      maxChartMs: Math.max(model.dailyPaceTargetMs, maxVisibleGoalMs, maxVisibleDailyMs, 60 * 60000),
       visibleTotalMs: days.reduce((sum, day) => sum + day.totalMs, 0),
     };
   }
@@ -1395,6 +1442,23 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         group.appendChild(sheen);
         barsEl.appendChild(group);
       });
+      const segmentGroup = document.createElementNS(svgNs, "g");
+      segmentGroup.setAttribute("class", "dashboardActivityGoalSegments");
+      if (model.totalGoalMs > 0) {
+        view.days.forEach((day, index) => {
+          if (!(day.goalTargetMs > 0)) return;
+          const y = getDashboardActivityY(day.goalTargetMs, view.maxChartMs);
+          const line = document.createElementNS(svgNs, "line");
+          line.setAttribute("class", "dashboardActivityGoalLine dashboardActivityGoalSegment");
+          line.setAttribute("x1", (chart.left + index * slotWidth + 6).toFixed(1));
+          line.setAttribute("x2", (chart.left + (index + 1) * slotWidth - 6).toFixed(1));
+          line.setAttribute("y1", y.toFixed(1));
+          line.setAttribute("y2", y.toFixed(1));
+          line.setAttribute("aria-label", `${day.longLabel} goal: ${formatDashboardDurationShort(day.goalTargetMs)}`);
+          segmentGroup.appendChild(line);
+        });
+      }
+      barsEl.appendChild(segmentGroup);
     }
 
     if (goalLineEl) {

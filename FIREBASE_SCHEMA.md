@@ -312,6 +312,7 @@ Allowed fields (`isDashboardV1`):
 - `schemaVersion: int`
 - `order: list`
 - `widgets: map`
+- `activityGoalSnapshotsByDay: map` (`YYYY-MM-DD` local day key to daily pace target milliseconds)
 - `updatedAt: timestamp`
 
 ---
