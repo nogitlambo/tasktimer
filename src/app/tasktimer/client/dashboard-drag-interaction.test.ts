@@ -102,6 +102,8 @@ function makeDashboardContext() {
   appendCard("heatmap", grid);
 
   const originalDocument = globalThis.document;
+  const events: Array<{ target: unknown; type: string; handler: (event: unknown) => void }> = [];
+  const activityPageCalls: string[] = [];
   Object.defineProperty(globalThis, "document", {
     configurable: true,
     value: {
@@ -132,11 +134,16 @@ function makeDashboardContext() {
     setDashboardEditMode: () => {},
     setDashboardDragEl: () => {},
     renderDashboardWidgets: () => {},
-    on: () => {},
+    on: (target: unknown, type: string, handler: (event: unknown) => void) => {
+      events.push({ target, type, handler });
+    },
     hasEntitlement: () => true,
     navigateToAppRoute: () => {},
     jumpToTaskById: () => {},
     openDashboardHeatSummaryCard: () => {},
+    pageDashboardActivityOverview: (direction: string) => {
+      activityPageCalls.push(direction);
+    },
     renderDashboardHeatTaskList: () => {},
     openDashboardHeatTaskSummary: () => {},
     selectDashboardMomentumDriver: () => {},
@@ -148,7 +155,15 @@ function makeDashboardContext() {
   return {
     cardsById,
     dashboard,
+    dispatchDashboardClick: (target: unknown) => {
+      const event = {
+        target,
+        preventDefault: () => {},
+      };
+      events.find((entry) => entry.type === "click")?.handler(event);
+    },
     grid,
+    activityPageCalls,
     restore: () => {
       Object.defineProperty(globalThis, "document", {
         configurable: true,
@@ -225,6 +240,41 @@ describe("dashboard drag interaction guards", () => {
       harness.restore();
     }
   });
+
+  it("routes Activity Overview page arrow clicks through delegated dashboard handling", () => {
+    const harness = makeDashboardContext();
+    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
+    const originalWindow = (globalThis as { window?: unknown }).window;
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: {},
+      });
+      harness.dashboard.registerDashboardEvents();
+      harness.dispatchDashboardClick({
+        closest: (selector: string) =>
+          selector === "[data-dashboard-activity-page]"
+            ? {
+                disabled: false,
+                getAttribute: (name: string) => name === "data-dashboard-activity-page" ? "older" : null,
+              }
+            : null,
+      });
+
+      expect(harness.activityPageCalls).toEqual(["older"]);
+    } finally {
+      if (hadWindow) {
+        Object.defineProperty(globalThis, "window", {
+          configurable: true,
+          value: originalWindow,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
+      harness.restore();
+    }
+  });
 });
 
 describe("dashboard heatmap click handling", () => {
@@ -283,6 +333,7 @@ describe("dashboard heatmap click handling", () => {
         navigateToAppRoute: () => {},
         jumpToTaskById: () => {},
         openDashboardHeatSummaryCard: () => {},
+        pageDashboardActivityOverview: () => {},
         renderDashboardHeatTaskList: () => {},
         openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => {
           calls.push({ dayKey, taskId });

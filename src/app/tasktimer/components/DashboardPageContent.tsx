@@ -92,6 +92,16 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                     <div className="dashboardActivityOverviewBody">
                       <div className="dashboardActivityChartPanel">
                         <div className="dashboardActivityChartWrap" id="dashboardActivityChartWrap">
+                          <button
+                            className="iconBtn dashboardActivityPageBtn dashboardActivityPageBtnOlder"
+                            id="dashboardActivityPageOlderBtn"
+                            type="button"
+                            title="Older week"
+                            aria-label="Show older activity week"
+                            data-dashboard-activity-page="older"
+                          >
+                            {"<"}
+                          </button>
                           <svg className="dashboardActivityChart" id="dashboardActivityChart" viewBox="0 0 720 320" preserveAspectRatio="none" role="img" aria-label="Seven day activity chart with previous week comparison" focusable="false">
                             <g id="dashboardActivityChartGrid" />
                             <g id="dashboardActivityPreviousBars" />
@@ -99,6 +109,17 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
                             <text className="dashboardActivityGoalLabel" id="dashboardActivityGoalLabel" x="0" y="0" aria-hidden="true" />
                           </svg>
+                          <button
+                            className="iconBtn dashboardActivityPageBtn dashboardActivityPageBtnNewer"
+                            id="dashboardActivityPageNewerBtn"
+                            type="button"
+                            title="Newer week"
+                            aria-label="Show newer activity week"
+                            data-dashboard-activity-page="newer"
+                            disabled
+                          >
+                            {">"}
+                          </button>
                           <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
                           <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
                           <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden />

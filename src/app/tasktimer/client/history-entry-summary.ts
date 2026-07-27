@@ -1,5 +1,10 @@
 import { sessionColorForTaskMs } from "../lib/colors";
-import type { RewardProgressV1 } from "../lib/rewards";
+import {
+  MIN_REWARD_ELIGIBLE_SESSION_MS,
+  SESSION_BASE_XP_PER_INTERVAL,
+  SESSION_XP_INTERVAL_MS,
+  type RewardProgressV1,
+} from "../lib/rewards";
 import type { SessionNoteAttachment, Task } from "../lib/types";
 import { normalizeSessionNoteAttachments } from "../lib/sessionNoteAttachments";
 import { prepareRichNoteForDisplay, richNoteHasMeaningfulText, richNoteToolbarHtml } from "./rich-session-notes";
@@ -216,7 +221,15 @@ function deriveXpEarned(entry: HistoryEntrySummarySource, taskId: string, reward
         return Math.abs(awardTs - awardedAt) <= XP_AWARD_TIMESTAMP_MATCH_TOLERANCE_MS;
       });
   const totalXp = matchingEntries.reduce((sum, award) => sum + Math.max(0, Number(award?.xp || 0) || 0), 0);
-  return totalXp > 0 ? totalXp : 0;
+  if (totalXp > 0) return totalXp;
+  const hasCanonicalRewardHistory =
+    Math.max(0, Number(rewardProgress?.totalXpPrecise || rewardProgress?.totalXp || 0) || 0) > 0 ||
+    Math.max(0, Number(rewardProgress?.completedSessions || 0) || 0) > 0 ||
+    normalizeTimestamp(rewardProgress?.lastAwardedAt) > 0;
+  if (!hasCanonicalRewardHistory) return 0;
+  const elapsedMs = normalizeElapsedMs(entry?.ms);
+  if (elapsedMs < MIN_REWARD_ELIGIBLE_SESSION_MS) return 0;
+  return (elapsedMs / SESSION_XP_INTERVAL_MS) * SESSION_BASE_XP_PER_INTERVAL;
 }
 
 function deriveXpPending(entry: HistoryEntrySummarySource, taskId: string, rewardProgress?: RewardProgressV1 | null) {

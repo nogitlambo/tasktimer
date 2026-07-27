@@ -6,7 +6,7 @@ export function normalizeStartupModule(raw: unknown): StartupModulePreference {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "tasks" || value === "notes" || value === "friends" || value === "leaderboard") return value;
   if (value === "dashboard") return value;
-  return "tasks";
+  return "dashboard";
 }
 
 export function startupModuleToAppPage(startupModule: StartupModulePreference): AppPage {

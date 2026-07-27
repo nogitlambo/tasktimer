@@ -214,6 +214,9 @@ describe("dashboard activity overview model", () => {
     expect(model.days[7]?.activityProgressPct).toBe(50);
     expect(model.days[8]?.activityProgressPct).toBe(100);
     expect(model.days[9]?.activityProgressPct).toBe(150);
+    expect(model.days[7]?.activityColorProgressPct).toBe(50);
+    expect(model.days[8]?.activityColorProgressPct).toBe(100);
+    expect(model.days[9]?.activityColorProgressPct).toBe(150);
     expect(model.days[7]?.activityBarColor).toBe(fillBackgroundForPct(50));
     expect(model.days[8]?.activityBarColor).toBe(fillBackgroundForPct(100));
     expect(model.days[9]?.activityBarColor).toBe(fillBackgroundForPct(150));
@@ -245,9 +248,135 @@ describe("dashboard activity overview model", () => {
     expect(model.days[7]?.goalTargetMs).toBe(60 * 60000);
     expect(model.days[8]?.goalTargetMs).toBe(120 * 60000);
     expect(model.days[9]?.goalTargetMs).toBe(180 * 60000);
+    expect(model.days[6]?.goalTargetMs).toBe(180 * 60000);
+    expect(model.days[6]?.goalLineTargetMs).toBe(60 * 60000);
+    expect(model.days[7]?.goalLineTargetMs).toBe(60 * 60000);
+    expect(model.days[8]?.goalLineTargetMs).toBe(120 * 60000);
+    expect(model.days[9]?.goalLineTargetMs).toBe(180 * 60000);
     expect(model.days[7]?.activityProgressPct).toBe(100);
     expect(model.days[8]?.activityProgressPct).toBe(100);
     expect(model.days[9]?.activityProgressPct).toBe(100);
+    expect(model.days[7]?.activityColorProgressPct).toBe(100);
+    expect(model.days[8]?.activityColorProgressPct).toBe(100);
+    expect(model.days[9]?.activityColorProgressPct).toBe(100);
+  });
+
+  it("carries the earliest saved goal line target back without changing progress targets", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })],
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 60 * 60000 }],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      selectedWeekOffset: 1,
+      activityGoalSnapshotsByDay: {
+        "2026-05-18": 60 * 60000,
+      },
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.dailyPaceTargetMs).toBe(180 * 60000);
+    expect(model.days[7]?.key).toBe("2026-05-11");
+    expect(model.days[9]?.key).toBe("2026-05-13");
+    expect(model.days[9]?.goalTargetMs).toBe(180 * 60000);
+    expect(model.days[9]?.goalLineTargetMs).toBe(60 * 60000);
+    expect(model.days[9]?.activityProgressPct).toBeCloseTo(33.333, 3);
+    expect(model.days[9]?.activityColorProgressPct).toBe(100);
+    expect(model.days[9]?.activityBarColor).toBe(fillBackgroundForPct(100));
+    expect(model.days.slice(7, 14).every((day) => day.goalLineTargetMs === 60 * 60000)).toBe(true);
+  });
+
+  it("builds the selected older week when a week offset is provided", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 45 * 60000 },
+          { ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 90 * 60000 },
+        ],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      selectedWeekOffset: 1,
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.selectedWeekOffset).toBe(1);
+    expect(model.weekStartMs).toBe(new Date(2026, 4, 11).getTime());
+    expect(model.days[7]?.key).toBe("2026-05-11");
+    expect(model.days[9]?.totalMs).toBe(45 * 60000);
+    expect(model.weekTotalMs).toBe(45 * 60000);
+    expect(model.earliestActivityWeekOffset).toBe(1);
+  });
+
+  it("aligns selected older weeks to the configured week start", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus" })],
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 3, 9).getTime(), name: "Focus", ms: 15 * 60000 }],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "sun",
+      nowMs: new Date(2026, 4, 13, 10).getTime(),
+      selectedWeekOffset: 1,
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.days[7]?.key).toBe("2026-05-03");
+    expect(model.days[13]?.key).toBe("2026-05-09");
+    expect(model.days[7]?.totalMs).toBe(15 * 60000);
+    expect(model.weekTotalMs).toBe(15 * 60000);
+  });
+
+  it("does not add a live running session to older selected weeks", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "live", running: true })],
+      historyByTaskId: {},
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      selectedWeekOffset: 1,
+      getElapsedMs: () => 25 * 60000,
+      isTaskRunning: (entry) => !!entry.running,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.days.every((day) => day.totalMs === 0)).toBe(true);
+    expect(model.days.every((day) => day.sessions.length === 0)).toBe(true);
+  });
+
+  it("uses saved goal snapshots on selected older weeks", () => {
+    const model = buildDashboardActivityOverviewModel({
+      tasks: [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })],
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 60 * 60000 }],
+      },
+      deletedTaskMeta: {},
+      weekStarting: "mon",
+      nowMs: new Date(2026, 4, 20, 10).getTime(),
+      selectedWeekOffset: 1,
+      activityGoalSnapshotsByDay: {
+        "2026-05-13": 60 * 60000,
+      },
+      getElapsedMs: () => 0,
+      isTaskRunning: () => false,
+      normalizeHistoryTimestampMs: (value) => Number(value) || 0,
+    });
+
+    expect(model.dailyPaceTargetMs).toBe(180 * 60000);
+    expect(model.days[9]?.goalTargetMs).toBe(60 * 60000);
+    expect(model.days[9]?.goalLineTargetMs).toBe(60 * 60000);
+    expect(model.days[9]?.activityProgressPct).toBe(100);
+    expect(model.days[9]?.activityColorProgressPct).toBe(100);
   });
 
   it("uses the current daily pace for past days without saved targets", () => {
@@ -268,6 +397,7 @@ describe("dashboard activity overview model", () => {
     expect(model.dailyPaceTargetMs).toBe(120 * 60000);
     expect(model.days[7]?.goalTargetMs).toBe(120 * 60000);
     expect(model.days[7]?.activityProgressPct).toBe(50);
+    expect(model.days[7]?.activityColorProgressPct).toBe(50);
   });
 
   it("falls back to the dominant task color when no weekly goal exists", () => {
@@ -291,6 +421,7 @@ describe("dashboard activity overview model", () => {
     expect(model.dailyPaceTargetMs).toBe(0);
     expect(model.days[7]?.goalTargetMs).toBe(0);
     expect(model.days[7]?.activityProgressPct).toBeNull();
+    expect(model.days[7]?.activityColorProgressPct).toBeNull();
     expect(model.days[7]?.activityBarColor).toBe("#00e5ff");
   });
 
@@ -308,6 +439,7 @@ describe("dashboard activity overview model", () => {
 
     expect(model.dailyPaceTargetMs).toBe(0);
     expect(model.days[0]?.activityProgressPct).toBeNull();
+    expect(model.days[0]?.activityColorProgressPct).toBeNull();
     expect(model.days[0]?.activityBarColor).toBe("#d9ff59");
   });
 });

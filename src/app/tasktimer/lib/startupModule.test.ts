@@ -16,10 +16,10 @@ function createPreferenceSource(cached: unknown, resolved: unknown = "tasks") {
 }
 
 describe("startupModule", () => {
-  it("defaults missing and invalid startup modules to Tasks", () => {
-    expect(normalizeStartupModule(undefined)).toBe("tasks");
-    expect(normalizeStartupModule("")).toBe("tasks");
-    expect(normalizeStartupModule("legacy-module")).toBe("tasks");
+  it("defaults missing and invalid startup modules to Dashboard", () => {
+    expect(normalizeStartupModule(undefined)).toBe("dashboard");
+    expect(normalizeStartupModule("")).toBe("dashboard");
+    expect(normalizeStartupModule("legacy-module")).toBe("dashboard");
   });
 
   it("maps Tasks to the Tasks app page and route", () => {
@@ -28,14 +28,14 @@ describe("startupModule", () => {
     expect(startupModuleToRoute("tasks")).toBe("/tasklaunch");
   });
 
-  it("defaults to Tasks when signed-out preference fallback is missing", () => {
+  it("defaults to Dashboard when signed-out preference fallback is missing", () => {
     expect(
       resolveStartupModulePreference({
         preferences: createPreferenceSource(null),
         isSignedIn: false,
         readSignedOutFallback: () => null,
       })
-    ).toBe("tasks");
+    ).toBe("dashboard");
   });
 
   it("uses cached preferences before stale local startup module storage", () => {
@@ -81,6 +81,6 @@ describe("startupModule", () => {
   });
 
   it("does not preserve the legacy Session Notes startup module value", () => {
-    expect(normalizeStartupModule("session-notes")).toBe("tasks");
+    expect(normalizeStartupModule("session-notes")).toBe("dashboard");
   });
 });

@@ -130,6 +130,83 @@
   display:block;
 }
 
+.dashboardActivityChartWrap.isPagingOlder .dashboardActivityChart,
+.dashboardActivityChartWrap.isPagingOlder .dashboardActivityXAxis,
+.dashboardActivityChartWrap.isPagingOlder .dashboardActivityEmpty{
+  animation:dashboardActivityWeekSlideFromLeft 320ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.dashboardActivityChartWrap.isPagingNewer .dashboardActivityChart,
+.dashboardActivityChartWrap.isPagingNewer .dashboardActivityXAxis,
+.dashboardActivityChartWrap.isPagingNewer .dashboardActivityEmpty{
+  animation:dashboardActivityWeekSlideFromRight 320ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes dashboardActivityWeekSlideFromLeft{
+  from{
+    opacity:.18;
+    transform:translateX(-7%);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@keyframes dashboardActivityWeekSlideFromRight{
+  from{
+    opacity:.18;
+    transform:translateX(7%);
+  }
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dashboardActivityChartWrap.isPagingOlder .dashboardActivityChart,
+  .dashboardActivityChartWrap.isPagingOlder .dashboardActivityXAxis,
+  .dashboardActivityChartWrap.isPagingOlder .dashboardActivityEmpty,
+  .dashboardActivityChartWrap.isPagingNewer .dashboardActivityChart,
+  .dashboardActivityChartWrap.isPagingNewer .dashboardActivityXAxis,
+  .dashboardActivityChartWrap.isPagingNewer .dashboardActivityEmpty{
+    animation:none;
+  }
+}
+
+.dashboardActivityPageBtn{
+  position:absolute;
+  top:calc(50% - 18px);
+  z-index:3;
+  border-color:transparent;
+  background:transparent;
+  color:var(--text);
+}
+
+.dashboardActivityPageBtn:hover,
+.dashboardActivityPageBtn:focus-visible{
+  border-color:transparent;
+  background:transparent;
+  color:var(--text);
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPageBtn,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPageBtn:hover,
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPageBtn:focus-visible{
+  border-color:transparent;
+  background:transparent;
+  color:var(--text);
+}
+
+.dashboardActivityPageBtnOlder{
+  left:0;
+}
+
+.dashboardActivityPageBtnNewer{
+  right:0;
+}
+
 .dashboardActivityGridLine{
   stroke:rgba(255,255,255,.12);
   stroke-width:1;
@@ -144,6 +221,12 @@
   stroke:rgba(217,255,89,.56);
   stroke-width:2;
   stroke-dasharray:5 7;
+}
+
+.dashboardActivityGoalPath{
+  stroke-dasharray:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 .dashboardActivityPreviousBar{
@@ -244,12 +327,11 @@
   color:#fff;
 }
 
+.dashboardActivityAxisDay.isCurrentDay span,
 .dashboardActivityAxisDay.isCurrentDay small{
-  padding-bottom:8px;
-  text-decoration-line:underline;
-  text-decoration-color:#c9ff24;
-  text-decoration-thickness:2px;
-  text-underline-offset:8px;
+  color:#35e8ff;
+  padding-bottom:0;
+  text-decoration:none;
 }
 
 .dashboardActivityEmpty{
@@ -295,7 +377,7 @@
 }
 
 .dashboardActivitySummaryMini .dashboardBigValue{
-  font-size:28px;
+  font-size:26px;
   line-height:1;
 }
 
@@ -6491,7 +6573,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivitySummaryMini .dashboardBigValue{
     min-width: 0;
-    font-size: 28px !important;
+    font-size: 26px !important;
     line-height: 1 !important;
   }
 
@@ -8188,7 +8270,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityAxisDay.isCurrentDay small{
-    padding-bottom:6px !important;
+    padding-bottom:0 !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardCard{
@@ -8720,7 +8802,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardBigValue{
   color:var(--dashboard-reference-text) !important;
   font-family:var(--font-tight), var(--font-readable), sans-serif !important;
-  font-size:42px !important;
+  font-size:26px !important;
   font-weight:800 !important;
   line-height:1 !important;
   letter-spacing:0 !important;
@@ -8729,11 +8811,18 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryFoot,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryStatus{
-  margin:10px 0 0 !important;
   color:var(--dashboard-reference-faint) !important;
   font-family:var(--font-readable) !important;
   font-size:11px !important;
   line-height:1.35 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryFoot{
+  margin:0 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryStatus{
+  margin:10px 0 0 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardSummaryFoot.positive{
@@ -8848,6 +8937,14 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   overflow:visible !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPageBtnOlder{
+  left:-17px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPageBtnNewer{
+  right:-17px !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityChart{
   inset:0 0 34px 0 !important;
   height:calc(100% - 34px) !important;
@@ -8870,6 +8967,12 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   stroke:rgba(255,146,72,.55) !important;
   stroke-width:1 !important;
   stroke-dasharray:2 3 !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalPath{
+  stroke-dasharray:none !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalLabel{
@@ -8933,7 +9036,9 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color:var(--dashboard-reference-cyan) !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityAxisDay.isCurrentDay span,
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityAxisDay.isCurrentDay small{
+  color:var(--dashboard-reference-cyan) !important;
   padding-bottom:0 !important;
   text-decoration:none !important;
 }
@@ -9158,7 +9263,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardBigValue{
-    font-size:36px !important;
+    font-size:26px !important;
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivityChartWrap{
@@ -9178,7 +9283,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryMini .dashboardBigValue{
-    font-size:32px !important;
+    font-size:26px !important;
   }
 }
 

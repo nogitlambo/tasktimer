@@ -181,6 +181,13 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   }
 
   function handleDashboardGridClick(e: any) {
+    const activityPageBtn = e.target?.closest?.("[data-dashboard-activity-page]") as HTMLButtonElement | null;
+    if (activityPageBtn) {
+      const direction = String(activityPageBtn.getAttribute("data-dashboard-activity-page") || "").trim();
+      if (!activityPageBtn.disabled) ctx.pageDashboardActivityOverview(direction);
+      e.preventDefault();
+      return;
+    }
     const heatDayBtn = e.target?.closest?.(".dashboardHeatDayCell.isInteractive[data-heat-date]") as HTMLElement | null;
     if (heatDayBtn) {
       const dayKey = String(heatDayBtn.getAttribute("data-heat-date") || "").trim();

@@ -114,8 +114,8 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
               <span className="settingsPreferenceControlHelp">Choose which main area opens first after sign-in or app launch.</span>
             </div>
             <SettingsDownwardSelect id="taskStartupModuleSelect" aria-label="Default module on app startup">
-              <option value="dashboard">Dashboard</option>
-              <option value="tasks">Tasks (default)</option>
+              <option value="dashboard">Dashboard (default)</option>
+              <option value="tasks">Tasks</option>
               <option value="notes">Notes</option>
               <option value="friends">Friends</option>
               <option value="leaderboard">Leaderboards</option>

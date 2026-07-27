@@ -703,6 +703,7 @@ type CreateDashboardOptionsArgs = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  pageDashboardActivityOverview: (direction: "older" | "newer" | string | null) => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;
@@ -728,6 +729,7 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
     | "renderDashboardTimelineCard"
+    | "pageDashboardActivityOverview"
     | "selectDashboardTimelineSuggestion"
     | "selectDashboardMomentumDriver"
     | "clearDashboardMomentumDriverSelection"
@@ -1648,6 +1650,7 @@ export function createTaskTimerDashboardContext(
     saveCloudDashboard: args.saveCloudDashboard,
     renderDashboardWidgets: args.renderDashboardWidgets,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
+    pageDashboardActivityOverview: args.pageDashboardActivityOverview,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver: args.selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection: args.clearDashboardMomentumDriverSelection,
@@ -1669,6 +1672,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     renderDashboardTimelineCard,
     renderDashboardLiveWidgets,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
+    pageDashboardActivityOverview,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
     clearDashboardMomentumDriverSelection,
@@ -1703,6 +1707,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       syncDashboardMenuFlipUi: dashboardBindings.syncDashboardMenuFlipUi,
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
+      pageDashboardActivityOverview: (direction) => pageDashboardActivityOverview(direction),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),
       selectDashboardMomentumDriver: (key) => selectDashboardMomentumDriver(key),
       clearDashboardMomentumDriverSelection: () => clearDashboardMomentumDriverSelection(),

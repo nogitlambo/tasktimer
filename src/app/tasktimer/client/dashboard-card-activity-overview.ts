@@ -39,7 +39,9 @@ export type DashboardActivityOverviewDay = {
   previousWeekCumulativeMs: number;
   activityBarColor: string;
   activityProgressPct: number | null;
+  activityColorProgressPct: number | null;
   goalTargetMs: number;
+  goalLineTargetMs: number;
   taskRows: DashboardActivityOverviewTaskRow[];
   sessions: DashboardActivityOverviewSession[];
 };
@@ -47,6 +49,9 @@ export type DashboardActivityOverviewDay = {
 export type DashboardActivityOverviewModel = {
   weekStartMs: number;
   weekEndMs: number;
+  currentWeekStartMs: number;
+  selectedWeekOffset: number;
+  earliestActivityWeekOffset: number;
   totalGoalMs: number;
   dailyPaceTargetMs: number;
   weekTotalMs: number;
@@ -88,12 +93,18 @@ function getTaskGoalMs(task: Task) {
   return 0;
 }
 
+function normalizeWeekOffset(value: unknown) {
+  const next = Math.max(0, Math.floor(Number(value) || 0));
+  return Number.isFinite(next) ? next : 0;
+}
+
 export function buildDashboardActivityOverviewModel(options: {
   tasks: Task[];
   historyByTaskId: HistoryByTaskId;
   deletedTaskMeta: DeletedTaskMeta;
   weekStarting: DashboardWeekStart;
   nowMs: number;
+  selectedWeekOffset?: number;
   activityGoalSnapshotsByDay?: Record<string, number>;
   getElapsedMs: (task: Task) => number;
   isTaskRunning: (task: Task) => boolean;
@@ -117,7 +128,9 @@ export function buildDashboardActivityOverviewModel(options: {
     if (!taskColorById.has(taskId)) taskColorById.set(taskId, normalizeTaskColor(meta.color) || "#8b95a7");
   });
 
-  const weekStartMs = startOfCurrentWeekMs(options.nowMs, options.weekStarting);
+  const currentWeekStartMs = startOfCurrentWeekMs(options.nowMs, options.weekStarting);
+  const selectedWeekOffset = normalizeWeekOffset(options.selectedWeekOffset);
+  const weekStartMs = currentWeekStartMs - selectedWeekOffset * 7 * 86400000;
   const weekEndMs = weekStartMs + 7 * 86400000;
   const chartStartMs = weekStartMs - 7 * 86400000;
   const days: DashboardActivityOverviewDay[] = Array.from({ length: 14 }, (_, index) => {
@@ -136,13 +149,16 @@ export function buildDashboardActivityOverviewModel(options: {
       previousWeekCumulativeMs: 0,
       activityBarColor: DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR,
       activityProgressPct: null,
+      activityColorProgressPct: null,
       goalTargetMs: 0,
+      goalLineTargetMs: 0,
       taskRows: [],
       sessions: [],
     };
   });
   const dayByKey = new Map(days.map((day) => [day.key, day]));
   const includedTaskIds = new Set<string>([...taskNameById.keys(), ...Object.keys(options.historyByTaskId || {})]);
+  let earliestActivityTs = Number.POSITIVE_INFINITY;
 
   includedTaskIds.forEach((taskId) => {
     const entries = Array.isArray(options.historyByTaskId?.[taskId])
@@ -152,6 +168,7 @@ export function buildDashboardActivityOverviewModel(options: {
       const ts = normalizeTimestamp(entry?.ts, options.normalizeHistoryTimestampMs);
       const ms = normalizeMs(entry?.ms);
       if (ts <= 0 || ms <= 0) return;
+      if (ts < earliestActivityTs) earliestActivityTs = ts;
       if (ts >= chartStartMs && ts < weekEndMs) {
         const day = dayByKey.get(localDayKey(ts));
         if (!day) return;
@@ -172,33 +189,45 @@ export function buildDashboardActivityOverviewModel(options: {
     });
   });
 
-  tasks.forEach((task) => {
-    const taskId = String(task?.id || "").trim();
-    if (!taskId || !options.isTaskRunning(task)) return;
-    const todayKey = localDayKey(options.nowMs);
-    const today = dayByKey.get(todayKey);
-    if (!today) return;
-    const alreadyHasLive = today.sessions.some((session) => session.taskId === taskId && session.isLive);
-    if (alreadyHasLive) return;
-    const ms = normalizeMs(options.getElapsedMs(task));
-    if (ms <= 0) return;
-    const color = taskColorById.get(taskId) || "#75e7ff";
-    today.totalMs += ms;
-    today.sessions.push({
-      taskId,
-      taskName: taskNameById.get(taskId) || "Task",
-      ts: options.nowMs,
-      ms,
-      note: "",
-      color,
-      isLive: true,
+  if (selectedWeekOffset === 0) {
+    tasks.forEach((task) => {
+      const taskId = String(task?.id || "").trim();
+      if (!taskId || !options.isTaskRunning(task)) return;
+      const todayKey = localDayKey(options.nowMs);
+      const today = dayByKey.get(todayKey);
+      if (!today) return;
+      const alreadyHasLive = today.sessions.some((session) => session.taskId === taskId && session.isLive);
+      if (alreadyHasLive) return;
+      const ms = normalizeMs(options.getElapsedMs(task));
+      if (ms <= 0) return;
+      const color = taskColorById.get(taskId) || "#75e7ff";
+      today.totalMs += ms;
+      today.sessions.push({
+        taskId,
+        taskName: taskNameById.get(taskId) || "Task",
+        ts: options.nowMs,
+        ms,
+        note: "",
+        color,
+        isLive: true,
+      });
     });
-  });
+  }
 
   const totalGoalMs = tasks.reduce((sum, task) => sum + getTaskGoalMs(task), 0);
   const dailyPaceTargetMs = totalGoalMs > 0 ? totalGoalMs / 7 : 0;
   const todayKey = localDayKey(options.nowMs);
   const snapshots = options.activityGoalSnapshotsByDay || {};
+  const sortedSnapshotTargets = Object.entries(snapshots)
+    .reduce<Array<{ key: string; ms: number }>>((out, [key, value]) => {
+      const dayKey = String(key || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return out;
+      const ms = Math.max(0, Math.floor(Number(value) || 0));
+      if (Number.isFinite(ms) && ms > 0) out.push({ key: dayKey, ms });
+      return out;
+    }, [])
+    .sort((left, right) => left.key.localeCompare(right.key));
+  const earliestSnapshotTarget = sortedSnapshotTargets[0] || null;
   let cumulativeMs = 0;
   days.forEach((day) => {
     cumulativeMs += day.totalMs;
@@ -226,13 +255,27 @@ export function buildDashboardActivityOverviewModel(options: {
     });
     const snapshotGoalMs = Math.max(0, Math.floor(Number(snapshots[day.key]) || 0));
     const goalTargetMs = dailyPaceTargetMs > 0 && day.key < todayKey && snapshotGoalMs > 0 ? snapshotGoalMs : dailyPaceTargetMs;
+    const goalLineTargetMs = dailyPaceTargetMs > 0
+      ? snapshotGoalMs > 0
+        ? snapshotGoalMs
+        : earliestSnapshotTarget && day.key < earliestSnapshotTarget.key
+          ? earliestSnapshotTarget.ms
+          : dailyPaceTargetMs
+      : 0;
     day.goalTargetMs = goalTargetMs;
+    day.goalLineTargetMs = goalLineTargetMs;
     if (goalTargetMs > 0) {
       const progressPct = (day.totalMs / goalTargetMs) * 100;
       day.activityProgressPct = progressPct;
-      day.activityBarColor = fillBackgroundForPct(progressPct);
     } else {
       day.activityProgressPct = null;
+    }
+    if (goalLineTargetMs > 0) {
+      const colorProgressPct = (day.totalMs / goalLineTargetMs) * 100;
+      day.activityColorProgressPct = colorProgressPct;
+      day.activityBarColor = fillBackgroundForPct(colorProgressPct);
+    } else {
+      day.activityColorProgressPct = null;
       day.activityBarColor = day.taskRows[0]?.color || DASHBOARD_ACTIVITY_BAR_FALLBACK_COLOR;
     }
     day.sessions.sort((left, right) => left.ts - right.ts);
@@ -243,10 +286,16 @@ export function buildDashboardActivityOverviewModel(options: {
   const previousWeekTotalMs = visibleTotalMs - weekTotalMs;
   const maxDailyMs = days.reduce((max, day) => Math.max(max, day.totalMs), 0);
   const maxChartMs = Math.max(dailyPaceTargetMs, maxDailyMs, 60 * 60000);
+  const earliestActivityWeekOffset = Number.isFinite(earliestActivityTs)
+    ? Math.max(0, Math.floor((currentWeekStartMs - startOfCurrentWeekMs(earliestActivityTs, options.weekStarting)) / (7 * 86400000)))
+    : 0;
 
   return {
     weekStartMs,
     weekEndMs,
+    currentWeekStartMs,
+    selectedWeekOffset,
+    earliestActivityWeekOffset,
     totalGoalMs,
     dailyPaceTargetMs,
     weekTotalMs,

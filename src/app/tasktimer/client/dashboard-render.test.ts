@@ -12,6 +12,8 @@ class ElementStub {
   id = "";
   className = "";
   textContent = "";
+  disabled = false;
+  title = "";
   children: ElementStub[] = [];
   style: Record<string, string | ((name: string, value: string) => void)> = {
     setProperty: (name: string, value: string) => {
@@ -181,12 +183,15 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardHeatWeekdays");
   register("dashboardHeatCalendarGrid");
   register("dashboardHeatSummaryBody");
+  register("dashboardActivityChartWrap");
   register("dashboardActivityChart");
   register("dashboardActivityChartGrid");
   register("dashboardActivityPreviousBars");
   register("dashboardActivityBars");
   register("dashboardActivityGoalLine");
   register("dashboardActivityGoalLabel");
+  register("dashboardActivityPageOlderBtn");
+  register("dashboardActivityPageNewerBtn");
   register("dashboardActivityYAxis");
   register("dashboardActivityXAxis");
   register("dashboardActivityEmpty");
@@ -409,6 +414,7 @@ function createRenderHarness(
     topbarXp,
     renderAll: () => dashboardRender.renderDashboardWidgets(),
     renderActivityOverview: () => dashboardRender.renderDashboardActivityOverviewCard(),
+    pageActivityOverview: (direction: "older" | "newer") => dashboardRender.pageDashboardActivityOverview(direction),
     renderHeaderXp: () => dashboardRender.renderDashboardHeaderProgress(),
     render: () => dashboardRender.renderDashboardTasksCompletedCard(),
     renderWeeklyGoals: () => dashboardRender.renderDashboardWeeklyGoalsCard(),
@@ -449,9 +455,14 @@ function getActivityGradientStopColors(container: ElementStub | undefined, gradi
   return (gradient?.children || []).map((child) => child.getAttribute("stop-color"));
 }
 
-function getActivityGoalSegments(container: ElementStub | undefined) {
-  const group = (container?.children || []).find((child) => child.getAttribute("class") === "dashboardActivityGoalSegments");
-  return group?.children.filter((child) => String(child.getAttribute("class") || "").includes("dashboardActivityGoalSegment")) || [];
+function getActivityGoalPath(container: ElementStub | undefined) {
+  return (container?.children || []).find((child) => String(child.getAttribute("class") || "").includes("dashboardActivityGoalPath")) || null;
+}
+
+function getActivityGoalPathYValues(path: ElementStub | null) {
+  const d = String(path?.getAttribute("d") || "");
+  const matches = [...d.matchAll(/[ML]\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)];
+  return matches.map((match) => match[2]);
 }
 
 afterEach(() => {
@@ -510,7 +521,7 @@ describe("dashboard activity overview card", () => {
     }
   });
 
-  it("renders current week with previous-week ghost bars on desktop", () => {
+  it("renders current week without previous-week ghost bars on desktop", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
@@ -534,24 +545,18 @@ describe("dashboard activity overview card", () => {
       const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
       const currentBar = getActivityBarFront(bars[0]);
-      const ghostBar = previousBars?.children[0];
 
       expect(axisDayCount).toBe(7);
       expect(bars).toHaveLength(7);
-      expect(previousBars?.style.display).toBe("");
-      expect(previousBars?.children).toHaveLength(7);
-      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
-      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
-      expect(ghostBar?.getAttribute("class")).toBe("dashboardActivityPreviousBar");
-      expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
-        Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
-      );
+      expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(0);
+      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeGreaterThan(0);
     } finally {
       harness.restore();
     }
   });
 
-  it("hides previous-week ghost bars when the dashboard setting is disabled", () => {
+  it("keeps previous-week ghost bars hidden when the dashboard setting is disabled", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
@@ -573,7 +578,7 @@ describe("dashboard activity overview card", () => {
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(previousBars?.style.display).toBe("none");
-      expect(previousBars?.children).toHaveLength(3);
+      expect(previousBars?.children).toHaveLength(0);
     } finally {
       harness.restore();
     }
@@ -599,13 +604,13 @@ describe("dashboard activity overview card", () => {
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
 
       expect(previousBars?.style.display).toBe("none");
-      expect(previousBars?.children).toHaveLength(3);
+      expect(previousBars?.children).toHaveLength(0);
     } finally {
       harness.restore();
     }
   });
 
-  it("renders current week with previous-week ghost bars and no y-axis labels on mobile", () => {
+  it("renders current week without previous-week ghost bars and no y-axis labels on mobile", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
@@ -631,19 +636,13 @@ describe("dashboard activity overview card", () => {
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
       const yAxisHtml = harness.byId.get("dashboardActivityYAxis")?.innerHTML || "";
       const currentBar = getActivityBarFront(bars[0]);
-      const ghostBar = previousBars?.children[0];
 
       expect(axisDayCount).toBe(7);
       expect(bars).toHaveLength(7);
-      expect(previousBars?.style.display).toBe("");
-      expect(previousBars?.children).toHaveLength(7);
+      expect(previousBars?.style.display).toBe("none");
+      expect(previousBars?.children).toHaveLength(0);
       expect(yAxisHtml).toBe("");
-      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeCloseTo(85, 1);
-      expect(Number.parseFloat(String(ghostBar?.getAttribute("height") || "0"))).toBeCloseTo(255, 1);
-      expect(ghostBar?.getAttribute("class")).toBe("dashboardActivityPreviousBar");
-      expect(Number.parseFloat(String(ghostBar?.getAttribute("width") || "0"))).toBeGreaterThan(
-        Number.parseFloat(String(currentBar?.getAttribute("width") || "0"))
-      );
+      expect(Number.parseFloat(String(currentBar?.getAttribute("height") || "0"))).toBeGreaterThan(0);
     } finally {
       harness.restore();
     }
@@ -659,6 +658,7 @@ describe("dashboard activity overview card", () => {
           focus: [
             { ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
             { ts: weekStart + 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 120 * 60000 },
+            { ts: weekStart + 2 * 86400000 + 9 * 60 * 60 * 1000, name: "Focus", ms: 180 * 60000 },
           ],
         },
       }
@@ -670,43 +670,55 @@ describe("dashboard activity overview card", () => {
       const barsContainer = harness.byId.get("dashboardActivityBars");
       const firstBar = getActivityBarFront(bars[0]);
       const secondBar = getActivityBarFront(bars[1]);
+      const thirdBar = getActivityBarFront(bars[2]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
-      const goalSegments = getActivityGoalSegments(barsContainer);
+      const goalPath = getActivityGoalPath(barsContainer);
+      const goalPathYValues = getActivityGoalPathYValues(goalPath);
 
       expect(bars).toHaveLength(7);
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(255,140,0)");
       expect(secondBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(12,245,127)");
+      expect(thirdBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(12,245,127)");
       expect(firstBar?.getAttribute("fill")).not.toBe(secondBar?.getAttribute("fill"));
+      expect(secondBar?.getAttribute("fill")).not.toBe(thirdBar?.getAttribute("fill"));
       expect(getActivityGradientStopColors(barsContainer, "dashboardActivityBarGradient-0")).toEqual([
-        "#ffb56f",
-        "#ff9148",
-        "#d96a2f",
-        "#8d3f22",
+        "rgb(255,184,97)",
+        "rgb(255,161,46)",
+        "rgb(214,118,0)",
+        "rgb(148,81,0)",
       ]);
       expect(getActivityGradientStopColors(barsContainer, "dashboardActivityBarGradient-1")).toEqual([
-        "#9dff5f",
-        "#47ffb5",
-        "#0cf57f",
-        "#078f4f",
+        "rgb(104,249,176)",
+        "rgb(56,247,150)",
+        "rgb(10,206,107)",
+        "rgb(7,142,74)",
       ]);
-      expect(goalLine?.style.display).toBe("");
+      expect(getActivityGradientStopColors(barsContainer, "dashboardActivityBarGradient-2")).toEqual([
+        "rgb(104,249,176)",
+        "rgb(56,247,150)",
+        "rgb(10,206,107)",
+        "rgb(7,142,74)",
+      ]);
+      expect(goalLine?.style.display).toBe("none");
       expect(goalLabel?.style.display).toBe("");
       expect(goalLabel?.textContent).toBe("2h GOAL");
       expect(goalLine?.getAttribute("x1")).toBe("84");
       expect(goalLine?.getAttribute("x2")).toBe("692");
       expect(Number(goalLabel?.getAttribute("x"))).toBeLessThan(Number(goalLine?.getAttribute("x1")));
-      expect(goalSegments.length).toBeGreaterThan(0);
-      expect(new Set(goalSegments.map((segment) => segment.getAttribute("y1"))).size).toBe(1);
+      expect(goalPath?.getAttribute("class")).toContain("dashboardActivityGoalPath");
+      expect(goalPath?.getAttribute("d")).toMatch(/^M /);
+      expect(goalPathYValues.length).toBeGreaterThan(1);
+      expect(new Set(goalPathYValues).size).toBe(1);
       expect(previousBars?.style.display).toBe("none");
-      expect(previousBars?.children).toHaveLength(7);
+      expect(previousBars?.children).toHaveLength(0);
     } finally {
       harness.restore();
     }
   });
 
-  it("renders historical goal segments at saved per-day targets", () => {
+  it("renders one historical goal path at saved per-day targets", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 20, 10));
     const tasks = [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })];
@@ -727,12 +739,134 @@ describe("dashboard activity overview card", () => {
 
     try {
       harness.renderActivityOverview();
-      const goalSegments = getActivityGoalSegments(harness.byId.get("dashboardActivityBars"));
+      const goalPath = getActivityGoalPath(harness.byId.get("dashboardActivityBars"));
+      const goalPathYValues = getActivityGoalPathYValues(goalPath);
       const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
 
-      expect(goalSegments).toHaveLength(3);
-      expect(new Set(goalSegments.map((segment) => segment.getAttribute("y1"))).size).toBe(3);
+      expect(goalPath?.getAttribute("class")).toContain("dashboardActivityGoalPath");
+      expect(goalPath?.getAttribute("d")?.match(/\bL\b/g) || []).toHaveLength(2);
+      expect(goalPathYValues).toHaveLength(3);
+      expect(new Set(goalPathYValues).size).toBe(3);
       expect(goalLabel?.textContent).toBe("3h GOAL");
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("labels the carried-back Activity Overview goal line value on older weeks", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const tasks = [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })];
+    const harness = createRenderHarness(tasks, {
+      optimalProductivityDays: ["mon", "tue", "wed"],
+      activityGoalSnapshotsByDay: {
+        "2026-05-18": 60 * 60000,
+      },
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 60 * 60000 }],
+      },
+    });
+
+    try {
+      harness.renderActivityOverview();
+      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("3h GOAL");
+
+      harness.pageActivityOverview("older");
+      const goalPath = getActivityGoalPath(harness.byId.get("dashboardActivityBars"));
+      const goalPathYValues = getActivityGoalPathYValues(goalPath);
+
+      expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("11 May");
+      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("1h GOAL");
+      expect(goalPathYValues).toHaveLength(3);
+      expect(new Set(goalPathYValues).size).toBe(1);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("pages Activity Overview to older and newer selected weeks", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const tasks = [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })];
+    const harness = createRenderHarness(tasks, {
+      optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 45 * 60000 },
+          { ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 90 * 60000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderActivityOverview();
+      expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("18 May");
+      expect(harness.byId.get("dashboardActivityPageOlderBtn")?.disabled).toBe(false);
+      expect(harness.byId.get("dashboardActivityPageNewerBtn")?.disabled).toBe(true);
+
+      harness.pageActivityOverview("older");
+      const olderBars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+      const olderWednesdayBar = getActivityBarFront(olderBars[2]);
+      expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("11 May");
+      expect(Number.parseFloat(String(olderWednesdayBar?.getAttribute("height") || "0"))).toBeGreaterThan(0);
+      expect(harness.byId.get("dashboardActivityPageOlderBtn")?.disabled).toBe(true);
+      expect(harness.byId.get("dashboardActivityPageNewerBtn")?.disabled).toBe(false);
+      expect(harness.byId.get("dashboardActivityChart")?.getAttribute("aria-label")).toContain("11 May through 17 May");
+      expect(harness.byId.get("dashboardActivityChartWrap")?.classList.contains("isPagingOlder")).toBe(true);
+
+      harness.pageActivityOverview("newer");
+      expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("18 May");
+      expect(harness.byId.get("dashboardActivityPageNewerBtn")?.disabled).toBe(true);
+      expect(harness.byId.get("dashboardActivityChartWrap")?.classList.contains("isPagingNewer")).toBe(true);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("disables older Activity Overview paging when no older activity week exists", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const harness = createRenderHarness([task({ id: "focus", name: "Focus" })], {
+      optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      historyByTaskId: {
+        focus: [{ ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 60 * 60000 }],
+      },
+    });
+
+    try {
+      harness.renderActivityOverview();
+      expect(harness.byId.get("dashboardActivityPageOlderBtn")?.disabled).toBe(true);
+      expect(harness.byId.get("dashboardActivityPageOlderBtn")?.getAttribute("aria-disabled")).toBe("true");
+      expect(harness.byId.get("dashboardActivityPageNewerBtn")?.disabled).toBe(true);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("keeps Activity Overview summary cards current while chart weeks are paged", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const tasks = [task({ id: "focus", name: "Focus", timeGoalPeriod: "week", timeGoalMinutes: 840 })];
+    const harness = createRenderHarness(tasks, {
+      optimalProductivityDays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 45 * 60000 },
+          { ts: new Date(2026, 4, 20, 9).getTime(), name: "Focus", ms: 90 * 60000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderAll();
+      const todayValue = harness.byId.get("dashboardActivityTodayHoursValue")?.textContent;
+      const weekValue = harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent;
+
+      harness.pageActivityOverview("older");
+
+      expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("11 May");
+      expect(harness.byId.get("dashboardActivityTodayHoursValue")?.textContent).toBe(todayValue);
+      expect(harness.byId.get("dashboardActivityWeeklyGoalsValue")?.textContent).toBe(weekValue);
     } finally {
       harness.restore();
     }
@@ -758,11 +892,11 @@ describe("dashboard activity overview card", () => {
       const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
       const firstBar = getActivityBarFront(bars[0]);
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
-      const goalSegments = getActivityGoalSegments(harness.byId.get("dashboardActivityBars"));
+      const goalPath = getActivityGoalPath(harness.byId.get("dashboardActivityBars"));
 
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("#00e5ff");
       expect(goalLine?.style.display).toBe("none");
-      expect(goalSegments).toHaveLength(0);
+      expect(goalPath).toBeNull();
     } finally {
       harness.restore();
     }
@@ -1231,6 +1365,52 @@ describe("dashboard completed card", () => {
     expect(css).toContain(
       ".dashboardActivitySummaryMini:has(.dashboardSummaryFoot.negative) .dashboardGoalProgressFill{\n  background:linear-gradient(90deg, #ff6b6b, #ff8a5f) !important;"
     );
+  });
+
+  it("keeps the current activity day label aligned while highlighting the day and date", () => {
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).not.toContain(".dashboardActivityAxisDay.isCurrentDay small{\n  padding-bottom:8px;");
+    expect(css).not.toContain(".dashboardActivityAxisDay.isCurrentDay small{\n    padding-bottom:6px !important;");
+    expect(css).toContain(
+      ".dashboardActivityAxisDay.isCurrentDay span,\n.dashboardActivityAxisDay.isCurrentDay small{\n  color:#35e8ff;\n  padding-bottom:0;\n  text-decoration:none;"
+    );
+    expect(css).toContain(
+      ".dashboardActivityAxisDay.isCurrentDay span,\nbody[data-app-page=\"dashboard\"] #app[aria-label=\"TaskLaunch App\"] #appPageDashboard .dashboardActivityAxisDay.isCurrentDay small{\n  color:var(--dashboard-reference-cyan) !important;"
+    );
+  });
+
+  it("keeps Activity Overview pagination controls inside the chart wrapper", () => {
+    const component = readFileSync("src/app/tasktimer/components/DashboardPageContent.tsx", "utf8").replace(/\r\n/g, "\n");
+    const css = readFileSync("src/app/tasktimer/styles/03-dashboard.css", "utf8").replace(/\r\n/g, "\n");
+    const chartWrap = component.slice(
+      component.indexOf('id="dashboardActivityChartWrap"'),
+      component.indexOf('id="dashboardActivityYAxis"')
+    );
+
+    expect(chartWrap).toContain('id="dashboardActivityPageOlderBtn"');
+    expect(chartWrap).toContain('className="iconBtn dashboardActivityPageBtn dashboardActivityPageBtnOlder"');
+    expect(chartWrap).toContain('{"<"}');
+    expect(chartWrap).toContain('data-dashboard-activity-page="older"');
+    expect(chartWrap).toContain('id="dashboardActivityPageNewerBtn"');
+    expect(chartWrap).toContain('className="iconBtn dashboardActivityPageBtn dashboardActivityPageBtnNewer"');
+    expect(chartWrap).toContain('{">"}');
+    expect(chartWrap).toContain('data-dashboard-activity-page="newer"');
+    expect(css).toContain(".dashboardActivityPageBtn{\n  position:absolute;");
+    expect(css).not.toContain(".dashboardActivityPageBtn{\n  position:absolute;\n  top:calc(50% - 22px);\n  z-index:3;\n  width:");
+    expect(css).not.toContain("body[data-app-page=\"dashboard\"] #app[aria-label=\"TaskLaunch App\"] #appPageDashboard .dashboardActivityPageBtn{\n  border-color:");
+    expect(css).not.toContain("body[data-app-page=\"dashboard\"] #app[aria-label=\"TaskLaunch App\"] #appPageDashboard .dashboardActivityPageBtn{\n  box-shadow:");
+    expect(css).not.toContain(".dashboardActivityPageBtn:disabled,");
+    expect(css).toContain("  border-color:transparent;\n  background:transparent;\n  color:var(--text);");
+    expect(css).toContain(".dashboardActivityPageBtn:hover,\n.dashboardActivityPageBtn:focus-visible{\n  border-color:transparent;\n  background:transparent;\n  color:var(--text);");
+    expect(css).toContain("body[data-theme=\"lime\"] #app[aria-label=\"TaskLaunch App\"] #appPageDashboard .dashboardActivityPageBtn:hover,");
+    expect(css).toContain("body[data-theme=\"lime\"] #app[aria-label=\"TaskLaunch App\"] #appPageDashboard .dashboardActivityPageBtn:focus-visible{\n  border-color:transparent;");
+    expect(css).toContain(".dashboardActivityPageBtnOlder{\n  left:0;");
+    expect(css).toContain(".dashboardActivityPageBtnNewer{\n  right:0;");
+    expect(css).toContain(".dashboardActivityChartWrap.isPagingOlder .dashboardActivityChart,");
+    expect(css).toContain("animation:dashboardActivityWeekSlideFromLeft 320ms cubic-bezier(.2,.8,.2,1) both;");
+    expect(css).toContain("animation:dashboardActivityWeekSlideFromRight 320ms cubic-bezier(.2,.8,.2,1) both;");
+    expect(css).toContain("@media (prefers-reduced-motion: reduce){");
   });
 
   it("keeps the mobile Task Overview panel on the shared dashboard panel chrome", () => {

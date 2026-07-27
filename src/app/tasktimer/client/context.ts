@@ -833,6 +833,7 @@ export type TaskTimerDashboardContext = {
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   renderDashboardTimelineCard: () => void;
+  pageDashboardActivityOverview: (direction: "older" | "newer" | string | null) => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
   selectDashboardMomentumDriver: (key: DashboardMomentumDriverKey | string | null) => string | null;
   clearDashboardMomentumDriverSelection: () => void;

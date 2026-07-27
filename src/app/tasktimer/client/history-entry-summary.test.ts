@@ -207,6 +207,27 @@ describe("history entry summary", () => {
     expect(payload?.sessions[0]?.xpText).toBe("12");
   });
 
+  it("falls back to base session XP when reward ledger detail has aged out", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task({ timeGoalEnabled: false, timeGoalMinutes: 0 }),
+      rewardProgress: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 120,
+        totalXpPrecise: 120,
+        awardLedger: [],
+      },
+      entries: [{ taskId: "task-1", ts: 1_717_200_000_000, ms: 10 * 60_000, name: "Focus" }],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    expect(payload?.sessions[0]?.xpEarned).toBe(5);
+    expect(payload?.sessions[0]?.xpText).toBe("5");
+  });
+
   it("renders the note section after the time goal and XP metrics", () => {
     const html = renderSummary(task({ timeGoalEnabled: true, timeGoalValue: 3, timeGoalUnit: "minute", timeGoalPeriod: "day", timeGoalMinutes: 3 }));
     const metricsIndex = html.indexOf("historyEntrySummaryGrid");
