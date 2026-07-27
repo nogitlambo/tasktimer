@@ -205,34 +205,50 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(friendsCss).toContain("animation-delay:920ms;");
   });
 
-  it("pulses the weekly and global podium radial burst outward from center", () => {
+  it("spins the weekly and global podium radial burst as an oversized circle", () => {
     expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage"');
     expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage leaderboardGlobalPodiumStage"');
+    expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::before");
     expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after");
     expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after");
-    expect(friendsCss).toContain("@keyframes leaderboardPodiumCenterGlowBreathe");
-    expect(friendsCss).toContain("animation:leaderboardPodiumCenterGlowBreathe 3.8s ease-in-out infinite both;");
+    expect(friendsCss).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
+    const podiumBurstRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::before\s*\{([\s\S]*?)\n\}/
+    )?.[1] ?? "";
+    expect(podiumBurstRule).not.toBe("");
+    expect(podiumBurstRule).toContain("left:50%;");
+    expect(podiumBurstRule).toContain("top:42%;");
+    expect(podiumBurstRule).toContain("width:max(220%, 560px);");
+    expect(podiumBurstRule).toContain("aspect-ratio:1;");
+    expect(podiumBurstRule).toContain("translate:-50% -42%;");
+    expect(podiumBurstRule).toContain("border-radius:50%;");
+    expect(podiumBurstRule).toContain("clip-path:circle(50% at 50% 50%);");
+    expect(podiumBurstRule).toContain("transform-origin:center;");
+    expect(podiumBurstRule).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
+    expect(podiumBurstRule).toContain("will-change:transform, opacity, filter;");
+    expect(podiumBurstRule).toContain("radial-gradient(circle at 50% 50%");
+    expect(podiumBurstRule).toContain("from -5deg at 50% 50%");
     const podiumGlowRule = friendsCss.match(
       /#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\n\}/
     )?.[1] ?? "";
     expect(podiumGlowRule).not.toBe("");
-    expect(friendsCss).toContain("left:50%;");
-    expect(friendsCss).toContain("top:42%;");
-    expect(friendsCss).toContain("width:220%;");
-    expect(friendsCss).toContain("transform-origin:center;");
-    expect(friendsCss).toContain("transform:translate3d(-50%,-50%,0) scale(.46);");
-    expect(friendsCss).toContain("backface-visibility:hidden;");
-    expect(friendsCss).toContain("will-change:transform, opacity;");
+    expect(podiumGlowRule).toContain("width:max(220%, 560px);");
+    expect(podiumGlowRule).toContain("aspect-ratio:1;");
+    expect(podiumGlowRule).toContain("translate:-50% -42%;");
+    expect(podiumGlowRule).toContain("border-radius:50%;");
+    expect(podiumGlowRule).toContain("clip-path:circle(50% at 50% 50%);");
+    expect(podiumGlowRule).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
     expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.16)");
     expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.16)");
     expect(podiumGlowRule).not.toContain("conic-gradient(");
     expect(friendsCss).toContain(".leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after");
-    expect(friendsCss).toContain("width:240%;");
+    expect(friendsCss).toContain("width:max(240%, 560px);");
     expect(friendsCss).not.toContain("@keyframes leaderboardPodiumCenterPulseMobile");
     expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.2)");
     expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.2)");
     expect(friendsCss).toContain("opacity:.09;");
-    expect(friendsCss).toContain("transform:translate3d(-50%,-50%,0) scale(.52);");
+    expect(podiumBurstRule).not.toContain("scale(");
+    expect(podiumGlowRule).not.toContain("scale(");
     expect(friendsCss).not.toContain("filter:blur(.45px);");
 
     const reducedMotionRule = Array.from(
@@ -240,7 +256,7 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     ).map((match) => match[1] ?? "").find((rule) => rule.includes("animation:none;")) ?? "";
     expect(reducedMotionRule).not.toBe("");
     expect(reducedMotionRule).toContain("opacity:.12;");
-    expect(reducedMotionRule).toContain("transform:translate3d(-50%,-50%,0) scale(.48);");
+    expect(reducedMotionRule).toContain("transform:none;");
     expect(reducedMotionRule).toContain("animation:none;");
   });
 
@@ -325,27 +341,35 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer.warm();");
     expect(source).toMatch(/playXpAwardUnitDeliverySound\(\);\r?\n\s+playXpAwardUnitDeliveryHaptic\(\);\r?\n\s+setXpAwardFx\(\(current\) => \(\{/);
     expect(source).toMatch(/addExtraTimer\(\(\) => \{\r?\n\s+markPayloadArrived\(\);\r?\n\s+\}, XP_AWARD_UNIT_FX_DURATION_MS\);/);
-    expect(source).toMatch(/playXpAwardDoneSoundOnce\(\);\r?\n\s+finishAward/);
+    expect(source).toMatch(/playXpAwardDoneSoundOnce\(\);\r?\n\s+if \(reducedMotion\) \{/);
     expect(source).toMatch(/xpAwardUnitDeliveryAudioPlayer\.stop\(\);\r?\n\s+playXpAwardDoneSoundOnce\(\);/);
     expect(source).toContain("}, XP_AWARD_UNIT_FX_DURATION_MS);");
     expect(source).toContain("xpAwardDeliveryDoneAudioPlayer,");
     expect(source).toContain("xpAwardUnitDeliveryAudioPlayer,");
   });
 
-  it("counts the app top bar XP up in sync with modal XP countdown", () => {
+  it("holds the app top bar XP until modal XP payload delivery finishes", () => {
     const modalDeliveryStart = source.indexOf("const runModalXpValueDelivery = () => {");
-    const animationStart = source.indexOf("countAnimationStartedDuringEffect = true;", modalDeliveryStart);
+    const animationStart = source.indexOf("if (achievementSoundsEnabled) {", modalDeliveryStart);
     const scheduleDeliveryStart = source.indexOf("scheduleUnitPayloadDelivery();", modalDeliveryStart);
+    const finishModalAwardStart = source.indexOf("const finishModalAwardWhenReady = () => {", modalDeliveryStart);
+    const finishModalAwardEnd = source.indexOf("const markPayloadArrived = () => {", finishModalAwardStart);
     const tickStart = source.indexOf("const tick = (nowValue: number) => {", modalDeliveryStart);
     const tickEnd = source.indexOf("xpAnimationFrameRef.current = window.requestAnimationFrame(tick);", tickStart);
     const animationSetupSource = source.slice(animationStart, scheduleDeliveryStart);
+    const finishModalAwardSource = source.slice(finishModalAwardStart, finishModalAwardEnd);
     const tickSource = source.slice(tickStart, tickEnd);
 
-    expect(animationSetupSource).toContain("countAnimationStartedDuringEffect = true;");
-    expect(animationSetupSource).toContain("xpCountAnimationStartedRef.current = true;");
-    expect(animationSetupSource).toContain("setIsXpCountAnimating(true);");
-    expect(tickSource).toContain("getDisplayedXpForModalCountdown({");
-    expect(tickSource).toContain("remainingXp: nextRemaining");
+    expect(animationSetupSource).not.toContain("countAnimationStartedDuringEffect = true;");
+    expect(animationSetupSource).not.toContain("xpCountAnimationStartedRef.current = true;");
+    expect(animationSetupSource).toContain("setIsXpCountAnimating(false);");
+    expect(tickSource).not.toContain("setDisplayedXp(nextDisplayedXp);");
+    expect(tickSource).not.toContain("displayedXpRef.current = endXp;");
+    expect(finishModalAwardSource).toContain("playXpAwardDoneSoundOnce();");
+    expect(finishModalAwardSource).toContain("const tickHeaderCount = (nowValue: number) => {");
+    expect(finishModalAwardSource).toContain("xpCountAnimationStartedRef.current = true;");
+    expect(finishModalAwardSource).toContain("setIsXpCountAnimating(true);");
+    expect(finishModalAwardSource).toContain("setDisplayedXp(nextDisplayedXp);");
   });
 
   it("plays rate-limited haptics in sync with each modal XP unit launch", () => {

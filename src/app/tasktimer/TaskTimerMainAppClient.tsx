@@ -106,7 +106,6 @@ import {
   clearActiveXpAward,
   createXpAwardAnimationState,
   enqueuePendingXpAwardFromOverlayState,
-  getDisplayedXpForModalCountdown,
   getTaskButtonXpAwardCountdownDurationMs,
   getXpAwardCountRange,
   getXpAwardCountStartedAfterEffectCleanup,
@@ -1396,12 +1395,38 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       const finishModalAwardWhenReady = () => {
         if (didFinishAward || !didCountdownFinish || arrivedParticles < totalUnits) return;
         didFinishAward = true;
-        displayedXpRef.current = endXp;
-        setDisplayedXp(endXp);
-        setIsXpCountAnimating(false);
         xpAwardUnitDeliveryAudioPlayer.stop();
         playXpAwardDoneSoundOnce();
-        finishAward(reducedMotion ? 80 : 180);
+        if (reducedMotion) {
+          displayedXpRef.current = endXp;
+          setDisplayedXp(endXp);
+          setIsXpCountAnimating(false);
+          finishAward(80);
+          return;
+        }
+        const startedAt = performance.now();
+        countAnimationStartedDuringEffect = true;
+        xpCountAnimationStartedRef.current = true;
+        setIsXpCountAnimating(true);
+        const tickHeaderCount = (nowValue: number) => {
+          const progress = Math.max(0, Math.min(1, (nowValue - startedAt) / XP_AWARD_COUNT_DURATION_MS));
+          const eased = 1 - (1 - progress) * (1 - progress);
+          const nextDisplayedXp = Math.round(startXp + (endXp - startXp) * eased);
+          if (nextDisplayedXp !== displayedXpRef.current) {
+            displayedXpRef.current = nextDisplayedXp;
+            setDisplayedXp(nextDisplayedXp);
+          }
+          if (progress >= 1) {
+            xpCountAnimationStartedRef.current = false;
+            displayedXpRef.current = endXp;
+            setDisplayedXp(endXp);
+            setIsXpCountAnimating(false);
+            finishAward(180);
+            return;
+          }
+          xpAnimationFrameRef.current = window.requestAnimationFrame(tickHeaderCount);
+        };
+        xpAnimationFrameRef.current = window.requestAnimationFrame(tickHeaderCount);
       };
 
       const markPayloadArrived = () => {
@@ -1505,9 +1530,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         xpAwardUnitDeliveryAudioPlayer.warm();
         xpAwardDeliveryDoneAudioPlayer.warm();
       }
-      countAnimationStartedDuringEffect = true;
-      xpCountAnimationStartedRef.current = true;
-      setIsXpCountAnimating(true);
+      setIsXpCountAnimating(false);
       scheduleUnitPayloadDelivery();
       const startedAt = performance.now();
 
@@ -1519,22 +1542,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           previousRemaining = nextRemaining;
           setModalRemainingXp(nextRemaining);
         }
-        const nextDisplayedXp = getDisplayedXpForModalCountdown({
-          startXp,
-          endXp,
-          targetCountdownXp,
-          remainingXp: nextRemaining,
-        });
-        if (nextDisplayedXp !== displayedXpRef.current) {
-          displayedXpRef.current = nextDisplayedXp;
-          setDisplayedXp(nextDisplayedXp);
-        }
         if (progress >= 1) {
           didCountdownFinish = true;
-          xpCountAnimationStartedRef.current = false;
           setModalRemainingXp(0);
-          displayedXpRef.current = endXp;
-          setDisplayedXp(endXp);
           finishModalAwardWhenReady();
           return;
         }

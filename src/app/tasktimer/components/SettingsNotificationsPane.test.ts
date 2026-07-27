@@ -14,8 +14,11 @@ describe("SettingsNotificationsPane", () => {
     expect(source).toContain('id="taskCheckpointAlarmPermissionBtn"');
   });
 
-  it("keeps the Android background checkpoint row visible when alerts are off", () => {
-    expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionRow?.classList.toggle("isHidden", !nativeAndroid);');
+  it("keeps the background checkpoint row visible and disables it outside Android", () => {
+    expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionRow?.classList.remove("isHidden");');
+    expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionRow?.classList.toggle("isDisabled", !nativeAndroid);');
+    expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionToggle.setAttribute("aria-disabled", "true");');
+    expect(preferencesSource).toContain("Available in the Android app for background checkpoint alerts.");
     expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionStatus.textContent = "Background checkpoint alerts are off.";');
     expect(preferencesSource).toContain('els.taskCheckpointAlarmPermissionBtn?.classList.add("isHidden");');
   });

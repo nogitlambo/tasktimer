@@ -44,10 +44,22 @@ export function validateVersionName(value) {
   return { value: normalized };
 }
 
+export function formatIsoDateForReleaseMetadata(date = new Date()) {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) {
+    fail(`Invalid release metadata date: ${String(date)}.`);
+  }
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export async function readVersionMetadata(root) {
   const packageJsonPath = path.join(root, "package.json");
   const packageLockPath = path.join(root, "package-lock.json");
   const buildGradlePath = path.join(root, "android", "app", "build.gradle");
+  const buildMetadataPath = path.join(root, "src", "app", "tasktimer", "buildMetadata.json");
   const [packageJsonRaw, packageLockRaw, buildGradleRaw] = await Promise.all([
     readFile(packageJsonPath, "utf8"),
     readFile(packageLockPath, "utf8"),
@@ -62,7 +74,7 @@ export async function readVersionMetadata(root) {
   }
 
   return {
-    paths: { packageJsonPath, packageLockPath, buildGradlePath },
+    paths: { packageJsonPath, packageLockPath, buildGradlePath, buildMetadataPath },
     raw: { packageJsonRaw, packageLockRaw, buildGradleRaw },
     currentVersionCode,
     currentVersionName: nameMatch[2].trim(),
@@ -81,6 +93,7 @@ async function promptUntilValid({ prompt, message, defaultValue, validate, log }
 export async function configureAndroidVersion({
   root = process.cwd(),
   prompt,
+  releaseDate = new Date(),
   isInteractive = Boolean(process.stdin.isTTY && process.stdout.isTTY),
   log = (message) => console.log(message),
 } = {}) {
@@ -121,10 +134,14 @@ export async function configureAndroidVersion({
   const buildGradle = metadata.raw.buildGradleRaw
     .replace(VERSION_CODE_PATTERN, `$1${versionCode}$3`)
     .replace(VERSION_NAME_PATTERN, `$1${versionName}$3`);
+  const buildMetadata = {
+    androidReleaseDate: formatIsoDateForReleaseMetadata(releaseDate),
+  };
 
   await writeFile(metadata.paths.packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
   await writeFile(metadata.paths.packageLockPath, `${JSON.stringify(packageLock, null, 2)}\n`, "utf8");
   await writeFile(metadata.paths.buildGradlePath, buildGradle, "utf8");
+  await writeFile(metadata.paths.buildMetadataPath, `${JSON.stringify(buildMetadata, null, 2)}\n`, "utf8");
   log(`Android version metadata updated: versionName ${versionName}, versionCode ${versionCode}.`);
   return { versionCode, versionName };
 }

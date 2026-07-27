@@ -1,10 +1,13 @@
 "use client";
 
 import packageJson from "../../../../../package.json";
+import buildMetadata from "../../buildMetadata.json";
+import { formatReleaseDate } from "../../lib/releaseDate";
 import { resolveTaskTimerRouteHref } from "../../lib/routeHref";
 import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
 
 const APP_VERSION = packageJson.version;
+const ANDROID_RELEASE_DATE = formatReleaseDate(buildMetadata.androidReleaseDate);
 
 export function SettingsAboutPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   return (
@@ -18,7 +21,7 @@ export function SettingsAboutPane({ active, exiting = false }: { active: boolean
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsDetailNote">Version: {APP_VERSION}</div>
-          <div className="settingsDetailNote">Release Date: 21st June 2026</div>
+          <div className="settingsDetailNote">Release Date: {ANDROID_RELEASE_DATE}</div>
           <ul className="settingsDataList settingsAboutLinkList">
             <li>
               <a

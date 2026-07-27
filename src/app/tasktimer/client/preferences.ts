@@ -462,32 +462,36 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskWebPushAlertsToggle.title = lockWebPushAlerts ? "Use desktop web to change web push alerts." : "";
     }
     els.taskWebPushAlertsToggleRow?.classList.toggle("isDisabled", lockWebPushAlerts);
-    const showInteractionHaptics = isInteractionHapticsRuntimeAvailable();
+    const interactionHapticsAvailable = isInteractionHapticsRuntimeAvailable();
+    const lockInteractionHaptics = !interactionHapticsAvailable;
     if (els.taskInteractionHapticsToggleRow) {
-      (els.taskInteractionHapticsToggleRow as HTMLElement).hidden = !showInteractionHaptics;
+      (els.taskInteractionHapticsToggleRow as HTMLElement).hidden = false;
+      (els.taskInteractionHapticsToggleRow as HTMLElement).classList.toggle("isDisabled", lockInteractionHaptics);
     }
     if (els.taskInteractionHapticsIntensityField) {
       (els.taskInteractionHapticsIntensityField as HTMLElement).hidden =
-        !showInteractionHaptics || !ctx.getInteractionHapticsEnabled();
+        interactionHapticsAvailable && !ctx.getInteractionHapticsEnabled();
+      (els.taskInteractionHapticsIntensityField as HTMLElement).classList.toggle("isDisabled", lockInteractionHaptics);
     }
     if (els.taskInteractionHapticsToggle) {
-      (els.taskInteractionHapticsToggle as HTMLButtonElement).disabled = !showInteractionHaptics;
-      els.taskInteractionHapticsToggle.setAttribute("aria-disabled", String(!showInteractionHaptics));
-      els.taskInteractionHapticsToggle.title = showInteractionHaptics ? "" : "Use the mobile app to change interaction haptics.";
+      (els.taskInteractionHapticsToggle as HTMLButtonElement).disabled = lockInteractionHaptics;
+      els.taskInteractionHapticsToggle.setAttribute("aria-disabled", String(lockInteractionHaptics));
+      els.taskInteractionHapticsToggle.title = interactionHapticsAvailable ? "" : "Use the mobile app to change interaction haptics.";
     }
     if (els.taskCheckpointSoundToggle) {
       (els.taskCheckpointSoundToggle as HTMLButtonElement).disabled = false;
       els.taskCheckpointSoundToggle.setAttribute("aria-disabled", "false");
       els.taskCheckpointSoundToggle.title = "";
     }
-    const showCheckpointVibration = isNativeAndroidCheckpointAlarmRuntime();
+    const checkpointVibrationAvailable = isNativeAndroidCheckpointAlarmRuntime();
     if (els.taskCheckpointVibrationToggleRow) {
-      (els.taskCheckpointVibrationToggleRow as HTMLElement).hidden = !showCheckpointVibration;
+      (els.taskCheckpointVibrationToggleRow as HTMLElement).hidden = false;
+      (els.taskCheckpointVibrationToggleRow as HTMLElement).classList.toggle("isDisabled", !checkpointVibrationAvailable);
     }
     if (els.taskCheckpointVibrationToggle) {
-      (els.taskCheckpointVibrationToggle as HTMLButtonElement).disabled = !showCheckpointVibration;
-      els.taskCheckpointVibrationToggle.setAttribute("aria-disabled", String(!showCheckpointVibration));
-      els.taskCheckpointVibrationToggle.title = showCheckpointVibration ? "" : "Use the Android app to change checkpoint vibration.";
+      (els.taskCheckpointVibrationToggle as HTMLButtonElement).disabled = !checkpointVibrationAvailable;
+      els.taskCheckpointVibrationToggle.setAttribute("aria-disabled", String(!checkpointVibrationAvailable));
+      els.taskCheckpointVibrationToggle.title = checkpointVibrationAvailable ? "" : "Use the Android app to change checkpoint vibration.";
     }
     if (els.taskCheckpointFlashToggle) {
       (els.taskCheckpointFlashToggle as HTMLButtonElement).disabled = false;
@@ -566,18 +570,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       els.taskInteractionHapticsIntensitySelect.disabled =
         !isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled();
     }
-    const buttons = [
-      els.taskInteractionHapticsIntensityMax,
-      els.taskInteractionHapticsIntensityMed,
-      els.taskInteractionHapticsIntensityLow,
-    ];
-    buttons.forEach((button) => {
-      if (!button) return;
-      const value = normalizeInteractionHapticsIntensity((button as HTMLElement).dataset.hapticsIntensity);
-      const isOn = value === current;
-      button.classList.toggle("isOn", isOn);
-      button.setAttribute("aria-pressed", isOn ? "true" : "false");
-    });
   }
 
   function getFocusDndStorageKey() {
@@ -757,8 +749,21 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     const sequence = ++checkpointAlarmPermissionSyncSeq;
     const nativeAndroid = isNativeAndroidCheckpointAlarmRuntime();
     const hasNativeCheckpointAlert = ctx.getCheckpointAlertSoundEnabled() || ctx.getCheckpointAlertVibrationEnabled();
-    els.taskCheckpointAlarmPermissionRow?.classList.toggle("isHidden", !nativeAndroid);
-    if (!nativeAndroid) return;
+    els.taskCheckpointAlarmPermissionRow?.classList.remove("isHidden");
+    els.taskCheckpointAlarmPermissionRow?.classList.toggle("isDisabled", !nativeAndroid);
+    ctx.toggleSwitchElement(els.taskCheckpointAlarmPermissionToggle as HTMLElement | null, nativeAndroid && hasNativeCheckpointAlert);
+    if (!nativeAndroid) {
+      if (els.taskCheckpointAlarmPermissionToggle) {
+        (els.taskCheckpointAlarmPermissionToggle as HTMLButtonElement).disabled = true;
+        els.taskCheckpointAlarmPermissionToggle.setAttribute("aria-disabled", "true");
+        els.taskCheckpointAlarmPermissionToggle.title = "Use the Android app to change background checkpoint alerts.";
+      }
+      if (els.taskCheckpointAlarmPermissionStatus) {
+        els.taskCheckpointAlarmPermissionStatus.textContent = "Available in the Android app for background checkpoint alerts.";
+      }
+      els.taskCheckpointAlarmPermissionBtn?.classList.add("isHidden");
+      return;
+    }
     ctx.toggleSwitchElement(els.taskCheckpointAlarmPermissionToggle as HTMLElement | null, hasNativeCheckpointAlert);
     if (els.taskCheckpointAlarmPermissionToggle) {
       (els.taskCheckpointAlarmPermissionToggle as HTMLButtonElement).disabled = false;
@@ -1383,18 +1388,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     });
     ctx.on(els.taskCheckpointAlarmPermissionBtn, "click", () => {
       void openNativeCheckpointAlarmPermissionSettings().then(syncCheckpointAlarmPermissionUi).catch(() => {});
-    });
-    [
-      els.taskInteractionHapticsIntensityMax,
-      els.taskInteractionHapticsIntensityMed,
-      els.taskInteractionHapticsIntensityLow,
-    ].forEach((button) => {
-      ctx.on(button, "click", () => {
-        if (!isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled()) return;
-        applyInteractionHapticsIntensityPreference(
-          normalizeInteractionHapticsIntensity((button as HTMLElement | null)?.dataset.hapticsIntensity)
-        );
-      });
     });
     ctx.on(els.taskInteractionHapticsIntensitySelect, "change", () => {
       if (!isInteractionHapticsRuntimeAvailable() || !ctx.getInteractionHapticsEnabled()) {

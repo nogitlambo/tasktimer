@@ -18,12 +18,14 @@ export function MenuIconLabel({ icon, label, helper }: { icon: string; label: st
 
 function SettingsNavTile({
   id,
+  paneKey,
   icon,
   label,
   active,
   onClick,
 }: {
   id?: string;
+  paneKey: SettingsNavItem["key"];
   icon: string;
   label: string;
   active: boolean;
@@ -34,6 +36,7 @@ function SettingsNavTile({
       type="button"
       id={id}
       className={`menuItem settingsNavTile${active ? " isActive" : ""}`}
+      data-settings-pane={paneKey}
       aria-pressed={active}
       aria-label={label}
       onClick={onClick}
@@ -71,6 +74,7 @@ export function SettingsNav({
           <SettingsNavTile
             key={item.key}
             id={item.id}
+            paneKey={item.key}
             icon={item.icon}
             label={item.label}
             active={activePane === item.key}

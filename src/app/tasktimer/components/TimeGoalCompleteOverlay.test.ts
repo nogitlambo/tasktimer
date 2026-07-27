@@ -47,15 +47,18 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
       /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{\s*background:/,
     );
     expect(overlaysCss).toContain("repeating-conic-gradient(");
-    expect(overlaysCss).toContain("from -5deg at 50% 46%");
+    expect(overlaysCss).toContain("from -5deg at 50% 50%");
     expect(overlaysCss).toContain("rgba(255, 246, 162, .24) 0 12%");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .2)");
     expect(overlaysCss).toContain("rgba(201, 255, 36, .12) 0deg 7deg");
     expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
     expect(overlaysCss).toContain("rgba(219, 178, 255, .28) 0 12%");
+    expect(overlaysCss).toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*width: max\(140%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -46%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);/,
+    );
     expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toContain("mix-blend-mode: screen;");
-    expect(overlaysCss).toContain("transform-origin: 50% 46%;");
+    expect(overlaysCss).toContain("transform-origin: 50% 50%;");
     expect(overlaysCss).toContain("animation: timeGoalCompleteWheelGlow 24s linear infinite;");
     expect(overlaysCss).toContain("will-change: transform, opacity, filter;");
     expect(overlaysCss).toContain("@keyframes timeGoalCompleteCenterGlow");

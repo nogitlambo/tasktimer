@@ -63,6 +63,7 @@ class FakeElement {
   classList = new FakeClassList();
   dataset: Record<string, string> = {};
   disabled = false;
+  hidden = false;
   parent: FakeElement | null = null;
   textContent = "";
   value = "";
@@ -460,24 +461,28 @@ function addOptimalProductivityControls(fakeDocument: FakeDocument) {
 }
 
 function setupInteractionHapticsIntensityControls(fakeDocument: FakeDocument) {
-  const maxButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityMax"));
-  maxButton.dataset.hapticsIntensity = "max";
-  const medButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityMed"));
-  medButton.dataset.hapticsIntensity = "medium";
-  const lowButton = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityLow"));
-  lowButton.dataset.hapticsIntensity = "low";
+  const toggleRow = fakeDocument.addElement(new FakeElement("taskInteractionHapticsToggleRow"));
+  const toggle = fakeDocument.addElement(new FakeElement("taskInteractionHapticsToggle"));
+  const field = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensityField"));
   const select = fakeDocument.addElement(new FakeElement("taskInteractionHapticsIntensitySelect"));
+  const checkpointVibrationRow = fakeDocument.addElement(new FakeElement("taskCheckpointVibrationToggleRow"));
+  const checkpointVibrationToggle = fakeDocument.addElement(new FakeElement("taskCheckpointVibrationToggle"));
 
   return {
     els: {
-      taskInteractionHapticsIntensityMax: maxButton,
-      taskInteractionHapticsIntensityMed: medButton,
-      taskInteractionHapticsIntensityLow: lowButton,
+      taskInteractionHapticsToggleRow: toggleRow,
+      taskInteractionHapticsToggle: toggle,
+      taskInteractionHapticsIntensityField: field,
       taskInteractionHapticsIntensitySelect: select,
+      taskCheckpointVibrationToggleRow: checkpointVibrationRow,
+      taskCheckpointVibrationToggle: checkpointVibrationToggle,
     } as Partial<TaskTimerPreferencesContext["els"]>,
-    lowButton,
-    medButton,
+    checkpointVibrationRow,
+    checkpointVibrationToggle,
+    field,
     select,
+    toggle,
+    toggleRow,
   };
 }
 
@@ -630,7 +635,7 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(dayInputs.filter((input) => input.checked).map((input) => input.value)).toEqual(["tue", "thu"]);
   });
 
-  it("syncs haptics intensity into the mobile dropdown and desktop pill controls", () => {
+  it("syncs haptics intensity into the dropdown control", () => {
     let controls: ReturnType<typeof setupInteractionHapticsIntensityControls> | null = null;
     const { preferences, state } = createHarness({
       setupEls: (fakeDocument) => {
@@ -643,8 +648,28 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     preferences.syncTaskSettingsUi();
 
     expect(controls?.select.value).toBe("low");
-    expect(controls?.lowButton.classList.has("isOn")).toBe(true);
-    expect(controls?.medButton.classList.has("isOn")).toBe(false);
+  });
+
+  it("keeps haptics controls visible but disabled when haptics are unavailable", () => {
+    let controls: ReturnType<typeof setupInteractionHapticsIntensityControls> | null = null;
+    const { preferences } = createHarness({
+      setupEls: (fakeDocument) => {
+        controls = setupInteractionHapticsIntensityControls(fakeDocument);
+        return controls.els;
+      },
+    });
+
+    preferences.syncTaskSettingsUi();
+
+    expect(controls?.toggleRow.hidden).toBe(false);
+    expect(controls?.toggleRow.classList.has("isDisabled")).toBe(true);
+    expect(controls?.toggle.disabled).toBe(true);
+    expect(controls?.field.hidden).toBe(false);
+    expect(controls?.field.classList.has("isDisabled")).toBe(true);
+    expect(controls?.select.disabled).toBe(true);
+    expect(controls?.checkpointVibrationRow.hidden).toBe(false);
+    expect(controls?.checkpointVibrationRow.classList.has("isDisabled")).toBe(true);
+    expect(controls?.checkpointVibrationToggle.disabled).toBe(true);
   });
 
   it("reveals the native time input when the clock button is clicked", () => {

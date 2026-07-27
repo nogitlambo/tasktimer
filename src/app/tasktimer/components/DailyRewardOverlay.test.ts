@@ -54,9 +54,12 @@ describe("DailyRewardOverlay", () => {
 
   it("uses a daily reward purple radial burst and reduced-motion treatment", () => {
     expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
-    expect(overlaysCss).toContain("radial-gradient(circle at 50% 46%, rgba(219, 178, 255, .28) 0 12%");
+    expect(overlaysCss).toContain("radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .28) 0 12%");
     expect(overlaysCss).toContain("rgba(176, 73, 255, .16) 0deg 7deg");
     expect(overlaysCss).toContain("rgba(180, 145, 255, .09)");
+    expect(overlaysCss).toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*width: max\(140%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -46%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);/,
+    );
     expect(overlaysCss).toContain("opacity: .88;");
     expect(overlaysCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/,

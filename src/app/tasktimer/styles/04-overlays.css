@@ -3058,8 +3058,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   content: "";
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 46%;
+  width: max(140%, 560px);
+  height: auto;
+  aspect-ratio: 1;
+  translate: -50% -46%;
   z-index: -2;
+  border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
   background:
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
     radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
@@ -3068,33 +3075,33 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
-    radial-gradient(circle at 50% 46%, rgba(255, 246, 162, .24) 0 12%, rgba(201, 255, 36, .13) 22%, rgba(201, 255, 36, .045) 42%, transparent 66%),
-    radial-gradient(circle at 50% 46%, rgba(201, 255, 36, .2), transparent 0 14%, rgba(201, 255, 36, .08) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(255, 246, 162, .24) 0 12%, rgba(201, 255, 36, .13) 22%, rgba(201, 255, 36, .045) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(201, 255, 36, .2), transparent 0 14%, rgba(201, 255, 36, .08) 22%, transparent 56%),
     repeating-conic-gradient(
-      from -5deg at 50% 46%,
+      from -5deg at 50% 50%,
       rgba(201, 255, 36, .12) 0deg 7deg,
       rgba(20, 27, 34, .035) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 46%, rgba(255, 220, 90, .13), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(255, 220, 90, .13), transparent 36%),
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
     radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
   opacity: .88;
   mix-blend-mode: screen;
-  transform-origin: 50% 46%;
+  transform-origin: 50% 50%;
   animation: timeGoalCompleteWheelGlow 24s linear infinite;
   will-change: transform, opacity, filter;
 }
 
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
-    radial-gradient(circle at 50% 46%, rgba(219, 178, 255, .28) 0 12%, rgba(177, 84, 255, .18) 22%, rgba(132, 54, 255, .08) 42%, transparent 66%),
-    radial-gradient(circle at 50% 46%, rgba(187, 92, 255, .24), transparent 0 14%, rgba(159, 68, 255, .12) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .28) 0 12%, rgba(177, 84, 255, .18) 22%, rgba(132, 54, 255, .08) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(187, 92, 255, .24), transparent 0 14%, rgba(159, 68, 255, .12) 22%, transparent 56%),
     repeating-conic-gradient(
-      from -5deg at 50% 46%,
+      from -5deg at 50% 50%,
       rgba(176, 73, 255, .16) 0deg 7deg,
       rgba(24, 18, 38, .04) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 46%, rgba(255, 112, 244, .13), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(255, 112, 244, .13), transparent 36%),
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
     radial-gradient(circle at 78% 44%, rgba(180, 145, 255, .09), transparent 38%);
   opacity: .88;

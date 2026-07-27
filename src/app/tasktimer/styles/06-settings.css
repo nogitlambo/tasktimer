@@ -1303,7 +1303,8 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .toggleRow,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .unitRow,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .field{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .field,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .settingsPermissionRow{
   border:none;
   background: transparent;
   box-shadow:none;
@@ -1319,6 +1320,15 @@ body > .deleteAccountConfirmOverlay .deleteAccountConfirmModal :where(.confirmBt
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .switch[aria-disabled="true"],
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .toggleRow.isDisabled .switch{
   opacity:.56;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .field.isDisabled{
+  opacity:.62;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsPermissionRow.isDisabled{
+  opacity:.62;
+  pointer-events:none;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineFooter{
@@ -4205,32 +4215,33 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .interactionHapticsIntensityField{
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 12px;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .hapticsIntensityControls{
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-left: auto;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .interactionHapticsIntensityField .settingsPreferenceControlCopy{
+  min-width: 0;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .hapticsIntensitySelect{
-  display: none;
+  display:inline-flex;
+  flex:0 0 auto;
+  width:min(156px, 42%);
+  margin-left:auto;
 }
 
 @media (max-width: 980px){
-  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .interactionHapticsIntensityField .hapticsIntensityControls{
-    display:none;
-  }
-
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .interactionHapticsIntensityField .hapticsIntensitySelect{
     display:inline-flex;
-    width:min(156px, 100%);
+    flex:0 0 auto;
+    width:min(156px, 42%);
     margin-left:auto;
+  }
+
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsInlineSection .interactionHapticsIntensityField label{
+    margin-bottom:0;
   }
 }
 
@@ -4689,7 +4700,8 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   gap: 8px;
 }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .toggleRow{
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .toggleRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsNotificationsPane .settingsPermissionRow{
   align-items: flex-start;
   justify-content: space-between;
   padding: 8px 0;
@@ -5246,6 +5258,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout > .settingsNavPanel{
     min-height: calc(100dvh - 170px - var(--safe-top) - var(--safe-bottom));
+    padding-bottom:calc(92px + var(--safe-bottom));
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTopActions,
@@ -5257,17 +5270,27 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTopActions{
     order:2;
+    position:fixed;
+    left:50%;
+    right:auto;
+    bottom:calc(12px + var(--safe-bottom));
+    z-index:45;
+    box-sizing:border-box;
     justify-content:center;
-    margin:auto auto 0;
-    padding-top:12px;
+    margin:0;
+    padding:12px 10px;
+    transform:translateX(-50%);
+    pointer-events:none;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid{
     order:1;
+    padding-bottom:calc(92px + var(--safe-bottom));
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavExitBtn{
     min-height:48px;
+    pointer-events:auto;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile{
@@ -5291,6 +5314,10 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child{
     border-bottom-color:transparent !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile[data-settings-pane="sounds"]{
+    border-bottom-color:rgba(255,255,255,.09) !important;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
@@ -5495,6 +5522,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .toggleRow,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .unitRow,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .field,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane .settingsInlineSection .settingsPermissionRow,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane:is(.settingsHelpPane, .settingsAboutPane, .settingsDataPane) .settingsDataListItem{
     box-sizing:border-box;
     padding-left:8px !important;

@@ -91,48 +91,12 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
               </div>
               <button className="switch on" id="taskAchievementSoundsToggle" type="button" role="switch" aria-checked="true" />
             </div>
-            <div className="toggleRow" id="taskInteractionHapticsToggleRow" hidden>
-              <div className="settingsPreferenceControlCopy">
-                <span className="settingsPreferenceControlLabel">Interaction haptics</span>
-                <span className="settingsPreferenceControlHelp">Use subtle device feedback for navigation, buttons, switches, and checkbox interactions.</span>
-              </div>
-              <button className="switch on" id="taskInteractionHapticsToggle" type="button" role="switch" aria-checked="true" />
-            </div>
-            <div className="field interactionHapticsIntensityField" id="taskInteractionHapticsIntensityField" hidden>
-              <div className="settingsPreferenceControlCopy">
-                <span className="settingsPreferenceControlLabel">Haptics intensity</span>
-                <span className="settingsPreferenceControlHelp">Choose how strong interaction feedback feels on this device.</span>
-              </div>
-              <div className="hapticsIntensityControls" role="group" aria-label="Haptics intensity">
-                <button className="btn btn-ghost small unitBtn isOn" id="taskInteractionHapticsIntensityMax" type="button" data-haptics-intensity="max" aria-pressed="true">
-                  Max
-                </button>
-                <button className="btn btn-ghost small unitBtn" id="taskInteractionHapticsIntensityMed" type="button" data-haptics-intensity="medium" aria-pressed="false">
-                  Med
-                </button>
-                <button className="btn btn-ghost small unitBtn" id="taskInteractionHapticsIntensityLow" type="button" data-haptics-intensity="low" aria-pressed="false">
-                  Low
-                </button>
-              </div>
-              <SettingsDownwardSelect className="hapticsIntensitySelect" id="taskInteractionHapticsIntensitySelect" defaultValue="max" aria-label="Haptics intensity">
-                <option value="max">Max</option>
-                <option value="medium">Med</option>
-                <option value="low">Low</option>
-              </SettingsDownwardSelect>
-            </div>
             <div className="toggleRow" id="taskCheckpointSoundToggleRow">
               <div className="settingsPreferenceControlCopy">
                 <span className="settingsPreferenceControlLabel">Checkpoint Sound</span>
                 <span className="settingsPreferenceControlHelp">Play an audible alert when an active task reaches a checkpoint.</span>
               </div>
               <button className="switch on" id="taskCheckpointSoundToggle" type="button" role="switch" aria-checked="true" />
-            </div>
-            <div className="toggleRow" id="taskCheckpointVibrationToggleRow" hidden>
-              <div className="settingsPreferenceControlCopy">
-                <span className="settingsPreferenceControlLabel">Checkpoint vibration</span>
-                <span className="settingsPreferenceControlHelp">Vibrate twice when an active task reaches a checkpoint.</span>
-              </div>
-              <button className="switch on" id="taskCheckpointVibrationToggle" type="button" role="switch" aria-checked="true" />
             </div>
             <div className="field checkpointAlertSoundModeField" id="taskCheckpointSoundModeField">
               <label className="settingsPreferenceControlCopy" htmlFor="taskCheckpointSoundModeSelect">
@@ -155,6 +119,35 @@ export function SettingsSoundsPane({ active, exiting = false }: { active: boolea
               <button className="btn btn-ghost small" id="taskCheckpointAlarmPermissionBtn" type="button">
                 Open Android Settings
               </button>
+            </div>
+            <div className="settingsInlineSectionHead">
+              <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/haptic_feedback.webp" alt="" aria-hidden="true" />
+              <div className="settingsInlineSectionTitle">Haptic Feedback</div>
+            </div>
+            <div className="toggleRow" id="taskInteractionHapticsToggleRow" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Interaction haptics</span>
+                <span className="settingsPreferenceControlHelp">Use subtle device feedback for navigation, buttons, switches, and checkbox interactions.</span>
+              </div>
+              <button className="switch on" id="taskInteractionHapticsToggle" type="button" role="switch" aria-checked="true" />
+            </div>
+            <div className="field interactionHapticsIntensityField" id="taskInteractionHapticsIntensityField" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Haptics intensity</span>
+                <span className="settingsPreferenceControlHelp">Choose how strong interaction feedback feels on this device.</span>
+              </div>
+              <SettingsDownwardSelect className="hapticsIntensitySelect" id="taskInteractionHapticsIntensitySelect" defaultValue="max" aria-label="Haptics intensity">
+                <option value="max">Max</option>
+                <option value="medium">Med</option>
+                <option value="low">Low</option>
+              </SettingsDownwardSelect>
+            </div>
+            <div className="toggleRow" id="taskCheckpointVibrationToggleRow" hidden>
+              <div className="settingsPreferenceControlCopy">
+                <span className="settingsPreferenceControlLabel">Checkpoint vibration</span>
+                <span className="settingsPreferenceControlHelp">Vibrate twice when an active task reaches a checkpoint.</span>
+              </div>
+              <button className="switch on" id="taskCheckpointVibrationToggle" type="button" role="switch" aria-checked="true" />
             </div>
           </div>
         </section>

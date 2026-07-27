@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   configureAndroidVersion,
+  formatIsoDateForReleaseMetadata,
   validateVersionCode,
   validateVersionName,
 } from "./prompt-android-version.mjs";
@@ -14,6 +15,7 @@ async function createFixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "tasklaunch-android-version-"));
   tempRoots.push(root);
   await mkdir(path.join(root, "android", "app"), { recursive: true });
+  await mkdir(path.join(root, "src", "app", "tasktimer"), { recursive: true });
   await writeFile(path.join(root, "package.json"), '{\n  "name": "fixture",\n  "version": "1.3.6"\n}\n');
   await writeFile(
     path.join(root, "package-lock.json"),
@@ -23,6 +25,7 @@ async function createFixture() {
     path.join(root, "android", "app", "build.gradle"),
     'android {\n    defaultConfig {\n        versionCode 36\n        versionName "1.3.6"\n    }\n}\n',
   );
+  await writeFile(path.join(root, "src", "app", "tasktimer", "buildMetadata.json"), '{\n  "androidReleaseDate": "2026-06-21"\n}\n');
   return root;
 }
 
@@ -31,6 +34,7 @@ async function snapshot(root) {
     readFile(path.join(root, "package.json"), "utf8"),
     readFile(path.join(root, "package-lock.json"), "utf8"),
     readFile(path.join(root, "android", "app", "build.gradle"), "utf8"),
+    readFile(path.join(root, "src", "app", "tasktimer", "buildMetadata.json"), "utf8"),
   ]);
 }
 
@@ -58,34 +62,55 @@ describe("Android version validation", () => {
   it.each(["1.3.7", "2.0.0-beta.1", "2.0.0+build.4"])("accepts semantic version %s", (value) => {
     expect(validateVersionName(value)).toEqual({ value });
   });
+
+  it("formats release metadata dates using the local calendar date", () => {
+    expect(formatIsoDateForReleaseMetadata(new Date(2026, 6, 27, 23, 30))).toBe("2026-07-27");
+  });
 });
 
 describe("interactive Android version configuration", () => {
   it("accepts current defaults and keeps all metadata consistent", async () => {
     const root = await createFixture();
     const prompt = vi.fn(async () => "");
-    const result = await configureAndroidVersion({ root, isInteractive: true, prompt, log: vi.fn() });
+    const result = await configureAndroidVersion({
+      root,
+      isInteractive: true,
+      prompt,
+      releaseDate: new Date(2026, 6, 27),
+      log: vi.fn(),
+    });
     expect(result).toEqual({ versionCode: 36, versionName: "1.3.6" });
     expect(prompt.mock.calls.map(([message]) => message)).toEqual([
       "Android version code [36]: ",
       "Version name [1.3.6]: ",
     ]);
     expect(JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version).toBe("1.3.6");
+    expect(JSON.parse(await readFile(path.join(root, "src", "app", "tasktimer", "buildMetadata.json"), "utf8"))).toEqual({
+      androidReleaseDate: "2026-07-27",
+    });
   });
 
   it("re-prompts invalid values and updates every metadata location", async () => {
     const root = await createFixture();
     const answers = ["35", "37", "bad", "1.4.0"];
-    await configureAndroidVersion({ root, isInteractive: true, prompt: vi.fn(async () => answers.shift()), log: vi.fn() });
+    await configureAndroidVersion({
+      root,
+      isInteractive: true,
+      prompt: vi.fn(async () => answers.shift()),
+      releaseDate: new Date(2026, 6, 27),
+      log: vi.fn(),
+    });
 
     const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
     const packageLock = JSON.parse(await readFile(path.join(root, "package-lock.json"), "utf8"));
     const gradle = await readFile(path.join(root, "android", "app", "build.gradle"), "utf8");
+    const buildMetadata = JSON.parse(await readFile(path.join(root, "src", "app", "tasktimer", "buildMetadata.json"), "utf8"));
     expect(packageJson.version).toBe("1.4.0");
     expect(packageLock.version).toBe("1.4.0");
     expect(packageLock.packages[""].version).toBe("1.4.0");
     expect(gradle).toContain("versionCode 37");
     expect(gradle).toContain('versionName "1.4.0"');
+    expect(buildMetadata.androidReleaseDate).toBe("2026-07-27");
   });
 
   it("does not touch files when prompting is cancelled", async () => {
