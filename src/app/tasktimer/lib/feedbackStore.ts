@@ -13,6 +13,8 @@ import {
 } from "firebase/firestore";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { recordNonFatal } from "@/lib/firebaseTelemetry";
 
 import { getApiUrl } from "./apiClient";
 
@@ -76,6 +78,75 @@ export type FeedbackAttachmentUploadInput = {
 
 function dbOrNull() {
   return getFirebaseFirestoreClient();
+}
+
+function getRuntimeOrigin() {
+  if (typeof window === "undefined") return "server";
+  try {
+    return window.location.origin || `${window.location.protocol}//${window.location.host}`;
+  } catch {
+    return "unknown";
+  }
+}
+
+function getRuntimeLocationProtocol() {
+  if (typeof window === "undefined") return "server";
+  try {
+    return window.location.protocol || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function getRuntimeLocationPathname() {
+  if (typeof window === "undefined") return "server";
+  try {
+    return window.location.pathname || "";
+  } catch {
+    return "unknown";
+  }
+}
+
+function getNativeDiagnosticPlatform() {
+  try {
+    const cap = (window as Window & { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+    return String(cap?.getPlatform?.() || "native");
+  } catch {
+    return "native";
+  }
+}
+
+function recordNativeFeedbackSubmitDiagnostic(
+  stage: "http-error" | "fetch-error",
+  error: unknown,
+  details: {
+    url: string;
+    status?: number;
+    hasAttachments: boolean;
+    attachmentCount: number;
+    hasAuthHeader: boolean;
+  }
+) {
+  if (!isNativeOrFileRuntime()) return;
+  const diagnosticError = error instanceof Error ? error : new Error(`feedback submit ${stage}`);
+  const errorName = error instanceof Error && error.name ? error.name : "";
+  const errorMessage = error instanceof Error && error.message ? error.message : "";
+  void recordNonFatal(diagnosticError, {
+    flow: "feedback_submit",
+    stage,
+    url: details.url,
+    method: "POST",
+    status: Number.isFinite(details.status) ? Number(details.status) : 0,
+    origin: getRuntimeOrigin(),
+    location_protocol: getRuntimeLocationProtocol(),
+    location_pathname: getRuntimeLocationPathname(),
+    platform: getNativeDiagnosticPlatform(),
+    body_kind: details.hasAttachments ? "multipart" : "json",
+    attachment_count: details.attachmentCount,
+    has_auth_header: details.hasAuthHeader,
+    error_name: errorName,
+    error_message: errorMessage,
+  });
 }
 
 function normalizeFeedbackType(value: unknown): FeedbackType {
@@ -189,7 +260,8 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
         type: normalizeFeedbackType(input.type),
       });
     }
-    const response = await fetch(getApiUrl("/api/feedback"), {
+    const feedbackUrl = getApiUrl("/api/feedback/");
+    const response = await fetch(feedbackUrl, {
       method: "POST",
       credentials: "same-origin",
       headers,
@@ -199,6 +271,13 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       | { error?: string; jiraIssueBrowseUrl?: string | null; jiraIssueKey?: string | null }
       | null;
     if (!response.ok) {
+      recordNativeFeedbackSubmitDiagnostic("http-error", new Error(result?.error || `Feedback submit HTTP ${response.status}`), {
+        url: feedbackUrl,
+        status: response.status,
+        hasAttachments,
+        attachmentCount: attachments.length,
+        hasAuthHeader: !!headers["x-firebase-auth"],
+      });
       return { ok: false, message: result?.error || "Could not submit feedback." };
     }
     return {
@@ -225,6 +304,12 @@ export async function createFeedbackItem(input: CreateFeedbackItemInput): Promis
       },
     };
   } catch (error) {
+    recordNativeFeedbackSubmitDiagnostic("fetch-error", error, {
+      url: getApiUrl("/api/feedback/"),
+      hasAttachments: Array.isArray(input.attachments) && input.attachments.length > 0,
+      attachmentCount: Array.isArray(input.attachments) ? input.attachments.length : 0,
+      hasAuthHeader: !!normalizeString(input.authToken, 8192),
+    });
     const message = String((error as FirestoreError | undefined)?.message || "").trim();
     return { ok: false, message: message || "Could not submit feedback." };
   }
@@ -287,7 +372,7 @@ export async function toggleFeedbackUpvote(
     const uid = normalizeString(uidRaw, 120);
     const authToken = normalizeString(authTokenRaw, 8192);
     if (!feedbackId || !uid) return { ok: false, message: "You must be signed in to vote." };
-    const response = await fetch(getApiUrl("/api/feedback"), {
+    const response = await fetch(getApiUrl("/api/feedback/"), {
       method: "PATCH",
       credentials: "same-origin",
       headers: {
