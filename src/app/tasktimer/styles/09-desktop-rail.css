@@ -465,7 +465,7 @@ body[data-module-intro-tour-page="history"] #app[aria-label="TaskLaunch App"] :i
 
 #app[aria-label="TaskLaunch Feedback"]{
     --mobile-footer-offset: 10px;
-    --mobile-footer-height: 72px;
+    --mobile-footer-height: 78px;
     --mobile-footer-reserved-space: calc(
       var(--mobile-footer-height) + env(safe-area-inset-bottom)
     );
@@ -539,6 +539,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     width: auto !important;
     min-height: 56px !important;
     padding: 4px 2px !important;
+    gap: 4px !important;
     background: #0D0F13 !important;
     border-color: transparent !important;
     border-bottom-color: transparent !important;
@@ -547,8 +548,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterIconImage{
     filter:
-      brightness(0) saturate(100%) invert(100%)
-      drop-shadow(0 0 6px rgba(255,255,255,.28)) !important;
+      brightness(0) saturate(100%) invert(95%) sepia(7%) saturate(441%) hue-rotate(182deg) brightness(101%) contrast(96%)
+      drop-shadow(0 0 6px rgba(233,238,249,.28)) !important;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn .appFooterIconImage{
@@ -593,7 +594,23 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterLabel{
-    display: none !important;
+    display: block !important;
+    max-width: 100%;
+    overflow: hidden;
+    color: #e9eef9 !important;
+    font-family: var(--font-readable);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.05;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: none !important;
+    white-space: nowrap;
+  }
+
+#app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterBtn.isOn .appFooterLabel{
+    color: #c9ff24 !important;
   }
 
 #app[aria-label="TaskLaunch App"] .desktopAppRail,

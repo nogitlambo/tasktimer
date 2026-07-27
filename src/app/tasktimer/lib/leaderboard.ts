@@ -85,8 +85,8 @@ type LeaderboardMetricsSnapshot = {
   totalFocusMs: number;
   weeklyFocusMs: number;
   weeklyXpGain: number;
-  weeklyPeriodStartMs: number;
-  weeklyPeriodEndMs: number;
+  weeklyPeriodStartMs?: number;
+  weeklyPeriodEndMs?: number;
 };
 
 export type LeaderboardScreenData = {
@@ -94,6 +94,7 @@ export type LeaderboardScreenData = {
   risingEntries: LeaderboardProfile[];
   rivalEntries: LeaderboardProfile[];
   weeklyEntries: LeaderboardProfile[];
+  currentWeeklyPeriodStartMs: number;
   currentUserEntry: LeaderboardProfile | null;
   currentUserRank: number | null;
   currentUserGapToNextXp: number | null;
@@ -345,12 +346,17 @@ export function formatWeeklyLeaderboardTimeRemaining(nowMs = Date.now()): string
 }
 
 function sumWeeklyXpGain(rewards: RewardProgressV1, period: { startMs: number; endMs: number }): number {
-  return rewards.awardLedger.reduce((sum, entry) => {
+  const ledgerXpGain = rewards.awardLedger.reduce((sum, entry) => {
     const ts = normalizeInt(entry?.ts);
     const xp = normalizeInt(entry?.xp);
     if (!ts || ts < period.startMs || ts > period.endMs || xp <= 0) return sum;
     return sum + xp;
   }, 0);
+  if (ledgerXpGain > 0) return ledgerXpGain;
+
+  const lastAwardedAt = normalizeInt(rewards.lastAwardedAt);
+  if (!lastAwardedAt || lastAwardedAt < period.startMs || lastAwardedAt > period.endMs) return 0;
+  return normalizeInt(rewards.totalXp);
 }
 
 function sumWeeklyFocusMs(projectedHistory: HistoryByTaskId, period: { startMs: number; endMs: number }): number {
@@ -799,6 +805,22 @@ function filterCurrentUid(entries: Array<LeaderboardProfile | null | undefined>,
   return visibleLeaderboardProfiles(entries).filter((entry) => entry.uid !== currentUid);
 }
 
+function uniqueLeaderboardProfiles(entries: Array<LeaderboardProfile | null | undefined>): LeaderboardProfile[] {
+  const byUid = new Map<string, LeaderboardProfile>();
+  visibleLeaderboardProfiles(entries).forEach((entry) => {
+    const uid = String(entry.uid || "").trim();
+    if (uid && !byUid.has(uid)) byUid.set(uid, entry);
+  });
+  return Array.from(byUid.values());
+}
+
+function selectCurrentWeeklyEntries(entries: Array<LeaderboardProfile | null | undefined>, currentWeeklyPeriodStartMs: number): LeaderboardProfile[] {
+  return sortWeeklyEntries(uniqueLeaderboardProfiles(entries).filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs))).slice(
+    0,
+    WEEKLY_LEADERBOARD_DISPLAY_LIMIT
+  );
+}
+
 function sortWeeklyEntries(entries: LeaderboardProfile[]): LeaderboardProfile[] {
   return entries.slice().sort((left, right) => {
     const weeklyDelta = normalizeInt(right.weeklyXpGain) - normalizeInt(left.weeklyXpGain);
@@ -1178,11 +1200,13 @@ function applyOwnIdentity(profile: LeaderboardProfile, currentUid: string, ident
 export async function loadLeaderboardScreenData(currentUid: string): Promise<LeaderboardScreenData> {
   const db = dbOrNull();
   if (!db || !currentUid) {
+    const currentWeeklyPeriodStartMs = getWeeklyLeaderboardUtcPeriod().startMs;
     return {
       topEntries: [],
       risingEntries: [],
       rivalEntries: [],
       weeklyEntries: [],
+      currentWeeklyPeriodStartMs,
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
@@ -1221,6 +1245,9 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     ? normalizeLeaderboardProfileRecord(currentUserSnap.id, currentUserSnap.data() as Record<string, unknown>)
     : null;
   const currentUserEntryWithIdentity = currentUserEntry ? applyOwnIdentity(currentUserEntry, currentUid, ownIdentity) : null;
+  const weeklyEntriesWithFallback = weeklyEntries.length
+    ? weeklyEntries
+    : selectCurrentWeeklyEntries([...topEntries, currentUserEntryWithIdentity], currentWeeklyPeriodStartMs);
 
   if (!currentUserEntryWithIdentity || isExcludedLeaderboardProfile(currentUserEntryWithIdentity)) {
     return {
@@ -1232,7 +1259,8 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
         currentUid
       ).filter((row) => hasCurrentWeeklyXp(row, currentWeeklyPeriodStartMs)).slice(0, 3),
       rivalEntries: [],
-      weeklyEntries,
+      weeklyEntries: weeklyEntriesWithFallback,
+      currentWeeklyPeriodStartMs,
       currentUserEntry: null,
       currentUserRank: null,
       currentUserGapToNextXp: null,
@@ -1319,7 +1347,8 @@ export async function loadLeaderboardScreenData(currentUid: string): Promise<Lea
     topEntries,
     risingEntries,
     rivalEntries,
-    weeklyEntries,
+    weeklyEntries: weeklyEntriesWithFallback,
+    currentWeeklyPeriodStartMs,
     currentUserEntry: currentUserEntryWithIdentity,
     currentUserRank: higherXpSize == null ? null : higherXpEntries.length + 1,
     currentUserGapToNextXp,

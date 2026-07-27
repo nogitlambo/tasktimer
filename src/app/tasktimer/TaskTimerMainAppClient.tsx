@@ -179,6 +179,7 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
   risingEntries: [],
   rivalEntries: [],
   weeklyEntries: [],
+  currentWeeklyPeriodStartMs: 0,
   currentUserEntry: null,
   currentUserRank: null,
   currentUserGapToNextXp: null,
@@ -189,6 +190,7 @@ const EMPTY_LEADERBOARD_SCREEN_DATA: LeaderboardScreenData = {
 
 const LEADERBOARD_LOADING_TEXT = "Loading leaderboard standings";
 const LEADERBOARD_LOADING_MIN_MS = 2_000;
+const LEADERBOARD_REFRESH_INTERVAL_MS = 60_000;
 
 type LeaderboardLoadState = "loading" | "ready" | "signedOut" | "error";
 type LeaderboardView = "global" | "weekly" | "rivals";
@@ -1710,6 +1712,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     let cancelled = false;
     let activeUid = String(auth.currentUser?.uid || "").trim();
     let refreshTimer: number | null = null;
+    let appPageObserver: MutationObserver | null = null;
 
     const loadForUid = async (uid: string) => {
       const loadSeq = leaderboardLoadSeqRef.current + 1;
@@ -1768,13 +1771,31 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       }
     };
 
-    const scheduleRefresh = () => {
+    const isLeaderboardPageActive = () => {
+      const appPage = typeof document === "undefined" ? "" : String(document.body.getAttribute("data-app-page") || "").trim();
+      return appPage ? appPage === "leaderboard" : initialPage === "leaderboard";
+    };
+
+    const clearScheduledRefresh = () => {
       if (refreshTimer != null) window.clearInterval(refreshTimer);
+      refreshTimer = null;
+    };
+
+    const scheduleRefresh = () => {
+      if (refreshTimer != null || !activeUid || !isLeaderboardPageActive()) return;
       refreshTimer = window.setInterval(() => {
-        if (!activeUid || document.visibilityState !== "visible") return;
+        if (!activeUid || !isLeaderboardPageActive() || document.visibilityState !== "visible") return;
         void loadForUid(activeUid);
         void loadFriendUidsForUid(activeUid);
-      }, 60_000);
+      }, LEADERBOARD_REFRESH_INTERVAL_MS);
+    };
+
+    const syncRefreshTimerForAppPage = () => {
+      if (activeUid && isLeaderboardPageActive()) {
+        scheduleRefresh();
+        return;
+      }
+      clearScheduledRefresh();
     };
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -1783,13 +1804,14 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       setIsAuthenticated(!!user && !isAnonymous);
       if (!activeUid || isAnonymous) {
         leaderboardLoadSeqRef.current += 1;
+        clearScheduledRefresh();
         setLeaderboardData(EMPTY_LEADERBOARD_SCREEN_DATA);
         setLeaderboardFriendUidSet(new Set());
         setLeaderboardState("signedOut");
         setLeaderboardError(null);
         return;
       }
-      scheduleRefresh();
+      syncRefreshTimerForAppPage();
       void loadForUid(activeUid);
       void loadFriendUidsForUid(activeUid);
     });
@@ -1808,10 +1830,12 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       window.addEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
       window.addEventListener("focus", handleProfileUpdated as EventListener);
       document.addEventListener("visibilitychange", handleProfileUpdated as EventListener);
+      appPageObserver = new MutationObserver(syncRefreshTimerForAppPage);
+      appPageObserver.observe(document.body, { attributes: true, attributeFilter: ["data-app-page"] });
     }
 
     if (activeUid) {
-      scheduleRefresh();
+      syncRefreshTimerForAppPage();
       void loadForUid(activeUid);
       void loadFriendUidsForUid(activeUid);
     }
@@ -1819,7 +1843,8 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     return () => {
       cancelled = true;
       unsubscribe();
-      if (refreshTimer != null) window.clearInterval(refreshTimer);
+      clearScheduledRefresh();
+      appPageObserver?.disconnect();
       if (typeof window !== "undefined") {
         window.removeEventListener(LEADERBOARD_PROFILE_UPDATED_EVENT, handleProfileUpdated as EventListener);
         window.removeEventListener(ACCOUNT_AVATAR_UPDATED_EVENT, handleProfileUpdated as EventListener);
@@ -1827,7 +1852,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         document.removeEventListener("visibilitychange", handleProfileUpdated as EventListener);
       }
     };
-  }, []);
+  }, [initialPage]);
 
   const hydratedCurrentUserEntry = useMemo(
     () => withCurrentUserProfileHydration(leaderboardData.currentUserEntry, hydratedCurrentUserProfile),
@@ -1856,8 +1881,9 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         weeklyEntries: hydratedWeeklyEntries,
         currentUserEntry: hydratedCurrentUserWeeklyEntry,
         currentUserWeeklyRank: leaderboardData.currentUserWeeklyRank,
+        currentWeeklyPeriodStartMs: leaderboardData.currentWeeklyPeriodStartMs,
       }),
-    [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank]
+    [hydratedCurrentUserWeeklyEntry, hydratedWeeklyEntries, leaderboardData.currentUserWeeklyRank, leaderboardData.currentWeeklyPeriodStartMs]
   );
   const weeklyPodiumRows = weeklyRows.filter((row) => row.rank && row.rank <= 3).slice(0, 3);
   const orderedWeeklyPodiumRows = [2, 1, 3].map((rank) => weeklyPodiumRows.find((row) => row.rank === rank)).filter((row): row is WeeklyLeaderboardRow => Boolean(row));

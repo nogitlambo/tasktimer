@@ -848,11 +848,20 @@ describe("loadLeaderboardScreenData", () => {
     const result = await loadLeaderboardScreenData("uid-weekly-index");
 
     expect(result.topEntries.map((entry) => entry.uid)).toEqual(["uid-2", "uid-weekly-index"]);
-    expect(result.weeklyEntries).toEqual([]);
+    expect(result.weeklyEntries.map((entry) => entry.uid)).toEqual(["uid-2", "uid-weekly-index"]);
     expect(result.risingEntries).toEqual([]);
     expect(result.currentUserEntry?.uid).toBe("uid-weekly-index");
     expect(result.currentUserRank).toBe(2);
     expect(result.currentUserWeeklyEntry?.uid).toBe("uid-weekly-index");
+
+    const rows = buildWeeklyLeaderboardRows({
+      weeklyEntries: result.weeklyEntries,
+      currentUserEntry: result.currentUserWeeklyEntry,
+      currentUserWeeklyRank: result.currentUserWeeklyRank,
+      currentWeeklyPeriodStartMs: result.currentWeeklyPeriodStartMs,
+    });
+    expect(rows.slice(0, 2).map((row) => row.profile.uid)).toEqual(["uid-2", "uid-weekly-index"]);
+    expect(rows.some((row) => row.isCurrentUser)).toBe(true);
   });
 });
 
@@ -1178,6 +1187,67 @@ describe("buildLeaderboardMetricsSnapshot", () => {
     expect(snapshot.weeklyXpGain).toBe(50);
     expect(snapshot.weeklyPeriodStartMs).toBe(weekStartTs);
     expect(snapshot.weeklyPeriodEndMs).toBe(weekEndTs);
+  });
+
+  it("uses current total XP as current-week gain when a current-week award has no retained ledger entries", () => {
+    const nowMs = Date.parse("2026-05-20T12:00:00.000Z");
+    const awardedAt = Date.parse("2026-05-19T09:00:00.000Z");
+
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 75,
+        totalXpPrecise: 75,
+        lastAwardedAt: awardedAt,
+        awardLedger: [],
+      },
+      nowMs,
+    });
+
+    expect(snapshot.weeklyXpGain).toBe(75);
+  });
+
+  it("does not use total XP as weekly gain when retained ledger entries already provide current-week XP", () => {
+    const nowMs = Date.parse("2026-05-20T12:00:00.000Z");
+    const awardedAt = Date.parse("2026-05-19T09:00:00.000Z");
+
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 75,
+        totalXpPrecise: 75,
+        lastAwardedAt: awardedAt,
+        awardLedger: [
+          { ts: awardedAt, dayKey: "2026-05-19", taskId: "a", xp: 25, baseXp: 25, multiplier: 1, eligibleMs: 1, reason: "session", sourceKey: "current" },
+        ],
+      },
+      nowMs,
+    });
+
+    expect(snapshot.weeklyXpGain).toBe(25);
+  });
+
+  it("does not use total XP as weekly gain when the last XP award predates the current week", () => {
+    const nowMs = Date.parse("2026-05-20T12:00:00.000Z");
+
+    const snapshot = buildLeaderboardMetricsSnapshot({
+      historyByTaskId: {},
+      liveSessionsByTaskId: {},
+      rewards: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 75,
+        totalXpPrecise: 75,
+        lastAwardedAt: Date.parse("2026-05-10T09:00:00.000Z"),
+        awardLedger: [],
+      },
+      nowMs,
+    });
+
+    expect(snapshot.weeklyXpGain).toBe(0);
   });
 
   it("formats the weekly leaderboard UTC period label with compact dates", () => {

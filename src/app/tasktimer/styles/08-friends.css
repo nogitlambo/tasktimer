@@ -5553,6 +5553,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
   opacity:.78;
   mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
+  mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
   transform-origin:center;
   animation:timeGoalCompleteWheelGlow 24s linear infinite;
   will-change:transform, opacity, filter;
@@ -5560,15 +5562,16 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::before{
   background:
-    radial-gradient(circle at 50% 50%, rgba(162,246,255,.18) 0 11%, rgba(53,232,255,.1) 22%, rgba(53,232,255,.035) 42%, transparent 66%),
-    radial-gradient(circle at 50% 50%, rgba(53,232,255,.16), transparent 0 14%, rgba(53,232,255,.065) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(162,246,255,.13) 0 10%, rgba(53,232,255,.075) 22%, rgba(53,232,255,.026) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(53,232,255,.11), transparent 0 14%, rgba(53,232,255,.04) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 50%,
-      rgba(53,232,255,.1) 0deg 7deg,
-      rgba(20,27,34,.03) 7deg 15deg
+      rgba(53,232,255,.065) 0deg 7deg,
+      rgba(20,27,34,.022) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 50%, rgba(90,220,255,.1), transparent 36%),
-    linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
+    radial-gradient(circle at 50% 50%, rgba(90,220,255,.075), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,0) 32%, rgba(0,0,0,.1));
+  opacity:.46;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after{
@@ -5588,6 +5591,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
     radial-gradient(circle at 50% 50%, rgba(255,246,162,.16) 0 8%, rgba(201,255,36,.095) 18%, rgba(201,255,36,.035) 34%, transparent 62%);
   opacity:.12;
   mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
+  mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
   transform-origin:center;
   animation:timeGoalCompleteWheelGlow 24s linear infinite;
   backface-visibility:hidden;
@@ -5597,7 +5602,14 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after{
   background:
-    radial-gradient(circle at 50% 50%, rgba(162,246,255,.16) 0 8%, rgba(53,232,255,.095) 18%, rgba(53,232,255,.035) 34%, transparent 62%);
+    radial-gradient(circle at 50% 50%, rgba(162,246,255,.12) 0 8%, rgba(53,232,255,.07) 18%, rgba(53,232,255,.026) 34%, transparent 62%);
+  opacity:.09;
+}
+
+#app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumStage{
+  background:
+    linear-gradient(180deg, rgba(2,7,12,.18), rgba(2,7,12,.34) 44%, rgba(2,7,12,.92)),
+    linear-gradient(90deg, rgba(1,5,10,.86), rgba(1,5,10,.14) 48%, rgba(1,5,10,.72)) #03070b;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumDeck{
@@ -5621,7 +5633,10 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   padding:clamp(50px, 8vw, 66px) clamp(10px, 2.4vw, 20px) 0;
   border:0;
   border-radius:18px 18px 0 0;
+  border-top-left-radius:18px;
+  border-top-right-radius:18px;
   background:#24283d;
+  background-clip:padding-box;
   color:#f8fbff;
   font:inherit;
   text-align:center;
@@ -7331,6 +7346,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     height:176px;
     padding:50px 8px 0;
     border-radius:13px 13px 0 0;
+    border-top-left-radius:13px;
+    border-top-right-radius:13px;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumCard1{
@@ -7470,8 +7487,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     border-radius:50%;
     clip-path:circle(50% at 50% 50%);
     background:
-      radial-gradient(circle at 50% 50%, rgba(255,246,162,.2) 0 8%, rgba(201,255,36,.12) 18%, rgba(201,255,36,.045) 35%, transparent 64%);
-    opacity:.13;
+      radial-gradient(circle at 50% 50%, rgba(162,246,255,.12) 0 8%, rgba(53,232,255,.07) 18%, rgba(53,232,255,.026) 35%, transparent 64%);
+    opacity:.09;
     mix-blend-mode:screen;
     transform-origin:center;
     animation:timeGoalCompleteWheelGlow 24s linear infinite;
@@ -7481,8 +7498,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after{
-    background:
-      radial-gradient(circle at 50% 50%, rgba(162,246,255,.2) 0 8%, rgba(53,232,255,.12) 18%, rgba(53,232,255,.045) 35%, transparent 64%);
+    content:"";
   }
 
   @media (prefers-reduced-motion: reduce){

@@ -80,6 +80,20 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).not.toContain("preserveReadyState");
   });
 
+  it("refreshes leaderboard standings once per minute", () => {
+    expect(source).toContain("const LEADERBOARD_REFRESH_INTERVAL_MS = 60_000;");
+    expect(source).toContain('document.body.getAttribute("data-app-page")');
+    expect(source).toContain('appPage === "leaderboard"');
+    expect(source).toContain('initialPage === "leaderboard"');
+    expect(source).toContain("clearScheduledRefresh");
+    expect(source).toContain("syncRefreshTimerForAppPage");
+    expect(source).toContain('appPageObserver.observe(document.body, { attributes: true, attributeFilter: ["data-app-page"] });');
+    expect(source).toContain("appPageObserver?.disconnect();");
+    expect(source).toContain("if (refreshTimer != null || !activeUid || !isLeaderboardPageActive()) return;");
+    expect(source).toContain('if (!activeUid || !isLeaderboardPageActive() || document.visibilityState !== "visible") return;');
+    expect(source).toContain("}, LEADERBOARD_REFRESH_INTERVAL_MS);");
+  });
+
   it("renders the leaderboard movement overlay outside the app page scroller", () => {
     const frameCloseIndex = source.indexOf("</TaskTimerAppFrame>");
     const overlayIndex = source.indexOf('id="leaderboardMovementOverlay"');
@@ -205,11 +219,12 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(friendsCss).toContain("animation-delay:920ms;");
   });
 
-  it("spins the weekly and global podium radial burst as an oversized circle", () => {
+  it("spins the podium radial fade as an oversized circle without a cyan Global burst", () => {
     expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage"');
     expect(source).toContain('className="leaderboardGlobalStage leaderboardWeeklyPodiumStage leaderboardGlobalPodiumStage"');
     expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::before");
     expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after");
+    expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::before");
     expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after");
     expect(friendsCss).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
     const podiumBurstRule = friendsCss.match(
@@ -239,17 +254,31 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(podiumGlowRule).toContain("clip-path:circle(50% at 50% 50%);");
     expect(podiumGlowRule).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
     expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.16)");
-    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.16)");
     expect(podiumGlowRule).not.toContain("conic-gradient(");
     expect(friendsCss).toContain(".leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after");
     expect(friendsCss).toContain("width:max(240%, 560px);");
     expect(friendsCss).not.toContain("@keyframes leaderboardPodiumCenterPulseMobile");
-    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.2)");
-    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.2)");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.12)");
     expect(friendsCss).toContain("opacity:.09;");
     expect(podiumBurstRule).not.toContain("scale(");
     expect(podiumGlowRule).not.toContain("scale(");
     expect(friendsCss).not.toContain("filter:blur(.45px);");
+
+    const globalPodiumBurstRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #leaderboardGlobalPanel \.leaderboardWeeklyPodiumStage::before\s*\{([\s\S]*?)\n\}/
+    )?.[1] ?? "";
+    const globalPodiumGlowRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #leaderboardGlobalPanel \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\n\}/
+    )?.[1] ?? "";
+    const mobileGlobalPodiumGlowRule = friendsCss.match(
+      /#app\[aria-label="TaskLaunch App"\] #leaderboardGlobalPanel \.leaderboardGlobalStage\.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\n  \}/
+    )?.[1] ?? "";
+    expect(globalPodiumBurstRule).toContain("rgba(53,232,255,.075)");
+    expect(globalPodiumBurstRule).not.toContain("rgba(201,255,36");
+    expect(globalPodiumGlowRule).toContain("rgba(53,232,255,.07)");
+    expect(globalPodiumGlowRule).not.toContain("rgba(201,255,36");
+    expect(mobileGlobalPodiumGlowRule).toContain('content:"";');
+    expect(friendsCss).toContain("rgba(53,232,255,.07) 18%");
 
     const reducedMotionRule = Array.from(
       friendsCss.matchAll(/#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\}/g)
@@ -258,6 +287,29 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(reducedMotionRule).toContain("opacity:.12;");
     expect(reducedMotionRule).toContain("transform:none;");
     expect(reducedMotionRule).toContain("animation:none;");
+  });
+
+  it("renders the global podium stage without a video background", () => {
+    const weeklyPanelStart = source.indexOf('id="leaderboardWeeklyPanel"');
+    const rivalsPanelStart = source.indexOf('id="leaderboardRivalsPanel"');
+    const globalPanelStart = source.indexOf('id="leaderboardGlobalPanel"');
+
+    expect(source).not.toContain("LEADERBOARD_EARTH_VIDEO_PLAYBACK_RATE");
+    expect(source).not.toContain("setGlobalLeaderboardEarthVideoRef");
+    expect(source).not.toContain("leaderboardGlobalEarthVideo");
+    expect(source).not.toContain('src="/leaderboard/spinning_earth.mp4"');
+    expect(source).not.toContain('poster="/leaderboard/spinning-earth-poster.webp"');
+    expect(source).not.toContain('className="leaderboardGlobalEarthScrim"');
+
+    const weeklyPanelSource = source.slice(weeklyPanelStart, rivalsPanelStart);
+    const rivalsPanelSource = source.slice(rivalsPanelStart, globalPanelStart);
+    expect(weeklyPanelSource).not.toContain("leaderboardGlobalEarthVideo");
+    expect(rivalsPanelSource).not.toContain("leaderboardGlobalEarthVideo");
+
+    expect(friendsCss).toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardGlobalPodiumStage");
+    expect(friendsCss).not.toContain('url("/leaderboard/spinning-earth-poster.webp")');
+    expect(friendsCss).not.toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardGlobalEarthVideo");
+    expect(friendsCss).not.toContain("#app[aria-label=\"TaskLaunch App\"] #leaderboardGlobalPanel .leaderboardGlobalEarthScrim");
   });
 
   it("shows rank insignia instead of usernames on podium cards", () => {

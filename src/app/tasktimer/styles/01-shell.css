@@ -1251,7 +1251,7 @@ body.isInitialAuthHydrating{
 
 #app[aria-label="TaskLaunch App"]{
     --mobile-footer-offset: 10px;
-    --mobile-footer-height: 72px;
+    --mobile-footer-height: 78px;
     --mobile-footer-reserved-space: calc(
       var(--mobile-footer-height) + env(safe-area-inset-bottom)
     );
