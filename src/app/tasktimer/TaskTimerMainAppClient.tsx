@@ -91,6 +91,7 @@ import {
   awardDailyOpenReward,
   DEFAULT_REWARD_PROGRESS,
   DAILY_OPEN_REWARD_XP,
+  getPersistedRewardProgressUpdate,
   getRankForXp,
   isDailyOpenRewardEligible,
   normalizeRewardProgress,
@@ -506,7 +507,12 @@ function LeaderboardSharedTableContent({
   getRowProps: (row: WeeklyLeaderboardRow, index: number) => LeaderboardSharedTableRowProps;
 }) {
   return (
-    <div className={`leaderboardWeeklyTable${className ? ` ${className}` : ""}`} role="table" aria-label={ariaLabel}>
+    <div
+      className={`leaderboardWeeklyTable${className ? ` ${className}` : ""}`}
+      role="table"
+      aria-label={ariaLabel}
+      style={{ "--leaderboard-data-row-count": Math.max(1, rows.length) } as CSSProperties}
+    >
       <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
         <span role="columnheader">Pos</span>
         <span role="columnheader">User</span>
@@ -761,7 +767,12 @@ function RankRivalsLadder({
           <span className="rankRivalsTargetIcon" aria-hidden="true">R</span>
           <strong>{viewModel.subtitle}</strong>
         </div>
-        <div className="rankRivalsTable" role="table" aria-label="Rank Rivals standings">
+        <div
+          className="rankRivalsTable"
+          role="table"
+          aria-label="Rank Rivals standings"
+          style={{ "--leaderboard-data-row-count": Math.max(1, viewModel.rows.length) } as CSSProperties}
+        >
           <div className="rankRivalsTableRow rankRivalsTableHead" role="row">
             <span role="columnheader">Pos</span>
             <span role="columnheader">User</span>
@@ -1000,9 +1011,21 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, [initialPage, friendsAuthRuntimeKey]);
 
   useEffect(() => {
+    const hydrateRewards = (sourcePrefs: UserPreferencesV1 | null | undefined) => {
+      const resolvedPrefs = sourcePrefs || preferencesPersistence.loadResolved();
+      const { normalized, changed } = getPersistedRewardProgressUpdate(resolvedPrefs.rewards);
+      if (changed) {
+        const nextPreferences = preferencesPersistence.update({ rewards: normalized });
+        setCachedPreferences(nextPreferences);
+      } else {
+        setCachedPreferences(resolvedPrefs);
+      }
+      setRewardProgress(normalized);
+    };
+
+    hydrateRewards(preferencesPersistence.loadCached());
     const unsubscribe = preferencesPersistence.subscribe((prefs) => {
-      setCachedPreferences(prefs);
-      setRewardProgress(normalizeRewardProgress(prefs?.rewards || DEFAULT_REWARD_PROGRESS));
+      hydrateRewards(prefs);
       setAchievementSoundsEnabled(prefs?.achievementSoundsEnabled !== false);
       setInteractionHapticsEnabled(prefs?.interactionHapticsEnabled !== false);
       setInteractionHapticsIntensity(normalizeInteractionHapticsIntensity(prefs?.interactionHapticsIntensity));
@@ -2270,6 +2293,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       <TaskTimerAppFrame
         activePage={initialPage}
         currentRankId={displayedRewardProgress.currentRankId}
+        rankPromotionsById={rewardProgress.rankPromotionsById}
         desktopPromotionHoldRankId={activeRankPromotion?.previousRankId || null}
         desktopInsigniaUpgrade={desktopInsigniaUpgrade}
         achievementSoundsEnabled={achievementSoundsEnabled}

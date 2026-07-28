@@ -156,7 +156,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "feedback",
     label: "Feedback",
     ariaLabel: "Feedback",
-    iconSrc: "/Feedback.svg",
+    iconSrc: "/icons/icons_default/question.webp",
     desktopId: "commandCenterFeedbackBtn",
     mobileId: "footerFeedbackBtn",
     href: "/feedback",
@@ -801,7 +801,7 @@ export default function DesktopAppRail({
                   >
                     <AppImg
                       className="dashboardRailMenuIconImage"
-                      src="/icons/icons_default/question.webp"
+                      src="/icons/icons_default/headset-help.webp"
                       alt=""
                       aria-hidden="true"
                     />

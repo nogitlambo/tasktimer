@@ -16,11 +16,17 @@ export type RewardProgressV1 = {
   totalXp: number;
   totalXpPrecise: number;
   currentRankId: string;
+  rankPromotionsById: Record<string, RankPromotionRecord>;
   lastAwardedAt: number | null;
   lastDailyRewardAwardedAtMs: number | null;
   completedSessions: number;
   awardLedger: RewardLedgerEntry[];
   pendingTimeGoalXp: PendingTimeGoalXpState;
+};
+
+export type RankPromotionRecord = {
+  promotedAt: number;
+  promotedAtXp: number;
 };
 
 export type RewardLedgerEntry = {
@@ -149,6 +155,7 @@ export const DEFAULT_REWARD_PROGRESS: RewardProgressV1 = {
   totalXp: 0,
   totalXpPrecise: 0,
   currentRankId: "unranked",
+  rankPromotionsById: {},
   lastAwardedAt: null,
   lastDailyRewardAwardedAtMs: null,
   completedSessions: 0,
@@ -263,16 +270,108 @@ export function normalizeRewardProgress(input: unknown, options: { nowMs?: numbe
   const awardLedger = normalizeAwardLedger(obj.awardLedger, normalizationNowMs);
   const resolvedRank = getRankForXp(totalXp);
   const rawRankId = String(obj.currentRankId || "").trim();
+  const rankPromotionsById = normalizeRankPromotionsById(
+    obj.rankPromotionsById,
+    totalXp,
+    resolvedRank.id,
+    awardLedger,
+    normalizationNowMs,
+  );
   return {
     totalXp,
     totalXpPrecise,
     completedSessions,
+    rankPromotionsById,
     lastAwardedAt,
     lastDailyRewardAwardedAtMs,
     awardLedger,
     pendingTimeGoalXp: normalizePendingTimeGoalXpState(obj.pendingTimeGoalXp, normalizationNowMs),
     currentRankId: rawRankId && rawRankId === resolvedRank.id ? rawRankId : resolvedRank.id,
   };
+}
+
+export function getPersistedRewardProgressUpdate(
+  input: unknown,
+  options: { nowMs?: number } = {}
+): { normalized: RewardProgressV1; changed: boolean } {
+  const normalized = normalizeRewardProgress(input, options);
+  const source = input && typeof input === "object" ? input : DEFAULT_REWARD_PROGRESS;
+  return {
+    normalized,
+    changed: JSON.stringify(source) !== JSON.stringify(normalized),
+  };
+}
+
+export function formatRewardPromotionDate(promotedAt: number): string {
+  const safePromotedAt = Math.max(0, Math.floor(Number(promotedAt) || 0));
+  if (!(safePromotedAt > 0)) return "";
+  return new Date(safePromotedAt).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function normalizeRankPromotionsById(
+  input: unknown,
+  totalXp: number,
+  currentRankId: string,
+  awardLedger: RewardLedgerEntry[],
+  normalizationNowMs: number,
+): Record<string, RankPromotionRecord> {
+  const source = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const normalized: Record<string, RankPromotionRecord> = {};
+
+  Object.entries(source).forEach(([rawRankId, value]) => {
+    const rank = getRankById(rawRankId);
+    if (!rank.id || rank.id === "unranked" || rank.id !== String(rawRankId || "").trim().toLowerCase()) return;
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    const promotedAtRaw = Number(record.promotedAt || 0);
+    const promotedAt = Number.isFinite(promotedAtRaw) && promotedAtRaw > 0 ? Math.floor(promotedAtRaw) : 0;
+    if (!(promotedAt > 0)) return;
+    const promotedAtXpRaw = Number(record.promotedAtXp ?? rank.minXp);
+    const promotedAtXp = Number.isFinite(promotedAtXpRaw) ? Math.max(0, Math.floor(promotedAtXpRaw)) : rank.minXp;
+    normalized[rank.id] = {
+      promotedAt,
+      promotedAtXp: promotedAtXp > 0 ? promotedAtXp : rank.minXp,
+    };
+  });
+
+  const currentRankIndex = Math.max(0, RANK_LADDER.findIndex((rank) => rank.id === currentRankId));
+  const inferredPromotionTsByRankId = inferPromotionTimestampsByRankId(totalXp, awardLedger);
+  for (let index = 1; index <= currentRankIndex; index += 1) {
+    const rank = RANK_LADDER[index];
+    if (!rank) continue;
+    if (!normalized[rank.id]) {
+      normalized[rank.id] = {
+        promotedAt: inferredPromotionTsByRankId[rank.id] || normalizationNowMs,
+        promotedAtXp: rank.minXp,
+      };
+    }
+  }
+
+  return normalized;
+}
+
+function inferPromotionTimestampsByRankId(totalXp: number, awardLedger: RewardLedgerEntry[]): Record<string, number> {
+  if (!awardLedger.length) return {};
+  const totalLedgerXp = awardLedger.reduce((sum, entry) => sum + Math.max(0, Number(entry.xp) || 0), 0);
+  let runningXp = Math.max(0, Math.floor(Number(totalXp || 0) || 0) - totalLedgerXp);
+  const inferred: Record<string, number> = {};
+  const lockedRanks = RANK_LADDER.filter((rank) => rank.id !== "unranked" && rank.minXp > runningXp);
+  let targetIndex = 0;
+
+  for (const entry of awardLedger) {
+    runningXp += Math.max(0, Math.floor(Number(entry.xp) || 0));
+    while (targetIndex < lockedRanks.length && runningXp >= lockedRanks[targetIndex].minXp) {
+      inferred[lockedRanks[targetIndex].id] = entry.ts;
+      targetIndex += 1;
+    }
+    if (targetIndex >= lockedRanks.length) break;
+  }
+
+  return inferred;
 }
 
 function normalizePendingTimeGoalXpState(input: unknown, normalizationNowMs = Date.now()): PendingTimeGoalXpState {
@@ -370,6 +469,34 @@ function clampAwardTimestamp(previous: RewardProgressV1, awardedAtRaw: number): 
   return awardedAt;
 }
 
+function getCrossedRanks(previousXp: number, nextXp: number): RankDefinition[] {
+  const floorPreviousXp = Math.max(0, Math.floor(Number(previousXp || 0) || 0));
+  const floorNextXp = Math.max(0, Math.floor(Number(nextXp || 0) || 0));
+  if (floorNextXp <= floorPreviousXp) return [];
+  return RANK_LADDER.filter((rank) => rank.id !== "unranked" && rank.minXp > floorPreviousXp && rank.minXp <= floorNextXp);
+}
+
+function applyRankPromotionRecords(
+  previous: RewardProgressV1,
+  next: RewardProgressV1,
+  promotedAtRaw: number | null | undefined,
+): Record<string, RankPromotionRecord> {
+  const rankPromotionsById = { ...(previous.rankPromotionsById || {}) };
+  const promotedAt =
+    Number.isFinite(Number(promotedAtRaw)) && Number(promotedAtRaw) > 0
+      ? Math.floor(Number(promotedAtRaw))
+      : next.lastAwardedAt || previous.lastAwardedAt || Date.now();
+
+  for (const rank of getCrossedRanks(previous.totalXp, next.totalXp)) {
+    rankPromotionsById[rank.id] = {
+      promotedAt,
+      promotedAtXp: rank.minXp,
+    };
+  }
+
+  return rankPromotionsById;
+}
+
 function getExistingSourceKeys(progress: RewardProgressV1): Set<string> {
   return new Set(progress.awardLedger.map((entry) => entry.sourceKey));
 }
@@ -436,15 +563,20 @@ function awardEntries(previous: RewardProgressV1, entries: RewardLedgerEntry[], 
   const lastAwardedAt =
     normalizedEntries.reduce<number | null>((latest, entry) => (latest == null || entry.ts > latest ? entry.ts : latest), previous.lastAwardedAt) ??
     previous.lastAwardedAt;
-  const next: RewardProgressV1 = {
+  const provisionalNext: RewardProgressV1 = {
     totalXp: nextTotalXp,
     totalXpPrecise: nextTotalXpPrecise,
     currentRankId: nextRank.id,
+    rankPromotionsById: previous.rankPromotionsById,
     lastAwardedAt,
     lastDailyRewardAwardedAtMs: previous.lastDailyRewardAwardedAtMs,
     completedSessions: Math.max(0, previous.completedSessions + completedSessionsDelta),
     awardLedger: nextLedger,
     pendingTimeGoalXp: previous.pendingTimeGoalXp,
+  };
+  const next: RewardProgressV1 = {
+    ...provisionalNext,
+    rankPromotionsById: applyRankPromotionRecords(previous, provisionalNext, lastAwardedAt),
   };
 
   return {
@@ -1038,13 +1170,30 @@ export function getRankLabelForThumbnailSrc(src: string): string | null {
 export function buildRewardProgressForRankSelection(progress: RewardProgressV1, rankId: string): RewardProgressV1 {
   const base = normalizeRewardProgress(progress);
   const rank = getRankById(rankId);
-  return {
+  const nextRankIndex = Math.max(0, RANK_LADDER.findIndex((row) => row.id === rank.id));
+  const nextRankPromotionsById = Object.fromEntries(
+    Object.entries(base.rankPromotionsById || {}).filter(([storedRankId]) => {
+      const storedRankIndex = RANK_LADDER.findIndex((row) => row.id === storedRankId);
+      return storedRankIndex > 0 && storedRankIndex <= nextRankIndex;
+    })
+  );
+  const selectedAt = Date.now();
+  const next: RewardProgressV1 = {
     ...base,
     totalXp: rank.minXp,
     totalXpPrecise: rank.minXp,
     currentRankId: rank.id,
+    rankPromotionsById: nextRankPromotionsById,
     lastDailyRewardAwardedAtMs: base.lastDailyRewardAwardedAtMs,
   };
+  return normalizeRewardProgress({
+    ...next,
+    rankPromotionsById: applyRankPromotionRecords(
+      { ...base, rankPromotionsById: nextRankPromotionsById },
+      next,
+      selectedAt
+    ),
+  }, { nowMs: selectedAt });
 }
 
 export function awardSessionCompletionXp(progress: RewardProgressV1, _awardedAt: number): RewardAwardResult {
@@ -1132,16 +1281,20 @@ export function reconcileRewardProgressWithHistory(context: {
     current.lastAwardedAt
   );
 
-  return {
+  return normalizeRewardProgress({
     totalXp,
     totalXpPrecise,
     currentRankId: getRankForXp(totalXp).id,
+    rankPromotionsById: {
+      ...rebuilt.rankPromotionsById,
+      ...current.rankPromotionsById,
+    },
     lastAwardedAt,
     lastDailyRewardAwardedAtMs: current.lastDailyRewardAwardedAtMs,
     completedSessions: Math.max(current.completedSessions, rebuilt.completedSessions),
     awardLedger: mergedLedger,
     pendingTimeGoalXp: current.pendingTimeGoalXp,
-  };
+  }, { nowMs: lastAwardedAt ?? Date.now() });
 }
 
 export function buildRewardsHeaderViewModel(progress: RewardProgressV1): RewardsHeaderViewModel {

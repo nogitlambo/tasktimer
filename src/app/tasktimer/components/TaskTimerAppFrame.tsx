@@ -16,7 +16,13 @@ import RankLadderModal from "./RankLadderModal";
 import RankThumbnail from "./RankThumbnail";
 import ModuleIntroTour from "./ModuleIntroTour";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
-import { RANK_LADDER, buildRankLadderSummary, buildXpProgressSubtext, getRankLadderThumbnailSrc } from "../lib/rewards";
+import {
+  RANK_LADDER,
+  buildRankLadderSummary,
+  buildXpProgressSubtext,
+  getRankLadderThumbnailSrc,
+  type RankPromotionRecord,
+} from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "friends" | "leaderboard" | "history";
@@ -36,6 +42,7 @@ type TaskTimerAppFrameProps = {
   useClientNavButtons?: boolean;
   mobileToolbar?: ReactNode;
   currentRankId: string;
+  rankPromotionsById: Record<string, RankPromotionRecord>;
   desktopPromotionHoldRankId?: string | null;
   desktopInsigniaUpgrade?: DesktopInsigniaUpgradePayload | null;
   achievementSoundsEnabled?: boolean;
@@ -166,6 +173,7 @@ export default function TaskTimerAppFrame({
   useClientNavButtons = activePage !== "history",
   mobileToolbar = null,
   currentRankId,
+  rankPromotionsById,
   desktopPromotionHoldRankId = null,
   desktopInsigniaUpgrade = null,
   achievementSoundsEnabled = true,
@@ -596,6 +604,7 @@ export default function TaskTimerAppFrame({
         rankSummary={rankSummary}
         currentRankId={currentRankId}
         currentRankIndex={currentRankIndex}
+        rankPromotionsById={rankPromotionsById}
         rankThumbnailSrc={rankThumbnailSrc}
         canSelectRankInsignia={false}
         onSelectRankThumbnail={async () => {}}

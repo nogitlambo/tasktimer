@@ -377,6 +377,7 @@ export function SettingsAccountPane({
         rankSummary={avatar.rankLadderSummary}
         currentRankId={avatar.rewardProgress.currentRankId}
         currentRankIndex={avatar.currentRankIndex}
+        rankPromotionsById={avatar.rewardProgress.rankPromotionsById}
         rankThumbnailSrc={avatar.rankThumbnailSrc}
         canSelectRankInsignia={avatar.canSelectRankInsignia}
         onSelectRankThumbnail={avatar.onSelectRankThumbnail}

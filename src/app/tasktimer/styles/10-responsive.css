@@ -65,6 +65,10 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
     height:0;
     display:none;
   }
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalLabel{
+    font-size:16px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce){

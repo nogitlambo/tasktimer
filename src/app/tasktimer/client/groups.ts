@@ -2140,7 +2140,11 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
                   </button>
                   <span class="friendIdentityDivider" aria-hidden="true">|</span>
                   ${sharedCountMetaHtml}
+                  <span class="friendIdentityExpandArrow" aria-hidden="true">›</span>
                 </div>
+                <button class="friendIdentityBtn friendIdentityProfileLink" type="button" data-friend-profile-open="${ctx.escapeHtmlUI(row.friendUid)}">
+                  View Profile
+                </button>
               </div>
             </summary>
             <div class="friendSharedTasksList">${summaryHtml}</div>

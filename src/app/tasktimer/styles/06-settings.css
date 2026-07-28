@@ -2441,6 +2441,7 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 #app[aria-label="TaskLaunch App"] .rankLadderModal,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderModal{
   width:min(560px, calc(100vw - 28px));
+  border-radius:22px !important;
 }
 
 #app[aria-label="TaskLaunch App"] #rankLadderOverlay .rankLadderCloseBtn,
@@ -2477,11 +2478,13 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
   gap:12px;
   min-height:190px;
   padding:16px 8px 0;
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:0;
-  background:#17191d;
-  background-image:none;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+  border:1px solid transparent;
+  border-radius:18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, 0) 22%),
+    linear-gradient(135deg, rgba(54, 61, 69, .16) 0%, rgba(25, 30, 36, .1) 38%, rgba(66, 72, 80, .12) 58%, rgba(18, 22, 28, .16) 100%),
+    linear-gradient(180deg, rgba(14, 18, 23, .99) 0%, rgba(8, 11, 16, .99) 100%);
+  box-shadow:0 14px 30px rgba(0, 0, 0, .28);
   text-align:center;
 }
 
@@ -2494,10 +2497,13 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectable:hover,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isSelectable:hover{
-  border-color:rgba(255,255,255,.2);
   transform:translateY(-1px);
-  background:#17191d;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+  border-color:transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, 0) 22%),
+    linear-gradient(135deg, rgba(54, 61, 69, .16) 0%, rgba(25, 30, 36, .1) 38%, rgba(66, 72, 80, .12) 58%, rgba(18, 22, 28, .16) 100%),
+    linear-gradient(180deg, rgba(14, 18, 23, .99) 0%, rgba(8, 11, 16, .99) 100%);
+  box-shadow:0 18px 34px rgba(0,0,0,.34);
 }
 
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectable:focus-visible,
@@ -2508,41 +2514,50 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
 
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked{
-  background:#17191d;
-  border-color:rgba(255,255,255,.08);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, 0) 22%),
+    linear-gradient(135deg, rgba(54, 61, 69, .16) 0%, rgba(25, 30, 36, .1) 38%, rgba(66, 72, 80, .12) 58%, rgba(18, 22, 28, .16) 100%),
+    linear-gradient(180deg, rgba(14, 18, 23, .99) 0%, rgba(8, 11, 16, .99) 100%);
+  border-color:transparent;
+  box-shadow:0 14px 30px rgba(0, 0, 0, .28);
   opacity:1;
 }
 
 #app[aria-label="TaskLaunch App"] .rankLadderItem.isSelectedThumbnail,
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isSelectedThumbnail{
-  border-color:rgba(255,255,255,.24);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  border-color:transparent;
+  box-shadow:
+    0 0 0 1px rgba(126,243,255,.18),
+    0 0 24px rgba(0,220,255,.12),
+    0 18px 34px rgba(0,0,0,.34);
 }
 
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isCurrent{
-  background:#17191d;
-  border-color:#c9ff24;
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, #c9ff24 24%, transparent);
+#app[aria-label="TaskLaunch App"] .rankLadderItem:is(.isCurrent, .isPrevious),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem:is(.isCurrent, .isPrevious){
+  background:
+    linear-gradient(180deg, rgba(227, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 26%),
+    linear-gradient(135deg, rgba(141, 226, 240, .28) 0%, rgba(57, 92, 103, .14) 34%, rgba(214, 252, 255, .24) 52%, rgba(34, 64, 76, .16) 68%, rgba(127, 214, 228, .24) 100%),
+    linear-gradient(180deg, rgba(10, 24, 32, .98) 0%, rgba(8, 15, 22, .98) 100%);
+  border-color:transparent;
+  box-shadow:0 18px 34px rgba(0,0,0,.34);
   opacity:1;
 }
 
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemTitle,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isCurrent .rankLadderItemTitle,
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemMeta,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isCurrent .rankLadderItemMeta,
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isCurrent .rankLadderItemBadgePlaceholder,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isCurrent .rankLadderItemBadgePlaceholder{
+#app[aria-label="TaskLaunch App"] .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemTitle,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch App"] .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemMeta,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemMeta,
+#app[aria-label="TaskLaunch App"] .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemBadgePlaceholder,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem:is(.isCurrent, .isPrevious) .rankLadderItemBadgePlaceholder{
   opacity:1;
 }
 
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemTitle,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemTitle,
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemMeta,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemMeta,
-#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder,
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent) .rankLadderItemBadgePlaceholder{
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemTitle,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemTitle,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemMeta,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemMeta,
+#app[aria-label="TaskLaunch App"] .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemBadgePlaceholder,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .rankLadderItem.isUnlocked:not(.isCurrent):not(.isPrevious) .rankLadderItemBadgePlaceholder{
   opacity:.7;
 }
 
@@ -2699,6 +2714,7 @@ body[data-control-style="square"] #app:is([aria-label="TaskLaunch Settings"], [a
     height:75dvh;
     max-height:75dvh;
     margin:0;
+    border-radius:22px !important;
   }
 
 #app[aria-label="TaskLaunch App"] .rankLadderList,
@@ -5307,17 +5323,22 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     letter-spacing:0;
     border-radius:0 !important;
     border:0 !important;
-    border-bottom:1px solid rgba(255,255,255,.09) !important;
     clip-path:none !important;
     box-shadow:none !important;
   }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child{
-    border-bottom-color:transparent !important;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:1px;
+    background:rgba(255,255,255,.09);
   }
 
-#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile[data-settings-pane="sounds"]{
-    border-bottom-color:rgba(255,255,255,.09) !important;
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child::after{
+    background:transparent;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover,
@@ -5332,6 +5353,26 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isActive::before{
     display:none;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:hover::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile:focus-visible::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isActive::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:hover::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger:focus-visible::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile.isDanger.isActive::after{
+    background:rgba(255,255,255,.09);
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child:hover::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child:focus-visible::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child.isActive::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child.isDanger::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child.isDanger:hover::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child.isDanger:focus-visible::after,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavGrid .settingsNavTile:last-child.isDanger.isActive::after{
+    background:transparent;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsNavTile .settingsNavItemIcon{
@@ -6629,17 +6670,56 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList .settingsDataListItem{
-    width:auto !important;
-    max-width:100% !important;
-    margin:0 auto !important;
-    justify-content:center !important;
-    text-align:center !important;
+  width:auto !important;
+  max-width:100% !important;
+  margin:0 auto !important;
+  justify-content:center !important;
+  text-align:center !important;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsAboutPane .settingsAboutLinkList .settingsMenuItemText{
     width:auto !important;
     justify-content:center !important;
     text-align:center !important;
+  }
+}
+
+@media (min-width: 981px){
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataList{
+    width:100% !important;
+    align-items:flex-start !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsInlineSection,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListStack{
+    align-items:stretch !important;
+    justify-items:stretch !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{
+    width:100% !important;
+    max-width:none !important;
+    justify-content:flex-start !important;
+    text-align:left !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText:has(.settingsMenuItemHelper){
+    align-items:flex-start !important;
+    justify-content:flex-start !important;
+    text-align:left !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span{
+    text-align:left !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > .settingsMenuItemHelper{
+    text-align:left !important;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem .settingsMenuItemText > span:not(.settingsMenuItemHelper){
+    color:#fff !important;
   }
 }
 

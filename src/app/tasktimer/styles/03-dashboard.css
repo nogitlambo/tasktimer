@@ -8946,8 +8946,8 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityChart{
-  inset:0 0 34px 0 !important;
-  height:calc(100% - 34px) !important;
+  inset:0 0 52px 0 !important;
+  height:calc(100% - 52px) !important;
   overflow:visible !important;
 }
 
@@ -8964,25 +8964,36 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalLine{
-  stroke:rgba(255,146,72,.55) !important;
+  stroke:#47ffb5 !important;
   stroke-width:1 !important;
-  stroke-dasharray:2 3 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalPath{
-  stroke-dasharray:none !important;
   stroke-linecap:round !important;
   stroke-linejoin:round !important;
 }
 
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalPathCurrent{
+  stroke-dasharray:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalPathPrevious{
+  stroke:#ff9248 !important;
+  stroke-dasharray:2 3 !important;
+}
+
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityGoalLabel{
-  fill:var(--dashboard-reference-amber) !important;
+  fill:#47ffb5 !important;
   font-family:var(--font-geist-mono, var(--font-readable)) !important;
   font-size:13px !important;
   font-weight:700 !important;
   letter-spacing:0 !important;
   text-anchor:end !important;
   dominant-baseline:middle !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityPreviousGoalLabel{
+  fill:#ff9248 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityBar{
@@ -9006,10 +9017,56 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityXAxis{
   left:var(--dashboard-activity-plot-left) !important;
   right:var(--dashboard-activity-plot-right) !important;
-  bottom:0 !important;
+  bottom:18px !important;
   height:34px !important;
   grid-template-columns:repeat(var(--dashboard-activity-visible-days, 7), minmax(0, 1fr)) !important;
   gap:4px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegend{
+  position:absolute !important;
+  left:var(--dashboard-activity-plot-left) !important;
+  right:var(--dashboard-activity-plot-right) !important;
+  bottom:0 !important;
+  height:16px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  pointer-events:none !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegendItem{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegendLine{
+  display:block !important;
+  width:18px !important;
+  height:0 !important;
+  border-top:2px solid #47ffb5 !important;
+  border-radius:999px !important;
+  flex:0 0 auto !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegendLinePrevious{
+  border-top-color:#ff9248 !important;
+  border-top-style:dashed !important;
+  border-top-width:1px !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegendLabel{
+  color:#47ffb5 !important;
+  font-family:var(--font-readable) !important;
+  font-size:11px !important;
+  font-weight:600 !important;
+  letter-spacing:.02em !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityLegendItem:has(.dashboardActivityLegendLinePrevious) .dashboardActivityLegendLabel{
+  color:#ff9248 !important;
 }
 
 body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardActivityAxisDay{

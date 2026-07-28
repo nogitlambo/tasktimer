@@ -6,6 +6,7 @@ import {
   buildRankLadderSummary,
   DAILY_OPEN_REWARD_XP,
   DEFAULT_REWARD_PROGRESS,
+  getPersistedRewardProgressUpdate,
   getRankForXp,
   isDailyOpenRewardEligible,
   MIN_REWARD_ELIGIBLE_SESSION_MS,
@@ -543,5 +544,264 @@ describe("rank ladder", () => {
 
   it("builds the rank ladder summary for max-rank users", () => {
     expect(buildRankLadderSummary(50000)).toBe("Your current rank is: Mythic.\nYou have reached the highest configured rank.");
+  });
+});
+
+describe("reward progress normalization", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("backfills legacy unlocked ranks from retained reward history", () => {
+    const initiateAt = Date.parse("2026-05-01T09:00:00.000Z");
+    const operatorAt = Date.parse("2026-05-02T09:00:00.000Z");
+
+    const normalized = normalizeRewardProgress(
+      {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 60,
+        totalXpPrecise: 60,
+        currentRankId: "operator",
+        awardLedger: [
+          {
+            ts: initiateAt,
+            dayKey: "2026-05-01",
+            taskId: "task-1",
+            xp: 10,
+            baseXp: 10,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "dailyOpen",
+            sourceKey: "legacy:initiate",
+          },
+          {
+            ts: operatorAt,
+            dayKey: "2026-05-02",
+            taskId: "task-1",
+            xp: 50,
+            baseXp: 50,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "dailyOpen",
+            sourceKey: "legacy:operator",
+          },
+        ],
+      },
+      { nowMs: operatorAt }
+    );
+
+    expect(normalized.rankPromotionsById).toEqual({
+      initiate: { promotedAt: initiateAt, promotedAtXp: 10 },
+      operator: { promotedAt: operatorAt, promotedAtXp: 60 },
+    });
+  });
+
+  it("preserves valid promotion records and backfills only missing unlocked ranks", () => {
+    const initiateAt = Date.parse("2026-05-01T09:00:00.000Z");
+    const operatorAt = Date.parse("2026-05-02T09:00:00.000Z");
+    const technicianAt = Date.parse("2026-05-03T09:00:00.000Z");
+
+    const normalized = normalizeRewardProgress(
+      {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 240,
+        totalXpPrecise: 240,
+        currentRankId: "technician",
+        rankPromotionsById: {
+          operator: {
+            promotedAt: operatorAt,
+            promotedAtXp: 60,
+          },
+        },
+        awardLedger: [
+          {
+            ts: initiateAt,
+            dayKey: "2026-05-01",
+            taskId: "task-1",
+            xp: 10,
+            baseXp: 10,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "dailyOpen",
+            sourceKey: "legacy:initiate",
+          },
+          {
+            ts: operatorAt,
+            dayKey: "2026-05-02",
+            taskId: "task-1",
+            xp: 50,
+            baseXp: 50,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "dailyOpen",
+            sourceKey: "legacy:operator",
+          },
+          {
+            ts: technicianAt,
+            dayKey: "2026-05-03",
+            taskId: "task-1",
+            xp: 180,
+            baseXp: 180,
+            multiplier: 1,
+            eligibleMs: 0,
+            reason: "dailyOpen",
+            sourceKey: "legacy:technician",
+          },
+        ],
+      },
+      { nowMs: technicianAt }
+    );
+
+    expect(normalized.rankPromotionsById).toEqual({
+      initiate: { promotedAt: initiateAt, promotedAtXp: 10 },
+      operator: { promotedAt: operatorAt, promotedAtXp: 60 },
+      technician: { promotedAt: technicianAt, promotedAtXp: 240 },
+    });
+  });
+
+  it("falls back to the normalization timestamp for malformed or non-inferable promotion records", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const { normalized, changed } = getPersistedRewardProgressUpdate({
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 960,
+      totalXpPrecise: 960,
+      currentRankId: "engineer",
+      rankPromotionsById: {
+        initiate: { promotedAt: 0, promotedAtXp: 10 },
+        operator: { promotedAt: Number.NaN, promotedAtXp: 60 },
+      },
+    });
+
+    expect(changed).toBe(true);
+    expect(normalized.rankPromotionsById).toEqual({
+      initiate: { promotedAt: Date.now(), promotedAtXp: 10 },
+      operator: { promotedAt: Date.now(), promotedAtXp: 60 },
+      technician: { promotedAt: Date.now(), promotedAtXp: 240 },
+      engineer: { promotedAt: Date.now(), promotedAtXp: 960 },
+    });
+  });
+});
+
+describe("rank promotion metadata writes", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("writes the promotion timestamp and threshold XP for a single-rank promotion", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const previous = normalizeRewardProgress({
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 59,
+      totalXpPrecise: 59,
+      currentRankId: "initiate",
+      rankPromotionsById: {
+        initiate: {
+          promotedAt: Date.parse("2026-05-01T10:00:00.000Z"),
+          promotedAtXp: 10,
+        },
+      },
+    });
+
+    const result = awardCompletedSessionXp(previous, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+    });
+
+    expect(result.next.rankPromotionsById.operator).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 60,
+    });
+  });
+
+  it("stamps all crossed ranks with the same timestamp on a multi-rank promotion", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const result = awardCompletedSessionXp(DEFAULT_REWARD_PROGRESS, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs: 60 * MINUTE_MS,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: 60 * MINUTE_MS }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+      sessionSegments: [
+        {
+          startMs: Date.now() - 60 * MINUTE_MS,
+          endMs: Date.now(),
+          multiplier: 200,
+        },
+      ],
+    });
+
+    expect(result.next.currentRankId).toBe("specialist");
+    expect(result.next.rankPromotionsById.initiate).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 10,
+    });
+    expect(result.next.rankPromotionsById.operator).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 60,
+    });
+    expect(result.next.rankPromotionsById.technician).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 240,
+    });
+    expect(result.next.rankPromotionsById.engineer).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 960,
+    });
+    expect(result.next.rankPromotionsById.analyst).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 2880,
+    });
+    expect(result.next.rankPromotionsById.specialist).toEqual({
+      promotedAt: Date.now(),
+      promotedAtXp: 5760,
+    });
+  });
+
+  it("does not mutate unrelated promotion metadata when no rank is crossed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T10:00:00.000Z"));
+
+    const previous = normalizeRewardProgress({
+      ...DEFAULT_REWARD_PROGRESS,
+      totalXp: 60,
+      totalXpPrecise: 60,
+      currentRankId: "operator",
+      rankPromotionsById: {
+        initiate: { promotedAt: Date.parse("2026-05-01T10:00:00.000Z"), promotedAtXp: 10 },
+        operator: { promotedAt: Date.parse("2026-05-02T10:00:00.000Z"), promotedAtXp: 60 },
+      },
+    });
+
+    const result = awardCompletedSessionXp(previous, {
+      taskId: "task-1",
+      awardedAt: Date.now(),
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS - 1,
+      historyByTaskId: {
+        "task-1": [{ ts: Date.now(), name: "Focus", ms: MIN_REWARD_ELIGIBLE_SESSION_MS - 1 }],
+      },
+      tasks: [task()],
+      weekStarting: "mon",
+      momentumEntitled: false,
+      completedSessionsDelta: 0,
+    });
+
+    expect(result.next.rankPromotionsById).toEqual(previous.rankPromotionsById);
   });
 });

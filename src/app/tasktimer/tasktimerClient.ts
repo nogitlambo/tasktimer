@@ -659,6 +659,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
   window.addEventListener(TASKTIMER_OPEN_FRIEND_PROFILE_EVENT, openFriendProfileFromLeaderboardListener);
 
   const {
+    dashboardRenderApi,
     dashboardBindings,
     dashboardApi,
     closeDashboardHeatSummaryCard,
@@ -1173,6 +1174,7 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       renderHistory: (taskId) => renderHistory(taskId),
       applyDashboardCardSizes: () => applyDashboardCardSizesApi(),
       renderDashboardWidgets: (opts) => renderDashboardWidgetsWithBusy(opts),
+      resetDashboardActivityOverviewPage: () => dashboardRenderApi.resetDashboardActivityOverviewPage(),
       renderGroupsPage,
       refreshGroupsData,
       getOpenHistoryTaskIds: () => openHistoryTaskIds,

@@ -101,9 +101,10 @@ body.landingRoute {
   margin: 0 auto;
   max-width: 1920px;
   isolation: isolate;
-  --web-sign-in-bg-image: url("/landing_feature_wide-1440.webp");
+  --web-sign-in-bg-image: url("/landing_feature_wide.webp");
   --web-sign-in-bg-position: right top;
-  --web-sign-in-bg-width: max(100vw, 177.8svh);
+  --web-sign-in-bg-width: 2048px;
+  --web-sign-in-bg-height: 1000px;
   --web-sign-in-bg-right: 0px;
   --web-sign-in-bg-translate-x: 0;
   background: #050608;
@@ -128,13 +129,13 @@ body.webSignInNativeRoute .webSignInPage {
   right: var(--web-sign-in-bg-right);
   bottom: auto;
   z-index: -3;
-  height: 100svh;
+  height: var(--web-sign-in-bg-height);
   width: var(--web-sign-in-bg-width);
   pointer-events: none;
   transform: translateX(var(--web-sign-in-bg-translate-x));
   background:
-    linear-gradient(90deg, rgba(5, 6, 8, 0.18) 0%, rgba(5, 6, 8, 0.08) 46%, rgba(5, 6, 8, 0.12) 100%),
-    var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / 100% auto no-repeat;
+    linear-gradient(90deg, rgba(5, 6, 8, 0.5) 0%, rgba(5, 6, 8, 0.34) 46%, rgba(5, 6, 8, 0.42) 100%),
+    var(--web-sign-in-bg-image) var(--web-sign-in-bg-position) / 2048px 1000px no-repeat;
 }
 
 .webSignInPage::after {
@@ -550,13 +551,13 @@ body[data-theme="lime"] #landingEmailInput.webSignInAuthInput:focus-visible {
 
 @media (min-width: 1200px) {
   .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature_wide-1440.webp");
+    --web-sign-in-bg-image: url("/landing_feature_wide.webp");
   }
 }
 
 @media (min-width: 1800px) {
   .webSignInPage {
-    --web-sign-in-bg-image: url("/landing_feature_wide-2048.webp");
+    --web-sign-in-bg-image: url("/landing_feature_wide.webp");
   }
 }
 

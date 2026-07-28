@@ -108,6 +108,7 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                             <g id="dashboardActivityBars" />
                             <line className="dashboardActivityGoalLine" id="dashboardActivityGoalLine" x1="0" y1="0" x2="0" y2="0" />
                             <text className="dashboardActivityGoalLabel" id="dashboardActivityGoalLabel" x="0" y="0" aria-hidden="true" />
+                            <text className="dashboardActivityGoalLabel dashboardActivityPreviousGoalLabel" id="dashboardActivityPreviousGoalLabel" x="0" y="0" aria-hidden="true" />
                           </svg>
                           <button
                             className="iconBtn dashboardActivityPageBtn dashboardActivityPageBtnNewer"
@@ -122,6 +123,16 @@ export default function DashboardPageContent({ active }: DashboardPageContentPro
                           </button>
                           <div className="dashboardActivityYAxis" id="dashboardActivityYAxis" aria-hidden="true" />
                           <div className="dashboardActivityXAxis" id="dashboardActivityXAxis" aria-hidden="true" />
+                          <div className="dashboardActivityLegend" aria-hidden="true">
+                            <span className="dashboardActivityLegendItem">
+                              <span className="dashboardActivityLegendLine" />
+                              <span className="dashboardActivityLegendLabel">Current Target</span>
+                            </span>
+                            <span className="dashboardActivityLegendItem">
+                              <span className="dashboardActivityLegendLine dashboardActivityLegendLinePrevious" />
+                              <span className="dashboardActivityLegendLabel">Previous Target</span>
+                            </span>
+                          </div>
                           <div className="dashboardActivityEmpty" id="dashboardActivityEmpty" hidden />
                         </div>
                       </div>

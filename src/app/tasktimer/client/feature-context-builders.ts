@@ -599,6 +599,7 @@ type CreateAppShellOptionsArgs = {
   renderHistory: (taskId: string) => void;
   applyDashboardCardSizes: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
+  resetDashboardActivityOverviewPage: () => void;
   renderGroupsPage: () => void;
   refreshGroupsData: (opts?: { preserveStatus?: boolean }) => Promise<void>;
   getOpenHistoryTaskIds: () => Iterable<string>;
@@ -702,6 +703,7 @@ type CreateDashboardOptionsArgs = {
   loadCachedDashboard: () => unknown;
   saveCloudDashboard: (value: unknown) => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
+  resetDashboardActivityOverviewPage: () => void;
   renderDashboardTimelineCard: () => void;
   pageDashboardActivityOverview: (direction: "older" | "newer" | string | null) => void;
   selectDashboardTimelineSuggestion: (key: string | null) => void;
@@ -728,6 +730,7 @@ type CreateDashboardFeatureOptionsArgs = {
     | "syncDashboardRefreshButtonUi"
     | "syncDashboardMenuFlipUi"
     | "renderDashboardWidgets"
+    | "resetDashboardActivityOverviewPage"
     | "renderDashboardTimelineCard"
     | "pageDashboardActivityOverview"
     | "selectDashboardTimelineSuggestion"
@@ -1540,6 +1543,7 @@ export function createTaskTimerAppShellContext(args: CreateAppShellOptionsArgs):
     renderHistory: args.renderHistory,
     applyDashboardCardSizes: args.applyDashboardCardSizes,
     renderDashboardWidgets: args.renderDashboardWidgets,
+    resetDashboardActivityOverviewPage: args.resetDashboardActivityOverviewPage,
     renderGroupsPage: args.renderGroupsPage,
     refreshGroupsData: args.refreshGroupsData,
     getOpenHistoryTaskIds: args.getOpenHistoryTaskIds,
@@ -1649,6 +1653,7 @@ export function createTaskTimerDashboardContext(
     loadCachedDashboard: args.loadCachedDashboard,
     saveCloudDashboard: args.saveCloudDashboard,
     renderDashboardWidgets: args.renderDashboardWidgets,
+    resetDashboardActivityOverviewPage: args.resetDashboardActivityOverviewPage,
     renderDashboardTimelineCard: args.renderDashboardTimelineCard,
     pageDashboardActivityOverview: args.pageDashboardActivityOverview,
     selectDashboardTimelineSuggestion: args.selectDashboardTimelineSuggestion,
@@ -1672,6 +1677,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     renderDashboardTimelineCard,
     renderDashboardLiveWidgets,
     renderDashboardWidgets: renderDashboardWidgetsFromRenderApi,
+    resetDashboardActivityOverviewPage,
     pageDashboardActivityOverview,
     selectDashboardTimelineSuggestion,
     selectDashboardMomentumDriver,
@@ -1706,6 +1712,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       syncDashboardRefreshButtonUi: dashboardBindings.syncDashboardRefreshButtonUi,
       syncDashboardMenuFlipUi: dashboardBindings.syncDashboardMenuFlipUi,
       renderDashboardWidgets: dashboardBindings.renderDashboardWidgetsWithBusy,
+      resetDashboardActivityOverviewPage: () => resetDashboardActivityOverviewPage(),
       renderDashboardTimelineCard: () => renderDashboardTimelineCard(),
       pageDashboardActivityOverview: (direction) => pageDashboardActivityOverview(direction),
       selectDashboardTimelineSuggestion: (key) => selectDashboardTimelineSuggestion(key),

@@ -783,6 +783,22 @@
   align-content: center;
 }
 
+.friendIdentityProfileLink{
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  color: rgba(188, 214, 230, 0.64);
+  font-family: var(--font-readable);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.friendIdentityProfileLink:hover,
+.friendIdentityProfileLink:focus-visible{
+  color: rgba(188, 214, 230, 0.82);
+}
+
 .friendIdentityPrimaryLine{
   min-width: 0;
   display: flex;
@@ -813,6 +829,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.friendIdentityExpandArrow{
+  flex: 0 0 auto;
+  margin-left: 2px;
+  color: rgba(188, 214, 230, 0.58);
+  font-family: var(--font-readable);
+  font-size: 11px;
+  line-height: 1;
+  transform: translateY(1px);
+  transition: transform 140ms ease, color 140ms ease;
+}
+
+.friendSharedTasksDetails[open] .friendIdentityExpandArrow{
+  transform: translateY(1px) rotate(90deg);
+  color: rgba(188, 214, 230, 0.82);
 }
 
 .friendIdentityDivider{
@@ -2824,8 +2856,9 @@
   border: 1px solid rgba(255,255,255,.12);
   background: transparent;
   box-shadow: none;
-  border-radius: 0;
+  border-radius: 12px;
   clip-path: none;
+  overflow: hidden;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendSharedTasksDetails.isFriendAcceptLanding{
@@ -2905,7 +2938,7 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  border-radius: 0;
+  border-radius: 12px;
   clip-path: none;
 }
 
@@ -2964,6 +2997,15 @@
   min-width: 0;
   display: grid;
   gap: 4px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityProfileLink{
+  justify-self: start;
+  font-size: 11px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityExpandArrow{
+  justify-self: start;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends #groupsFriendsList .friendIdentityDivider{
@@ -3460,8 +3502,9 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   align-items:stretch;
   width:100%;
   gap:0;
-  padding:4px;
+  padding:3px;
   border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;
   background:#0d0f13;
   box-sizing:border-box;
   overflow:hidden;
@@ -3583,16 +3626,22 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   padding:10px 18px;
   border-color: transparent !important;
   background: transparent !important;
+  background-clip:padding-box;
   box-shadow: none !important;
   color: #8f969d !important;
   clip-path:none !important;
-  border-radius:0 !important;
+  border-radius:14px !important;
+  overflow:hidden;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn.isOn{
   color:#ffffff !important;
   background:#1a1b20 !important;
   border-color:transparent !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardViewToggleBtn + .leaderboardViewToggleBtn{
+  margin-left:2px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyBoard{
@@ -7270,12 +7319,24 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     padding-bottom:0;
   }
 
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody{
+    display:flex;
+    flex-direction:column;
+  }
+
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardWeeklyBoard,
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardGlobalBoard{
     flex:1 1 auto;
     height:auto;
     max-height:none;
     min-height:0;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardWeeklyBoard,
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .leaderboardGlobalBoard,
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardScrollBody > .rankRivalsBoard{
+    flex:1 1 auto;
+    min-height:100%;
   }
 
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel.leaderboardWeeklyBoard{
@@ -7290,9 +7351,41 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     overflow-y:visible;
   }
 
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap,
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyTableWrap,
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .leaderboardWeeklyTableWrap{
+    display:flex;
+    flex:1 1 auto;
+    min-height:0;
+    overflow-x:hidden;
+  }
+
   body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardWeeklyPanel .leaderboardWeeklyLiveTableWrap .leaderboardWeeklyTable{
     min-height:100%;
     align-content:start;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSharedTablePanel{
+    flex:1 1 auto;
+    min-height:100%;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTable{
+    display:flex;
+    flex:1 1 auto;
+    flex-direction:column;
+    min-height:100%;
+    overflow:visible;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableHead{
+    flex:0 0 28px;
+    min-height:28px;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow:not(.leaderboardWeeklyTableHead){
+    flex:1 0 max(34px, calc((100% - 28px) / var(--leaderboard-data-row-count, 1)));
+    min-height:34px;
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalBoard{
@@ -7628,6 +7721,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     overflow:visible;
   }
 
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsLadder{
+    display:flex;
+    flex:1 1 auto;
+    flex-direction:column;
+    min-height:100%;
+  }
+
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsRankPanel{
     flex:0 0 auto;
     min-height:230px;
@@ -7675,6 +7775,13 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     overflow-y:visible;
   }
 
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTablePanel{
+    display:flex;
+    flex:1 1 auto;
+    flex-direction:column;
+    min-height:0;
+  }
+
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTargetLine{
     min-width:0;
     min-height:36px;
@@ -7696,9 +7803,22 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     border-radius:0;
   }
 
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTable{
+    display:flex;
+    flex:1 1 auto;
+    flex-direction:column;
+    min-height:100%;
+    overflow:visible;
+  }
+
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow{
     grid-template-columns:minmax(38px, .36fr) minmax(0, 1.2fr) minmax(72px, .72fr) minmax(70px, .72fr);
     min-height:34px;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead{
+    flex:0 0 28px;
+    min-height:28px;
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableHead{
@@ -7709,6 +7829,10 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow.isCurrentUser{
     min-height:34px;
     border-radius:12px;
+  }
+
+  body[data-tasktimer-native-runtime="true"][data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow:not(.rankRivalsTableHead){
+    flex:1 0 max(34px, calc((100% - 28px) / var(--leaderboard-data-row-count, 1)));
   }
 
   #app[aria-label="TaskLaunch App"] #leaderboardRivalsPanel .rankRivalsTableRow > span{

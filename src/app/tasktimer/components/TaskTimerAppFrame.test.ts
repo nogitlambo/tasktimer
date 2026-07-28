@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const rankLadderModalMock = vi.fn((_props: Record<string, unknown>) => null);
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/tasklaunch",
   useSearchParams: () => new URLSearchParams(),
@@ -18,7 +20,7 @@ vi.mock("./DesktopAppRail", () => ({
 }));
 
 vi.mock("./RankLadderModal", () => ({
-  default: () => null,
+  default: (props: Record<string, unknown>) => rankLadderModalMock(props),
 }));
 
 vi.mock("./RankThumbnail", () => ({
@@ -45,6 +47,7 @@ function renderTaskTimerAppFrameMarkup(overrides: Partial<ComponentProps<typeof 
       {
         activePage: "tasks",
         currentRankId: "operator",
+        rankPromotionsById: {},
         currentUserLabel: "User",
         rewardsHeader: {
           rankLabel: "Operator",
@@ -63,6 +66,7 @@ function renderTaskTimerAppFrameMarkup(overrides: Partial<ComponentProps<typeof 
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  rankLadderModalMock.mockClear();
 });
 
 describe("TaskTimerAppFrame mobile menu", () => {
@@ -123,6 +127,7 @@ describe("TaskTimerAppFrame XP header animation", () => {
         {
           activePage: "tasks",
           currentRankId: "operator",
+          rankPromotionsById: {},
           currentUserLabel: "User",
           rewardsHeader: {
             rankLabel: "Operator",
@@ -163,6 +168,30 @@ describe("TaskTimerAppFrame XP header animation", () => {
     expect(html).toContain('class="xpAwardFxPayload xpAwardFxPayloadUnit xpAwardFxPayloadStar"');
     expect(html).toContain("*");
     expect(html).not.toContain("xpAwardFxShard");
+  });
+});
+
+describe("TaskTimerAppFrame rank ladder wiring", () => {
+  it("passes stored rank promotion metadata into the rank ladder modal", () => {
+    renderTaskTimerAppFrameMarkup({
+      rankPromotionsById: {
+        operator: {
+          promotedAt: Date.parse("2026-05-05T10:00:00.000Z"),
+          promotedAtXp: 60,
+        },
+      },
+    });
+
+    expect(rankLadderModalMock).toHaveBeenCalled();
+    const lastCall = rankLadderModalMock.mock.calls[rankLadderModalMock.mock.calls.length - 1];
+    expect(lastCall?.[0]).toMatchObject({
+      rankPromotionsById: {
+        operator: {
+          promotedAt: Date.parse("2026-05-05T10:00:00.000Z"),
+          promotedAtXp: 60,
+        },
+      },
+    });
   });
 });
 

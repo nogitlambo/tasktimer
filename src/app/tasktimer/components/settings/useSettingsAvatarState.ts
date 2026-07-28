@@ -8,6 +8,7 @@ import {
   buildRankLadderSummary,
   buildRewardProgressForRankSelection,
   DEFAULT_REWARD_PROGRESS,
+  getPersistedRewardProgressUpdate,
   RANK_LADDER,
   RANK_MODAL_THUMBNAIL_BY_ID,
   normalizeRewardProgress,
@@ -119,8 +120,18 @@ export function useSettingsAvatarState({
   }, []);
 
   useEffect(() => {
+    const hydrateRewards = (sourcePrefs: { rewards?: unknown } | null | undefined) => {
+      const resolvedPrefs = sourcePrefs || preferencesPersistence.loadResolved();
+      const { normalized, changed } = getPersistedRewardProgressUpdate(resolvedPrefs.rewards);
+      if (changed) {
+        preferencesPersistence.update({ rewards: normalized });
+      }
+      setRewardProgress(normalized);
+    };
+
+    hydrateRewards(preferencesPersistence.loadCached());
     const unsubscribe = preferencesPersistence.subscribe((prefs) => {
-      setRewardProgress(normalizeRewardProgress((prefs || preferencesPersistence.loadResolved()).rewards));
+      hydrateRewards(prefs);
     });
     return () => unsubscribe();
   }, []);

@@ -190,6 +190,7 @@ function createDocumentHarness(options?: { includeHeaderXpCard?: boolean }) {
   register("dashboardActivityBars");
   register("dashboardActivityGoalLine");
   register("dashboardActivityGoalLabel");
+  register("dashboardActivityPreviousGoalLabel");
   register("dashboardActivityPageOlderBtn");
   register("dashboardActivityPageNewerBtn");
   register("dashboardActivityYAxis");
@@ -455,8 +456,20 @@ function getActivityGradientStopColors(container: ElementStub | undefined, gradi
   return (gradient?.children || []).map((child) => child.getAttribute("stop-color"));
 }
 
+function getActivityGoalPaths(container: ElementStub | undefined) {
+  return (container?.children || []).filter((child) => String(child.getAttribute("class") || "").includes("dashboardActivityGoalPath"));
+}
+
 function getActivityGoalPath(container: ElementStub | undefined) {
-  return (container?.children || []).find((child) => String(child.getAttribute("class") || "").includes("dashboardActivityGoalPath")) || null;
+  return getActivityGoalPaths(container)[0] || null;
+}
+
+function getActivityGoalPathByState(container: ElementStub | undefined, state: "Current" | "Previous") {
+  return (
+    getActivityGoalPaths(container).find((child) =>
+      String(child.getAttribute("class") || "").includes(`dashboardActivityGoalPath${state}`)
+    ) || null
+  );
 }
 
 function getActivityGoalPathYValues(path: ElementStub | null) {
@@ -674,8 +687,9 @@ describe("dashboard activity overview card", () => {
       const goalLine = harness.byId.get("dashboardActivityGoalLine");
       const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
       const previousBars = harness.byId.get("dashboardActivityPreviousBars");
-      const goalPath = getActivityGoalPath(barsContainer);
-      const goalPathYValues = getActivityGoalPathYValues(goalPath);
+      const goalPaths = getActivityGoalPaths(barsContainer);
+      const currentGoalPath = getActivityGoalPathByState(barsContainer, "Current");
+      const goalPathYValues = getActivityGoalPathYValues(currentGoalPath);
 
       expect(bars).toHaveLength(7);
       expect(firstBar?.getAttribute("data-dashboard-activity-color")).toBe("rgb(255,140,0)");
@@ -703,12 +717,13 @@ describe("dashboard activity overview card", () => {
       ]);
       expect(goalLine?.style.display).toBe("none");
       expect(goalLabel?.style.display).toBe("");
-      expect(goalLabel?.textContent).toBe("2h GOAL");
+      expect(goalLabel?.textContent).toBe("2h");
       expect(goalLine?.getAttribute("x1")).toBe("84");
       expect(goalLine?.getAttribute("x2")).toBe("692");
       expect(Number(goalLabel?.getAttribute("x"))).toBeLessThan(Number(goalLine?.getAttribute("x1")));
-      expect(goalPath?.getAttribute("class")).toContain("dashboardActivityGoalPath");
-      expect(goalPath?.getAttribute("d")).toMatch(/^M /);
+      expect(goalPaths).toHaveLength(1);
+      expect(currentGoalPath?.getAttribute("class")).toContain("dashboardActivityGoalPathCurrent");
+      expect(currentGoalPath?.getAttribute("d")).toMatch(/^M /);
       expect(goalPathYValues.length).toBeGreaterThan(1);
       expect(new Set(goalPathYValues).size).toBe(1);
       expect(previousBars?.style.display).toBe("none");
@@ -739,15 +754,20 @@ describe("dashboard activity overview card", () => {
 
     try {
       harness.renderActivityOverview();
-      const goalPath = getActivityGoalPath(harness.byId.get("dashboardActivityBars"));
-      const goalPathYValues = getActivityGoalPathYValues(goalPath);
+      const barsContainer = harness.byId.get("dashboardActivityBars");
+      const goalPaths = getActivityGoalPaths(barsContainer);
+      const previousGoalPath = getActivityGoalPathByState(barsContainer, "Previous");
+      const currentGoalPath = getActivityGoalPathByState(barsContainer, "Current");
       const goalLabel = harness.byId.get("dashboardActivityGoalLabel");
+      const previousGoalLabel = harness.byId.get("dashboardActivityPreviousGoalLabel");
 
-      expect(goalPath?.getAttribute("class")).toContain("dashboardActivityGoalPath");
-      expect(goalPath?.getAttribute("d")?.match(/\bL\b/g) || []).toHaveLength(2);
-      expect(goalPathYValues).toHaveLength(3);
-      expect(new Set(goalPathYValues).size).toBe(3);
-      expect(goalLabel?.textContent).toBe("3h GOAL");
+      expect(goalPaths).toHaveLength(3);
+      expect(previousGoalPath?.getAttribute("class")).toContain("dashboardActivityGoalPathPrevious");
+      expect(currentGoalPath?.getAttribute("class")).toContain("dashboardActivityGoalPathCurrent");
+      expect(getActivityGoalPathYValues(previousGoalPath)).toHaveLength(3);
+      expect(getActivityGoalPathYValues(currentGoalPath)).toHaveLength(2);
+      expect(goalLabel?.textContent).toBe("3h");
+      expect(previousGoalLabel?.textContent).toBe("2h");
     } finally {
       harness.restore();
     }
@@ -769,16 +789,56 @@ describe("dashboard activity overview card", () => {
 
     try {
       harness.renderActivityOverview();
-      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("3h GOAL");
+      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("3h");
+      expect(harness.byId.get("dashboardActivityGoalLine")?.style.display).toBe("none");
 
       harness.pageActivityOverview("older");
-      const goalPath = getActivityGoalPath(harness.byId.get("dashboardActivityBars"));
-      const goalPathYValues = getActivityGoalPathYValues(goalPath);
+      const currentGoalPath = getActivityGoalPathByState(harness.byId.get("dashboardActivityBars"), "Current");
+      const previousGoalPath = getActivityGoalPathByState(harness.byId.get("dashboardActivityBars"), "Previous");
+      const goalPathYValues = getActivityGoalPathYValues(currentGoalPath);
+      const previousGoalLabel = harness.byId.get("dashboardActivityPreviousGoalLabel");
 
       expect(harness.byId.get("dashboardActivityXAxis")?.innerHTML).toContain("11 May");
-      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("1h GOAL");
-      expect(goalPathYValues).toHaveLength(3);
-      expect(new Set(goalPathYValues).size).toBe(1);
+      expect(harness.byId.get("dashboardActivityGoalLabel")?.textContent).toBe("3h");
+      expect(previousGoalLabel?.textContent).toBe("1h");
+      expect(harness.byId.get("dashboardActivityGoalLine")?.style.display).toBe("");
+      expect(previousGoalPath?.getAttribute("class")).toContain("dashboardActivityGoalPathPrevious");
+      expect(currentGoalPath).toBeNull();
+      expect(goalPathYValues).toHaveLength(0);
+      expect(getActivityGoalPathYValues(previousGoalPath)).toHaveLength(2);
+      expect(new Set(getActivityGoalPathYValues(previousGoalPath)).size).toBe(1);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("separates previous and current target labels when the lines are close together", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const tasks = [task({ id: "focus", timeGoalPeriod: "week", timeGoalMinutes: 1260 })];
+    const harness = createRenderHarness(tasks, {
+      optimalProductivityDays: ["mon", "tue", "wed"],
+      activityGoalSnapshotsByDay: {
+        "2026-05-18": 165 * 60000,
+      },
+      historyByTaskId: {
+        focus: [
+          { ts: new Date(2026, 4, 13, 9).getTime(), name: "Focus", ms: 60 * 60000 },
+        ],
+      },
+    });
+
+    try {
+      harness.renderActivityOverview();
+      harness.pageActivityOverview("older");
+      const currentGoalLabel = harness.byId.get("dashboardActivityGoalLabel");
+      const previousGoalLabel = harness.byId.get("dashboardActivityPreviousGoalLabel");
+      const currentY = Number(currentGoalLabel?.getAttribute("y"));
+      const previousY = Number(previousGoalLabel?.getAttribute("y"));
+
+      expect(currentGoalLabel?.textContent).toBe("3h");
+      expect(previousGoalLabel?.textContent).toBe("2h 45m");
+      expect(Math.abs(currentY - previousY)).toBeGreaterThanOrEqual(16);
     } finally {
       harness.restore();
     }
@@ -1479,7 +1539,7 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children).toHaveLength(2);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Goal Task");
       expect(labelsEl?.children[1]?.innerHTML).toContain("New Task");
-      expect(connectorEls).toHaveLength(2);
+      expect(connectorEls).toHaveLength(0);
       expect(separatorEls).toHaveLength(2);
       expect(ringEdgeEls).toHaveLength(4);
       expect(ringEdgeEls.map((edge) => edge.getAttribute("r"))).toEqual(["70", "76", "100", "106"]);
@@ -1824,7 +1884,7 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children).toHaveLength(1);
       expect(labelsEl?.children[0]?.innerHTML).toContain("Scheduled Task");
       expect(labelsEl?.innerHTML).not.toContain("Unscheduled Task");
-      expect(connectorEls).toHaveLength(1);
+      expect(connectorEls).toHaveLength(0);
     } finally {
       harness.restore();
     }
@@ -2024,7 +2084,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("renders connector paths when short time-goal labels are bunched", () => {
+  it("keeps labels visible when short time-goal labels are bunched", () => {
     const tasks = [
       task({ id: "quick-1", name: "Quick 1", order: 1, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
       task({ id: "quick-2", name: "Quick 2", order: 2, timeGoalMinutes: 1, plannedStartByDay: todaySchedule() }),
@@ -2042,14 +2102,13 @@ describe("dashboard completed card", () => {
 
       expect(labelsEl?.children).toHaveLength(5);
       expect(labelsEl?.children.some((child) => child.innerHTML.includes("Quick 1"))).toBe(true);
-      expect(connectorEls).toHaveLength(5);
-      expect(connectorEls.every((child) => child.getAttribute("d")?.includes(" L "))).toBe(true);
+      expect(connectorEls).toHaveLength(0);
     } finally {
       harness.restore();
     }
   });
 
-  it("keeps shortened task labels and connector paths when full labels would overlap the donut area", () => {
+  it("keeps shortened task labels when full labels would overlap the donut area", () => {
     const tasks = [
       task({ id: "long-1", name: "Extremely Long Deep Work Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
       task({ id: "long-2", name: "Extremely Long Admin Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
@@ -2075,7 +2134,7 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children[0]?.innerHTML).toContain("Extre...");
       expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Extremely Long Deep Work Task: Not complete");
       expect(labelsEl?.children[0]?.getAttribute("aria-label")).toBe("Extremely Long Deep Work Task: Not complete");
-      expect(connectorEls).toHaveLength(2);
+      expect(connectorEls).toHaveLength(0);
       expect(centerEl?.innerHTML).toContain("0%");
     } finally {
       harness.restore();
@@ -2110,7 +2169,7 @@ describe("dashboard completed card", () => {
     }
   });
 
-  it("keeps shortened task labels and connector paths when the rendered chart viewport would clip full labels", () => {
+  it("keeps shortened task labels when the rendered chart viewport would clip full labels", () => {
     const tasks = [
       task({ id: "goal-task", name: "Goal Task", order: 1, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
       task({ id: "new-task", name: "New Task", order: 2, timeGoalMinutes: 60, plannedStartByDay: todaySchedule() }),
@@ -2137,7 +2196,7 @@ describe("dashboard completed card", () => {
       expect(labelsEl?.children.every((child) => child.className.includes("isMicro"))).toBe(true);
       expect(labelsEl?.children[0]?.getAttribute("title")).toBe("Goal Task: Not complete");
       expect(labelsEl?.children[1]?.getAttribute("title")).toBe("New Task: Not complete");
-      expect(connectorEls).toHaveLength(2);
+      expect(connectorEls).toHaveLength(0);
     } finally {
       harness.restore();
     }

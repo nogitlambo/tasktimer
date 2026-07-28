@@ -1375,6 +1375,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     const barsEl = (els as any).dashboardActivityBars as SVGGElement | null;
     const goalLineEl = (els as any).dashboardActivityGoalLine as SVGLineElement | null;
     const goalLabelEl = document.getElementById("dashboardActivityGoalLabel") as unknown as SVGTextElement | null;
+    const previousGoalLabelEl = document.getElementById("dashboardActivityPreviousGoalLabel") as unknown as SVGTextElement | null;
     const chart = dashboardActivityChartBounds;
     const svgNs = "http://www.w3.org/2000/svg";
     const view = getDashboardActivityChartView(model);
@@ -1472,52 +1473,121 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         group.appendChild(sheen);
         barsEl.appendChild(group);
       });
+      const showOlderCurrentReference = model.selectedWeekOffset > 0 && model.dailyPaceTargetMs > 0;
       if (model.totalGoalMs > 0) {
-        const goalPoints = view.days.reduce<Array<{ x: number; y: number; label: string }>>((points, day, index) => {
-          if (!(day.goalLineTargetMs > 0)) return points;
-          points.push({
-            x: chart.left + index * slotWidth + slotWidth / 2,
-            y: getDashboardActivityY(day.goalLineTargetMs, view.maxChartMs),
-            label: `${day.longLabel} goal: ${formatDashboardDurationShort(day.goalLineTargetMs)}`,
-          });
-          return points;
-        }, []);
-        if (goalPoints.length > 0) {
-          const path = document.createElementNS(svgNs, "path");
-          path.setAttribute("class", "dashboardActivityGoalLine dashboardActivityGoalPath");
-          if (goalPoints.length === 1) {
-            const point = goalPoints[0]!;
-            path.setAttribute("d", `M ${(point.x - slotWidth / 2 + 6).toFixed(1)} ${point.y.toFixed(1)} L ${(point.x + slotWidth / 2 - 6).toFixed(1)} ${point.y.toFixed(1)}`);
-          } else {
-            path.setAttribute(
-              "d",
-              goalPoints
-                .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-                .join(" ")
-            );
+        const goalRuns = view.days.reduce<Array<{ startIndex: number; endIndex: number; goalMs: number; labels: string[] }>>((runs, day, index) => {
+          if (!(day.goalLineTargetMs > 0)) return runs;
+          const label = `${day.longLabel} goal: ${formatDashboardDurationShort(day.goalLineTargetMs)}`;
+          const previousRun = runs[runs.length - 1];
+          if (previousRun && previousRun.goalMs === day.goalLineTargetMs && previousRun.endIndex === index - 1) {
+            previousRun.endIndex = index;
+            previousRun.labels.push(label);
+            return runs;
           }
-          path.setAttribute("aria-label", goalPoints.map((point) => point.label).join("; "));
+          runs.push({ startIndex: index, endIndex: index, goalMs: day.goalLineTargetMs, labels: [label] });
+          return runs;
+        }, []);
+        goalRuns.forEach((run, runIndex) => {
+          const path = document.createElementNS(svgNs, "path");
+          const isCurrentRun = !showOlderCurrentReference && runIndex === goalRuns.length - 1;
+          const y = getDashboardActivityY(run.goalMs, view.maxChartMs);
+          const nextRun = goalRuns[runIndex + 1];
+          path.setAttribute(
+            "class",
+            `dashboardActivityGoalLine dashboardActivityGoalPath ${isCurrentRun ? "dashboardActivityGoalPathCurrent" : "dashboardActivityGoalPathPrevious"}`
+          );
+          if (run.startIndex === run.endIndex) {
+            const pointX = chart.left + run.startIndex * slotWidth + slotWidth / 2;
+            const startX = pointX - slotWidth / 2 + 6;
+            const endX = pointX + slotWidth / 2 - 6;
+            const commands = [`M ${startX.toFixed(1)} ${y.toFixed(1)}`, `L ${endX.toFixed(1)} ${y.toFixed(1)}`];
+            if (nextRun) {
+              const nextX = chart.left + nextRun.startIndex * slotWidth + slotWidth / 2;
+              const nextY = getDashboardActivityY(nextRun.goalMs, view.maxChartMs);
+              commands.push(`L ${nextX.toFixed(1)} ${nextY.toFixed(1)}`);
+            }
+            path.setAttribute("d", commands.join(" "));
+          } else {
+            const startX = chart.left + run.startIndex * slotWidth + slotWidth / 2;
+            const endX = chart.left + run.endIndex * slotWidth + slotWidth / 2;
+            const commands = [`M ${startX.toFixed(1)} ${y.toFixed(1)}`, `L ${endX.toFixed(1)} ${y.toFixed(1)}`];
+            if (nextRun) {
+              const nextX = chart.left + nextRun.startIndex * slotWidth + slotWidth / 2;
+              const nextY = getDashboardActivityY(nextRun.goalMs, view.maxChartMs);
+              commands.push(`L ${nextX.toFixed(1)} ${nextY.toFixed(1)}`);
+            }
+            path.setAttribute("d", commands.join(" "));
+          }
+          path.setAttribute("aria-label", run.labels.join("; "));
           barsEl.appendChild(path);
+        });
+
+        const latestPreviousRun = [...goalRuns]
+          .reverse()
+          .find((run, runIndexFromEnd) => {
+            const actualIndex = goalRuns.length - 1 - runIndexFromEnd;
+            return showOlderCurrentReference || actualIndex !== goalRuns.length - 1;
+          }) || null;
+        const previousGoalLabelMs = latestPreviousRun?.goalMs || 0;
+        const currentGoalLabelMs = showOlderCurrentReference
+          ? model.dailyPaceTargetMs
+          : goalRuns[goalRuns.length - 1]?.goalMs || model.dailyPaceTargetMs;
+        const currentGoalLabelY =
+          currentGoalLabelMs > 0
+            ? Math.max(chart.top + 10, Math.min(chart.bottom - 8, getDashboardActivityY(currentGoalLabelMs, view.maxChartMs)))
+            : null;
+        if (previousGoalLabelEl) {
+          if (previousGoalLabelMs > 0) {
+            const previousGoalY = getDashboardActivityY(previousGoalLabelMs, view.maxChartMs);
+            const minLabelGap = 16;
+            let previousLabelY = previousGoalY;
+            if (currentGoalLabelY != null && Math.abs(previousGoalY - currentGoalLabelY) < minLabelGap) {
+              const aboveY = Math.max(chart.top + 10, currentGoalLabelY - minLabelGap);
+              const belowY = Math.min(chart.bottom - 8, currentGoalLabelY + minLabelGap);
+              const aboveGap = Math.abs(currentGoalLabelY - aboveY);
+              const belowGap = Math.abs(currentGoalLabelY - belowY);
+              if (previousGoalY <= currentGoalLabelY) {
+                previousLabelY = aboveGap >= minLabelGap || aboveGap >= belowGap ? aboveY : belowY;
+              } else {
+                previousLabelY = belowGap >= minLabelGap || belowGap >= aboveGap ? belowY : aboveY;
+              }
+            }
+            previousGoalLabelEl.setAttribute("x", String(chart.left - 14));
+            previousGoalLabelEl.setAttribute("y", previousLabelY.toFixed(1));
+            previousGoalLabelEl.textContent = formatDashboardDurationShort(previousGoalLabelMs).replace(/\s+0m$/i, "");
+            previousGoalLabelEl.style.display = "";
+          } else {
+            previousGoalLabelEl.textContent = "";
+            previousGoalLabelEl.style.display = "none";
+          }
         }
+      } else if (previousGoalLabelEl) {
+        previousGoalLabelEl.textContent = "";
+        previousGoalLabelEl.style.display = "none";
       }
     }
 
     if (goalLineEl) {
-      const showGoal = model.totalGoalMs > 0;
-      const labelGoalMs = [...view.days].reverse().find((day) => day.goalLineTargetMs > 0)?.goalLineTargetMs || model.dailyPaceTargetMs;
+      const showOlderCurrentReference = model.selectedWeekOffset > 0 && model.dailyPaceTargetMs > 0;
+      const latestVisibleGoalMs = [...view.days].reverse().find((day) => day.goalLineTargetMs > 0)?.goalLineTargetMs || 0;
+      const labelGoalMs = showOlderCurrentReference ? model.dailyPaceTargetMs : latestVisibleGoalMs || model.dailyPaceTargetMs;
+      const showGoal = labelGoalMs > 0;
       const y = getDashboardActivityY(labelGoalMs, view.maxChartMs);
       goalLineEl.setAttribute("x1", String(chart.left));
       goalLineEl.setAttribute("x2", String(chart.right));
       goalLineEl.setAttribute("y1", y.toFixed(1));
       goalLineEl.setAttribute("y2", y.toFixed(1));
-      goalLineEl.style.display = "none";
+      goalLineEl.style.display = showOlderCurrentReference ? "" : "none";
       if (goalLabelEl) {
-        goalLabelEl.setAttribute("x", String(chart.left - 10));
+        goalLabelEl.setAttribute("x", String(chart.left - 14));
         goalLabelEl.setAttribute("y", Math.max(chart.top + 10, Math.min(chart.bottom - 8, y)).toFixed(1));
         const compactGoalLabel = formatDashboardDurationShort(labelGoalMs).replace(/\s+0m$/i, "");
-        goalLabelEl.textContent = showGoal ? `${compactGoalLabel} GOAL` : "";
+        goalLabelEl.textContent = showGoal ? compactGoalLabel : "";
         goalLabelEl.style.display = showGoal ? "" : "none";
       }
+    } else if (previousGoalLabelEl) {
+      previousGoalLabelEl.textContent = "";
+      previousGoalLabelEl.style.display = "none";
     }
   }
 
@@ -1576,6 +1646,10 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     if (dashboardActivityWeekOffset === previousOffset) return;
     renderDashboardActivityOverviewCard();
     animateDashboardActivityPageTransition(direction);
+  }
+
+  function resetDashboardActivityOverviewPage() {
+    dashboardActivityWeekOffset = 0;
   }
 
   function renderDashboardTasksCompletedCard() {
@@ -1867,15 +1941,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
         const labelsAreSafe = areDashboardCompletedRenderedLabelsSafe(labelsEl, ticksEl);
         if (labelsAreSafe || labelMode === "micro") break;
       }
-      positionedSliceEntries.forEach(({ key }) => {
-        const layout = finalLabelLayoutByKey.get(key);
-        if (!layout?.connectorPath) return;
-        const connectorEl = document.createElementNS(svgNs, "path");
-        connectorEl.setAttribute("class", "dashboardTasksCompletedConnector");
-        connectorEl.setAttribute("d", layout.connectorPath);
-        connectorEl.setAttribute("aria-hidden", "true");
-        svgEl.appendChild(connectorEl);
-      });
       const needle = (document.getElementById("dashboardTasksCompletedNeedle") as SVGLineElement | null) || needleEl;
       if (needle) {
         needle.classList.toggle("isRunning", hasRunningItem);
@@ -2901,6 +2966,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     renderDashboardTasksCompletedCard,
     renderDashboardTodayHoursCard,
     renderDashboardActivityOverviewCard,
+    resetDashboardActivityOverviewPage,
     pageDashboardActivityOverview,
     renderDashboardTimelineCard,
     renderDashboardFocusTrend,

@@ -9,7 +9,7 @@ import {
   type MobileSwipeCloseState,
 } from "./mobileSwipeClose";
 import { playTaskFlipClickAudio } from "../client/secondary-click-audio";
-import { RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID } from "../lib/rewards";
+import { formatRewardPromotionDate, RANK_LADDER, RANK_MODAL_THUMBNAIL_BY_ID, type RankPromotionRecord } from "../lib/rewards";
 
 type RankLadderModalProps = {
   open: boolean;
@@ -18,6 +18,7 @@ type RankLadderModalProps = {
   rankSummary: string;
   currentRankId: string;
   currentRankIndex: number;
+  rankPromotionsById: Record<string, RankPromotionRecord>;
   rankThumbnailSrc: string;
   canSelectRankInsignia: boolean;
   onSelectRankThumbnail: (rankId: string) => void | Promise<void>;
@@ -34,6 +35,14 @@ function formatXpValue(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
 }
 
+function buildUnlockedRankMeta(rankId: string, thresholdLabel: string, rankPromotionsById: Record<string, RankPromotionRecord>) {
+  const promotion = rankPromotionsById[rankId];
+  if (!promotion) return `Promoted at ${thresholdLabel}.`;
+  const xpLabel = `${formatXpValue(promotion.promotedAtXp)} XP`;
+  const dateLabel = formatRewardPromotionDate(promotion.promotedAt);
+  return dateLabel ? `Promoted at ${xpLabel} on ${dateLabel}.` : `Promoted at ${xpLabel}.`;
+}
+
 export default function RankLadderModal(props: RankLadderModalProps) {
   const {
     open,
@@ -41,6 +50,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
     rankSummary,
     currentRankId,
     currentRankIndex,
+    rankPromotionsById,
     rankThumbnailSrc,
     canSelectRankInsignia,
     onSelectRankThumbnail,
@@ -247,6 +257,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
           <div className="rankLadderList" role="list" aria-label="Available ranks">
             {displayRanks.map(({ rank, index }) => {
               const isCurrent = rank.id === currentRankId;
+              const isPrevious = !isCurrent && index < currentRankIndex;
               const isUnlocked = index <= currentRankIndex;
               const thresholdLabel = Number.isFinite(rank.minXp) ? `${formatXpValue(rank.minXp)} XP` : "Threshold pending";
               const rankThumbnail = RANK_MODAL_THUMBNAIL_BY_ID[rank.id] || "";
@@ -280,7 +291,9 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                     </div>
                     {rank.id === "unranked" ? null : (
                       <div className="rankLadderItemMeta">
-                        {isUnlocked ? `Promoted at ${thresholdLabel}` : `You need ${thresholdLabel} to be promoted to this rank`}
+                        {isUnlocked
+                          ? buildUnlockedRankMeta(rank.id, thresholdLabel, rankPromotionsById)
+                          : `You need ${thresholdLabel} to be promoted to this rank`}
                       </div>
                     )}
                   </div>
@@ -292,7 +305,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
                   <button
                     key={rank.id}
                     type="button"
-                    className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                    className={`rankLadderItem isSelectable${isCurrent ? " isCurrent" : ""}${isPrevious ? " isPrevious" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                     role="listitem"
                     onClick={handleRankClick}
                     ref={isCurrent ? setCurrentRankButtonRef : undefined}
@@ -305,7 +318,7 @@ export default function RankLadderModal(props: RankLadderModalProps) {
               return (
                 <div
                   key={rank.id}
-                  className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
+                  className={`rankLadderItem${isCurrent ? " isCurrent" : ""}${isPrevious ? " isPrevious" : ""}${isUnlocked ? " isUnlocked" : ""}${isSelectedThumbnail ? " isSelectedThumbnail" : ""}`}
                   role="listitem"
                   ref={isCurrent ? setCurrentRankDivRef : undefined}
                 >
