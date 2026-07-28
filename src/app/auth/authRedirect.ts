@@ -20,11 +20,17 @@ export function resolveAuthSuccessRoute(redirectOnSuccess?: string | null): stri
 }
 
 export function shouldFallbackFromAuthSuccessRoute(currentPathname: string, targetRoute: string): boolean {
-  const current = String(currentPathname || "").trim().replace(/\/+$/, "") || "/";
+  const current = (String(currentPathname || "").trim().split(/[?#]/, 1)[0] || "")
+    .replace(/\/index\.html$/i, "")
+    .replace(/\/+$/, "") || "/";
   const target = String(targetRoute || "").trim();
   if (current !== "/login") return false;
   if (!target.startsWith("/")) return true;
-  const targetPathname = target.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/";
+  const targetPathname =
+    target
+      .split(/[?#]/, 1)[0]
+      .replace(/\/index\.html$/i, "")
+      .replace(/\/+$/, "") || "/";
   return targetPathname !== current;
 }
 

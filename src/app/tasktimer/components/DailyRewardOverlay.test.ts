@@ -54,13 +54,14 @@ describe("DailyRewardOverlay", () => {
 
   it("uses a daily reward purple radial burst and reduced-motion treatment", () => {
     expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
-    expect(overlaysCss).toContain("radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .28) 0 12%");
-    expect(overlaysCss).toContain("rgba(176, 73, 255, .16) 0deg 7deg");
-    expect(overlaysCss).toContain("rgba(180, 145, 255, .09)");
+    expect(overlaysCss).toContain("radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .18) 0 11%");
+    expect(overlaysCss).toContain("rgba(176, 73, 255, .1) 0deg 7deg");
+    expect(overlaysCss).toContain("linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12))");
     expect(overlaysCss).toMatch(
-      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*width: max\(140%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -46%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);/,
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(220%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);[\s\S]*mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
     );
-    expect(overlaysCss).toContain("opacity: .88;");
+    expect(overlaysCss).toContain("opacity: .78;");
+    expect(overlaysCss).toContain("animation: timeGoalCompleteWheelGlow 24s linear infinite;");
     expect(overlaysCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/,
     );

@@ -306,7 +306,7 @@ body[data-app-page="leaderboard"] #modeSwitch{
   .taskScreenHeaderBtn,
   .taskMenuBtn,
   .dashboardRailMenuBtn,
-  button:not(.switch)
+  button:not(.switch):not(.leaderboardWeeklyPodiumCard)
 ){
   border-radius: 0 !important;
 }

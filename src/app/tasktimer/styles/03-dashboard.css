@@ -9061,7 +9061,7 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   color:#47ffb5 !important;
   font-family:var(--font-readable) !important;
   font-size:11px !important;
-  font-weight:600 !important;
+  font-weight:400 !important;
   letter-spacing:.02em !important;
 }
 

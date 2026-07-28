@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   const source = readFileSync(resolve(__dirname, "TaskTimerMainAppClient.tsx"), "utf8");
+  const baseCss = readFileSync(resolve(__dirname, "styles/00-base.css"), "utf8");
   const shellCss = readFileSync(resolve(__dirname, "styles/01-shell.css"), "utf8");
   const overlaysCss = readFileSync(resolve(__dirname, "styles/04-overlays.css"), "utf8");
   const friendsCss = readFileSync(resolve(__dirname, "styles/08-friends.css"), "utf8");
@@ -35,6 +36,12 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(source).toContain('className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"');
     expect(source).toContain('className="friendUserSummaryBorderTrace"');
     expect(source).toContain('className="leaderboardPositionRevealBody leaderboardPositionPrimitiveBody"');
+  });
+
+  it("does not let the square button reset flatten podium card corners", () => {
+    expect(baseCss).toContain("button:not(.switch):not(.leaderboardWeeklyPodiumCard)");
+    expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard{");
+    expect(friendsCss).toContain("border-radius:18px 18px 0 0");
   });
 
   it("does not let leaderboard swipe handling capture profile-open clicks", () => {

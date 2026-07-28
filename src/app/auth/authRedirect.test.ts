@@ -103,6 +103,7 @@ describe("shouldFallbackFromAuthSuccessRoute", () => {
   it("falls back only when auth success remains on the login route", () => {
     expect(shouldFallbackFromAuthSuccessRoute("/login", "/dashboard")).toBe(true);
     expect(shouldFallbackFromAuthSuccessRoute("/login/", "/tasklaunch?page=dashboard")).toBe(true);
+    expect(shouldFallbackFromAuthSuccessRoute("/login/index.html", "/dashboard/index.html")).toBe(true);
     expect(shouldFallbackFromAuthSuccessRoute("/dashboard", "/dashboard")).toBe(false);
     expect(shouldFallbackFromAuthSuccessRoute("/login", "/login")).toBe(false);
   });

@@ -495,13 +495,14 @@ body[data-module-intro-tour-page="history"] #app[aria-label="TaskLaunch App"] :i
     flex: 1 1 0;
     height: 0;
     min-height: 0;
+    --app-pages-bottom-padding: 0px;
     margin-bottom: var(--mobile-footer-reserved-space);
     overflow-y: auto !important;
     overflow-x: hidden !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: var(--mobile-footer-reserved-space) !important;
-    scroll-padding-bottom: var(--mobile-footer-reserved-space);
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: 0;
   }
 
 body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
@@ -511,8 +512,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
 
 #app[aria-label="TaskLaunch Feedback"] .desktopAppMain{
     margin-bottom: var(--mobile-footer-reserved-space);
-    padding-bottom: var(--mobile-footer-reserved-space);
-    scroll-padding-bottom: var(--mobile-footer-reserved-space);
+    padding-bottom: 0;
+    scroll-padding-bottom: 0;
   }
 
 #app:is([aria-label="TaskLaunch App"], [aria-label="TaskLaunch Feedback"]) .appFooterNav{

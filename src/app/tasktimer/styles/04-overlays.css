@@ -3096,67 +3096,56 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   content: "";
   position: absolute;
   left: 50%;
-  top: 46%;
-  width: max(140%, 560px);
+  top: 42%;
+  width: max(220%, 560px);
   height: auto;
   aspect-ratio: 1;
-  translate: -50% -46%;
+  translate: -50% -42%;
   z-index: -2;
   border-radius: 50%;
   clip-path: circle(50% at 50% 50%);
-  background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 34%),
-    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .09), transparent 38%);
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0, 0, 0, .68) 22%, rgba(0, 0, 0, .24) 31%, rgba(0, 0, 0, .04) 38%, transparent 41%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0, 0, 0, .68) 22%, rgba(0, 0, 0, .24) 31%, rgba(0, 0, 0, .04) 38%, transparent 41%);
+  transform-origin: center;
 }
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 246, 162, .24) 0 12%, rgba(201, 255, 36, .13) 22%, rgba(201, 255, 36, .045) 42%, transparent 66%),
-    radial-gradient(circle at 50% 50%, rgba(201, 255, 36, .2), transparent 0 14%, rgba(201, 255, 36, .08) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(255, 246, 162, .18) 0 11%, rgba(201, 255, 36, .1) 22%, rgba(201, 255, 36, .035) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(201, 255, 36, .16), transparent 0 14%, rgba(201, 255, 36, .065) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 50%,
-      rgba(201, 255, 36, .12) 0deg 7deg,
-      rgba(20, 27, 34, .035) 7deg 15deg
+      rgba(201, 255, 36, .1) 0deg 7deg,
+      rgba(20, 27, 34, .03) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 50%, rgba(255, 220, 90, .13), transparent 36%),
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
-    radial-gradient(circle at 78% 44%, rgba(160, 190, 210, .08), transparent 38%);
-  opacity: .88;
+    radial-gradient(circle at 50% 50%, rgba(255, 220, 90, .1), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12));
+  opacity: .78;
   mix-blend-mode: screen;
-  transform-origin: 50% 50%;
   animation: timeGoalCompleteWheelGlow 24s linear infinite;
+  backface-visibility: hidden;
+  contain: paint;
   will-change: transform, opacity, filter;
 }
 
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
   background:
-    radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .28) 0 12%, rgba(177, 84, 255, .18) 22%, rgba(132, 54, 255, .08) 42%, transparent 66%),
-    radial-gradient(circle at 50% 50%, rgba(187, 92, 255, .24), transparent 0 14%, rgba(159, 68, 255, .12) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .18) 0 11%, rgba(177, 84, 255, .1) 22%, rgba(132, 54, 255, .035) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(187, 92, 255, .16), transparent 0 14%, rgba(159, 68, 255, .065) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 50%,
-      rgba(176, 73, 255, .16) 0deg 7deg,
-      rgba(24, 18, 38, .04) 7deg 15deg
+      rgba(176, 73, 255, .1) 0deg 7deg,
+      rgba(24, 18, 38, .03) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 50%, rgba(255, 112, 244, .13), transparent 36%),
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .07), transparent 34%),
-    radial-gradient(circle at 78% 44%, rgba(180, 145, 255, .09), transparent 38%);
-  opacity: .88;
+    radial-gradient(circle at 50% 50%, rgba(255, 112, 244, .1), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12));
+  opacity: .78;
   mix-blend-mode: screen;
-  animation: timeGoalCompleteCenterGlow 7.2s ease-in-out 2.8s infinite alternate both;
-  will-change: opacity, filter;
-}
-
-@keyframes timeGoalCompleteCenterGlow{
-  0%{
-    opacity: .86;
-    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
-  }100%{
-    opacity: .98;
-    filter:
-      drop-shadow(0 0 28px rgba(201, 255, 36, .26))
-      drop-shadow(0 0 52px rgba(255, 220, 90, .14));
-  }
+  animation: timeGoalCompleteWheelGlow 24s linear infinite;
+  backface-visibility: hidden;
+  contain: paint;
+  will-change: transform, opacity, filter;
 }
 
 @keyframes timeGoalCompleteWheelGlow{
