@@ -21,7 +21,7 @@ export default function HistoryManagerScreen({ showHeader = true }: { showHeader
               <button className="btn btn-ghost" id="historyManagerCloseBtn" type="button">
                 Close
               </button>
-              <button className="btn btn-warn small" id="historyManagerBulkDeleteBtn" type="button" style={{ display: "none" }}>
+              <button className="btn btn-warn" id="historyManagerBulkDeleteBtn" type="button" style={{ display: "none" }}>
                 Delete
               </button>
             </div>

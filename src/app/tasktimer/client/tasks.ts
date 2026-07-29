@@ -22,6 +22,10 @@ import {
 
 const TASK_PRIMARY_ACTION_PRESS_CLASS = "isTaskPrimaryActionPressed";
 const TASK_PRIMARY_ACTION_PRESS_MS = 140;
+const ARCHIVE_TASK_CONFIRM_TEXT =
+  "Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from History Manager. [under Settings > Data]";
+const ARCHIVE_TASK_CONFIRM_TEXT_HTML =
+  'Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from <a href="/history-manager">History Manager</a>.<br><span class="confirmTextNote">[under Settings &gt; Data]</span>';
 
 export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
   const { els } = ctx;
@@ -210,30 +214,35 @@ export function createTaskTimerTasks(ctx: TaskTimerTasksContext) {
     if (!task || task.running) return;
     const taskId = String(task.id || "").trim();
     const shouldCloseFocusMode = String(ctx.getFocusModeTaskId() || "").trim() === taskId;
-    ctx.confirm("Archive Task", `Archive "${getTaskDisplayName(task)}"?`, {
-      okLabel: "Archive",
-      cancelLabel: "Cancel",
-      overlayClassName: "isArchiveTaskConfirm",
-      onOk: () => {
-        const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
-        const nextDeletedTaskMeta = {
-          ...(ctx.getDeletedTaskMeta() || {}),
-          [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
-        };
-        ctx.setTasks(nextTasks);
-        ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
-        ctx.saveDeletedMeta(nextDeletedTaskMeta);
-        ctx.save({ deletedTaskIds: taskId ? [taskId] : [] });
-        void ctx.deleteSharedTaskSummariesForTask(String(ctx.getCurrentUid() || ""), taskId).catch(() => {});
-        void ctx.refreshOwnSharedSummaries().catch(() => {});
-        if (shouldCloseFocusMode) ctx.closeFocusMode();
-        renderTasksPage();
-        ctx.render();
-        ctx.closeConfirm();
-        ctx.showActionConfirmation("Task archived.");
-      },
-      onCancel: () => ctx.closeConfirm(),
-    });
+    ctx.confirm(
+      "Archive Task",
+      ARCHIVE_TASK_CONFIRM_TEXT,
+      {
+        okLabel: "Archive",
+        cancelLabel: "Cancel",
+        overlayClassName: "isArchiveTaskConfirm",
+        textHtml: ARCHIVE_TASK_CONFIRM_TEXT_HTML,
+        onOk: () => {
+          const nextTasks = tasks.filter((_, taskIndex) => taskIndex !== index);
+          const nextDeletedTaskMeta = {
+            ...(ctx.getDeletedTaskMeta() || {}),
+            [taskId]: buildTaskStatusMeta(task, "archived", nowMs()),
+          };
+          ctx.setTasks(nextTasks);
+          ctx.setDeletedTaskMeta(nextDeletedTaskMeta);
+          ctx.saveDeletedMeta(nextDeletedTaskMeta);
+          ctx.save({ deletedTaskIds: taskId ? [taskId] : [] });
+          void ctx.deleteSharedTaskSummariesForTask(String(ctx.getCurrentUid() || ""), taskId).catch(() => {});
+          void ctx.refreshOwnSharedSummaries().catch(() => {});
+          if (shouldCloseFocusMode) ctx.closeFocusMode();
+          renderTasksPage();
+          ctx.render();
+          ctx.closeConfirm();
+          ctx.showActionConfirmation("Task archived.");
+        },
+        onCancel: () => ctx.closeConfirm(),
+      }
+    );
   }
 
   const taskDestructiveActionEffects = createTaskDestructiveActionEffects({

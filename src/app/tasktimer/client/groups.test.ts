@@ -1919,6 +1919,7 @@ describe("friend removal status", () => {
     const deleteBtn = makeElement();
     const eventHandlers: Record<string, (event: { preventDefault?: () => void }) => void> = {};
     const confirmActions: Array<() => void> = [];
+    const confirmOptions: Array<{ overlayClassName?: string; onOk: () => void }> = [];
     const showActionConfirmation = vi.fn();
 
     const ctx = {
@@ -1944,7 +1945,8 @@ describe("friend removal status", () => {
       on: (target: unknown, event: string, handler: (event: unknown) => void) => {
         if (target === deleteBtn && event === "click") eventHandlers.delete = handler;
       },
-      confirm: (_title: string, _text: string, opts: { onOk: () => void }) => {
+      confirm: (_title: string, _text: string, opts: { overlayClassName?: string; onOk: () => void }) => {
+        confirmOptions.push(opts);
         confirmActions.push(opts.onOk);
       },
       closeConfirm: vi.fn(),
@@ -2008,6 +2010,7 @@ describe("friend removal status", () => {
         globalThis.window = originalWindow;
       },
       showActionConfirmation,
+      confirmOptions,
     };
   }
 
@@ -2025,6 +2028,7 @@ describe("friend removal status", () => {
     try {
       await flushRemoveFriendAction();
 
+      expect(harness.confirmOptions[0]?.overlayClassName).toBe("isDeleteFriendConfirm");
       expect(harness.showActionConfirmation).toHaveBeenCalledWith("Friend Bee was removed from your friends.");
     } finally {
       harness.restoreWindow();

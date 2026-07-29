@@ -4,6 +4,11 @@ import { buildDeleteTaskConfirmOptions } from "./confirm-actions";
 import type { TaskTimerConfirmOptions } from "./context";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 
+const ARCHIVE_TASK_CONFIRM_TEXT =
+  "Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from History Manager. [under Settings > Data]";
+const ARCHIVE_TASK_CONFIRM_TEXT_HTML =
+  'Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from <a href="/history-manager">History Manager</a>.<br><span class="confirmTextNote">[under Settings &gt; Data]</span>';
+
 type CreateTaskDeleteOptions = {
   getTasks: () => Task[];
   setTasks: (value: Task[]) => void;
@@ -61,13 +66,18 @@ export function createTaskTimerTaskDelete(options: CreateTaskDeleteOptions) {
 
     if (hasTaskHistory) {
       if (task.running) return;
-      options.confirm("Archive Task", `Archive "${task.name || "this task"}"?`, {
-        okLabel: "Archive",
-        cancelLabel: "Cancel",
-        overlayClassName: "isArchiveTaskConfirm",
-        onOk: archiveTask,
-        onCancel: () => options.closeConfirm(),
-      });
+      options.confirm(
+        "Archive Task",
+        ARCHIVE_TASK_CONFIRM_TEXT,
+        {
+          okLabel: "Archive",
+          cancelLabel: "Cancel",
+          overlayClassName: "isArchiveTaskConfirm",
+          textHtml: ARCHIVE_TASK_CONFIRM_TEXT_HTML,
+          onOk: archiveTask,
+          onCancel: () => options.closeConfirm(),
+        }
+      );
       return;
     }
 

@@ -121,10 +121,10 @@ export default function TaskManualEntryOverlay() {
         </div>
 
         <footer className="footerBtns hmManualEntryFooterBtns taskManualEntryPrimitiveFooter">
-          <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitiveSecondaryAction" id="taskManualEntryCancelBtn" type="button">
+          <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitiveSecondaryAction" id="taskManualEntryCancelBtn" type="button">
             Cancel
           </button>
-          <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitivePrimaryAction" id="taskManualEntrySaveBtn" type="button">
+          <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction taskManualEntryPrimitiveAction taskManualEntryPrimitivePrimaryAction" id="taskManualEntrySaveBtn" type="button">
             Save
           </button>
         </footer>

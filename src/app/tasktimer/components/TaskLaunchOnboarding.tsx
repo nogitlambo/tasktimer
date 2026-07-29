@@ -1416,7 +1416,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
   const anecdoteStepContent = {
     title: isImplementationIntentionsStep ? ONBOARDING_IMPLEMENTATION_INTENTIONS_TITLE : ONBOARDING_MISSED_DAYS_PROGRESS_TITLE,
     subtext: isImplementationIntentionsStep ? ONBOARDING_IMPLEMENTATION_INTENTIONS_SUBTEXT : ONBOARDING_MISSED_DAYS_PROGRESS_SUBTEXT,
-    imageSrc: isImplementationIntentionsStep ? "/onboarding/onboarding_start_small.png" : "/onboarding/onboarding_missed_days.png",
+    imageSrc: isImplementationIntentionsStep ? "/onboarding/onboarding_start_small.webp" : "/onboarding/onboarding_missed_days.webp",
     titleId: isImplementationIntentionsStep ? "onboardingImplementationIntentionsTitle" : "onboardingMissedDaysProgressTitle",
   };
 
@@ -2285,7 +2285,7 @@ export default function TaskLaunchOnboarding({ preferences }: TaskLaunchOnboardi
               onClick={() => void handleFinish()}
               disabled={isOnboardingFinishDisabled(onboardingActionsDisabled)}
             >
-              Continue
+              Finish
             </button>
           )}
         </div>

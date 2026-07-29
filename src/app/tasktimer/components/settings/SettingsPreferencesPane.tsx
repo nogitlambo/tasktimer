@@ -91,7 +91,7 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon" src="/Task_Settings.svg" alt="" aria-hidden="true" />
+            <AppImg className="settingsInlineSectionIcon" src="/icons/icons_default/tasks.webp" alt="" aria-hidden="true" />
             <div className="settingsInlineSectionTitle">Task Settings</div>
           </div>
           <div className="toggleRow" id="taskAutoFocusOnLaunchToggleRow">

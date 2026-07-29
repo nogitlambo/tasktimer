@@ -57,11 +57,24 @@ describe("DailyRewardOverlay", () => {
     expect(overlaysCss).toContain("radial-gradient(circle at 50% 50%, rgba(219, 178, 255, .18) 0 11%");
     expect(overlaysCss).toContain("rgba(176, 73, 255, .1) 0deg 7deg");
     expect(overlaysCss).toContain("linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12))");
+    const dailyRewardBurstRule =
+      Array.from(
+        overlaysCss.matchAll(/#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*?\n\}/g),
+      )
+        .map((match) => match[0])
+        .find((rule) => rule.includes("repeating-conic-gradient(")) ?? "";
     expect(overlaysCss).toMatch(
-      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(220%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);[\s\S]*mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(170%, 440px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
     );
-    expect(overlaysCss).toContain("opacity: .78;");
+    expect(overlaysCss).toContain("opacity: .82;");
+    expect(overlaysCss).not.toContain("clip-path: circle(50% at 50% 50%);");
+    expect(dailyRewardBurstRule).not.toContain("mix-blend-mode:");
+    expect(dailyRewardBurstRule).toContain("will-change: transform;");
+    expect(dailyRewardBurstRule).not.toContain("will-change: transform, opacity, filter;");
     expect(overlaysCss).toContain("animation: timeGoalCompleteWheelGlow 24s linear infinite;");
+    const wheelGlowKeyframes = overlaysCss.match(/@keyframes timeGoalCompleteWheelGlow\{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(wheelGlowKeyframes).not.toContain("filter:");
+    expect(wheelGlowKeyframes).not.toContain("opacity:");
     expect(overlaysCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/,
     );

@@ -16,6 +16,15 @@ describe("settings navigation", () => {
     expect(labels).toEqual(["Preferences", "Appearance", "Sounds & Alerts", "Notifications", "Help Center", "Data", "About"]);
   });
 
+  it("uses default webp icons for mobile Settings menu items", () => {
+    const iconsByLabel = new Map(getVisibleSettingsNavItems().map((item) => [item.label, item.icon]));
+
+    expect(iconsByLabel.get("Preferences")).toBe("/icons/icons_default/preferences.webp");
+    expect(iconsByLabel.get("Appearance")).toBe("/icons/icons_default/appearance.webp");
+    expect(iconsByLabel.get("Data")).toBe("/icons/icons_default/data.webp");
+    expect(iconsByLabel.get("About")).toBe("/icons/icons_default/about.webp");
+  });
+
   it("includes Profile in the desktop nav list", () => {
     const labels = getVisibleSettingsNavItems(true).map((item) => item.label);
 

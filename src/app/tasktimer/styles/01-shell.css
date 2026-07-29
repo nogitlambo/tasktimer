@@ -1572,7 +1572,7 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     background: #0d0f13 !important;
     border: 1px solid transparent;
     border-bottom: 0;
-    border-radius: 0;
+    border-radius: 18px 18px 0 0;
     box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(236,236,236,.06);
     font-family: var(--font-orbitron) !important;
     transform: translateY(calc(100% + 24px));

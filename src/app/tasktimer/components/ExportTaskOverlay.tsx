@@ -15,10 +15,10 @@ export default function ExportTaskOverlay() {
           </div>
         </div>
         <footer className="footerBtns exportTaskPrimitiveFooter">
-          <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction exportTaskPrimitiveAction exportTaskPrimitiveSecondaryAction" id="exportTaskCancelBtn" type="button">
+          <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction exportTaskPrimitiveAction exportTaskPrimitiveSecondaryAction" id="exportTaskCancelBtn" type="button">
             Cancel
           </button>
-          <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction exportTaskPrimitiveAction exportTaskPrimitivePrimaryAction" id="exportTaskConfirmBtn" type="button">
+          <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction exportTaskPrimitiveAction exportTaskPrimitivePrimaryAction" id="exportTaskConfirmBtn" type="button">
             Export
           </button>
         </footer>

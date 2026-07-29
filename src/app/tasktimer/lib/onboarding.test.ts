@@ -26,6 +26,7 @@ import {
   readLocalTaskTimerOnboardingNewUserHint,
   saveTaskTimerOnboardingState,
   shouldAutoOpenTaskTimerOnboarding,
+  shouldSuppressDailyRewardForOnboarding,
   taskTimerOnboardingPendingEmailLinkStorageKey,
   taskTimerOnboardingNewUserHintStorageKey,
   taskTimerOnboardingStorageKey,
@@ -169,6 +170,78 @@ describe("TaskTimer onboarding gating", () => {
         newUserHint: true,
       })
     ).toBe(false);
+  });
+});
+
+describe("TaskTimer daily reward onboarding gate", () => {
+  const signupDay = new Date("2026-07-29T10:00:00").getTime();
+  const sameLocalDay = new Date("2026-07-29T18:00:00").getTime();
+  const nextLocalDay = new Date("2026-07-30T09:00:00").getTime();
+
+  it("suppresses the daily reward on the signup day", () => {
+    expect(
+      shouldSuppressDailyRewardForOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: { onboardingVersion: 1, onboardingStatus: "completed", onboardingCompletedAtMs: signupDay },
+        preferencePresence: completePresence,
+        authCreationAtMs: signupDay,
+        nowMs: sameLocalDay,
+      })
+    ).toBe(true);
+  });
+
+  it("allows the daily reward after signup day when onboarding is completed", () => {
+    expect(
+      shouldSuppressDailyRewardForOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: { onboardingVersion: 1, onboardingStatus: "completed", onboardingCompletedAtMs: signupDay },
+        preferencePresence: completePresence,
+        authCreationAtMs: signupDay,
+        nowMs: nextLocalDay,
+      })
+    ).toBe(false);
+  });
+
+  it("suppresses the daily reward after dismissed onboarding", () => {
+    expect(
+      shouldSuppressDailyRewardForOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: { onboardingVersion: 1, onboardingStatus: "dismissed", onboardingDismissedAtMs: signupDay },
+        preferencePresence: completePresence,
+        authCreationAtMs: signupDay,
+        nowMs: nextLocalDay,
+      })
+    ).toBe(true);
+  });
+
+  it("allows an existing complete profile without an onboarding record", () => {
+    expect(
+      shouldSuppressDailyRewardForOnboarding({
+        uid: "uid-1",
+        username: "user_1",
+        state: null,
+        preferencePresence: completePresence,
+        authCreationAtMs: null,
+        nowMs: nextLocalDay,
+      })
+    ).toBe(false);
+  });
+
+  it("suppresses the daily reward when onboarding should auto-open", () => {
+    expect(
+      shouldSuppressDailyRewardForOnboarding({
+        uid: "uid-1",
+        username: "",
+        state: null,
+        preferencePresence: completePresence,
+        newUserHint: true,
+        authCreationAtMs: null,
+        nowMs: nextLocalDay,
+      })
+    ).toBe(true);
   });
 });
 

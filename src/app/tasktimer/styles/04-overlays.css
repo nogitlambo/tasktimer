@@ -1339,11 +1339,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top:18px;
 }
 
-#editOverlay .footerBtns .btn{
-  padding:9px 12px;
-  min-height:36px;
-}
-
 #taskManualEntryOverlay .hmManualEntryFooterBtns{
   flex: 0 0 auto;
   margin-top: 12px;
@@ -1355,11 +1350,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   border-top: 0;
   position: relative;
   z-index: 2;
-}
-
-#taskManualEntryOverlay .hmManualEntryFooterBtns .btn{
-  padding: 9px 12px;
-  min-height: 36px;
 }
 
 @media (max-width: 640px){
@@ -1426,13 +1416,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #addTaskOverlay .addTaskValidationError.isOn{
   display:block;
-}
-
-#editOverlay #saveEditBtn:disabled{
-  opacity:.45;
-  cursor:not-allowed;
-  box-shadow:none;
-  filter:saturate(.65);
 }
 
 #editOverlay .milestones{
@@ -2854,72 +2837,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     0 -1px 0 rgba(255, 255, 255, .05);
 }
 
-#exportTaskOverlay .exportTaskPrimitiveAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#exportTaskOverlay .exportTaskPrimitiveAction:hover,
-#exportTaskOverlay .exportTaskPrimitiveAction:focus-visible{
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#exportTaskOverlay .exportTaskPrimitiveAction:active{
-  transform: translateY(3px) !important;
-}
-
-#exportTaskOverlay .exportTaskPrimitiveAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#exportTaskOverlay .exportTaskPrimitiveAction::before,
-#exportTaskOverlay .exportTaskPrimitiveAction::after{
-  content: none !important;
-}
-
-#exportTaskOverlay .exportTaskPrimitivePrimaryAction{
-  border-color: #0f1600 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-}
-
 @media (max-width: 980px){
   #exportTaskOverlay .exportTaskPrimitiveModal{
     max-height: calc(100dvh - 14px - var(--safe-top) - var(--safe-bottom)) !important;
@@ -3003,40 +2920,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     rgba(12, 18, 24, .92) !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  letter-spacing: 0 !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitivePrimaryAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitivePrimaryAction{
-  border-color: #0f1600 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-}
-
 #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveModal,
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal,
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal,
@@ -3097,13 +2980,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   position: absolute;
   left: 50%;
   top: 42%;
-  width: max(220%, 560px);
+  width: max(170%, 440px);
   height: auto;
   aspect-ratio: 1;
   translate: -50% -42%;
   z-index: -2;
   border-radius: 50%;
-  clip-path: circle(50% at 50% 50%);
   pointer-events: none;
   -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0, 0, 0, .68) 22%, rgba(0, 0, 0, .24) 31%, rgba(0, 0, 0, .04) 38%, transparent 41%);
   mask-image: radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0, 0, 0, .68) 22%, rgba(0, 0, 0, .24) 31%, rgba(0, 0, 0, .04) 38%, transparent 41%);
@@ -3121,12 +3003,11 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     ),
     radial-gradient(circle at 50% 50%, rgba(255, 220, 90, .1), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12));
-  opacity: .78;
-  mix-blend-mode: screen;
+  opacity: .82;
   animation: timeGoalCompleteWheelGlow 24s linear infinite;
   backface-visibility: hidden;
   contain: paint;
-  will-change: transform, opacity, filter;
+  will-change: transform;
 }
 
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{
@@ -3140,29 +3021,18 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     ),
     radial-gradient(circle at 50% 50%, rgba(255, 112, 244, .1), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, .12));
-  opacity: .78;
-  mix-blend-mode: screen;
+  opacity: .82;
   animation: timeGoalCompleteWheelGlow 24s linear infinite;
   backface-visibility: hidden;
   contain: paint;
-  will-change: transform, opacity, filter;
+  will-change: transform;
 }
 
 @keyframes timeGoalCompleteWheelGlow{
   0%{
-    opacity: .86;
-    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
     transform: rotate(0deg);
   }
-  50%{
-    opacity: .98;
-    filter:
-      drop-shadow(0 0 28px rgba(201, 255, 36, .26))
-      drop-shadow(0 0 52px rgba(255, 220, 90, .14));
-  }
   100%{
-    opacity: .86;
-    filter: drop-shadow(0 0 12px rgba(201, 255, 36, .14));
     transform: rotate(360deg);
   }
 }
@@ -3268,96 +3138,8 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
     0 -1px 0 rgba(255, 255, 255, .05);
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction[hidden]{
   display: none !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:hover:not(:disabled),
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:focus-visible:not(:disabled),
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:hover:not(:disabled),
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:focus-visible:not(:disabled),
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:hover:not(:disabled),
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible:not(:disabled),
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:hover:not(:disabled),
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:active:not(:disabled),
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:active:not(:disabled),
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:active:not(:disabled),
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction:focus-visible,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction:focus-visible,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction::before,
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction::after,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction::before,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction::after,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::before,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::after,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::before,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction::after{
-  content: none !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitivePrimaryAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitivePrimaryAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
-  border-color: #0f1600 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
 }
 
 @media (max-width: 640px){
@@ -3434,11 +3216,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   }
 }
 
-.overlay .modal .btn{
-  min-height: 28px !important;
-  padding: 4px 10px !important;
-}
-
 #confirmOverlay:is(.isDeleteTaskConfirm, .isArchiveTaskConfirm, .isResetTaskConfirm) .modal{
   padding: var(--modal-padding);
 }
@@ -3457,9 +3234,7 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteTaskConfirm #confirmOkBtn{
   display: inline-flex;
   align-items: center;
-  font-size: 11px !important;
   line-height: 1;
-  min-width: 92px;
   justify-content: center;
   text-align: center;
 }
@@ -3467,19 +3242,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteTaskConfirm .confirmText,
 #confirmOverlay.isDeleteSessionEntryConfirm .confirmText{
   color: #fff;
-}
-
-#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn,
-#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:focus-visible:not(:disabled),
-#confirmOverlay.isDeleteTaskConfirm #confirmOkBtn:active:not(:disabled),
-#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn,
-#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:focus-visible:not(:disabled),
-#confirmOverlay.isDeleteSessionEntryConfirm #confirmOkBtn:active:not(:disabled){
-  border-color: var(--warn) !important;
-  color: var(--warn) !important;
-  background: rgba(255, 255, 255, .01) !important;
 }
 
 #confirmOverlay.isScheduleConflictConfirm .confirmBtns{
@@ -3715,7 +3477,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #addTaskOverlay .addTaskWizardFooter .addTaskWizardNextBtn,
 #addTaskOverlay .addTaskWizardFooter .addTaskWizardBackBtn,
 #addTaskOverlay .addTaskWizardFooter #addTaskConfirmBtn{
-  min-width: 92px;
   justify-content: center;
 }
 
@@ -4013,35 +3774,12 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #editOverlay #cancelEditBtn,
 #editOverlay #saveEditBtn{
-  min-width: 92px;
   justify-content: center;
-}
-
-#editOverlay #cancelEditBtn,
-#editOverlay #saveEditBtn,
-#addTaskOverlay #addTaskCancelBtn,
-#addTaskOverlay #addTaskConfirmBtn{
-  font-size: 11px;
-}
-
-#editOverlay #cancelEditBtn,
-#editOverlay #cancelEditBtn:hover,
-#editOverlay #cancelEditBtn:focus-visible{
-  background: transparent !important;
 }
 
 #taskManualEntryOverlay #taskManualEntryCancelBtn,
 #taskManualEntryOverlay #taskManualEntrySaveBtn{
-  min-width: 92px;
   justify-content: center;
-}
-
-#editOverlay #saveEditBtn:hover{
-  background: linear-gradient(180deg, var(--accent3), var(--accent)) !important;
-  color: #04131c !important;
-  border-color: rgba(53,232,255,.55) !important;
-  box-shadow: 0 0 14px rgba(0,220,255,.3) !important;
-  font-weight: 800;
 }
 
 /* Add Task modal: mirror Edit Task single-screen layout while preserving Add-only name picker hooks. */
@@ -4383,35 +4121,9 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   margin-top: 12px;
 }
 
-#addTaskOverlay .btn{
-  border-radius: 0 !important;
-  clip-path: none !important;
-}
-
 #addTaskOverlay #addTaskCancelBtn,
 #addTaskOverlay #addTaskConfirmBtn{
-  min-width: 92px;
   justify-content: center;
-}
-
-#addTaskOverlay #addTaskCancelBtn{
-  border-color: rgba(165, 172, 182, .66);
-}
-
-#addTaskOverlay #addTaskCancelBtn:hover:not(:disabled),
-#addTaskOverlay #addTaskCancelBtn:focus-visible:not(:disabled){
-  border-color: rgba(194, 201, 211, .86);
-}
-
-#addTaskOverlay #addTaskConfirmBtn{
-  border-color: #c9ff24 !important;
-  color: #c9ff24 !important;
-}
-
-#addTaskOverlay #addTaskConfirmBtn:hover:not(:disabled),
-#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled){
-  border-color: #c9ff24 !important;
-  color: #c9ff24 !important;
 }
 
 #elapsedPadOverlay .modal.elapsedPadModal{
@@ -4449,7 +4161,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #elapsedPadOverlay #elapsedPadCancelBtn,
 #elapsedPadOverlay #elapsedPadDoneBtn{
-  min-width: 92px;
   justify-content: center;
 }
 
@@ -4692,34 +4403,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   background: var(--history-entry-note-surface);
 }
 
-#historyEntryNoteOverlay .confirmBtns .btn{
-  padding: 9px 12px;
-  min-height: 36px;
-  font-family: var(--font-orbitron) !important;
-  font-size: 11px;
-}
-
-#historyEntryNoteOverlay #historyEntryNoteEditBtn,
-#historyEntryNoteOverlay #historyEntryNoteCancelBtn,
-#historyEntryNoteOverlay .closePopup{
-  border-color: rgba(174,184,194,.45) !important;
-  color: rgba(245,248,244,.88) !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-}
-
-#historyEntryNoteOverlay #historyEntryNoteSaveBtn,
-#historyEntryNoteOverlay #historyEntryNoteSaveBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteSaveBtn:focus-visible{
-  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
-  color: #02060d !important;
-  border-color: rgba(174,184,194,.58) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
-  font-weight: 800;
-}
-
 #historyEntryNoteOverlay #historyEntryNoteSaveAndCloseBtn{
   order: 2;
 }
@@ -4736,20 +4419,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #historyEntryNoteOverlay[data-history-entry-editing="true"] .closePopup{
   margin-left: 0 !important;
-}
-
-#historyEntryNoteOverlay .closePopup:hover,
-#historyEntryNoteOverlay .closePopup:focus-visible,
-#historyEntryNoteOverlay #historyEntryNoteEditBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteEditBtn:focus-visible,
-#historyEntryNoteOverlay #historyEntryNoteCancelBtn:hover,
-#historyEntryNoteOverlay #historyEntryNoteCancelBtn:focus-visible{
-  border-color: rgba(174,184,194,.62) !important;
-  color: rgba(250,253,247,.96) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.04),
-    0 0 0 1px rgba(174,184,194,.12),
-    0 0 12px rgba(174,184,194,.1) !important;
 }
 
 #historyEntryNoteOverlay .historyEntrySummarySectionTitle{
@@ -5153,35 +4822,25 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 #confirmOverlay.isDeleteFriendConfirm .modal{
   background: linear-gradient(180deg, rgba(28,10,14,.98) 0%, rgba(13,15,19,.98) 100%);
   border: 1px solid rgba(255,92,112,.56);
-  border-radius: 0;
+  border-radius: 12px;
   box-shadow: 0 24px 56px rgba(0,0,0,.52), inset 0 0 0 1px rgba(255,92,112,.14);
 }
 
 #confirmOverlay.isDeleteFriendConfirm .confirmText{
   color: rgba(255,228,232,.92);
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  padding: 8px 0;
+  padding: 8px 0 16px;
 }
 
 #confirmOverlay.isDeleteFriendConfirm .confirmBtns{
   margin-top: 6px;
+  justify-content: center !important;
   gap: 8px;
 }
 
 #confirmOverlay.isDeleteFriendConfirm #confirmCancelBtn,
 #confirmOverlay.isDeleteFriendConfirm #confirmOkBtn{
-  min-width: 92px;
   justify-content: center;
-  border-color: rgba(148,152,161,.62);
-}
-
-#confirmOverlay.isDeleteFriendConfirm #confirmOkBtn{
-  align-items: center;
-  background: #ff4d4d !important;
-  border-color: #ff4d4d !important;
-  color: #fff !important;
-  display: inline-flex;
-  line-height: 1;
 }
 
 #confirmOverlay.isDeleteFriendConfirm .modal{
@@ -5208,7 +4867,6 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 #confirmOverlay.isTaskAlreadyRunningConfirm #confirmCancelBtn,
 #confirmOverlay.isTaskAlreadyRunningConfirm #confirmOkBtn{
-  min-width: 92px;
   justify-content: center;
 }
 
@@ -7463,7 +7121,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
 #dailyRewardOverlay .timeGoalCompleteActionGrid .btn{
-  min-width: 132px;
   justify-content: center;
 }
 
@@ -7526,26 +7183,6 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent,
-#dailyRewardOverlay .timeGoalCompleteActionGrid .btn,
-#dailyRewardOverlay .timeGoalCompleteActionGrid .btn.btn-accent{
-  background: rgba(255,255,255,.01);
-  color: var(--text);
-  border: 1px solid rgba(160,232,255,.28);
-  box-shadow: none;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn:hover,
-#timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover,
-#dailyRewardOverlay .timeGoalCompleteActionGrid .btn:hover,
-#dailyRewardOverlay .timeGoalCompleteActionGrid .btn.btn-accent:hover{
-  background: linear-gradient(180deg, var(--accent3), var(--accent));
-  color: #04131c;
-  border-color: rgba(53,232,255,.55);
-  box-shadow: 0 0 14px rgba(0,220,255,.3);
-}
-
 #timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
   background: #c9ff24 !important;
   background-image: none !important;
@@ -7599,24 +7236,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn{
-  min-width: 96px;
   justify-content: center;
-}
-
-#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn,
-#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent{
-  background: rgba(255,255,255,.01);
-  color: var(--text);
-  border: 1px solid rgba(160,232,255,.28);
-  box-shadow: none;
-}
-
-#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn:hover,
-#timeGoalCompleteSaveNoteOverlay .timeGoalCompleteSaveNoteBtns .btn.btn-accent:hover{
-  background: linear-gradient(180deg, var(--accent3), var(--accent));
-  color: #04131c;
-  border-color: rgba(53,232,255,.55);
-  box-shadow: 0 0 14px rgba(0,220,255,.3);
 }
 
 #timeGoalCompleteNoteOverlay .timeGoalCompleteNoteBody{
@@ -7868,8 +7488,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 #editOverlay .milestonesBody,
-#editOverlay .presetIntervalsInfoSlot,
-#editOverlay .btn{
+#editOverlay .presetIntervalsInfoSlot{
   font-family: var(--font-readable) !important;
 }
 
@@ -8090,148 +7709,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   background: transparent !important;
 }
 
-#editOverlay #cancelEditBtn,
-#editOverlay #cancelEditBtn:hover,
-#editOverlay #cancelEditBtn:focus-visible{
-  font-family: var(--font-orbitron) !important;
-  border-color: rgba(165, 172, 182, .66) !important;
-  color: rgba(245,248,244,.88) !important;
-  background: transparent !important;
-}
-
-#editOverlay #cancelEditBtn:hover,
-#editOverlay #cancelEditBtn:focus-visible{
-  border-color: rgba(194, 201, 211, .86) !important;
-}
-
-#editOverlay #saveEditBtn,
-#editOverlay #saveEditBtn:hover,
-#editOverlay #saveEditBtn:focus-visible,
-#addTaskOverlay #addTaskConfirmBtn,
-#addTaskOverlay #addTaskConfirmBtn:hover:not(:disabled),
-#addTaskOverlay #addTaskConfirmBtn:focus-visible:not(:disabled){
-  font-family: var(--font-orbitron) !important;
-  background: rgba(255,255,255,.01) !important;
-  color: #c9ff24 !important;
-  border-color: #c9ff24 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
-  font-weight: 800;
-}
-
-#editOverlay #saveEditBtn:active,
-#addTaskOverlay #addTaskConfirmBtn:active:not(:disabled){
-  background: linear-gradient(180deg, #e4ff65 0%, #c9ff24 100%) !important;
-  color: #02060d !important;
-  border-color: rgba(201,255,36,.86) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    0 0 16px rgba(201,255,36,.2) !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction,
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction:hover:not(:disabled),
-#editOverlay .footerBtns .primitiveSciFiModalAction:focus-visible:not(:disabled),
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction:hover:not(:disabled),
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction:focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction:active:not(:disabled),
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction:active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction:focus-visible,
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction::before,
-#editOverlay .footerBtns .primitiveSciFiModalAction::after,
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction::before,
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction::after{
-  content: none !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalPrimaryAction,
-#addTaskOverlay .footerBtns .primitiveSciFiModalPrimaryAction{
-  border-color: #0f1600 !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-  color: #f7f8fb !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalSecondaryAction,
-#addTaskOverlay .footerBtns .primitiveSciFiModalSecondaryAction{
-  border-color: #020509 !important;
-}
-
-#editOverlay .footerBtns .primitiveSciFiModalAction:disabled,
-#addTaskOverlay .footerBtns .primitiveSciFiModalAction:disabled{
-  cursor: not-allowed !important;
-  filter: grayscale(.42) brightness(.68) !important;
-  opacity: .48 !important;
-  transform: none !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .1),
-    0 8px 12px rgba(0, 0, 0, .58),
-    inset 0 0 0 3px rgba(184, 207, 224, .24),
-    inset 0 12px 18px rgba(255, 255, 255, .026),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-}
-
-@media (prefers-reduced-motion: reduce){
-  #editOverlay .footerBtns .primitiveSciFiModalAction,
-  #addTaskOverlay .footerBtns .primitiveSciFiModalAction{
-    transition: none !important;
-  }
-}
-
 /* Migrated from tasktimer.css tail: overlay and confirm authority rules. */
 #editOverlay .field input,
 #editOverlay .field select,
@@ -8251,7 +7728,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #editOverlay .editHead h4,
 #editOverlay .editHead h5,
 #editOverlay .editHead h6,
-#editOverlay .btn,
 #editOverlay .iconBtn{
   font-family: inherit;
 }
@@ -8500,14 +7976,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #confirmOverlay.isResetAllDeleteConfirm #confirmCancelBtn,
 #confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn{
-  min-width: 92px;
   justify-content: center;
-}
-
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay.isResetAllDeleteConfirm #confirmOkBtn:focus-visible:not(:disabled){
-  border-color: #ff4d4d;
-  color: #ff4d4d;
 }
 
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid,
@@ -8520,7 +7989,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #timeGoalCompleteOverlay .timeGoalCompleteActionGrid .btn,
 #dailyRewardOverlay .timeGoalCompleteActionGrid .btn{
   width: auto;
-  min-width: 132px;
   flex: 0 0 auto;
   justify-content: center;
   white-space: normal;
@@ -8923,61 +8391,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow:
     inset 0 1px 0 rgba(0, 0, 0, .68),
     0 -1px 0 rgba(255, 255, 255, .05);
-}
-
-#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: auto !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  height: auto !important;
-  margin: 0 !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-align: center !important;
-  text-decoration: none !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:hover:not(:disabled),
-#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-#leaderboardMovementOverlay .leaderboardMovementPrimitiveAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
 }
 
 @media (max-width: 640px){
@@ -9717,6 +9130,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   gap: clamp(22px, 5vw, 52px) !important;
 }
 
+#confirmOverlay.isDeleteFriendConfirm .modal{
+  border-radius: 12px !important;
+}
+
 .standardModalOverlay .modal .confirmBtns,
 #temporaryModalOverlay .modal .confirmBtns{
   justify-content:flex-end !important;
@@ -9724,109 +9141,10 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   flex-wrap:wrap !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn){
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
-  box-shadow: none !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px !important;
-}
-
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):hover:not(:disabled),
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal :where(.confirmBtns, .footerBtns) .btn:not(.btn-warn):focus-visible{
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  background: rgba(170, 178, 190, .16) !important;
-}
-
 #confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn,
 #confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn{
-  position: relative !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
   min-width: min(178px, 38vw) !important;
   min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn:hover:not(:disabled),
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn:focus-visible:not(:disabled),
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn:hover:not(:disabled),
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn:focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn:active:not(:disabled),
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn:active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn:focus-visible,
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn::before,
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmCancelBtn::after,
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn::before,
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn::after{
-  content: none !important;
-}
-
-#confirmOverlay:is(.isArchiveTaskConfirm, .isResetTaskConfirm) #confirmOkBtn{
-  border-color: #0f1600 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-}
-
-#signOutConfirmOverlay .modal .confirmBtns .btn-warn{
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
-  box-shadow: none !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px !important;
-}
-
-#signOutConfirmOverlay .modal .confirmBtns .btn-warn:hover:not(:disabled),
-#signOutConfirmOverlay .modal .confirmBtns .btn-warn:focus-visible{
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  background: rgba(170, 178, 190, .16) !important;
 }
 
 :is(
@@ -9849,12 +9167,118 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #rankPromotionOverlay,
   #timeGoalCompleteSaveNoteOverlay,
   #timeGoalCompleteNoteOverlay
-) .modal :where(.btn, .iconBtn, button:not(.switch)){
+) .modal :where(.iconBtn, button:not(.btn):not(.switch)){
   border-radius: 0 !important;
 }
 
 #rankLadderOverlay .modal button.rankLadderItem{
   border-radius: 18px !important;
+}
+
+:is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn[style*="display: none"]{
+  display: none !important;
+}
+
+:is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn[hidden],
+:is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn[style*="display:none"],
+:is(#confirmOverlay, #signOutConfirmOverlay) .modal .confirmBtns .btn[style*="display: none"]{
+  display: none !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive){
+  display: block !important;
+  width: min(420px, 100%) !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: var(--modal-padding) !important;
+  border: 1px solid rgba(86, 90, 98, .86) !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background: linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;
+  box-shadow: var(--modal-shadow) !important;
+  color: var(--text) !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive)::before,
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive)::after{
+  content: none !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) #confirmTitle{
+  display: block !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  font-family: var(--font-tight) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) .confirmText{
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 16px 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  color: var(--accent3) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  text-shadow: none !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) .confirmText a{
+  color: #35e8ff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) .confirmText .confirmTextNote{
+  color: rgba(170, 178, 190, .86) !important;
+  font-style: italic !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) :is(#confirmChkRow, #confirmChkNote, #confirmChkRow2, #confirmDangerInputRow){
+  margin: 0 0 12px !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  background: transparent !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) .confirmBtns{
+  display: flex !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#confirmOverlay .modal:is(.modalConfirmation, .modalConfirmationDestructive) .confirmBtns .btn{
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: min(178px, 38vw) !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding: 0 28px !important;
+  border-radius: 8px !important;
 }
 
 @media (max-width: 700px){
@@ -10559,23 +9983,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 #onboardingOverlay .modal.onboardingIntroModal .onboardingActions{
   bottom: clamp(36px, 6.3dvh, 48px);
-}
-
-#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn{
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, .42) !important;
-  color: #0d0f13 !important;
-  min-height: 48px;
-  text-shadow: none !important;
-}
-
-#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn:hover,
-#onboardingOverlay .modal.onboardingIntroModal .onboardingActions .btn:focus-visible{
-  background: #d9ff4d !important;
-  border-color: #d9ff4d !important;
-  color: #0d0f13 !important;
-  outline: none;
 }
 
 @media (min-width: 521px){
@@ -13166,87 +12573,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   margin-top: clamp(18px, 4vh, 32px);
 }
 
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]{
-  position: relative !important;
-  box-sizing: border-box !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalPrimaryAction[data-onboarding-next-action="true"]{
-  border-color: #0f1600 !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-  color: #f7f8fb !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:hover:not(:disabled),
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:disabled{
-  cursor: not-allowed !important;
-  filter: grayscale(.42) brightness(.68) !important;
-  opacity: .48 !important;
-  transform: none !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .1),
-    0 8px 12px rgba(0, 0, 0, .58),
-    inset 0 0 0 3px rgba(184, 207, 224, .24),
-    inset 0 12px 18px rgba(255, 255, 255, .026),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]::before,
-#onboardingOverlay .modal .confirmBtns.onboardingActions .primitiveSciFiModalAction[data-onboarding-next-action="true"]::after{
-  content: none !important;
-}
-
 #onboardingOverlay .onboardingActions .btn-accent:only-child{
   margin-left: auto;
   margin-right: auto;
@@ -14313,44 +13639,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   padding: 16px 36px 18px !important;
 }
 
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveAction{
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  letter-spacing: 0 !important;
-}
-
-#signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitivePrimaryAction,
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitivePrimaryAction,
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction,
-#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitivePrimaryAction{
-  border-color: #0f1600 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-}
-
 @media (max-width: 640px){
   #signOutConfirmOverlay.signOutPrimitiveOverlay .confirmBtns{
     display: grid !important;
@@ -14363,9 +13651,80 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #signOutConfirmOverlay.signOutPrimitiveOverlay .signOutPrimitiveAction{
     width: 100% !important;
     min-width: 0 !important;
-    padding-inline: 12px !important;
     white-space: nowrap !important;
   }
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation{
+  display: block !important;
+  width: min(420px, 100%) !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: var(--modal-padding) !important;
+  border: 1px solid rgba(86, 90, 98, .86) !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background: linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;
+  box-shadow: var(--modal-shadow) !important;
+  color: var(--text) !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation::before,
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation::after{
+  content: none !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation > h2{
+  display: block !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+  font-family: var(--font-tight) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmText{
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 16px 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  color: var(--accent3) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  text-shadow: none !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns{
+  display: flex !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .btn{
+  min-width: min(178px, 38vw) !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
 }
 
 @media (max-width: 640px){
@@ -14428,8 +13787,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
-    min-width: min(154px, 42vw) !important;
-    min-height: 44px !important;
-    padding-inline: 18px !important;
+    min-width: 0 !important;
   }
 }

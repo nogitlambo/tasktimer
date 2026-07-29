@@ -276,7 +276,8 @@ describe("secondary click audio", () => {
   });
 
   it("matches modal preview dropdown trigger for dedicated dropdown audio", () => {
-    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]';
+    const dropdownSelector = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
+    const modalOpenSelector = "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]";
     const dropdownTrigger = makeElement({
       selectorMatches: { [dropdownSelector]: true, ".modalPreviewDropdownButton": true, "button,a": true },
       textContent: "Standard option",
@@ -286,7 +287,7 @@ describe("secondary click audio", () => {
       attributes: { id: "menuIcon" },
     });
     const rankLadderTrigger = makeElement({
-      selectorMatches: { [dropdownSelector]: true, "[data-rank-ladder-open]": true, "button,a": true },
+      selectorMatches: { [modalOpenSelector]: true, "[data-rank-ladder-open]": true, "button,a": true },
       attributes: { "data-rank-ladder-open": "" },
       textContent: "Current rank",
     });
@@ -299,7 +300,8 @@ describe("secondary click audio", () => {
     expect(getSecondaryClickTarget(dropdownTrigger)).toBeNull();
     expect(getDropdownClickTarget(mobileMenuTrigger)).toBe(mobileMenuTrigger);
     expect(getSecondaryClickTarget(mobileMenuTrigger)).toBeNull();
-    expect(getDropdownClickTarget(rankLadderTrigger)).toBe(rankLadderTrigger);
+    expect(getDropdownClickTarget(rankLadderTrigger)).toBeNull();
+    expect(getModalOpenClickTarget(rankLadderTrigger)).toBe(rankLadderTrigger);
     expect(getSecondaryClickTarget(rankLadderTrigger)).toBeNull();
     expect(getDropdownClickTarget(dropdownOption)).toBeNull();
     expect(getCheckboxClickTarget(dropdownOption)).toBe(dropdownOption);
@@ -325,8 +327,9 @@ describe("secondary click audio", () => {
   });
 
   it("matches friend identity controls for dedicated modal open audio", () => {
+    const modalOpenSelector = "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]";
     const friendIdentityButton = makeElement({
-      selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-friend-profile-open]": true, "button,a": true },
+      selectorMatches: { [modalOpenSelector]: true, "[data-friend-profile-open]": true, "button,a": true },
       attributes: { "data-friend-profile-open": "friend-1" },
       textContent: "Open Friend profile",
     });
@@ -336,8 +339,9 @@ describe("secondary click audio", () => {
   });
 
   it("matches leaderboard identity controls for dedicated modal open audio", () => {
+    const modalOpenSelector = "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]";
     const leaderboardIdentityButton = makeElement({
-      selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-leaderboard-profile-open]": true, "button,a": true },
+      selectorMatches: { [modalOpenSelector]: true, "[data-leaderboard-profile-open]": true, "button,a": true },
       attributes: { "data-leaderboard-profile-open": "user-1" },
       textContent: "Open user summary",
     });
@@ -642,7 +646,7 @@ describe("secondary click audio", () => {
 
     handler({
       defaultPrevented: false,
-      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-friend-profile-open]": true, "button,a": true } }),
+      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]": true, "[data-friend-profile-open]": true, "button,a": true } }),
     } as unknown as Event);
 
     expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
@@ -666,7 +670,7 @@ describe("secondary click audio", () => {
 
     handler({
       defaultPrevented: false,
-      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open]": true, "[data-leaderboard-profile-open]": true, "button,a": true } }),
+      target: makeElement({ selectorMatches: { "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]": true, "[data-leaderboard-profile-open]": true, "button,a": true } }),
     } as unknown as Event);
 
     expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
@@ -846,7 +850,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, ".modalPreviewDropdownButton": true, "button,a": true },
         textContent: "Standard option",
       }),
     } as unknown as Event);
@@ -873,7 +877,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, "#menuIcon": true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, "#menuIcon": true, "button,a": true },
         attributes: { id: "menuIcon" },
       }),
     } as unknown as Event);
@@ -900,7 +904,7 @@ describe("secondary click audio", () => {
     handler({
       defaultPrevented: false,
       target: makeElement({
-        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true, '[data-action="history"]': true, "button,a": true },
+        selectorMatches: { ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"]']: true, '[data-action="history"]': true, "button,a": true },
         textContent: "View Chart",
       }),
     } as unknown as Event);
@@ -909,17 +913,17 @@ describe("secondary click audio", () => {
     expect(playAudio).not.toHaveBeenCalled();
   });
 
-  it("routes rank ladder open triggers to dropdown audio instead of default secondary audio", () => {
+  it("routes rank ladder open triggers to modal open audio instead of default secondary audio", () => {
     const documentRef = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     const on = vi.fn();
     const playAudio = vi.fn();
-    const playDropdownAudio = vi.fn();
+    const playModalOpenAudio = vi.fn();
 
     registerSecondaryClickAudio({
       on,
       documentRef: documentRef as unknown as Document,
       playAudio,
-      playDropdownAudio,
+      playModalOpenAudio,
     });
 
     const handler = on.mock.calls[0]?.[2] as EventListener;
@@ -928,7 +932,7 @@ describe("secondary click audio", () => {
       defaultPrevented: false,
       target: makeElement({
         selectorMatches: {
-          ['.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]']: true,
+          ["[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]"]: true,
           "[data-rank-ladder-open]": true,
           "button,a": true,
         },
@@ -937,7 +941,7 @@ describe("secondary click audio", () => {
       }),
     } as unknown as Event);
 
-    expect(playDropdownAudio).toHaveBeenCalledTimes(1);
+    expect(playModalOpenAudio).toHaveBeenCalledTimes(1);
     expect(playAudio).not.toHaveBeenCalled();
   });
 

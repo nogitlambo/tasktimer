@@ -22,10 +22,10 @@ export default function FriendsOverlays() {
             <div id="friendRequestModalStatus" className="friendRequestPrimitiveStatus" style={{ display: "none" }} aria-live="polite" />
           </div>
           <footer className="primitiveSciFiModalFooter friendRequestPrimitiveFooter">
-            <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendRequestPrimitiveAction friendRequestPrimitiveSecondaryAction" id="friendRequestCancelBtn" type="button">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendRequestPrimitiveAction friendRequestPrimitiveSecondaryAction" id="friendRequestCancelBtn" type="button">
               Cancel
             </button>
-            <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction friendRequestPrimitiveAction friendRequestPrimitivePrimaryAction" id="friendRequestSendBtn" type="button">
+            <button className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction friendRequestPrimitiveAction friendRequestPrimitivePrimaryAction" id="friendRequestSendBtn" type="button">
               Send Request
             </button>
           </footer>
@@ -97,10 +97,10 @@ export default function FriendsOverlays() {
             <div id="shareTaskStatus" className="settingsDetailNote" style={{ display: "none" }} aria-live="polite" />
           </div>
           <footer className="footerBtns shareTaskPrimitiveFooter">
-            <button className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction shareTaskPrimitiveAction shareTaskPrimitiveSecondaryAction" id="shareTaskCancelBtn" type="button">
+            <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction shareTaskPrimitiveAction shareTaskPrimitiveSecondaryAction" id="shareTaskCancelBtn" type="button">
               Cancel
             </button>
-            <button className="modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction shareTaskPrimitiveAction shareTaskPrimitivePrimaryAction" id="shareTaskConfirmBtn" type="button">
+            <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction shareTaskPrimitiveAction shareTaskPrimitivePrimaryAction" id="shareTaskConfirmBtn" type="button">
               Share
             </button>
           </footer>
@@ -141,7 +141,13 @@ export default function FriendsOverlays() {
                   <AppImg id="friendProfileAvatar" className="friendUserSummaryAvatarImg" src="/avatars/toons/toon-01-cap-glasses.webp" alt="" />
                 </span>
                 <div className="friendUserSummaryIdentityText">
-                  <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+                  <div className="friendUserSummaryNameRow">
+                    <strong className="friendUserSummaryName" id="friendProfileName">Friend</strong>
+                    <span className="friendUserSummaryNameDivider" aria-hidden="true">|</span>
+                    <button className="friendUserSummaryRemoveBtn" id="friendProfileDeleteBtn" type="button">
+                      Unfriend
+                    </button>
+                  </div>
                   <span className="friendUserSummaryEmail" id="friendProfileEmail" style={{ display: "none" }} />
                   <span className="friendUserSummaryMemberSince" id="friendProfileMemberSince">Member since --</span>
                 </div>
@@ -176,10 +182,7 @@ export default function FriendsOverlays() {
               </div>
             </div>
             <div className="confirmBtns friendProfileCloseRow friendProfilePrimitiveFooter">
-              <button className="friendUserSummaryRemoveBtn primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendProfilePrimitiveAction friendProfilePrimitiveDestructiveAction" id="friendProfileDeleteBtn" type="button">
-                Unfriend
-              </button>
-              <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction friendProfilePrimitiveAction friendProfilePrimitiveSecondaryAction" id="friendProfileCloseBtn" type="button">
+              <button className="btn btn-ghost primitiveConfirmationModalAction friendProfilePrimitiveAction friendProfilePrimitiveSecondaryAction" id="friendProfileCloseBtn" type="button">
                 Close
               </button>
             </div>

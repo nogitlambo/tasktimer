@@ -39,9 +39,25 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
   });
 
   it("does not let the square button reset flatten podium card corners", () => {
-    expect(baseCss).toContain("button:not(.switch):not(.leaderboardWeeklyPodiumCard)");
+    expect(baseCss).toContain("button:not(.btn):not(.switch):not(.leaderboardWeeklyPodiumCard)");
     expect(friendsCss).toContain(".leaderboardWeeklyPodiumCard{");
     expect(friendsCss).toContain("border-radius:18px 18px 0 0");
+  });
+
+  it("defines the shared btn primitive treatment while keeping small buttons compact", () => {
+    const sharedButtonRule = baseCss.match(/\.btn\{[\s\S]*?\n\}/)?.[0] || "";
+    const accentButtonRule = baseCss.match(/\.btn-accent\{[\s\S]*?\n\}/)?.[0] || "";
+    const warnButtonRule = baseCss.match(/\.btn-warn\{[\s\S]*?\n\}/)?.[0] || "";
+    const smallButtonRule = baseCss.match(/\.btn\.small\{[\s\S]*?\n\}/)?.[0] || "";
+
+    expect(sharedButtonRule).toContain("min-height: 48px;");
+    expect(sharedButtonRule).toContain("border-radius: 8px !important;");
+    expect(sharedButtonRule).toContain("background: rgba(8, 9, 10, 0.58) !important;");
+    expect(sharedButtonRule).toContain("font-size: 13px !important;");
+    expect(accentButtonRule).toContain("linear-gradient(180deg, #e2ff72 0%, #c9ff24 48%, #94c900 100%) !important;");
+    expect(warnButtonRule).toContain("linear-gradient(180deg, #ff8a8a 0%, #ff4d4d 48%, #b91515 100%) !important;");
+    expect(smallButtonRule).toContain("min-height: 0;");
+    expect(smallButtonRule).toContain("padding: 8px 10px !important;");
   });
 
   it("does not let leaderboard swipe handling capture profile-open clicks", () => {
@@ -260,13 +276,13 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(podiumGlowRule).toContain("border-radius:50%;");
     expect(podiumGlowRule).toContain("clip-path:circle(50% at 50% 50%);");
     expect(podiumGlowRule).toContain("animation:timeGoalCompleteWheelGlow 24s linear infinite;");
-    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.16)");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(255,246,162,.24)");
     expect(podiumGlowRule).not.toContain("conic-gradient(");
     expect(friendsCss).toContain(".leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after");
     expect(friendsCss).toContain("width:max(240%, 560px);");
     expect(friendsCss).not.toContain("@keyframes leaderboardPodiumCenterPulseMobile");
-    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.12)");
-    expect(friendsCss).toContain("opacity:.09;");
+    expect(friendsCss).toContain("radial-gradient(circle at 50% 50%, rgba(162,246,255,.18)");
+    expect(friendsCss).toContain("opacity:.14;");
     expect(podiumBurstRule).not.toContain("scale(");
     expect(podiumGlowRule).not.toContain("scale(");
     expect(friendsCss).not.toContain("filter:blur(.45px);");
@@ -280,18 +296,18 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     const mobileGlobalPodiumGlowRule = friendsCss.match(
       /#app\[aria-label="TaskLaunch App"\] #leaderboardGlobalPanel \.leaderboardGlobalStage\.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\n  \}/
     )?.[1] ?? "";
-    expect(globalPodiumBurstRule).toContain("rgba(53,232,255,.075)");
+    expect(globalPodiumBurstRule).toContain("rgba(53,232,255,.105)");
     expect(globalPodiumBurstRule).not.toContain("rgba(201,255,36");
-    expect(globalPodiumGlowRule).toContain("rgba(53,232,255,.07)");
+    expect(globalPodiumGlowRule).toContain("rgba(53,232,255,.105)");
     expect(globalPodiumGlowRule).not.toContain("rgba(201,255,36");
     expect(mobileGlobalPodiumGlowRule).toContain('content:"";');
-    expect(friendsCss).toContain("rgba(53,232,255,.07) 18%");
+    expect(friendsCss).toContain("rgba(53,232,255,.105) 18%");
 
     const reducedMotionRule = Array.from(
       friendsCss.matchAll(/#app\[aria-label="TaskLaunch App"\] #appPageLeaderboard \.leaderboardWeeklyPodiumStage::after\s*\{([\s\S]*?)\}/g)
     ).map((match) => match[1] ?? "").find((rule) => rule.includes("animation:none;")) ?? "";
     expect(reducedMotionRule).not.toBe("");
-    expect(reducedMotionRule).toContain("opacity:.12;");
+    expect(reducedMotionRule).toContain("opacity:.18;");
     expect(reducedMotionRule).toContain("transform:none;");
     expect(reducedMotionRule).toContain("animation:none;");
   });
@@ -353,6 +369,13 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
 
   it("opens and claims the daily reward through the shared modal XP delivery path", () => {
     expect(source).toContain("isDailyOpenRewardEligible");
+    expect(source).toContain("shouldSuppressDailyRewardForOnboarding");
+    expect(source).toContain("TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT");
+    expect(source).toContain("parseAuthCreationAtMs(user)");
+    expect(source).toContain("if (!dailyRewardOnboardingGate.ready || dailyRewardOnboardingGate.suppress) return;");
+    expect(source).toMatch(
+      /if \(!dailyRewardOnboardingGate\.ready \|\| dailyRewardOnboardingGate\.suppress\) return;[\s\S]*?if \(!isDailyOpenRewardEligible/
+    );
     expect(source).toContain("isDailyRewardMarkedClaimedForDay(dailyRewardUid, dayKey)");
     expect(source).toContain("markDailyRewardClaimedForDay(dailyRewardUid, dayKey)");
     expect(source).toContain("openDailyRewardOverlay(document)");

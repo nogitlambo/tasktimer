@@ -97,9 +97,19 @@ import {
   normalizeRewardProgress,
 } from "./lib/rewards";
 import {
+  TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT,
+  consumePendingEmailLinkOnboardingHint,
+  loadRemoteTaskTimerOnboardingState,
+  loadTaskTimerOnboardingPreferencePresence,
+  readLocalTaskTimerOnboardingNewUserHint,
+  readLocalTaskTimerOnboardingState,
+  shouldSuppressDailyRewardForOnboarding,
+} from "./lib/onboarding";
+import {
   createTaskTimerWorkspacePreferencesPersistence,
   createTaskTimerWorkspaceRepository,
 } from "./lib/workspaceRepository";
+import { loadClaimedUsername } from "./components/settings/settingsAccountService";
 import type { UserPreferencesV1 } from "./lib/cloudStore";
 import { initTaskTimerClient } from "./tasktimerClient";
 import { bootstrapFirebaseWebAppCheck } from "@/lib/firebaseClient";
@@ -161,6 +171,11 @@ type XpAwardFxPayload = {
   text?: string;
   style: CSSProperties | null;
   className?: string;
+};
+
+type DailyRewardOnboardingGateState = {
+  ready: boolean;
+  suppress: boolean;
 };
 
 function isMobileTaskToolbarViewport() {
@@ -808,6 +823,12 @@ function localDayKeyForTimestamp(value: number): string {
   return `${y}-${m}-${d}`;
 }
 
+function parseAuthCreationAtMs(user: User | null | undefined): number | null {
+  const creationTime = String(user?.metadata?.creationTime || "").trim();
+  const parsed = creationTime ? Date.parse(creationTime) : 0;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function getDailyRewardClaimedDayStorageKey(uidRaw: string): string {
   const uid = String(uidRaw || "").trim();
   return uid ? `${DAILY_REWARD_CLAIMED_DAY_STORAGE_KEY}:${uid}` : "";
@@ -897,6 +918,10 @@ function closeDailyRewardOverlay(documentRef: Document): void {
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [dailyRewardOnboardingGate, setDailyRewardOnboardingGate] = useState<DailyRewardOnboardingGateState>({
+    ready: false,
+    suppress: true,
+  });
   const [cachedPreferences, setCachedPreferences] = useState<UserPreferencesV1 | null>(() => preferencesPersistence.loadCached());
   const [rewardProgress, setRewardProgress] = useState(() => normalizeRewardProgress(DEFAULT_REWARD_PROGRESS));
   const [achievementSoundsEnabled, setAchievementSoundsEnabled] = useState(() => preferencesPersistence.loadResolved().achievementSoundsEnabled !== false);
@@ -1034,7 +1059,67 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
   }, []);
 
   useEffect(() => {
+    const auth = getFirebaseAuthClient();
+    if (!auth || typeof window === "undefined") return;
+
+    let cancelled = false;
+    let activeUid = "";
+    let activeUser: User | null = auth.currentUser;
+
+    const refreshDailyRewardOnboardingGate = async (user: User | null | undefined) => {
+      const isAnonymous = !!user?.isAnonymous;
+      const uid = isAnonymous ? "" : String(user?.uid || "").trim();
+      activeUid = uid;
+      activeUser = user || null;
+      if (!uid) {
+        setDailyRewardOnboardingGate({ ready: true, suppress: true });
+        return;
+      }
+
+      setDailyRewardOnboardingGate({ ready: false, suppress: true });
+      const localState = readLocalTaskTimerOnboardingState(uid);
+      const newUserHint = readLocalTaskTimerOnboardingNewUserHint(uid) || consumePendingEmailLinkOnboardingHint(uid);
+      const [remoteState, preferencePresence, claimedUsername] = await Promise.all([
+        loadRemoteTaskTimerOnboardingState(uid).catch(() => localState),
+        loadTaskTimerOnboardingPreferencePresence(uid).catch(() => null),
+        loadClaimedUsername(uid).catch(() => ""),
+      ]);
+      if (cancelled || activeUid !== uid) return;
+
+      setDailyRewardOnboardingGate({
+        ready: true,
+        suppress: shouldSuppressDailyRewardForOnboarding({
+          uid,
+          username: claimedUsername,
+          state: remoteState || localState || null,
+          preferencePresence,
+          newUserHint,
+          authCreationAtMs: parseAuthCreationAtMs(user),
+          nowMs: Date.now(),
+        }),
+      });
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      void refreshDailyRewardOnboardingGate(user);
+    });
+    const handleOnboardingStateChanged = (event: Event) => {
+      const detailUid = String((event as CustomEvent<{ uid?: string }>).detail?.uid || "").trim();
+      if (detailUid && detailUid !== activeUid) return;
+      void refreshDailyRewardOnboardingGate(activeUser);
+    };
+    window.addEventListener(TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT, handleOnboardingStateChanged);
+    if (auth.currentUser) void refreshDailyRewardOnboardingGate(auth.currentUser);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+      window.removeEventListener(TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT, handleOnboardingStateChanged);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated || !cachedPreferences || typeof document === "undefined" || typeof window === "undefined") return;
+    if (!dailyRewardOnboardingGate.ready || dailyRewardOnboardingGate.suppress) return;
     const nowValue = Date.now();
     const dayKey = localDayKeyForTimestamp(nowValue);
     const dailyRewardUid = getCurrentDailyRewardUid();
@@ -1055,7 +1140,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
     dailyRewardPromptedDayKeyRef.current = dayKey;
     openDailyRewardOverlay(document);
     if (achievementSoundsEnabled) dailyRewardAudioPlayer.play();
-  }, [achievementSoundsEnabled, cachedPreferences, dailyRewardAudioPlayer, dailyRewardRetrySeq, isAuthenticated]);
+  }, [achievementSoundsEnabled, cachedPreferences, dailyRewardAudioPlayer, dailyRewardOnboardingGate, dailyRewardRetrySeq, isAuthenticated]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -2575,7 +2660,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
             </div>
             <footer className="primitiveSciFiModalFooter leaderboardMovementPrimitiveFooter">
               <button
-                className="modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction leaderboardMovementPrimitiveAction leaderboardMovementPrimitiveSecondaryAction"
+                className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction leaderboardMovementPrimitiveAction leaderboardMovementPrimitiveSecondaryAction"
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();

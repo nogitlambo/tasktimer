@@ -5,6 +5,13 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
   const { els } = ctx;
   let confirmDangerMatchValue = "";
   let confirmOverlayClassName = "";
+  const nonDestructiveModalShellClasses = new Set([
+    "isArchiveTaskConfirm",
+    "isResetTaskConfirm",
+    "isResetAllDeleteConfirm",
+    "isDeleteTaskConfirm",
+    "isDeleteFriendConfirm",
+  ]);
   const overlayLifecycle = createTaskTimerOverlayLifecycle({
     documentRef: document,
     closeEdit: ctx.closeEdit,
@@ -18,7 +25,30 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     els.confirmOkBtn?.classList.remove("btn-accent", "btn-warn", "btn-ghost");
     els.confirmAltBtn?.classList.remove("btn-accent", "btn-warn", "btn-ghost");
     els.confirmOkBtn?.classList.add("btn-accent");
-    els.confirmAltBtn?.classList.add("btn-warn");
+    els.confirmAltBtn?.classList.add("btn-ghost");
+  }
+
+  function getConfirmModalElement() {
+    return (els.confirmOverlay as HTMLElement | null)?.querySelector(".modal") as HTMLElement | null;
+  }
+
+  function resetConfirmModalTypeClasses() {
+    const modal = getConfirmModalElement();
+    modal?.classList.remove("modalConfirmation", "modalConfirmationDestructive");
+  }
+
+  function shouldUseNonDestructiveModalShell() {
+    const overlay = els.confirmOverlay as HTMLElement | null;
+    if (!overlay) return false;
+    return [...nonDestructiveModalShellClasses].some((className) => overlay.classList.contains(className));
+  }
+
+  function syncConfirmModalTypeClass() {
+    const modal = getConfirmModalElement();
+    if (!modal) return;
+    const isDestructive = !!els.confirmOkBtn?.classList.contains("btn-warn") && !shouldUseNonDestructiveModalShell();
+    modal.classList.toggle("modalConfirmationDestructive", isDestructive);
+    modal.classList.toggle("modalConfirmation", !isDestructive);
   }
 
   function syncConfirmPrimaryToggleUi() {
@@ -60,6 +90,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
         els.confirmOkBtn.classList.remove("btn-accent", "btn-warn", "btn-ghost");
         okButtonClassName.split(/\s+/).filter(Boolean).forEach((token) => els.confirmOkBtn?.classList.add(token));
       }
+      syncConfirmModalTypeClass();
     }
 
     if (els.confirmCancelBtn) {
@@ -69,6 +100,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (els.confirmAltBtn) {
       if (altLabel) {
         els.confirmAltBtn.textContent = altLabel;
+        (els.confirmAltBtn as HTMLElement).hidden = false;
         (els.confirmAltBtn as HTMLElement).style.display = "inline-flex";
         (els.confirmAltBtn as HTMLButtonElement).disabled = false;
         const altButtonClassName = String(opts?.altButtonClassName || "").trim();
@@ -77,6 +109,7 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
           altButtonClassName.split(/\s+/).filter(Boolean).forEach((token) => els.confirmAltBtn?.classList.add(token));
         }
       } else {
+        (els.confirmAltBtn as HTMLElement).hidden = true;
         (els.confirmAltBtn as HTMLElement).style.display = "none";
         els.confirmAltBtn.textContent = "";
       }
@@ -133,11 +166,13 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     if (confirmOverlayClassName && els.confirmOverlay) {
       (els.confirmOverlay as HTMLElement).classList.add(confirmOverlayClassName);
     }
+    syncConfirmModalTypeClass();
     overlayLifecycle.openOverlay(els.confirmOverlay as HTMLElement | null);
   }
 
   function closeConfirm() {
     overlayLifecycle.closeOverlay(els.confirmOverlay as HTMLElement | null);
+    resetConfirmModalTypeClasses();
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteTaskConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isDeleteFriendConfirm");
     if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.remove("isTaskAlreadyRunningConfirm");
@@ -151,8 +186,11 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     ctx.setConfirmActionCancel(null);
     confirmDangerMatchValue = "";
     confirmOverlayClassName = "";
-    if (els.confirmAltBtn) (els.confirmAltBtn as HTMLElement).style.display = "none";
-    if (els.confirmAltBtn) (els.confirmAltBtn as HTMLButtonElement).disabled = false;
+    if (els.confirmAltBtn) {
+      (els.confirmAltBtn as HTMLElement).hidden = true;
+      (els.confirmAltBtn as HTMLElement).style.display = "none";
+      (els.confirmAltBtn as HTMLButtonElement).disabled = false;
+    }
     if (els.confirmOkBtn) {
       (els.confirmOkBtn as HTMLButtonElement).disabled = false;
       resetConfirmActionButtonClasses();

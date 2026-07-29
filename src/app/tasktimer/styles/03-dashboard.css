@@ -9344,8 +9344,48 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashbo
   }
 }
 
+@media (min-width: 641px) and (max-width: 1600px){
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel{
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardActivityOverviewCard,
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel > .dashboardSupportGrid{
+    grid-column:1 / -1 !important;
+    grid-row:auto !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid{
+    display:grid !important;
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardSupportGrid > .dashboardCard{
+    grid-column:auto !important;
+    grid-row:auto !important;
+    justify-self:stretch !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack{
+  display:grid !important;
+  grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  gap:clamp(8px, 2vw, 36px) !important;
+  width:100% !important;
+  min-width:0 !important;
+  flex-wrap:nowrap !important;
+}
+
+body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel .dashboardActivitySummaryStack > .dashboardActivitySummaryMini{
+  grid-column:auto !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
 /* Desktop dashboard panel order: Activity Overview, Momentum, Task Overview, Focus Heatmap. */
-@media (min-width: 981px){
+@media (min-width: 1601px){
   body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardIntegratedPanel{
     grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
   }

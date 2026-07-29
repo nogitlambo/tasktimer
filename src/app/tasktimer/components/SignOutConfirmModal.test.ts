@@ -18,7 +18,7 @@ describe("SignOutConfirmModal", () => {
     expect(html).toContain('id="signOutConfirmOverlay"');
     expect(html).toContain('style="display:flex"');
     expect(html).toContain('aria-hidden="false"');
-    expect(html).toContain('class="modal signOutPrimitiveModal"');
+    expect(html).toContain('class="modal signOutPrimitiveModal modalConfirmation"');
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain('aria-label="Sign Out"');
@@ -30,7 +30,7 @@ describe("SignOutConfirmModal", () => {
       'class="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction signOutPrimitiveAction signOutPrimitiveSecondaryAction"'
     );
     expect(html).toContain(
-      'class="btn btn-warn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"'
+      'class="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"'
     );
   });
 

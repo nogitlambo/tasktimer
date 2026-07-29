@@ -61,7 +61,7 @@ export function SettingsNav({
     <aside className="settingsNavPanel dashboardCard" aria-label="Settings navigation">
       <div className="settingsNavTopActions">
         <button
-          className="btn btn-ghost small modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction settingsNavExitBtn"
+          className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction settingsNavExitBtn"
           id="closeMenuBtn"
           type="button"
           aria-label="Close"

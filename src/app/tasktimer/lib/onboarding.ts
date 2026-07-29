@@ -1,11 +1,13 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
+import { localDayKey } from "./history";
 import { STORAGE_KEY } from "./storage";
 import { normalizeDashboardWeekStart, type DashboardWeekStart } from "./historyChart";
 import { normalizeOptimalProductivityDays, normalizeTimeOfDay, type OptimalProductivityDays } from "./productivityPeriod";
 
 export const TASKTIMER_ONBOARDING_VERSION = 1;
+export const TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT = "tasktimer:onboardingStateChanged";
 export const TASKTIMER_ONBOARDING_DEFAULT_WEEK_START = "mon";
 export const TASKTIMER_ONBOARDING_DEFAULT_START_TIME = "09:00";
 export const TASKTIMER_ONBOARDING_DEFAULT_END_TIME = "17:00";
@@ -33,6 +35,11 @@ export type TaskTimerOnboardingGateInput = {
   state: TaskTimerOnboardingState | null;
   preferencePresence: TaskTimerOnboardingPreferencePresence | null;
   newUserHint?: boolean;
+};
+
+export type TaskTimerDailyRewardOnboardingGateInput = TaskTimerOnboardingGateInput & {
+  authCreationAtMs?: number | null;
+  nowMs?: number;
 };
 
 export type TaskTimerOnboardingPreferenceDraft = {
@@ -108,6 +115,22 @@ export function writeLocalTaskTimerOnboardingState(uid: string, state: TaskTimer
     window.localStorage.setItem(taskTimerOnboardingStorageKey(uid), JSON.stringify(state));
   } catch {
     // Ignore localStorage failures.
+  }
+}
+
+function dispatchTaskTimerOnboardingStateChanged(uid: string, state: TaskTimerOnboardingState): void {
+  if (typeof window === "undefined" || !uid) return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent(TASKTIMER_ONBOARDING_STATE_CHANGED_EVENT, {
+        detail: {
+          uid,
+          state,
+        },
+      })
+    );
+  } catch {
+    // Ignore event dispatch failures.
   }
 }
 
@@ -209,6 +232,7 @@ export async function saveTaskTimerOnboardingState(
   writeLocalTaskTimerOnboardingState(uid, next);
   clearLocalTaskTimerOnboardingNewUserHint(uid);
   clearPendingEmailLinkOnboardingHint();
+  dispatchTaskTimerOnboardingStateChanged(uid, next);
 
   const ref = accountStateDoc(uid);
   if (ref) {
@@ -276,6 +300,21 @@ export function shouldAutoOpenTaskTimerOnboarding(input: TaskTimerOnboardingGate
   if (input.newUserHint) return true;
   const missingUsername = !String(input.username || "").trim();
   return missingUsername || hasIncompleteTaskTimerOnboardingPreferences(input.preferencePresence);
+}
+
+export function shouldSuppressDailyRewardForOnboarding(input: TaskTimerDailyRewardOnboardingGateInput): boolean {
+  const uid = String(input.uid || "").trim();
+  if (!uid) return true;
+  if (input.state?.onboardingStatus === "dismissed") return true;
+  if (input.state?.onboardingStatus !== "completed" && shouldAutoOpenTaskTimerOnboarding(input)) return true;
+
+  const authCreationAtMs = Math.max(0, Math.floor(Number(input.authCreationAtMs || 0) || 0));
+  if (authCreationAtMs > 0) {
+    const nowMs = Math.max(0, Math.floor(Number(input.nowMs || 0) || 0)) || Date.now();
+    if (localDayKey(authCreationAtMs) === localDayKey(nowMs)) return true;
+  }
+
+  return false;
 }
 
 export function buildTaskTimerOnboardingPreferenceDraft(

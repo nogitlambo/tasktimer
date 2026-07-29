@@ -14,6 +14,8 @@ describe("PrimitiveGallery", () => {
     expect(html).toContain("Buttons");
     expect(html).toContain("Launch Button");
     expect(html).toContain("Modal Baseline");
+    expect(html).toContain("Non-Destructive Confirmation Modal Baseline");
+    expect(html).toContain("Destructive Confirmation Modal Baseline");
     expect(html).toContain("Dropdown Menus");
     expect(html).toContain("Switches And Checks");
     expect(html).toContain("btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction");
@@ -38,8 +40,19 @@ describe("PrimitiveGallery", () => {
     expect(html).toContain("primitiveSciFiModalHeader");
     expect(html).not.toContain("primitiveSciFiModalClose");
     expect(html).not.toContain("Close modal preview");
-    expect(html).toContain("primitiveSciFiModalPrimaryAction");
-    expect(html).toContain("primitiveSciFiModalSecondaryAction");
+    expect(html).toContain("btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction");
+    expect(html).toContain("btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction");
+    expect(html).not.toContain("isDeleteFriendConfirm");
+    expect(html).toContain('class="overlay primitiveLiveOverlay primitiveConfirmationModalOverlay"');
+    expect(html).toContain('class="modal modalConfirmation"');
+    expect(html).toContain('class="modal modalConfirmationDestructive"');
+    expect(html).toContain("Confirm Title");
+    expect(html).toContain("Confirm text confirms the action being requested.");
+    expect(html).toContain('class="btn btn-accent primitiveConfirmationModalAction" type="button"');
+    expect(html).toContain('class="btn btn-warn primitiveConfirmationModalAction" type="button"');
+    expect(html).toContain("Secondary");
+    expect(html).toContain("Primary");
+    expect(html).toContain("Destructive");
     expect(html).not.toContain("Open Modal Preview");
     expect(html).toContain("dashboardCard");
     expect(html).toContain("--accent");
@@ -49,17 +62,50 @@ describe("PrimitiveGallery", () => {
     expect(html).not.toContain("modalPreviewCheckbox");
   });
 
-  it("keeps primitive secondary button hover neutral in the lime theme", () => {
-    const css = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
+  it("uses the shared global button primitive treatment", () => {
+    const baseCss = readFileSync("src/app/tasktimer/styles/00-base.css", "utf8").replace(/\r\n/g, "\n");
+    const primitiveCss = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
 
-    expect(css).toContain(
-      'body[data-theme="lime"] #app[aria-label="TaskLaunch Primitives"] .primitiveButtonGrid .btn-ghost:hover:not(:disabled)'
-    );
-    expect(css).toContain(
-      'body[data-theme="lime"] #app.primitiveSurface .primitiveButtonGrid .btn-ghost:focus-visible'
-    );
-    expect(css).toContain("border-color: #020509 !important;");
-    expect(css).toContain("color: rgba(238, 242, 246, .88) !important;");
+    const primitiveButtonRule = baseCss.match(/\.btn\{[\s\S]*?\n\}/)?.[0] || "";
+    const primitiveButtonHoverRule = baseCss.match(/\.btn:hover:not\(:disabled\),[\s\S]*?\n\}/)?.[0] || "";
+    const primitivePrimaryButtonRule = baseCss.match(/\.btn-accent\{[\s\S]*?\n\}/)?.[0] || "";
+    const primitivePrimaryButtonHoverRule = baseCss.match(/\.btn-accent:hover:not\(:disabled\),[\s\S]*?\n\}/)?.[0] || "";
+    const primitiveDestructiveButtonRule = baseCss.match(/\.btn-warn\{[\s\S]*?\n\}/)?.[0] || "";
+    const primitiveDestructiveButtonHoverRule = baseCss.match(/\.btn-warn:hover:not\(:disabled\),[\s\S]*?\n\}/)?.[0] || "";
+    const primitiveSmallButtonRule = baseCss.match(/\.btn\.small\{[\s\S]*?\n\}/)?.[0] || "";
+
+    expect(primitiveButtonRule).toContain("min-width: min(178px, 38vw);");
+    expect(primitiveButtonRule).toContain("min-height: 48px;");
+    expect(primitiveButtonRule).toContain("padding: 0 28px !important;");
+    expect(primitiveButtonRule).toContain("border: 1px solid rgba(247, 248, 251, 0.58) !important;");
+    expect(primitiveButtonRule).toContain("background: rgba(8, 9, 10, 0.58) !important;");
+    expect(primitiveButtonRule).toContain("color: #f7f8fb !important;");
+    expect(primitiveButtonRule).toContain("font-size: 13px !important;");
+    expect(primitiveButtonRule).toContain("text-transform: none !important;");
+    expect(primitiveButtonHoverRule).toContain("border-color: rgba(201, 255, 36, 0.9) !important;");
+    expect(primitiveButtonHoverRule).toContain("background: rgba(13, 19, 25, 0.82) !important;");
+    expect(primitivePrimaryButtonRule).toContain("border-color: #c9ff24 !important;");
+    expect(primitivePrimaryButtonRule).toContain("linear-gradient(180deg, #e2ff72 0%, #c9ff24 48%, #94c900 100%) !important;");
+    expect(primitivePrimaryButtonRule).toContain("color: #000 !important;");
+    expect(primitivePrimaryButtonRule).toContain("text-shadow: none;");
+    expect(primitivePrimaryButtonHoverRule).toContain("linear-gradient(180deg, #edff95 0%, #d4ff3d 48%, #a6df00 100%) !important;");
+    expect(primitivePrimaryButtonHoverRule).toContain("color: #000 !important;");
+    expect(primitiveDestructiveButtonRule).toContain("border-color: #ff4d4d !important;");
+    expect(primitiveDestructiveButtonRule).toContain("linear-gradient(180deg, #ff8a8a 0%, #ff4d4d 48%, #b91515 100%) !important;");
+    expect(primitiveDestructiveButtonRule).toContain("color: #fff !important;");
+    expect(primitiveDestructiveButtonRule).toContain("text-shadow: none;");
+    expect(primitiveDestructiveButtonHoverRule).toContain("linear-gradient(180deg, #ffaaaa 0%, #ff6262 48%, #d31d1d 100%) !important;");
+    expect(primitiveDestructiveButtonHoverRule).toContain("color: #fff !important;");
+    expect(primitiveSmallButtonRule).toContain("min-width: 0;");
+    expect(primitiveSmallButtonRule).toContain("min-height: 0;");
+    expect(primitiveSmallButtonRule).toContain("padding: 8px 10px !important;");
+    expect(primitiveCss).toContain(".primitiveConfirmationModalAction");
+    expect(primitiveCss).toContain(".primitiveConfirmationModalAction:is(.btn-accent, .btn-ghost, .btn-warn)");
+    expect(primitiveCss).toContain("height: 48px !important;");
+    expect(primitiveCss).toContain("max-height: 48px;");
+    expect(primitiveCss).toContain("border-radius: 8px !important;");
+    expect(primitiveCss).not.toContain(".primitiveButtonGrid .btn-accent{");
+    expect(primitiveCss).not.toContain(".primitiveButtonGrid .btn-warn{");
   });
 
   it("applies slightly curved corners to the primitive shared card", () => {
@@ -70,5 +116,43 @@ describe("PrimitiveGallery", () => {
     )?.[0] || "";
 
     expect(sharedCardRule).toContain("border-radius: 6px;");
+  });
+
+  it("keeps destructive and non-destructive confirmation previews the same width", () => {
+    const css = readFileSync("src/app/primitives/primitives.css", "utf8").replace(/\r\n/g, "\n");
+
+    const confirmationModalRule =
+      css.match(
+        /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) :is\(\.modalConfirmation, \.modalConfirmationDestructive\)\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const confirmationButtonRule =
+      css.match(
+        /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveConfirmationModalPreviewPanel \.primitiveConfirmationModalAction\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const confirmationTextRule =
+      css.match(
+        /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveConfirmationModalPreviewPanel \.confirmText\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const confirmationButtonRowRule =
+      css.match(
+        /:where\(#app\[aria-label="TaskLaunch Primitives"\], #app\.primitiveSurface\) \.primitiveConfirmationModalPreviewPanel \.confirmBtns\{[\s\S]*?\n\}/
+      )?.[0] || "";
+    const confirmationPreviewModalRadiusRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch Primitives"\] \.primitiveConfirmationModalPreviewPanel :is\(\.modalConfirmation, \.modalConfirmationDestructive\),[\s\S]*?\n\}/
+      )?.[0] || "";
+    const confirmationPreviewButtonRadiusRule =
+      css.match(
+        /#app\[aria-label="TaskLaunch Primitives"\] \.primitiveConfirmationModalPreviewPanel \.primitiveConfirmationModalAction,[\s\S]*?\n\}/
+      )?.[0] || "";
+
+    expect(confirmationModalRule).toContain("width: min(420px, 100%);");
+    expect(confirmationModalRule).toContain("border-color: rgba(86, 90, 98, .86) !important;");
+    expect(confirmationModalRule).toContain("linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;");
+    expect(confirmationButtonRule).toContain("border-radius: 8px !important;");
+    expect(confirmationTextRule).toContain("padding-block: 16px;");
+    expect(confirmationButtonRowRule).toContain("justify-content: center !important;");
+    expect(confirmationPreviewModalRadiusRule).toContain("border-radius: 8px !important;");
+    expect(confirmationPreviewButtonRadiusRule).toContain("border-radius: 8px !important;");
   });
 });

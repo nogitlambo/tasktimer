@@ -53,19 +53,39 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("rgba(201, 255, 36, .1) 0deg 7deg");
     expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
     expect(overlaysCss).toContain("rgba(219, 178, 255, .18) 0 11%");
+    const timeGoalBurstRule =
+      Array.from(
+        overlaysCss.matchAll(/#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*?\n\}/g),
+      )
+        .map((match) => match[0])
+        .find((rule) => rule.includes("repeating-conic-gradient(")) ?? "";
+    const dailyRewardBurstRule =
+      Array.from(
+        overlaysCss.matchAll(/#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*?\n\}/g),
+      )
+        .map((match) => match[0])
+        .find((rule) => rule.includes("repeating-conic-gradient(")) ?? "";
     expect(overlaysCss).toMatch(
-      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(220%, 560px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*clip-path: circle\(50% at 50% 50%\);[\s\S]*-webkit-mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(170%, 440px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*-webkit-mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
     );
-    expect(overlaysCss).toContain("opacity: .78;");
-    expect(overlaysCss).toContain("mix-blend-mode: screen;");
+    expect(overlaysCss).toContain("opacity: .82;");
+    expect(overlaysCss).not.toContain("clip-path: circle(50% at 50% 50%);");
+    expect(timeGoalBurstRule).not.toContain("mix-blend-mode:");
+    expect(dailyRewardBurstRule).not.toContain("mix-blend-mode:");
     expect(overlaysCss).toContain("transform-origin: center;");
     expect(overlaysCss).toContain("animation: timeGoalCompleteWheelGlow 24s linear infinite;");
     expect(overlaysCss).toContain("backface-visibility: hidden;");
     expect(overlaysCss).toContain("contain: paint;");
-    expect(overlaysCss).toContain("will-change: transform, opacity, filter;");
+    expect(timeGoalBurstRule).toContain("will-change: transform;");
+    expect(dailyRewardBurstRule).toContain("will-change: transform;");
+    expect(timeGoalBurstRule).not.toContain("will-change: transform, opacity, filter;");
+    expect(dailyRewardBurstRule).not.toContain("will-change: transform, opacity, filter;");
     expect(overlaysCss).toContain("@keyframes timeGoalCompleteWheelGlow");
     expect(overlaysCss).toContain("transform: rotate(0deg);");
     expect(overlaysCss).toContain("transform: rotate(360deg);");
+    const wheelGlowKeyframes = overlaysCss.match(/@keyframes timeGoalCompleteWheelGlow\{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(wheelGlowKeyframes).not.toContain("filter:");
+    expect(wheelGlowKeyframes).not.toContain("opacity:");
     expect(overlaysCss).toContain("#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .timeGoalCompletePrimitiveModal::after{");
     expect(overlaysCss).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\s*\{[\s\S]*animation: none;/);
   });

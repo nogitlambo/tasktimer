@@ -120,10 +120,12 @@
   margin: 0 46px 18px !important;
   clip-path: none !important;
   border: 1px solid rgba(190, 207, 218, .18) !important;
+  border-radius: 12px !important;
   background: rgba(8, 14, 19, .58) !important;
   box-shadow:
     0 12px 22px rgba(0, 0, 0, .38),
     inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+  overflow: hidden;
 }
 
 :is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) .leaderboardPositionStats::before,
@@ -146,72 +148,6 @@
   box-shadow:
     inset 0 1px 0 rgba(0, 0, 0, .68),
     0 -1px 0 rgba(255, 255, 255, .05);
-}
-
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction){
-  position: relative !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: auto !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  height: auto !important;
-  margin: 0 !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-align: center !important;
-  text-decoration: none !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction):hover:not(:disabled),
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction):focus-visible:not(:disabled){
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction):active:not(:disabled){
-  transform: translateY(3px) !important;
-}
-
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction):focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#friendProfileModal.friendProfilePrimitiveOverlay .friendProfilePrimitiveDestructiveAction{
-  border-color: #2a0509 !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 92, 112, .28),
-    0 0 14px rgba(255, 92, 112, .28),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(255, 92, 112, .58),
-    inset 0 12px 18px rgba(255, 255, 255, .06),
-    inset 0 -18px 22px rgba(0, 0, 0, .3) !important;
 }
 
 @media (max-width: 640px){
@@ -257,7 +193,6 @@
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: 178px !important;
-    padding: 0 12px !important;
   }
 }
 
@@ -380,82 +315,6 @@
     0 -1px 0 rgba(255, 255, 255, .05) !important;
 }
 
-#friendRequestModal .primitiveSciFiModalAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#friendRequestModal .primitiveSciFiModalAction:hover,
-#friendRequestModal .primitiveSciFiModalAction:focus-visible{
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#friendRequestModal .primitiveSciFiModalAction:active{
-  transform: translateY(3px) !important;
-}
-
-#friendRequestModal .primitiveSciFiModalAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#friendRequestModal .primitiveSciFiModalAction::after{
-  content: none !important;
-}
-
-#friendRequestModal .primitiveSciFiModalPrimaryAction{
-  border-color: #0f1600 !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-  color: #f7f8fb !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-}
-
-#friendRequestModal .primitiveSciFiModalSecondaryAction{
-  border-color: #020509 !important;
-}
-
-#friendRequestModal .primitiveSciFiModalAction::before,
-#friendRequestModal .primitiveSciFiModalPrimaryAction::before{
-  content: none !important;
-}
-
 #friendRequestModal .friendRequestPrimitiveInput{
   display: block !important;
   width: 100% !important;
@@ -491,12 +350,6 @@
   line-height: 1.45 !important;
 }
 
-@media (prefers-reduced-motion: reduce){
-  #friendRequestModal .primitiveSciFiModalAction{
-    transition: none !important;
-  }
-}
-
 @media (max-width: 640px){
   #friendRequestModal .primitiveSciFiModal{
     width: min(100%, calc(100vw - 20px)) !important;
@@ -527,10 +380,7 @@
   }
 
   #friendRequestModal .primitiveSciFiModalAction{
-    min-width: min(168px, 100%) !important;
-    min-height: 46px !important;
-    padding: 0 24px !important;
-    border-width: 4px !important;
+    min-width: min(178px, 100%) !important;
   }
 }
 
@@ -656,8 +506,6 @@
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
-    min-height: 46px !important;
-    padding: 0 12px !important;
   }
 }
 
@@ -1974,98 +1822,6 @@
   gap: clamp(22px, 5vw, 52px) !important;
 }
 
-#shareTaskModal .primitiveSciFiModalAction{
-  position: relative !important;
-  box-sizing: border-box !important;
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer !important;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  letter-spacing: 0 !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease !important;
-}
-
-#shareTaskModal .primitiveSciFiModalAction:hover,
-#shareTaskModal .primitiveSciFiModalAction:focus-visible{
-  filter: brightness(1.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-#shareTaskModal .primitiveSciFiModalAction:active{
-  transform: translateY(3px) !important;
-}
-
-#shareTaskModal .primitiveSciFiModalAction:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95) !important;
-  outline-offset: 6px !important;
-}
-
-#shareTaskModal .primitiveSciFiModalAction::after{
-  content: none !important;
-}
-
-#shareTaskModal .primitiveSciFiModalPrimaryAction{
-  border-color: #0f1600 !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 0 0 1px rgba(201, 255, 36, .28),
-    0 0 14px rgba(201, 255, 36, .34),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(201, 255, 36, .72),
-    inset 0 12px 18px rgba(255, 255, 255, .08),
-    inset 0 -18px 22px rgba(0, 0, 0, .28) !important;
-  color: #f7f8fb !important;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8) !important;
-}
-
-#shareTaskModal .primitiveSciFiModalSecondaryAction{
-  border-color: #020509 !important;
-}
-
-#shareTaskModal .primitiveSciFiModalAction::before{
-  content: none !important;
-}
-
-#shareTaskModal .primitiveSciFiModalPrimaryAction::before{
-  content: none !important;
-}
-
-#shareTaskModal .primitiveSciFiModal .primitiveSciFiModalAction,
-#shareTaskModal .shareTaskPrimitiveModal .primitiveSciFiModalAction{
-  border-radius: 8px !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  overflow: hidden !important;
-}
-
-@media (prefers-reduced-motion: reduce){
-  #shareTaskModal .primitiveSciFiModalAction{
-    transition: none !important;
-  }
-}
-
 #shareTaskModal .modalDropdownField .modalDropdownHelp{
   margin: 0 0 8px !important;
 }
@@ -2281,59 +2037,6 @@
   box-shadow:
     inset 0 1px 0 rgba(0, 0, 0, .68),
     0 -1px 0 rgba(255, 255, 255, .05);
-}
-
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn{
-  position: relative;
-  box-sizing: border-box;
-  min-width: min(178px, 38vw);
-  height: 48px;
-  min-height: 0;
-  padding: 0 28px;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  cursor: pointer;
-  overflow: hidden !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, .8);
-  transition:
-    filter .16s ease,
-    transform .16s ease,
-    box-shadow .16s ease;
-}
-
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:hover:not(:disabled),
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:focus-visible{
-  filter: brightness(1.12);
-  transform: translateY(-1px);
-}
-
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:active{
-  transform: translateY(3px);
-}
-
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn:focus-visible{
-  outline: 1px solid rgba(126, 243, 255, .95);
-  outline-offset: 6px;
-}
-
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn::before,
-#sharedTaskSummaryModal #sharedTaskSummaryCloseBtn::after{
-  content: none;
 }
 
 @media (max-width: 640px){
@@ -4733,23 +4436,6 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   margin-top: 16px;
 }
 
-#leaderboardPositionOverlay .confirmBtns .btn-ghost{
-  background: rgba(255,255,255,.01) !important;
-  background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(178,187,196,.46) !important;
-  box-shadow: none !important;
-}
-
-#leaderboardPositionOverlay .confirmBtns .btn-ghost:hover:not(:disabled),
-#leaderboardPositionOverlay .confirmBtns .btn-ghost:focus-visible{
-  background: rgba(255,255,255,.05) !important;
-  background-image: none !important;
-  color: var(--text) !important;
-  border-color: rgba(202,210,218,.62) !important;
-  box-shadow: 0 0 0 1px rgba(202,210,218,.12) inset !important;
-}
-
 #friendProfileModal .friendUserSummaryModal{
   max-width: min(560px, calc(100vw - 32px));
   border-radius: 0;
@@ -4967,8 +4653,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   object-position: center;
 }
 
+#friendProfileModal .friendUserSummaryNameRow{
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+
 #friendProfileModal .friendUserSummaryName{
   display:block;
+  flex: 0 1 auto;
   min-width: 0;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 13px;
@@ -4977,6 +4671,14 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+}
+
+#friendProfileModal .friendUserSummaryNameDivider{
+  flex: 0 0 auto;
+  color: rgba(170,178,190,.58);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 #friendProfileModal .friendUserSummaryEmail{
@@ -4988,7 +4690,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   font-size: 11px;
   line-height: 1.25;
   font-weight: 400;
-  color: #7ef3ff;
+  color: rgba(238,242,246,.72);
 }
 
 #friendProfileModal .friendUserSummaryMemberSince{
@@ -5001,16 +4703,16 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   font-size: 11px;
   line-height: 1.25;
   font-weight: 400;
-  color: #7ef3ff;
+  color: rgba(238,242,246,.72);
 }
 
 #friendProfileModal .friendUserSummaryRemoveBtn{
   appearance: none;
-  justify-self: start;
+  flex: 0 0 auto;
   width: auto;
   min-width: 0;
   height: auto;
-  margin: 2px 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -5040,14 +4742,10 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
   outline-offset: 3px;
 }
 
-#friendProfileModal .friendProfileCloseRow .friendUserSummaryRemoveBtn{
-  margin: 0;
-}
-
 #friendProfileModal .confirmBtns{
   margin-top: 16px;
   display:flex;
-  justify-content:space-between;
+  justify-content:flex-end;
   align-items:center;
   gap:10px;
 }
@@ -5085,26 +4783,6 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     max-width: 92px;
     font-size: 11px;
   }
-}
-
-#friendProfileModal .confirmBtns .btn-ghost{
-  border-color: rgba(170, 178, 190, .58) !important;
-  background: rgba(170, 178, 190, .12) !important;
-  color: rgba(238, 242, 246, .88) !important;
-  box-shadow: none !important;
-  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
-  font-size: 11px !important;
-}
-
-#friendProfileModal #friendProfileCloseBtn{
-  border-radius: 0 !important;
-}
-
-#friendProfileModal .confirmBtns .btn-ghost:hover:not(:disabled),
-#friendProfileModal .confirmBtns .btn-ghost:focus-visible{
-  border-color: #c9ff24 !important;
-  color: #c9ff24 !important;
-  background: rgba(170, 178, 190, .16) !important;
 }
 
 body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardRow,
@@ -5591,14 +5269,14 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   clip-path:circle(50% at 50% 50%);
   pointer-events:none;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255,246,162,.18) 0 11%, rgba(201,255,36,.1) 22%, rgba(201,255,36,.035) 42%, transparent 66%),
-    radial-gradient(circle at 50% 50%, rgba(201,255,36,.16), transparent 0 14%, rgba(201,255,36,.065) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(255,246,162,.24) 0 11%, rgba(201,255,36,.14) 22%, rgba(201,255,36,.05) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(201,255,36,.22), transparent 0 14%, rgba(201,255,36,.09) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 50%,
       rgba(201,255,36,.1) 0deg 7deg,
       rgba(20,27,34,.03) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 50%, rgba(255,220,90,.1), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(255,220,90,.16), transparent 36%),
     linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0) 32%, rgba(0,0,0,.12));
   opacity:.78;
   mix-blend-mode:screen;
@@ -5611,16 +5289,16 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::before{
   background:
-    radial-gradient(circle at 50% 50%, rgba(162,246,255,.13) 0 10%, rgba(53,232,255,.075) 22%, rgba(53,232,255,.026) 42%, transparent 66%),
-    radial-gradient(circle at 50% 50%, rgba(53,232,255,.11), transparent 0 14%, rgba(53,232,255,.04) 22%, transparent 56%),
+    radial-gradient(circle at 50% 50%, rgba(162,246,255,.18) 0 10%, rgba(53,232,255,.105) 22%, rgba(53,232,255,.04) 42%, transparent 66%),
+    radial-gradient(circle at 50% 50%, rgba(53,232,255,.16), transparent 0 14%, rgba(53,232,255,.06) 22%, transparent 56%),
     repeating-conic-gradient(
       from -5deg at 50% 50%,
       rgba(53,232,255,.065) 0deg 7deg,
       rgba(20,27,34,.022) 7deg 15deg
     ),
-    radial-gradient(circle at 50% 50%, rgba(90,220,255,.075), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(90,220,255,.11), transparent 36%),
     linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,0) 32%, rgba(0,0,0,.1));
-  opacity:.46;
+  opacity:.58;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after{
@@ -5637,8 +5315,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
   clip-path:circle(50% at 50% 50%);
   pointer-events:none;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255,246,162,.16) 0 8%, rgba(201,255,36,.095) 18%, rgba(201,255,36,.035) 34%, transparent 62%);
-  opacity:.12;
+    radial-gradient(circle at 50% 50%, rgba(255,246,162,.24) 0 8%, rgba(201,255,36,.14) 18%, rgba(201,255,36,.052) 34%, transparent 62%);
+  opacity:.18;
   mix-blend-mode:screen;
   -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
   mask-image:radial-gradient(circle at 50% 50%, #000 0 12%, rgba(0,0,0,.68) 22%, rgba(0,0,0,.24) 31%, rgba(0,0,0,.04) 38%, transparent 41%);
@@ -5651,8 +5329,8 @@ body[data-app-page="friends"] #app[aria-label="TaskLaunch App"] #appPageFriends 
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardWeeklyPodiumStage::after{
   background:
-    radial-gradient(circle at 50% 50%, rgba(162,246,255,.12) 0 8%, rgba(53,232,255,.07) 18%, rgba(53,232,255,.026) 34%, transparent 62%);
-  opacity:.09;
+    radial-gradient(circle at 50% 50%, rgba(162,246,255,.18) 0 8%, rgba(53,232,255,.105) 18%, rgba(53,232,255,.04) 34%, transparent 62%);
+  opacity:.14;
 }
 
 #app[aria-label="TaskLaunch App"] #leaderboardGlobalPanel .leaderboardGlobalPodiumStage{
@@ -6766,7 +6444,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #appPageLead
   }
 
   #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyPodiumStage::after{
-    opacity:.12;
+    opacity:.18;
     transform:none;
     animation:none;
   }
@@ -7600,8 +7278,8 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     border-radius:50%;
     clip-path:circle(50% at 50% 50%);
     background:
-      radial-gradient(circle at 50% 50%, rgba(162,246,255,.12) 0 8%, rgba(53,232,255,.07) 18%, rgba(53,232,255,.026) 35%, transparent 64%);
-    opacity:.09;
+      radial-gradient(circle at 50% 50%, rgba(162,246,255,.18) 0 8%, rgba(53,232,255,.105) 18%, rgba(53,232,255,.04) 35%, transparent 64%);
+    opacity:.14;
     mix-blend-mode:screen;
     transform-origin:center;
     animation:timeGoalCompleteWheelGlow 24s linear infinite;
@@ -7616,7 +7294,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
 
   @media (prefers-reduced-motion: reduce){
     #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardGlobalStage.leaderboardWeeklyPodiumStage::after{
-      opacity:.12;
+      opacity:.18;
       transform:none;
       animation:none;
     }
@@ -7952,35 +7630,3 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] #leaderboard
     rgba(12, 18, 24, .92) !important;
 }
 
-:is(#friendProfileModal.friendProfilePrimitiveOverlay, #leaderboardPositionOverlay.leaderboardPositionPrimitiveOverlay) :is(.friendProfilePrimitiveAction, .leaderboardPositionPrimitiveAction){
-  min-width: min(178px, 38vw) !important;
-  min-height: 48px !important;
-  padding: 0 28px !important;
-  border: 4px solid #020509 !important;
-  border-radius: 8px !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, .035) 38%, rgba(0, 0, 0, .28) 100%),
-    #0b1319 !important;
-  box-shadow:
-    0 2px 0 rgba(180, 206, 226, .22),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(184, 207, 224, .4),
-    inset 0 12px 18px rgba(255, 255, 255, .045),
-    inset 0 -18px 22px rgba(0, 0, 0, .34) !important;
-  color: #f7f8fb !important;
-  font-family: var(--font-orbitron), var(--font-geist-sans), var(--font-readable) !important;
-  font-size: 11px !important;
-  letter-spacing: 0 !important;
-  text-decoration: none !important;
-}
-
-#friendProfileModal.friendProfilePrimitiveOverlay .friendProfilePrimitiveDestructiveAction{
-  border-color: #2a0509 !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 92, 112, .28),
-    0 0 14px rgba(255, 92, 112, .28),
-    0 10px 14px rgba(0, 0, 0, .72),
-    inset 0 0 0 3px rgba(255, 92, 112, .58),
-    inset 0 12px 18px rgba(255, 255, 255, .06),
-    inset 0 -18px 22px rgba(0, 0, 0, .3) !important;
-}

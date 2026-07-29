@@ -20,6 +20,7 @@ type ConfirmCall = {
     checkboxChecked?: boolean;
     dangerInputMatch?: string;
     dangerInputPlaceholder?: string;
+    overlayClassName?: string;
     onOk: () => void | Promise<void>;
     onCancel?: () => void;
   };
@@ -173,6 +174,7 @@ describe("task destructive action effects", () => {
 
     expect(harness.confirmCalls[0]?.title).toBe("Reset Task");
     expect(harness.confirmCalls[0]?.opts.okLabel).toBe("Reset");
+    expect(harness.confirmCalls[0]?.opts.overlayClassName).toBe("isResetTaskConfirm");
     expect(harness.classes.has("isResetTaskConfirm")).toBe(true);
     expect(harness.calls).toContain("busy:false:false");
   });
@@ -406,6 +408,7 @@ describe("task destructive action effects", () => {
     harness.confirmCalls[0].opts.onOk();
 
     expect(playDeleteAlertAudio).toHaveBeenCalledTimes(1);
+    expect(harness.confirmCalls[0].opts.overlayClassName).toBe("isResetAllDeleteConfirm");
     expect(harness.confirmCalls[0].opts.dangerInputMatch).toBeUndefined();
     expect(harness.confirmCalls[0].opts.dangerInputPlaceholder).toBeUndefined();
     expect(harness.history).toEqual({});

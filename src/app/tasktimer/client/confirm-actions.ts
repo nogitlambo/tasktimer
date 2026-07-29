@@ -49,6 +49,7 @@ export function buildDeleteTaskConfirmOptions(args: {
     okLabel: "Delete",
     cancelLabel: "Cancel",
     altLabel: null,
+    overlayClassName: "isDeleteTaskConfirm",
     onOk: args.onDelete,
     onAlt: null,
     onCancel: args.onCancel,

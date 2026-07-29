@@ -24,8 +24,8 @@ const pricingTiers = [
   },
   {
     name: "Pro",
-    price: "$3.99",
-    cta: "GET PRO - 7-DAY FREE TRIAL",
+    price: "$7.99",
+    cta: "Launch My 7-Day Free Trial",
     href: "/login?checkout=pro",
     badge: "7-day free trial",
     description: "Advanced tools for power users",

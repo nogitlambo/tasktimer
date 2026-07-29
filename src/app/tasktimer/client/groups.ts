@@ -2507,9 +2507,10 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       if (ctx.getGroupsLoading()) return;
       const fallbackName = String(els.friendProfileName?.textContent || "").trim();
       const friendName = String(ctx.getActiveFriendProfileName() || fallbackName || "this user").trim();
-      ctx.confirm("Remove Friend", `Remove ${friendName} as a friend?`, {
+      ctx.confirm("Remove Friend", `Do you want to remove ${friendName} as a friend?`, {
         okLabel: "Remove",
         cancelLabel: "Cancel",
+        overlayClassName: "isDeleteFriendConfirm",
         onOk: () => {
           if (ctx.getGroupsLoading()) return;
           const ownUid = String(ctx.getCurrentUid() || "").trim();
@@ -2559,7 +2560,6 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
           })();
         },
       });
-      if (els.confirmOverlay) (els.confirmOverlay as HTMLElement).classList.add("isDeleteFriendConfirm");
     });
     ctx.on(els.friendRequestSendBtn, "click", (e: any) => {
       e?.preventDefault?.();

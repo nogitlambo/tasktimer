@@ -2,7 +2,7 @@
 export default function ConfirmOverlay() {
   return (
     <div className="overlay" id="confirmOverlay">
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Confirm">
+      <div className="modal modalConfirmation" role="dialog" aria-modal="true" aria-label="Confirm">
         <h2 id="confirmTitle">Confirm</h2>
         <div className="confirmText" id="confirmText" />
 
@@ -38,7 +38,7 @@ export default function ConfirmOverlay() {
           <button className="btn btn-ghost" id="confirmCancelBtn" type="button">
             Cancel
           </button>
-          <button className="btn btn-warn" id="confirmAltBtn" type="button" style={{ display: "none" }}>
+          <button className="btn btn-ghost" id="confirmAltBtn" type="button" hidden style={{ display: "none" }}>
             Alt
           </button>
           <button className="btn btn-accent" id="confirmOkBtn" type="button">

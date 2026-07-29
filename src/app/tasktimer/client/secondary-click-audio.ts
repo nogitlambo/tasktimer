@@ -33,9 +33,9 @@ const SECONDARY_CLICK_DIRECT_SELECTOR = [
 
 const FOOTER_NAV_CLICK_SELECTOR = ".appFooterBtn";
 const CHECKBOX_CLICK_SELECTOR = ['input[type="checkbox"]', '[role="checkbox"]', ".modalPreviewDropdownOption"].join(",");
-const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"],[data-rank-ladder-open]';
+const DROPDOWN_CLICK_SELECTOR = '.modalPreviewDropdownButton,#menuIcon,[data-action="history"]';
 const TASK_FLIP_CLICK_SELECTOR = "[data-task-flip],[data-heatmap-flip]";
-const MODAL_OPEN_CLICK_SELECTOR = "[data-friend-profile-open],[data-leaderboard-profile-open]";
+const MODAL_OPEN_CLICK_SELECTOR = "[data-friend-profile-open],[data-leaderboard-profile-open],[data-rank-ladder-open]";
 const NOTE_TOOLBAR_CLICK_SELECTOR = ".richNoteToolbar [data-rich-note-command]";
 const DESTRUCTIVE_ALERT_CLICK_SELECTOR = "#friendProfileDeleteBtn";
 const SECONDARY_CLICK_TEXT_SELECTOR = "button,a";

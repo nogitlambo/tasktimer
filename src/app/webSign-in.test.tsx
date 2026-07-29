@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { isValidElement, type ButtonHTMLAttributes, type HTMLAttributes, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -101,7 +103,8 @@ describe("WebSignIn", () => {
     expect(html).toContain("webSignInEmailActions");
     expect(html).toContain("Cancel");
     expect(html).toContain("Send Link");
-    expect(html).toContain("webSignInSendLinkButton");
+    expect(sendButton?.props.className).toContain("btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction");
+    expect(sendButton?.props.className).toContain("webSignInSendLinkButton");
     expect(transitionStack?.props.className).toContain("isEmailMode");
     expect(continueButton?.props.disabled).toBe(true);
     expect(continueButton?.props.tabIndex).toBe(-1);
@@ -109,6 +112,25 @@ describe("WebSignIn", () => {
     expect(sendButton?.props.tabIndex).toBeUndefined();
     sendButton?.props.onClick?.(testEvent);
     expect(onSendEmailLink).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies the primary primitive edge treatment to the Send Link button", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8").replace(/\r\n/g, "\n");
+    const sendLinkRule = css.match(/\.webSignInPage \.webSignInSendLinkButton\.btn-accent \{[\s\S]*?\n\}/)?.[0] || "";
+    const sendLinkHoverRule =
+      css.match(
+        /\.webSignInPage \.webSignInSendLinkButton:hover:not\(:disabled\),[\s\S]*?\.webSignInPage \.webSignInSendLinkButton:focus-visible:not\(:disabled\) \{[\s\S]*?\n\}/
+      )?.[0] || "";
+
+    expect(sendLinkRule).toContain("border-radius: 8px !important;");
+    expect(sendLinkRule).toContain("linear-gradient(180deg, #e2ff72 0%, #c9ff24 48%, #94c900 100%) !important;");
+    expect(sendLinkRule).toContain("filter .16s ease");
+    expect(sendLinkRule).toContain("transform .16s ease");
+    expect(sendLinkRule).toContain("box-shadow .16s ease");
+    expect(sendLinkHoverRule).toContain("filter: brightness(1.12);");
+    expect(sendLinkHoverRule).toContain("opacity: 1;");
+    expect(sendLinkHoverRule).not.toContain("linear-gradient(180deg, #edff95");
+    expect(sendLinkHoverRule).not.toContain("color: #000;");
   });
 
   it("keeps email controls mounted but inert before email mode is selected", () => {

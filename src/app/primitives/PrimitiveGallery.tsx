@@ -207,7 +207,7 @@ export default function PrimitiveGallery() {
         <PrimitiveSection
           title="Modal Baseline"
           note="The primitives modal preview uses an isolated visual shell while preserving the expected dialog, helper text, and action patterns."
-          code={`<div className="overlay primitiveLiveOverlay primitiveSciFiModalOverlay" style={{ display: "flex" }}>\n  <div className="primitiveSciFiModal" role="dialog" aria-modal="true" aria-label="Primitive modal example">\n    <header className="primitiveSciFiModalHeader">\n      <h2>Modal Preview</h2>\n    </header>\n    <div className="primitiveSciFiModalBody">\n      <p className="modalSubtext">Standard modal helper text.</p>\n    </div>\n    <footer className="primitiveSciFiModalFooter">\n      <button className="primitiveSciFiModalAction primitiveSciFiModalSecondaryAction">Secondary</button>\n      <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction">Primary</button>\n    </footer>\n  </div>\n</div>`}
+          code={`<div className="overlay primitiveLiveOverlay primitiveSciFiModalOverlay" style={{ display: "flex" }}>\n  <div className="primitiveSciFiModal" role="dialog" aria-modal="true" aria-label="Primitive modal example">\n    <header className="primitiveSciFiModalHeader">\n      <h2>Modal Preview</h2>\n    </header>\n    <div className="primitiveSciFiModalBody">\n      <p className="modalSubtext">Standard modal helper text.</p>\n    </div>\n    <footer className="primitiveSciFiModalFooter">\n      <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction" type="button">Secondary</button>\n      <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">Primary</button>\n    </footer>\n  </div>\n</div>`}
           exampleClassName="primitiveModalPreviewPanel"
         >
           <div className="overlay primitiveLiveOverlay primitiveSciFiModalOverlay" style={{ display: "flex" }}>
@@ -221,13 +221,61 @@ export default function PrimitiveGallery() {
                 </p>
               </div>
               <footer className="primitiveSciFiModalFooter">
-                <button className="primitiveSciFiModalAction primitiveSciFiModalSecondaryAction" type="button">
+                <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction" type="button">
                   Secondary
                 </button>
-                <button className="primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">
+                <button className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction" type="button">
                   Primary
                 </button>
               </footer>
+            </div>
+          </div>
+        </PrimitiveSection>
+
+        <PrimitiveSection
+          title="Non-Destructive Confirmation Modal Baseline"
+          note="Use this confirmation modal baseline for actions that need confirmation without destructive styling."
+          code={`<div className="overlay primitiveConfirmationModalOverlay" style={{ display: "flex" }}>\n  <div className="modal modalConfirmation" role="dialog" aria-modal="true" aria-label="Confirm">\n    <h2>Confirm Title</h2>\n    <div className="confirmText">Confirm text confirms the action being requested.</div>\n    <div className="confirmBtns">\n      <button className="btn btn-ghost primitiveConfirmationModalAction" type="button">Secondary</button>\n      <button className="btn btn-accent primitiveConfirmationModalAction" type="button">Primary</button>\n    </div>\n  </div>\n</div>`}
+          exampleClassName="primitiveModalPreviewPanel primitiveConfirmationModalPreviewPanel"
+        >
+          <div className="overlay primitiveLiveOverlay primitiveConfirmationModalOverlay" style={{ display: "flex" }}>
+            <div className="modal modalConfirmation" role="dialog" aria-modal="true" aria-label="Confirm">
+              <h2>Confirm Title</h2>
+              <div className="confirmText">
+                Confirm text confirms the action being requested.
+              </div>
+              <div className="confirmBtns">
+                <button className="btn btn-ghost primitiveConfirmationModalAction" type="button">
+                  Secondary
+                </button>
+                <button className="btn btn-accent primitiveConfirmationModalAction" type="button">
+                  Primary
+                </button>
+              </div>
+            </div>
+          </div>
+        </PrimitiveSection>
+
+        <PrimitiveSection
+          title="Destructive Confirmation Modal Baseline"
+          note="Use this confirmation modal baseline for destructive actions: same modal styling, secondary cancel action, and destructive confirmation."
+          code={`<div className="overlay primitiveConfirmationModalOverlay" style={{ display: "flex" }}>\n  <div className="modal modalConfirmationDestructive" role="dialog" aria-modal="true" aria-label="Confirm">\n    <h2>Confirm Title</h2>\n    <div className="confirmText">Confirm text confirms the action being requested.</div>\n    <div className="confirmBtns">\n      <button className="btn btn-ghost primitiveConfirmationModalAction" type="button">Secondary</button>\n      <button className="btn btn-warn primitiveConfirmationModalAction" type="button">Destructive</button>\n    </div>\n  </div>\n</div>`}
+          exampleClassName="primitiveModalPreviewPanel primitiveConfirmationModalPreviewPanel"
+        >
+          <div className="overlay primitiveLiveOverlay primitiveConfirmationModalOverlay" style={{ display: "flex" }}>
+            <div className="modal modalConfirmationDestructive" role="dialog" aria-modal="true" aria-label="Confirm">
+              <h2>Confirm Title</h2>
+              <div className="confirmText">
+                Confirm text confirms the action being requested.
+              </div>
+              <div className="confirmBtns">
+                <button className="btn btn-ghost primitiveConfirmationModalAction" type="button">
+                  Secondary
+                </button>
+                <button className="btn btn-warn primitiveConfirmationModalAction" type="button">
+                  Destructive
+                </button>
+              </div>
             </div>
           </div>
         </PrimitiveSection>

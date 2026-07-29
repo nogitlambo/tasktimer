@@ -146,7 +146,7 @@ const NAV_ITEMS: NavItem[] = [
     page: "userGuide",
     label: "User Guide",
     ariaLabel: "User Guide",
-    iconSrc: "/User_Guide.svg",
+    iconSrc: "/icons/icons_default/user-guide.webp",
     desktopId: "commandCenterUserGuideBtn",
     mobileId: "footerUserGuideBtn",
     href: "/user-guide",

@@ -97,13 +97,13 @@ export function useSettingsPaneState(initialPane: SettingsPaneKey | null) {
 export function getSettingsNavItems(): SettingsNavItem[] {
   return [
     { key: "general", label: "Profile", icon: "/avatars/avatar_01.webp", desktopOnly: true },
-    { key: "preferences", label: "Preferences", icon: "/Task_Settings.svg" },
-    { key: "appearance", label: "Appearance", icon: "/Appearance.svg" },
+    { key: "preferences", label: "Preferences", icon: "/icons/icons_default/preferences.webp" },
+    { key: "appearance", label: "Appearance", icon: "/icons/icons_default/appearance.webp" },
     { key: "sounds", label: "Sounds & Alerts", icon: "/icons/icons_default/sounds.webp" },
     { key: "notifications", label: "Notifications", icon: "/icons/icons_default/toast.webp" },
     { key: "help", label: "Help Center", icon: "/icons/icons_default/question.webp", id: "commandCenterHelpCenterBtn" },
-    { key: "data", label: "Data", icon: "/History_Manager.svg" },
-    { key: "about", label: "About", icon: "/About.svg" },
+    { key: "data", label: "Data", icon: "/icons/icons_default/data.webp" },
+    { key: "about", label: "About", icon: "/icons/icons_default/about.webp" },
   ];
 }
 

@@ -24,7 +24,13 @@ export default function SignOutConfirmModal({ open, busy, onCancel, onConfirm }:
       style={{ display: "flex" }}
       onClick={busy ? undefined : onCancel}
     >
-      <div className="modal signOutPrimitiveModal" role="dialog" aria-modal="true" aria-label="Sign Out" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="modal signOutPrimitiveModal modalConfirmation"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sign Out"
+        onClick={(event) => event.stopPropagation()}
+      >
         <h2>Sign Out</h2>
         <p className="modalSubtext confirmText">Sign out of TaskLaunch on this device?</p>
         <div className="confirmBtns">
@@ -37,7 +43,7 @@ export default function SignOutConfirmModal({ open, busy, onCancel, onConfirm }:
             Cancel
           </button>
           <button
-            className="btn btn-warn modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"
+            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction signOutPrimitiveAction signOutPrimitivePrimaryAction"
             type="button"
             onClick={onConfirm}
             disabled={busy}

@@ -105,6 +105,7 @@ describe("createTaskTimerTaskDelete", () => {
     const onOk = harness.confirmOptions[0]?.onOk;
     expect(onOk).toBeTypeOf("function");
     expect(harness.confirmOptions[0]?.altLabel).toBeNull();
+    expect(harness.confirmOptions[0]?.overlayClassName).toBe("isDeleteTaskConfirm");
     onOk?.();
 
     expect(harness.tasks.map((entry) => entry.id)).toEqual(["task-2"]);
@@ -134,6 +135,9 @@ describe("createTaskTimerTaskDelete", () => {
     const onOk = harness.confirmOptions[0]?.onOk;
     expect(onOk).toBeTypeOf("function");
     expect(harness.confirmOptions[0]?.okLabel).toBe("Archive");
+    expect(harness.confirmOptions[0]?.overlayClassName).toBe("isArchiveTaskConfirm");
+    expect(harness.confirmOptions[0]?.textHtml).toContain('<a href="/history-manager">History Manager</a>');
+    expect(harness.confirmOptions[0]?.textHtml).toContain('<br><span class="confirmTextNote">[under Settings &gt; Data]</span>');
     expect(harness.confirmOptions[0]?.altLabel).toBeUndefined();
     onOk?.();
 
@@ -148,7 +152,7 @@ describe("createTaskTimerTaskDelete", () => {
       state: "archived",
     });
     expect(harness.calls).toEqual([
-      'confirm:Archive Task:Archive "Focus"?',
+      "confirm:Archive Task:Archiving a task removes it from your active tasks while preserving history. You can restore or permanently delete an archived task and associated history from History Manager. [under Settings > Data]",
       "setTasks:task-2",
       "setDeletedTaskMeta",
       "saveDeletedMeta:task-1",

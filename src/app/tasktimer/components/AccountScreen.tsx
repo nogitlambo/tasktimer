@@ -278,7 +278,7 @@ export default function AccountScreen() {
                 )}
               </div>
               <div className="accountMobileBackFooter">
-                <button className="btn btn-ghost small modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
+                <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">
                   Back
                 </button>
               </div>

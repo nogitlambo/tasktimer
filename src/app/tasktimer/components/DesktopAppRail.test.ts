@@ -46,6 +46,7 @@ describe("DesktopAppRail profile menu", () => {
 
     expect(items.map((item) => item.label)).toEqual(["User Guide", "Feedback"]);
     expect(items.map((item) => item.href)).toEqual(["/user-guide", "/feedback"]);
+    expect(items.find((item) => item.label === "User Guide")?.iconSrc).toBe("/icons/icons_default/user-guide.webp");
   });
 
   it("opens the Help Center submenu on hover and closes it when hover leaves", () => {

@@ -13,6 +13,7 @@ type ConfirmOptions = {
   dangerInputLabel?: string;
   dangerInputMatch?: string;
   dangerInputPlaceholder?: string;
+  overlayClassName?: string;
   onOk: () => void | Promise<void>;
   onCancel?: () => void;
 };
@@ -100,6 +101,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
     options.confirm("Reset Task", "Reset this task?", {
       okLabel: "Reset",
       cancelLabel: "Cancel",
+      overlayClassName: RESET_TASK_CONFIRM_CLASS,
       textHtml: resetConfirmText,
       onOk: async () => {
         options.setResetTaskConfirmBusy(true, false);
@@ -180,6 +182,7 @@ export function createTaskDestructiveActionEffects(options: TaskDestructiveActio
       "This will permanently delete all task history and tasks (if selected below) from your account.",
       {
         okLabel: "Delete",
+        overlayClassName: RESET_ALL_DELETE_CONFIRM_CLASS,
         checkboxLabel: "Also Delete All Tasks",
         checkboxChecked: false,
         onOk: () => {

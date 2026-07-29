@@ -1574,11 +1574,13 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-width:0;
   padding:0;
   border:0;
+  border-radius:8px;
   background:transparent;
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:11px;
   line-height:1.15;
   text-align:center;
+  overflow:hidden;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItem::before{
@@ -1594,6 +1596,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   width:100%;
   height:100%;
   border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;
   background:rgba(255,255,255,.04);
   color:var(--text);
   font-family:Orbitron, var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;

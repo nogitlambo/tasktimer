@@ -216,7 +216,7 @@ export default function WebSignIn(props: WebSignInProps) {
                             onClick={onSendEmailLink}
                             disabled={!showEmailLoginForm || !canSendEmailLink}
                             tabIndex={showEmailLoginForm ? undefined : -1}
-                            className="webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton"
+                            className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction webSignInAuthButton webSignInAuthButtonCompact webSignInSendLinkButton"
                           >
                             Send Link
                           </button>
