@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { readApiJson } from "@/lib/apiJson";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 
@@ -80,7 +81,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
         },
         body: JSON.stringify({ uid }),
       });
-      const data = (await res.json()) as { url?: string; error?: string };
+      const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Could not start checkout.");
       }

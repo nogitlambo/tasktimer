@@ -12,6 +12,7 @@ import {
 import AppImg from "@/components/AppImg";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { readApiJson } from "@/lib/apiJson";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
@@ -696,7 +697,7 @@ export default function DesktopAppRail({
           returnPath: "/account",
         }),
       });
-      const data = (await res.json()) as { url?: string; error?: string };
+      const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not open billing management.");
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Could not open billing management.");
       }

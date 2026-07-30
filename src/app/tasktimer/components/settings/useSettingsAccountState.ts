@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
+import { readApiJson } from "@/lib/apiJson";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { loadUserRootPlan, loadUserSubscriptionRenewalAtMs } from "@/app/tasktimer/lib/cloudStore";
@@ -350,7 +351,7 @@ export function useSettingsAccountState(): {
             returnPath: "/account",
           }),
         });
-        const data = (await res.json()) as { url?: string; error?: string };
+        const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not open billing management.");
         if (!res.ok || !data.url) {
           throw new Error(data.error || "Could not open billing management.");
         }
