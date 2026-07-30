@@ -41,7 +41,6 @@ export async function POST(req: Request) {
       client_reference_id: uid,
       allow_promotion_codes: true,
       subscription_data: {
-        trial_period_days: 7,
         metadata: { uid },
       },
       metadata: { uid },
