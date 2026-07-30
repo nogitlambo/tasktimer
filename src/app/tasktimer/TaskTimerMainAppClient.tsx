@@ -137,7 +137,6 @@ import { normalizeInteractionHapticsIntensity, type InteractionHapticsIntensity 
 import {
   captureXpAwardRectSnapshot,
   dispatchDailyRewardXpClaimEvent,
-  dispatchOverlayClosedEvent,
   dispatchPendingXpAwardEvent,
   TASKTIMER_CLAIM_TIME_GOAL_COMPLETE_XP_EVENT,
   TASKTIMER_CLAIM_DAILY_REWARD_XP_EVENT,
@@ -149,6 +148,7 @@ import {
   type TimeGoalCompleteXpClaimRequest,
 } from "./client/xp-award-events";
 import { getVisibleXpTargetRectFromDocument } from "./client/xp-award-target";
+import { closeTaskTimerOverlay } from "./client/overlay-lifecycle";
 import {
   buildRankPromotionTestPayload,
   dispatchRankPromotionEvent,
@@ -910,8 +910,7 @@ function closeDailyRewardOverlay(documentRef: Document): void {
   const overlay = documentRef.getElementById("dailyRewardOverlay") as HTMLElement | null;
   if (!overlay) return;
   overlay.classList.remove("isClaimDeliveryActive");
-  overlay.style.display = "none";
-  overlay.setAttribute("aria-hidden", "true");
+  closeTaskTimerOverlay(overlay, documentRef);
   delete overlay.dataset.awardedXp;
 }
 
@@ -1209,7 +1208,6 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
         await requestDailyRewardXpClaimDelivery(awardedXp);
       }
       closeDailyRewardOverlay(document);
-      dispatchOverlayClosedEvent(window, "dailyRewardOverlay");
     };
 
     claimBtn.addEventListener("click", handleClaim);

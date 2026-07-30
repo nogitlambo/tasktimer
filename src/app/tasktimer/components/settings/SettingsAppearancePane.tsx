@@ -15,7 +15,12 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
       <div className="settingsInlineStack">
         <section className="settingsInlineSection">
           <div className="settingsInlineSectionHead">
-            <AppImg className="settingsInlineSectionIcon" src="/Appearance.svg" alt="" aria-hidden="true" />
+            <AppImg
+              className="settingsInlineSectionIcon"
+              src="/icons/icons_default/appearance.webp"
+              alt=""
+              aria-hidden="true"
+            />
             <div className="settingsInlineSectionTitle">Theme</div>
           </div>
           <div className="unitRow" id="themeToggleRow">
@@ -34,7 +39,10 @@ export function SettingsAppearancePane({ active, exiting = false }: { active: bo
             </div>
           </div>
           <div className="toggleRow" id="taskFullColorCardsToggleRow">
-            <span>Use full color task cards</span>
+            <div className="settingsPreferenceControlCopy">
+              <span className="settingsPreferenceControlLabel">Use full color task cards</span>
+              <span className="settingsPreferenceControlHelp">Shows each task color across the full card background.</span>
+            </div>
             <button
               className="switch"
               id="taskFullColorCardsToggle"

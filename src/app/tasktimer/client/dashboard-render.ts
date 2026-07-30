@@ -1438,9 +1438,17 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
 
         const group = document.createElementNS(svgNs, "g");
         group.setAttribute("class", "dashboardActivityBarGroup");
+        if (day.sessions.length > 0) {
+          group.setAttribute("role", "button");
+          group.setAttribute("tabindex", "0");
+          group.setAttribute("data-dashboard-activity-day", day.key);
+          group.setAttribute("data-dashboard-activity-session-count", String(day.sessions.length));
+        }
         group.setAttribute(
           "aria-label",
-          `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
+          day.sessions.length > 0
+            ? `Open session summary for ${day.longLabel}, ${day.sessions.length} ${day.sessions.length === 1 ? "session" : "sessions"}`
+            : `${day.longLabel}: ${formatDashboardDurationShort(day.totalMs)} logged`
         );
 
         const glow = document.createElementNS(svgNs, "rect");
@@ -2762,6 +2770,31 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     return true;
   }
 
+  function openDashboardActivityDaySummary(dayKeyRaw: string) {
+    const dayKey = String(dayKeyRaw || "").trim();
+    if (!dayKey) return false;
+    const model = getDashboardActivityOverviewModel();
+    const day = getDashboardActivityChartView(model).days.find((candidate) => candidate.key === dayKey) || null;
+    if (!day || !day.sessions.length) return false;
+    const entries = day.sessions.map((session) => ({
+      taskId: session.taskId,
+      ts: session.ts,
+      ms: session.ms,
+      name: session.taskName,
+      note: session.note,
+      color: session.color,
+      historyMutationAllowed: false,
+      ...(session.isLive ? { isLiveSession: true } : {}),
+      ...(session.sessionId ? { sessionId: session.sessionId } : {}),
+      ...(session.liveSessionId ? { liveSessionId: session.liveSessionId } : {}),
+      ...(session.attachments != null ? { attachments: session.attachments } : {}),
+      ...(session.completionDifficulty != null ? { completionDifficulty: session.completionDifficulty } : {}),
+    }));
+    const primaryTaskId = String(entries[0]?.taskId || "").trim();
+    ctx.openHistoryEntryNoteOverlay(primaryTaskId, entries);
+    return true;
+  }
+
   function findDashboardHeatDayButton(dayKeyRaw: string): HTMLElement | null {
     const dayKey = String(dayKeyRaw || "").trim();
     if (!dayKey) return null;
@@ -2981,5 +3014,6 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
     closeDashboardHeatSummaryCard,
     renderDashboardHeatTaskList,
     openDashboardHeatTaskSummary,
+    openDashboardActivityDaySummary,
   };
 }

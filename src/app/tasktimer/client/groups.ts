@@ -2510,6 +2510,7 @@ export function createTaskTimerGroups(ctx: TaskTimerGroupsContext) {
       ctx.confirm("Remove Friend", `Do you want to remove ${friendName} as a friend?`, {
         okLabel: "Remove",
         cancelLabel: "Cancel",
+        okButtonClassName: "btn btn-warn",
         overlayClassName: "isDeleteFriendConfirm",
         onOk: () => {
           if (ctx.getGroupsLoading()) return;

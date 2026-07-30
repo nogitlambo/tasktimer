@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createTaskTimerDashboard,
   isDashboardCardSizeOptionAllowed,
@@ -104,6 +104,7 @@ function makeDashboardContext() {
   const originalDocument = globalThis.document;
   const events: Array<{ target: unknown; type: string; handler: (event: unknown) => void }> = [];
   const activityPageCalls: string[] = [];
+  const activitySummaryCalls: string[] = [];
   Object.defineProperty(globalThis, "document", {
     configurable: true,
     value: {
@@ -146,6 +147,10 @@ function makeDashboardContext() {
     },
     renderDashboardHeatTaskList: () => {},
     openDashboardHeatTaskSummary: () => {},
+    openDashboardActivityDaySummary: (dayKey: string) => {
+      activitySummaryCalls.push(dayKey);
+      return true;
+    },
     selectDashboardMomentumDriver: () => {},
     hasSelectedDashboardMomentumDriver: () => false,
     clearDashboardMomentumDriverSelection: () => {},
@@ -162,8 +167,12 @@ function makeDashboardContext() {
       };
       events.find((entry) => entry.type === "click")?.handler(event);
     },
+    dispatchDashboardEvent: (type: string, event: Record<string, unknown>) => {
+      events.find((entry) => entry.type === type)?.handler(event);
+    },
     grid,
     activityPageCalls,
+    activitySummaryCalls,
     restore: () => {
       Object.defineProperty(globalThis, "document", {
         configurable: true,
@@ -171,6 +180,17 @@ function makeDashboardContext() {
       });
     },
     supportGrid,
+  };
+}
+
+function makeDashboardActivityDayTarget(dayKey: string) {
+  return {
+    closest: (selector: string) =>
+      selector === "[data-dashboard-activity-day]"
+        ? {
+            getAttribute: (name: string) => name === "data-dashboard-activity-day" ? dayKey : null,
+          }
+        : null,
   };
 }
 
@@ -275,6 +295,115 @@ describe("dashboard drag interaction guards", () => {
       harness.restore();
     }
   });
+
+  it("opens Activity Overview day summaries on bar double-click", () => {
+    const harness = makeDashboardContext();
+    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
+    const originalWindow = (globalThis as { window?: unknown }).window;
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: {},
+      });
+      harness.dashboard.registerDashboardEvents();
+      harness.dispatchDashboardEvent("dblclick", {
+        target: makeDashboardActivityDayTarget("2026-05-18"),
+        preventDefault: () => {},
+      });
+
+      expect(harness.activitySummaryCalls).toEqual(["2026-05-18"]);
+    } finally {
+      if (hadWindow) {
+        Object.defineProperty(globalThis, "window", {
+          configurable: true,
+          value: originalWindow,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
+      harness.restore();
+    }
+  });
+
+  it("opens Activity Overview day summaries after a mobile long-press", () => {
+    vi.useFakeTimers();
+    const harness = makeDashboardContext();
+    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
+    const originalWindow = (globalThis as { window?: unknown }).window;
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: {},
+      });
+      harness.dashboard.registerDashboardEvents();
+      harness.dispatchDashboardEvent("touchstart", {
+        target: makeDashboardActivityDayTarget("2026-05-18"),
+        touches: [{ clientX: 50, clientY: 60 }],
+      });
+      vi.advanceTimersByTime(519);
+      expect(harness.activitySummaryCalls).toEqual([]);
+      vi.advanceTimersByTime(1);
+
+      expect(harness.activitySummaryCalls).toEqual(["2026-05-18"]);
+    } finally {
+      vi.useRealTimers();
+      if (hadWindow) {
+        Object.defineProperty(globalThis, "window", {
+          configurable: true,
+          value: originalWindow,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
+      harness.restore();
+    }
+  });
+
+  it("cancels Activity Overview long-press on movement and touch end", () => {
+    vi.useFakeTimers();
+    const harness = makeDashboardContext();
+    const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
+    const originalWindow = (globalThis as { window?: unknown }).window;
+
+    try {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: {},
+      });
+      harness.dashboard.registerDashboardEvents();
+      harness.dispatchDashboardEvent("touchstart", {
+        target: makeDashboardActivityDayTarget("2026-05-18"),
+        touches: [{ clientX: 50, clientY: 60 }],
+      });
+      harness.dispatchDashboardEvent("touchmove", {
+        target: makeDashboardActivityDayTarget("2026-05-18"),
+        touches: [{ clientX: 70, clientY: 60 }],
+      });
+      vi.advanceTimersByTime(520);
+
+      harness.dispatchDashboardEvent("touchstart", {
+        target: makeDashboardActivityDayTarget("2026-05-19"),
+        touches: [{ clientX: 50, clientY: 60 }],
+      });
+      harness.dispatchDashboardEvent("touchend", {});
+      vi.advanceTimersByTime(520);
+
+      expect(harness.activitySummaryCalls).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+      if (hadWindow) {
+        Object.defineProperty(globalThis, "window", {
+          configurable: true,
+          value: originalWindow,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, "window");
+      }
+      harness.restore();
+    }
+  });
 });
 
 describe("dashboard heatmap click handling", () => {
@@ -339,6 +468,7 @@ describe("dashboard heatmap click handling", () => {
           calls.push({ dayKey, taskId });
           return true;
         },
+        openDashboardActivityDaySummary: () => false,
         selectDashboardMomentumDriver: () => {},
         hasSelectedDashboardMomentumDriver: () => false,
         clearDashboardMomentumDriverSelection: () => {},

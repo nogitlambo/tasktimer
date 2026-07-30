@@ -844,6 +844,7 @@ export type TaskTimerDashboardContext = {
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
   openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => boolean;
+  openDashboardActivityDaySummary: (dayKey: string) => boolean;
   navigateToAppRoute: (path: string) => void;
   jumpToTaskById: (taskId: string) => void;
 };

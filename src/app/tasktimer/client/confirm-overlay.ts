@@ -10,7 +10,6 @@ export function createTaskTimerConfirmOverlay(ctx: TaskTimerConfirmOverlayContex
     "isResetTaskConfirm",
     "isResetAllDeleteConfirm",
     "isDeleteTaskConfirm",
-    "isDeleteFriendConfirm",
   ]);
   const overlayLifecycle = createTaskTimerOverlayLifecycle({
     documentRef: document,

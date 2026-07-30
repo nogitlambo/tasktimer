@@ -37,6 +37,10 @@ function formatXp(value: number) {
   return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString();
 }
 
+function formatAccountPlan(plan: string) {
+  return plan === "pro" ? "PLUS User" : "Free User";
+}
+
 export function getAccountSignOutActionCopy(signOutBusy: boolean) {
   return {
     label: signOutBusy ? "Signing Out" : "Sign Out",
@@ -137,7 +141,6 @@ export default function AccountScreen() {
   }, [router]);
 
   const profileName = account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
-  const signOutActionCopy = getAccountSignOutActionCopy(signOutBusy);
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
@@ -206,14 +209,28 @@ export default function AccountScreen() {
                       <p className="accountProfileBio">
                         Member since {formatMemberSinceDate(account.authMemberSince)}.
                       </p>
-                      <button
-                        className="accountProfileInlineDeleteAction"
-                        type="button"
-                        onClick={() => account.setShowDeleteAccountConfirm(true)}
-                        disabled={account.authBusy}
-                      >
-                        Delete Account
-                      </button>
+                      <p className="accountProfilePlanRow">
+                        <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
+                          {formatAccountPlan(account.authPlan)}
+                        </span>
+                        <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                        {account.authPlan === "pro" ? (
+                          <span>Manage Subscription</span>
+                        ) : (
+                          <a className="settingsAccountUpgradeLink" href="/pricing">
+                            Upgrade to <strong>PLUS</strong>
+                          </a>
+                        )}
+                        <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                        <button
+                          className="accountProfileInlineDeleteAction"
+                          type="button"
+                          onClick={() => account.setShowDeleteAccountConfirm(true)}
+                          disabled={account.authBusy}
+                        >
+                          Delete Account
+                        </button>
+                      </p>
                     </div>
                   </div>
 
@@ -245,12 +262,6 @@ export default function AccountScreen() {
                       <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
                       <span>
                         <strong>Delete Account</strong>
-                      </span>
-                    </button>
-                    <button className="accountProfileAction accountProfileActionSignOut" type="button" onClick={() => setShowSignOutConfirm(true)} disabled={signOutBusy}>
-                      <AppImg src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>{signOutActionCopy.label}</strong>
                       </span>
                     </button>
                   </div>

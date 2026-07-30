@@ -70,6 +70,7 @@ type HistoryEntrySummaryPayload = {
 type BuildHistoryEntrySummaryPayloadOptions = {
   taskId?: string;
   task?: Task | null;
+  getTaskById?: (taskId: string) => Task | null | undefined;
   rewardProgress?: RewardProgressV1 | null;
   entries: HistoryEntrySummarySource[];
   formatDateTime: (value: number) => string;
@@ -354,11 +355,29 @@ export function buildHistoryEntrySummaryPayload({
   formatDateTime,
   formatTwo,
   getEntryNote,
+  getTaskById,
 }: BuildHistoryEntrySummaryPayloadOptions): HistoryEntrySummaryPayload | null {
   const normalizedEntries = Array.isArray(entries) ? entries : [];
   const normalizedTaskId = String(taskId || "").trim();
   const sessions = normalizedEntries
-    .map((entry) => buildHistoryEntrySummaryItem(entry, normalizedTaskId, task, rewardProgress, formatDateTime, formatTwo, getEntryNote))
+    .map((entry) => {
+      const entryTaskId = String(entry?.taskId || normalizedTaskId).trim();
+      const resolvedTask = entryTaskId ? getTaskById?.(entryTaskId) || null : null;
+      const entryTask = resolvedTask
+        ? resolvedTask
+        : entryTaskId === normalizedTaskId
+          ? task
+          : null;
+      return buildHistoryEntrySummaryItem(
+        entry,
+        entryTaskId || normalizedTaskId,
+        entryTask,
+        rewardProgress,
+        formatDateTime,
+        formatTwo,
+        getEntryNote
+      );
+    })
     .sort((a, b) => a.ts - b.ts);
   if (!sessions.length) return null;
   const aggregate = buildAggregateSummary(sessions, formatDateTime, formatTwo);
@@ -436,6 +455,7 @@ export function renderHistoryEntrySummaryHtml(
           <div class="historyEntrySummarySessionInfo">
             <div class="historyEntrySummarySessionHead">
               <div class="historyEntrySummarySessionHeadMain">
+                <div class="historyEntrySummaryTaskName">${escapeHtml(session.name)}</div>
                 ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
                 <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
                 ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}

@@ -302,9 +302,11 @@ function createRenderHarness(
       name: string;
       ms: number;
       note?: string;
+      color?: string;
       sessionId?: string;
       isLiveSession?: boolean;
       liveSessionId?: string;
+      historyMutationAllowed?: boolean;
     }>;
   }> = [];
   const originalDocument = globalThis.document;
@@ -399,9 +401,11 @@ function createRenderHarness(
           name: string;
           ms: number;
           note?: string;
+          color?: string;
           sessionId?: string;
           isLiveSession?: boolean;
           liveSessionId?: string;
+          historyMutationAllowed?: boolean;
         }>,
       });
     },
@@ -422,6 +426,7 @@ function createRenderHarness(
     renderHeat: () => dashboardRender.renderDashboardHeatCalendar(),
     renderHeatTaskList: (dayKey: string, dateLabel = dayKey) => dashboardRender.renderDashboardHeatTaskList(dayKey, dateLabel),
     openHeatTaskSummary: (dayKey: string, taskId: string) => dashboardRender.openDashboardHeatTaskSummary(dayKey, taskId),
+    openActivityDaySummary: (dayKey: string) => dashboardRender.openDashboardActivityDaySummary(dayKey),
     openSummaryCalls,
     restore: () => {
       ElementStub.labelRectOverride = null;
@@ -509,6 +514,124 @@ describe("dashboard activity overview card", () => {
       expect(getActivityBarPart(bars[0], "dashboardActivityBarTop")).toBeNull();
       expect(getActivityBarPart(bars[0], "dashboardActivityBarHighlight")).toBeNull();
       expect(firstBar?.getAttribute("fill")).toMatch(/^url\(#dashboardActivityBarGradient-0\)$/);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("marks non-empty Activity Overview bars as interactive day summary targets", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const dayKey = localDayKey(weekStart);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        optimalProductivityDays: ["mon", "tue"],
+        historyByTaskId: {
+          focus: [{ ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 30 * 60000 }],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      const bars = getActivityBarGroups(harness.byId.get("dashboardActivityBars"));
+
+      expect(bars[0]?.getAttribute("data-dashboard-activity-day")).toBe(dayKey);
+      expect(bars[0]?.getAttribute("data-dashboard-activity-session-count")).toBe("1");
+      expect(bars[0]?.getAttribute("role")).toBe("button");
+      expect(bars[0]?.getAttribute("tabindex")).toBe("0");
+      expect(bars[0]?.getAttribute("aria-label")).toContain("Open session summary for");
+      expect(bars[1]?.getAttribute("data-dashboard-activity-day")).toBeNull();
+      expect(bars[1]?.getAttribute("role")).toBeNull();
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("opens a read-only Activity Overview summary for all sessions on a visible day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const dayKey = localDayKey(weekStart);
+    const harness = createRenderHarness(
+      [
+        task({ id: "focus", name: "Focus", color: "#ff5252" }),
+        task({ id: "build", name: "Build", color: "#00e5ff" }),
+      ],
+      {
+        optimalProductivityDays: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        historyByTaskId: {
+          focus: [{ ts: weekStart + 9 * 60 * 60 * 1000, name: "Focus", ms: 30 * 60000, note: "Deep work" }],
+          build: [
+            {
+              ts: weekStart + 11 * 60 * 60 * 1000,
+              name: "Build",
+              ms: 45 * 60000,
+              sessionId: "session-build",
+              isLiveSession: true,
+              liveSessionId: "live-build",
+            },
+          ],
+        },
+      }
+    );
+
+    try {
+      expect(harness.openActivityDaySummary(dayKey)).toBe(true);
+      expect(harness.openSummaryCalls).toHaveLength(1);
+      expect(harness.openSummaryCalls[0]?.taskId).toBe("focus");
+      expect(harness.openSummaryCalls[0]?.entries).toEqual([
+        expect.objectContaining({
+          taskId: "focus",
+          name: "Focus",
+          note: "Deep work",
+          historyMutationAllowed: false,
+        }),
+        expect.objectContaining({
+          taskId: "build",
+          name: "Build",
+          sessionId: "session-build",
+          isLiveSession: true,
+          liveSessionId: "live-build",
+          historyMutationAllowed: false,
+        }),
+      ]);
+    } finally {
+      harness.restore();
+    }
+  });
+
+  it("opens Activity Overview summaries for the selected older week", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 20, 10));
+    const weekStart = startOfCurrentWeekMs(Date.now(), "mon");
+    const olderDayMs = weekStart - 7 * 86400000 + 9 * 60 * 60 * 1000;
+    const olderDayKey = localDayKey(olderDayMs);
+    const currentDayKey = localDayKey(weekStart);
+    const harness = createRenderHarness(
+      [task({ id: "focus", name: "Focus" })],
+      {
+        optimalProductivityDays: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        historyByTaskId: {
+          focus: [
+            { ts: olderDayMs, name: "Focus", ms: 45 * 60000 },
+            { ts: weekStart + 10 * 60 * 60 * 1000, name: "Focus", ms: 60 * 60000 },
+          ],
+        },
+      }
+    );
+
+    try {
+      harness.renderActivityOverview();
+      harness.pageActivityOverview("older");
+
+      expect(harness.openActivityDaySummary(currentDayKey)).toBe(false);
+      expect(harness.openActivityDaySummary(olderDayKey)).toBe(true);
+      expect(harness.openSummaryCalls[0]?.entries[0]).toEqual(
+        expect.objectContaining({ taskId: "focus", ms: 45 * 60000 })
+      );
     } finally {
       harness.restore();
     }

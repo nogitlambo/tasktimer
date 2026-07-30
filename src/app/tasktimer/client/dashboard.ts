@@ -20,6 +20,9 @@ const DASHBOARD_SUPPORT_PANEL_IDS = [
   "heatmap",
 ] as const;
 
+const DASHBOARD_ACTIVITY_LONG_PRESS_MS = 520;
+const DASHBOARD_ACTIVITY_LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+
 export function sanitizeDashboardCardSize(value: unknown, cardId?: string | null) {
   void value;
   void cardId;
@@ -49,6 +52,10 @@ export function shouldOpenDashboardLockedUpgradePrompt(editMode: boolean) {
 
 export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
   const { els } = ctx;
+  let activityLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let activityLongPressDayKey = "";
+  let activityLongPressStartX = 0;
+  let activityLongPressStartY = 0;
 
   function getDashboardGridEl() {
     return (document.querySelector("#appPageDashboard .dashboardGrid") as HTMLElement | null) || els.dashboardGrid || null;
@@ -180,6 +187,53 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     ctx.renderDashboardWidgets(opts);
   }
 
+  function getDashboardActivityDayTarget(target: EventTarget | null) {
+    return ((target as HTMLElement | null)?.closest?.("[data-dashboard-activity-day]") || null) as HTMLElement | null;
+  }
+
+  function openDashboardActivityTarget(target: EventTarget | null) {
+    const activityDayTarget = getDashboardActivityDayTarget(target);
+    const dayKey = String(activityDayTarget?.getAttribute("data-dashboard-activity-day") || "").trim();
+    return dayKey ? ctx.openDashboardActivityDaySummary(dayKey) : false;
+  }
+
+  function clearDashboardActivityLongPress() {
+    if (activityLongPressTimer != null) {
+      clearTimeout(activityLongPressTimer);
+      activityLongPressTimer = null;
+    }
+    activityLongPressDayKey = "";
+    activityLongPressStartX = 0;
+    activityLongPressStartY = 0;
+  }
+
+  function beginDashboardActivityLongPress(target: EventTarget | null, clientX: number, clientY: number) {
+    const activityDayTarget = getDashboardActivityDayTarget(target);
+    const dayKey = String(activityDayTarget?.getAttribute("data-dashboard-activity-day") || "").trim();
+    clearDashboardActivityLongPress();
+    if (!dayKey) return;
+    activityLongPressDayKey = dayKey;
+    activityLongPressStartX = clientX;
+    activityLongPressStartY = clientY;
+    activityLongPressTimer = setTimeout(() => {
+      const targetDayKey = activityLongPressDayKey;
+      clearDashboardActivityLongPress();
+      if (targetDayKey) ctx.openDashboardActivityDaySummary(targetDayKey);
+    }, DASHBOARD_ACTIVITY_LONG_PRESS_MS);
+  }
+
+  function moveDashboardActivityLongPress(clientX: number, clientY: number, target?: EventTarget | null) {
+    if (activityLongPressTimer == null) return;
+    const dx = clientX - activityLongPressStartX;
+    const dy = clientY - activityLongPressStartY;
+    const movedTooFar = Math.hypot(dx, dy) > DASHBOARD_ACTIVITY_LONG_PRESS_MOVE_TOLERANCE_PX;
+    const currentTarget = target == null ? null : getDashboardActivityDayTarget(target);
+    const currentDayKey = String(currentTarget?.getAttribute("data-dashboard-activity-day") || "");
+    if (movedTooFar || (target != null && !currentTarget) || (currentDayKey && currentDayKey !== activityLongPressDayKey)) {
+      clearDashboardActivityLongPress();
+    }
+  }
+
   function handleDashboardGridClick(e: any) {
     const activityPageBtn = e.target?.closest?.("[data-dashboard-activity-page]") as HTMLButtonElement | null;
     if (activityPageBtn) {
@@ -218,10 +272,51 @@ export function createTaskTimerDashboard(ctx: TaskTimerDashboardContext) {
     }
   }
 
+  function handleDashboardActivityDoubleClick(e: any) {
+    if (!openDashboardActivityTarget(e.target)) return;
+    e.preventDefault?.();
+  }
+
+  function handleDashboardActivityKeydown(e: any) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (!openDashboardActivityTarget(e.target)) return;
+    e.preventDefault?.();
+  }
+
   function registerDashboardEvents() {
     const dashboardInteractionRoot = els.appPageDashboard || els.dashboardGrid;
     ctx.on(dashboardInteractionRoot, "click", handleDashboardGridClick);
+    ctx.on(dashboardInteractionRoot, "dblclick", handleDashboardActivityDoubleClick);
+    ctx.on(dashboardInteractionRoot, "keydown", handleDashboardActivityKeydown);
+    ctx.on(
+      dashboardInteractionRoot,
+      "touchstart",
+      (e: any) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        beginDashboardActivityLongPress(e.target, touch.clientX, touch.clientY);
+      },
+      { passive: true }
+    );
+    ctx.on(
+      dashboardInteractionRoot,
+      "touchmove",
+      (e: any) => {
+        const touch = e.touches && e.touches[0] ? e.touches[0] : null;
+        if (!touch) {
+          clearDashboardActivityLongPress();
+          return;
+        }
+        moveDashboardActivityLongPress(touch.clientX, touch.clientY, e.target);
+      },
+      { passive: true }
+    );
+    ctx.on(dashboardInteractionRoot, "touchend", clearDashboardActivityLongPress, { passive: true });
+    ctx.on(dashboardInteractionRoot, "touchcancel", clearDashboardActivityLongPress, { passive: true });
+    ctx.on(dashboardInteractionRoot, "pointerleave", clearDashboardActivityLongPress);
+    ctx.on(window as any, "scroll", clearDashboardActivityLongPress, { passive: true, capture: true });
     ctx.on(window as any, "resize", () => {
+      clearDashboardActivityLongPress();
       applyDashboardCardSizes();
       ctx.renderDashboardWidgets();
     });

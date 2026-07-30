@@ -714,6 +714,7 @@ type CreateDashboardOptionsArgs = {
   closeDashboardHeatSummaryCard: (opts?: { restoreFocus?: boolean }) => void;
   renderDashboardHeatTaskList: (dayKey: string, dateLabel: string) => boolean;
   openDashboardHeatTaskSummary: (dayKey: string, taskId: string) => boolean;
+  openDashboardActivityDaySummary: (dayKey: string) => boolean;
   navigateToAppRoute: (path: string) => void;
   jumpToTaskById: (taskId: string) => void;
 };
@@ -741,6 +742,7 @@ type CreateDashboardFeatureOptionsArgs = {
     | "closeDashboardHeatSummaryCard"
     | "renderDashboardHeatTaskList"
     | "openDashboardHeatTaskSummary"
+    | "openDashboardActivityDaySummary"
   >;
 };
 
@@ -1664,6 +1666,7 @@ export function createTaskTimerDashboardContext(
     closeDashboardHeatSummaryCard: args.closeDashboardHeatSummaryCard,
     renderDashboardHeatTaskList: args.renderDashboardHeatTaskList,
     openDashboardHeatTaskSummary: args.openDashboardHeatTaskSummary,
+    openDashboardActivityDaySummary: args.openDashboardActivityDaySummary,
     navigateToAppRoute: args.navigateToAppRoute,
     jumpToTaskById: args.jumpToTaskById,
   };
@@ -1687,6 +1690,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
     closeDashboardHeatSummaryCard,
     renderDashboardHeatTaskList,
     openDashboardHeatTaskSummary,
+    openDashboardActivityDaySummary,
   } = dashboardRenderApi;
 
   let dashboardBusyApi: { isBusy: () => boolean } = { isBusy: () => false };
@@ -1724,6 +1728,7 @@ export function createTaskTimerDashboardFeature(args: CreateDashboardFeatureOpti
       closeDashboardHeatSummaryCard: (opts) => closeDashboardHeatSummaryCard(opts),
       renderDashboardHeatTaskList: (dayKey, dateLabel) => renderDashboardHeatTaskList(dayKey, dateLabel),
       openDashboardHeatTaskSummary: (dayKey, taskId) => openDashboardHeatTaskSummary(dayKey, taskId),
+      openDashboardActivityDaySummary: (dayKey) => openDashboardActivityDaySummary(dayKey),
     })
   );
 

@@ -4,14 +4,24 @@ import {
   createTaskTimerOverlayLifecycle,
   isTaskTimerOverlayVisible,
   openTaskTimerOverlay,
+  REWARD_MODAL_CLOSE_ANIMATION_MS,
 } from "./overlay-lifecycle";
 import { hasBlockingTimeGoalCompleteOverlay, isBlockingTimeGoalCompleteOverlay } from "./overlay-visibility";
 
 function overlayStub(id = "overlay", attrs: Record<string, string | null> = {}) {
+  const classes = new Set<string>();
   return {
     id,
     style: { display: "" },
+    classList: {
+      add: (className: string) => classes.add(className),
+      remove: (className: string) => classes.delete(className),
+      contains: (className: string) => classes.has(className),
+    },
     getAttribute: (name: string) => attrs[name] ?? null,
+    setAttribute: (name: string, value: string) => {
+      attrs[name] = value;
+    },
   } as HTMLElement;
 }
 
@@ -60,18 +70,55 @@ describe("overlay lifecycle", () => {
   });
 
   it("stops time goal confetti when closing the task complete overlay", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", { dispatchEvent: vi.fn(), matchMedia: () => ({ matches: false }) });
     const stage = confettiStageStub();
+    const classes = new Set<string>();
+    const attrs: Record<string, string | null> = {};
     const overlay = {
       id: "timeGoalCompleteOverlay",
       style: { display: "flex" },
+      classList: {
+        add: (className: string) => classes.add(className),
+        remove: (className: string) => classes.delete(className),
+        contains: (className: string) => classes.has(className),
+      },
+      setAttribute: (name: string, value: string) => {
+        attrs[name] = value;
+      },
       querySelector: (selector: string) => (selector === "#timeGoalCompleteConfettiStage" ? stage : null),
     } as unknown as HTMLElement;
 
     closeTaskTimerOverlay(overlay, { activeElement: null });
 
+    expect(classes.has("isClosing")).toBe(true);
+    expect(attrs["aria-hidden"]).toBe("true");
+    expect(overlay.style.display).toBe("flex");
+    vi.advanceTimersByTime(REWARD_MODAL_CLOSE_ANIMATION_MS);
+
     expect(stage.classList.contains("isPlaying")).toBe(false);
     expect(stage.dataset.confettiState).toBe("stopped");
     expect(overlay.style.display).toBe("none");
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("cancels a pending reward close animation when reopening", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", { dispatchEvent: vi.fn(), matchMedia: () => ({ matches: false }) });
+    const overlay = overlayStub("dailyRewardOverlay");
+    overlay.style.display = "flex";
+
+    closeTaskTimerOverlay(overlay, { activeElement: null });
+    expect(overlay.classList.contains("isClosing")).toBe(true);
+
+    openTaskTimerOverlay(overlay);
+    vi.advanceTimersByTime(REWARD_MODAL_CLOSE_ANIMATION_MS);
+
+    expect(overlay.classList.contains("isClosing")).toBe(false);
+    expect(overlay.style.display).toBe("flex");
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("keeps the existing visibility rules", () => {

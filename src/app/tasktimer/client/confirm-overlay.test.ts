@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TaskTimerConfirmOverlayContext } from "./context";
 import { createTaskTimerConfirmOverlay } from "./confirm-overlay";
 
 function createClassList(initial: string[] = []) {
@@ -61,7 +62,7 @@ function createHarness() {
   };
 
   const overlay = createTaskTimerConfirmOverlay({
-    els: els as any,
+    els: els as unknown as TaskTimerConfirmOverlayContext["els"],
     on: vi.fn(),
     closeEdit: vi.fn(),
     closeElapsedPad: vi.fn(),
@@ -127,7 +128,7 @@ describe("createTaskTimerConfirmOverlay", () => {
     expect(modal.classList.contains("modalConfirmationDestructive")).toBe(false);
   });
 
-  it("keeps remove friend on the non-destructive modal shell", () => {
+  it("classifies remove friend as a destructive modal shell", () => {
     const { modal, overlay } = createHarness();
 
     overlay.confirm("Remove Friend", "Remove?", {
@@ -135,8 +136,8 @@ describe("createTaskTimerConfirmOverlay", () => {
       overlayClassName: "isDeleteFriendConfirm",
     });
 
-    expect(modal.classList.contains("modalConfirmation")).toBe(true);
-    expect(modal.classList.contains("modalConfirmationDestructive")).toBe(false);
+    expect(modal.classList.contains("modalConfirmation")).toBe(false);
+    expect(modal.classList.contains("modalConfirmationDestructive")).toBe(true);
   });
 
   it("removes modal type classes when closing", () => {

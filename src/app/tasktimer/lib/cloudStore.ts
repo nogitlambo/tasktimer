@@ -272,6 +272,12 @@ function usersDoc(uid: string) {
   return doc(db, "users", uid);
 }
 
+function userSubscriptionDoc(uid: string) {
+  const db = dbOrNull();
+  if (!db) return null;
+  return doc(db, "userSubscriptions", uid);
+}
+
 function taskDoc(uid: string, taskId: string) {
   const db = dbOrNull();
   if (!db) return null;
@@ -2211,6 +2217,23 @@ export async function loadPreferences(uid: string): Promise<UserPreferencesV1 | 
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
   return normalizeUserPreferencesDocument(snap.data());
+}
+
+export async function loadUserRootPlan(uid: string): Promise<TaskTimerPlan> {
+  const normalizedUid = String(uid || "").trim();
+  const ref = normalizedUid ? usersDoc(normalizedUid) : null;
+  if (!ref) return "free";
+  const snap = await getDoc(ref);
+  return normalizeTaskTimerPlan(snap.exists() ? snap.get("plan") : "free");
+}
+
+export async function loadUserSubscriptionRenewalAtMs(uid: string): Promise<number | null> {
+  const normalizedUid = String(uid || "").trim();
+  const ref = normalizedUid ? userSubscriptionDoc(normalizedUid) : null;
+  if (!ref) return null;
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return timestampLikeToMillis(snap.get("currentPeriodEndAt"));
 }
 
 export function buildDefaultUserPreferences(updatedAtMs = Date.now()): UserPreferencesV1 {

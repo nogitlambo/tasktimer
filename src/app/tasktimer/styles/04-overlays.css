@@ -4474,6 +4474,15 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   justify-items: start;
 }
 
+#historyEntryNoteOverlay .historyEntrySummaryTaskName{
+  color: var(--text);
+  font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
 #historyEntryNoteOverlay .historyEntrySummarySessionHeadActions{
   display: flex;
   align-items: flex-start;
@@ -13725,6 +13734,188 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+  display: block !important;
+  width: min(420px, 100%) !important;
+  max-width: min(420px, calc(100vw - 28px)) !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 36px - var(--safe-top) - var(--safe-bottom)) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: var(--modal-padding) !important;
+  border: 1px solid rgba(86, 90, 98, .86) !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background: linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;
+  box-shadow: var(--modal-shadow) !important;
+  color: var(--text) !important;
+  isolation: isolate !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+  width: min(525px, 100%) !important;
+  max-width: min(525px, calc(100vw - 28px)) !important;
+  border: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  box-shadow:
+    var(--modal-shadow),
+    inset 0 0 34px rgba(0, 0, 0, .42),
+    inset 0 0 86px rgba(0, 0, 0, .26) !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+  width: min(900px, 100%) !important;
+  max-width: min(900px, calc(100vw - 28px)) !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::before,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::before{
+  content: none !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after{
+  z-index: 0 !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after{
+  top: 50% !important;
+  translate: -50% -50% !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > *,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > *{
+  position: relative;
+  z-index: 1;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > .timeGoalCompleteConfettiStage{
+  position: absolute !important;
+  z-index: 30 !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > .timeGoalCompleteConfettiStage .timeGoalCompleteConfettiCanvas,
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > .timeGoalCompleteConfettiStage .timeGoalConfettiPiece{
+  z-index: 1 !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompletePrimitiveBody,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompletePrimitiveBody{
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  color: var(--accent3) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  text-shadow: none !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{
+  width: min(100%, 360px);
+  margin: 0 auto 16px;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{
+  width: min(100%, 420px);
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompletePrimitiveFooter,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompletePrimitiveFooter{
+  display: flex !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction{
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: min(178px, 38vw) !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding: 0 28px !important;
+  border-radius: 8px !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay.isClosing,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay.isClosing{
+  pointer-events: none !important;
+}
+
+#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+  animation: rewardConfirmationModalSlideDownOut 560ms cubic-bezier(.28, .86, .36, 1) both !important;
+  will-change: transform, opacity;
+}
+
+@keyframes rewardConfirmationModalSlideDownOut{
+  0%{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  9%,
+  63%{
+    opacity: 1;
+    transform: translateY(-12px) scale(1.01);
+  }
+
+  100%{
+    opacity: 0;
+    transform: translateY(calc(100dvh + 96px)) scale(.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+    animation: none !important;
+  }
+}
+
+@media (max-width: 640px){
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: min(100%, calc(100vw - 20px)) !important;
+    border-radius: 8px !important;
+  }
+
+  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction,
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction{
+    min-width: min(168px, 100%) !important;
+    padding: 0 24px !important;
+  }
 }
 
 @media (max-width: 640px){

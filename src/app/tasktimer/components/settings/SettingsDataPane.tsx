@@ -2,7 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT, type TaskTimerPlan } from "@/app/tasktimer/lib/entitlements";
-import { MenuIconLabel, SettingsDetailPane } from "./SettingsShared";
+import AppImg from "@/components/AppImg";
+import { SettingsDetailPane } from "./SettingsShared";
+
+function SettingsDataTileLabel({ icon, label, helper }: { icon: string; label: string; helper: string }) {
+  return (
+    <span className="settingsDataTileBody">
+      <AppImg className="settingsDataTileIcon" src={icon} alt="" aria-hidden="true" />
+      <span className="settingsDataTileText">
+        <span className="settingsDataTileLabel">{label}</span>
+        <span className="settingsDataTileHelper">{helper}</span>
+      </span>
+    </span>
+  );
+}
 
 export function SettingsDataPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
   const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>(() => readTaskTimerPlanFromStorage());
@@ -23,7 +36,7 @@ export function SettingsDataPane({ active, exiting = false }: { active: boolean;
         <section className="settingsInlineSection">
           <div className="settingsDataList">
             <button className="menuItem settingsDataListItem" data-menu="historyManager" id="historyManagerBtn" type="button">
-              <MenuIconLabel icon="/icons/icons_default/history.webp" label="History Manager" helper="Review, sort, and bulk-manage saved history entries." />
+              <SettingsDataTileLabel icon="/icons/icons_default/history.webp" label="History Manager" helper="Review, sort, and bulk-manage saved history entries." />
             </button>
             <button
               className={`menuItem settingsDataListItem${showBackupLock ? " settingsDataListItemLocked" : ""}`}
@@ -32,7 +45,7 @@ export function SettingsDataPane({ active, exiting = false }: { active: boolean;
               title={showBackupLock ? "Pro feature: Export Backup" : "Export Backup"}
               aria-label={showBackupLock ? "Export Backup, Pro feature" : "Export Backup"}
             >
-              <MenuIconLabel icon="/icons/icons_default/export.webp" label="Export Backup" helper="Save a backup file of your current task data." />
+              <SettingsDataTileLabel icon="/icons/icons_default/export.webp" label="Export Backup" helper="Save a backup file of your current task data." />
               {showBackupLock ? <span className="settingsPlanLockIcon" aria-hidden="true">&#128274;</span> : null}
             </button>
             <button
@@ -42,11 +55,11 @@ export function SettingsDataPane({ active, exiting = false }: { active: boolean;
               title={showBackupLock ? "Pro feature: Import Backup" : "Import Backup"}
               aria-label={showBackupLock ? "Import Backup, Pro feature" : "Import Backup"}
             >
-              <MenuIconLabel icon="/icons/icons_default/import.webp" label="Import Backup" helper="Restore tasks from a saved backup file." />
+              <SettingsDataTileLabel icon="/icons/icons_default/import.webp" label="Import Backup" helper="Restore tasks from a saved backup file." />
               {showBackupLock ? <span className="settingsPlanLockIcon" aria-hidden="true">&#128274;</span> : null}
             </button>
             <button className="menuItem settingsDataListItem settingsDataListItemDanger" id="resetAllBtn" type="button">
-              <MenuIconLabel icon="/History_Manager.svg" label="Reset All" helper="Permanently delete history entries and tasks." />
+              <SettingsDataTileLabel icon="/History_Manager.svg" label="Reset All" helper="Permanently delete history entries and tasks." />
             </button>
           </div>
         </section>

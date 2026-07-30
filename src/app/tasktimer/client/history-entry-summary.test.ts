@@ -51,6 +51,75 @@ function rewardLedgerEntry(overrides: Partial<RewardLedgerEntry>): RewardLedgerE
 }
 
 describe("history entry summary", () => {
+  it("resolves task-specific metadata for mixed-task day summaries", () => {
+    const focus = task({
+      id: "focus",
+      name: "Focus",
+      timeGoalEnabled: true,
+      timeGoalValue: 15,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 15,
+    });
+    const build = task({
+      id: "build",
+      name: "Build",
+      timeGoalEnabled: true,
+      timeGoalValue: 2,
+      timeGoalUnit: "hour",
+      timeGoalPeriod: "week",
+      timeGoalMinutes: 120,
+    });
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "focus",
+      task: focus,
+      getTaskById: (taskId) => (taskId === "focus" ? focus : taskId === "build" ? build : null),
+      rewardProgress: {
+        ...DEFAULT_REWARD_PROGRESS,
+        totalXp: 30,
+        totalXpPrecise: 30,
+        completedSessions: 2,
+        awardLedger: [
+          rewardLedgerEntry({ taskId: "focus", ts: 1_717_200_000_000, xp: 10 }),
+          rewardLedgerEntry({ taskId: "build", ts: 1_717_203_600_000, xp: 20 }),
+        ],
+      },
+      entries: [
+        {
+          taskId: "focus",
+          ts: 1_717_200_000_000,
+          ms: 15 * 60000,
+          name: "Focus",
+          historyMutationAllowed: false,
+        },
+        {
+          taskId: "build",
+          ts: 1_717_203_600_000,
+          ms: 2 * 60 * 60000,
+          name: "Build",
+          historyMutationAllowed: false,
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html).toContain("15 min daily");
+    expect(html).toContain("2 hr weekly");
+    expect(html).toContain('<div class="historyEntrySummaryTaskName">Focus</div>\n                <div class="historyEntrySummarySectionTitle">Session 1</div>');
+    expect(html).toContain('<div class="historyEntrySummaryTaskName">Build</div>\n                <div class="historyEntrySummarySectionTitle">Session 2</div>');
+    expect(html).toContain('data-history-summary-task-id="focus"');
+    expect(html).toContain('data-history-summary-task-id="build"');
+    expect(html).toContain('data-history-summary-xp="10" data-history-summary-task-id="focus"');
+    expect(html).toContain('data-history-summary-xp="20" data-history-summary-task-id="build"');
+    expect(html).not.toContain('data-history-summary-action="delete-session"');
+    expect(html).not.toContain('data-history-summary-action="edit-note"');
+  });
+
   it("propagates an optional opaque target key while preserving existing history action and tuple hooks", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",

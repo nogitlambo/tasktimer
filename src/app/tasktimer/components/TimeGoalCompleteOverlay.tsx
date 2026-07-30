@@ -23,7 +23,7 @@ function buildConfettiPieces(): ConfettiPiece[] {
     return seed / 4294967296;
   };
 
-  return Array.from({ length: 60 }, (_, index) => {
+  return Array.from({ length: 45 }, (_, index) => {
     const angle = Math.PI * (0.16 + rand() * 0.68);
     const pressureBias = 1 - Math.abs(angle - Math.PI / 2) / (Math.PI / 2);
     const burstDistance = 230 + rand() * 190 + pressureBias * (60 + rand() * 90);
@@ -111,7 +111,7 @@ const GOLD_FRAGMENTS = buildGoldFragments();
 export default function TimeGoalCompleteOverlay() {
   return (
     <div className="overlay primitiveSciFiModalOverlay timeGoalCompletePrimitiveOverlay" id="timeGoalCompleteOverlay" style={{ display: "none" }}>
-      <div className="modal timeGoalCompletePrimitiveModal" role="dialog" aria-modal="true" aria-label="Task Complete">
+      <div className="modal modalConfirmation timeGoalCompletePrimitiveModal" role="dialog" aria-modal="true" aria-label="Task Complete">
         <div className="timeGoalCompleteConfettiStage" id="timeGoalCompleteConfettiStage" aria-hidden="true">
           <canvas className="timeGoalCompleteConfettiCanvas" />
           {CONFETTI_PIECES.map((piece, index) => (
@@ -160,7 +160,7 @@ export default function TimeGoalCompleteOverlay() {
         </div>
         <div className="confirmBtns timeGoalCompleteActionGrid timeGoalCompletePrimitiveFooter">
           <button
-            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction"
+            className="btn btn-accent modalPreviewPrimaryAction primitiveConfirmationModalAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction"
             id="timeGoalCompleteCloseBtn"
             type="button"
             hidden

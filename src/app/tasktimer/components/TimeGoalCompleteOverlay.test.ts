@@ -6,6 +6,63 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
   const source = readFileSync(resolve(__dirname, "TimeGoalCompleteOverlay.tsx"), "utf8");
   const overlaysCss = readFileSync(resolve(__dirname, "../styles/04-overlays.css"), "utf8");
 
+  it("uses confirmation modal chrome while preserving task-complete hooks", () => {
+    expect(source).toContain('className="modal modalConfirmation timeGoalCompletePrimitiveModal"');
+    expect(source).toContain('id="timeGoalCompleteOverlay"');
+    expect(source).toContain('id="timeGoalCompleteXpValue"');
+    expect(source).toContain('id="timeGoalCompleteCloseBtn"');
+    expect(source).toContain("primitiveConfirmationModalAction timeGoalCompletePrimitiveAction");
+    expect(source).not.toContain("primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction");
+    const confirmationChromeRule =
+      overlaysCss.match(
+        /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation\{[\s\S]*?\n\}/,
+      )?.[0] ?? "";
+    expect(confirmationChromeRule).toContain("width: min(420px, 100%) !important;");
+    expect(confirmationChromeRule).toContain("border: 1px solid rgba(86, 90, 98, .86) !important;");
+    expect(confirmationChromeRule).toContain("border-radius: 8px !important;");
+    expect(confirmationChromeRule).toContain("box-shadow: var(--modal-shadow) !important;");
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{",
+    );
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{",
+    );
+    expect(overlaysCss).toContain("width: min(525px, 100%) !important;");
+    expect(overlaysCss).toContain("max-width: min(525px, calc(100vw - 28px)) !important;");
+    expect(overlaysCss).toContain("border: 0 !important;");
+    expect(overlaysCss).toContain("overflow: hidden !important;");
+    expect(overlaysCss).toContain("overflow-y: hidden !important;");
+    expect(overlaysCss).toContain("inset 0 0 34px rgba(0, 0, 0, .42)");
+    expect(overlaysCss).toContain("inset 0 0 86px rgba(0, 0, 0, .26) !important;");
+    expect(overlaysCss).toContain("width: min(900px, 100%) !important;");
+    expect(overlaysCss).toContain("max-width: min(900px, calc(100vw - 28px)) !important;");
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after{",
+    );
+    expect(overlaysCss).toContain("top: 50% !important;");
+    expect(overlaysCss).toContain("translate: -50% -50% !important;");
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation > .timeGoalCompleteConfettiStage{",
+    );
+    expect(overlaysCss).toContain("position: absolute !important;");
+    expect(overlaysCss).toContain("z-index: 30 !important;");
+    expect(overlaysCss).toContain(".timeGoalCompleteConfettiCanvas,");
+    expect(overlaysCss).toContain(".timeGoalConfettiPiece{");
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{",
+    );
+    expect(overlaysCss).toContain("background: transparent !important;");
+    expect(overlaysCss).toContain("box-shadow: none !important;");
+    expect(overlaysCss).toContain(
+      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation,",
+    );
+    expect(overlaysCss).toContain("animation: rewardConfirmationModalSlideDownOut 560ms");
+    expect(overlaysCss).toContain("@keyframes rewardConfirmationModalSlideDownOut");
+    expect(overlaysCss).toContain("63%{");
+    expect(overlaysCss).toContain("transform: translateY(-12px) scale(1.01);");
+    expect(overlaysCss).toContain("transform: translateY(calc(100dvh + 96px)) scale(.98);");
+  });
+
   it("renders a decorative gold star arc around the completion badge", () => {
     expect(source).toContain('className="timeGoalCompleteTickWrap" aria-hidden="true"');
     expect(source).toContain('className="timeGoalCompleteStarArc"');
@@ -135,6 +192,8 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
   it("varies confetti motion and uses a slower falling path", () => {
     expect(source).toContain('className="timeGoalCompleteConfettiCanvas"');
     expect(source).toContain("const className = `timeGoalConfettiPiece");
+    expect(source).toContain("Array.from({ length: 45 }, (_, index) => {");
+    expect(source).not.toContain("Array.from({ length: 60 }, (_, index) => {");
     expect(source).toContain("className={piece.className}");
     expect(source).not.toContain("const direction = rand() > 0.5 ? 1 : -1;");
     expect(source).toContain("const angle = Math.PI * (0.16 + rand() * 0.68);");

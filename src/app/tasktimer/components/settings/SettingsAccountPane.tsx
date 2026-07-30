@@ -28,6 +28,17 @@ function formatMemberSinceDate(value: string | null) {
   return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+function formatSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
+  return plan === "pro" ? "PLUS User" : "Free User";
+}
+
+function formatPlanRenewalDate(value: number | null) {
+  if (!value) return "--";
+  const nextDate = new Date(value);
+  if (Number.isNaN(nextDate.getTime())) return "--";
+  return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 export function SettingsAccountPane({
   active,
   exiting = false,
@@ -198,19 +209,46 @@ export function SettingsAccountPane({
                       <dt className="settingsAccountUidLabel">{accountEmailLabel}</dt>
                       <dd className="settingsAccountEmailValue">{accountEmailValue}</dd>
                     </div>
+                    <div className="settingsAccountMetaListItem">
+                      <dt className="settingsAccountUidLabel">Plan</dt>
+                      <dd className="settingsAccountMemberSinceValue">
+                        <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
+                          {formatSubscriptionPlan(account.authPlan)}
+                        </span>
+                        {account.authPlan === "free" ? (
+                          <>
+                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                            <a className="settingsAccountUpgradeLink" href="/pricing">
+                              Upgrade to <strong>PLUS</strong>
+                            </a>
+                          </>
+                        ) : null}
+                        {account.authPlan === "pro" ? (
+                          <>
+                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                            <span>Manage Subscription</span>
+                          </>
+                        ) : null}
+                      </dd>
+                    </div>
+                    {account.authPlan === "pro" ? (
+                      <div className="settingsAccountMetaListItem">
+                        <dt className="settingsAccountUidLabel">Plan Renewal Date</dt>
+                        <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>
+                      </div>
+                    ) : null}
                     {account.authUserUid ? (
                       <div className="settingsAccountMetaListItem settingsAccountUidListItem">
                         <dt className="settingsAccountUidLabel">UID</dt>
                         <dd className="settingsAccountUserIdValue settingsAccountUserIdWithCopy">
-                          <span>{account.authUserUid}</span>
                           <button
-                            className="iconBtn settingsUidCopyBtn"
+                            className="settingsUidCopyValueBtn"
                             type="button"
                             onClick={() => void account.onCopyUid()}
                             aria-label={account.uidCopyStatus || "Copy UID"}
                             title={account.uidCopyStatus || "Copy UID"}
                           >
-                            <span className="settingsUidCopyIcon" aria-hidden="true" />
+                            {account.authUserUid}
                           </button>
                         </dd>
                       </div>

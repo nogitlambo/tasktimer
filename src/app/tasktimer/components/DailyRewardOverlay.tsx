@@ -42,7 +42,7 @@ const GOLD_FRAGMENTS = buildGoldFragments();
 export default function DailyRewardOverlay() {
   return (
     <div className="overlay primitiveSciFiModalOverlay timeGoalCompletePrimitiveOverlay dailyRewardPrimitiveOverlay" id="dailyRewardOverlay" style={{ display: "none" }}>
-      <div className="modal timeGoalCompletePrimitiveModal dailyRewardPrimitiveModal" role="dialog" aria-modal="true" aria-label="Daily Reward">
+      <div className="modal modalConfirmation timeGoalCompletePrimitiveModal dailyRewardPrimitiveModal" role="dialog" aria-modal="true" aria-label="Daily Reward">
         <div className="timeGoalCompletePrimitiveBody dailyRewardPrimitiveBody">
           <div className="timeGoalCompleteRewardCard dailyRewardCard">
             <span className="timeGoalCompleteRibbonRail dailyRewardRibbonRail" aria-hidden="true">
@@ -75,7 +75,7 @@ export default function DailyRewardOverlay() {
         </div>
         <div className="confirmBtns timeGoalCompleteActionGrid timeGoalCompletePrimitiveFooter dailyRewardActionGrid dailyRewardPrimitiveFooter">
           <button
-            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction dailyRewardPrimitiveAction dailyRewardPrimitivePrimaryAction"
+            className="btn btn-accent modalPreviewPrimaryAction primitiveConfirmationModalAction timeGoalCompletePrimitiveAction timeGoalCompletePrimitivePrimaryAction dailyRewardPrimitiveAction dailyRewardPrimitivePrimaryAction"
             id="dailyRewardClaimBtn"
             type="button"
           >

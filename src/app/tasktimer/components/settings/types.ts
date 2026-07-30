@@ -44,6 +44,7 @@ export type SettingsAccountViewModel = {
   authPlan: TaskTimerPlan;
   authPlanStatus: "confirmed" | "refreshing";
   authPlanIsProvisional: boolean;
+  authPlanRenewalAtMs: number | null;
   authUserEmail: string | null;
   authUserUid: string | null;
   authIsAnonymous: boolean;

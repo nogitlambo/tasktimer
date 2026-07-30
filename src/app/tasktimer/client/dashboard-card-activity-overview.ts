@@ -6,6 +6,7 @@ import { normalizeTaskColor } from "../lib/taskColors";
 
 type ActivityHistoryEntry = HistoryEntry & {
   isLiveSession?: boolean;
+  liveSessionId?: string;
 };
 
 export type DashboardActivityOverviewSession = {
@@ -16,6 +17,10 @@ export type DashboardActivityOverviewSession = {
   note: string;
   color: string;
   isLive: boolean;
+  sessionId?: string;
+  liveSessionId?: string;
+  attachments?: unknown;
+  completionDifficulty?: unknown;
 };
 
 export type DashboardActivityOverviewTaskRow = {
@@ -183,6 +188,14 @@ export function buildDashboardActivityOverviewModel(options: {
           note: String(entry.note || "").trim(),
           color,
           isLive: !!entry.isLiveSession,
+          ...(typeof entry.sessionId === "string" && entry.sessionId.trim()
+            ? { sessionId: entry.sessionId.trim() }
+            : {}),
+          ...(typeof entry.liveSessionId === "string" && entry.liveSessionId.trim()
+            ? { liveSessionId: entry.liveSessionId.trim() }
+            : {}),
+          ...(entry.attachments != null ? { attachments: entry.attachments } : {}),
+          ...(entry.completionDifficulty != null ? { completionDifficulty: entry.completionDifficulty } : {}),
         });
         return;
       }

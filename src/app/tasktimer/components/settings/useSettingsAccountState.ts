@@ -4,10 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
+import { loadUserRootPlan, loadUserSubscriptionRenewalAtMs } from "@/app/tasktimer/lib/cloudStore";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
 import { notifyAccountProfileUpdated } from "@/app/tasktimer/lib/accountProfileStorage";
-import { readTaskTimerPlanCacheFromStorage, readTaskTimerPlanFromStorage, TASKTIMER_PLAN_CHANGED_EVENT } from "@/app/tasktimer/lib/entitlements";
+import {
+  readTaskTimerPlanCacheFromStorage,
+  readTaskTimerPlanFromStorage,
+  TASKTIMER_PLAN_CHANGED_EVENT,
+  writeTaskTimerPlanToStorage,
+} from "@/app/tasktimer/lib/entitlements";
 import {
   getErrorMessage,
   handleDeleteAccountFlow,
@@ -36,6 +42,7 @@ export function useSettingsAccountState(): {
   const [authPlan, setAuthPlan] = useState<SettingsAccountViewModel["authPlan"]>(() => readTaskTimerPlanFromStorage());
   const [authPlanStatus, setAuthPlanStatus] = useState<SettingsAccountViewModel["authPlanStatus"]>("confirmed");
   const [authPlanIsProvisional, setAuthPlanIsProvisional] = useState(false);
+  const [authPlanRenewalAtMs, setAuthPlanRenewalAtMs] = useState<number | null>(null);
   const [authUserEmail, setAuthUserEmail] = useState<string | null>(null);
   const [authUserUid, setAuthUserUid] = useState<string | null>(null);
   const [authIsAnonymous, setAuthIsAnonymous] = useState(false);
@@ -64,6 +71,13 @@ export function useSettingsAccountState(): {
     setAuthPlan(plan);
     setAuthPlanStatus("confirmed");
     setAuthPlanIsProvisional(false);
+    if (plan !== "pro") setAuthPlanRenewalAtMs(null);
+  }, []);
+
+  const markPlanRenewal = useCallback((renewalAtMs: number | null, uid: string) => {
+    const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+    if (activeUid !== uid) return;
+    setAuthPlanRenewalAtMs(renewalAtMs);
   }, []);
 
   const beginPlanRefresh = useCallback(
@@ -72,12 +86,35 @@ export function useSettingsAccountState(): {
       setAuthPlan(fallbackPlan);
       setAuthPlanStatus("refreshing");
       setAuthPlanIsProvisional(provisional);
+      if (fallbackPlan !== "pro") setAuthPlanRenewalAtMs(null);
       const refreshId = ++planRefreshIdRef.current;
-      void syncCurrentUserPlanCache(uid)
+      void loadUserRootPlan(uid)
         .then((nextPlan) => {
           const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
           if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
+          writeTaskTimerPlanToStorage(nextPlan, { uid });
           markPlanConfirmed(nextPlan, uid);
+          if (nextPlan === "pro") {
+            void loadUserSubscriptionRenewalAtMs(uid)
+              .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
+              .catch(() => markPlanRenewal(null, uid));
+          }
+          void syncCurrentUserPlanCache(uid).catch(() => {
+            // The profile row already reflects the direct user-root plan read.
+          });
+        })
+        .catch(() => syncCurrentUserPlanCache(uid))
+        .then((nextPlan) => {
+          const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
+          if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
+          if (nextPlan) {
+            markPlanConfirmed(nextPlan, uid);
+            if (nextPlan === "pro") {
+              void loadUserSubscriptionRenewalAtMs(uid)
+                .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
+                .catch(() => markPlanRenewal(null, uid));
+            }
+          }
         })
         .catch(() => {
           const activeUid = String(getFirebaseAuthClient()?.currentUser?.uid || "").trim();
@@ -88,7 +125,7 @@ export function useSettingsAccountState(): {
           setAuthPlanIsProvisional(false);
         });
     },
-    [markPlanConfirmed]
+    [markPlanConfirmed, markPlanRenewal]
   );
 
   const markSynced = useCallback((message = "Cloud data connected.") => {
@@ -104,6 +141,7 @@ export function useSettingsAccountState(): {
       const cached = readTaskTimerPlanCacheFromStorage();
       if (!activeUid) {
         markPlanConfirmed("free", null);
+        setAuthPlanRenewalAtMs(null);
         return;
       }
       if (!cached.uid || cached.uid !== activeUid) return;
@@ -163,6 +201,7 @@ export function useSettingsAccountState(): {
       } else {
         pendingPlanRefreshRef.current = false;
         markPlanConfirmed("free", null);
+        setAuthPlanRenewalAtMs(null);
         setSyncState("idle");
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
@@ -340,6 +379,7 @@ export function useSettingsAccountState(): {
       authPlan,
       authPlanStatus,
       authPlanIsProvisional,
+      authPlanRenewalAtMs,
       authUserEmail,
       authUserUid,
       authIsAnonymous,

@@ -334,6 +334,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     const payload = buildHistoryEntrySummaryPayload({
       taskId,
       task: options.getTaskById(taskId),
+      getTaskById: options.getTaskById,
       rewardProgress: options.getRewardProgress(),
       entries,
       formatDateTime: options.formatDateTime,

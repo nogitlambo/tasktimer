@@ -251,6 +251,15 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageDashboard .das
   filter:drop-shadow(0 0 10px rgba(217,255,89,.22));
 }
 
+.dashboardActivityBarGroup[data-dashboard-activity-day]{
+  cursor:pointer;
+}
+
+.dashboardActivityBarGroup[data-dashboard-activity-day]:focus-visible .dashboardActivityBar{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
+
 .dashboardActivityBarHighlight{
   fill:rgba(255,255,255,.18);
   pointer-events:none;

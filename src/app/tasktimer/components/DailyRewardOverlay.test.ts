@@ -18,6 +18,9 @@ describe("DailyRewardOverlay", () => {
     expect(source).toContain('<span id="dailyRewardXpValue">10</span> XP');
     expect(source).not.toContain("XP Awarded:");
     expect(source).toContain('id="dailyRewardClaimBtn"');
+    expect(source).toContain('className="modal modalConfirmation timeGoalCompletePrimitiveModal dailyRewardPrimitiveModal"');
+    expect(source).toContain("primitiveConfirmationModalAction timeGoalCompletePrimitiveAction");
+    expect(source).not.toContain("primitiveSciFiModalAction primitiveSciFiModalPrimaryAction timeGoalCompletePrimitiveAction");
     expect(source).not.toContain('id="timeGoalCompleteOverlay"');
     expect(source).not.toContain('id="timeGoalCompleteXpValue"');
     expect(source).not.toContain('id="timeGoalCompleteCloseBtn"');
@@ -66,6 +69,11 @@ describe("DailyRewardOverlay", () => {
     expect(overlaysCss).toMatch(
       /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveModal::after\{[\s\S]*top: 42%;[\s\S]*width: max\(170%, 440px\);[\s\S]*aspect-ratio: 1;[\s\S]*translate: -50% -42%;[\s\S]*border-radius: 50%;[\s\S]*mask-image: radial-gradient\(circle at 50% 50%, #000 0 12%, rgba\(0, 0, 0, \.68\) 22%, rgba\(0, 0, 0, \.24\) 31%, rgba\(0, 0, 0, \.04\) 38%, transparent 41%\);/,
     );
+    expect(overlaysCss).toContain(
+      "#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after{",
+    );
+    expect(overlaysCss).toContain("top: 50% !important;");
+    expect(overlaysCss).toContain("translate: -50% -50% !important;");
     expect(overlaysCss).toContain("opacity: .82;");
     expect(overlaysCss).not.toContain("clip-path: circle(50% at 50% 50%);");
     expect(dailyRewardBurstRule).not.toContain("mix-blend-mode:");
@@ -81,7 +89,29 @@ describe("DailyRewardOverlay", () => {
   });
 
   it("inherits task-complete reward card, XP, and action grid styling", () => {
+    const confirmationChromeRule =
+      overlaysCss.match(
+        /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation\{[\s\S]*?\n\}/,
+      )?.[0] ?? "";
+    expect(confirmationChromeRule).toContain("width: min(420px, 100%) !important;");
+    expect(confirmationChromeRule).toContain("background: linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;");
+    expect(overlaysCss).toContain("width: min(525px, 100%) !important;");
+    expect(overlaysCss).toContain("max-width: min(525px, calc(100vw - 28px)) !important;");
+    expect(overlaysCss).toContain("border: 0 !important;");
+    expect(overlaysCss).toContain("overflow: hidden !important;");
+    expect(overlaysCss).toContain("overflow-y: hidden !important;");
+    expect(overlaysCss).toContain("inset 0 0 34px rgba(0, 0, 0, .42)");
+    expect(overlaysCss).toContain("inset 0 0 86px rgba(0, 0, 0, .26) !important;");
+    expect(overlaysCss).toContain(
+      "#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::before{",
+    );
+    expect(overlaysCss).toContain("content: none !important;");
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteRewardCard,\s*#dailyRewardOverlay \.timeGoalCompleteRewardCard\{/);
+    expect(overlaysCss).toContain(
+      "#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{",
+    );
+    expect(overlaysCss).toContain("background: transparent !important;");
+    expect(overlaysCss).toContain("box-shadow: none !important;");
     expect(overlaysCss).toContain("#timeGoalCompleteOverlay .timeGoalCompleteTickBadge{");
     expect(overlaysCss).not.toContain("#dailyRewardOverlay .timeGoalCompleteTickBadge");
     expect(overlaysCss).toContain("#dailyRewardOverlay .dailyRewardBoxImage{");
@@ -96,5 +126,12 @@ describe("DailyRewardOverlay", () => {
     expect(overlaysCss).toContain("font-size: 32px !important;");
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay \.timeGoalCompleteActionGrid,\s*#dailyRewardOverlay \.timeGoalCompleteActionGrid\{/);
     expect(overlaysCss).toMatch(/#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveFooter,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.timeGoalCompletePrimitiveFooter\{/);
+    expect(overlaysCss).toContain(
+      "#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay.isClosing .modal.timeGoalCompletePrimitiveModal.modalConfirmation{",
+    );
+    expect(overlaysCss).toContain("animation: rewardConfirmationModalSlideDownOut 560ms");
+    expect(overlaysCss).toContain("63%{");
+    expect(overlaysCss).toContain("transform: translateY(-12px) scale(1.01);");
+    expect(overlaysCss).toContain("transform: translateY(calc(100dvh + 96px)) scale(.98);");
   });
 });

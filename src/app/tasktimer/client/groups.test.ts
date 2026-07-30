@@ -2029,6 +2029,7 @@ describe("friend removal status", () => {
       await flushRemoveFriendAction();
 
       expect(harness.confirmOptions[0]?.overlayClassName).toBe("isDeleteFriendConfirm");
+      expect(harness.confirmOptions[0]?.okButtonClassName).toBe("btn btn-warn");
       expect(harness.showActionConfirmation).toHaveBeenCalledWith("Friend Bee was removed from your friends.");
     } finally {
       harness.restoreWindow();

@@ -658,17 +658,27 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
   }
 
   function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
-    const currentEntries = getHistoryForTask(taskId);
-    const selectionSession = getHistoryInlineSelectionSession(taskId);
     const summaryEntries = (Array.isArray(entries) ? entries : []).map((entry) => {
+      const entryTaskId = String(entry?.taskId || taskId || "").trim();
+      const currentEntries = getHistoryForTask(entryTaskId);
+      const selectionSession = getHistoryInlineSelectionSession(entryTaskId);
       const suppliedTargetKey = String(entry?.historyTargetKey || "");
+      if (entry?.historyMutationAllowed === false && !suppliedTargetKey) {
+        return {
+          ...entry,
+          taskId: entryTaskId,
+          ts: ctx.normalizeHistoryTimestampMs(entry?.ts),
+          historyTargetKey: "",
+          historyMutationAllowed: false,
+        };
+      }
       const resolution = suppliedTargetKey
         ? selectionSession.resolveEntryTarget(suppliedTargetKey, currentEntries)
         : selectionSession.resolveEntryCandidate(entry, currentEntries);
       if (resolution.kind !== "resolved") {
         return {
           ...entry,
-          taskId,
+          taskId: entryTaskId,
           ts: ctx.normalizeHistoryTimestampMs(entry?.ts),
           historyTargetKey: "",
           historyMutationAllowed: false,
@@ -677,7 +687,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       const historyTargetKey = suppliedTargetKey || ("targetKey" in resolution ? resolution.targetKey : "");
       return {
         ...resolution.entry,
-        taskId,
+        taskId: entryTaskId,
         ts: ctx.normalizeHistoryTimestampMs(resolution.entry.ts),
         historyTargetKey,
         historyMutationAllowed: entry?.historyMutationAllowed !== false && !resolution.entry.isLiveSession,

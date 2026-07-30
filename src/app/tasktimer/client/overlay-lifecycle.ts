@@ -16,8 +16,28 @@ type TaskTimerOverlayLifecycleOptions = {
   closeShareTaskModal: () => void;
 };
 
+export const REWARD_MODAL_CLOSE_ANIMATION_MS = 560;
+
+const rewardOverlayCloseTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+const ANIMATED_REWARD_OVERLAY_IDS = new Set(["timeGoalCompleteOverlay", "dailyRewardOverlay"]);
+
+function shouldAnimateRewardOverlayClose(overlay: HTMLElement) {
+  if (!ANIMATED_REWARD_OVERLAY_IDS.has(String(overlay.id || ""))) return false;
+  if (typeof window === "undefined") return false;
+  return !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+}
+
+function clearRewardOverlayCloseTimer(overlay: HTMLElement) {
+  const timer = rewardOverlayCloseTimers.get(overlay);
+  if (!timer) return;
+  clearTimeout(timer);
+  rewardOverlayCloseTimers.delete(overlay);
+}
+
 export function openTaskTimerOverlay(overlay: HTMLElement | null) {
   if (!overlay) return;
+  clearRewardOverlayCloseTimer(overlay);
+  overlay.classList?.remove("isClosing");
   overlay.style.display = "flex";
 }
 
@@ -31,13 +51,30 @@ export function closeTaskTimerOverlay(overlay: HTMLElement | null, documentRef: 
     // ignore
   }
   if (!overlay) return;
-  if (overlay.id === "timeGoalCompleteOverlay") {
-    stopTimeGoalConfetti(getTimeGoalConfettiStage(overlay));
+  clearRewardOverlayCloseTimer(overlay);
+  const finishClose = () => {
+    overlay.classList?.remove("isClosing");
+    if (overlay.id === "timeGoalCompleteOverlay") {
+      stopTimeGoalConfetti(getTimeGoalConfettiStage(overlay));
+    }
+    overlay.style.display = "none";
+    if (typeof window !== "undefined") {
+      dispatchOverlayClosedEvent(window, overlay.id);
+    }
+  };
+  if (!shouldAnimateRewardOverlayClose(overlay)) {
+    finishClose();
+    return;
   }
-  overlay.style.display = "none";
-  if (typeof window !== "undefined") {
-    dispatchOverlayClosedEvent(window, overlay.id);
-  }
+  overlay.classList?.add("isClosing");
+  overlay.setAttribute("aria-hidden", "true");
+  rewardOverlayCloseTimers.set(
+    overlay,
+    setTimeout(() => {
+      rewardOverlayCloseTimers.delete(overlay);
+      finishClose();
+    }, REWARD_MODAL_CLOSE_ANIMATION_MS),
+  );
 }
 
 export function isTaskTimerOverlayVisible(overlay: HTMLElement | null) {
