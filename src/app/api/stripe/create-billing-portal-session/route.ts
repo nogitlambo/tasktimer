@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
+import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiErrors";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
@@ -56,6 +57,13 @@ export async function POST(req: Request) {
     }
     if (error instanceof Error && "status" in error) {
       return createApiAuthErrorResponse(error, "Could not create billing portal session.");
+    }
+    if (isStripeApiError(error)) {
+      return createStripeApiErrorResponse(
+        error,
+        "Could not create billing portal session.",
+        "[api/stripe/create-billing-portal-session] Stripe request failed"
+      );
     }
     return createApiInternalErrorResponse(
       error,
