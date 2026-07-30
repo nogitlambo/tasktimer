@@ -1441,6 +1441,54 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     text-align: left;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileNameRow,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileNameRow,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailProfileNameRow,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileNameRow{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileNameText,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileNameText,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailProfileNameText,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailProfileNameText{
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanPill,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanPill,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanPill,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanPill{
+    flex: 0 0 auto;
+    min-width: 42px;
+    padding: 3px 7px;
+    border: 1px solid rgba(201,255,36,.34);
+    background: rgba(201,255,36,.08);
+    color: rgba(232,255,160,.94);
+    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanPill-free,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanPill-free,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanPill-free,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanPill-free{
+    border-color: rgba(188,214,230,.28);
+    background: rgba(188,214,230,.07);
+    color: rgba(214,224,234,.78);
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,
@@ -2130,6 +2178,17 @@ body[data-theme="lime"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashb
 #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileEmail,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileEmail{
     display: block;
+  }
+
+#app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileNameRow,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailProfileIdentity .dashboardRailProfileNameRow{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
 #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailProfileTags,

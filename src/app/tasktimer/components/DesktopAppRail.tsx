@@ -778,7 +778,12 @@ export default function DesktopAppRail({
                     <span className="dashboardAvatar dashboardRailProfileAvatar">{profileInitials}</span>
                   )}
                   <span className="dashboardRailProfileIdentity">
-                    <span className="dashboardProfileName">{profileLabel.toLocaleLowerCase()}</span>
+                    <span className="dashboardProfileName dashboardRailProfileNameRow">
+                      <span className="dashboardRailProfileNameText">{profileLabel.toLocaleLowerCase()}</span>
+                      <span className={`dashboardRailPlanPill dashboardRailPlanPill-${currentPlan}`} aria-label={`${currentPlanLabel} plan`}>
+                        {currentPlanLabel}
+                      </span>
+                    </span>
                     {profileEmail ? <span className="dashboardProfileMeta dashboardRailProfileEmail">{profileEmail}</span> : null}
                   </span>
                 </span>
