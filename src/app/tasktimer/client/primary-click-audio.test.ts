@@ -33,7 +33,7 @@ function makeElement(opts: {
 }
 
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id], #timeGoalCompleteNextTaskOverlay [data-time-goal-next-task-id]';
 const TASK_STOP_CLICK_SELECTOR = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 const ONBOARDING_NEXT_CLICK_SELECTOR = '[data-onboarding-next-action="true"]';
 const PRIMARY_CLICK_SELECTOR = `#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction, ${ONBOARDING_NEXT_CLICK_SELECTOR}`;

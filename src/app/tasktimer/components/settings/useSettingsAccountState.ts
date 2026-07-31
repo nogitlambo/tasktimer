@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
+import { Browser } from "@capacitor/browser";
 import { readApiJson } from "@/lib/apiJson";
-import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { loadUserRootPlan, loadUserSubscriptionRenewalAtMs } from "@/app/tasktimer/lib/cloudStore";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
@@ -24,7 +25,17 @@ import {
 } from "./settingsAccountService";
 import type { SettingsAccountViewModel } from "./types";
 
-export function useSettingsAccountState(): {
+type UseSettingsAccountStateOptions = {
+  nativeCheckoutReturnPath?: string;
+};
+
+function resolveNativeCheckoutReturnPath(value: string | undefined) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "/settings";
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+}
+
+export function useSettingsAccountState(options: UseSettingsAccountStateOptions = {}): {
   account: SettingsAccountViewModel;
   authUserUid: string | null;
   authUserEmail: string | null;
@@ -35,6 +46,7 @@ export function useSettingsAccountState(): {
   setAuthStatus: (value: string) => void;
   markSynced: (message?: string) => void;
 } {
+  const nativeCheckoutReturnPath = resolveNativeCheckoutReturnPath(options.nativeCheckoutReturnPath);
   const initialPlanCache = readTaskTimerPlanCacheFromStorage();
   const [authStatus, setAuthStatus] = useState("");
   const [authError, setAuthError] = useState("");
@@ -59,6 +71,9 @@ export function useSettingsAccountState(): {
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
+  const [showNativePlusUpsellModal, setShowNativePlusUpsellModal] = useState(false);
+  const [nativePlusCheckoutBusy, setNativePlusCheckoutBusy] = useState(false);
+  const [nativePlusCheckoutError, setNativePlusCheckoutError] = useState("");
   const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
   const pendingPlanRefreshRef = useRef(false);
@@ -325,6 +340,48 @@ export function useSettingsAccountState(): {
     }
   }, [authIsAnonymous, authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
 
+  const onStartNativePlusCheckout = useCallback(async () => {
+    const auth = getFirebaseAuthClient();
+    const currentUser = auth?.currentUser || null;
+    const uid = String(currentUser?.uid || "").trim();
+    if (!uid || nativePlusCheckoutBusy) return;
+
+    setNativePlusCheckoutBusy(true);
+    setNativePlusCheckoutError("");
+    setAuthError("");
+    setAuthStatus("");
+    try {
+      const idToken = await currentUser?.getIdToken();
+      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
+        body: JSON.stringify({
+          uid,
+          returnTarget: "native",
+          successReturnPath: nativeCheckoutReturnPath,
+          cancelReturnPath: nativeCheckoutReturnPath,
+        }),
+      });
+      const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Could not start checkout.");
+      }
+      try {
+        await Browser.open({ url: data.url });
+      } catch {
+        window.location.assign(data.url);
+      }
+    } catch (err: unknown) {
+      void recordNonFatal(err, {
+        flow: "billing_checkout",
+        source_page: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
+      });
+      setNativePlusCheckoutError(getErrorMessage(err, "Could not start checkout."));
+      setNativePlusCheckoutBusy(false);
+    }
+  }, [nativeCheckoutReturnPath, nativePlusCheckoutBusy]);
+
   const onOpenPlanAction = useCallback(async () => {
     if (typeof window === "undefined") return;
 
@@ -348,7 +405,7 @@ export function useSettingsAccountState(): {
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
             uid,
-            returnPath: "/account",
+            returnPath: nativeCheckoutReturnPath,
           }),
         });
         const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not open billing management.");
@@ -360,7 +417,7 @@ export function useSettingsAccountState(): {
       } catch (err: unknown) {
         void recordNonFatal(err, {
           flow: "billing_portal",
-          source_page: "settings",
+          source_page: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
         });
         setAuthError(getErrorMessage(err, "Could not open billing management."));
         setAuthStatus("");
@@ -368,8 +425,14 @@ export function useSettingsAccountState(): {
       }
     }
 
-    window.open("/pricing", "_blank", "noopener,noreferrer");
-  }, [authPlan]);
+    if (isNativeOrFileRuntime()) {
+      setNativePlusCheckoutError("");
+      setShowNativePlusUpsellModal(true);
+      return;
+    }
+
+    window.location.assign("/pricing");
+  }, [authPlan, nativeCheckoutReturnPath]);
 
   return {
     account: {
@@ -396,7 +459,17 @@ export function useSettingsAccountState(): {
       syncAtMs,
       uidCopyStatus,
       showDeleteAccountConfirm,
+      showNativePlusUpsellModal,
+      nativePlusCheckoutBusy,
+      nativePlusCheckoutError,
+      nativePlusCheckoutCtaLabel: nativePlusCheckoutBusy ? "Starting Checkout..." : "Launch My 7-Day Free Trial",
       setShowDeleteAccountConfirm,
+      setShowNativePlusUpsellModal: (open) => {
+        setShowNativePlusUpsellModal(open);
+        if (open) return;
+        setNativePlusCheckoutError("");
+        setNativePlusCheckoutBusy(false);
+      },
       onDeleteAccount,
       onCopyUid,
       onStartAliasEdit: () => {
@@ -413,6 +486,7 @@ export function useSettingsAccountState(): {
       onSaveAlias,
       onAliasDraftChange: setAuthUserAliasDraft,
       onOpenPlanAction,
+      onStartNativePlusCheckout,
     },
     authUserUid,
     authUserEmail,

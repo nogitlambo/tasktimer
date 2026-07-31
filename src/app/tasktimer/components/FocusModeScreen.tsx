@@ -98,7 +98,12 @@ export default function FocusModeScreen() {
         </div>
       </div>
       <div className="focusModeExitBar">
-        <button className="btn btn-ghost small" id="focusModeBackBtn" type="button" aria-label="Close Focus Mode">
+        <button
+          className="btn btn-ghost primitiveFocusExitBtn"
+          id="focusModeBackBtn"
+          type="button"
+          aria-label="Close Focus Mode"
+        >
           Exit
         </button>
       </div>

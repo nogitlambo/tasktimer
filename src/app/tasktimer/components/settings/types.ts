@@ -60,7 +60,12 @@ export type SettingsAccountViewModel = {
   syncAtMs: number | null;
   uidCopyStatus: string;
   showDeleteAccountConfirm: boolean;
+  showNativePlusUpsellModal: boolean;
+  nativePlusCheckoutBusy: boolean;
+  nativePlusCheckoutError: string;
+  nativePlusCheckoutCtaLabel: string;
   setShowDeleteAccountConfirm: (open: boolean) => void;
+  setShowNativePlusUpsellModal: (open: boolean) => void;
   onDeleteAccount: () => Promise<void>;
   onCopyUid: () => Promise<void>;
   onStartAliasEdit: () => void;
@@ -68,6 +73,7 @@ export type SettingsAccountViewModel = {
   onSaveAlias: () => Promise<void>;
   onAliasDraftChange: (value: string) => void;
   onOpenPlanAction: () => Promise<void>;
+  onStartNativePlusCheckout: () => Promise<void>;
 };
 
 export type SettingsAvatarViewModel = {

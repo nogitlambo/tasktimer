@@ -526,8 +526,8 @@ describe("time goal complete next task launcher", () => {
     );
 
     expect(options).toEqual([
-      { id: "daily", name: "Daily Task", color: "#ff5252", scheduleText: "9:30 AM" },
-      { id: "partial", name: "Partial Task", color: "#35e8ff", scheduleText: "10:30 AM" },
+      { id: "daily", name: "Daily Task", color: "#ff5252", goalText: "1m" },
+      { id: "partial", name: "Partial Task", color: "#35e8ff", goalText: "1m" },
     ]);
   });
 
@@ -537,7 +537,7 @@ describe("time goal complete next task launcher", () => {
         [timeGoalTask({ id: "daily", name: "Daily Task", running: false, color: "not-a-color" })],
         { fallbackColor: "#00bcd4" }
       )
-    ).toEqual([{ id: "daily", name: "Daily Task", color: "#00bcd4", scheduleText: "Unscheduled" }]);
+    ).toEqual([{ id: "daily", name: "Daily Task", color: "#00bcd4", goalText: "1m" }]);
   });
 
   it("excludes tasks with current-day completion metadata even before history is available", () => {
@@ -612,7 +612,7 @@ describe("time goal complete next task launcher", () => {
   });
 
   it("shows the all-tasks-complete message only when no next tasks remain", () => {
-    expect(getTimeGoalCompleteMetaMessage([{ id: "next", name: "Next", color: "#35e8ff", scheduleText: "9:00 AM" }])).toBe("");
+    expect(getTimeGoalCompleteMetaMessage([{ id: "next", name: "Next", color: "#35e8ff", goalText: "1m" }])).toBe("");
     expect(getTimeGoalCompleteMetaMessage([])).toBe("All tasks completed for today!");
   });
 

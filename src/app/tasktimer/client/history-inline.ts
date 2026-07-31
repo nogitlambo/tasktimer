@@ -3,6 +3,7 @@ import type { TaskTimerHistoryInlineContext } from "./context";
 import { findDelegatedElement, getDelegatedAction } from "./delegated-actions";
 import { playDeleteAlertAudio } from "./delete-alert-audio";
 import { createHistoryEntrySummaryInteraction } from "./history-entry-summary-interaction";
+import type { HistoryEntrySummaryOpenOptions } from "./history-entry-summary-interaction";
 import {
   createHistoryInlineSelectionSession,
   type HistoryInlineDeleteResolution,
@@ -657,7 +658,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     return !!el.closest?.(".historyCanvasWrap");
   }
 
-  function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
+  function openHistoryEntryNoteOverlay(taskId: string, entries: any[], openOptions?: HistoryEntrySummaryOpenOptions) {
     const summaryEntries = (Array.isArray(entries) ? entries : []).map((entry) => {
       const entryTaskId = String(entry?.taskId || taskId || "").trim();
       const currentEntries = getHistoryForTask(entryTaskId);
@@ -693,7 +694,7 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
         historyMutationAllowed: entry?.historyMutationAllowed !== false && !resolution.entry.isLiveSession,
       };
     });
-    if (!historyEntrySummaryInteraction.openSummary(taskId, summaryEntries)) {
+    if (!historyEntrySummaryInteraction.openSummary(taskId, summaryEntries, openOptions)) {
       closeHistoryEntryNoteOverlay();
       return;
     }

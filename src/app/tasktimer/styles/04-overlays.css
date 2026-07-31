@@ -699,6 +699,22 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   }
 }
 
+@media (max-width: 700px){
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
+    align-items: flex-end !important;
+    padding: 0 !important;
+    z-index: 1200 !important;
+  }
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal{
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 75dvh !important;
+    max-height: 75dvh !important;
+    margin: 0 !important;
+  }
+}
+
 @keyframes rankLadderSheetIn{
   from{
     transform: translateY(100%);
@@ -3083,6 +3099,10 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
   text-align: left !important;
 }
 
+#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryCloseIcon{
+  display: none !important;
+}
+
 #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader h2{
   display: block;
   margin: 0 !important;
@@ -4717,24 +4737,24 @@ body:has(#editOverlay[style*="display: flex"]) #app[aria-label="TaskLaunch App"]
 
 @media (max-width: 640px){
 #historyEntryNoteOverlay{
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: center;
-    padding:
-      calc(72px + var(--safe-top))
-      calc(6px + var(--safe-right))
-      calc(96px + var(--safe-bottom))
-      calc(6px + var(--safe-left));
+    padding: 0 !important;
   }
 
 #historyEntryNoteOverlay .modal{
       --history-entry-note-shell-pad-x: 12px;
-      width: calc(100vw - 12px - var(--safe-left) - var(--safe-right));
-      max-width: none;
-      min-width: 0;
-      min-height: 0;
-      max-height: calc(100dvh - 72px - 96px - var(--safe-top) - var(--safe-bottom));
-      margin-inline: auto;
-      padding: 12px;
+      box-sizing: border-box !important;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      min-width: 100vw !important;
+      min-height: 0 !important;
+      height: 75dvh !important;
+      max-height: 75dvh !important;
+      margin: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      padding: 12px !important;
     }
 
 #historyEntryNoteOverlay .historyEntrySummaryAggregateCard,
@@ -6992,38 +7012,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   margin: 0 0 12px;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTasks[hidden]{
-  display: none !important;
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
-  margin: 0 0 28px;
-  overflow: hidden;
-  transform-origin: top center;
-  animation: timeGoalCompleteLauncherRollDown .34s cubic-bezier(.16,.84,.24,1) both;
-  will-change: opacity, transform, clip-path;
-}@keyframes timeGoalCompleteLauncherRollDown{from{
-    opacity: 0;
-    clip-path: inset(0 0 100% 0);
-    transform: translateY(-10px) scaleY(.92);
-  }62%{
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transform: translateY(2px) scaleY(1.015);
-  }to{
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transform: translateY(0) scaleY(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce){
-#timeGoalCompleteOverlay .timeGoalCompleteNextTasks{
-    animation: none;
-  }
-}
-
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTitle{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTitle{
   flex: 0 0 100%;
   margin: 0 0 9px;
   color: rgba(210,218,228,.76);
@@ -7035,7 +7024,24 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   text-align: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskGrid{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskModalGrid{
+  margin: 0 0 18px;
+}
+
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskModalActions{
+  justify-content: center !important;
+  margin-top: 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(170,178,190,.18);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskModalActions .btn{
+  justify-content: center;
+}
+
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskGrid{
   --time-goal-next-task-gap: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -7043,12 +7049,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   justify-content: center;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile{
   --task-color: var(--accent);
   flex: 0 1 calc((100% - (3 * var(--time-goal-next-task-gap))) / 4);
   min-width: 0;
   min-height: 54px;
   border: 1px solid color-mix(in srgb, var(--task-color) 72%, rgba(255,255,255,.34));
+  border-radius: 18px;
   background: rgba(5,7,10,.32);
   box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 0 12px color-mix(in srgb, var(--task-color) 26%, transparent);
   color: #fff;
@@ -7056,7 +7063,7 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   display: grid;
   place-items: center;
   gap: 4px;
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-readable);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -7067,8 +7074,8 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:hover,
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile:focus-visible{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile:hover,
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile:focus-visible{
   border-color: color-mix(in srgb, var(--task-color) 62%, #fff);
   background: linear-gradient(180deg, color-mix(in srgb, var(--task-color) 82%, rgba(255,255,255,.18)), color-mix(in srgb, var(--task-color) 68%, #05070a));
   box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px color-mix(in srgb, var(--task-color) 42%, transparent);
@@ -7077,15 +7084,15 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   transform: translateY(-1px);
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile span{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile span{
   overflow-wrap: anywhere;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskName{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskName{
   display: block;
 }
 
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTime{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTime{
   display: block;
   color: rgba(255,255,255,.78);
   font-size: 10px;
@@ -7095,13 +7102,13 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
 }
 
 @media (max-width: 560px){
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile{
     flex-basis: calc((100% - var(--time-goal-next-task-gap)) / 2);
   }
 }
 
 @media (max-width: 360px){
-#timeGoalCompleteOverlay .timeGoalCompleteNextTaskTile{
+#timeGoalCompleteNextTaskOverlay .timeGoalCompleteNextTaskTile{
     flex-basis: 100%;
   }
 }
@@ -7192,27 +7199,14 @@ body[data-theme="lime"] #rankPromotionOverlay .rankPromotionLabel::after{
   }
 }
 
-#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn{
-  background: #c9ff24 !important;
-  background-image: none !important;
-  color: #061006 !important;
-  border-color: #c9ff24 !important;
-  box-shadow: 0 0 14px rgba(201,255,36,.22);
-}
-
-#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:hover,
-#timeGoalCompleteOverlay #timeGoalCompleteLaunchNextBtn:focus-visible{
-  background: #d6ff57 !important;
-  background-image: none !important;
-  color: #061006 !important;
-  border-color: #d6ff57 !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 16px rgba(201,255,36,.3) !important;
-}
-
 #timeGoalCompleteOverlay .modal{
   clip-path: none;
   width:min(calc(var(--modal-width-lg) * 0.75), 100%) !important;
   max-width:calc(var(--modal-width-lg) * 0.75);
+}
+
+#timeGoalCompleteNextTaskOverlay .modal{
+  width:min(var(--modal-width-md), 100%) !important;
 }
 
 #timeGoalCompleteSaveNoteOverlay .modal,
@@ -8487,7 +8481,8 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #rewardsInfoOverlay,
   #rankLadderOverlay,
   #timeGoalCompleteSaveNoteOverlay,
-  #timeGoalCompleteNoteOverlay
+  #timeGoalCompleteNoteOverlay,
+  #nativePlusUpsellOverlay
 ) .modal{
   background: var(--modal-bg) !important;
   border: 1px solid var(--modal-border) !important;
@@ -8496,7 +8491,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   box-shadow: var(--modal-shadow) !important;
   padding: var(--modal-padding) !important;
   font-family: var(--font-readable) !important;
-}:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal{
+}:is(.standardModalOverlay, #confirmOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modal{
   width:min(var(--modal-width-sm), 100%) !important;
 }:is(#aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #shareTaskModal, #taskManualEntryOverlay) .modal{
   width:min(var(--modal-width-md), 100%) !important;
@@ -8504,13 +8499,13 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   width:min(var(--modal-width-lg), 100%) !important;
 }#rankPromotionOverlay .modal{
   width:min(520px, 100%) !important;
-}:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) :where(.modalSubtext, .confirmText),
+}:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) :where(.modalSubtext, .confirmText),
 #confirmOverlay :is(.confirmText, .confirmChkNote, .confirmDangerInputLabel){
   font-family: var(--font-readable) !important;
   font-size: 13px !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modalSubtext{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modalSubtext{
   color: #a8a7a7 !important;
 }
 
@@ -8538,21 +8533,21 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   }
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modal select{
   border-color: #1a1b20 !important;
   background-color: rgba(26, 27, 32, .58) !important;
   color: rgba(238, 242, 246, .92) !important;
   border-radius: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus,
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select:focus-visible{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modal select:focus,
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modal select:focus-visible{
   border-color: var(--accent) !important;
   outline: 1px solid var(--accent) !important;
   outline-offset: 0 !important;
 }
 
-:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay) .modal select option{
+:is(.standardModalOverlay, #confirmOverlay, #aboutOverlay, #howtoOverlay, #appearanceOverlay, #taskSettingsOverlay, #contactOverlay, #elapsedPadOverlay, #signOutConfirmOverlay, #temporaryModalOverlay, #exportTaskOverlay, #historyAnalysisOverlay, #onboardingOverlay, #rewardsInfoOverlay, #rankLadderOverlay, #rankPromotionOverlay, #shareTaskModal, #taskManualEntryOverlay, #timeGoalCompleteSaveNoteOverlay, #timeGoalCompleteNoteOverlay, #nativePlusUpsellOverlay) .modal select option{
   background: #0d0f13 !important;
   color: rgba(238, 242, 246, .92) !important;
 }
@@ -13736,6 +13731,20 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   max-height: 48px !important;
 }
 
+body[data-tasktimer-native-runtime="true"] #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .signOutPrimitiveAction{
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
   display: block !important;
@@ -13768,11 +13777,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
     var(--modal-shadow),
     inset 0 0 34px rgba(0, 0, 0, .42),
     inset 0 0 86px rgba(0, 0, 0, .26) !important;
-}
-
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
-  width: min(900px, 100%) !important;
-  max-width: min(900px, calc(100vw - 28px)) !important;
 }
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::before,
@@ -13831,10 +13835,6 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{
   background: transparent !important;
   box-shadow: none !important;
-}
-
-#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{
-  width: min(100%, 420px);
 }
 
 #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompletePrimitiveFooter,
@@ -13904,8 +13904,7 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
 
 @media (max-width: 640px){
   #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
-  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,
-  #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
+  #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{
     width: min(100%, calc(100vw - 20px)) !important;
     max-width: min(100%, calc(100vw - 20px)) !important;
     border-radius: 8px !important;
@@ -13914,70 +13913,377 @@ body[data-theme="lime"] #editOverlay .milestonesSummaryCollapseLabel::after{
   #timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction,
   #dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .primitiveConfirmationModalAction{
     min-width: min(168px, 100%) !important;
-    padding: 0 24px !important;
+  padding: 0 24px !important;
+  }
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation{
+  display: block !important;
+  width: min(525px, 100%) !important;
+  max-width: min(525px, calc(100vw - 28px)) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  padding: var(--modal-padding) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  clip-path: none !important;
+  background: linear-gradient(180deg, rgba(28, 30, 36, .98) 0%, rgba(13, 15, 19, .98) 100%) !important;
+  box-shadow:
+    var(--modal-shadow),
+    inset 0 0 34px rgba(0, 0, 0, .42),
+    inset 0 0 86px rgba(0, 0, 0, .26) !important;
+  color: var(--text) !important;
+  isolation: isolate !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation::before{
+  content: none !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation::after{
+  z-index: 0 !important;
+  top: 50% !important;
+  translate: -50% -50% !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation > *{
+  position: relative;
+  z-index: 1;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation > h2{
+  margin-bottom: 10px !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation .confirmText{
+  margin: 0 0 18px !important;
+  color: var(--accent3) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  text-shadow: none !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation .timeGoalCompleteNextTaskModalGrid{
+  margin: 0 0 18px !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation .timeGoalCompleteNextTaskModalActions{
+  display: flex !important;
+  min-height: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-top: 0 !important;
+  padding: 14px 0 0 !important;
+  border-top: 1px solid rgba(170,178,190,.18) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation .primitiveConfirmationModalAction{
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: min(178px, 38vw) !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding: 0 28px !important;
+  border-radius: 8px !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay.isClosing{
+  pointer-events: none !important;
+}
+
+#timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay.isClosing .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation{
+  animation: rewardConfirmationModalSlideDownOut 560ms cubic-bezier(.28, .86, .36, 1) both !important;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay.isClosing .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation{
+    animation: none !important;
   }
 }
 
 @media (max-width: 640px){
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
-    --history-entry-summary-mobile-top-clearance: calc(44px + var(--safe-top));
-    --history-entry-summary-mobile-bottom-clearance: calc(
-      max(116px, var(--mobile-footer-reserved-space, 82px)) + var(--safe-bottom)
-    );
+  #timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation{
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: min(100%, calc(100vw - 20px)) !important;
+    border-radius: 8px !important;
+  }
+
+  #timeGoalCompleteNextTaskOverlay.timeGoalCompleteNextTaskPrimitiveOverlay .modal.timeGoalCompleteNextTaskPrimitiveModal.modalConfirmation .primitiveConfirmationModalAction{
+    min-width: min(168px, 100%) !important;
+    padding: 0 24px !important;
+  }
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay{
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding:
+    calc(14px + var(--safe-top))
+    0
+    0
+    0 !important;
+  overflow: hidden !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal{
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: calc(75dvh - var(--safe-bottom)) !important;
+  max-height: calc(75dvh - var(--safe-bottom)) !important;
+  margin: 0 !important;
+  border-radius: 18px 18px 0 0 !important;
+  transform: translateY(calc(100% + 20px));
+  transform-origin: bottom center;
+  animation: historyEntrySummaryNativeSheetIn .42s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::before{
+  inset: 0;
+  border-radius: 18px 18px 0 0;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal::after{
+  top: 18%;
+  translate: -50% -18%;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader{
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: auto !important;
+  align-items: start !important;
+  justify-items: stretch !important;
+  gap: 14px !important;
+  min-height: 68px !important;
+  padding: 14px 18px 12px !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryHeaderMain{
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryCloseIcon{
+  display: inline-flex !important;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0 !important;
+  order: 0 !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: start;
+  justify-self: end;
+  border: 1px solid rgba(190, 207, 218, .24) !important;
+  background: rgba(12, 18, 24, .72) !important;
+  color: rgba(244, 247, 251, .92) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryCloseIcon:hover,
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryCloseIcon:focus-visible{
+  border-color: rgba(201, 255, 36, .34) !important;
+  color: #f7fbff !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor{
+  --history-entry-summary-body-pad: 22px;
+  min-height: 0 !important;
+  padding: 0 22px 18px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter{
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 3 !important;
+  min-height: 76px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 14px calc(14px + var(--safe-bottom)) !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay #historyEntryNoteCloseBtn{
+  display: none !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
+  min-width: 0 !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay.isClosing .historyEntrySummaryPrimitiveModal{
+  animation: historyEntrySummaryNativeSheetOut .42s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+@keyframes historyEntrySummaryNativeSheetIn{
+  from{
+    transform: translateY(calc(100% + 20px));
+  }
+  to{
+    transform: translateY(0);
+  }
+}
+
+@keyframes historyEntrySummaryNativeSheetOut{
+  from{
+    transform: translateY(0);
+  }
+  to{
+    transform: translateY(calc(100% + 20px));
+  }
+}
+
+#nativePlusUpsellOverlay .modal{
+  width: min(520px, 100%) !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellHeader{
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellHeader h2{
+  margin: 0 !important;
+  color: #f5fbff !important;
+  font-size: clamp(34px, 5vw, 52px) !important;
+  font-weight: 500 !important;
+  line-height: .92 !important;
+  letter-spacing: .08em !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellBadge{
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(194, 255, 36, .82) !important;
+  border-radius: 999px !important;
+  color: #c2ff24 !important;
+  font-family: var(--font-orbitron) !important;
+  font-size: 12px !important;
+  letter-spacing: .08em !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellIntro{
+  margin: 14px 0 0 !important;
+  color: rgba(236, 242, 247, .9) !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellPriceRow{
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 10px !important;
+  margin: 16px 0 0 !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellPrice{
+  color: #c2ff24 !important;
+  font-family: var(--font-readable) !important;
+  font-size: clamp(34px, 6vw, 48px) !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellBilling{
+  color: rgba(236, 242, 247, .86) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 18px !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellDivider{
+  height: 1px !important;
+  margin: 24px 0 18px !important;
+  background: linear-gradient(90deg, rgba(148, 157, 167, .22) 0%, rgba(148, 157, 167, .08) 100%) !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellFeatureList{
+  display: grid !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellFeatureList li{
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+  color: rgba(236, 242, 247, .94) !important;
+  font-family: var(--font-readable) !important;
+  font-size: 16px !important;
+  line-height: 1.42 !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellFeatureIcon{
+  color: #c2ff24 !important;
+  font-family: var(--font-orbitron) !important;
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellError{
+  margin: 18px 0 0 !important;
+  color: #ff8f8f !important;
+}
+
+#nativePlusUpsellOverlay .nativePlusUpsellActions{
+  margin-top: 22px !important;
+}
+
+@media (max-width: 640px){
+  #nativePlusUpsellOverlay .modal{
+    width: min(100%, calc(100vw - 18px)) !important;
+  }
+
+  #nativePlusUpsellOverlay .nativePlusUpsellHeader{
     align-items: flex-start !important;
-    padding:
-      var(--history-entry-summary-mobile-top-clearance)
-      calc(8px + var(--safe-right))
-      var(--history-entry-summary-mobile-bottom-clearance)
-      calc(8px + var(--safe-left)) !important;
+    flex-direction: column !important;
   }
 
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveModal{
-    width: calc(100vw - 16px - var(--safe-left) - var(--safe-right)) !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    height: min(
-      620px,
-      calc(
-        100dvh
-        - var(--history-entry-summary-mobile-top-clearance)
-        - var(--history-entry-summary-mobile-bottom-clearance)
-      )
-    ) !important;
-    max-height: calc(
-      100dvh
-      - var(--history-entry-summary-mobile-top-clearance)
-      - var(--history-entry-summary-mobile-bottom-clearance)
-    ) !important;
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
+  #nativePlusUpsellOverlay .nativePlusUpsellFeatureList li{
+    font-size: 15px !important;
   }
 
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay[data-history-entry-session-count="1"] .historyEntrySummaryPrimitiveModal{
-    height: auto !important;
-    grid-template-rows: auto minmax(0, auto) auto !important;
-  }
-
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveHeader{
-    min-height: 52px !important;
-    padding: 9px 18px 8px !important;
-  }
-
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveBody,
-  #historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveEditor{
-    --history-entry-summary-body-pad: 22px;
-    padding: 0 22px !important;
-  }
-
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveFooter{
-    position: sticky !important;
-    bottom: 0 !important;
-    min-height: 72px !important;
-    align-items: center !important;
+  #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: center !important;
     gap: 12px !important;
-    padding: 12px 14px calc(16px + var(--safe-bottom)) !important;
   }
 
-#historyEntryNoteOverlay.historyEntrySummaryPrimitiveOverlay .historyEntrySummaryPrimitiveAction{
+  #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .signOutPrimitiveAction,
+  #signOutConfirmOverlay.signOutPrimitiveOverlay .modal.signOutPrimitiveModal.modalConfirmation .confirmBtns .btn{
+    flex: 1 1 0 !important;
+    width: 0 !important;
     min-width: 0 !important;
+    max-width: none !important;
   }
 }

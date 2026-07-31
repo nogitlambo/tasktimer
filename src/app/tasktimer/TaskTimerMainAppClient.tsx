@@ -510,6 +510,7 @@ function LeaderboardSharedTableContent({
   ariaLabel,
   className = "",
   rankBeforeMetric = false,
+  showHeader = true,
   formatMetric,
   getRowProps,
 }: {
@@ -518,6 +519,7 @@ function LeaderboardSharedTableContent({
   ariaLabel: string;
   className?: string;
   rankBeforeMetric?: boolean;
+  showHeader?: boolean;
   formatMetric: (profile: LeaderboardProfile) => string;
   getRowProps: (row: WeeklyLeaderboardRow, index: number) => LeaderboardSharedTableRowProps;
 }) {
@@ -528,21 +530,23 @@ function LeaderboardSharedTableContent({
       aria-label={ariaLabel}
       style={{ "--leaderboard-data-row-count": Math.max(1, rows.length) } as CSSProperties}
     >
-      <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
-        <span role="columnheader">Pos</span>
-        <span role="columnheader">User</span>
-        {rankBeforeMetric ? (
-          <>
-            <span role="columnheader">Rank</span>
-            <span role="columnheader">{metricHeader}</span>
-          </>
-        ) : (
-          <>
-            <span role="columnheader">{metricHeader}</span>
-            <span role="columnheader">Rank</span>
-          </>
-        )}
-      </div>
+      {showHeader ? (
+        <div className="leaderboardWeeklyTableRow leaderboardWeeklyTableHead" role="row">
+          <span role="columnheader">Pos</span>
+          <span role="columnheader">User</span>
+          {rankBeforeMetric ? (
+            <>
+              <span role="columnheader">Rank</span>
+              <span role="columnheader">{metricHeader}</span>
+            </>
+          ) : (
+            <>
+              <span role="columnheader">{metricHeader}</span>
+              <span role="columnheader">Rank</span>
+            </>
+          )}
+        </div>
+      ) : null}
       {rows.map((row, index) => {
         const rowProps = getRowProps(row, index);
         const rowClassName = `leaderboardWeeklyTableRow${row.isCurrentUser ? " isCurrentUser" : ""}${row.isPlaceholder ? " isPlaceholder" : ""}${row.isDummy ? " isDummy" : ""}${rowProps.className ? ` ${rowProps.className}` : ""}`;
@@ -593,6 +597,7 @@ function LeaderboardSharedTable({
   ariaLabel,
   className = "",
   rankBeforeMetric = false,
+  showHeader = true,
   friendUidSet,
   formatMetric,
   onOpenProfile,
@@ -602,6 +607,7 @@ function LeaderboardSharedTable({
   ariaLabel: string;
   className?: string;
   rankBeforeMetric?: boolean;
+  showHeader?: boolean;
   friendUidSet: Set<string>;
   formatMetric: (profile: LeaderboardProfile) => string;
   onOpenProfile: (profile: LeaderboardProfile) => void;
@@ -614,6 +620,7 @@ function LeaderboardSharedTable({
           metricHeader={metricHeader}
           ariaLabel={ariaLabel}
           rankBeforeMetric={rankBeforeMetric}
+          showHeader={showHeader}
           formatMetric={formatMetric}
           getRowProps={(row) => {
             const isFriend = !row.isPlaceholder && !row.isDummy && friendUidSet.has(row.profile.uid);
@@ -2287,6 +2294,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               ariaLabel="Weekly leaderboard table"
               className="leaderboardGlobalTableWrap"
               rankBeforeMetric
+              showHeader={false}
               friendUidSet={leaderboardFriendUidSet}
               formatMetric={(profile) => formatLeaderboardTrend(profile.weeklyXpGain)}
               onOpenProfile={openWeeklyLeaderboardProfile}
@@ -2355,6 +2363,7 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
               ariaLabel="Global leaderboard table"
               className="leaderboardGlobalTableWrap"
               rankBeforeMetric
+              showHeader={false}
               friendUidSet={leaderboardFriendUidSet}
               formatMetric={(profile) => formatLeaderboardXp(profile.rewardTotalXp)}
               onOpenProfile={openLeaderboardProfile}

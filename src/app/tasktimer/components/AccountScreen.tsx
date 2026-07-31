@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { buildRewardsHeaderViewModel } from "../lib/rewards";
 import { getAccountBackRoute } from "../lib/accountRoute";
 import DesktopAppRail from "./DesktopAppRail";
+import NativePlusUpsellModal from "./NativePlusUpsellModal";
 import RankLadderModal from "./RankLadderModal";
 import RankPromotionOverlay from "./RankPromotionOverlay";
 import RankThumbnail from "./RankThumbnail";
@@ -38,7 +39,7 @@ function formatXp(value: number) {
 }
 
 function formatAccountPlan(plan: string) {
-  return plan === "pro" ? "PLUS User" : "Free User";
+  return plan === "pro" ? "PLUS" : "FREE";
 }
 
 export function getAccountSignOutActionCopy(signOutBusy: boolean) {
@@ -49,7 +50,7 @@ export function getAccountSignOutActionCopy(signOutBusy: boolean) {
 
 export default function AccountScreen() {
   const router = useRouter();
-  const accountState = useSettingsAccountState();
+  const accountState = useSettingsAccountState({ nativeCheckoutReturnPath: "/account" });
   const achievementSoundsEnabled = useAchievementSoundsEnabled();
   const account = accountState.account;
   const avatar = useSettingsAvatarState({
@@ -217,9 +218,9 @@ export default function AccountScreen() {
                         {account.authPlan === "pro" ? (
                           <span>Manage Subscription</span>
                         ) : (
-                          <a className="settingsAccountUpgradeLink" href="/pricing">
+                          <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
                             Upgrade to <strong>PLUS</strong>
-                          </a>
+                          </button>
                         )}
                         <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
                         <button
@@ -287,6 +288,14 @@ export default function AccountScreen() {
                     </div>
                   </section>
                 )}
+                <NativePlusUpsellModal
+                  open={account.showNativePlusUpsellModal}
+                  busy={account.nativePlusCheckoutBusy}
+                  error={account.nativePlusCheckoutError}
+                  ctaLabel={account.nativePlusCheckoutCtaLabel}
+                  onClose={() => account.setShowNativePlusUpsellModal(false)}
+                  onConfirm={account.onStartNativePlusCheckout}
+                />
               </div>
               <div className="accountMobileBackFooter">
                 <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction accountProfileBackAction accountPageBackBtn" type="button" onClick={handleBack} aria-label="Go back">

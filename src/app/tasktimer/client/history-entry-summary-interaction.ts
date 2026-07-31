@@ -70,6 +70,10 @@ type CreateHistoryEntrySummaryInteractionOptions = {
   isMobileLayout: () => boolean;
 };
 
+export type HistoryEntrySummaryOpenOptions = {
+  source?: "default" | "activityOverviewChart";
+};
+
 function normalizeTimestamp(raw: unknown) {
   const value = Number(raw);
   return Number.isFinite(value) ? Math.floor(value) : 0;
@@ -260,7 +264,14 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
       && overlay.dataset.historyEntryEditing === "true"
       && hasChangedDraft
       && getEditedNoteDrafts().some((draft) => richNoteHasMeaningfulText(draft.note));
-    if (closeBtn) closeBtn.textContent = overlay.dataset.historyEntryEditing === "true" && hasChangedDraft ? "Cancel" : "Close";
+    if (closeBtn) {
+      const closeLabel = overlay.dataset.historyEntryEditing === "true" && hasChangedDraft
+        ? "Cancel session summary"
+        : "Close session summary";
+      closeBtn.setAttribute("aria-label", closeLabel);
+      closeBtn.setAttribute("title", closeLabel.startsWith("Cancel") ? "Cancel" : "Close");
+      closeBtn.dataset.historyEntryCloseMode = closeLabel.startsWith("Cancel") ? "cancel" : "close";
+    }
     setButtonVisible(saveAndCloseBtn, shouldShowSaveAndClose);
   }
 
@@ -330,7 +341,7 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     syncEditorUi(false);
   }
 
-  function openSummary(taskId: string, entries: HistoryEntrySummarySource[]) {
+  function openSummary(taskId: string, entries: HistoryEntrySummarySource[], openOptions?: HistoryEntrySummaryOpenOptions) {
     const payload = buildHistoryEntrySummaryPayload({
       taskId,
       task: options.getTaskById(taskId),
@@ -344,8 +355,9 @@ export function createHistoryEntrySummaryInteraction(options: CreateHistoryEntry
     if (!payload) return false;
     if (elements.title) elements.title.textContent = "Session Summary";
     if (elements.meta) {
-      elements.meta.textContent = payload.titleText;
-      elements.meta.style.display = payload.titleText ? "" : "none";
+      const showMeta = openOptions?.source !== "activityOverviewChart" && !!payload.titleText;
+      elements.meta.textContent = showMeta ? payload.titleText : "";
+      elements.meta.style.display = showMeta ? "" : "none";
     }
     if (elements.body) {
       elements.body.innerHTML = renderHistoryEntrySummaryHtml(payload, options.escapeHtml);

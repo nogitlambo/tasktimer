@@ -19,12 +19,12 @@ import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "../lib/avatarCatalog";
 import { playDropdownClickAudio, playTaskFlipClickAudio } from "../client/secondary-click-audio";
 import {
-  readTaskTimerPlanFromStorage,
+  readTaskTimerPlanCacheFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
   type TaskTimerPlan,
 } from "../lib/entitlements";
 import { syncCurrentUserPlanCache } from "../lib/planFunctions";
-import { saveUserRootPatch } from "../lib/cloudStore";
+import { loadUserRootPlan, saveUserRootPatch } from "../lib/cloudStore";
 import {
   ACCOUNT_AVATAR_UPDATED_EVENT,
   ACCOUNT_PROFILE_UPDATED_EVENT,
@@ -458,6 +458,10 @@ export function getDesktopRailProfileSignOutLabel(signOutBusy: boolean) {
   return signOutBusy ? "Signing Out" : "Sign Out";
 }
 
+function readDisplayPlanFromStorage(): TaskTimerPlan {
+  return readTaskTimerPlanCacheFromStorage().plan;
+}
+
 export function shouldCloseDesktopRailProfileMenuOnPointerDown(
   profileMenu: Pick<Node, "contains"> | null,
   target: Node | null
@@ -497,7 +501,7 @@ export default function DesktopAppRail({
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
-  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
+  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>(() => readDisplayPlanFromStorage());
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
@@ -541,7 +545,6 @@ export default function DesktopAppRail({
       const avatarId = String((snap.exists() ? snap.get("avatarId") : "") || storedAvatarId).trim();
       const avatarCustomSrc = String(snap.get("avatarCustomSrc") || storedCustomAvatarSrc).trim();
       const remoteGooglePhotoUrl = String((snap.exists() ? snap.get("googlePhotoUrl") : "") || "").trim();
-      const remotePlan = snap.exists() ? String(snap.get("plan") || "").trim().toLowerCase() : "";
       if (googlePhotoUrl && remoteGooglePhotoUrl !== googlePhotoUrl) {
         void saveUserRootPatch(uid, { googlePhotoUrl }).catch(() => {
           // Keep rendering from local auth state when cloud sync is unavailable.
@@ -550,9 +553,8 @@ export default function DesktopAppRail({
       setProfileEmail(email || remoteEmail);
       setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
-      if (remotePlan === "free" || remotePlan === "pro") {
-        setCurrentPlan(remotePlan);
-      }
+      const remotePlan = await loadUserRootPlan(uid).catch(() => null);
+      if (remotePlan === "free" || remotePlan === "pro") setCurrentPlan(remotePlan);
     } catch {
       // Keep local/auth profile state if user-doc enrichment fails.
     }
@@ -560,7 +562,7 @@ export default function DesktopAppRail({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const syncStoredPlan = () => setCurrentPlan(readTaskTimerPlanFromStorage());
+    const syncStoredPlan = () => setCurrentPlan(readDisplayPlanFromStorage());
     syncStoredPlan();
     window.addEventListener(TASKTIMER_PLAN_CHANGED_EVENT, syncStoredPlan as EventListener);
     return () => {
@@ -595,6 +597,7 @@ export default function DesktopAppRail({
   }, []);
 
   const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
+  const currentPlanBadgeLabel = currentPlan === "pro" ? "PLUS" : "FREE";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
     if (currentPlan !== "pro") return "No upcoming charge while on Free.";
@@ -780,8 +783,11 @@ export default function DesktopAppRail({
                   <span className="dashboardRailProfileIdentity">
                     <span className="dashboardProfileName dashboardRailProfileNameRow">
                       <span className="dashboardRailProfileNameText">{profileLabel.toLocaleLowerCase()}</span>
-                      <span className={`dashboardRailPlanPill dashboardRailPlanPill-${currentPlan}`} aria-label={`${currentPlanLabel} plan`}>
-                        {currentPlanLabel}
+                      <strong className="dashboardRailPlanText" aria-label={`${currentPlanBadgeLabel} plan`}>
+                        {currentPlanBadgeLabel}
+                      </strong>
+                      <span className={`dashboardRailPlanPill dashboardRailPlanPill-${currentPlan}`} aria-label={`${currentPlanBadgeLabel} plan`}>
+                        {currentPlanBadgeLabel}
                       </span>
                     </span>
                     {profileEmail ? <span className="dashboardProfileMeta dashboardRailProfileEmail">{profileEmail}</span> : null}

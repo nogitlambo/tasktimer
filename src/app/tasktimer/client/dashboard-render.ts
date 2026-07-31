@@ -2791,7 +2791,7 @@ export function createTaskTimerDashboardRender(ctx: TaskTimerDashboardRenderCont
       ...(session.completionDifficulty != null ? { completionDifficulty: session.completionDifficulty } : {}),
     }));
     const primaryTaskId = String(entries[0]?.taskId || "").trim();
-    ctx.openHistoryEntryNoteOverlay(primaryTaskId, entries);
+    ctx.openHistoryEntryNoteOverlay(primaryTaskId, entries, { source: "activityOverviewChart" });
     return true;
   }
 

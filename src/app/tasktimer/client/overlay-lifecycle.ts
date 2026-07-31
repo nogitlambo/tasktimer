@@ -17,9 +17,16 @@ type TaskTimerOverlayLifecycleOptions = {
 };
 
 export const REWARD_MODAL_CLOSE_ANIMATION_MS = 560;
+export const HISTORY_ENTRY_SUMMARY_NATIVE_CLOSE_ANIMATION_MS = 420;
 
 const rewardOverlayCloseTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
 const ANIMATED_REWARD_OVERLAY_IDS = new Set(["timeGoalCompleteOverlay", "dailyRewardOverlay"]);
+
+function shouldAnimateHistoryEntrySummaryOverlayClose(overlay: HTMLElement) {
+  if (String(overlay.id || "") !== "historyEntryNoteOverlay") return false;
+  if (typeof document === "undefined") return false;
+  return document.body?.dataset?.tasktimerNativeRuntime === "true";
+}
 
 function shouldAnimateRewardOverlayClose(overlay: HTMLElement) {
   if (!ANIMATED_REWARD_OVERLAY_IDS.has(String(overlay.id || ""))) return false;
@@ -38,6 +45,7 @@ export function openTaskTimerOverlay(overlay: HTMLElement | null) {
   if (!overlay) return;
   clearRewardOverlayCloseTimer(overlay);
   overlay.classList?.remove("isClosing");
+  overlay.setAttribute("aria-hidden", "false");
   overlay.style.display = "flex";
 }
 
@@ -62,18 +70,21 @@ export function closeTaskTimerOverlay(overlay: HTMLElement | null, documentRef: 
       dispatchOverlayClosedEvent(window, overlay.id);
     }
   };
-  if (!shouldAnimateRewardOverlayClose(overlay)) {
+  if (!shouldAnimateRewardOverlayClose(overlay) && !shouldAnimateHistoryEntrySummaryOverlayClose(overlay)) {
     finishClose();
     return;
   }
   overlay.classList?.add("isClosing");
   overlay.setAttribute("aria-hidden", "true");
+  const closeDuration = shouldAnimateRewardOverlayClose(overlay)
+    ? REWARD_MODAL_CLOSE_ANIMATION_MS
+    : HISTORY_ENTRY_SUMMARY_NATIVE_CLOSE_ANIMATION_MS;
   rewardOverlayCloseTimers.set(
     overlay,
     setTimeout(() => {
       rewardOverlayCloseTimers.delete(overlay);
       finishClose();
-    }, REWARD_MODAL_CLOSE_ANIMATION_MS),
+    }, closeDuration),
   );
 }
 

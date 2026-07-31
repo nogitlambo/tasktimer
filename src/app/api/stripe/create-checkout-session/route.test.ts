@@ -35,10 +35,10 @@ vi.mock("@/lib/stripeApiErrors", () => ({
 
 import { POST } from "./route";
 
-function checkoutRequest() {
+function checkoutRequest(body: Record<string, unknown> = { idToken: "token" }) {
   return new Request("https://tasklaunch.app/api/stripe/create-checkout-session", {
     method: "POST",
-    body: JSON.stringify({ idToken: "token" }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -56,11 +56,49 @@ describe("POST /api/stripe/create-checkout-session", () => {
       expect.objectContaining({
         mode: "subscription",
         line_items: [{ price: "price_live_no_trial", quantity: 1 }],
+        success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "https://tasklaunch.app/login?checkout=cancelled",
         subscription_data: {
           metadata: { uid: "uid-123" },
         },
       })
     );
     expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).not.toHaveProperty("trial_period_days");
+  });
+
+  it("creates native account return URLs when the caller requests native checkout routing", async () => {
+    await POST(
+      checkoutRequest({
+        idToken: "token",
+        returnTarget: "native",
+        successReturnPath: "/account",
+        cancelReturnPath: "/settings?page=general",
+      })
+    );
+
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success_url: "com.tasklaunch.app://account?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "com.tasklaunch.app://settings?page=general&checkout=cancelled",
+      })
+    );
+  });
+
+  it("falls back to safe defaults when native return paths are unsafe", async () => {
+    await POST(
+      checkoutRequest({
+        idToken: "token",
+        returnTarget: "native",
+        successReturnPath: "https://evil.example/account",
+        cancelReturnPath: "//evil.example/settings",
+      })
+    );
+
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success_url: "com.tasklaunch.app://account?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "com.tasklaunch.app://account?checkout=cancelled",
+      })
+    );
   });
 });

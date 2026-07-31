@@ -308,6 +308,9 @@ function createRenderHarness(
       liveSessionId?: string;
       historyMutationAllowed?: boolean;
     }>;
+    openOptions?: {
+      source?: "default" | "activityOverviewChart";
+    };
   }> = [];
   const originalDocument = globalThis.document;
   const originalWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
@@ -393,7 +396,7 @@ function createRenderHarness(
     normalizeHistoryTimestampMs: (value) => Number(value) || 0,
     getModeColor: () => "#00ffff",
     addRangeMsToLocalDayMap: () => {},
-    openHistoryEntryNoteOverlay: (taskId, entries) => {
+    openHistoryEntryNoteOverlay: (taskId, entries, openOptions) => {
       openSummaryCalls.push({
         taskId,
         entries: entries as Array<{
@@ -407,6 +410,7 @@ function createRenderHarness(
           liveSessionId?: string;
           historyMutationAllowed?: boolean;
         }>,
+        openOptions: openOptions as { source?: "default" | "activityOverviewChart" } | undefined,
       });
     },
     hasEntitlement: () => options?.hasEntitlement ?? true,
@@ -582,6 +586,7 @@ describe("dashboard activity overview card", () => {
       expect(harness.openActivityDaySummary(dayKey)).toBe(true);
       expect(harness.openSummaryCalls).toHaveLength(1);
       expect(harness.openSummaryCalls[0]?.taskId).toBe("focus");
+      expect(harness.openSummaryCalls[0]?.openOptions).toEqual({ source: "activityOverviewChart" });
       expect(harness.openSummaryCalls[0]?.entries).toEqual([
         expect.objectContaining({
           taskId: "focus",
@@ -629,6 +634,7 @@ describe("dashboard activity overview card", () => {
 
       expect(harness.openActivityDaySummary(currentDayKey)).toBe(false);
       expect(harness.openActivityDaySummary(olderDayKey)).toBe(true);
+      expect(harness.openSummaryCalls[0]?.openOptions).toEqual({ source: "activityOverviewChart" });
       expect(harness.openSummaryCalls[0]?.entries[0]).toEqual(
         expect.objectContaining({ taskId: "focus", ms: 45 * 60000 })
       );
@@ -1355,6 +1361,7 @@ describe("dashboard heatmap summaries", () => {
         {
           taskId: "focus",
           entries: [{ ts, ms: 30 * 60 * 1000, name: "Focus", note: undefined }],
+          openOptions: undefined,
         },
       ]);
     } finally {

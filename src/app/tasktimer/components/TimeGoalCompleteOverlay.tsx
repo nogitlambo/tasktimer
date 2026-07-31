@@ -150,13 +150,6 @@ export default function TimeGoalCompleteOverlay() {
             </div>
           </div>
           <div className="timeGoalCompleteMeta confirmText" id="timeGoalCompleteMeta" hidden />
-          <div className="timeGoalCompleteNextTasks" id="timeGoalCompleteNextTasks" hidden>
-            <div
-              className="timeGoalCompleteNextTaskGrid"
-              id="timeGoalCompleteNextTaskGrid"
-              aria-label="Incomplete tasks for today"
-            />
-          </div>
         </div>
         <div className="confirmBtns timeGoalCompleteActionGrid timeGoalCompletePrimitiveFooter">
           <button

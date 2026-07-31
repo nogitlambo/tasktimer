@@ -54,6 +54,18 @@
                     android:host="login" />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="com.tasklaunch.app"
+                    android:host="account" />
+                <data
+                    android:scheme="com.tasklaunch.app"
+                    android:host="settings" />
+            </intent-filter>
+
         </activity>
 
         <provider

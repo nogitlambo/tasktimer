@@ -205,7 +205,7 @@ describe("secondary click audio", () => {
     const primarySelector =
       '#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction, [data-onboarding-next-action="true"]';
     const taskLaunchSelector =
-      'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+      'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id], #timeGoalCompleteNextTaskOverlay [data-time-goal-next-task-id]';
     const taskStopSelector = 'button[data-action="stop"][title="Stop"], #focusDial.isRunning';
 
     const saveButton = makeElement({

@@ -665,14 +665,32 @@ body:not(.isFocusModeOpen) #app:is([aria-label="TaskLaunch App"], [aria-label="T
 }
 
 @media (min-width: 981px){
+body.isFocusModeOpen .wrap{
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+body.isFocusModeOpen #app[aria-label="TaskLaunch App"]{
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppRail{
     display: none !important;
   }
 
 body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppShell{
     display: block !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
+    width: 100% !important;
+    max-width: none !important;
     min-height: 100dvh !important;
     margin: 0 !important;
     gap: 0 !important;
@@ -683,8 +701,8 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .desktopAppMain,
   body.isFocusModeOpen #app[aria-label="TaskLaunch App"] .appPages,
   body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
   body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1View{
-    width: 100vw !important;
-    max-width: 100vw !important;
+    width: 100% !important;
+    max-width: none !important;
     height: 100dvh !important;
     max-height: 100dvh !important;
     min-height: 100dvh !important;
@@ -1461,16 +1479,32 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
     white-space: nowrap;
   }
 
+  #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanText,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanText,
+  #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanText,
+  #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanText{
+    display: none;
+    flex: 0 0 auto;
+    color: #fff;
+    font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
   #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanPill,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanPill,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanPill,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanPill{
     flex: 0 0 auto;
-    min-width: 42px;
-    padding: 3px 7px;
-    border: 1px solid rgba(201,255,36,.34);
-    background: rgba(201,255,36,.08);
-    color: rgba(232,255,160,.94);
+    min-width: 48px;
+    padding: 4px 9px;
+    border: 1px solid #c9ff24;
+    border-radius: 999px;
+    background: transparent;
+    color: #c9ff24;
     font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
     font-size: 9px;
     font-weight: 800;
@@ -1484,9 +1518,23 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"] .appFooterNav{
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanPill-free,
   #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanPill-free,
   #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanPill-free{
-    border-color: rgba(188,214,230,.28);
-    background: rgba(188,214,230,.07);
-    color: rgba(214,224,234,.78);
+    border-color: rgba(214,219,225,.36);
+    background: transparent;
+    color: rgba(214,219,225,.9);
+  }
+
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanText,
+  body[data-tasktimer-native-runtime="true"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanText,
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanText,
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanText{
+    display: inline-block;
+  }
+
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .desktopAppRail .dashboardRailPlanPill,
+  body[data-tasktimer-native-runtime="true"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .desktopAppRail .dashboardRailPlanPill,
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch Feedback"] .desktopAppRail .dashboardRailPlanPill,
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch History Manager"] .desktopAppRail .dashboardRailPlanPill{
+    display: none;
   }
 
   #app[aria-label="TaskLaunch App"] .desktopAppRail .desktopRailProfileMenuTrigger::-webkit-details-marker,

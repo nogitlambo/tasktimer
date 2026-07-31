@@ -79,6 +79,14 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks > #m
   box-shadow: 0 14px 34px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.03);
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #taskList.hasRunningTask .task:not(.taskRunning){
+  opacity:.5;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #taskList.hasRunningTask .task.taskRunning{
+  opacity:1;
+}
+
 @keyframes taskRunningBorderPulse{0%, 100%{
     box-shadow:
       0 16px 38px rgba(0,0,0,.34),

@@ -13,6 +13,12 @@ type StubElement = {
   dataset: Record<string, string>;
   children: StubElement[];
   attributes: Map<string, string>;
+  classList: {
+    add: ReturnType<typeof vi.fn>;
+    remove: ReturnType<typeof vi.fn>;
+    toggle: ReturnType<typeof vi.fn>;
+    contains: ReturnType<typeof vi.fn>;
+  };
   setAttribute: ReturnType<typeof vi.fn>;
   removeAttribute: ReturnType<typeof vi.fn>;
   appendChild: ReturnType<typeof vi.fn>;
@@ -26,6 +32,29 @@ function elementStub(tagName = "div"): StubElement {
     dataset: {} as Record<string, string>,
     children: [] as StubElement[],
     attributes: new Map<string, string>(),
+    classList: {
+      add: vi.fn((...tokens: string[]) => {
+        const classNames = new Set(node.className.split(/\s+/).filter(Boolean));
+        tokens.forEach((token) => classNames.add(token));
+        node.className = Array.from(classNames).join(" ");
+      }),
+      remove: vi.fn((...tokens: string[]) => {
+        const removals = new Set(tokens);
+        node.className = node.className
+          .split(/\s+/)
+          .filter((token) => token && !removals.has(token))
+          .join(" ");
+      }),
+      toggle: vi.fn((token: string, force?: boolean) => {
+        const classNames = new Set(node.className.split(/\s+/).filter(Boolean));
+        const nextState = force === undefined ? !classNames.has(token) : !!force;
+        if (nextState) classNames.add(token);
+        else classNames.delete(token);
+        node.className = Array.from(classNames).join(" ");
+        return nextState;
+      }),
+      contains: vi.fn((token: string) => node.className.split(/\s+/).filter(Boolean).includes(token)),
+    },
     setAttribute: vi.fn((name: string, value: string) => {
       node.attributes.set(name, value);
     }),
@@ -182,6 +211,28 @@ describe("task list renderer", () => {
     expect(secondColumnTask?.dataset.taskId).toBe("b");
     expect(harness.calls).toContain("apply-flip:a");
     expect(harness.calls).toContain("apply-flip:b");
+  });
+
+  it("marks the task list as having a running task when any task is active", () => {
+    const harness = createHarness({
+      tasks: [task({ id: "running", running: true }), task({ id: "idle", running: false, order: 2 })],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    expect(harness.taskListEl.classList.toggle).toHaveBeenCalledWith("hasRunningTask", true);
+    expect(harness.taskListEl.className.split(/\s+/)).toContain("hasRunningTask");
+  });
+
+  it("clears the running-task list class when no tasks are active", () => {
+    const harness = createHarness({
+      tasks: [task({ id: "idle-1", running: false }), task({ id: "idle-2", running: false, order: 2 })],
+    });
+
+    harness.renderer.renderTasksPage();
+
+    expect(harness.taskListEl.classList.toggle).toHaveBeenCalledWith("hasRunningTask", false);
+    expect(harness.taskListEl.className.split(/\s+/)).not.toContain("hasRunningTask");
   });
 
   it("preserves source indexes when task ids are duplicated", () => {

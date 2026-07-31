@@ -24,6 +24,8 @@ import {
   type RankPromotionRecord,
 } from "../lib/rewards";
 import { resolveTaskTimerRouteHref } from "../lib/routeHref";
+import SignOutConfirmModal from "./SignOutConfirmModal";
+import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 
 type MainAppPage = "tasks" | "schedule" | "dashboard" | "notes" | "friends" | "leaderboard" | "history";
 
@@ -34,7 +36,14 @@ type TaskLaunchMobileMenuLinkItem = {
   iconSrc: string;
 };
 
-type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem;
+type TaskLaunchMobileMenuActionItem = {
+  kind: "action";
+  label: string;
+  iconSrc: string;
+  actionId: "signOut";
+};
+
+type TaskLaunchMobileMenuItem = TaskLaunchMobileMenuLinkItem | TaskLaunchMobileMenuActionItem;
 
 type TaskTimerAppFrameProps = {
   activePage: MainAppPage;
@@ -160,6 +169,12 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       href: resolveTaskTimerRouteHref("/user-guide"),
       iconSrc: "/User_Guide.svg",
     },
+    {
+      kind: "action",
+      label: "Sign Out",
+      iconSrc: "/icons/icons_default/signout.webp",
+      actionId: "signOut",
+    },
   ];
 }
 
@@ -194,6 +209,9 @@ export default function TaskTimerAppFrame({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuDragY, setMobileMenuDragY] = useState(0);
   const [isMobileMenuDragging, setIsMobileMenuDragging] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showRankLadderModal, setShowRankLadderModal] = useState(false);
   const [activeDesktopInsigniaUpgradeSeq, setActiveDesktopInsigniaUpgradeSeq] = useState<number | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -276,6 +294,24 @@ export default function TaskTimerAppFrame({
     if (typeof window === "undefined") return;
     window.location.href = resolveTaskTimerRouteHref("/account");
   }, []);
+
+  const handleMobileMenuSignOut = useCallback(() => {
+    setMobileMenuOpen(false);
+    setShowSignOutConfirm(true);
+  }, []);
+
+  const handleConfirmSignOut = useCallback(async () => {
+    if (signOutBusy) return;
+    setSignOutBusy(true);
+    setSignOutError("");
+    try {
+      await handleSignOutFlow();
+    } catch (error: unknown) {
+      setSignOutError(getErrorMessage(error, "Could not sign out."));
+      setSignOutBusy(false);
+      setShowSignOutConfirm(false);
+    }
+  }, [signOutBusy]);
 
   const resetMobileMenuSwipeClose = useCallback(() => {
     mobileMenuSwipeCloseRef.current = getResetMobileSwipeCloseState();
@@ -501,18 +537,35 @@ export default function TaskTimerAppFrame({
         >
           <div className="taskLaunchMobileMenuSwipeHandle" aria-hidden="true" />
           <div className="taskLaunchMobileMenuList" role="menu" aria-label="App menu">
-            {getTaskLaunchMobileMenuItems().map((item) => (
-              <a
-                key={item.label}
-                className="menuItem taskLaunchMobileMenuItem"
-                href={item.href}
-                role="menuitem"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span className="taskLaunchMobileMenuItemText">{item.label}</span>
-              </a>
-            ))}
+            {getTaskLaunchMobileMenuItems().map((item) =>
+              item.kind === "link" ? (
+                <a
+                  key={item.label}
+                  className="menuItem taskLaunchMobileMenuItem"
+                  href={item.href}
+                  role="menuitem"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
+                </a>
+              ) : (
+                <button
+                  key={item.label}
+                  className="menuItem taskLaunchMobileMenuItem"
+                  type="button"
+                  role="menuitem"
+                  onClick={handleMobileMenuSignOut}
+                >
+                  <span className="taskLaunchMobileMenuItemText">{item.label}</span>
+                </button>
+              )
+            )}
           </div>
+          {signOutError ? (
+            <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">
+              {signOutError}
+            </div>
+          ) : null}
         </div>
       </div>
       {mobileToolbar ? <div className="taskLaunchMobileToolbar">{mobileToolbar}</div> : null}
@@ -615,6 +668,12 @@ export default function TaskTimerAppFrame({
       />
       <DesktopAppRail activePage={railPage} useClientNavButtons={useClientNavButtons} showDesktopRail={false} showMobileFooter />
       <ModuleIntroTour />
+      <SignOutConfirmModal
+        open={showSignOutConfirm}
+        busy={signOutBusy}
+        onCancel={() => setShowSignOutConfirm(false)}
+        onConfirm={() => void handleConfirmSignOut()}
+      />
       <div
         className={`initialAuthBusyOverlay${isLeaderboardPage ? "" : " isOn"}`}
         id="initialAuthBusyOverlay"

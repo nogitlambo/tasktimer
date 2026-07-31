@@ -233,7 +233,23 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.meta.textContent).toBe("Focus");
     expect(h.body.innerHTML).toContain("Session note");
     expect(h.opened).toEqual([h.overlay]);
-    expect(h.closeBtn.textContent).toBe("Close");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("close");
+  });
+
+  it("hides the modal subtext when opened from the activity overview chart", () => {
+    const h = createHarness();
+
+    expect(
+      h.interaction.openSummary(
+        "task-1",
+        [{ taskId: "task-1", ts: 1000, ms: 60000, name: "Focus", note: "Original note" }],
+        { source: "activityOverviewChart" }
+      )
+    ).toBe(true);
+
+    expect(h.title.textContent).toBe("Session Summary");
+    expect(h.meta.textContent).toBe("");
+    expect(h.meta.style.display).toBe("none");
   });
 
   it("renders aggregate and session XP values as hidden replay targets without modal replay buttons", () => {
@@ -396,7 +412,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(input.focus).toHaveBeenCalledTimes(1);
     expect(h.closeBtn.style.display).toBe("");
     expect(h.closeBtn.hidden).toBe(false);
-    expect(h.closeBtn.textContent).toBe("Close");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("close");
     expect(h.cancelBtn.hidden).toBe(true);
     expect(h.saveBtn.hidden).toBe(true);
     expect(h.cancelBtn.style.display).toBe("none");
@@ -410,7 +426,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     input.value = "Updated note";
     h.interaction.syncInputMirror("Updated note");
 
-    expect(h.closeBtn.textContent).toBe("Cancel");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("cancel");
     expect(h.saveAndCloseBtn.style.display).toBe("");
     expect(h.saveAndCloseBtn.hidden).toBe(false);
   });
@@ -494,7 +510,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
 
     expect(h.editorInput.value).toBe("Updated note");
     expect(h.closeBtn.style.display).toBe("");
-    expect(h.closeBtn.textContent).toBe("Cancel");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("cancel");
     expect(h.saveAndCloseBtn.style.display).toBe("");
     expect(input.style.height).toBe("180px");
     expect(input.style.overflowY).toBe("hidden");
@@ -504,7 +520,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     h.interaction.syncInputMirror("   ");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
     expect(h.saveAndCloseBtn.hidden).toBe(true);
-    expect(h.closeBtn.textContent).toBe("Cancel");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("cancel");
   });
 
   it("collapses the active inline note to compact height while preserving the draft and edit state", () => {
@@ -772,7 +788,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(first.input.classList.contains("isActiveEditing")).toBe(false);
     expect(second.input.classList.contains("isActiveEditing")).toBe(false);
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
-    expect(h.closeBtn.textContent).toBe("Close");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("close");
   });
 
   it("cancels editing and restores the stored dataset note", () => {
@@ -797,7 +813,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
     expect(input.style.height).toBe("");
     expect(input.style.overflowY).toBe("");
-    expect(h.closeBtn.textContent).toBe("Close");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("close");
   });
 
   it("discards the active draft and restores the stored note", () => {
@@ -818,7 +834,7 @@ describe("createHistoryEntrySummaryInteraction", () => {
     expect(h.editorInput.value).toBe("Original note");
     expect(input.value).toBe("Original note");
     expect(h.overlay.dataset.historyEntryEditing).toBe("false");
-    expect(h.closeBtn.textContent).toBe("Close");
+    expect(h.closeBtn.dataset.historyEntryCloseMode).toBe("close");
     expect(h.saveAndCloseBtn.style.display).toBe("none");
   });
 

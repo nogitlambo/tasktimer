@@ -2405,7 +2405,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   width:100%;
   max-width:100%;
   min-width:0;
-  margin-bottom:clamp(18px, 2.8dvh, 34px);
+  gap:10px;
+  padding:0 18px;
+  margin-bottom:0;
 }
 
 #focusModeScreen .focusSessionNotesBody{
@@ -2415,12 +2417,45 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   min-width:0;
   margin-left:auto;
   margin-right:auto;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding:0 0 14px;
 }
 
 #focusModeScreen .richNoteToolbar,
 #focusModeScreen .focusSessionNotesInput{
   max-width:100%;
   min-width:0;
+}
+
+#focusModeScreen .focusSessionNotes{
+  width:min(100%, 672px);
+  margin-top:0;
+  margin-left:auto;
+  margin-right:auto;
+  margin-bottom:clamp(18px, 2.8dvh, 34px);
+  padding:0;
+  align-items:stretch;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;
+  box-shadow:0 24px 60px -30px rgba(0,0,0,.6);
+  backdrop-filter:blur(16px);
+  text-align:left;
+  overflow:hidden;
+}
+
+#focusModeScreen .focusSessionNotes .focusInsightsTitle{
+  margin:0;
+  padding:14px 20px 8px;
+  color:rgba(243,245,251,.96);
+  font-family:var(--font-readable);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.02em;
+  text-transform:none;
+  text-align:left;
 }
 
 .sessionNoteAttachments{
@@ -2608,18 +2643,34 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 }
 
 #focusModeScreen .focusSessionNotesInput{
-  padding: 8px;
+  padding:18px 20px;
   max-height:max(var(--focus-session-notes-min-height), min(34dvh, 300px));
-  background: #1a1b20 !important;
-  background-color: #1a1b20 !important;
-  border-color: rgba(174,184,194,.45) !important;
+  background:rgba(10,12,22,.96) !important;
+  background-color:rgba(10,12,22,.96) !important;
+  border:0 !important;
+  border-radius:0 0 14px 14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  color:rgba(243,245,251,.96);
+  font-family:var(--font-readable);
+  font-size:14px;
+  font-weight:400;
+  line-height:1.7;
+  letter-spacing:.01em;
 }
 
 #focusModeScreen .richNoteToolbar{
-  background: #1a1b20;
-  background-color: #1a1b20;
-  border-color: rgba(174,184,194,.45);
-  border-bottom-color: rgba(118,128,142,.58);
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  width:100%;
+  padding:12px 14px;
+  background:transparent;
+  background-color:transparent;
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.09);
+  border-radius:0;
+  box-shadow:none;
 }
 
 .focusSessionNotesInput::placeholder{
@@ -2635,7 +2686,9 @@ body[data-theme="lime"] .addTaskNameItem:focus{
 
 #focusModeScreen .focusSessionNotesInput:focus,
 #focusModeScreen .focusSessionNotesInput:focus-visible{
-  border-color: rgba(174,184,194,.45) !important;
+  border-color:transparent !important;
+  outline:none !important;
+  box-shadow:inset 0 0 0 1px rgba(79,227,208,.22) !important;
 }
 
 .focusSessionNotesBody{
@@ -2663,6 +2716,139 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   font-weight:700;
   letter-spacing:.02em;
   text-align:center;
+}
+
+#focusModeScreen .richNoteToolbar:has(+ .sessionNoteEditorGrid .focusSessionNotesInput:focus),
+#focusModeScreen .richNoteToolbar:has(+ .sessionNoteEditorGrid .focusSessionNotesInput:focus-visible){
+  border-color:rgba(255,255,255,.09);
+}
+
+#focusModeScreen .richNoteToolbarBtn{
+  min-width:30px;
+  min-height:30px;
+  padding:0 9px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px !important;
+  background:transparent !important;
+  border:1px solid transparent !important;
+  box-shadow:none;
+  color:rgba(137,145,168,.95) !important;
+  font-family:var(--font-readable);
+  font-size:12px;
+  font-weight:700;
+  line-height:1;
+  transform:none;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+#focusModeScreen .richNoteToolbarBtn:hover,
+#focusModeScreen .richNoteToolbarBtn:focus-visible{
+  background:rgba(255,255,255,.06) !important;
+  border-color:rgba(255,255,255,.09) !important;
+  color:rgba(243,245,251,.98) !important;
+  box-shadow:none;
+}
+
+#focusModeScreen .richNoteToolbarBtn:active,
+#focusModeScreen .richNoteToolbarBtn[aria-pressed="true"]{
+  background:rgba(79,227,208,.12) !important;
+  border-color:rgba(79,227,208,.3) !important;
+  color:rgba(79,227,208,.98) !important;
+  box-shadow:none;
+  transform:none;
+}
+
+#focusModeScreen .richNoteToolbarBtn[data-rich-note-command="attachFiles"]{
+  margin-left:auto;
+  min-width:auto;
+  padding:0 12px;
+  gap:6px;
+  font-size:11.5px;
+  font-weight:500;
+  border-color:rgba(255,255,255,.09) !important;
+}
+
+#focusModeScreen .richNoteToolbarBtn[data-rich-note-command="attachFiles"]:hover,
+#focusModeScreen .richNoteToolbarBtn[data-rich-note-command="attachFiles"]:focus-visible{
+  background:rgba(255,255,255,.06) !important;
+  border-color:rgba(255,255,255,.12) !important;
+  color:rgba(243,245,251,.98) !important;
+}
+
+#focusModeScreen .richNoteToolbarBtn[data-rich-note-command="attachFiles"]:active,
+#focusModeScreen .richNoteToolbarBtn[data-rich-note-command="attachFiles"][aria-pressed="true"]{
+  background:rgba(255,255,255,.08) !important;
+  border-color:rgba(255,255,255,.16) !important;
+  color:rgba(243,245,251,.98) !important;
+}
+
+#focusModeScreen .richNoteToolbarIcon{
+  width:12px;
+  height:12px;
+  opacity:.82;
+}
+
+#focusModeScreen .richNoteToolbarBtn:hover .richNoteToolbarIcon,
+#focusModeScreen .richNoteToolbarBtn:focus-visible .richNoteToolbarIcon,
+#focusModeScreen .richNoteToolbarBtn[aria-pressed="true"] .richNoteToolbarIcon{
+  opacity:1;
+}
+
+#focusModeScreen .focusSessionNotesInput.richNoteEditor:empty::before{
+  color:rgba(84,92,114,.96);
+}
+
+#focusModeScreen .focusSessionNotesInput.richNoteEditor :is(ul, ol, li, li *),
+#focusModeScreen .focusSessionNotesInput.richNoteEditor :is(li)::marker{
+  color:rgba(243,245,251,.96) !important;
+  -webkit-text-fill-color:rgba(243,245,251,.96) !important;
+}
+
+#focusModeScreen .focusSessionNotesInput.richNoteEditor a{
+  color:rgba(79,227,208,.98);
+}
+
+#focusModeScreen .sessionNoteAttachments{
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  color:rgba(219,227,242,.92);
+  font-family:var(--font-readable);
+  font-size:12px;
+  line-height:1.45;
+}
+
+#focusModeScreen .sessionNoteAttachmentStatus{
+  color:rgba(79,227,208,.98);
+  font-family:var(--font-readable);
+}
+
+#focusModeScreen .sessionNoteAttachmentLink{
+  color:rgba(243,245,251,.96);
+  font-family:var(--font-readable);
+}
+
+#focusModeScreen .sessionNoteAttachmentMeta{
+  color:rgba(137,145,168,.9);
+}
+
+#focusModeScreen .sessionNoteAttachmentError,
+#focusModeScreen .sessionNoteAttachmentOnly{
+  color:#f0b56a;
+}
+
+#focusModeScreen .focusSessionNotesSavedText{
+  margin-top:10px;
+  padding:0 20px;
+  color:rgba(79,227,208,.9);
+  font-family:var(--font-readable);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.01em;
+  text-align:left;
 }
 
 .historySaveWorkingPanel{
@@ -2789,8 +2975,8 @@ body[data-theme="lime"] .addTaskNameItem:focus{
   padding: calc(18px + var(--safe-top)) calc(16px + var(--safe-right)) calc(18px + var(--safe-bottom))
     calc(16px + var(--safe-left));
   background:
-    linear-gradient(rgba(0, 0, 0, .42), rgba(0, 0, 0, .62)),
-    url("/leaderboard/deep-space-bg.webp") center / cover no-repeat #000;
+    radial-gradient(140% 120% at 50% 0%, rgba(42,46,54,.2), rgba(42,46,54,0) 40%),
+    linear-gradient(180deg, #1e2126 0%, #111318 48%, #08090c 100%);
 }
 
 body.isFocusModeOpen #focusModeScreen{
@@ -2880,13 +3066,15 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks,
 body.isFocusModeOpen #focusModeScreen{
     position:fixed;
     inset:0;
-    width:100vw;
-    height:100dvh;
-    max-height:100dvh;
+    width:100%;
+    height:100%;
+    max-height:none;
     padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-    grid-template-columns:minmax(0, 1fr);
-    justify-content:stretch;
-    align-content:start;
+    display:flex !important;
+    flex-direction:column;
+    justify-content:flex-start;
+    align-items:center;
+    gap:clamp(6px, 1.3dvh, 14px);
     overflow-y:auto;
     overflow-x:hidden;
   }
@@ -2894,10 +3082,16 @@ body.isFocusModeOpen #focusModeScreen{
 body.isFocusModeOpen #focusModeScreen .focusModeHead,
   body.isFocusModeOpen #focusModeScreen .focusTaskTitle,
   body.isFocusModeOpen #focusModeScreen .focusDialWrap,
-  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
-    width:100%;
-    max-width:none;
-    justify-self:stretch;
+  body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop,
+  body.isFocusModeOpen #focusModeScreen .focusSessionNotes,
+  body.isFocusModeOpen #focusModeScreen .focusDndSetup,
+  body.isFocusModeOpen #focusModeScreen .focusModeExitBar{
+    width:min(100%, 720px);
+    max-width:720px;
+    margin-left:auto;
+    margin-right:auto;
+    justify-self:center;
+    align-self:center;
   }
 
 body.isFocusModeOpen #focusModeScreen .focusDialWrap{
@@ -2905,7 +3099,7 @@ body.isFocusModeOpen #focusModeScreen .focusDialWrap{
   }
 
 body.isFocusModeOpen #focusModeScreen .focusCheckpointToggleTop{
-    align-self:stretch;
+    align-self:center;
   }
 }
 
@@ -2946,6 +3140,32 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   padding-bottom:32px;
   position:relative;
   z-index:1;
+}
+
+#focusModeBackBtn{
+  box-sizing: border-box;
+  min-width: min(178px, 38vw);
+  height: 48px !important;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0 28px !important;
+  border-width: 1px !important;
+  border-radius: 8px !important;
+  font-size: 11px;
+}
+
+#focusModeBackBtn:hover,
+#focusModeBackBtn:focus-visible{
+  border-radius: 8px !important;
+}
+
+#focusModeBackBtn:focus-visible{
+  border-radius: 8px !important;
+}
+
+#focusModeBackBtn::before,
+#focusModeBackBtn::after{
+  content:none;
 }
 
 /* About */
@@ -3947,6 +4167,25 @@ body.isFocusModeOpen #focusModeScreen{
 .focusSessionNotesInput{
     --focus-session-notes-min-height: 76px;
     min-height: var(--focus-session-notes-min-height);
+  }
+  #focusModeScreen .focusSessionNotes{
+    padding:0;
+  }
+
+  #focusModeScreen .focusSessionNotes .focusInsightsTitle{
+    padding:12px 16px 8px;
+  }
+
+  #focusModeScreen .sessionNoteEditorGrid{
+    padding:0 16px;
+  }
+
+  #focusModeScreen .focusSessionNotesInput{
+    padding:16px;
+  }
+
+  #focusModeScreen .focusSessionNotesSavedText{
+    padding:0 16px;
   }
 }@keyframes signedInHeaderBadgeXpSlideIn{from{
     opacity:0;

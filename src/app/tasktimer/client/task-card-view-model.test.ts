@@ -499,6 +499,15 @@ describe("task card view model", () => {
     );
   });
 
+  it("dims only non-running task cards when the Tasks list has an active running task", () => {
+    const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
+
+    expect(css).toContain('body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #taskList.hasRunningTask .task:not(.taskRunning){');
+    expect(css).toContain("opacity:.5;");
+    expect(css).toContain('body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks #taskList.hasRunningTask .task.taskRunning{');
+    expect(css).toContain("opacity:1;");
+  });
+
   it("defines mock-style static recess and interactive inner button styles", () => {
     const css = readFileSync("src/app/tasktimer/styles/02-tasks.css", "utf8").replace(/\r\n/g, "\n");
     const launchRule = css.match(/#app\[aria-label="TaskLaunch App"\] #appPageTasks\.appPageOn \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch,[\s\S]*?body\[data-app-page="schedule"\] #app\[aria-label="TaskLaunch App"\] #appPageTasks \.task \.actions > \.btn\.taskPrimaryAction\.taskPrimaryActionLaunch\{[\s\S]*?\n\}/)?.[0] ?? "";

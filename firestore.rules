@@ -1175,7 +1175,8 @@ service cloud.firestore {
     }
 
     match /userSubscriptions/{userId} {
-      allow read, create, update, delete: if false;
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/preferences/{docId} {

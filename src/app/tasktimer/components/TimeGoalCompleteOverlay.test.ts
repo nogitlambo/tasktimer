@@ -21,11 +21,8 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(confirmationChromeRule).toContain("border: 1px solid rgba(86, 90, 98, .86) !important;");
     expect(confirmationChromeRule).toContain("border-radius: 8px !important;");
     expect(confirmationChromeRule).toContain("box-shadow: var(--modal-shadow) !important;");
-    expect(overlaysCss).toContain(
-      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay:has(#timeGoalCompleteNextTasks:not([hidden])) .modal.timeGoalCompletePrimitiveModal.modalConfirmation{",
-    );
-    expect(overlaysCss).toContain(
-      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation{",
+    expect(overlaysCss).toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation\{/,
     );
     expect(overlaysCss).toContain("width: min(525px, 100%) !important;");
     expect(overlaysCss).toContain("max-width: min(525px, calc(100vw - 28px)) !important;");
@@ -34,10 +31,8 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("overflow-y: hidden !important;");
     expect(overlaysCss).toContain("inset 0 0 34px rgba(0, 0, 0, .42)");
     expect(overlaysCss).toContain("inset 0 0 86px rgba(0, 0, 0, .26) !important;");
-    expect(overlaysCss).toContain("width: min(900px, 100%) !important;");
-    expect(overlaysCss).toContain("max-width: min(900px, calc(100vw - 28px)) !important;");
-    expect(overlaysCss).toContain(
-      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation::after{",
+    expect(overlaysCss).toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation::after,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation::after\{/,
     );
     expect(overlaysCss).toContain("top: 50% !important;");
     expect(overlaysCss).toContain("translate: -50% -50% !important;");
@@ -48,8 +43,8 @@ describe("TimeGoalCompleteOverlay reward badge", () => {
     expect(overlaysCss).toContain("z-index: 30 !important;");
     expect(overlaysCss).toContain(".timeGoalCompleteConfettiCanvas,");
     expect(overlaysCss).toContain(".timeGoalConfettiPiece{");
-    expect(overlaysCss).toContain(
-      "#timeGoalCompleteOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard,\n#dailyRewardOverlay.timeGoalCompletePrimitiveOverlay .modal.timeGoalCompletePrimitiveModal.modalConfirmation .timeGoalCompleteRewardCard{",
+    expect(overlaysCss).toMatch(
+      /#timeGoalCompleteOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation \.timeGoalCompleteRewardCard,\s*#dailyRewardOverlay\.timeGoalCompletePrimitiveOverlay \.modal\.timeGoalCompletePrimitiveModal\.modalConfirmation \.timeGoalCompleteRewardCard\{/,
     );
     expect(overlaysCss).toContain("background: transparent !important;");
     expect(overlaysCss).toContain("box-shadow: none !important;");

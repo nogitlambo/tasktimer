@@ -1,4 +1,5 @@
 import type { TaskTimerElements } from "./elements";
+import type { HistoryEntrySummaryOpenOptions } from "./history-entry-summary-interaction";
 import type { TaskTimerRuntime } from "./runtime";
 import type { TaskTimerSharedTaskApi } from "./task-shared";
 import type {
@@ -878,7 +879,11 @@ export type TaskTimerDashboardRenderContext = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
-  openHistoryEntryNoteOverlay: (taskId: string, entries: unknown[]) => void;
+  openHistoryEntryNoteOverlay: (
+    taskId: string,
+    entries: unknown[],
+    openOptions?: HistoryEntrySummaryOpenOptions
+  ) => void;
   hasEntitlement: (entitlement: TaskTimerEntitlement) => boolean;
   getCurrentPlan: () => TaskTimerPlan;
 };

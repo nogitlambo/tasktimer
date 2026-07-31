@@ -175,7 +175,7 @@ function createCompletionHarness(options?: {
     querySelector: vi.fn(() => null),
   };
   const taskList = options?.liveTaskDom
-    ? { querySelectorAll: vi.fn(() => [liveTaskNode]) }
+    ? { classList: createClassList([]), querySelectorAll: vi.fn(() => [liveTaskNode]) }
     : null;
   const focusModeScreen = createFocusElementStub();
   focusModeScreen.style = { ...focusModeScreen.style, display: "block" };
@@ -192,8 +192,13 @@ function createCompletionHarness(options?: {
     selector === "#timeGoalCompleteXpValue" ? timeGoalCompleteXpValue : null
   );
   const timeGoalCompleteMeta = createFocusElementStub();
-  const timeGoalCompleteNextTasks = createFocusElementStub();
-  const timeGoalCompleteNextTaskGrid = createFocusElementStub();
+  const timeGoalCompleteNextTaskOverlay = {
+    dataset: {} as Record<string, string>,
+    style: { display: "none" },
+    getAttribute: () => null,
+  };
+  const timeGoalCompleteNextTaskModalGrid = createFocusElementStub();
+  const timeGoalCompleteNextTaskCloseBtn = createFocusElementStub();
   const handlers = new Map<string, (event?: Event) => unknown>();
   const previousWindow = (globalThis as { window?: unknown }).window;
   const previousDocument = (globalThis as { document?: unknown }).document;
@@ -287,8 +292,13 @@ function createCompletionHarness(options?: {
       timeGoalCompleteMeta: timeGoalCompleteMeta as unknown as HTMLElement,
       timeGoalCompleteCloseBtn: timeGoalCompleteCloseBtn as unknown as HTMLButtonElement,
       timeGoalCompleteLaunchNextBtn: null,
-      timeGoalCompleteNextTasks: options?.withNextTaskElements ? timeGoalCompleteNextTasks as unknown as HTMLElement : null,
-      timeGoalCompleteNextTaskGrid: options?.withNextTaskElements ? timeGoalCompleteNextTaskGrid as unknown as HTMLElement : null,
+      timeGoalCompleteNextTasks: null,
+      timeGoalCompleteNextTaskGrid: null,
+      timeGoalCompleteNextTaskOverlay: options?.withNextTaskElements ? timeGoalCompleteNextTaskOverlay as unknown as HTMLElement : null,
+      timeGoalCompleteNextTaskModalTitle: null,
+      timeGoalCompleteNextTaskModalText: null,
+      timeGoalCompleteNextTaskModalGrid: options?.withNextTaskElements ? timeGoalCompleteNextTaskModalGrid as unknown as HTMLElement : null,
+      timeGoalCompleteNextTaskCloseBtn: options?.withNextTaskElements ? timeGoalCompleteNextTaskCloseBtn as unknown as HTMLButtonElement : null,
       timeGoalCompleteConfettiStage: null,
       timeGoalCompleteNoteInput: null,
     },
@@ -359,6 +369,8 @@ function createCompletionHarness(options?: {
     on: (target: unknown, eventName: string, handler: (event?: Event) => unknown) => {
       if (target === timeGoalCompleteCloseBtn && eventName === "click") handlers.set("timeGoalCompleteCloseBtn:click", handler);
       if (target === timeGoalCompleteText && eventName === "click") handlers.set("timeGoalCompleteText:click", handler);
+      if (target === timeGoalCompleteNextTaskModalGrid && eventName === "click") handlers.set("timeGoalCompleteNextTaskModalGrid:click", handler);
+      if (target === timeGoalCompleteNextTaskCloseBtn && eventName === "click") handlers.set("timeGoalCompleteNextTaskCloseBtn:click", handler);
       if (target === windowStub) handlers.set(`window:${eventName}`, handler);
     },
     openOverlay,
@@ -432,8 +444,9 @@ function createCompletionHarness(options?: {
     timeGoalCompleteXpValue,
     timeGoalCompleteCloseBtn,
     timeGoalCompleteMeta,
-    timeGoalCompleteNextTasks,
-    timeGoalCompleteNextTaskGrid,
+    timeGoalCompleteNextTaskOverlay,
+    timeGoalCompleteNextTaskModalGrid,
+    timeGoalCompleteNextTaskCloseBtn,
     save,
     resetTaskStateImmediate,
     clearFocusSessionDraft,
@@ -468,6 +481,23 @@ function createCompletionHarness(options?: {
       if (!handler) throw new Error("time goal complete XP replay handler was not registered");
       handler(new CustomEvent(TASKTIMER_REPLAY_TIME_GOAL_COMPLETE_XP_EVENT, { detail }));
     },
+    triggerOverlayClosed: (overlayId: string) => {
+      const handler = handlers.get(`window:tasktimer:overlayClosed`);
+      if (!handler) throw new Error("overlay closed handler was not registered");
+      handler(new CustomEvent("tasktimer:overlayClosed", { detail: { overlayId } }));
+    },
+    triggerNextTaskGridClick: (nextTaskId: string) => {
+      const handler = handlers.get("timeGoalCompleteNextTaskModalGrid:click");
+      if (!handler) throw new Error("next task grid click handler was not registered");
+      const tile = { dataset: { timeGoalNextTaskId: nextTaskId } };
+      const target = { closest: vi.fn(() => tile) } as unknown as HTMLElement;
+      handler({ target } as unknown as Event);
+    },
+    triggerNextTaskClose: () => {
+      const handler = handlers.get("timeGoalCompleteNextTaskCloseBtn:click");
+      if (!handler) throw new Error("next task close handler was not registered");
+      handler(new Event("click"));
+    },
   };
 }
 
@@ -483,6 +513,14 @@ function runScheduledTimeoutByDelay(harness: ReturnType<typeof createCompletionH
   const callback = call?.[0];
   if (typeof callback !== "function") throw new Error(`No ${delayMs}ms timeout callback found`);
   callback();
+}
+
+function runAllScheduledTimeoutsByDelay(harness: ReturnType<typeof createCompletionHarness>, delayMs: number) {
+  harness.windowStub.setTimeout.mock.calls
+    .filter(([, timeout]) => timeout === delayMs)
+    .forEach(([callback]) => {
+      if (typeof callback === "function") callback();
+    });
 }
 
 describe("task timer session tick", () => {
@@ -802,7 +840,7 @@ describe("task timer session tick", () => {
     }
   });
 
-  it("hides and clears task complete next task tiles by default", () => {
+  it("does not open the follow-up next-task modal by default", () => {
     const harness = createCompletionHarness({
       withNextTaskElements: true,
       extraTasks: [
@@ -819,16 +857,17 @@ describe("task timer session tick", () => {
     try {
       harness.session.tick();
 
-      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(true);
-      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toBe("");
+      expect(harness.openOverlay).not.toHaveBeenCalledWith(harness.timeGoalCompleteNextTaskOverlay);
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toBe("");
     } finally {
       harness.restoreWindow();
     }
   });
 
-  it("renders task complete next task tiles when the preference is enabled", () => {
+  it("opens the follow-up next-task modal after the reward modal closes when enabled", async () => {
     const harness = createCompletionHarness({
       withNextTaskElements: true,
+      timeGoalModalTaskId: "task-1",
       timeGoalCompleteNextTasksEnabled: true,
       extraTasks: [
         task({
@@ -843,34 +882,50 @@ describe("task timer session tick", () => {
     });
 
     try {
-      harness.session.tick();
+      harness.session.registerSessionEvents();
+      harness.timeGoalCompleteOverlay.dataset.awardedXp = "0";
+      harness.openOverlay.mockClear();
 
-      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(false);
-      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("Click a task below to launch immediately");
-      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain('data-time-goal-next-task-id="task-2"');
-      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("Next Focus");
+      await harness.triggerTimeGoalCompleteClose();
+      harness.triggerOverlayClosed("timeGoalCompleteOverlay");
+      runAllScheduledTimeoutsByDelay(harness, 0);
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteNextTaskOverlay);
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toContain("Click a task below to launch immediately");
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toContain('data-time-goal-next-task-id="task-2"');
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toContain("Next Focus");
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toContain("1m");
     } finally {
       harness.restoreWindow();
     }
   });
 
-  it("shows the all-complete message only when next task tiles are enabled", () => {
+  it("does not open the follow-up next-task modal when no eligible tasks remain", async () => {
     const disabledHarness = createCompletionHarness({ withNextTaskElements: true });
     try {
       disabledHarness.session.tick();
 
-      expect(disabledHarness.timeGoalCompleteNextTasks.hidden).toBe(true);
-      expect(disabledHarness.timeGoalCompleteNextTaskGrid.innerHTML).not.toContain("All tasks completed for today!");
+      expect(disabledHarness.openOverlay).not.toHaveBeenCalledWith(disabledHarness.timeGoalCompleteNextTaskOverlay);
     } finally {
       disabledHarness.restoreWindow();
     }
 
-    const enabledHarness = createCompletionHarness({ withNextTaskElements: true, timeGoalCompleteNextTasksEnabled: true });
+    const enabledHarness = createCompletionHarness({
+      withNextTaskElements: true,
+      timeGoalModalTaskId: "task-1",
+      timeGoalCompleteNextTasksEnabled: true,
+    });
     try {
-      enabledHarness.session.tick();
+      enabledHarness.session.registerSessionEvents();
+      enabledHarness.timeGoalCompleteOverlay.dataset.awardedXp = "0";
+      enabledHarness.openOverlay.mockClear();
 
-      expect(enabledHarness.timeGoalCompleteNextTasks.hidden).toBe(false);
-      expect(enabledHarness.timeGoalCompleteNextTaskGrid.innerHTML).toContain("All tasks completed for today!");
+      await enabledHarness.triggerTimeGoalCompleteClose();
+      enabledHarness.triggerOverlayClosed("timeGoalCompleteOverlay");
+      runAllScheduledTimeoutsByDelay(enabledHarness, 0);
+
+      expect(enabledHarness.openOverlay).not.toHaveBeenCalledWith(enabledHarness.timeGoalCompleteNextTaskOverlay);
+      expect(enabledHarness.timeGoalCompleteNextTaskModalGrid.innerHTML).toBe("");
     } finally {
       enabledHarness.restoreWindow();
     }
@@ -914,8 +969,8 @@ describe("task timer session tick", () => {
       expect(harness.timeGoalCompleteText.classList.contains("isCalculating")).toBe(false);
       expect(harness.timeGoalCompleteText.classList.contains("isCounting")).toBe(false);
       expect(harness.timeGoalCompleteCloseBtn.hidden).toBe(false);
-      expect(harness.timeGoalCompleteNextTasks.hidden).toBe(true);
-      expect(harness.timeGoalCompleteNextTaskGrid.innerHTML).toBe("");
+      expect(harness.openOverlay).not.toHaveBeenCalledWith(harness.timeGoalCompleteNextTaskOverlay);
+      expect(harness.timeGoalCompleteNextTaskModalGrid.innerHTML).toBe("");
       expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
 
       const pendingAwardEvent = harness.windowStub.dispatchEvent.mock.calls[0]?.[0] as CustomEvent | undefined;
@@ -970,6 +1025,10 @@ describe("task timer session tick", () => {
       expect(harness.setFocusSessionDraft).not.toHaveBeenCalled();
       expect(harness.completedTask.running).toBe(true);
       expect(harness.completedTask.accumulatedMs).toBe(120_000);
+
+      harness.triggerOverlayClosed("timeGoalCompleteOverlay");
+      runAllScheduledTimeoutsByDelay(harness, 0);
+      expect(harness.openOverlay).not.toHaveBeenCalledWith(harness.timeGoalCompleteNextTaskOverlay);
     } finally {
       harness.restoreWindow();
     }
@@ -1417,6 +1476,7 @@ describe("task timer session tick", () => {
       },
     } as unknown as HTMLElement;
     const taskListEl = {
+      classList: createClassList([]),
       querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
     } as unknown as HTMLElement;
 
@@ -1525,6 +1585,7 @@ describe("task timer session tick", () => {
     session.tick();
 
     expect(taskNode.classList.contains("taskRunning")).toBe(true);
+    expect((taskListEl as unknown as { classList: { contains: (token: string) => boolean } }).classList.contains("hasRunningTask")).toBe(true);
     expect(primaryActionBtn.className).toBe("btn btn-warn small taskPrimaryAction taskPrimaryActionStop");
     expect(primaryActionBtn.dataset.action).toBe("stop");
     expect(primaryActionBtn.innerHTML).toContain("taskPrimaryActionFace");
@@ -1573,6 +1634,7 @@ describe("task timer session tick", () => {
       },
     } as unknown as HTMLElement;
     const taskListEl = {
+      classList: createClassList(["hasRunningTask"]),
       querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
     } as unknown as HTMLElement;
 
@@ -1682,6 +1744,7 @@ describe("task timer session tick", () => {
     session.tick();
 
     expect(taskNode.classList.contains("taskRunning")).toBe(false);
+    expect((taskListEl as unknown as { classList: { contains: (token: string) => boolean } }).classList.contains("hasRunningTask")).toBe(false);
     expect(primaryActionBtn.className).toBe("btn btn-resume small taskPrimaryAction taskPrimaryActionResume");
     expect(primaryActionBtn.dataset.action).toBe("start");
     expect(primaryActionBtn.title).toBe("Resume");
@@ -1732,6 +1795,7 @@ describe("task timer session tick", () => {
       },
     } as unknown as HTMLElement;
     const taskListEl = {
+      classList: createClassList([]),
       querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
     } as unknown as HTMLElement;
 
@@ -1892,6 +1956,7 @@ describe("task timer session tick", () => {
       },
     } as unknown as HTMLElement;
     const taskListEl = {
+      classList: createClassList([]),
       querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
     } as unknown as HTMLElement;
 

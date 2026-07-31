@@ -1373,6 +1373,14 @@ body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .ta
     position:relative;
   }
 
+body[data-tasktimer-native-runtime="true"] .wrap,
+  body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"]{
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
 body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .taskLaunchAppTopbar::before{
     content:"";
     position:absolute;
@@ -1569,7 +1577,10 @@ body.taskLaunchMobileMenuOpen #app[aria-label="TaskLaunch App"] .appFooterNav{
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    background: #0d0f13 !important;
+    background:
+      linear-gradient(180deg, rgba(52, 56, 64, .28) 0%, rgba(36, 39, 46, .16) 22%, rgba(13, 15, 19, 0) 44%),
+      linear-gradient(180deg, rgba(96, 102, 112, .09) 0%, rgba(96, 102, 112, 0) 30%),
+      #0d0f13 !important;
     border: 1px solid transparent;
     border-bottom: 0;
     border-radius: 18px 18px 0 0;

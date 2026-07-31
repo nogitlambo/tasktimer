@@ -3600,6 +3600,10 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   width:100%;
 }
 
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyTableWrap{
+  margin-top: 12px;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSharedTablePanel{
   --leaderboard-shared-table-corner:14px;
   --leaderboard-shared-table-border:rgba(255,255,255,.14);
@@ -3616,6 +3620,13 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   clip-path:polygon(var(--leaderboard-shared-table-corner) 0, calc(100% - var(--leaderboard-shared-table-corner)) 0, 100% var(--leaderboard-shared-table-corner), 100% calc(100% - var(--leaderboard-shared-table-corner)), calc(100% - var(--leaderboard-shared-table-corner)) 100%, var(--leaderboard-shared-table-corner) 100%, 0 calc(100% - var(--leaderboard-shared-table-corner)), 0 var(--leaderboard-shared-table-corner));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   box-sizing:border-box;
+}
+
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardSharedTablePanel{
+  min-width:650px;
+  padding:0;
+  clip-path:none;
+  box-shadow:none;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardSharedTablePanel::before{
@@ -3635,6 +3646,10 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
     linear-gradient(135deg, transparent calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% - .75px), var(--leaderboard-shared-table-border) calc(50% + .75px), transparent calc(50% + .75px)) bottom right / var(--leaderboard-shared-table-corner) var(--leaderboard-shared-table-corner) no-repeat;
 }
 
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardSharedTablePanel::before{
+  display:none;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTable{
   min-width: 650px;
   width:100%;
@@ -3644,6 +3659,10 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   border:0;
   border-radius:0;
   background:rgba(0,0,0,.16);
+}
+
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyTable{
+  background:transparent;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow{
@@ -3662,6 +3681,15 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
   font: inherit;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
   text-align:left;
+}
+
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyTableRow{
+  min-height:56px;
+  border-top:1px solid rgba(255,255,255,.1);
+}
+
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyTableRow:first-child{
+  border-top:0;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTableRow:not(.leaderboardWeeklyTableHead){
@@ -3769,6 +3797,11 @@ body[data-theme="lime"] .friendSharedTaskActions [data-friend-action="import-sha
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyTimeCell{
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   text-align:center;
+}
+
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyRankCell,
+#app[aria-label="TaskLaunch App"] :is(#leaderboardGlobalPanel, #leaderboardWeeklyPanel) .leaderboardWeeklyTimeCell{
+  font-size:11px;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageLeaderboard .leaderboardWeeklyInsigniaCell{

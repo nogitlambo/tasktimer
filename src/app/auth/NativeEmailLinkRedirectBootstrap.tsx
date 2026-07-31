@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+import { resolveNativeAppRoute } from "@/lib/nativeAppLinks";
 import { resolveTaskTimerRouteHref } from "../tasktimer/lib/routeHref";
 import { resolveNativeEmailLinkLoginRoute } from "./nativeEmailLinkRedirect";
 
@@ -17,13 +19,14 @@ export default function NativeEmailLinkRedirectBootstrap() {
     let disposed = false;
     let removeListener: (() => void) | null = null;
 
-    const openEmailLinkRoute = (rawUrl: string) => {
+    const openNativeRoute = (rawUrl: string) => {
       if (disposed) return;
-      const route = resolveNativeEmailLinkLoginRoute(rawUrl);
+      const route = resolveNativeAppRoute(rawUrl) || resolveNativeEmailLinkLoginRoute(rawUrl);
       if (!route) return;
       const target = resolveTaskTimerRouteHref(route);
       const current = `${window.location.pathname}${window.location.search || ""}`;
       if (current === target) return;
+      void Browser.close().catch(() => {});
       window.location.assign(target);
     };
 
@@ -31,9 +34,9 @@ export default function NativeEmailLinkRedirectBootstrap() {
       try {
         const { App } = await import("@capacitor/app");
         const launchUrl = await App.getLaunchUrl().catch(() => undefined);
-        openEmailLinkRoute(launchUrl?.url || "");
+        openNativeRoute(launchUrl?.url || "");
         const handle = await App.addListener("appUrlOpen", (event) => {
-          openEmailLinkRoute(event.url || "");
+          openNativeRoute(event.url || "");
         });
         removeListener = () => {
           void handle.remove();

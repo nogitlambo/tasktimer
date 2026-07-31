@@ -5,8 +5,18 @@ export default function HistoryEntryNoteOverlay() {
     <div className="overlay primitiveSciFiModalOverlay historyEntrySummaryPrimitiveOverlay" id="historyEntryNoteOverlay">
       <div className="modal historyEntrySummaryModal historyEntrySummaryPrimitiveModal" role="dialog" aria-modal="true" aria-label="Session Summary">
         <div className="historyEntryNoteHeader historyEntrySummaryPrimitiveHeader">
-          <h2 id="historyEntryNoteTitle">Session Summary</h2>
-          <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
+          <div className="historyEntrySummaryHeaderMain">
+            <h2 id="historyEntryNoteTitle">Session Summary</h2>
+            <p className="modalSubtext" id="historyEntryNoteMeta" style={{ display: "none" }} />
+          </div>
+          <button
+            className="iconBtn closePopup historyEntrySummaryCloseIcon"
+            type="button"
+            aria-label="Close session summary"
+            title="Close"
+          >
+            <span aria-hidden="true">X</span>
+          </button>
         </div>
         <div className="historyEntryNoteBody historyEntrySummaryPrimitiveBody" id="historyEntryNoteBody">
           No session summary available.
@@ -52,6 +62,13 @@ export default function HistoryEntryNoteOverlay() {
         </div>
         <div className="confirmBtns historyEntrySummaryActions historyEntrySummaryPrimitiveFooter">
           <button
+            className="btn btn-ghost closePopup modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction"
+            id="historyEntryNoteCloseBtn"
+            type="button"
+          >
+            Close
+          </button>
+          <button
             className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction"
             id="historyEntryNoteCancelBtn"
             type="button"
@@ -77,9 +94,6 @@ export default function HistoryEntryNoteOverlay() {
             style={{ display: "none" }}
           >
             Save &amp; Close
-          </button>
-          <button className="btn btn-ghost closePopup modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction historyEntrySummaryPrimitiveAction historyEntrySummaryPrimitiveSecondaryAction" type="button">
-            Close
           </button>
         </div>
       </div>

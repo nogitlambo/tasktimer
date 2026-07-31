@@ -103,8 +103,8 @@ export function SettingsPreferencesPane({ active, exiting = false }: { active: b
           </div>
           <div className="toggleRow" id="timeGoalCompleteNextTasksToggleRow">
             <div className="settingsPreferenceControlCopy">
-              <span className="settingsPreferenceControlLabel">Show next task tiles after completion</span>
-              <span className="settingsPreferenceControlHelp">Shows incomplete task tiles in the task complete modal so you can launch the next task immediately.</span>
+              <span className="settingsPreferenceControlLabel">Show next task modal after completion</span>
+              <span className="settingsPreferenceControlHelp">Shows a follow-up modal after task completion so you can launch your next incomplete task immediately.</span>
             </div>
             <button className="switch" id="timeGoalCompleteNextTasksToggle" type="button" role="switch" aria-checked="false" />
           </div>

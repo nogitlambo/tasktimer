@@ -56,7 +56,7 @@ function makeElement(opts: {
 const PRIMARY_CLICK_SELECTOR =
   '#saveEditBtn, #addTaskConfirmBtn, #friendRequestSendBtn, #historyEntryNoteSaveAndCloseBtn, .modalPreviewPrimaryAction, [data-onboarding-next-action="true"]';
 const TASK_LAUNCH_CLICK_SELECTOR =
-  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id]';
+  'button[data-action="start"][title="Launch"], button[data-action="start"][title="Resume"], #focusDial.isStopped, #confirmOverlay.isResetTaskConfirm #confirmOkBtn, #timeGoalCompleteOverlay [data-time-goal-next-task-id], #timeGoalCompleteNextTaskOverlay [data-time-goal-next-task-id]';
 const SECONDARY_DIRECT_SELECTOR =
   '.switch,[role="switch"],#closeMenuBtn,[data-nav-page],.dashboardRailMenuBtn,.settingsNavTile,.taskLaunchMobileMenuItem,#openAddTaskBtn,[data-action="openAddTask"],[data-action="reset"],[data-action="edit"],#openFriendRequestModalBtn';
 const FOOTER_NAV_SELECTOR = ".appFooterBtn";

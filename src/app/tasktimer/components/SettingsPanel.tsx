@@ -64,7 +64,7 @@ export default function SettingsPanel({ initialPane = null }: { initialPane?: Se
   const navItems = useSettingsNavItems();
   const paneState = useSettingsPaneState(initialPane);
   const { setMobileDetailOpen } = paneState;
-  const accountState = useSettingsAccountState();
+  const accountState = useSettingsAccountState({ nativeCheckoutReturnPath: "/settings" });
   const avatarState = useSettingsAvatarState({
     authUserUid: accountState.authUserUid,
     authUserEmail: accountState.authUserEmail,

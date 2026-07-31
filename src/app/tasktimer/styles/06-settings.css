@@ -843,6 +843,16 @@ body.isRouteSlideEntering[data-route-slide-direction="backward"] #app[aria-label
   opacity:.55;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDeleteAccountInlineLink{
+  margin: 0;
+  text-decoration: none;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDeleteAccountInlineLink:hover:not(:disabled),
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDeleteAccountInlineLink:focus-visible:not(:disabled){
+  text-decoration: none;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSyncStatusTime{
   color:rgba(188,214,230,.8);
 }
@@ -3584,7 +3594,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountMetaListItem .settingsAccountUidLabel{
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
-  color: #c9ff24;
+  color: #fff;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountMetaListItem :is(.settingsAccountEmailValue, .settingsAccountUserIdValue, .settingsAccountMemberSinceValue){
@@ -3625,7 +3635,20 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountUpgradeLink{
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #7ef3ff;
+  font: inherit;
+  cursor: pointer;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountUpgradeLink:hover,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountUpgradeLink:focus-visible{
+  color: #b8fbff;
+  outline: none;
+  text-decoration: underline;
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountUserIdWithCopy{
@@ -4638,7 +4661,7 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountIdCardLabel,
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountMetaListItem .settingsAccountUidLabel{
-  color: #c9ff24;
+  color: #fff;
 }
 
 body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountUsername,
@@ -5450,8 +5473,11 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout[data-settings-slide-direction="backward"]:not(.isMobileDetailOpen) .settingsNavPanel{
-    animation: settingsPaneSlideInBackward .22s ease;
     transform:none;
+  }
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsSplitLayout[data-settings-slide-direction="backward"]:not(.isMobileDetailOpen) .settingsNavGrid{
+    animation: settingsPaneSlideInBackward .22s ease both;
   }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDashboardShell.isMobileDetailOpen .settingsMobileBackFooter{
@@ -5876,6 +5902,17 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
 
 #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill{
   flex: 0 0 auto;
+}
+
+@media (min-width: 981px){
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill,
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-free,
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-pro{
+    border: 1px solid #c9ff24;
+    background: transparent;
+    color: #c9ff24;
+    font-weight: 800;
+  }
 }
 
 .accountProfileBio{
@@ -6829,6 +6866,12 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   align-items:stretch !important;
   justify-content:stretch !important;
   width:100% !important;
+}
+
+@media (min-width: 900px){
+  body:not([data-tasktimer-native-runtime="true"]) #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataList{
+    grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+  }
 }
 
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsDetailPane.settingsDataPane .settingsDataListItem{

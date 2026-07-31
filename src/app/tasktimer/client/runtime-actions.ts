@@ -3,6 +3,7 @@
 import type { Task } from "../lib/types";
 import type { AppPage } from "./types";
 import type { TaskTimerElements } from "./elements";
+import type { HistoryEntrySummaryOpenOptions } from "./history-entry-summary-interaction";
 
 type CreateTaskTimerRuntimeActionsOptions = {
   els: Pick<TaskTimerElements, "taskList" | "focusModeScreen">;
@@ -30,7 +31,11 @@ type CreateTaskTimerRuntimeActionsOptions = {
   historyInlineApi: () =>
     | {
         getHistoryEntryNote: (entry: any) => string;
-        openHistoryEntryNoteOverlay: (taskId: string, entries: any[]) => void;
+        openHistoryEntryNoteOverlay: (
+          taskId: string,
+          entries: any[],
+          openOptions?: HistoryEntrySummaryOpenOptions
+        ) => void;
         clearHistoryEntryNoteOverlayPosition: () => void;
       }
     | null;
@@ -106,8 +111,8 @@ export function createTaskTimerRuntimeActions(options: CreateTaskTimerRuntimeAct
     return options.historyInlineApi()?.getHistoryEntryNote(entry) || "";
   }
 
-  function openHistoryEntryNoteOverlay(taskId: string, entries: any[]) {
-    options.historyInlineApi()?.openHistoryEntryNoteOverlay(taskId, entries);
+  function openHistoryEntryNoteOverlay(taskId: string, entries: any[], openOptions?: HistoryEntrySummaryOpenOptions) {
+    options.historyInlineApi()?.openHistoryEntryNoteOverlay(taskId, entries, openOptions);
   }
 
   function clearHistoryEntryNoteOverlayPosition() {

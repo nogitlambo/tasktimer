@@ -19,4 +19,11 @@ describe("Android push notification manifest", () => {
     expect(manifest).toContain('android:scheme="com.tasklaunch.app"');
     expect(manifest).toContain('android:host="login"');
   });
+
+  it("declares native account and settings deep-link hosts for billing returns", () => {
+    const manifest = readManifest();
+
+    expect(manifest).toContain('android:host="account"');
+    expect(manifest).toContain('android:host="settings"');
+  });
 });

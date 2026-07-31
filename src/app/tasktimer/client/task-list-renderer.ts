@@ -128,6 +128,7 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     if (!taskListEl) return;
 
     const tasks = options.getTasks();
+    taskListEl.classList.toggle("hasRunningTask", tasks.some((task) => !!task?.running));
     const taskOrderBy = options.getTaskOrderBy();
     const displayedTasks = buildDisplayedTasks(tasks, taskOrderBy);
     const sourceIndexByTask = new Map(tasks.map((task, index) => [task, index] as const));

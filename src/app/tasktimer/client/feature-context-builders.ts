@@ -637,7 +637,11 @@ type CreateDashboardRenderOptionsArgs = {
   normalizeHistoryTimestampMs: (value: unknown) => number;
   getModeColor: (mode: MainMode) => string;
   addRangeMsToLocalDayMap: (dayMap: Map<string, number>, startMs: number, endMs: number) => void;
-  openHistoryEntryNoteOverlay: (taskId: string, entries: unknown[]) => void;
+  openHistoryEntryNoteOverlay: (
+    taskId: string,
+    entries: unknown[],
+    openOptions?: import("./history-entry-summary-interaction").HistoryEntrySummaryOpenOptions
+  ) => void;
   getCloudDashboardCache: () => unknown;
   setCloudDashboardCache: (value: unknown) => void;
   loadCachedDashboard: () => unknown;

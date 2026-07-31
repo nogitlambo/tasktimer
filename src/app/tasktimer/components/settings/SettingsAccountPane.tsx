@@ -11,6 +11,7 @@ import {
   type RankPromotion,
 } from "@/app/tasktimer/client/rank-promotion";
 import RankLadderModal from "../RankLadderModal";
+import NativePlusUpsellModal from "../NativePlusUpsellModal";
 import RankPromotionOverlay from "../RankPromotionOverlay";
 import SignOutConfirmModal from "../SignOutConfirmModal";
 import RankThumbnail from "../RankThumbnail";
@@ -29,7 +30,7 @@ function formatMemberSinceDate(value: string | null) {
 }
 
 function formatSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
-  return plan === "pro" ? "PLUS User" : "Free User";
+  return plan === "pro" ? "PLUS" : "FREE";
 }
 
 function formatPlanRenewalDate(value: number | null) {
@@ -114,7 +115,7 @@ export function SettingsAccountPane({
                           )}
                         </div>
                       </button>
-                      <div className="settingsAccountIdCardAvatarCaption">Tap avatar to update profile badge</div>
+                      <div className="settingsAccountIdCardAvatarCaption">Click avatar to change</div>
                     </div>
 
                     <div className="settingsAccountIdCardIdentity">
@@ -206,37 +207,13 @@ export function SettingsAccountPane({
                 <div className="settingsAccountProfileRow settingsAccountIdCardBody">
                   <dl className="settingsAccountIdCardMetaList">
                     <div className="settingsAccountMetaListItem">
+                      <dt className="settingsAccountUidLabel">Member Since</dt>
+                      <dd className="settingsAccountMemberSinceValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
+                    </div>
+                    <div className="settingsAccountMetaListItem">
                       <dt className="settingsAccountUidLabel">{accountEmailLabel}</dt>
                       <dd className="settingsAccountEmailValue">{accountEmailValue}</dd>
                     </div>
-                    <div className="settingsAccountMetaListItem">
-                      <dt className="settingsAccountUidLabel">Plan</dt>
-                      <dd className="settingsAccountMemberSinceValue">
-                        <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
-                          {formatSubscriptionPlan(account.authPlan)}
-                        </span>
-                        {account.authPlan === "free" ? (
-                          <>
-                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
-                            <a className="settingsAccountUpgradeLink" href="/pricing">
-                              Upgrade to <strong>PLUS</strong>
-                            </a>
-                          </>
-                        ) : null}
-                        {account.authPlan === "pro" ? (
-                          <>
-                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
-                            <span>Manage Subscription</span>
-                          </>
-                        ) : null}
-                      </dd>
-                    </div>
-                    {account.authPlan === "pro" ? (
-                      <div className="settingsAccountMetaListItem">
-                        <dt className="settingsAccountUidLabel">Plan Renewal Date</dt>
-                        <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>
-                      </div>
-                    ) : null}
                     {account.authUserUid ? (
                       <div className="settingsAccountMetaListItem settingsAccountUidListItem">
                         <dt className="settingsAccountUidLabel">UID</dt>
@@ -254,9 +231,40 @@ export function SettingsAccountPane({
                       </div>
                     ) : null}
                     <div className="settingsAccountMetaListItem">
-                      <dt className="settingsAccountUidLabel">Member Since</dt>
-                      <dd className="settingsAccountMemberSinceValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
+                      <dt className="settingsAccountUidLabel">Plan</dt>
+                      <dd className="settingsAccountMemberSinceValue">
+                        <span>{formatSubscriptionPlan(account.authPlan)}</span>
+                        {account.authPlan === "free" ? (
+                          <>
+                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                            <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
+                              Upgrade to <strong>PLUS</strong>
+                            </button>
+                          </>
+                        ) : null}
+                        {account.authPlan === "pro" ? (
+                          <>
+                            <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                            <span>Manage Subscription</span>
+                          </>
+                        ) : null}
+                        <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                        <button
+                          className="settingsDeleteAccountLink settingsDeleteAccountInlineLink"
+                          type="button"
+                          disabled={account.authBusy}
+                          onClick={() => account.setShowDeleteAccountConfirm(true)}
+                        >
+                          Delete Account
+                        </button>
+                      </dd>
                     </div>
+                    {account.authPlan === "pro" ? (
+                      <div className="settingsAccountMetaListItem">
+                        <dt className="settingsAccountUidLabel">Renews On</dt>
+                        <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </div>
               </div>
@@ -274,14 +282,6 @@ export function SettingsAccountPane({
                   </span>
                 ) : null}
               </div>
-              <button
-                className="settingsDeleteAccountLink"
-                type="button"
-                disabled={account.authBusy}
-                onClick={() => account.setShowDeleteAccountConfirm(true)}
-              >
-                Delete Account
-              </button>
             </div>
           ) : null}
 
@@ -290,6 +290,14 @@ export function SettingsAccountPane({
           {avatar.avatarSyncNotice ? (
             <div className={avatar.avatarSyncNoticeIsError ? "settingsAuthError" : "settingsAuthNotice"}>{avatar.avatarSyncNotice}</div>
           ) : null}
+          <NativePlusUpsellModal
+            open={account.showNativePlusUpsellModal}
+            busy={account.nativePlusCheckoutBusy}
+            error={account.nativePlusCheckoutError}
+            ctaLabel={account.nativePlusCheckoutCtaLabel}
+            onClose={() => account.setShowNativePlusUpsellModal(false)}
+            onConfirm={account.onStartNativePlusCheckout}
+          />
 
           {hasAccountSession ? (
             <>

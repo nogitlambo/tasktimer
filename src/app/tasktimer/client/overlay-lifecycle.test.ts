@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   closeTaskTimerOverlay,
   createTaskTimerOverlayLifecycle,
+  HISTORY_ENTRY_SUMMARY_NATIVE_CLOSE_ANIMATION_MS,
   isTaskTimerOverlayVisible,
   openTaskTimerOverlay,
   REWARD_MODAL_CLOSE_ANIMATION_MS,
@@ -117,6 +118,35 @@ describe("overlay lifecycle", () => {
 
     expect(overlay.classList.contains("isClosing")).toBe(false);
     expect(overlay.style.display).toBe("flex");
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("animates native session summary sheet close before hiding the overlay", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", { dispatchEvent: vi.fn(), matchMedia: () => ({ matches: false }) });
+    const originalDocument = globalThis.document;
+    const overlay = overlayStub("historyEntryNoteOverlay");
+    overlay.style.display = "flex";
+    vi.stubGlobal("document", {
+      ...(originalDocument ?? {}),
+      body: {
+        dataset: {
+          tasktimerNativeRuntime: "true",
+        },
+      },
+    });
+
+    closeTaskTimerOverlay(overlay, { activeElement: null });
+
+    expect(overlay.classList.contains("isClosing")).toBe(true);
+    expect(overlay.getAttribute("aria-hidden")).toBe("true");
+    expect(overlay.style.display).toBe("flex");
+
+    vi.advanceTimersByTime(HISTORY_ENTRY_SUMMARY_NATIVE_CLOSE_ANIMATION_MS);
+
+    expect(overlay.classList.contains("isClosing")).toBe(false);
+    expect(overlay.style.display).toBe("none");
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
