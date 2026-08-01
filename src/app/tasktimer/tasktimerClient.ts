@@ -131,6 +131,52 @@ import { Capacitor } from "@capacitor/core";
 
 const ARCHITECT_EMAIL = "aniven82@gmail.com";
 const DASHBOARD_BUSY_MIN_VISIBLE_MS = 420;
+const NATIVE_UI_PREVIEW_QUERY_KEY = "nativeUiPreview";
+const NATIVE_UI_PREVIEW_STORAGE_KEY = "tasktimer:native-ui-preview";
+
+function isTaskTimerLocalhostRuntime() {
+  if (typeof window === "undefined") return false;
+  const hostname = String(window.location.hostname || "").trim().toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function parseBooleanPreviewFlag(value: string | null) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  switch (normalized) {
+    case "1":
+    case "true":
+    case "yes":
+    case "on":
+      return true;
+    case "0":
+    case "false":
+    case "no":
+    case "off":
+      return false;
+    default:
+      return null;
+  }
+}
+
+function shouldPreviewTaskTimerNativeUi() {
+  if (!isTaskTimerLocalhostRuntime()) return false;
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    const queryOverride = parseBooleanPreviewFlag(params.get(NATIVE_UI_PREVIEW_QUERY_KEY));
+    if (queryOverride != null) {
+      if (queryOverride) {
+        window.localStorage.setItem(NATIVE_UI_PREVIEW_STORAGE_KEY, "true");
+      } else {
+        window.localStorage.removeItem(NATIVE_UI_PREVIEW_STORAGE_KEY);
+      }
+      return queryOverride;
+    }
+    return parseBooleanPreviewFlag(window.localStorage.getItem(NATIVE_UI_PREVIEW_STORAGE_KEY)) === true;
+  } catch {
+    return false;
+  }
+}
 
 function syncOwnFriendshipProfileForAccountUser(uid: string, partial: Parameters<typeof syncOwnFriendshipProfile>[1]) {
   if (getCurrentTaskTimerUserIsAnonymous()) return Promise.resolve(null);
@@ -148,7 +194,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       return window.location.protocol === "file:";
     }
   })();
-  if (isNativeOrFileRuntime) {
+  const shouldUseNativeRuntimeUi = isNativeOrFileRuntime || shouldPreviewTaskTimerNativeUi();
+  if (shouldUseNativeRuntimeUi) {
     document.body.dataset.tasktimerNativeRuntime = "true";
   } else {
     delete document.body.dataset.tasktimerNativeRuntime;

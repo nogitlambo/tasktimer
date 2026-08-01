@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { Browser } from "@capacitor/browser";
 import { readApiJson } from "@/lib/apiJson";
-import { getFirebaseAuthClient, isNativeOrFileRuntime } from "@/lib/firebaseClient";
+import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { loadUserRootPlan, loadUserSubscriptionRenewalAtMs } from "@/app/tasktimer/lib/cloudStore";
 import { syncOwnFriendshipProfile } from "@/app/tasktimer/lib/friendsStore";
 import { syncCurrentUserPlanCache } from "@/app/tasktimer/lib/planFunctions";
 import { notifyAccountProfileUpdated } from "@/app/tasktimer/lib/accountProfileStorage";
+import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
 import {
   readTaskTimerPlanCacheFromStorage,
   readTaskTimerPlanFromStorage,
@@ -353,7 +354,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     try {
       const idToken = await currentUser?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const res = await fetch("/api/stripe/create-checkout-session", {
+      const res = await fetch(getApiUrl("/api/stripe/create-checkout-session"), {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({
@@ -400,7 +401,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       try {
         const idToken = await currentUser?.getIdToken();
         if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-        const res = await fetch("/api/stripe/create-billing-portal-session", {
+        const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({
@@ -425,13 +426,8 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       }
     }
 
-    if (isNativeOrFileRuntime()) {
-      setNativePlusCheckoutError("");
-      setShowNativePlusUpsellModal(true);
-      return;
-    }
-
-    window.location.assign("/pricing");
+    setNativePlusCheckoutError("");
+    setShowNativePlusUpsellModal(true);
   }, [authPlan, nativeCheckoutReturnPath]);
 
   return {
@@ -462,7 +458,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       showNativePlusUpsellModal,
       nativePlusCheckoutBusy,
       nativePlusCheckoutError,
-      nativePlusCheckoutCtaLabel: nativePlusCheckoutBusy ? "Starting Checkout..." : "Launch My 7-Day Free Trial",
+      nativePlusCheckoutCtaLabel: nativePlusCheckoutBusy ? "Starting Checkout..." : "Start my 14-day free trial",
       setShowDeleteAccountConfirm,
       setShowNativePlusUpsellModal: (open) => {
         setShowNativePlusUpsellModal(open);

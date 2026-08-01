@@ -3,6 +3,7 @@ import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
 import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiErrors";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
@@ -18,6 +19,10 @@ function resolveSafeReturnPath(value: unknown) {
   const pathOnly = normalized.split("#")[0]?.split("?")[0] || "/account";
   const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/pricing"]);
   return allowedPaths.has(pathOnly.replace(/\/+$/, "") || "/") ? normalized : "/account";
+}
+
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
 }
 
 export async function POST(req: Request) {
@@ -37,9 +42,12 @@ export async function POST(req: Request) {
     const customerId = await loadStripeCustomerIdForUser(uid);
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: "No Stripe billing profile was found for this account yet." },
-        { status: 400 },
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json(
+          { error: "No Stripe billing profile was found for this account yet." },
+          { status: 400 },
+        )
       );
     }
 
@@ -50,25 +58,31 @@ export async function POST(req: Request) {
       return_url: `${appBaseUrl}${returnPath.startsWith("/") ? returnPath : `/${returnPath}`}`,
     });
 
-    return NextResponse.json({ url: session.url });
+    return withAuthenticatedApiCors(req, NextResponse.json({ url: session.url }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not create billing portal session.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not create billing portal session."));
     }
     if (isStripeApiError(error)) {
-      return createStripeApiErrorResponse(
-        error,
-        "Could not create billing portal session.",
-        "[api/stripe/create-billing-portal-session] Stripe request failed"
+      return withAuthenticatedApiCors(
+        req,
+        createStripeApiErrorResponse(
+          error,
+          "Could not create billing portal session.",
+          "[api/stripe/create-billing-portal-session] Stripe request failed"
+        )
       );
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not create billing portal session.",
-      "[api/stripe/create-billing-portal-session] Request failed"
+    return withAuthenticatedApiCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not create billing portal session.",
+        "[api/stripe/create-billing-portal-session] Request failed"
+      )
     );
   }
 }

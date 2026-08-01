@@ -37,14 +37,25 @@ export default function NativePlusUpsellModal({
         if (event.target === event.currentTarget && !busy) onClose();
       }}
     >
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Upgrade to Plus">
+      <div className="modal nativePlusUpsellPrimitiveModal" role="dialog" aria-modal="true" aria-label="Upgrade to Plus">
+        <button
+          className="iconBtn nativePlusUpsellCloseBtn"
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          disabled={busy}
+        >
+          x
+        </button>
         <div className="nativePlusUpsellHeader">
-          <h2>PRO</h2>
-          <span className="nativePlusUpsellBadge">7-DAY FREE TRIAL</span>
+          <h2>
+            Get <span className="nativePlusUpsellTitleAccent">PLUS</span>
+          </h2>
+          <span className="nativePlusUpsellBadge">14-DAY FREE TRIAL</span>
         </div>
         <p className="modalSubtext nativePlusUpsellIntro">Advanced tools for power users</p>
         <div className="nativePlusUpsellPriceRow" aria-label="Plus price">
-          <strong className="nativePlusUpsellPrice">$7.99</strong>
+          <strong className="nativePlusUpsellPrice">$1.00</strong>
           <span className="nativePlusUpsellBilling">Per month</span>
         </div>
         <div className="nativePlusUpsellDivider" aria-hidden="true" />
@@ -64,10 +75,12 @@ export default function NativePlusUpsellModal({
           </p>
         ) : null}
         <div className="confirmBtns nativePlusUpsellActions">
-          <button className="btn btn-ghost" type="button" onClick={onClose} disabled={busy}>
-            Close
-          </button>
-          <button className="btn btn-accent" type="button" onClick={() => void onConfirm()} disabled={busy}>
+          <button
+            className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction nativePlusUpsellPrimaryAction"
+            type="button"
+            onClick={() => void onConfirm()}
+            disabled={busy}
+          >
             {ctaLabel}
           </button>
         </div>

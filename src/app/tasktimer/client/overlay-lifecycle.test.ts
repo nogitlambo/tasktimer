@@ -23,7 +23,7 @@ function overlayStub(id = "overlay", attrs: Record<string, string | null> = {}) 
     setAttribute: (name: string, value: string) => {
       attrs[name] = value;
     },
-  } as HTMLElement;
+  } as unknown as HTMLElement;
 }
 
 function confettiStageStub() {

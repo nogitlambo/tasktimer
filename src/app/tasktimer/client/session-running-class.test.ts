@@ -86,6 +86,7 @@ type FocusElementStub = ReturnType<typeof createClassList> extends infer ClassLi
       clientWidth: number;
       clientHeight: number;
       hidden: boolean;
+      disabled: boolean;
       setAttribute: ReturnType<typeof vi.fn>;
       closest: ReturnType<typeof vi.fn>;
       querySelector: ReturnType<typeof vi.fn>;
@@ -104,6 +105,7 @@ function createFocusElementStub(options: { clientWidth?: number; clientHeight?: 
     clientWidth: options.clientWidth ?? 0,
     clientHeight: options.clientHeight ?? 0,
     hidden: false,
+    disabled: false,
     setAttribute: vi.fn(),
     closest: vi.fn(() => null),
     querySelector: vi.fn(() => null),
@@ -247,6 +249,9 @@ function createCompletionHarness(options?: {
     audioInstances.push(audio);
     return audio;
   });
+  const windowAddEventListener = vi.fn<(type: string, listener: EventListenerOrEventListenerObject) => void>();
+  const windowRemoveEventListener = vi.fn<(type: string, listener: EventListenerOrEventListenerObject) => void>();
+  const windowDispatchEvent = vi.fn<(event: Event) => boolean>(() => true);
   const windowStub = {
     requestAnimationFrame: vi.fn(() => 1),
     setTimeout: vi.fn((handler: () => void, timeout?: number) => {
@@ -265,9 +270,9 @@ function createCompletionHarness(options?: {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     })),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(() => true),
+    addEventListener: windowAddEventListener,
+    removeEventListener: windowRemoveEventListener,
+    dispatchEvent: windowDispatchEvent,
   };
   const documentStub = {
     activeElement: null,

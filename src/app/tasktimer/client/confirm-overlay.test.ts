@@ -66,7 +66,6 @@ function createHarness() {
     on: vi.fn(),
     closeEdit: vi.fn(),
     closeElapsedPad: vi.fn(),
-    closeConfirm: vi.fn(),
     closeTaskExportModal: vi.fn(),
     closeShareTaskModal: vi.fn(),
     getConfirmAction: vi.fn(() => null),

@@ -18,6 +18,7 @@ import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
 import { recordNonFatal } from "@/lib/firebaseTelemetry";
 import { AVATAR_CATALOG, normalizeBundledAvatarWebpSrc } from "../lib/avatarCatalog";
 import { playDropdownClickAudio, playTaskFlipClickAudio } from "../client/secondary-click-audio";
+import { getApiUrl } from "../lib/apiClient";
 import {
   readTaskTimerPlanCacheFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
@@ -692,7 +693,7 @@ export default function DesktopAppRail({
     try {
       const idToken = await currentUser?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const res = await fetch("/api/stripe/create-billing-portal-session", {
+      const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({

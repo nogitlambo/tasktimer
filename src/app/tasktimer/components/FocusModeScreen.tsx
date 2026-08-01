@@ -6,10 +6,17 @@ export default function FocusModeScreen() {
       <div className="focusModeHead">
         <div className="focusModeHeadSpacer" aria-hidden="true" />
         <div className="focusModeTitle">Focus Mode</div>
-        <div className="focusModeHeadAction" aria-hidden="true" />
-      </div>
-      <div className="focusTaskTitle" id="focusTaskName">
-        TASKTIMER
+        <div className="focusModeHeadAction">
+          <button
+            className="btn btn-ghost primitiveFocusExitBtn focusModeCloseIconBtn"
+            id="focusModeBackBtn"
+            type="button"
+            aria-label="Close Focus Mode"
+          >
+            <span className="focusModeCloseIconGlyph" aria-hidden="true" />
+            <span className="focusModeCloseText">Exit</span>
+          </button>
+        </div>
       </div>
       <div className="focusDialWrap">
         <div className="focusDialPanel">
@@ -47,7 +54,9 @@ export default function FocusModeScreen() {
         </div>
       </div>
       <div className="focusSessionNotes" id="focusSessionNotesSection">
-        <div className="focusInsightsTitle">Notes</div>
+        <div className="focusInsightsTitle">
+          Session Notes - <span id="focusTaskName">Task</span>
+        </div>
         <div className="focusSessionNotesBody">
           <div
             className="richNoteToolbar"
@@ -97,16 +106,7 @@ export default function FocusModeScreen() {
           </button>
         </div>
       </div>
-      <div className="focusModeExitBar">
-        <button
-          className="btn btn-ghost primitiveFocusExitBtn"
-          id="focusModeBackBtn"
-          type="button"
-          aria-label="Close Focus Mode"
-        >
-          Exit
-        </button>
-      </div>
+      <div className="focusModeExitBar" aria-hidden="true" />
     </section>
   );
 }

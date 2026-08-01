@@ -1919,7 +1919,7 @@ describe("friend removal status", () => {
     const deleteBtn = makeElement();
     const eventHandlers: Record<string, (event: { preventDefault?: () => void }) => void> = {};
     const confirmActions: Array<() => void> = [];
-    const confirmOptions: Array<{ overlayClassName?: string; onOk: () => void }> = [];
+    const confirmOptions: Array<{ overlayClassName?: string; okButtonClassName?: string; onOk: () => void }> = [];
     const showActionConfirmation = vi.fn();
 
     const ctx = {
@@ -1945,7 +1945,7 @@ describe("friend removal status", () => {
       on: (target: unknown, event: string, handler: (event: unknown) => void) => {
         if (target === deleteBtn && event === "click") eventHandlers.delete = handler;
       },
-      confirm: (_title: string, _text: string, opts: { overlayClassName?: string; onOk: () => void }) => {
+      confirm: (_title: string, _text: string, opts: { overlayClassName?: string; okButtonClassName?: string; onOk: () => void }) => {
         confirmOptions.push(opts);
         confirmActions.push(opts.onOk);
       },

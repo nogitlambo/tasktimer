@@ -33,7 +33,7 @@ vi.mock("@/lib/stripeApiErrors", () => ({
   isStripeApiError: vi.fn(() => false),
 }));
 
-import { POST } from "./route";
+import { OPTIONS, POST } from "./route";
 
 function checkoutRequest(body: Record<string, unknown> = { idToken: "token" }) {
   return new Request("https://tasklaunch.app/api/stripe/create-checkout-session", {
@@ -100,5 +100,31 @@ describe("POST /api/stripe/create-checkout-session", () => {
         cancel_url: "com.tasklaunch.app://account?checkout=cancelled",
       })
     );
+  });
+
+  it("answers authenticated CORS preflight for native app origins", () => {
+    const response = OPTIONS(
+      new Request("https://tasklaunch.app/api/stripe/create-checkout-session", {
+        method: "OPTIONS",
+        headers: { origin: "capacitor://localhost" },
+      })
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
+    expect(response.headers.get("access-control-allow-methods")).toContain("POST");
+  });
+
+  it("applies authenticated CORS headers to successful responses", async () => {
+    const response = await POST(
+      new Request("https://tasklaunch.app/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { origin: "capacitor://localhost" },
+        body: JSON.stringify({ idToken: "token", returnTarget: "native" }),
+      })
+    );
+
+    expect(response.headers.get("access-control-allow-origin")).toBe("capacitor://localhost");
+    expect(response.headers.get("vary")).toBe("Origin");
   });
 });

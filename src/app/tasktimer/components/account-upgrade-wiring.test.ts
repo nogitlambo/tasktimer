@@ -6,7 +6,7 @@ function readSource(relativePath: string) {
   return readFileSync(resolve(__dirname, relativePath), "utf8").replace(/\r\n/g, "\n");
 }
 
-describe("native account upgrade wiring", () => {
+describe("account upgrade wiring", () => {
   it("routes the settings account pane upgrade CTA through shared account actions and modal state", () => {
     const source = readSource("./settings/SettingsAccountPane.tsx");
 
@@ -21,5 +21,13 @@ describe("native account upgrade wiring", () => {
     expect(source).toContain('onClick={() => void account.onOpenPlanAction()}');
     expect(source).toContain("<NativePlusUpsellModal");
     expect(source).toContain("onConfirm={account.onStartNativePlusCheckout}");
+  });
+
+  it("uses the shared API URL helper for native checkout and billing portal requests", () => {
+    const source = readSource("./settings/useSettingsAccountState.ts");
+
+    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-checkout-session"), {');
+    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {');
+    expect(source).not.toContain('window.location.assign("/pricing")');
   });
 });

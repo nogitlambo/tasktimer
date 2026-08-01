@@ -77,6 +77,7 @@ import {
   getXpAwardButtonLabelOverride,
   setXpAwardButtonLabelOverride,
 } from "./xp-award-button-label-override";
+import { isNativeOrFileRuntime } from "@/lib/firebaseClient";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -734,12 +735,32 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return fallbackMaxHeight;
   }
 
+  function getNativeFocusSessionNotesViewportCap(input: HTMLElement, minHeight: number) {
+    if (!isNativeOrFileRuntime()) return Number.POSITIVE_INFINITY;
+    const doc = input.ownerDocument ?? (typeof document !== "undefined" ? document : null);
+    const windowRef = doc?.defaultView ?? (typeof window !== "undefined" ? window : null);
+    const viewportHeight = Math.max(0, Math.floor(Number(windowRef?.innerHeight || 0) || 0));
+    if (viewportHeight <= 0) return Number.POSITIVE_INFINITY;
+
+    const rect = typeof input.getBoundingClientRect === "function" ? input.getBoundingClientRect() : null;
+    const top = Math.max(0, Math.floor(Number(rect?.top || 0) || 0));
+    if (top <= 0) return Number.POSITIVE_INFINITY;
+
+    const bottomPadding = 24;
+    const availableHeight = viewportHeight - top - bottomPadding;
+    return Math.max(minHeight, availableHeight);
+  }
+
   function autosizeFocusSessionNotesInput() {
     const input = els.focusSessionNotesInput as HTMLElement | null;
     if (!input) return;
     input.style.height = "auto";
     const minHeight = getFocusSessionNotesMinHeight(input);
-    const maxHeight = getFocusSessionNotesMaxHeight(input, minHeight);
+    const cssMaxHeight = getFocusSessionNotesMaxHeight(input, minHeight);
+    const nativeViewportCap = getNativeFocusSessionNotesViewportCap(input, minHeight);
+    const maxHeight = Number.isFinite(nativeViewportCap)
+      ? Math.max(minHeight, nativeViewportCap)
+      : Math.max(minHeight, cssMaxHeight);
     const nextHeight = Math.max(minHeight, Math.ceil(Number(input.scrollHeight || 0) || 0));
     const clampedHeight = Math.min(nextHeight, maxHeight);
     input.style.height = `${clampedHeight}px`;

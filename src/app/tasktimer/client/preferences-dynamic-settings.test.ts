@@ -10,6 +10,7 @@ import { buildDefaultUserPreferences } from "../lib/cloudStore";
 import { normalizeRewardProgress } from "../lib/rewards";
 
 type Listener = (event: { target?: unknown; type?: string; detail?: unknown }) => void;
+type PartialPreferencesEls = Partial<TaskTimerPreferencesContext["els"]>;
 
 const storageKeys = {
   THEME_KEY: "taskticker_tasks_v1:theme",
@@ -206,7 +207,11 @@ function createLocalStorageStub() {
   };
 }
 
-function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Partial<TaskTimerPreferencesContext["els"]> } = {}) {
+function asPartialPreferencesEls(value: Record<string, unknown>) {
+  return value as unknown as PartialPreferencesEls;
+}
+
+function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => PartialPreferencesEls } = {}) {
   const fakeDocument = new FakeDocument();
   const localStorageStub = createLocalStorageStub();
   const windowStub = createWindowStub(localStorageStub as unknown as Storage);
@@ -289,7 +294,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
   });
 
   const ctx: TaskTimerPreferencesContext = {
-    els: options.setupEls?.(fakeDocument) as TaskTimerPreferencesContext["els"] || ({} as TaskTimerPreferencesContext["els"]),
+    els: (options.setupEls?.(fakeDocument) as TaskTimerPreferencesContext["els"]) || ({} as TaskTimerPreferencesContext["els"]),
     on: (target, type, listener) => {
       target?.addEventListener(type, listener as EventListener);
     },
@@ -469,14 +474,14 @@ function setupInteractionHapticsIntensityControls(fakeDocument: FakeDocument) {
   const checkpointVibrationToggle = fakeDocument.addElement(new FakeElement("taskCheckpointVibrationToggle"));
 
   return {
-    els: {
+    els: asPartialPreferencesEls({
       taskInteractionHapticsToggleRow: toggleRow,
       taskInteractionHapticsToggle: toggle,
       taskInteractionHapticsIntensityField: field,
       taskInteractionHapticsIntensitySelect: select,
       taskCheckpointVibrationToggleRow: checkpointVibrationRow,
       taskCheckpointVibrationToggle: checkpointVibrationToggle,
-    } as Partial<TaskTimerPreferencesContext["els"]>,
+    }),
     checkpointVibrationRow,
     checkpointVibrationToggle,
     field,
@@ -597,10 +602,10 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
         row = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggleRow"));
         toggle = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggle", ["switch"]));
         row.appendChild(toggle);
-        return {
+        return asPartialPreferencesEls({
           taskFullColorCardsToggleRow: row,
           taskFullColorCardsToggle: toggle,
-        };
+        });
       },
     });
 
@@ -608,8 +613,10 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(state.fullColorTaskCardsEnabled).toBe(false);
     expect(state.dynamicColorsEnabled).toBe(true);
 
-    expect(row?.listenerCount("click")).toBeGreaterThan(0);
-    row?.dispatch("click");
+    expect(row).not.toBeNull();
+    row!.listenerCount("click");
+    expect(row!.listenerCount("click")).toBeGreaterThan(0);
+    row!.dispatch("click");
 
     expect(state.fullColorTaskCardsEnabled).toBe(true);
     expect(state.dynamicColorsEnabled).toBe(true);
@@ -647,7 +654,8 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
 
     preferences.syncTaskSettingsUi();
 
-    expect(controls?.select.value).toBe("low");
+    expect(controls).not.toBeNull();
+    expect(controls!.select.value).toBe("low");
   });
 
   it("keeps haptics controls visible but disabled when haptics are unavailable", () => {
@@ -661,15 +669,16 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
 
     preferences.syncTaskSettingsUi();
 
-    expect(controls?.toggleRow.hidden).toBe(false);
-    expect(controls?.toggleRow.classList.has("isDisabled")).toBe(true);
-    expect(controls?.toggle.disabled).toBe(true);
-    expect(controls?.field.hidden).toBe(false);
-    expect(controls?.field.classList.has("isDisabled")).toBe(true);
-    expect(controls?.select.disabled).toBe(true);
-    expect(controls?.checkpointVibrationRow.hidden).toBe(false);
-    expect(controls?.checkpointVibrationRow.classList.has("isDisabled")).toBe(true);
-    expect(controls?.checkpointVibrationToggle.disabled).toBe(true);
+    expect(controls).not.toBeNull();
+    expect(controls!.toggleRow.hidden).toBe(false);
+    expect(controls!.toggleRow.classList.has("isDisabled")).toBe(true);
+    expect(controls!.toggle.disabled).toBe(true);
+    expect(controls!.field.hidden).toBe(false);
+    expect(controls!.field.classList.has("isDisabled")).toBe(true);
+    expect(controls!.select.disabled).toBe(true);
+    expect(controls!.checkpointVibrationRow.hidden).toBe(false);
+    expect(controls!.checkpointVibrationRow.classList.has("isDisabled")).toBe(true);
+    expect(controls!.checkpointVibrationToggle.disabled).toBe(true);
   });
 
   it("reveals the native time input when the clock button is clicked", () => {

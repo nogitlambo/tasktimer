@@ -101,8 +101,21 @@ async function setupPushModule(options: SetupOptions = {}) {
       getPlatform: () => options.nativeRuntime === true ? "android" : "web",
     },
   }));
+  const pushNotificationsAddListener = vi.fn(
+    async (
+      eventName: string,
+      listener: (payload: {
+        actionId?: string;
+        notification?: { data?: Record<string, string> };
+      }) => void
+    ) => {
+      void eventName;
+      void listener;
+      return { remove: vi.fn() };
+    }
+  );
   const pushNotificationsMock = {
-    addListener: vi.fn(async () => ({ remove: vi.fn() })),
+    addListener: pushNotificationsAddListener,
     checkPermissions: vi.fn(async () => ({ receive: options.nativePermission ?? "granted" })),
     createChannel: vi.fn(),
     register: vi.fn(),

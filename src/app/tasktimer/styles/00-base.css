@@ -3128,6 +3128,63 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
   z-index:1;
 }
 
+.focusModeHead{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items:center;
+  width:100%;
+}
+
+.focusModeHeadSpacer,
+.focusModeHeadAction{
+  min-width:0;
+}
+
+.focusModeHeadAction{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.focusModeCloseIconBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
+
+.focusModeCloseIconGlyph{
+  display:block;
+  position:relative;
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+}
+
+.focusModeCloseIconGlyph::before,
+.focusModeCloseIconGlyph::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:14px;
+  height:1.5px;
+  border-radius:999px;
+  background:currentColor;
+  transform-origin:center;
+}
+
+.focusModeCloseIconGlyph::before{
+  transform:translate(-50%, -50%) rotate(45deg);
+}
+
+.focusModeCloseIconGlyph::after{
+  transform:translate(-50%, -50%) rotate(-45deg);
+}
+
+.focusModeCloseText{
+  display:none !important;
+}
+
 .focusModeExitBar{
   grid-area:focusExit;
   display:flex;
@@ -3144,28 +3201,138 @@ body.isFocusModeOpen #app[aria-label="TaskLaunch App"] #appPageTasks > #mode1Vie
 
 #focusModeBackBtn{
   box-sizing: border-box;
-  min-width: min(178px, 38vw);
-  height: 48px !important;
-  min-height: 48px;
-  max-height: 48px;
-  padding: 0 28px !important;
+  min-width:36px;
+  width:36px;
+  height:36px !important;
+  min-height:36px;
+  max-height:36px;
+  padding:0 !important;
+  margin:0 !important;
   border-width: 1px !important;
-  border-radius: 8px !important;
-  font-size: 11px;
+  border-radius:0 !important;
+  border-color:transparent !important;
+  background:transparent !important;
+  color:rgba(244, 247, 251, .92) !important;
+  box-shadow:none;
+  text-align:center !important;
+  font-size:0 !important;
+  letter-spacing:0 !important;
+  text-transform:none;
 }
 
 #focusModeBackBtn:hover,
 #focusModeBackBtn:focus-visible{
-  border-radius: 8px !important;
+  border-color:transparent !important;
+  background:transparent !important;
+  color:#f7fbff;
 }
 
 #focusModeBackBtn:focus-visible{
-  border-radius: 8px !important;
+  box-shadow:0 0 0 2px rgba(201, 255, 36, .16);
 }
 
 #focusModeBackBtn::before,
 #focusModeBackBtn::after{
   content:none;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeHead{
+  grid-template-columns:minmax(0, 1fr) auto auto;
+  align-items:start;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeHeadSpacer{
+  display:none;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeHeadAction{
+  justify-self:end;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeExitBar{
+  display:none;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen{
+  overflow:hidden;
+}
+
+body[data-tasktimer-native-runtime="true"].isFocusModeOpen #focusModeScreen{
+  overflow:hidden;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeHead,
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusTaskTitle,
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusDialWrap,
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusCheckpointToggleTop,
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusDndSetup{
+  flex:0 0 auto;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusSessionNotes{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+  margin-bottom:0;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusSessionNotesBody{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .sessionNoteEditorGrid{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusSessionNotesInput{
+  flex:0 0 auto;
+  min-height:var(--focus-session-notes-min-height);
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeBackBtn{
+  min-width:36px;
+  width:36px;
+  height:36px !important;
+  min-height:36px;
+  max-height:36px;
+  padding:0 !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  border:1px solid rgba(190, 207, 218, .24) !important;
+  background:rgba(12, 18, 24, .72) !important;
+  color:rgba(244, 247, 251, .92) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  text-align:center !important;
+  font-size:0 !important;
+  letter-spacing:0 !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeBackBtn:hover,
+body[data-tasktimer-native-runtime="true"] #focusModeBackBtn:focus-visible{
+  border-color:rgba(201, 255, 36, .34) !important;
+  background:rgba(12, 18, 24, .72) !important;
+  color:#f7fbff;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeBackBtn:focus-visible{
+  box-shadow:0 0 0 2px rgba(201, 255, 36, .16);
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeCloseIconGlyph{
+  display:block !important;
+}
+
+body[data-tasktimer-native-runtime="true"] #focusModeScreen .focusModeCloseText{
+  display:none !important;
 }
 
 /* About */

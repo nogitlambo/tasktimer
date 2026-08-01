@@ -4,6 +4,7 @@ import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiE
 import { buildNativeAppRouteUrl } from "@/lib/nativeAppLinks";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
+import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
@@ -44,6 +45,10 @@ function buildReturnUrl(path: string, target: "native" | "web", appBaseUrl: stri
   return `${appBaseUrl}${pathOnly}${query}${hash}`;
 }
 
+export function OPTIONS(req: Request) {
+  return authenticatedApiOptions(req);
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
@@ -59,7 +64,7 @@ export async function POST(req: Request) {
 
     const priceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
     if (!priceId) {
-      return NextResponse.json({ error: "Missing STRIPE_PRICE_ID_PRO_MONTHLY." }, { status: 500 });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: "Missing STRIPE_PRICE_ID_PRO_MONTHLY." }, { status: 500 }));
     }
 
     const stripe = getStripeServer();
@@ -89,25 +94,31 @@ export async function POST(req: Request) {
       metadata: { uid },
     });
 
-    return NextResponse.json({ url: session.url });
+    return withAuthenticatedApiCors(req, NextResponse.json({ url: session.url }));
   } catch (error) {
     if (error instanceof ApiRateLimitError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return withAuthenticatedApiCors(req, NextResponse.json({ error: error.message, code: error.code }, { status: error.status }));
     }
     if (error instanceof Error && "status" in error) {
-      return createApiAuthErrorResponse(error, "Could not create checkout session.");
+      return withAuthenticatedApiCors(req, createApiAuthErrorResponse(error, "Could not create checkout session."));
     }
     if (isStripeApiError(error)) {
-      return createStripeApiErrorResponse(
-        error,
-        "Could not create checkout session.",
-        "[api/stripe/create-checkout-session] Stripe request failed"
+      return withAuthenticatedApiCors(
+        req,
+        createStripeApiErrorResponse(
+          error,
+          "Could not create checkout session.",
+          "[api/stripe/create-checkout-session] Stripe request failed"
+        )
       );
     }
-    return createApiInternalErrorResponse(
-      error,
-      "Could not create checkout session.",
-      "[api/stripe/create-checkout-session] Request failed"
+    return withAuthenticatedApiCors(
+      req,
+      createApiInternalErrorResponse(
+        error,
+        "Could not create checkout session.",
+        "[api/stripe/create-checkout-session] Request failed"
+      )
     );
   }
 }

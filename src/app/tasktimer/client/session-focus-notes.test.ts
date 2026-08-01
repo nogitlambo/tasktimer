@@ -13,6 +13,12 @@ import {
   showSessionNoteAttachmentUploadStatus,
 } from "./session";
 
+vi.mock("@/lib/firebaseClient", () => ({
+  isNativeOrFileRuntime: vi.fn(() => false),
+}));
+
+import { isNativeOrFileRuntime } from "@/lib/firebaseClient";
+
 function task(overrides: Partial<Task> = {}): Task {
   return {
     id: "task-1",
@@ -74,6 +80,7 @@ function createElementStub() {
   target.scrollTop = 0;
   target.scrollLeft = 0;
   target.ownerDocument = null;
+  target.getBoundingClientRect = () => ({ top: 0 });
   target.focus = () => {};
   target.blur = () => {};
   target.contains = (node: unknown) => node === target;
@@ -383,6 +390,7 @@ function createHarness(overrides?: {
 describe("task timer session focus notes", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.mocked(isNativeOrFileRuntime).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -652,6 +660,25 @@ describe("task timer session focus notes", () => {
 
     const style = harness.focusSessionNotesInput.style as Record<string, string>;
     expect(style.height).toBe("500px");
+    expect(style.overflowY).toBe("auto");
+  });
+
+  it("caps native focus notes to the remaining viewport space below the editor", () => {
+    vi.mocked(isNativeOrFileRuntime).mockReturnValue(true);
+    const harness = createHarness({
+      focusModeTaskId: "task-1",
+      focusSessionNotesScrollHeight: 800,
+      focusSessionNotesMaxHeight: "620px",
+      windowInnerHeight: 1000,
+    });
+    harness.focusSessionNotesInput.getBoundingClientRect = () => ({ top: 420 });
+
+    harness.session.registerSessionEvents();
+    harness.focusSessionNotesInput.value = "long note";
+    harness.focusSessionNotesInput.dispatchEvent(new Event("input"));
+
+    const style = harness.focusSessionNotesInput.style as Record<string, string>;
+    expect(style.height).toBe("556px");
     expect(style.overflowY).toBe("auto");
   });
 });
