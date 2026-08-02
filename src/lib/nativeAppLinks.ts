@@ -1,4 +1,5 @@
 const NATIVE_APP_URL_SCHEME = "com.tasklaunch.app";
+const HOSTED_APP_LINK_ORIGIN = "https://tasklaunch.app";
 
 function asUrl(value: string) {
   try {
@@ -31,10 +32,15 @@ export function buildNativeAppRouteUrl(route: string) {
 export function resolveNativeAppRoute(rawUrl: string) {
   const url = asUrl(rawUrl);
   if (!url) return "";
-  if (url.protocol.toLowerCase() !== `${NATIVE_APP_URL_SCHEME}:`) return "";
-  const host = String(url.hostname || "").trim().toLowerCase();
-  if (!host) return "";
-  const pathname = String(url.pathname || "").replace(/\/+$/, "");
-  const routePath = pathname && pathname !== "/" ? `/${host}${pathname}` : `/${host}`;
-  return `${routePath}${url.search || ""}${url.hash || ""}`;
+  if (url.protocol.toLowerCase() === `${NATIVE_APP_URL_SCHEME}:`) {
+    const host = String(url.hostname || "").trim().toLowerCase();
+    if (!host) return "";
+    const pathname = String(url.pathname || "").replace(/\/+$/, "");
+    const routePath = pathname && pathname !== "/" ? `/${host}${pathname}` : `/${host}`;
+    return `${routePath}${url.search || ""}${url.hash || ""}`;
+  }
+  if (url.origin.toLowerCase() !== HOSTED_APP_LINK_ORIGIN) return "";
+  const normalizedPath = String(url.pathname || "").replace(/\/+$/, "") || "/";
+  if (normalizedPath !== "/login" && normalizedPath !== "/account" && normalizedPath !== "/settings") return "";
+  return `${normalizedPath}${url.search || ""}${url.hash || ""}`;
 }

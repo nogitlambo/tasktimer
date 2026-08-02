@@ -15,8 +15,8 @@ android {
         applicationId "com.tasklaunch.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 63
-        versionName "1.6.3"
+        versionCode 66
+        versionName "1.6.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -46,6 +46,10 @@ android {
             }
             minifyEnabled true
             shrinkResources true
+            ndk {
+                // Include native symbol metadata in release AABs for Play Console crash symbolication.
+                debugSymbolLevel 'SYMBOL_TABLE'
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

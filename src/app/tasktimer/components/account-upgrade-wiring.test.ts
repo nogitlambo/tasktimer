@@ -26,8 +26,11 @@ describe("account upgrade wiring", () => {
   it("uses the shared API URL helper for native checkout and billing portal requests", () => {
     const source = readSource("./settings/useSettingsAccountState.ts");
 
-    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-checkout-session"), {');
-    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {');
+    expect(source).toContain('const checkoutApiUrl = getApiUrl("/api/stripe/create-checkout-session/");');
+    expect(source).toContain("fetch(checkoutApiUrl, {");
+    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {');
+    expect(source).toContain('logNativePlusCheckout("Starting native checkout"');
+    expect(source).toContain('warnNativePlusCheckout("Native checkout failed"');
     expect(source).not.toContain('window.location.assign("/pricing")');
   });
 });

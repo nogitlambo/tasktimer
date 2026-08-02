@@ -693,7 +693,7 @@ export default function DesktopAppRail({
     try {
       const idToken = await currentUser?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {
+      const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({

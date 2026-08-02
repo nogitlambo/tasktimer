@@ -14,7 +14,14 @@ describe("nativeAppLinks", () => {
     expect(resolveNativeAppRoute("com.tasklaunch.app://settings?page=general")).toBe("/settings?page=general");
   });
 
-  it("ignores non-native routes", () => {
-    expect(resolveNativeAppRoute("https://tasklaunch.app/account")).toBe("");
+  it("resolves hosted tasklaunch.app billing return routes back to in-app paths", () => {
+    expect(resolveNativeAppRoute("https://tasklaunch.app/account?checkout=success")).toBe("/account?checkout=success");
+    expect(resolveNativeAppRoute("https://tasklaunch.app/settings?page=general&checkout=cancelled")).toBe(
+      "/settings?page=general&checkout=cancelled"
+    );
+  });
+
+  it("ignores unrelated web routes", () => {
+    expect(resolveNativeAppRoute("https://tasklaunch.app/privacy")).toBe("");
   });
 });

@@ -26,4 +26,13 @@ describe("Android push notification manifest", () => {
     expect(manifest).toContain('android:host="account"');
     expect(manifest).toContain('android:host="settings"');
   });
+
+  it("declares hosted tasklaunch.app app links for account and settings billing returns", () => {
+    const manifest = readManifest();
+
+    expect(manifest).toContain('android:scheme="https"');
+    expect(manifest).toContain('android:host="tasklaunch.app"');
+    expect(manifest).toContain('android:pathPrefix="/account"');
+    expect(manifest).toContain('android:pathPrefix="/settings"');
+  });
 });

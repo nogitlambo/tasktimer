@@ -91,7 +91,7 @@ describe("DesktopAppRail profile menu", () => {
   it("uses the shared API URL helper for billing portal requests", () => {
     const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
 
-    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {');
+    expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {');
   });
 });
 

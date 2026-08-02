@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
 import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiErrors";
-import { buildNativeAppRouteUrl } from "@/lib/nativeAppLinks";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
@@ -39,9 +38,6 @@ function buildReturnUrl(path: string, target: "native" | "web", appBaseUrl: stri
     nextQueryParts.push(`${encodeURIComponent(key)}=${encodeQueryValue(value)}`);
   }
   const query = nextQueryParts.length ? `?${nextQueryParts.join("&")}` : "";
-  if (target === "native") {
-    return buildNativeAppRouteUrl(`${pathOnly}${query}${hash}`);
-  }
   return `${appBaseUrl}${pathOnly}${query}${hash}`;
 }
 

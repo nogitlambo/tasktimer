@@ -1,6 +1,6 @@
 {
   "name": "tasklaunch",
-  "version": "1.6.3",
+  "version": "1.6.6",
   "private": true,
   "scripts": {
     "clean:next": "node -e \"require('node:fs').rmSync('.next', { recursive: true, force: true })\"",

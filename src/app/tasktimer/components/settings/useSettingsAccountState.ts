@@ -36,6 +36,41 @@ function resolveNativeCheckoutReturnPath(value: string | undefined) {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
+function logNativePlusCheckout(
+  message: string,
+  details?: Record<string, unknown>
+) {
+  if (details) {
+    console.info(`[native-plus-checkout] ${message}`, details);
+    return;
+  }
+  console.info(`[native-plus-checkout] ${message}`);
+}
+
+function warnNativePlusCheckout(
+  message: string,
+  details?: Record<string, unknown>
+) {
+  if (details) {
+    console.warn(`[native-plus-checkout] ${message}`, details);
+    return;
+  }
+  console.warn(`[native-plus-checkout] ${message}`);
+}
+
+function describeCheckoutError(error: unknown) {
+  if (error instanceof Error) {
+    const errorWithCause = error as Error & { cause?: unknown };
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack || null,
+      cause: errorWithCause.cause ?? null,
+    };
+  }
+  return { value: error };
+}
+
 export function useSettingsAccountState(options: UseSettingsAccountStateOptions = {}): {
   account: SettingsAccountViewModel;
   authUserUid: string | null;
@@ -354,7 +389,15 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     try {
       const idToken = await currentUser?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-      const res = await fetch(getApiUrl("/api/stripe/create-checkout-session"), {
+      const checkoutApiUrl = getApiUrl("/api/stripe/create-checkout-session/");
+      logNativePlusCheckout("Starting native checkout", {
+        checkoutApiUrl,
+        hasBrowserPlugin: typeof Browser?.open === "function",
+        nativeCheckoutReturnPath,
+        sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
+        uid,
+      });
+      const res = await fetch(checkoutApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({
@@ -365,15 +408,37 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         }),
       });
       const data = await readApiJson<{ url?: string; error?: string }>(res, "Could not start checkout.");
+      logNativePlusCheckout("Checkout session response received", {
+        hasCheckoutUrl: Boolean(data.url),
+        responseOk: res.ok,
+        status: res.status,
+        statusText: res.statusText,
+      });
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Could not start checkout.");
       }
+      logNativePlusCheckout("Opening Stripe checkout", {
+        checkoutUrl: data.url,
+      });
       try {
         await Browser.open({ url: data.url });
-      } catch {
+        logNativePlusCheckout("Stripe checkout opened with Capacitor Browser");
+      } catch (browserError) {
+        warnNativePlusCheckout("Capacitor Browser.open failed; falling back to window.location.assign", {
+          browserError: describeCheckoutError(browserError),
+          checkoutUrl: data.url,
+        });
         window.location.assign(data.url);
+        logNativePlusCheckout("Fallback navigation dispatched", {
+          checkoutUrl: data.url,
+        });
       }
     } catch (err: unknown) {
+      warnNativePlusCheckout("Native checkout failed", {
+        error: describeCheckoutError(err),
+        nativeCheckoutReturnPath,
+        sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
+      });
       void recordNonFatal(err, {
         flow: "billing_checkout",
         source_page: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
@@ -401,7 +466,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       try {
         const idToken = await currentUser?.getIdToken();
         if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
-        const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session"), {
+        const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
           body: JSON.stringify({

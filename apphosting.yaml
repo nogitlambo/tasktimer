@@ -67,7 +67,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: STRIPE_PRICE_ID_PRO_MONTHLY
-    value: "price_1TymsURoafccyHKoPZ0gWvgN"
+    value: "price_1Tzo8URoafccyHKoelVEmmGO"
     availability:
       - BUILD
       - RUNTIME
