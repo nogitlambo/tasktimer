@@ -55,7 +55,7 @@ export default function NativePlusUpsellModal({
         </div>
         <p className="modalSubtext nativePlusUpsellIntro">Advanced tools for power users</p>
         <div className="nativePlusUpsellPriceRow" aria-label="Plus price">
-          <strong className="nativePlusUpsellPrice">$1.00</strong>
+          <strong className="nativePlusUpsellPrice">$6.99</strong>
           <span className="nativePlusUpsellBilling">Per month</span>
         </div>
         <div className="nativePlusUpsellDivider" aria-hidden="true" />

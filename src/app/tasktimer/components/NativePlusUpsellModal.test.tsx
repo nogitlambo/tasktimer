@@ -25,7 +25,7 @@ describe("NativePlusUpsellModal", () => {
     expect(html).toContain("Get <span");
     expect(html).toContain(">PLUS</span>");
     expect(html).toContain("14-DAY FREE TRIAL");
-    expect(html).toContain("$1.00");
+    expect(html).toContain("$6.99");
     expect(html).toContain("Unlock AI-guided workflow optimisation");
     expect(html).toContain('class="confirmBtns nativePlusUpsellActions"');
     expect(html).not.toContain(">Close<");

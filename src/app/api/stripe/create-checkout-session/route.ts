@@ -38,6 +38,14 @@ function buildReturnUrl(path: string, target: "native" | "web", appBaseUrl: stri
     nextQueryParts.push(`${encodeURIComponent(key)}=${encodeQueryValue(value)}`);
   }
   const query = nextQueryParts.length ? `?${nextQueryParts.join("&")}` : "";
+  if (target === "native") {
+    const hostedReturnParams = new URLSearchParams();
+    hostedReturnParams.set("target", `${pathOnly}${existingQuery ? `?${existingQuery}` : ""}${hash}`);
+    for (const [key, value] of Object.entries(params)) {
+      hostedReturnParams.set(key, value);
+    }
+    return `${appBaseUrl}/checkout-return/?${hostedReturnParams.toString()}`;
+  }
   return `${appBaseUrl}${pathOnly}${query}${hash}`;
 }
 

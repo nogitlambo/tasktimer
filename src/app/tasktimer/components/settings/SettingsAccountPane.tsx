@@ -232,8 +232,10 @@ export function SettingsAccountPane({
                     ) : null}
                     <div className="settingsAccountMetaListItem">
                       <dt className="settingsAccountUidLabel">Plan</dt>
-                      <dd className="settingsAccountMemberSinceValue">
-                        <span>{formatSubscriptionPlan(account.authPlan)}</span>
+                      <dd className="settingsAccountMemberSinceValue accountProfilePlanRow">
+                        <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
+                          {formatSubscriptionPlan(account.authPlan)}
+                        </span>
                         {account.authPlan === "free" ? (
                           <>
                             <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>

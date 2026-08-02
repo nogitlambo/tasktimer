@@ -78,8 +78,8 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
     expect(checkoutSessionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        success_url: "https://tasklaunch.app/account?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-        cancel_url: "https://tasklaunch.app/settings?page=general&checkout=cancelled",
+        success_url: "https://tasklaunch.app/checkout-return/?target=%2Faccount&checkout=success&session_id=%7BCHECKOUT_SESSION_ID%7D",
+        cancel_url: "https://tasklaunch.app/checkout-return/?target=%2Fsettings%3Fpage%3Dgeneral&checkout=cancelled",
       })
     );
   });
@@ -96,8 +96,8 @@ describe("POST /api/stripe/create-checkout-session", () => {
 
     expect(checkoutSessionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        success_url: "https://tasklaunch.app/account?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-        cancel_url: "https://tasklaunch.app/account?checkout=cancelled",
+        success_url: "https://tasklaunch.app/checkout-return/?target=%2Faccount&checkout=success&session_id=%7BCHECKOUT_SESSION_ID%7D",
+        cancel_url: "https://tasklaunch.app/checkout-return/?target=%2Faccount&checkout=cancelled",
       })
     );
   });

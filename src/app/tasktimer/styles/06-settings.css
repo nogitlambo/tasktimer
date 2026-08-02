@@ -5868,13 +5868,15 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   overflow-wrap: anywhere;
 }
 
-#app[aria-label="TaskLaunch Account"] .accountProfilePlanRow{
+#app[aria-label="TaskLaunch Account"] .accountProfilePlanRow,
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow{
   display: inline-flex;
   align-items: center;
-  justify-self: center;
+  justify-self: start;
   flex-wrap: nowrap;
-  margin: 16px 0 0;
-  padding-bottom: 18px;
+  gap: 0;
+  margin: 0;
+  padding-bottom: 0;
   color: rgba(238,249,255,.94);
   font-family: var(--font-readable);
   font-size: 12px;
@@ -5904,9 +5906,37 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   flex: 0 0 auto;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 22px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-free{
+  border-color: rgba(255,255,255,.24);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-pro{
+  border-color: #c9ff24;
+  background: rgba(201,255,36,.12);
+  color: #c9ff24;
+  font-weight: 800;
+}
+
 @media (min-width: 981px){
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-free,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-free,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-pro,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-pro{
     border: 1px solid #c9ff24;
     background: transparent;
