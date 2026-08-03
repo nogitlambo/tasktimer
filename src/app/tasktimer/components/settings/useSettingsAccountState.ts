@@ -461,6 +461,10 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       setAuthStatus("");
       const auth = getFirebaseAuthClient();
       const currentUser = auth?.currentUser || null;
+      if (!currentUser) {
+        setAuthError("Please sign in again to manage your subscription.");
+        return;
+      }
       const uid = String(currentUser?.uid || "").trim();
       if (!uid) {
         setAuthError("Please sign in again to manage your subscription.");

@@ -25,6 +25,15 @@ class FakeElement {
     this.listeners.set(type, [...(this.listeners.get(type) || []), listener]);
   }
 
+  removeEventListener(type: string, listener: Listener) {
+    const listeners = this.listeners.get(type) || [];
+    this.listeners.set(type, listeners.filter((entry) => entry !== listener));
+  }
+
+  dispatchEvent(_event: Event) {
+    return true;
+  }
+
   dispatchClick() {
     const event = {
       target: this,
@@ -44,7 +53,7 @@ class FakeElement {
   }
 
   private dispatchBubbledClick(target: FakeElement) {
-    const event = { target } as Event;
+    const event = { target } as unknown as Event;
     for (const listener of this.listeners.get("click") || []) {
       listener(event);
     }

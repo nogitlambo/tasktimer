@@ -89,6 +89,7 @@ type CreatePreferencesOptionsArgs = {
   syncEditCheckpointAlertUi: (task: Task) => void;
   clearTaskFlipStates: () => void;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
+  flushPendingCloudWrites: () => Promise<unknown>;
   render: () => void;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   closeOverlay: Parameters<typeof createTaskTimerPreferences>[0]["closeOverlay"];

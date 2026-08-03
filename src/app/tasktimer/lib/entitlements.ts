@@ -35,6 +35,13 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedBackup: true,
     socialFeatures: true,
   },
+  pro: {
+    advancedHistory: true,
+    advancedInsights: true,
+    advancedTaskConfig: true,
+    advancedBackup: true,
+    socialFeatures: true,
+  },
   plus_lifetime: {
     advancedHistory: true,
     advancedInsights: true,

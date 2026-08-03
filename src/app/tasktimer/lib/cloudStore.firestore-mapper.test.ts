@@ -288,18 +288,22 @@ describe("saveUserRootPatch plan-safe writes", () => {
   it("does not rewrite server-managed plan fields during client account saves", async () => {
     firestoreMocks.getDoc.mockImplementation(async (ref?: { path?: string }) => ({
       exists: () => ref?.path === "users/user-1",
-      data: () => (ref?.path === "users/user-1" ? {
-        plan: "plus",
-        planUpdatedAt: { toMillis: () => 123 },
-        schemaVersion: 1,
-      } : undefined),
-      get: (key?: string) => {
-        if (ref?.path !== "users/user-1" || !key) return undefined;
-        const data = {
+      data: () => {
+        if (ref?.path !== "users/user-1") return undefined;
+        const data: Record<string, unknown> = {
           plan: "plus",
           planUpdatedAt: { toMillis: () => 123 },
           schemaVersion: 1,
-        } satisfies Record<string, unknown>;
+        };
+        return data;
+      },
+      get: (key?: string) => {
+        if (ref?.path !== "users/user-1" || !key) return undefined;
+        const data: Record<string, unknown> = {
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          schemaVersion: 1,
+        };
         return data[key];
       },
     }));
