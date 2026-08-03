@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { TaskTimerPaidOffer } from "../lib/entitlements";
 
 const PLUS_FEATURES = [
@@ -12,6 +13,16 @@ const PLUS_FEATURES = [
   "Add Friends and task sharing",
   "Backup Import/Export",
 ];
+
+export type NativePlusUpsellPanel = "monthly" | "lifetime";
+
+export function getNativePlusUpsellPanelForOffer(offer: TaskTimerPaidOffer): NativePlusUpsellPanel {
+  return offer === "plus_lifetime" ? "lifetime" : "monthly";
+}
+
+export function getNativePlusUpsellToggleCopy(panel: NativePlusUpsellPanel): string {
+  return panel === "lifetime" ? "Back to monthly" : "Get PLUS Lifetime";
+}
 
 export default function NativePlusUpsellModal({
   open,
@@ -30,7 +41,37 @@ export default function NativePlusUpsellModal({
   onSelectOffer: (offer: TaskTimerPaidOffer) => void;
   onConfirm: (offer: TaskTimerPaidOffer) => void | Promise<void>;
 }) {
+  const [visiblePanel, setVisiblePanel] = useState<NativePlusUpsellPanel>("monthly");
+
+  useEffect(() => {
+    if (!open) {
+      setVisiblePanel("monthly");
+      return;
+    }
+    setVisiblePanel(getNativePlusUpsellPanelForOffer(selectedOffer));
+  }, [open, selectedOffer]);
+
   if (!open) return null;
+
+  const showLifetimePanel = () => {
+    if (busy) return;
+    setVisiblePanel("lifetime");
+    if (selectedOffer !== "plus_lifetime") onSelectOffer("plus_lifetime");
+  };
+
+  const showMonthlyPanel = () => {
+    if (busy) return;
+    setVisiblePanel("monthly");
+    if (selectedOffer !== "plus_monthly") onSelectOffer("plus_monthly");
+  };
+
+  const handleTogglePanel = () => {
+    if (visiblePanel === "lifetime") {
+      showMonthlyPanel();
+      return;
+    }
+    showLifetimePanel();
+  };
 
   return (
     <div
@@ -48,49 +89,53 @@ export default function NativePlusUpsellModal({
           aria-label="Close"
           onClick={onClose}
           disabled={busy}
-        >
-          x
-        </button>
-        <div className="nativePlusUpsellHeader">
-          <h2>
-            Get <span className="nativePlusUpsellTitleAccent">PLUS</span>
-          </h2>
-          <span className="nativePlusUpsellBadge">14-DAY FREE TRIAL</span>
-        </div>
-        <p className="modalSubtext nativePlusUpsellIntro">Advanced tools for power users</p>
-        <div className="nativePlusUpsellOfferList" role="list" aria-label="Plus offers">
-          <button
-            type="button"
-            className={`nativePlusUpsellOfferCard${selectedOffer === "plus_monthly" ? " isSelected" : ""}`}
-            onClick={() => onSelectOffer("plus_monthly")}
-            disabled={busy}
-            aria-pressed={selectedOffer === "plus_monthly"}
-          >
-            <span className="nativePlusUpsellOfferHeadingRow">
-              <strong className="nativePlusUpsellOfferTitle">PLUS</strong>
-              <span className="nativePlusUpsellOfferBadge">14-DAY FREE TRIAL</span>
-            </span>
-            <span className="nativePlusUpsellPriceRow" aria-label="Plus monthly price">
-              <strong className="nativePlusUpsellPrice">$6.99</strong>
-              <span className="nativePlusUpsellBilling">Per month</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`nativePlusUpsellOfferCard${selectedOffer === "plus_lifetime" ? " isSelected" : ""}`}
-            onClick={() => onSelectOffer("plus_lifetime")}
-            disabled={busy}
-            aria-pressed={selectedOffer === "plus_lifetime"}
-          >
-            <span className="nativePlusUpsellOfferHeadingRow">
-              <strong className="nativePlusUpsellOfferTitle">PLUS Lifetime</strong>
-              <span className="nativePlusUpsellOfferBadge">ONE-TIME</span>
-            </span>
-            <span className="nativePlusUpsellPriceRow" aria-label="Plus lifetime price">
-              <strong className="nativePlusUpsellPrice">Lifetime</strong>
-              <span className="nativePlusUpsellBilling">One-time purchase</span>
-            </span>
-          </button>
+      >
+        x
+      </button>
+        <div className="nativePlusUpsellTopSection">
+          <div className="nativePlusUpsellOfferViewport">
+            <div
+              className={`nativePlusUpsellOfferTrack${visiblePanel === "lifetime" ? " isLifetimeVisible" : ""}`}
+              role="list"
+              aria-label="Plus offers"
+            >
+              <div className="nativePlusUpsellOfferPanel">
+                <button
+                  type="button"
+                  className={`nativePlusUpsellOfferCard${selectedOffer === "plus_monthly" ? " isSelected" : ""}`}
+                  onClick={showMonthlyPanel}
+                  disabled={busy}
+                  aria-pressed={selectedOffer === "plus_monthly"}
+                >
+                  <span className="nativePlusUpsellOfferHeadingRow">
+                    <strong className="nativePlusUpsellOfferTitle">Get <span className="nativePlusUpsellOfferTitleAccent">PLUS</span></strong>
+                  </span>
+                  <span className="nativePlusUpsellPriceRow" aria-label="Plus monthly price">
+                    <strong className="nativePlusUpsellPrice">$6.99</strong>
+                    <span className="nativePlusUpsellBilling">Per month</span>
+                  </span>
+                </button>
+              </div>
+              <div className="nativePlusUpsellOfferPanel">
+                <button
+                  type="button"
+                  className={`nativePlusUpsellOfferCard${selectedOffer === "plus_lifetime" ? " isSelected" : ""}`}
+                  onClick={showLifetimePanel}
+                  disabled={busy}
+                  aria-pressed={selectedOffer === "plus_lifetime"}
+                >
+                  <span className="nativePlusUpsellOfferHeadingRow">
+                    <strong className="nativePlusUpsellOfferTitle">PLUS Lifetime</strong>
+                  </span>
+                  <span className="nativePlusUpsellPriceRow" aria-label="Plus lifetime price">
+                    <strong className="nativePlusUpsellPrice">$99.00</strong>
+                    <span className="nativePlusUpsellBilling">One-off payment</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          {visiblePanel === "monthly" ? <span className="nativePlusUpsellOfferBadge">14-DAY FREE TRIAL</span> : null}
         </div>
         <div className="nativePlusUpsellDivider" aria-hidden="true" />
         <ul className="nativePlusUpsellFeatureList">
@@ -122,6 +167,14 @@ export default function NativePlusUpsellModal({
                 : "Start my 14-day free trial"}
           </button>
         </div>
+        <button
+          type="button"
+          className="nativePlusUpsellToggleLink"
+          onClick={handleTogglePanel}
+          disabled={busy}
+        >
+          {getNativePlusUpsellToggleCopy(visiblePanel)}
+        </button>
       </div>
     </div>
   );
