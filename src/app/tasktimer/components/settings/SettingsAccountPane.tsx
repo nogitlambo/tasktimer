@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppImg from "@/components/AppImg";
 import { buildRewardsHeaderViewModel } from "@/app/tasktimer/lib/rewards";
 import { playDeleteAlertAudio } from "@/app/tasktimer/client/delete-alert-audio";
@@ -18,7 +18,6 @@ import RankThumbnail from "../RankThumbnail";
 import { DeleteAccountConfirmActions } from "./DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./InlineConfirmModal";
 import { SettingsDetailPane } from "./SettingsShared";
-import { getErrorMessage, handleSignOutFlow } from "./settingsAccountService";
 import type { SettingsAccountViewModel, SettingsAvatarViewModel } from "./types";
 import { useAchievementSoundsEnabled } from "./useAchievementSoundsEnabled";
 
@@ -57,8 +56,6 @@ export function SettingsAccountPane({
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
-  const [signOutBusy, setSignOutBusy] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const openRankLadderWithDropdownAudio = () => {
     avatar.setShowRankLadderModal(true);
@@ -73,20 +70,8 @@ export function SettingsAccountPane({
   const accountDisplayName = account.authUserAlias || "-";
   const accountEmailLabel = "Email Address";
   const accountEmailValue = account.authUserEmail || "Signed in account";
-  const signOutLabel = signOutBusy ? "Signing Out" : "Sign Out";
-
-  const handleSignOut = useCallback(async () => {
-    if (signOutBusy) return;
-    setSignOutBusy(true);
-    setSignOutError("");
-    try {
-      await handleSignOutFlow();
-    } catch (error: unknown) {
-      setSignOutError(getErrorMessage(error, "Could not sign out."));
-      setSignOutBusy(false);
-      setShowSignOutConfirm(false);
-    }
-  }, [signOutBusy]);
+  const syncLabel = account.syncBusy ? "Syncing..." : "Sync";
+  const signOutLabel = account.signOutBusy ? "Signing Out" : "Sign Out";
 
   return (
     <SettingsDetailPane active={active} exiting={exiting} title="Profile" subtitle="">
@@ -316,15 +301,23 @@ export function SettingsAccountPane({
               </div>
               <div className="settingsInlineFooter settingsAuthActions settingsProfileSignOutActions">
                 <button
+                  className="btn btn-ghost settingsProfileSignOutBtn settingsProfileSyncBtn"
+                  type="button"
+                  disabled={account.syncBusy || account.signOutBusy}
+                  onClick={() => void account.onSyncNow()}
+                >
+                  {syncLabel}
+                </button>
+                <button
                   className="btn btn-ghost settingsProfileSignOutBtn"
                   type="button"
-                  disabled={signOutBusy}
+                  disabled={account.syncBusy || account.signOutBusy}
                   onClick={() => setShowSignOutConfirm(true)}
                 >
                   {signOutLabel}
                 </button>
               </div>
-              {signOutError ? <div className="settingsAuthError settingsProfileSignOutError">{signOutError}</div> : null}
+              {account.signOutError ? <div className="settingsAuthError settingsProfileSignOutError">{account.signOutError}</div> : null}
             </>
           ) : (
             <div className="settingsDetailNote">
@@ -364,9 +357,9 @@ export function SettingsAccountPane({
 
       <SignOutConfirmModal
         open={showSignOutConfirm}
-        busy={signOutBusy}
+        busy={account.signOutBusy}
         onCancel={() => setShowSignOutConfirm(false)}
-        onConfirm={() => void handleSignOut()}
+        onConfirm={() => void account.onSignOut()}
       />
 
       <InlineConfirmModal

@@ -322,7 +322,7 @@
   box-sizing: border-box !important;
   min-height: 44px !important;
   border: 1px solid rgba(170, 178, 190, .58) !important;
-  border-radius: 0 !important;
+  border-radius: 10px !important;
   background: rgba(26, 27, 32, .58) !important;
   color: rgba(238, 242, 246, .94) !important;
   font-family: var(--font-readable) !important;

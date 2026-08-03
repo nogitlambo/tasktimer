@@ -161,8 +161,20 @@ describe("task timer rewards history", () => {
     vi.setSystemTime(new Date("2026-05-03T02:00:00Z"));
     const completedAtMs = Date.now();
     const elapsedMs = 10 * 60 * 1000;
+    const startedAtMs = completedAtMs - elapsedMs;
     const harness = createHarness({
       elapsedMs,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-goal-10m",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs,
+          elapsedMs,
+          updatedAtMs: completedAtMs,
+          status: "running",
+        },
+      },
       tasks: [
         task({
           timeGoalEnabled: true,
@@ -180,7 +192,9 @@ describe("task timer rewards history", () => {
     expect(finalizedElapsedMs).toBe(elapsedMs);
     expect(harness.getHistoryByTaskId()["task-1"]).toEqual([
       expect.objectContaining({
-        ts: completedAtMs,
+        ts: startedAtMs,
+        startedAtMs,
+        finishedAtMs: completedAtMs,
         name: "Focus",
         ms: elapsedMs,
       }),
@@ -502,11 +516,69 @@ describe("task timer rewards history", () => {
 
   it("keeps cross-midnight completion on the stop day", () => {
     vi.setSystemTime(new Date("2026-05-03T00:05:00"));
-    const harness = createHarness({ elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
+    const startedAtMs = new Date("2026-05-02T23:35:00").getTime();
+    const finishedAtMs = startedAtMs + MIN_REWARD_ELIGIBLE_SESSION_MS;
+    const harness = createHarness({
+      elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-cross-midnight",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs,
+          elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS,
+          updatedAtMs: finishedAtMs,
+          status: "running",
+        },
+      },
+    });
 
     harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: MIN_REWARD_ELIGIBLE_SESSION_MS });
 
-    expect(harness.getHistoryByTaskId()["task-1"]?.[0]?.ts).toBe(Date.now());
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({
+      ts: startedAtMs,
+      startedAtMs,
+      finishedAtMs: Date.now(),
+    });
+  });
+
+  it("uses the goal-derived completion timestamp while keeping the history entry on the true start day", () => {
+    const startedAtMs = new Date("2026-05-02T23:30:00").getTime();
+    const goalMs = 60 * 60_000;
+    const acknowledgedAtMs = new Date("2026-05-03T08:00:00").getTime();
+    vi.setSystemTime(new Date(acknowledgedAtMs));
+    const harness = createHarness({
+      elapsedMs: goalMs,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-goal-finished-overnight",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs,
+          elapsedMs: goalMs,
+          updatedAtMs: acknowledgedAtMs,
+          status: "running",
+        },
+      },
+      tasks: [
+        task({
+          running: false,
+          startMs: null,
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+        }),
+      ],
+    });
+
+    harness.api.finalizeLiveSession(harness.tasks[0]!, { elapsedMs: goalMs, completedAtMs: startedAtMs + goalMs });
+
+    expect(harness.getHistoryByTaskId()["task-1"]?.[0]).toMatchObject({
+      ts: startedAtMs,
+      startedAtMs,
+      finishedAtMs: startedAtMs + goalMs,
+      ms: goalMs,
+    });
   });
 
   it("saves completed history with a new history snapshot so pending sync detects the append", () => {

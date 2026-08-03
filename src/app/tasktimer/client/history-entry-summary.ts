@@ -20,6 +20,8 @@ type HistoryEntrySummarySource = {
   historyTargetKey?: unknown;
   historyMutationAllowed?: unknown;
   ts?: unknown;
+  startedAtMs?: unknown;
+  finishedAtMs?: unknown;
   ms?: unknown;
   name?: unknown;
   note?: unknown;
@@ -34,10 +36,18 @@ type HistoryEntrySummaryItem = {
   mutationAllowed: boolean;
   name: string;
   ts: number;
+  startedAtMs: number;
+  finishedAtMs: number;
   ms: number;
-  dateTimeText: string;
-  dateText: string;
-  timeText: string;
+  loggedDateTimeText: string;
+  loggedDateText: string;
+  loggedTimeText: string;
+  startedDateTimeText: string;
+  startedDateText: string;
+  startedTimeText: string;
+  finishedDateTimeText: string;
+  finishedDateText: string;
+  finishedTimeText: string;
   elapsedText: string;
   elapsedColor: string;
   timeGoalCompleted: boolean | null;
@@ -158,6 +168,13 @@ function formatSummaryLoggedDateTime(value: number) {
   return `Logged: ${dateText} - ${timeText}`;
 }
 
+function formatSummaryPlainDateTime(value: number) {
+  const dateText = formatSummaryLongDate(value);
+  const timeText = formatSummaryTime(value);
+  if (!timeText || dateText === "Unknown date/time") return dateText;
+  return `${dateText} - ${timeText}`;
+}
+
 function formatSummaryLoggedDate(value: number) {
   return `Logged: ${formatSummaryLongDate(value)}`;
 }
@@ -273,6 +290,8 @@ function buildHistoryEntrySummaryItem(
   getEntryNote: (entry: HistoryEntrySummarySource) => string
 ): HistoryEntrySummaryItem {
   const ts = normalizeTimestamp(entry?.ts);
+  const startedAtMs = normalizeTimestamp(entry?.startedAtMs) || ts;
+  const finishedAtMs = Math.max(startedAtMs || ts, normalizeTimestamp(entry?.finishedAtMs) || ts);
   const ms = normalizeElapsedMs(entry?.ms);
   const name = String(entry?.name || "").trim();
   const historyTargetKey = String(entry?.historyTargetKey ?? "");
@@ -289,10 +308,18 @@ function buildHistoryEntrySummaryItem(
     mutationAllowed,
     name,
     ts,
+    startedAtMs,
+    finishedAtMs,
     ms,
-    dateTimeText: formatSummaryLoggedDateTime(ts),
-    dateText: formatSummaryLoggedDate(ts),
-    timeText: formatSummaryLoggedTime(ts),
+    loggedDateTimeText: formatSummaryLoggedDateTime(ts),
+    loggedDateText: formatSummaryLoggedDate(ts),
+    loggedTimeText: formatSummaryLoggedTime(ts),
+    startedDateTimeText: formatSummaryPlainDateTime(startedAtMs),
+    startedDateText: formatSummaryLoggedDate(startedAtMs),
+    startedTimeText: formatSummaryLoggedTime(startedAtMs),
+    finishedDateTimeText: formatSummaryPlainDateTime(finishedAtMs),
+    finishedDateText: formatSummaryLoggedDate(finishedAtMs),
+    finishedTimeText: formatSummaryLoggedTime(finishedAtMs),
     elapsedText: formatHistoryEntrySummaryElapsed(ms, formatTwo),
     elapsedColor: sessionColorForTaskMs(task || ({} as Task), ms),
     timeGoalCompleted,
@@ -411,11 +438,12 @@ export function renderHistoryEntrySummaryHtml(
       options?.showRibbon && value !== "Pending"
         ? "historyEntrySummaryValue historyEntrySummaryXpRibbonValue"
         : "historyEntrySummaryValue";
+    const fieldClass = options?.showRibbon ? "historyEntrySummaryField historyEntrySummaryFieldCentered" : "historyEntrySummaryField";
     const replayXp = Math.max(0, Math.floor(Number(options?.xpEarned) || 0));
     const replayAttrs = replayXp > 0
       ? ` data-history-summary-action="trigger-xp-award" data-history-summary-xp="${escapeHtml(replayXp)}" data-history-summary-task-id="${escapeHtml(options?.taskId || "")}"`
       : "";
-    return `<div class="historyEntrySummaryField">
+    return `<div class="${fieldClass}">
       <div class="historyEntrySummaryLabel">${escapeHtml(label)}</div>
       <div class="historyEntrySummaryValueWrap">
         <div class="${valueClass}" data-history-summary-xp-source="true"${replayAttrs}>${escapeHtml(value)}</div>
@@ -457,13 +485,16 @@ export function renderHistoryEntrySummaryHtml(
               <div class="historyEntrySummarySessionHeadMain">
                 <div class="historyEntrySummaryTaskName">${escapeHtml(session.name)}</div>
                 ${showSessionHeading ? `<div class="historyEntrySummarySectionTitle">Session ${escapeHtml(index + 1)}</div>` : ""}
-                <div class="historyEntrySummarySessionDate">${escapeHtml(session.dateText)}</div>
-                ${session.timeText ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.timeText)}</div>` : ""}
+                <div class="historyEntrySummarySessionDate">${escapeHtml(session.startedAtMs > 0 ? session.startedDateText : session.loggedDateText)}</div>
+                ${(session.startedAtMs > 0 ? session.startedTimeText : session.loggedTimeText) ? `<div class="historyEntrySummarySessionTime">${escapeHtml(session.startedAtMs > 0 ? session.startedTimeText : session.loggedTimeText)}</div>` : ""}
                 <div class="historyEntrySummarySessionElapsed isProgressColored" style="--history-entry-summary-elapsed-color: ${escapeHtml(session.elapsedColor)}">${escapeHtml(session.elapsedText)}</div>
               </div>
               ${deleteButtonHtml ? `<div class="historyEntrySummarySessionHeadActions">${deleteButtonHtml}</div>` : ""}
             </div>
             <div class="historyEntrySummaryGrid">
+              ${session.startedAtMs > 0 && session.finishedAtMs > 0
+                ? `${renderField("Start", session.startedDateTimeText)}${renderField("Finish", session.finishedDateTimeText)}`
+                : renderField("Logged", session.loggedDateTimeText)}
               ${renderField("Time goal", session.timeGoalText)}
               ${renderXpField("XP earned", session.xpText, { xpEarned: session.xpEarned, taskId: session.taskId })}
             </div>

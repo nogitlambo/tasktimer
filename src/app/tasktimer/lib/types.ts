@@ -64,6 +64,8 @@ export type TaskStatusState = "archived" | "deleted";
 
 export type HistoryEntry = {
   ts: number;
+  startedAtMs?: number;
+  finishedAtMs?: number;
   name: string;
   ms: number;
   color?: string;

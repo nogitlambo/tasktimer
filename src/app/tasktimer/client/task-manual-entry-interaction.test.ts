@@ -266,6 +266,8 @@ describe("createTaskManualEntryInteraction", () => {
     expect(nextHistory["task-1"]).toEqual([
       {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T08:00").getTime(),
         ms: 90 * 60 * 1000,
         name: "Focus",
         note: "Goal note",
@@ -276,6 +278,8 @@ describe("createTaskManualEntryInteraction", () => {
       task,
       entry: {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T08:00").getTime(),
         ms: 90 * 60 * 1000,
         name: "Focus",
         note: "Goal note",
@@ -308,6 +312,8 @@ describe("createTaskManualEntryInteraction", () => {
     expect(harness.getHistoryByTaskId()["task-1"]).toEqual([
       {
         ts: new Date("2026-05-03T04:05").getTime(),
+        startedAtMs: new Date("2026-05-03T04:05").getTime(),
+        finishedAtMs: new Date("2026-05-03T04:30").getTime(),
         ms: 25 * 60 * 1000,
         name: "Focus",
         color: "#ff8a3d",
@@ -334,6 +340,8 @@ describe("createTaskManualEntryInteraction", () => {
     expect(nextHistory["task-1"]).toEqual([
       {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T07:55").getTime(),
         ms: 85 * 60 * 1000,
         name: "Focus",
         note: "Retrospective note",
@@ -346,6 +354,8 @@ describe("createTaskManualEntryInteraction", () => {
       task: { id: "task-1", name: "Focus", color: "#21c7ff" },
       entry: {
         ts: new Date("2026-05-03T06:30").getTime(),
+        startedAtMs: new Date("2026-05-03T06:30").getTime(),
+        finishedAtMs: new Date("2026-05-03T07:55").getTime(),
         ms: 85 * 60 * 1000,
         name: "Focus",
         note: "Retrospective note",

@@ -316,8 +316,13 @@ function taskLiveSessionDoc(uid: string, taskId: string) {
 
 function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   if (!row || typeof row !== "object") return null;
+  const ts = Number.isFinite(Number((row as HistoryEntry).ts)) ? Math.floor(Number((row as HistoryEntry).ts)) : 0;
+  const startedAtMsRaw = Number((row as HistoryEntry).startedAtMs);
+  const finishedAtMsRaw = Number((row as HistoryEntry).finishedAtMs);
+  const startedAtMs = Number.isFinite(startedAtMsRaw) && startedAtMsRaw > 0 ? Math.floor(startedAtMsRaw) : 0;
+  const finishedAtMs = Number.isFinite(finishedAtMsRaw) && finishedAtMsRaw > 0 ? Math.floor(finishedAtMsRaw) : 0;
   const next: HistoryEntry = {
-    ts: Number.isFinite(Number((row as HistoryEntry).ts)) ? Math.floor(Number((row as HistoryEntry).ts)) : 0,
+    ts,
     name: String((row as HistoryEntry).name || ""),
     ms: Number.isFinite(Number((row as HistoryEntry).ms)) ? Math.max(0, Math.floor(Number((row as HistoryEntry).ms))) : 0,
   };
@@ -331,6 +336,8 @@ function normalizeHistoryEntryRecord(row: unknown): HistoryEntry | null {
   if (attachments.length) next.attachments = attachments;
   if (completionDifficulty) next.completionDifficulty = completionDifficulty;
   if (typeof sessionId === "string" && sessionId.trim()) next.sessionId = sessionId.trim();
+  if (startedAtMs > 0) next.startedAtMs = startedAtMs;
+  if (finishedAtMs > 0) next.finishedAtMs = Math.max(startedAtMs || ts || 0, finishedAtMs);
   return next;
 }
 
@@ -1989,6 +1996,8 @@ export function buildCanonicalHistoryEntryDocId(taskId: string, entry: HistoryEn
 type HistoryDocPayload = {
   taskId: string;
   ts: number;
+  startedAtMs?: number;
+  finishedAtMs?: number;
   ms: number;
   name: string;
   color?: string;
@@ -2007,6 +2016,12 @@ function buildHistoryDocPayload(taskId: string, entry: HistoryEntry): HistoryDoc
   return {
     taskId: String(taskId || "").trim(),
     ts: Number.isFinite(+entry?.ts) ? Math.floor(+entry.ts) : 0,
+    ...(Number.isFinite(Number(entry?.startedAtMs)) && Number(entry?.startedAtMs) > 0
+      ? { startedAtMs: Math.floor(Number(entry?.startedAtMs)) }
+      : {}),
+    ...(Number.isFinite(Number(entry?.finishedAtMs)) && Number(entry?.finishedAtMs) > 0
+      ? { finishedAtMs: Math.floor(Number(entry?.finishedAtMs)) }
+      : {}),
     ms: Number.isFinite(+entry?.ms) ? Math.max(0, Math.floor(+entry.ms)) : 0,
     name: String(entry?.name || ""),
     ...(entry?.color != null ? { color: String(entry.color) } : {}),
@@ -2023,6 +2038,12 @@ function normalizeComparableHistoryPayload(row: Record<string, unknown> | Histor
   return {
     taskId: String(row.taskId || ""),
     ts: Number.isFinite(Number(row.ts)) ? Math.floor(Number(row.ts)) : 0,
+    ...(Number.isFinite(Number(row.startedAtMs)) && Number(row.startedAtMs) > 0
+      ? { startedAtMs: Math.floor(Number(row.startedAtMs)) }
+      : {}),
+    ...(Number.isFinite(Number(row.finishedAtMs)) && Number(row.finishedAtMs) > 0
+      ? { finishedAtMs: Math.floor(Number(row.finishedAtMs)) }
+      : {}),
     ms: Number.isFinite(Number(row.ms)) ? Math.max(0, Math.floor(Number(row.ms))) : 0,
     name: String(row.name || ""),
     ...(row.color != null ? { color: String(row.color) } : {}),
@@ -2090,6 +2111,12 @@ export async function replaceTaskHistory(
     const normalized: HistoryEntry = {
       ...entry,
       ts,
+      ...(Number.isFinite(Number(entry?.startedAtMs)) && Number(entry?.startedAtMs) > 0
+        ? { startedAtMs: Math.floor(Number(entry?.startedAtMs)) }
+        : {}),
+      ...(Number.isFinite(Number(entry?.finishedAtMs)) && Number(entry?.finishedAtMs) > 0
+        ? { finishedAtMs: Math.floor(Number(entry?.finishedAtMs)) }
+        : {}),
       ms,
       name: String(entry?.name || ""),
       ...(entry?.color != null ? { color: String(entry.color) } : {}),

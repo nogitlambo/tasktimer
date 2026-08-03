@@ -89,6 +89,8 @@ export function parseHistoryManagerManualDraft(input: HistoryManagerManualDraftP
   return {
     entry: {
       ts: Math.floor(parsedTs),
+      startedAtMs: Math.floor(parsedTs),
+      finishedAtMs: Math.floor(parsedTs) + Math.floor(elapsedMs),
       ms: Math.floor(elapsedMs),
       name: taskName,
       ...(completionDifficulty ? { completionDifficulty } : {}),

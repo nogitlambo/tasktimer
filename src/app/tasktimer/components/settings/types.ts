@@ -58,6 +58,9 @@ export type SettingsAccountViewModel = {
   syncState: "idle" | "syncing" | "synced" | "error";
   syncMessage: string;
   syncAtMs: number | null;
+  syncBusy: boolean;
+  signOutBusy: boolean;
+  signOutError: string;
   uidCopyStatus: string;
   showDeleteAccountConfirm: boolean;
   showNativePlusUpsellModal: boolean;
@@ -68,6 +71,8 @@ export type SettingsAccountViewModel = {
   setShowNativePlusUpsellModal: (open: boolean) => void;
   onDeleteAccount: () => Promise<void>;
   onCopyUid: () => Promise<void>;
+  onSyncNow: () => Promise<void>;
+  onSignOut: () => Promise<void>;
   onStartAliasEdit: () => void;
   onCancelAliasEdit: () => void;
   onSaveAlias: () => Promise<void>;

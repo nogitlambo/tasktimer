@@ -19,7 +19,6 @@ import {
 import { playDeleteAlertAudio } from "../client/delete-alert-audio";
 import { DeleteAccountConfirmActions } from "./settings/DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
-import { getErrorMessage, handleSignOutFlow } from "./settings/settingsAccountService";
 import SignOutConfirmModal from "./SignOutConfirmModal";
 import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
@@ -57,6 +56,12 @@ export function getAccountSignOutActionCopy(signOutBusy: boolean) {
   };
 }
 
+export function getAccountSyncActionCopy(syncBusy: boolean) {
+  return {
+    label: syncBusy ? "Syncing..." : "Sync",
+  };
+}
+
 export default function AccountScreen() {
   const router = useRouter();
   const accountState = useSettingsAccountState({ nativeCheckoutReturnPath: "/account" });
@@ -73,8 +78,6 @@ export default function AccountScreen() {
   });
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
-  const [signOutBusy, setSignOutBusy] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
 
@@ -130,19 +133,6 @@ export default function AccountScreen() {
       }
     };
   }, []);
-
-  const handleSignOut = useCallback(async () => {
-    if (signOutBusy) return;
-    setSignOutBusy(true);
-    setSignOutError("");
-    try {
-      await handleSignOutFlow();
-    } catch (error: unknown) {
-      setSignOutError(getErrorMessage(error, "Could not sign out."));
-      setSignOutBusy(false);
-      setShowSignOutConfirm(false);
-    }
-  }, [signOutBusy]);
 
   const handleBack = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -279,6 +269,28 @@ export default function AccountScreen() {
                         </dl>
                       </div>
                       <div className="accountProfileActions" role="list" aria-label="Account actions">
+                        <button
+                          className="accountProfileAction"
+                          type="button"
+                          onClick={() => void account.onSyncNow()}
+                          disabled={account.syncBusy || account.signOutBusy}
+                        >
+                          <AppImg src="/icons/icons_default/refresh.webp" alt="" aria-hidden="true" />
+                          <span>
+                            <strong>{getAccountSyncActionCopy(account.syncBusy).label}</strong>
+                          </span>
+                        </button>
+                        <button
+                          className="accountProfileAction"
+                          type="button"
+                          onClick={() => setShowSignOutConfirm(true)}
+                          disabled={account.syncBusy || account.signOutBusy}
+                        >
+                          <AppImg src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
+                          <span>
+                            <strong>{getAccountSignOutActionCopy(account.signOutBusy).label}</strong>
+                          </span>
+                        </button>
                         <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
                           <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
                           <span>
@@ -318,7 +330,7 @@ export default function AccountScreen() {
                     {avatar.avatarSyncNotice ? (
                       <div className={avatar.avatarSyncNoticeIsError ? "accountAuthError" : "accountAuthNotice"}>{avatar.avatarSyncNotice}</div>
                     ) : null}
-                    {signOutError ? <div className="accountAuthError">{signOutError}</div> : null}
+                    {account.signOutError ? <div className="accountAuthError">{account.signOutError}</div> : null}
                   </div>
 
                 </section>
@@ -382,9 +394,9 @@ export default function AccountScreen() {
 
       <SignOutConfirmModal
         open={showSignOutConfirm}
-        busy={signOutBusy}
+        busy={account.signOutBusy}
         onCancel={() => setShowSignOutConfirm(false)}
-        onConfirm={() => void handleSignOut()}
+        onConfirm={() => void account.onSignOut()}
       />
 
       <InlineConfirmModal

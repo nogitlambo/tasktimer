@@ -13,6 +13,22 @@ import { markAccountDeletionLandingRedirectIntent } from "@/app/tasktimer/lib/ac
 import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
 
 const workspaceRepository = createTaskTimerWorkspaceRepository();
+const PROFILE_SYNC_TIMEOUT_MS = 15000;
+
+export type ProfileSyncResult = {
+  checkedAtMs: number;
+  hadPendingBefore: boolean;
+};
+
+class ProfileSyncError extends Error {
+  code: "not-signed-in" | "timeout" | "pending";
+
+  constructor(code: "not-signed-in" | "timeout" | "pending", message: string) {
+    super(message);
+    this.code = code;
+    this.name = "ProfileSyncError";
+  }
+}
 
 export function getErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
@@ -20,6 +36,25 @@ export function getErrorMessage(err: unknown, fallback: string) {
     if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
+}
+
+function hasPendingProfileSyncState() {
+  return (
+    workspaceRepository.hasPendingTaskOrHistorySync?.() === true ||
+    workspaceRepository.hasPendingPreferenceSync?.() === true
+  );
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new ProfileSyncError("timeout", message));
+    }, timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId != null) clearTimeout(timeoutId);
+  }) as Promise<T>;
 }
 
 function redirectToLogin() {
@@ -51,6 +86,33 @@ export async function saveUserDocPatch(uid: string, patch: Record<string, unknow
   await saveUserRootPatch(uid, patch);
 }
 
+export async function syncLocalProfileDataToCloud({
+  timeoutMs = PROFILE_SYNC_TIMEOUT_MS,
+}: {
+  timeoutMs?: number;
+} = {}): Promise<ProfileSyncResult> {
+  const auth = getFirebaseAuthClient();
+  if (!auth?.currentUser) {
+    throw new ProfileSyncError("not-signed-in", "You must be signed in to sync your latest local data.");
+  }
+  const hadPendingBefore = hasPendingProfileSyncState();
+  await withTimeout(
+    (async () => {
+      await workspaceRepository.waitForPendingTaskSync();
+      await workspaceRepository.flushPendingCloudWrites();
+    })(),
+    timeoutMs,
+    "Could not sync your latest local data to the cloud because the sync timed out. Please try again."
+  );
+  if (hasPendingProfileSyncState()) {
+    throw new ProfileSyncError("pending", "Could not sync your latest local data to the cloud. Please try again.");
+  }
+  return {
+    checkedAtMs: Date.now(),
+    hadPendingBefore,
+  };
+}
+
 export async function loadClaimedUsername(uid: string): Promise<string> {
   const ref = userDocRef(uid);
   if (!ref) return "";
@@ -62,10 +124,15 @@ export async function loadClaimedUsername(uid: string): Promise<string> {
 export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
-  await workspaceRepository.waitForPendingTaskSync().catch(() => {});
-  await workspaceRepository.flushPendingCloudWrites().catch(() => {});
-  if (workspaceRepository.hasPendingPreferenceSync?.()) {
-    throw new Error("Could not sign out because your latest settings are still syncing. Please wait a moment and try again.");
+  try {
+    await syncLocalProfileDataToCloud();
+  } catch (error) {
+    if (error instanceof ProfileSyncError && error.code === "timeout") {
+      throw new Error(
+        "Could not sign out because your latest local data could not sync to the cloud before the request timed out. Please try Sync again."
+      );
+    }
+    throw new Error("Could not sign out because your latest local data could not sync to the cloud. Please try Sync again.");
   }
   await signOut(auth);
   workspaceRepository.clearScopedState();

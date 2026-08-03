@@ -26,6 +26,7 @@ import {
   updateAliasFlow,
 } from "./settingsAccountService";
 import type { SettingsAccountViewModel } from "./types";
+import { useSharedProfileSessionActions } from "./useSharedProfileSessionActions";
 
 type UseSettingsAccountStateOptions = {
   nativeCheckoutReturnPath?: string;
@@ -106,6 +107,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const [syncState, setSyncState] = useState<SettingsAccountViewModel["syncState"]>("idle");
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
+  const [signOutError, setSignOutError] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
   const [showNativePlusUpsellModal, setShowNativePlusUpsellModal] = useState(false);
@@ -117,6 +119,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const pendingPlanRefreshRef = useRef(false);
   const planRefreshIdRef = useRef(0);
   const loadedAliasUidRef = useRef<string | null>(null);
+  const { syncBusy, signOutBusy, actionBusy, runSync, runSignOut } = useSharedProfileSessionActions();
 
   const markPlanConfirmed = useCallback((plan: SettingsAccountViewModel["authPlan"], uid: string | null) => {
     lastConfirmedPlanRef.current = plan;
@@ -188,6 +191,42 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     setSyncAtMs(Date.now());
   }, []);
 
+  const onSyncNow = useCallback(async () => {
+    if (actionBusy) return;
+    setSignOutError("");
+    setAuthError("");
+    setAuthStatus("");
+    setSyncState("syncing");
+    setSyncMessage("Syncing your latest local data...");
+    try {
+      const result = await runSync();
+      setSyncState("synced");
+      setSyncMessage(result.hadPendingBefore ? "Synced just now." : "Cloud sync checked.");
+      setSyncAtMs(result.checkedAtMs);
+    } catch (err: unknown) {
+      setSyncState("error");
+      setSyncMessage(getErrorMessage(err, "Could not sync your latest local data to the cloud."));
+    }
+  }, [actionBusy, runSync]);
+
+  const onSignOut = useCallback(async () => {
+    if (actionBusy) return;
+    setSignOutError("");
+    setAuthError("");
+    setAuthStatus("");
+    setSyncState("syncing");
+    setSyncMessage("Syncing your latest local data before sign-out...");
+    setSyncAtMs(null);
+    try {
+      await runSignOut();
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, "Could not sign out.");
+      setSignOutError(message);
+      setSyncState("error");
+      setSyncMessage(message);
+    }
+  }, [actionBusy, runSignOut]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const syncPlanFromStorage = () => {
@@ -252,6 +291,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         }
         if (loadedAliasUidRef.current === uid) setAuthProfileReady(true);
         markSynced("Cloud data connected.");
+        setSignOutError("");
       } else {
         pendingPlanRefreshRef.current = false;
         markPlanConfirmed("free", null);
@@ -259,6 +299,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         setSyncState("idle");
         setSyncMessage("Sign in to sync preferences.");
         setSyncAtMs(null);
+        setSignOutError("");
         loadedAliasUidRef.current = null;
         setAuthProfileReady(true);
       }
@@ -528,6 +569,9 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       syncState,
       syncMessage,
       syncAtMs,
+      syncBusy,
+      signOutBusy,
+      signOutError,
       uidCopyStatus,
       showDeleteAccountConfirm,
       showNativePlusUpsellModal,
@@ -544,6 +588,8 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       },
       onDeleteAccount,
       onCopyUid,
+      onSyncNow,
+      onSignOut,
       onStartAliasEdit: () => {
         setAuthUserAliasDraft(authUserAlias);
         setAuthUserAliasEditing(true);

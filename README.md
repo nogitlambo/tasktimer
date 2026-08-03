@@ -2,6 +2,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Use Node `24` for local development. This repo pins that version via `.nvmrc`, `.node-version`, and `package.json` engines so local runs match CI without relying on deprecated Node `20`.
+
 First, run the development server:
 
 ```bash

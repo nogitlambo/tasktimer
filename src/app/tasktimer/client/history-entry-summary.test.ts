@@ -226,6 +226,59 @@ describe("history entry summary", () => {
     expect(html).toContain("Not tracked");
   });
 
+  it("renders explicit start and finish timestamps when present", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task(),
+      rewardProgress: null,
+      entries: [
+        {
+          taskId: "task-1",
+          ts: 1_717_200_000_000,
+          startedAtMs: 1_717_200_000_000,
+          finishedAtMs: 1_717_203_600_000,
+          ms: 180_000,
+          name: "Focus",
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html).toContain("Start");
+    expect(html).toContain("Finish");
+    expect(html).toContain("Saturday 1st June, 2024 - 10:00AM");
+    expect(html).toContain("Saturday 1st June, 2024 - 11:00AM");
+  });
+
+  it("falls back to the legacy logged timestamp when explicit start and finish are absent", () => {
+    const payload = buildHistoryEntrySummaryPayload({
+      taskId: "task-1",
+      task: task(),
+      rewardProgress: null,
+      entries: [
+        {
+          taskId: "task-1",
+          ts: 1_717_200_000_000,
+          ms: 180_000,
+          name: "Focus",
+        },
+      ],
+      formatDateTime: (value) => String(value),
+      formatTwo: (value) => String(value).padStart(2, "0"),
+      getEntryNote: () => "",
+    });
+    expect(payload).not.toBeNull();
+
+    const html = renderHistoryEntrySummaryHtml(payload!, (value) => String(value ?? ""));
+
+    expect(html).toContain("Logged");
+  });
+
   it("renders positive aggregate and session XP as hidden replay triggers while preserving the XP source hook", () => {
     const payload = buildHistoryEntrySummaryPayload({
       taskId: "task-1",

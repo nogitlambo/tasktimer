@@ -1,7 +1,10 @@
 {
   "name": "tasklaunch",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "clean:next": "node -e \"require('node:fs').rmSync('.next', { recursive: true, force: true })\"",
     "clean:next:dev": "node -e \"require('node:fs').rmSync('.next/dev', { recursive: true, force: true })\"",

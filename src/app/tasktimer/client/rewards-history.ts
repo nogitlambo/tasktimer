@@ -353,8 +353,17 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
   function normalizeCompletedHistoryEntry(entry: Record<string, unknown>): HistoryEntry {
     const completionDifficulty = normalizeCompletionDifficulty(entry?.completionDifficulty);
     const sessionId = typeof entry?.sessionId === "string" ? entry.sessionId.trim() : "";
+    const ts = Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs();
+    const startedAtMsRaw = Number(entry?.startedAtMs);
+    const finishedAtMsRaw = Number(entry?.finishedAtMs);
+    const startedAtMs = Number.isFinite(startedAtMsRaw) && startedAtMsRaw > 0 ? Math.floor(startedAtMsRaw) : ts;
+    const finishedAtMs = Number.isFinite(finishedAtMsRaw) && finishedAtMsRaw > 0
+      ? Math.max(startedAtMs, Math.floor(finishedAtMsRaw))
+      : Math.max(startedAtMs, ts);
     return {
-      ts: Number.isFinite(Number(entry?.ts)) ? Math.floor(Number(entry.ts)) : nowMs(),
+      ts,
+      startedAtMs,
+      finishedAtMs,
       name: String(entry?.name || ""),
       ms: Number.isFinite(Number(entry?.ms)) ? Math.max(0, Math.floor(Number(entry.ms))) : 0,
       ...(entry?.color != null && String(entry.color).trim() ? { color: String(entry.color).trim() } : {}),
@@ -364,13 +373,13 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     };
   }
 
-  function findMergeableHistoryIndex(entries: HistoryEntry[], completedAtMs: number, sessionId: string, canMergeLatestSameDay: boolean) {
+  function findMergeableHistoryIndex(entries: HistoryEntry[], startedAtMs: number, sessionId: string, canMergeLatestSameDay: boolean) {
     if (sessionId) {
       const sessionIndex = entries.findIndex((row) => String(row?.sessionId || "").trim() === sessionId);
       if (sessionIndex >= 0) return sessionIndex;
     }
     if (!canMergeLatestSameDay) return -1;
-    const completedDayKey = localDayKey(completedAtMs);
+    const completedDayKey = localDayKey(startedAtMs);
     for (let index = entries.length - 1; index >= 0; index -= 1) {
       const row = entries[index];
       const rowTs = Math.max(0, Math.floor(Number(row?.ts || 0) || 0));
@@ -387,6 +396,8 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       String(a.color || "") === String(b.color || "") &&
       String(a.note || "") === String(b.note || "") &&
       String(a.completionDifficulty || "") === String(b.completionDifficulty || "") &&
+      Number(a.startedAtMs || 0) === Number(b.startedAtMs || 0) &&
+      Number(a.finishedAtMs || 0) === Number(b.finishedAtMs || 0) &&
       String(a.sessionId || "") === String(b.sessionId || "")
     );
   }
@@ -402,7 +413,7 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const currentTaskHistory = Array.isArray(historyByTaskId[taskId]) ? historyByTaskId[taskId] : [];
     const mergeIndex = findMergeableHistoryIndex(
       currentTaskHistory,
-      normalizedEntry.ts,
+      normalizedEntry.startedAtMs || normalizedEntry.ts,
       normalizedEntry.sessionId || "",
       opts?.canMergeLatestSameDay === true
     );
@@ -411,6 +422,9 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
       const previousMs = Math.max(0, Math.floor(Number(previousEntry.ms || 0) || 0));
       const nextEntry: HistoryEntry = {
         ...previousEntry,
+        ts: normalizedEntry.ts,
+        ...(normalizedEntry.startedAtMs ? { startedAtMs: normalizedEntry.startedAtMs } : {}),
+        ...(normalizedEntry.finishedAtMs ? { finishedAtMs: normalizedEntry.finishedAtMs } : {}),
         name: normalizedEntry.name || previousEntry.name,
         ms: normalizedEntry.ms,
         ...(normalizedEntry.color ? { color: normalizedEntry.color } : {}),
@@ -528,14 +542,28 @@ export function createTaskTimerRewardsHistory(ctx: TaskTimerRewardsHistoryContex
     const taskId = String(task.id || "");
     const liveSession = ctx.getLiveSessionsByTaskId()[taskId];
     const sessionId = typeof liveSession?.sessionId === "string" ? liveSession.sessionId.trim() : "";
+    const startedAtMs = Math.max(
+      0,
+      Math.floor(
+        Number(
+          liveSession?.startedAtMs ??
+          (typeof task.startMs === "number" ? task.startMs : 0) ??
+          0
+        ) || 0
+      )
+    );
     const canMergeLatestSameDay = Math.max(0, Math.floor(Number(liveSession?.resumedFromMs || 0) || 0)) > 0 || (!liveSession && Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0)) > 0);
     const liveNote = getCurrentSessionNoteForTask(taskId);
     const note = String(noteOverride || liveNote || "").trim();
     const attachments = normalizeSessionNoteAttachments(opts?.attachments ?? liveSession?.attachments);
     const completionDifficulty = normalizeCompletionDifficulty(completionDifficultyRaw);
+    const normalizedStartedAtMs = startedAtMs > 0 ? startedAtMs : Math.max(0, completedAtMs - safeElapsedMs);
+    const normalizedFinishedAtMs = Math.max(normalizedStartedAtMs, Math.floor(Number(completedAtMs || 0) || 0));
     if (note) ctx.setFocusSessionDraft(taskId, note);
     const historyResult = upsertCompletedHistory(task.id, {
-      ts: completedAtMs,
+      ts: normalizedStartedAtMs,
+      startedAtMs: normalizedStartedAtMs,
+      finishedAtMs: normalizedFinishedAtMs,
       name: task.name,
       ms: safeElapsedMs,
       color: ctx.historyEntryColorForTaskMs(task, safeElapsedMs),
