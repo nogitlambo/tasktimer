@@ -311,6 +311,7 @@ function createCompletionHarness(options?: {
     storageKeys: {
       FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
       TIME_GOAL_PENDING_FLOW_KEY: "tasktimer:time-goal",
+      TIME_GOAL_PENDING_COMPLETIONS_KEY: "taskticker_tasks_v1:pendingTimeGoalCompletions",
       TIME_GOAL_COMPLETION_ACK_KEY: "tasktimer:time-goal-ack",
     },
     sharedTasks: { milestoneUnitSec: () => 60 } as unknown as TaskTimerSharedTaskApi,
@@ -997,6 +998,49 @@ describe("task timer session tick", () => {
     }
   });
 
+  it("resets replay presentation state before reopening the replay modal", () => {
+    const harness = createCompletionHarness({
+      achievementSoundsEnabled: true,
+      interactionHapticsEnabled: true,
+      reducedMotion: false,
+    });
+
+    try {
+      harness.session.registerSessionEvents();
+
+      harness.triggerTimeGoalCompleteXpReplay({
+        fromXp: 108,
+        toXp: 120,
+        awardedXp: 12,
+        taskId: "task-1",
+        sourceTaskId: "task-1",
+        sourceElementKey: "historyEntrySummaryXpValue",
+        sourceRect: { left: 40, top: 50, width: 70, height: 18 },
+      });
+
+      harness.timeGoalCompleteText.classList.add("isCounting", "isPlaying");
+      harness.audioPause.mockClear();
+
+      harness.triggerTimeGoalCompleteXpReplay({
+        fromXp: 120,
+        toXp: 132,
+        awardedXp: 12,
+        taskId: "task-1",
+        sourceTaskId: "task-1",
+        sourceElementKey: "historyEntrySummaryXpValue",
+        sourceRect: { left: 40, top: 50, width: 70, height: 18 },
+      });
+
+      expect(harness.audioPause).toHaveBeenCalled();
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBe("true");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayFromXp).toBe("120");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayToXp).toBe("132");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayAwardedXp).toBe("12");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
   it("closes a replay task complete modal on Claim without resolving task completion", async () => {
     const harness = createCompletionHarness({
       withNextTaskElements: true,
@@ -1247,6 +1291,124 @@ describe("task timer session tick", () => {
       harness.session.maybeRestorePendingTimeGoalFlow();
 
       expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBeUndefined();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("replays a push-restored pending completion flow when an xp preview is persisted", () => {
+    const harness = createCompletionHarness({
+      achievementSoundsEnabled: true,
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - 60_000,
+          elapsedMs: 0,
+          resumedFromMs: 0,
+          status: "running",
+          updatedAtMs: Date.now(),
+        },
+      },
+      localStorageValues: {
+        "tasktimer:time-goal": JSON.stringify({
+          taskId: "task-1",
+          step: "main",
+          frozenElapsedMs: 60_000,
+          reminder: false,
+          awardPreview: {
+            fromXp: 108,
+            toXp: 120,
+            awardedXp: 12,
+          },
+        }),
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow({ source: "push", taskId: "task-1" });
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBe("true");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayFromXp).toBe("108");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayToXp).toBe("120");
+      expect(harness.timeGoalCompleteOverlay.dataset.awardedXp).toBe("12");
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("falls back to the normal modal for push-restored pending flow when no xp preview is persisted", () => {
+    const harness = createCompletionHarness({
+      liveSessionsByTaskId: {
+        "task-1": {
+          sessionId: "session-1",
+          taskId: "task-1",
+          name: "Focus",
+          startedAtMs: Date.now() - 60_000,
+          elapsedMs: 0,
+          resumedFromMs: 0,
+          status: "running",
+          updatedAtMs: Date.now(),
+        },
+      },
+      localStorageValues: {
+        "tasktimer:time-goal": JSON.stringify({
+          taskId: "task-1",
+          step: "main",
+          frozenElapsedMs: 60_000,
+          reminder: false,
+        }),
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow({ source: "push", taskId: "task-1" });
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBeUndefined();
+    } finally {
+      harness.restoreWindow();
+    }
+  });
+
+  it("replays a push-restored queued completion when an xp preview is persisted", () => {
+    const completedAtMs = Date.now();
+    const harness = createCompletionHarness({
+      achievementSoundsEnabled: true,
+      taskOverrides: {
+        accumulatedMs: 0,
+        running: false,
+        startMs: null,
+        timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+        timeGoalCompletedAtMs: completedAtMs,
+        timeGoalCompletedReason: "goal",
+        timeGoalCompletedElapsedMs: 60_000,
+      },
+      localStorageValues: {
+        "taskticker_tasks_v1:pendingTimeGoalCompletions": JSON.stringify([{
+          taskId: "task-1",
+          periodKey: getTimeGoalCompletionDayKey(completedAtMs),
+          completedAtMs,
+          elapsedMs: 60_000,
+          awardPreview: {
+            fromXp: 120,
+            toXp: 138,
+            awardedXp: 18,
+          },
+        }]),
+      },
+    });
+
+    try {
+      harness.session.maybeRestorePendingTimeGoalFlow({ source: "push", taskId: "task-1" });
+
+      expect(harness.openOverlay).toHaveBeenCalledWith(harness.timeGoalCompleteOverlay);
+      expect(harness.timeGoalCompleteOverlay.dataset.replay).toBe("true");
+      expect(harness.timeGoalCompleteOverlay.dataset.replayAwardedXp).toBe("18");
+      expect(harness.timeGoalCompleteOverlay.dataset.acknowledgement).toBe("false");
     } finally {
       harness.restoreWindow();
     }
@@ -2080,6 +2242,172 @@ describe("task timer session tick", () => {
     expect(resetBtn.title).toBe("No time to reset");
 
     (globalThis as { window?: unknown }).window = previousWindow;
+  });
+
+  it("renders an August 1, 2026 completed goal task as Completed during live updates on Sunday, August 2, 2026", () => {
+    const originalDateNow = Date.now;
+    Date.now = () => new Date(2026, 7, 2, 8, 0, 0).getTime();
+    const staleCompletedTask = task({
+      accumulatedMs: 60 * 60 * 1000,
+      hasStarted: true,
+      timeGoalEnabled: true,
+      timeGoalMinutes: 60,
+      timeGoalPeriod: "day",
+      timeGoalCompletedDayKey: "2026-08-01",
+      timeGoalCompletedAtMs: new Date(2026, 7, 1, 21, 0, 0).getTime(),
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+    });
+    const timeEl = { innerHTML: "" } as HTMLElement;
+    const primaryActionBtn = {
+      className: "btn btn-accent small",
+      dataset: { action: "start" },
+      title: "Launch",
+      disabled: false,
+      textContent: "Launch",
+      innerHTML: "Launch",
+      setAttribute: vi.fn(),
+    } as unknown as HTMLButtonElement;
+    const resetBtn = {
+      disabled: false,
+      title: "",
+      setAttribute: vi.fn(),
+    } as unknown as HTMLButtonElement;
+    const progressFill = { style: { width: "", background: "" } } as HTMLElement;
+    const taskNode = {
+      dataset: { index: "0", taskId: "task-1" },
+      classList: createClassList(["task"]),
+      querySelector: (selector: string) => {
+        if (selector === ".time") return timeEl;
+        if (selector === ".progressFill") return progressFill;
+        if (selector === '.actions > .btn[data-action="start"], .actions > .btn[data-action="stop"], .actions > .btn[data-action="reset"]') return primaryActionBtn;
+        if (selector === '.taskBackActions > .taskMenuItem[data-action="reset"]') return resetBtn;
+        return null;
+      },
+    } as unknown as HTMLElement;
+    const taskListEl = {
+      classList: createClassList([]),
+      querySelectorAll: (selector: string) => (selector === ".task" ? [taskNode] : []),
+    } as unknown as HTMLElement;
+
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const windowStub = {
+      requestAnimationFrame: vi.fn((handler: FrameRequestCallback) => {
+        handler(0);
+        return 1;
+      }),
+      setTimeout: vi.fn(() => 1),
+    };
+    (globalThis as { window?: unknown }).window = windowStub;
+
+    const session = createTaskTimerSession({
+      els: {
+        taskList: taskListEl,
+        focusTaskName: null,
+      },
+      runtime: { destroyed: false, tickRaf: null, tickTimeout: null } as unknown as TaskTimerRuntime,
+      storageKeys: {
+        FOCUS_SESSION_NOTES_KEY: "tasktimer:focus-session-notes",
+      },
+      sharedTasks: {
+        milestoneUnitSec: () => 3600,
+      } as unknown as TaskTimerSharedTaskApi,
+      getTasks: () => [staleCompletedTask],
+      getCheckpointRepeatActiveTaskId: () => null,
+      getHistoryByTaskId: () => ({}),
+      getCheckpointFlashUntilMsByTaskId: () => ({}),
+      getCheckpointAutoResetDirty: () => false,
+      setCheckpointAutoResetDirty: () => {},
+      getFocusModeTaskId: () => null,
+      getFocusModeTaskName: () => null,
+      getCurrentAppPage: () => "tasks",
+      renderDashboardLiveWidgets: () => {},
+      render: () => {},
+      save: () => {},
+      syncRewardSessionTrackerForTask: () => {},
+      syncLiveSessionForTask: () => {},
+      formatMainTaskElapsedHtml: (elapsedMs: number) => `${elapsedMs}ms`,
+      getDynamicColorsEnabled: () => false,
+      fillBackgroundForPct: () => "#00ffff",
+      getModeColor: () => "#00ffff",
+      sortMilestones: (milestones: Task["milestones"]) => milestones,
+      getCheckpointBaselineSecByTaskId: () => ({}),
+      getCheckpointFiredKeysByTaskId: () => ({}),
+      getCheckpointAlertSoundEnabled: () => false,
+      getCheckpointAlertFlashEnabled: () => false,
+      getCheckpointAlertSoundMode: () => "once",
+      getCheckpointRepeatStopAtMs: () => 0,
+      setCheckpointRepeatStopAtMs: () => {},
+      getCheckpointRepeatCycleTimer: () => null,
+      setCheckpointRepeatCycleTimer: () => {},
+      setCheckpointRepeatActiveTaskId: () => {},
+      getCheckpointBeepAudio: () => null,
+      setCheckpointBeepAudio: () => {},
+      getCheckpointBeepQueueCount: () => 0,
+      setCheckpointBeepQueueCount: () => {},
+      getCheckpointBeepQueueTimer: () => null,
+      setCheckpointBeepQueueTimer: () => {},
+      broadcastCheckpointAlertMute: () => {},
+      hasEntitlement: () => false,
+      on: () => {},
+      openOverlay: () => {},
+      closeOverlay: () => {},
+      navigateToAppRoute: () => {},
+      normalizedPathname: () => "/tasklaunch",
+      savePendingTaskJump: () => {},
+      jumpToTaskById: () => {},
+      escapeHtmlUI: (value: unknown) => String(value),
+      formatTime: (value: number) => String(value),
+      formatMainTaskElapsed: (elapsedMs: number) => `${elapsedMs}ms`,
+      normalizeHistoryTimestampMs: () => 0,
+      getHistoryEntryNote: () => "",
+      syncSharedTaskSummariesForTask: async () => {},
+      startTask: () => {},
+      stopTask: () => {},
+      resetTask: () => {},
+      resetTaskStateImmediate: () => {},
+      clearFocusSessionDraft: () => {},
+      setFocusSessionDraft: () => {},
+      syncFocusSessionNotesInput: () => {},
+      syncFocusSessionNotesAccordion: () => {},
+      getFocusSessionNotesByTaskId: () => ({}),
+      setFocusSessionNotesByTaskId: () => {},
+      getFocusSessionNoteSaveTimer: () => null,
+      setFocusSessionNoteSaveTimer: () => {},
+      getDeferredFocusModeTimeGoalModals: () => [],
+      getTimeGoalModalTaskId: () => null,
+      setTimeGoalModalTaskId: () => {},
+      getLiveSessionsByTaskId: () => ({}),
+      getTaskTimeGoalAction: () => "confirmModal",
+      setDeferredFocusModeTimeGoalModals: () => {},
+      getFocusShowCheckpoints: () => false,
+      setFocusShowCheckpoints: () => {},
+      setFocusCheckpointSig: () => {},
+      getInteractionHapticsEnabled: () => false,
+      getInteractionHapticsIntensity: () => "medium",
+      getOptimalProductivityStartTime: () => "09:00",
+      getOptimalProductivityEndTime: () => "17:00",
+      getOptimalProductivityDays: () => ({ mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false }),
+      renderDashboardWidgets: () => {},
+      getWeekStarting: () => "mon",
+    } as unknown as TaskTimerSessionContext);
+
+    try {
+      session.tick();
+
+      expect(taskNode.classList.contains("taskCompleted")).toBe(true);
+      expect(primaryActionBtn.className).toBe("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
+      expect(primaryActionBtn.dataset.action).toBe("reset");
+      expect(primaryActionBtn.title).toBe("Completed");
+      expect(primaryActionBtn.disabled).toBe(true);
+      expect(primaryActionBtn.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
+      expect(primaryActionBtn.innerHTML).not.toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
+      expect(resetBtn.disabled).toBe(false);
+      expect(resetBtn.title).toBe("Reset");
+    } finally {
+      Date.now = originalDateNow;
+      (globalThis as { window?: unknown }).window = previousWindow;
+    }
   });
 
   it("syncs Focus Mode dial progress state for a task with a time goal", () => {

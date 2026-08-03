@@ -15,6 +15,7 @@ import {
   readTaskTimerPlanCacheFromStorage,
   readTaskTimerPlanFromStorage,
   TASKTIMER_PLAN_CHANGED_EVENT,
+  type TaskTimerPaidOffer,
   writeTaskTimerPlanToStorage,
 } from "@/app/tasktimer/lib/entitlements";
 import {
@@ -110,6 +111,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const [showNativePlusUpsellModal, setShowNativePlusUpsellModal] = useState(false);
   const [nativePlusCheckoutBusy, setNativePlusCheckoutBusy] = useState(false);
   const [nativePlusCheckoutError, setNativePlusCheckoutError] = useState("");
+  const [nativePlusCheckoutOffer, setNativePlusCheckoutOffer] = useState<TaskTimerPaidOffer>("plus_monthly");
   const lastConfirmedPlanRef = useRef<SettingsAccountViewModel["authPlan"]>(initialPlanCache.plan);
   const lastConfirmedPlanUidRef = useRef<string | null>(initialPlanCache.uid);
   const pendingPlanRefreshRef = useRef(false);
@@ -123,7 +125,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     setAuthPlan(plan);
     setAuthPlanStatus("confirmed");
     setAuthPlanIsProvisional(false);
-    if (plan !== "pro") setAuthPlanRenewalAtMs(null);
+    if (plan !== "plus") setAuthPlanRenewalAtMs(null);
   }, []);
 
   const markPlanRenewal = useCallback((renewalAtMs: number | null, uid: string) => {
@@ -138,7 +140,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       setAuthPlan(fallbackPlan);
       setAuthPlanStatus("refreshing");
       setAuthPlanIsProvisional(provisional);
-      if (fallbackPlan !== "pro") setAuthPlanRenewalAtMs(null);
+      if (fallbackPlan !== "plus") setAuthPlanRenewalAtMs(null);
       const refreshId = ++planRefreshIdRef.current;
       void loadUserRootPlan(uid)
         .then((nextPlan) => {
@@ -146,7 +148,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
           if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
           writeTaskTimerPlanToStorage(nextPlan, { uid });
           markPlanConfirmed(nextPlan, uid);
-          if (nextPlan === "pro") {
+          if (nextPlan === "plus") {
             void loadUserSubscriptionRenewalAtMs(uid)
               .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
               .catch(() => markPlanRenewal(null, uid));
@@ -161,7 +163,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
           if (planRefreshIdRef.current !== refreshId || activeUid !== uid) return;
           if (nextPlan) {
             markPlanConfirmed(nextPlan, uid);
-            if (nextPlan === "pro") {
+            if (nextPlan === "plus") {
               void loadUserSubscriptionRenewalAtMs(uid)
                 .then((renewalAtMs) => markPlanRenewal(renewalAtMs, uid))
                 .catch(() => markPlanRenewal(null, uid));
@@ -376,7 +378,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
     }
   }, [authIsAnonymous, authUserAlias, authUserAliasDraft, authUserUid, markSynced]);
 
-  const onStartNativePlusCheckout = useCallback(async () => {
+  const onStartNativePlusCheckout = useCallback(async (offer: TaskTimerPaidOffer) => {
     const auth = getFirebaseAuthClient();
     const currentUser = auth?.currentUser || null;
     const uid = String(currentUser?.uid || "").trim();
@@ -395,6 +397,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         hasBrowserPlugin: typeof Browser?.open === "function",
         nativeCheckoutReturnPath,
         sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
+        offer,
         uid,
       });
       const res = await fetch(checkoutApiUrl, {
@@ -402,6 +405,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         headers: { "Content-Type": "application/json", "x-firebase-auth": idToken },
         body: JSON.stringify({
           uid,
+          offer,
           returnTarget: "native",
           successReturnPath: nativeCheckoutReturnPath,
           cancelReturnPath: nativeCheckoutReturnPath,
@@ -437,6 +441,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       warnNativePlusCheckout("Native checkout failed", {
         error: describeCheckoutError(err),
         nativeCheckoutReturnPath,
+        offer,
         sourcePage: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
       });
       void recordNonFatal(err, {
@@ -451,20 +456,18 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const onOpenPlanAction = useCallback(async () => {
     if (typeof window === "undefined") return;
 
-    if (authPlan === "pro") {
+    if (authPlan === "plus") {
+      setAuthError("");
+      setAuthStatus("");
       const auth = getFirebaseAuthClient();
       const currentUser = auth?.currentUser || null;
       const uid = String(currentUser?.uid || "").trim();
       if (!uid) {
-        setAuthError("You must be signed in to manage your subscription.");
-        setAuthStatus("");
+        setAuthError("Please sign in again to manage your subscription.");
         return;
       }
-
-      setAuthError("");
-      setAuthStatus("");
       try {
-        const idToken = await currentUser?.getIdToken();
+        const idToken = await currentUser.getIdToken();
         if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
         const res = await fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {
           method: "POST",
@@ -478,20 +481,23 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
         if (!res.ok || !data.url) {
           throw new Error(data.error || "Could not open billing management.");
         }
-        window.location.assign(data.url);
-        return;
-      } catch (err: unknown) {
-        void recordNonFatal(err, {
+        try {
+          await Browser.open({ url: data.url });
+        } catch {
+          window.location.assign(data.url);
+        }
+      } catch (error: unknown) {
+        void recordNonFatal(error, {
           flow: "billing_portal",
           source_page: nativeCheckoutReturnPath === "/account" ? "account" : "settings",
         });
-        setAuthError(getErrorMessage(err, "Could not open billing management."));
-        setAuthStatus("");
-        return;
+        setAuthError(getErrorMessage(error, "Could not open billing management."));
       }
+      return;
     }
 
     setNativePlusCheckoutError("");
+    setNativePlusCheckoutOffer("plus_monthly");
     setShowNativePlusUpsellModal(true);
   }, [authPlan, nativeCheckoutReturnPath]);
 
@@ -523,13 +529,14 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       showNativePlusUpsellModal,
       nativePlusCheckoutBusy,
       nativePlusCheckoutError,
-      nativePlusCheckoutCtaLabel: nativePlusCheckoutBusy ? "Starting Checkout..." : "Start my 14-day free trial",
+      nativePlusCheckoutOffer,
       setShowDeleteAccountConfirm,
       setShowNativePlusUpsellModal: (open) => {
         setShowNativePlusUpsellModal(open);
         if (open) return;
         setNativePlusCheckoutError("");
         setNativePlusCheckoutBusy(false);
+        setNativePlusCheckoutOffer("plus_monthly");
       },
       onDeleteAccount,
       onCopyUid,
@@ -547,6 +554,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       onSaveAlias,
       onAliasDraftChange: setAuthUserAliasDraft,
       onOpenPlanAction,
+      onSelectNativePlusCheckoutOffer: setNativePlusCheckoutOffer,
       onStartNativePlusCheckout,
     },
     authUserUid,

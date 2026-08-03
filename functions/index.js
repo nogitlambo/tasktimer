@@ -68,7 +68,10 @@ function asBool(value) {
 }
 
 function normalizePlan(value) {
-  return String(value || "").trim().toLowerCase() === "pro" ? "pro" : "free";
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "plus_lifetime") return "plus_lifetime";
+  if (raw === "plus" || raw === "pro") return "plus";
+  return "free";
 }
 
 function normalizeEmailKey(value) {
@@ -168,7 +171,7 @@ async function restoreRetainedSubscriptionForUser(uid, email) {
   const batch = db.batch();
   batch.set(userRef, {
     schemaVersion: 1,
-    plan: "pro",
+    plan: "plus",
     planUpdatedAt: FieldValue.serverTimestamp(),
     createdAt: userSnap.exists ? userSnap.get("createdAt") || FieldValue.serverTimestamp() : FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
@@ -185,7 +188,7 @@ async function restoreRetainedSubscriptionForUser(uid, email) {
     updatedAt: FieldValue.serverTimestamp(),
   }, {merge: true});
   await batch.commit();
-  return "pro";
+  return "plus";
 }
 
 function asStringMap(value) {
@@ -400,11 +403,11 @@ export const syncCurrentUserPlan = onCall(protectedCallableOptions, async (reque
     const userRef = db.collection("users").doc(uid);
     const snap = await userRef.get();
     const existingPlan = snap.exists ? asString(snap.get("plan")).toLowerCase() : "";
-    if (existingPlan === "free" || existingPlan === "pro") {
+    if (existingPlan === "free" || existingPlan === "plus" || existingPlan === "plus_lifetime" || existingPlan === "pro") {
       return {ok: true, plan: existingPlan};
     }
     const restoredPlan = await restoreRetainedSubscriptionForUser(uid, email);
-    if (restoredPlan === "pro") {
+    if (restoredPlan === "plus" || restoredPlan === "plus_lifetime") {
       return {ok: true, plan: restoredPlan, restoredFromRetention: true};
     }
     const plan = await upsertUserPlan(uid, "free");

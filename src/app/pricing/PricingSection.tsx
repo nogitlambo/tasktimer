@@ -24,11 +24,11 @@ const pricingTiers = [
     finePrint: null,
   },
   {
-    name: "Pro",
-    price: "$7.99",
-    cta: "Launch My 7-Day Free Trial",
+    name: "PLUS",
+    price: "$6.99",
+    cta: "14-Day Free Trial",
     href: "/login?checkout=pro",
-    badge: "7-day free trial",
+    badge: "14-Day Free Trial",
     description: "Advanced tools for power users",
     billingLabel: "Per month",
     features: [
@@ -52,6 +52,7 @@ type PricingSectionProps = {
 export default function PricingSection({ mode = "landing" }: PricingSectionProps) {
   const router = useRouter();
   const isPage = mode === "page";
+  const analyticsSourcePage = isPage ? "pricing" : "landing";
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
@@ -89,7 +90,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
     } catch (error: unknown) {
       void recordNonFatal(error, {
         flow: "billing_checkout",
-        source_page: "pricing",
+        source_page: analyticsSourcePage,
       });
       setCheckoutError(error instanceof Error && error.message ? error.message : "Could not start checkout.");
       setCheckoutBusy(false);
@@ -117,7 +118,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                     {tier.badge ? <span className="pricingV2Badge displayFont">{tier.badge}</span> : null}
                   </div>
                   <p className="pricingV2PlanDescription">{tier.description}</p>
-                  <div className={`pricingV2PriceRow${tier.name === "Pro" ? "" : " isHidden"}`} aria-hidden={tier.name === "Pro" ? undefined : "true"}>
+                  <div className={`pricingV2PriceRow${tier.name === "PLUS" ? "" : " isHidden"}`} aria-hidden={tier.name === "PLUS" ? undefined : "true"}>
                     <strong className="pricingV2Price displayFont">{tier.price}</strong>
                     <span className="pricingV2Billing">{tier.billingLabel}</span>
                   </div>
@@ -136,7 +137,7 @@ export default function PricingSection({ mode = "landing" }: PricingSectionProps
                 </ul>
 
                 <div className="pricingV2ActionRow">
-                  {tier.name === "Pro" ? (
+                  {tier.name === "PLUS" ? (
                     <button
                       type="button"
                       onClick={() => void handleStartProCheckout()}

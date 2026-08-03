@@ -16,7 +16,6 @@ export const seoConfig = {
   supportEmail: "support@tasklaunch.app",
   publicRoutes: [
     { path: "/", changeFrequency: "weekly" as const, priority: 1 },
-    { path: "/pricing/", changeFrequency: "weekly" as const, priority: 0.8 },
     { path: "/user-guide/", changeFrequency: "weekly" as const, priority: 0.7 },
     { path: "/about/", changeFrequency: "monthly" as const, priority: 0.6 },
     { path: "/privacy/", changeFrequency: "yearly" as const, priority: 0.4 },
@@ -124,7 +123,7 @@ export function softwareApplicationJsonLd() {
         name: "Free",
         price: "0",
         priceCurrency: "USD",
-        url: canonicalUrl("/pricing/"),
+        url: canonicalUrl("/"),
       },
       {
         "@type": "Offer",
@@ -137,7 +136,7 @@ export function softwareApplicationJsonLd() {
           priceCurrency: "USD",
           billingDuration: "P1M",
         },
-        url: canonicalUrl("/pricing/"),
+        url: absoluteUrl("/#plans"),
       },
     ],
   };
@@ -147,7 +146,7 @@ export function pricingProductJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": `${seoConfig.siteUrl}/pricing/#product`,
+    "@id": `${seoConfig.siteUrl}/#product`,
     name: `${seoConfig.appName} plans`,
     brand: {
       "@type": "Brand",
@@ -169,14 +168,14 @@ export function pricingProductJsonLd() {
           name: "Free",
           price: "0",
           priceCurrency: "USD",
-          url: canonicalUrl("/pricing/"),
+          url: canonicalUrl("/"),
         },
         {
           "@type": "Offer",
           name: "Pro",
           price: "3.99",
           priceCurrency: "USD",
-          url: canonicalUrl("/pricing/"),
+          url: absoluteUrl("/#plans"),
           description: "Pro productivity features with a 7-day free trial.",
         },
       ],

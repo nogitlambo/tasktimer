@@ -16,6 +16,12 @@ function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function resolveCheckoutOffer(value: unknown) {
+  const raw = asString(value).toLowerCase();
+  if (raw === "plus_lifetime") return "plus_lifetime" as const;
+  return "plus_monthly" as const;
+}
+
 function resolveSubscriptionPeriodEndAt(subscription: Stripe.Subscription) {
   const itemPeriodEndMs = (subscription.items?.data || []).reduce<number | null>((latest, item) => {
     const nextValue = Number(item?.current_period_end || 0);
@@ -98,10 +104,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const uid = asString(session.client_reference_id) || asString(session.metadata?.uid);
   const customerId = asString(session.customer);
   const subscriptionId = asString(session.subscription);
+  const offer = resolveCheckoutOffer(session.metadata?.offer);
   logStripeWebhook("processing checkout.session.completed", {
     uid,
     customerId,
     subscriptionId,
+    offer,
     checkoutSessionId: asString(session.id),
   });
   if (!uid) {
@@ -115,9 +123,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   await upsertUserBillingState({
     uid,
-    plan: "pro",
+    plan: offer === "plus_lifetime" ? "plus_lifetime" : "plus",
     customerId,
     subscriptionId,
+    priceId: asString(session.metadata?.priceId),
     status: "checkout_completed",
   });
 }

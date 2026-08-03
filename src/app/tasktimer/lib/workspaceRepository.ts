@@ -17,6 +17,7 @@ import {
   loadDeletedMeta,
   loadHistory,
   loadLiveSessions,
+  hasPendingPreferenceSync,
   hasPendingTaskOrHistorySync,
   hasPendingTaskOrLiveSessionSync,
   hydrateTimerStateFromCloud,
@@ -208,6 +209,7 @@ export function createTaskTimerWorkspaceRepository() {
     },
     hasPendingTaskOrHistorySync: () => hasPendingTaskOrHistorySync(),
     hasPendingTaskOrLiveSessionSync: () => hasPendingTaskOrLiveSessionSync(),
+    hasPendingPreferenceSync: () => hasPendingPreferenceSync(),
     subscribeTaskCollection: (uid: string, listener: () => void) => subscribeCloudTaskCollection(uid, listener),
     subscribeTaskLiveSessions: (uid: string, taskIds: string[], listener: () => void) =>
       subscribeCloudTaskLiveSessions(uid, taskIds, listener),

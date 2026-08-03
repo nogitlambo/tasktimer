@@ -502,7 +502,7 @@ export default function DesktopAppRail({
   const [profileLabel, setProfileLabel] = useState("TaskLaunch User");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileAvatarSrc, setProfileAvatarSrc] = useState("");
-  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>(() => readDisplayPlanFromStorage());
+  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingError, setBillingError] = useState("");
   const [signOutBusy, setSignOutBusy] = useState(false);
@@ -555,7 +555,9 @@ export default function DesktopAppRail({
       setProfileLabel(username || fallbackLabel);
       setProfileAvatarSrc(resolveAvatarSrc(uid, avatarId, avatarCustomSrc, remoteGooglePhotoUrl || googlePhotoUrl));
       const remotePlan = await loadUserRootPlan(uid).catch(() => null);
-      if (remotePlan === "free" || remotePlan === "pro") setCurrentPlan(remotePlan);
+      if (remotePlan === "free" || remotePlan === "pro" || remotePlan === "plus" || remotePlan === "plus_lifetime") {
+        setCurrentPlan(remotePlan);
+      }
     } catch {
       // Keep local/auth profile state if user-doc enrichment fails.
     }
@@ -597,11 +599,12 @@ export default function DesktopAppRail({
     };
   }, []);
 
-  const currentPlanLabel = currentPlan === "pro" ? "Pro" : "Free";
-  const currentPlanBadgeLabel = currentPlan === "pro" ? "PLUS" : "FREE";
+  const currentPlanLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlan === "plus" || currentPlan === "pro" ? "PLUS" : "Free";
+  const currentPlanBadgeLabel = currentPlan === "plus_lifetime" ? "PLUS Lifetime" : currentPlan === "plus" || currentPlan === "pro" ? "PLUS" : "FREE";
   const profileInitials = useMemo(() => initialsFromLabel(profileLabel), [profileLabel]);
   const mockNextPaymentDateLabel = useMemo(() => {
-    if (currentPlan !== "pro") return "No upcoming charge while on Free.";
+    if (currentPlan === "plus_lifetime") return "No renewal. Lifetime access is active.";
+    if (currentPlan !== "plus" && currentPlan !== "pro") return "No upcoming charge while on Free.";
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 14);
     return nextDate.toLocaleDateString(undefined, {
@@ -613,7 +616,7 @@ export default function DesktopAppRail({
 
   const handleOpenPricingPage = useCallback(() => {
     if (typeof window === "undefined") return;
-    window.open("/pricing", "_blank", "noopener,noreferrer");
+    window.open("/#plans", "_blank", "noopener,noreferrer");
   }, []);
 
   const closeTemporaryModal = useCallback(() => {
@@ -863,9 +866,11 @@ export default function DesktopAppRail({
         <div className="modal rewardsInfoModal" role="dialog" aria-modal="true" aria-label="Subscription details">
           <h2>{currentPlanLabel} Subscription</h2>
           <p className="modalSubtext">
-            {currentPlan === "pro"
+            {currentPlan === "plus" || currentPlan === "pro"
               ? "Manage billing, payment methods, invoices, and cancellation in Stripe's secure customer portal."
-              : "Upgrade to Pro to unlock advanced history, analytics, task setup, backup tools, and social features."}
+              : currentPlan === "plus_lifetime"
+                ? "Your lifetime access includes the full PLUS feature set with no renewal date."
+                : "Upgrade to PLUS to unlock advanced history, analytics, task setup, backup tools, and social features."}
           </p>
           <div className="rewardsInfoDetailGrid" aria-label="Subscription summary">
             <div className="rewardsInfoDetailItem">
@@ -875,13 +880,13 @@ export default function DesktopAppRail({
             <div className="rewardsInfoDetailItem">
               <span className="rewardsInfoDetailLabel">Status</span>
               <strong className="rewardsInfoDetailValue">
-                {currentPlan === "pro" ? "Active" : "Available"}
+                {currentPlan === "free" ? "Available" : "Active"}
               </strong>
             </div>
             <div className="rewardsInfoDetailItem">
               <span className="rewardsInfoDetailLabel">Billing Cycle</span>
               <strong className="rewardsInfoDetailValue">
-                {currentPlan === "pro" ? "Monthly" : "No billing on Free"}
+                {currentPlan === "plus_lifetime" ? "One-time" : currentPlan === "plus" || currentPlan === "pro" ? "Monthly" : "No billing on Free"}
               </strong>
             </div>
             <div className="rewardsInfoDetailItem">
@@ -890,8 +895,10 @@ export default function DesktopAppRail({
             </div>
           </div>
           <div className="rewardsInfoText">
-            {currentPlan === "pro"
-              ? "Your Pro subscription includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
+            {currentPlan === "plus" || currentPlan === "pro"
+              ? "Your PLUS subscription includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
+              : currentPlan === "plus_lifetime"
+                ? "Your PLUS Lifetime plan includes advanced history, analytics, task setup, full-history backup tools, and connected social features."
               : "Free keeps the core solo workflow unlocked. Upgrade whenever you want the advanced workflow and billing-backed account features."}
           </div>
           {billingError ? (
@@ -900,13 +907,17 @@ export default function DesktopAppRail({
             </div>
           ) : null}
           <div className="confirmBtns rewardsInfoActions">
-            {currentPlan === "pro" ? (
+            {currentPlan === "plus" || currentPlan === "pro" ? (
               <button className="btn btn-accent" type="button" onClick={() => void handleOpenBillingPortal()} disabled={billingBusy}>
                 {billingBusy ? "Opening Billing..." : "Manage Billing"}
               </button>
+            ) : currentPlan === "plus_lifetime" ? (
+              <button className="btn btn-accent" type="button" disabled>
+                Lifetime Active
+              </button>
             ) : (
               <button className="btn btn-accent" type="button" onClick={handleOpenPricingPage}>
-                Upgrade to Pro
+                Upgrade to PLUS
               </button>
             )}
             <button className="btn btn-ghost closePopup" id="rewardsInfoCloseBtn" type="button">

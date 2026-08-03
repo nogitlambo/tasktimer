@@ -70,12 +70,12 @@ afterEach(() => {
 });
 
 describe("TaskTimerAppFrame mobile menu", () => {
-  it("shows Settings, User Guide, and Sign Out in the hamburger menu", () => {
+  it("shows Profile, Settings, User Guide, and Sign Out in the hamburger menu", () => {
     const items = getTaskLaunchMobileMenuItems();
 
-    expect(items.map((item) => item.label)).toEqual(["Settings", "User Guide", "Sign Out"]);
+    expect(items.map((item) => item.label)).toEqual(["Profile", "Settings", "User Guide", "Sign Out"]);
     expect(items.map((item) => item.label)).not.toContain("Account");
-    expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/settings", "/user-guide"]);
+    expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
     expect(items.find((item) => item.label === "Sign Out")).toMatchObject({
       kind: "action",
       actionId: "signOut",

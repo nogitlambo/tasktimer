@@ -63,6 +63,10 @@ export async function handleSignOutFlow() {
   const auth = getFirebaseAuthClient();
   if (!auth) throw new Error("Email sign-in is not configured for this environment.");
   await workspaceRepository.waitForPendingTaskSync().catch(() => {});
+  await workspaceRepository.flushPendingCloudWrites().catch(() => {});
+  if (workspaceRepository.hasPendingPreferenceSync?.()) {
+    throw new Error("Could not sign out because your latest settings are still syncing. Please wait a moment and try again.");
+  }
   await signOut(auth);
   workspaceRepository.clearScopedState();
   redirectToLogin();

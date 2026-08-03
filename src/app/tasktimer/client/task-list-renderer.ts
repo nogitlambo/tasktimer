@@ -1,7 +1,7 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
 import type { DashboardWeekStart } from "../lib/historyChart";
-import { isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
+import { hasRecordedTaskGoalCompletion, isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
 
@@ -27,7 +27,7 @@ type TaskListRendererOptions = {
   getCurrentAppPage: () => string;
   renderDashboardWidgets: () => void;
   syncTimeGoalModalWithTaskState: () => void;
-  maybeRestorePendingTimeGoalFlow: () => void;
+  maybeRestorePendingTimeGoalFlow: (restoreContext?: { source?: "push" | "appRestore"; taskId?: string }) => void;
   clearTimeoutRef: (timer: number) => void;
   requestAnimationFrameRef: (handler: () => void) => void;
   getElapsedMs: (task: Task) => number;
@@ -197,6 +197,8 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
       const taskHistory = taskId ? historyByTaskId?.[taskId] : null;
       const hasTaskHistory = Array.isArray(taskHistory) && taskHistory.length > 0;
       const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";
+      const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);
+      const isCompletedForCurrentPeriod = isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting?.() || "mon");
       const renderedCard = renderTaskCardHtml({
         task,
         taskId,
@@ -216,11 +218,11 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
         canUseSocialFeatures: options.canUseSocialFeatures(),
         hasFriends: options.hasFriends(),
         isSharedByOwner: options.isTaskSharedByOwner(taskId),
-        isTimeGoalCompleted: isHeldResetPrimaryAction || isTaskTimeGoalStartLockedForPeriod(
-          task,
-          Date.now(),
-          options.getWeekStarting?.() || "mon"
-        ),
+        isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,
+        isTimeGoalCompleted:
+          isHeldResetPrimaryAction ||
+          isCompletedForCurrentPeriod ||
+          isRecordedGoalCompleted,
         hasTaskHistory,
         dynamicColorsEnabled: options.getDynamicColorsEnabled(),
         fullColorTaskCardsEnabled: options.getFullColorTaskCardsEnabled(),

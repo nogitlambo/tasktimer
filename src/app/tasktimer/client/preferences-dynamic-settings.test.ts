@@ -211,7 +211,7 @@ function asPartialPreferencesEls(value: Record<string, unknown>) {
   return value as unknown as PartialPreferencesEls;
 }
 
-function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => PartialPreferencesEls } = {}) {
+function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => PartialPreferencesEls; currentUid?: string | null } = {}) {
   const fakeDocument = new FakeDocument();
   const localStorageStub = createLocalStorageStub();
   const windowStub = createWindowStub(localStorageStub as unknown as Storage);
@@ -277,6 +277,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     return cachedPreferences;
   });
   const render = vi.fn();
+  const flushPendingCloudWrites = vi.fn(async () => {});
 
   vi.stubGlobal("document", fakeDocument);
   vi.stubGlobal("window", windowStub);
@@ -400,7 +401,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     },
     getRewardProgress: () => ({}),
     normalizeRewardProgress,
-    currentUid: () => null,
+    currentUid: () => options.currentUid ?? null,
     loadCachedTaskUi: () => null,
     preferencesPersistence: {
       loadCached: () => cachedPreferences,
@@ -417,6 +418,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     syncEditCheckpointAlertUi: vi.fn(),
     clearTaskFlipStates: vi.fn(),
     save: vi.fn(),
+    flushPendingCloudWrites,
     render,
     renderDashboardWidgets: vi.fn(),
     closeOverlay: vi.fn(),
@@ -433,7 +435,7 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
   const preferences = createTaskTimerPreferences(ctx);
   preferences.registerPreferenceEvents({ handleAppBackNavigation: () => false });
 
-  return { fakeDocument, localStorageStub, preferences, render, saveCloudPreferences, state };
+  return { fakeDocument, localStorageStub, preferences, render, saveCloudPreferences, flushPendingCloudWrites, state };
 }
 
 function addOptimalProductivityControls(fakeDocument: FakeDocument) {
@@ -597,7 +599,7 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
   it("loads full color task cards as off by default and persists the toggle without changing dynamic colors", () => {
     let row: FakeElement | null = null;
     let toggle: FakeElement | null = null;
-    const { localStorageStub, preferences, saveCloudPreferences, state, render } = createHarness({
+    const { localStorageStub, preferences, saveCloudPreferences, flushPendingCloudWrites, state, render } = createHarness({
       setupEls: (fakeDocument) => {
         row = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggleRow"));
         toggle = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggle", ["switch"]));
@@ -623,7 +625,30 @@ describe("createTaskTimerPreferences dynamic optimal productivity settings", () 
     expect(toggle).not.toBeNull();
     expect(localStorageStub.get(storageKeys.FULL_COLOR_TASK_CARDS_KEY)).toBe("true");
     expect(saveCloudPreferences).toHaveBeenLastCalledWith(expect.objectContaining({ fullColorTaskCardsEnabled: true }));
-    expect(render).toHaveBeenCalled();
+    expect(flushPendingCloudWrites).not.toHaveBeenCalled();
+  });
+
+  it("flushes full color task cards immediately when the user is signed in", async () => {
+    let row: FakeElement | null = null;
+    let toggle: FakeElement | null = null;
+    const { preferences, flushPendingCloudWrites } = createHarness({
+      currentUid: "uid-1",
+      setupEls: (fakeDocument) => {
+        row = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggleRow"));
+        toggle = fakeDocument.addElement(new FakeElement("taskFullColorCardsToggle", ["switch"]));
+        row.appendChild(toggle);
+        return asPartialPreferencesEls({
+          taskFullColorCardsToggleRow: row,
+          taskFullColorCardsToggle: toggle,
+        });
+      },
+    });
+
+    preferences.loadFullColorTaskCardsSetting();
+    row!.dispatch("click");
+    await Promise.resolve();
+
+    expect(flushPendingCloudWrites).toHaveBeenCalledTimes(1);
   });
 
   it("syncs already-loaded preferences into controls when the preferences pane becomes active", () => {

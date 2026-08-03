@@ -37,6 +37,9 @@ export function bindToggleRow(opts: BindToggleRowOptions) {
 
   on(control, "click", (event: Event) => {
     event.preventDefault?.();
+    if ("stopPropagation" in event && typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
     handleToggle(event);
   });
 

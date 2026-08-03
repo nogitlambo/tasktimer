@@ -1085,7 +1085,7 @@ body[data-theme="lime"] .cloudSyncNotice .cloudSyncNoticeActions .btn-ghost:acti
 }
 #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .iconBtn,
 #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
-  border-radius: 0 !important;
+  border-radius: 10px !important;
   clip-path: none !important;
 }
 
@@ -1546,7 +1546,7 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .actions .taskFlipBtn{
-  border-radius:0 !important;
+  border-radius:10px !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn{
@@ -1561,9 +1561,19 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   min-width:0 !important;
   min-height:30px !important;
   padding:0 !important;
-  border-radius:0 !important;
-  background:#1a1b20 !important;
-  background-color:#1a1b20 !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  background-color:transparent !important;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn:hover,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn:focus-visible,
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskFaceShellFront > .taskFlipBtn:active{
+  border-color: transparent !important;
+  background: rgba(225,230,236,.16) !important;
+  background-color: rgba(225,230,236,.16) !important;
+  color: inherit !important;
+  box-shadow: none !important;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions{
@@ -2992,19 +3002,17 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
   order:1;
   margin-left:0;
-  width:36px;
-  min-width:0;
-  height:36px;
-  min-height:36px;
-  padding:0;
-  border:0 !important;
-  border-radius:0;
-  background:transparent !important;
+  width:auto;
+  min-width:104px;
+  height:auto;
+  min-height:0;
+  padding:8px 14px !important;
+  border-radius:8px !important;
   box-shadow:none !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn{
-  color:#c9ff24 !important;
+  color:#000 !important;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
@@ -3017,43 +3025,17 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
   flex-wrap:nowrap !important;
   gap:0;
   flex:0 0 auto;
-  width:36px;
+  width:auto;
   place-items:unset !important;
   white-space:nowrap;
-  border:0 !important;
-  color:#c9ff24 !important;
-  background:transparent !important;
+  color:#000 !important;
   box-shadow:none !important;
   transition:background-color .16s ease;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .openAddTaskBtnContent,
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .openAddTaskBtnContent{
-  color:#c9ff24 !important;
-  display:inline-flex;
-  align-items:center;
-  justify-content:flex-start;
-  flex-direction:row;
-  flex-wrap:nowrap;
-  gap:8px;
-  min-width:max-content;
-  white-space:nowrap;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenAddTaskBtnImage,
-#app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .taskScreenAddTaskBtnImage{
-  width:36px;
-  height:36px;
-  display:block;
-  margin:0;
-  object-fit:contain;
-  flex:0 0 auto;
-  filter:none;
-}
-
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenHeaderBtnText,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .taskScreenHeaderBtnText{
-  color:#c9ff24 !important;
+  color:inherit !important;
   font-family:var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size:11px !important;
   font-weight:700 !important;
@@ -3071,7 +3053,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn:active,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:active{
-  background:rgba(225,230,236,.16) !important;
+  color:#000 !important;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenHeaderBtnText{
@@ -3278,23 +3260,21 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
   margin-left:0;
   margin-right:auto;
   flex:0 0 auto;
-  min-width:0;
-  height:36px;
-  min-height:36px;
-  padding:0 12px;
-  border:1px solid #c9ff24 !important;
-  border-radius:0;
-  background:transparent !important;
+  min-width:104px;
+  height:auto;
+  min-height:0;
+  padding:8px 14px !important;
+  border-radius:8px !important;
   box-shadow:none !important;
   opacity:1 !important;
-  color:#c9ff24 !important;
-  justify-content:flex-start !important;
+  color:#000 !important;
+  justify-content:center !important;
 }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:hover,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn:active{
-  background:rgba(225,230,236,.16) !important;
+  color:#000 !important;
 }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks .taskScreenHeaderBtnText,
@@ -3309,7 +3289,7 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
 }
 
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .taskScreenHeaderBtnText{
-  color:#fff !important;
+  color:inherit !important;
   display:inline-block;
   flex:0 0 auto;
 }
@@ -3498,12 +3478,6 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] .appPages{
 #app[aria-label="TaskLaunch App"] #appPageTasks :is(.taskScreenIconBtnImage, .taskScreenIconBtnSvg){
     width:18px;
     height:18px;
-  }
-
-#app[aria-label="TaskLaunch App"] #appPageTasks #openAddTaskBtn .taskScreenAddTaskBtnImage,
-  #app[aria-label="TaskLaunch App"] .taskLaunchMobileToolbarTasks #openAddTaskBtn .taskScreenAddTaskBtnImage{
-    width:36px;
-    height:36px;
   }
 
 #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenIconBtnPlus{
@@ -4343,6 +4317,7 @@ body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch A
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel,
 body[data-task-view="tile"][data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .timePanel{
+  border-radius: 10px !important;
   border: 1px solid rgba(184,204,220,.34) !important;
   background: linear-gradient(180deg, rgba(10,18,25,.92), rgba(1,5,8,.92)) !important;
   box-shadow:

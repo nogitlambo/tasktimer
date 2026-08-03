@@ -3629,6 +3629,16 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   color: #000;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountPlanPill-plus{
+  background: #c9ff24;
+  color: #000;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountPlanPill-plus_lifetime{
+  background: #c9ff24;
+  color: #000;
+}
+
 #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .settingsAccountPlanPipe{
   display: inline-block;
   padding: 0 8px;
@@ -5846,6 +5856,43 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   outline: none;
 }
 
+#app[aria-label="TaskLaunch Account"] .accountProfileAliasSection{
+  width: 100%;
+  margin: 16px 0;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountProfileAliasContent{
+  width: 100%;
+  margin: 0;
+  padding: 0 0 16px;
+  text-align: center;
+}
+
+#app[aria-label="TaskLaunch Account"] h2.accountProfileAliasContent{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-family: var(--font-tight);
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 850;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountProfileAliasContent .accountProfileNameButton{
+  display: inline-flex;
+  justify-content: center;
+  text-align: center;
+}
+
+#app[aria-label="TaskLaunch Account"] .accountProfileAliasDivider{
+  width: 100%;
+  height: 1px;
+  background: rgba(188,198,208,.18);
+}
+
 .accountProfileEmail{
   margin: 0;
   color: rgba(188,198,208,.72);
@@ -5931,13 +5978,31 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
   font-weight: 800;
 }
 
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-plus{
+  border-color: #c9ff24;
+  background: rgba(201,255,36,.12);
+  color: #c9ff24;
+  font-weight: 800;
+}
+
+#app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-plus_lifetime{
+  border-color: #c9ff24;
+  background: rgba(201,255,36,.12);
+  color: #c9ff24;
+  font-weight: 800;
+}
+
 @media (min-width: 981px){
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-free,
   #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-free,
   #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-pro,
-  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-pro{
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-pro,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-plus,
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-plus,
+  #app:is([aria-label="TaskLaunch Settings"], [aria-label="TaskLaunch Account"]) .accountProfilePlanRow .settingsAccountPlanPill-plus_lifetime,
+  #app[aria-label="TaskLaunch Account"] .accountProfilePlanRow .settingsAccountPlanPill-plus_lifetime{
     border: 1px solid #c9ff24;
     background: transparent;
     color: #c9ff24;
@@ -6425,6 +6490,29 @@ body[data-theme="lime"] #app:is([aria-label="TaskLaunch Settings"], [aria-label=
     height: 100dvh;
     min-height: 100dvh;
     overflow: hidden !important;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfilePage,
+  #app[aria-label="TaskLaunch Account"] .accountProfileMetaRows,
+  #app[aria-label="TaskLaunch Account"] .accountProfileMetaRows .settingsAccountIdCardMetaList{
+    width: 100%;
+    max-width: none;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileMetaRows .settingsAccountMetaListItem{
+    grid-template-columns: minmax(88px, 128px) minmax(0, 1fr);
+    column-gap: 18px;
+    justify-items: start;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileMetaRows .settingsAccountMetaListItem .settingsAccountUidLabel,
+#app[aria-label="TaskLaunch Account"] .accountProfileMetaRows .settingsAccountMetaListItem :is(.settingsAccountEmailValue, .settingsAccountUserIdValue, .settingsAccountMemberSinceValue){
+    text-align: left;
+    white-space: nowrap;
+  }
+
+#app[aria-label="TaskLaunch Account"] .accountProfileMetaRows .settingsAccountMetaListItem .settingsAccountUidLabel{
+    font-size: 11px;
   }
 
 #app[aria-label="TaskLaunch Account"] .desktopAppShell,

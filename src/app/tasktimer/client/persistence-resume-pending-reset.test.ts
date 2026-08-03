@@ -341,4 +341,42 @@ describe("task timer persistence resume-pending cleanup", () => {
       completedAtMs,
     });
   });
+
+  it("keeps an August 1, 2026 completed goal task completed when loading on August 2, 2026", () => {
+    const completedAtMs = new Date(2026, 7, 1, 21, 0, 0).getTime();
+    const harness = createHarness(
+      [
+        task({
+          accumulatedMs: 60 * 60_000,
+          hasStarted: true,
+          resumePendingSinceDayKey: "2026-08-01",
+          timeGoalEnabled: true,
+          timeGoalPeriod: "day",
+          timeGoalMinutes: 60,
+          timeGoalCompletedDayKey: "2026-08-01",
+          timeGoalCompletedAtMs: completedAtMs,
+          timeGoalCompletedReason: "goal",
+          timeGoalCompletedElapsedMs: 60 * 60_000,
+        }),
+      ],
+      new Date(2026, 7, 2, 8, 0, 0).getTime()
+    );
+
+    harness.api.load();
+
+    expect(harness.getTasks()[0]).toMatchObject({
+      accumulatedMs: 60 * 60_000,
+      hasStarted: true,
+      running: false,
+      resumePendingSinceDayKey: null,
+      timeGoalCompletedDayKey: "2026-08-01",
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 60 * 60_000,
+    });
+    expect(harness.getHistory()).toEqual({});
+    expect(harness.finalizeLiveSession).not.toHaveBeenCalled();
+    expect(harness.saveTasks).toHaveBeenCalledWith(harness.getTasks());
+    expect(harness.syncSharedTaskSummariesForTasks).toHaveBeenCalledWith(["task-1"]);
+  });
 });

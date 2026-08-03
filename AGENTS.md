@@ -168,6 +168,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY = `${storageKey}:dashboardPreviousWeekVisible``
 - `DYNAMIC_COLORS_KEY = `${storageKey}:dynamicColorsEnabled``
 - `FOCUS_SESSION_NOTES_KEY = `${storageKey}:focusSessionNotes``
+- `FULL_COLOR_TASK_CARDS_KEY = `${storageKey}:fullColorTaskCardsEnabled``
 - `INTERACTION_CLICK_SOUND_KEY = `${storageKey}:interactionClickSoundEnabled``
 - `INTERACTION_HAPTICS_INTENSITY_KEY = `${storageKey}:interactionHapticsIntensity``
 - `INTERACTION_HAPTICS_KEY = `${storageKey}:interactionHapticsEnabled``
@@ -182,6 +183,7 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `TASK_ORDER_BY_KEY = `${storageKey}:taskOrderBy``
 - `TASK_VIEW_KEY = `${storageKey}:taskView``
 - `THEME_KEY = `${storageKey}:theme``
+- `TIME_GOAL_COMPLETE_NEXT_TASKS_KEY = `${storageKey}:timeGoalCompleteNextTasksEnabled``
 - `WEB_PUSH_ALERTS_KEY = `${storageKey}:webPushAlertsEnabled``
 - `WEEK_STARTING_KEY = `${storageKey}:weekStarting``
 

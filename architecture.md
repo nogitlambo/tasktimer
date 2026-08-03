@@ -25,6 +25,7 @@
 - `/about`
 - `/account`
 - `/arcade`
+- `/checkout-return`
 - `/dashboard`
 - `/feedback`
 - `/friends`
@@ -34,7 +35,6 @@
 - `/leaderboards`
 - `/login`
 - `/notes`
-- `/pricing`
 - `/primitives`
 - `/privacy`
 - `/settings`
@@ -87,6 +87,7 @@
 - [`src/app/tasktimer/client/cloud-sync.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/cloud-sync.ts)
 - [`src/app/tasktimer/client/confirm-actions.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/confirm-actions.test.ts)
 - [`src/app/tasktimer/client/confirm-actions.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/confirm-actions.ts)
+- [`src/app/tasktimer/client/confirm-overlay.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/confirm-overlay.test.ts)
 - [`src/app/tasktimer/client/confirm-overlay.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/confirm-overlay.ts)
 - [`src/app/tasktimer/client/context-bindings.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/context-bindings.ts)
 - [`src/app/tasktimer/client/context.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/context.ts)
@@ -132,6 +133,7 @@
 - [`src/app/tasktimer/client/history-entry-summary.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-entry-summary.ts)
 - [`src/app/tasktimer/client/history-inline-selection-interaction.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline-selection-interaction.test.ts)
 - [`src/app/tasktimer/client/history-inline-selection-interaction.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline-selection-interaction.ts)
+- [`src/app/tasktimer/client/history-inline.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline.test.ts)
 - [`src/app/tasktimer/client/history-inline.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-inline.ts)
 - [`src/app/tasktimer/client/history-manager-render.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-render.test.ts)
 - [`src/app/tasktimer/client/history-manager-render.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/history-manager-render.ts)
@@ -148,6 +150,8 @@
 - [`src/app/tasktimer/client/live-session-task-state.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/live-session-task-state.ts)
 - [`src/app/tasktimer/client/manual-entry-time-goal.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/manual-entry-time-goal.test.ts)
 - [`src/app/tasktimer/client/manual-entry-time-goal.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/manual-entry-time-goal.ts)
+- [`src/app/tasktimer/client/module-intro-tour.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/module-intro-tour.test.ts)
+- [`src/app/tasktimer/client/module-intro-tour.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/module-intro-tour.ts)
 - [`src/app/tasktimer/client/mutable-store.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/mutable-store.ts)
 - [`src/app/tasktimer/client/onboarding-events.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/onboarding-events.ts)
 - [`src/app/tasktimer/client/overlay-controller.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/overlay-controller.ts)
@@ -155,6 +159,8 @@
 - [`src/app/tasktimer/client/overlay-lifecycle.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/overlay-lifecycle.ts)
 - [`src/app/tasktimer/client/overlay-registry.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/overlay-registry.ts)
 - [`src/app/tasktimer/client/overlay-visibility.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/overlay-visibility.ts)
+- [`src/app/tasktimer/client/pending-time-goal-completions.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/pending-time-goal-completions.test.ts)
+- [`src/app/tasktimer/client/pending-time-goal-completions.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/pending-time-goal-completions.ts)
 - [`src/app/tasktimer/client/persistence-focus-notes.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/persistence-focus-notes.test.ts)
 - [`src/app/tasktimer/client/persistence-resume-pending-reset.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/persistence-resume-pending-reset.test.ts)
 - [`src/app/tasktimer/client/persistence.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/persistence.ts)
@@ -230,6 +236,8 @@
 - [`src/app/tasktimer/client/types.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/types.ts)
 - [`src/app/tasktimer/client/xp-award-animation.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-animation.test.ts)
 - [`src/app/tasktimer/client/xp-award-animation.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-animation.ts)
+- [`src/app/tasktimer/client/xp-award-button-label-override.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-button-label-override.test.ts)
+- [`src/app/tasktimer/client/xp-award-button-label-override.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-button-label-override.ts)
 - [`src/app/tasktimer/client/xp-award-events.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-events.ts)
 - [`src/app/tasktimer/client/xp-award-feedback.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-feedback.test.ts)
 - [`src/app/tasktimer/client/xp-award-feedback.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/client/xp-award-feedback.ts)
@@ -260,6 +268,7 @@
 - [`src/app/tasktimer/lib/dashboardPerformance.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/dashboardPerformance.ts)
 - [`src/app/tasktimer/lib/dashboardViewModel.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/dashboardViewModel.ts)
 - [`src/app/tasktimer/lib/entitlements.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/entitlements.ts)
+- [`src/app/tasktimer/lib/feedbackStore.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/feedbackStore.test.ts)
 - [`src/app/tasktimer/lib/feedbackStore.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/feedbackStore.ts)
 - [`src/app/tasktimer/lib/firestoreRules.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/firestoreRules.test.ts)
 - [`src/app/tasktimer/lib/focusInsights.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/focusInsights.test.ts)
@@ -296,6 +305,8 @@
 - [`src/app/tasktimer/lib/pushNotificationAction.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/pushNotificationAction.ts)
 - [`src/app/tasktimer/lib/pushNotifications.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/pushNotifications.test.ts)
 - [`src/app/tasktimer/lib/pushNotifications.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/pushNotifications.ts)
+- [`src/app/tasktimer/lib/releaseDate.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/releaseDate.test.ts)
+- [`src/app/tasktimer/lib/releaseDate.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/releaseDate.ts)
 - [`src/app/tasktimer/lib/rewards-award.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/rewards-award.test.ts)
 - [`src/app/tasktimer/lib/rewards-reconcile.test.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/rewards-reconcile.test.ts)
 - [`src/app/tasktimer/lib/rewards.ts`](/G:/Apps/tasklaunch/src/app/tasktimer/lib/rewards.ts)

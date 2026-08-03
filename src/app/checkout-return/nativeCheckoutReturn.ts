@@ -3,7 +3,7 @@ import { buildNativeAppRouteUrl } from "@/lib/nativeAppLinks";
 const CHECKOUT_RETURN_PATH = "/checkout-return";
 const NATIVE_HANDOFF_PARAM = "nativeHandoff";
 const NATIVE_APP_URL_SCHEME = "com.tasklaunch.app";
-const ALLOWED_TARGETS = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/pricing", "/login"]);
+const ALLOWED_TARGETS = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/login"]);
 
 function asUrl(value: string) {
   try {

@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   },
   workspaceRepository: {
     waitForPendingTaskSync: vi.fn(() => Promise.resolve()),
+    flushPendingCloudWrites: vi.fn(() => Promise.resolve()),
+    hasPendingPreferenceSync: vi.fn(() => false),
     clearScopedState: vi.fn(),
   },
 }));
@@ -56,6 +58,9 @@ describe("handleSignOutFlow", () => {
     const sessionValues = new Map<string, string>();
     mocks.authState.currentUser = null;
     mocks.workspaceRepository.waitForPendingTaskSync.mockClear();
+    mocks.workspaceRepository.flushPendingCloudWrites.mockClear();
+    mocks.workspaceRepository.hasPendingPreferenceSync.mockClear();
+    mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(false);
     mocks.workspaceRepository.clearScopedState.mockClear();
     vi.mocked(GoogleAuthProvider).mockClear();
     vi.mocked(deleteUser).mockClear();
@@ -93,9 +98,40 @@ describe("handleSignOutFlow", () => {
     await handleSignOutFlow();
 
     expect(mocks.workspaceRepository.waitForPendingTaskSync).toHaveBeenCalledTimes(1);
+    expect(mocks.workspaceRepository.flushPendingCloudWrites).toHaveBeenCalledTimes(1);
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(mocks.workspaceRepository.clearScopedState).toHaveBeenCalledTimes(1);
     expect(window.location.assign).toHaveBeenCalledWith("/login");
+  });
+
+  it("flushes pending cloud writes before signing out so preference changes survive re-auth", async () => {
+    mocks.authState.currentUser = { isAnonymous: false };
+    const callOrder: string[] = [];
+    mocks.workspaceRepository.waitForPendingTaskSync.mockImplementationOnce(async () => {
+      callOrder.push("waitForPendingTaskSync");
+    });
+    mocks.workspaceRepository.flushPendingCloudWrites.mockImplementationOnce(async () => {
+      callOrder.push("flushPendingCloudWrites");
+    });
+    vi.mocked(signOut).mockImplementationOnce(async () => {
+      callOrder.push("signOut");
+    });
+
+    await handleSignOutFlow();
+
+    expect(callOrder).toEqual(["waitForPendingTaskSync", "flushPendingCloudWrites", "signOut"]);
+  });
+
+  it("blocks sign-out when preference sync is still pending after flush", async () => {
+    mocks.authState.currentUser = { isAnonymous: false };
+    mocks.workspaceRepository.hasPendingPreferenceSync.mockReturnValue(true);
+
+    await expect(handleSignOutFlow()).rejects.toThrow(
+      "Could not sign out because your latest settings are still syncing. Please wait a moment and try again."
+    );
+
+    expect(signOut).not.toHaveBeenCalled();
+    expect(mocks.workspaceRepository.clearScopedState).not.toHaveBeenCalled();
   });
 
   it("requests server-side account deletion, signs out, clears local workspace state, and returns to landing", async () => {

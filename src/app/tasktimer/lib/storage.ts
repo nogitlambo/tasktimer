@@ -2230,6 +2230,11 @@ export function hasPendingTaskOrLiveSessionSync(): boolean {
   );
 }
 
+export function hasPendingPreferenceSync(): boolean {
+  const uid = currentUid() || scopedUid();
+  return !!inFlightPreferencesSync || !!queuedPreferencesSyncSnapshot || !!loadPendingPreferencesSync(uid);
+}
+
 export function saveLiveSessionLocally(session: LiveTaskSession | null): void {
   const uid = currentUid();
   if (!uid) {

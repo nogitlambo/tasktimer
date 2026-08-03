@@ -11,8 +11,9 @@ describe("NativePlusUpsellModal", () => {
         open
         busy={false}
         error=""
-        ctaLabel="Start my 14-day free trial"
+        selectedOffer="plus_monthly"
         onClose={() => {}}
+        onSelectOffer={() => {}}
         onConfirm={() => {}}
       />
     );
@@ -26,6 +27,9 @@ describe("NativePlusUpsellModal", () => {
     expect(html).toContain(">PLUS</span>");
     expect(html).toContain("14-DAY FREE TRIAL");
     expect(html).toContain("$6.99");
+    expect(html).toContain("PLUS Lifetime");
+    expect(html).toContain("ONE-TIME");
+    expect(html).toContain("One-time purchase");
     expect(html).toContain("Unlock AI-guided workflow optimisation");
     expect(html).toContain('class="confirmBtns nativePlusUpsellActions"');
     expect(html).not.toContain(">Close<");
@@ -39,6 +43,7 @@ describe("NativePlusUpsellModal", () => {
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellCloseBtn{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellHeader{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellTitleAccent{");
+    expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellOfferCard{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellFeatureList{");
     expect(css).toContain("#nativePlusUpsellOverlay .nativePlusUpsellActions{");
   });

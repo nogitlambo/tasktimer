@@ -4,6 +4,7 @@ import {
   buildPageMetadata,
   jsonLdScript,
   organizationJsonLd,
+  pricingProductJsonLd,
   seoConfig,
   softwareApplicationJsonLd,
   websiteJsonLd,
@@ -25,6 +26,7 @@ export default function Home() {
           organizationJsonLd(),
           websiteJsonLd(),
           softwareApplicationJsonLd(),
+          pricingProductJsonLd(),
         ])}
       />
       <Landing showTitlePhase={false} showActions={false} />

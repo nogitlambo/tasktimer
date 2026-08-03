@@ -59,11 +59,25 @@ describe("POST /api/stripe/create-checkout-session", () => {
         success_url: "https://tasklaunch.app/dashboard?checkout=success&session_id={CHECKOUT_SESSION_ID}",
         cancel_url: "https://tasklaunch.app/login?checkout=cancelled",
         subscription_data: {
-          metadata: { uid: "uid-123" },
+          metadata: { uid: "uid-123", offer: "plus_monthly" },
         },
+        metadata: { uid: "uid-123", offer: "plus_monthly" },
       })
     );
     expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).not.toHaveProperty("trial_period_days");
+  });
+
+  it("creates a payment checkout session for the lifetime offer", async () => {
+    await POST(checkoutRequest({ offer: "plus_lifetime" }));
+
+    expect(checkoutSessionsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "payment",
+        line_items: [{ price: "price_1U0AvORoafccyHKo1ThKo0cG", quantity: 1 }],
+        metadata: { uid: "uid-123", offer: "plus_lifetime" },
+      })
+    );
+    expect(checkoutSessionsCreate.mock.calls[0]?.[0]?.subscription_data).toBeUndefined();
   });
 
   it("creates native account return URLs when the caller requests native checkout routing", async () => {

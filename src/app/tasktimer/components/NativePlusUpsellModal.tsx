@@ -1,5 +1,7 @@
 "use client";
 
+import type { TaskTimerPaidOffer } from "../lib/entitlements";
+
 const PLUS_FEATURES = [
   "Everything in Free, plus:",
   "Unlock AI-guided workflow optimisation",
@@ -15,16 +17,18 @@ export default function NativePlusUpsellModal({
   open,
   busy,
   error,
-  ctaLabel,
+  selectedOffer,
   onClose,
+  onSelectOffer,
   onConfirm,
 }: {
   open: boolean;
   busy: boolean;
   error: string;
-  ctaLabel: string;
+  selectedOffer: TaskTimerPaidOffer;
   onClose: () => void;
-  onConfirm: () => void | Promise<void>;
+  onSelectOffer: (offer: TaskTimerPaidOffer) => void;
+  onConfirm: (offer: TaskTimerPaidOffer) => void | Promise<void>;
 }) {
   if (!open) return null;
 
@@ -54,9 +58,39 @@ export default function NativePlusUpsellModal({
           <span className="nativePlusUpsellBadge">14-DAY FREE TRIAL</span>
         </div>
         <p className="modalSubtext nativePlusUpsellIntro">Advanced tools for power users</p>
-        <div className="nativePlusUpsellPriceRow" aria-label="Plus price">
-          <strong className="nativePlusUpsellPrice">$6.99</strong>
-          <span className="nativePlusUpsellBilling">Per month</span>
+        <div className="nativePlusUpsellOfferList" role="list" aria-label="Plus offers">
+          <button
+            type="button"
+            className={`nativePlusUpsellOfferCard${selectedOffer === "plus_monthly" ? " isSelected" : ""}`}
+            onClick={() => onSelectOffer("plus_monthly")}
+            disabled={busy}
+            aria-pressed={selectedOffer === "plus_monthly"}
+          >
+            <span className="nativePlusUpsellOfferHeadingRow">
+              <strong className="nativePlusUpsellOfferTitle">PLUS</strong>
+              <span className="nativePlusUpsellOfferBadge">14-DAY FREE TRIAL</span>
+            </span>
+            <span className="nativePlusUpsellPriceRow" aria-label="Plus monthly price">
+              <strong className="nativePlusUpsellPrice">$6.99</strong>
+              <span className="nativePlusUpsellBilling">Per month</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`nativePlusUpsellOfferCard${selectedOffer === "plus_lifetime" ? " isSelected" : ""}`}
+            onClick={() => onSelectOffer("plus_lifetime")}
+            disabled={busy}
+            aria-pressed={selectedOffer === "plus_lifetime"}
+          >
+            <span className="nativePlusUpsellOfferHeadingRow">
+              <strong className="nativePlusUpsellOfferTitle">PLUS Lifetime</strong>
+              <span className="nativePlusUpsellOfferBadge">ONE-TIME</span>
+            </span>
+            <span className="nativePlusUpsellPriceRow" aria-label="Plus lifetime price">
+              <strong className="nativePlusUpsellPrice">Lifetime</strong>
+              <span className="nativePlusUpsellBilling">One-time purchase</span>
+            </span>
+          </button>
         </div>
         <div className="nativePlusUpsellDivider" aria-hidden="true" />
         <ul className="nativePlusUpsellFeatureList">
@@ -78,10 +112,14 @@ export default function NativePlusUpsellModal({
           <button
             className="btn btn-accent modalPreviewPrimaryAction primitiveSciFiModalAction primitiveSciFiModalPrimaryAction nativePlusUpsellPrimaryAction"
             type="button"
-            onClick={() => void onConfirm()}
+            onClick={() => void onConfirm(selectedOffer)}
             disabled={busy}
           >
-            {ctaLabel}
+            {busy
+              ? "Starting Checkout..."
+              : selectedOffer === "plus_lifetime"
+                ? "Get PLUS Lifetime"
+                : "Start my 14-day free trial"}
           </button>
         </div>
       </div>

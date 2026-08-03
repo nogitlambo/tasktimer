@@ -13,6 +13,7 @@ describe("account upgrade wiring", () => {
     expect(source).toContain('onClick={() => void account.onOpenPlanAction()}');
     expect(source).toContain("<NativePlusUpsellModal");
     expect(source).toContain("onConfirm={account.onStartNativePlusCheckout}");
+    expect(source).toContain("onSelectOffer={account.onSelectNativePlusCheckoutOffer}");
   });
 
   it("routes the dedicated account screen upgrade CTA through shared account actions and modal state", () => {
@@ -21,14 +22,17 @@ describe("account upgrade wiring", () => {
     expect(source).toContain('onClick={() => void account.onOpenPlanAction()}');
     expect(source).toContain("<NativePlusUpsellModal");
     expect(source).toContain("onConfirm={account.onStartNativePlusCheckout}");
+    expect(source).toContain("onSelectOffer={account.onSelectNativePlusCheckoutOffer}");
   });
 
-  it("uses the shared API URL helper for native checkout and billing portal requests", () => {
+  it("uses shared API URL helpers for native checkout and billing portal requests", () => {
     const source = readSource("./settings/useSettingsAccountState.ts");
 
     expect(source).toContain('const checkoutApiUrl = getApiUrl("/api/stripe/create-checkout-session/");');
     expect(source).toContain("fetch(checkoutApiUrl, {");
     expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {');
+    expect(source).toContain("await Browser.open({ url: data.url });");
+    expect(source).toContain("window.location.assign(data.url);");
     expect(source).toContain('logNativePlusCheckout("Starting native checkout"');
     expect(source).toContain('warnNativePlusCheckout("Native checkout failed"');
     expect(source).not.toContain('window.location.assign("/pricing")');

@@ -169,7 +169,7 @@ type CreatePersistenceOptionsArgs = {
   finalizeLiveSession: Parameters<typeof createTaskTimerPersistence>[0]["finalizeLiveSession"];
   maybeRepairHistoryNotesInCloudAfterHydrate: () => void;
   jumpToTaskById: (taskId: string) => void;
-  maybeRestorePendingTimeGoalFlow: () => void;
+  maybeRestorePendingTimeGoalFlow: (restoreContext?: { source?: "push" | "appRestore"; taskId?: string }) => void;
   normalizeLoadedTask: (task: Task) => void;
   syncSharedTaskSummariesForTasks: (taskIds: string[]) => Promise<void>;
 };
@@ -319,7 +319,7 @@ type CreateTasksOptionsArgs = {
   pruneInactiveHistoryTasks?: (activeTaskIds: Set<string>) => boolean;
   renderDashboardWidgets: (opts?: DashboardRenderOptions) => void;
   syncTimeGoalModalWithTaskState: () => void;
-  maybeRestorePendingTimeGoalFlow: () => void;
+  maybeRestorePendingTimeGoalFlow: (restoreContext?: { source?: "push" | "appRestore"; taskId?: string }) => void;
   getElapsedMs: (task: Task) => number;
   getTaskElapsedMs: (task: Task) => number;
   save: (opts?: { deletedTaskIds?: string[]; forceCloudFlush?: boolean }) => void;
@@ -1007,6 +1007,7 @@ export function createTaskTimerPreferencesContext(
     syncEditCheckpointAlertUi: args.syncEditCheckpointAlertUi,
     clearTaskFlipStates: args.clearTaskFlipStates,
     save: args.save,
+    flushPendingCloudWrites: args.flushPendingCloudWrites,
     render: args.render,
     renderDashboardWidgets: args.renderDashboardWidgets,
     closeOverlay: args.closeOverlay,

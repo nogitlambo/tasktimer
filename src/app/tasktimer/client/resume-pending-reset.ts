@@ -10,6 +10,13 @@ export function normalizeResumePendingSinceDayKey(value: unknown): string | null
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
 }
 
+function hasGoalCompletedTaskRun(task: Task | null | undefined): boolean {
+  if (!task || task.timeGoalCompletedReason !== "goal") return false;
+  const completedAtMs = Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0));
+  if (!(completedAtMs > 0)) return false;
+  return String(task.timeGoalCompletedDayKey || "").trim() === localDayKey(completedAtMs);
+}
+
 export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now()): ResumePendingResetResult {
   const todayKey = localDayKey(nowValue);
   const changedTaskIds: string[] = [];
@@ -20,8 +27,17 @@ export function reconcileResumePendingTasks(tasks: Task[], nowValue = Date.now()
     const taskId = String(task.id || "").trim();
     const elapsedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
     const marker = normalizeResumePendingSinceDayKey(task.resumePendingSinceDayKey);
+    const hasCompletedGoalRun = hasGoalCompletedTaskRun(task);
 
     if (task.running || elapsedMs <= 0) {
+      if (task.resumePendingSinceDayKey != null) {
+        task.resumePendingSinceDayKey = null;
+        if (taskId) changedTaskIds.push(taskId);
+      }
+      return;
+    }
+
+    if (hasCompletedGoalRun) {
       if (task.resumePendingSinceDayKey != null) {
         task.resumePendingSinceDayKey = null;
         if (taskId) changedTaskIds.push(taskId);

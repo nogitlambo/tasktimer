@@ -541,6 +541,7 @@ body[data-app-page="leaderboard"] #app[aria-label="TaskLaunch App"] .appPages{
     min-height: 56px !important;
     padding: 4px 2px !important;
     gap: 4px !important;
+    opacity: .7 !important;
     background: #0D0F13 !important;
     border-color: transparent !important;
     border-bottom-color: transparent !important;

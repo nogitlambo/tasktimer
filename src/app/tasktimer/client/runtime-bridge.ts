@@ -15,7 +15,7 @@ type HandlePendingPushActionOptions = {
   clearPendingPushAction: () => void;
   startTaskByIndex: (index: number) => void;
   jumpToTaskById: (taskId: string) => void;
-  maybeRestorePendingTimeGoalFlow: () => void;
+  maybeRestorePendingTimeGoalFlow: (restoreContext?: { source?: "push" | "appRestore"; taskId?: string }) => void;
 };
 
 type SubscribeToCheckpointAlertMuteSignalsOptions = {
@@ -100,8 +100,9 @@ export async function maybeHandleTaskTimerPendingPushAction(options: HandlePendi
     return;
   }
   options.jumpToTaskById(taskId);
-  options.maybeRestorePendingTimeGoalFlow();
-  window.setTimeout(() => options.maybeRestorePendingTimeGoalFlow(), 120);
+  const restoreContext = { source: "push" as const, taskId };
+  options.maybeRestorePendingTimeGoalFlow(restoreContext);
+  window.setTimeout(() => options.maybeRestorePendingTimeGoalFlow(restoreContext), 120);
 }
 
 export function broadcastTaskTimerCheckpointAlertMute(taskIdRaw: string) {

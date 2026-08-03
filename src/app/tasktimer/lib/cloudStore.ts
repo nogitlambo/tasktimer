@@ -548,13 +548,16 @@ function sanitizeUserRootFieldsForClientWrite(data: Record<string, unknown> | nu
   }
   if (Number.isInteger(source.rewardTotalXp)) next.rewardTotalXp = source.rewardTotalXp;
   if (Number.isInteger(source.completedTaskCount)) next.completedTaskCount = source.completedTaskCount;
-  if (source.plan === "free" || source.plan === "pro") next.plan = source.plan;
-  if (isTimestampLike(source.planUpdatedAt)) next.planUpdatedAt = source.planUpdatedAt;
   if (isTimestampLike(source.createdAt)) next.createdAt = source.createdAt;
   if (isTimestampLike(source.updatedAt)) next.updatedAt = source.updatedAt;
   if (Number.isInteger(source.schemaVersion)) next.schemaVersion = source.schemaVersion;
 
   return next;
+}
+
+function canRewriteUserRootWithoutMerge(data: Record<string, unknown> | null): boolean {
+  if (!data) return true;
+  return !("plan" in data) && !("planUpdatedAt" in data);
 }
 
 function normalizeUserRootPatchForClientWrite(patch: Record<string, unknown> | null | undefined): Record<string, unknown> {
@@ -745,7 +748,6 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
   const existing = await getDoc(root);
   const existingData = existing.exists() ? (existing.data() as Record<string, unknown>) : null;
   const prevEmail = normalizeEmail(existingData?.email);
-  const existingPlan = normalizeTaskTimerPlan(existingData?.plan);
   const existingCreatedAt = existingData?.createdAt;
   const unsupportedKeys = getUnsupportedUserRootKeys(existingData);
   const sanitizedPatch = normalizeUserRootPatchForClientWrite(options?.patch);
@@ -769,7 +771,6 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
   const payload = {
     ...sanitizeUserRootFieldsForClientWrite(existingData),
     ...sanitizedPatch,
-    plan: existingPlan,
     ...(options?.includeAuthIdentity && authEmail ? { email: authEmail } : {}),
     ...(options?.includeAuthIdentity ? { displayName: authDisplayName } : {}),
     createdAt: isTimestampLike(existingCreatedAt) ? existingCreatedAt : serverTimestamp(),
@@ -784,7 +785,7 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
         unsupportedKeys,
       });
     }
-    if (unsupportedKeys.length) {
+    if (unsupportedKeys.length && canRewriteUserRootWithoutMerge(existingData)) {
       await setDoc(root, payload);
     } else {
       await setDoc(root, payload, { merge: true });

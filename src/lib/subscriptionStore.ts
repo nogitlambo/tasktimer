@@ -2,7 +2,8 @@ import { FieldValue, Timestamp, type Firestore } from "firebase-admin/firestore"
 
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 
-export type SubscriptionPlan = "free" | "pro";
+export type SubscriptionPlan = "free" | "plus" | "plus_lifetime" | "pro";
+export type SubscriptionPlanLike = SubscriptionPlan;
 
 export type UserSubscriptionRecord = {
   stripeCustomerId: string;
@@ -21,7 +22,7 @@ export type RetainedSubscriptionRecord = {
   stripePriceId: string;
   stripeSubscriptionStatus: string;
   currentPeriodEndAt: unknown;
-  plan: "pro";
+  plan: "plus";
   sourceUid: string;
   retainedAt: unknown;
   updatedAt: unknown;
@@ -30,7 +31,7 @@ export type RetainedSubscriptionRecord = {
 
 export type UpsertUserSubscriptionInput = {
   uid: string;
-  plan: SubscriptionPlan;
+  plan: SubscriptionPlanLike;
   customerId?: string;
   subscriptionId?: string;
   priceId?: string;
@@ -53,7 +54,10 @@ function asString(value: unknown) {
 }
 
 function normalizePlan(value: unknown): SubscriptionPlan {
-  return asString(value).toLowerCase() === "pro" ? "pro" : "free";
+  const raw = asString(value).toLowerCase();
+  if (raw === "plus_lifetime") return "plus_lifetime";
+  if (raw === "plus" || raw === "pro") return "plus";
+  return "free";
 }
 
 function normalizeEmailKey(email: unknown) {
@@ -62,11 +66,11 @@ function normalizeEmailKey(email: unknown) {
 
 export function planFromStripeSubscriptionStatus(status: unknown): SubscriptionPlan {
   const activeStatuses = new Set(["trialing", "active", "past_due"]);
-  return activeStatuses.has(asString(status).toLowerCase()) ? "pro" : "free";
+  return activeStatuses.has(asString(status).toLowerCase()) ? "plus" : "free";
 }
 
 export function isActiveSubscriptionStatus(status: unknown) {
-  return planFromStripeSubscriptionStatus(status) === "pro";
+  return planFromStripeSubscriptionStatus(status) !== "free";
 }
 
 function normalizePeriodEnd(value: unknown): unknown {
@@ -121,7 +125,7 @@ export function normalizeRetainedSubscriptionRecord(data: Record<string, unknown
     stripePriceId: asString(data.stripePriceId),
     stripeSubscriptionStatus: asString(data.stripeSubscriptionStatus),
     currentPeriodEndAt: normalizePeriodEnd(data.currentPeriodEndAt),
-    plan: "pro",
+    plan: "plus",
     sourceUid: asString(data.sourceUid),
     retainedAt: data.retainedAt || null,
     updatedAt: data.updatedAt || null,
@@ -180,7 +184,7 @@ export function buildRetainedSubscriptionWriteData(
     schemaVersion: 1,
     email,
     stripeCustomerId: customerId,
-    plan: "pro",
+    plan: "plus",
     retainedAt: existingCreatedAt || FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
     stripeSyncedAt: syncedAt,
@@ -253,6 +257,13 @@ export async function upsertUserSubscriptionAndPlan(input: UpsertUserSubscriptio
   const subscriptionRef = db.collection("userSubscriptions").doc(uid);
   const [userSnap, subscriptionSnap] = await Promise.all([userRef.get(), subscriptionRef.get()]);
 
+  const existingPlan = normalizePlan(userSnap.exists ? userSnap.get("plan") : "free");
+  const requestedPlan = normalizePlan(input.plan);
+  const nextPlan =
+    existingPlan === "plus_lifetime" && requestedPlan !== "plus_lifetime"
+      ? "plus_lifetime"
+      : requestedPlan;
+
   const batch = db.batch();
   batch.set(
     subscriptionRef,
@@ -261,7 +272,7 @@ export async function upsertUserSubscriptionAndPlan(input: UpsertUserSubscriptio
   );
   batch.set(
     userRef,
-    buildUserPlanMirrorWriteData(input, userSnap.exists ? userSnap.get("createdAt") : null),
+    buildUserPlanMirrorWriteData({ ...input, plan: nextPlan }, userSnap.exists ? userSnap.get("createdAt") : null),
     { merge: true }
   );
   await batch.commit();

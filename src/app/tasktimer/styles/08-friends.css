@@ -2493,14 +2493,12 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
-  border: 0 !important;
-  color: #c9ff24 !important;
-  background: transparent !important;
+  width: auto;
+  min-width: 112px;
+  height: auto;
+  min-height: 0;
+  padding: 8px 14px !important;
+  color: #000 !important;
   box-shadow: none !important;
   font-family: var(--font-orbitron), "Segoe UI Variable", "Segoe UI", Arial, sans-serif !important;
   font-size: 11px !important;
@@ -2514,7 +2512,7 @@
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn:hover,
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn:focus-visible,
 #app[aria-label="TaskLaunch App"] #appPageFriends #openFriendRequestModalBtn:active{
-  background: rgba(225,230,236,.16) !important;
+  color: #000 !important;
   transform: none !important;
 }
 
@@ -2522,13 +2520,11 @@
   display: none !important;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageFriends .friendRequestBtnIcon{
-  width: 36px;
-  height: 36px;
-  display: block;
-  object-fit: contain;
+#app[aria-label="TaskLaunch App"] #appPageFriends .friendRequestBtnLabel{
+  color: inherit !important;
+  display: inline-block;
   flex: 0 0 auto;
-  filter: none;
+  white-space: nowrap;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageFriends .dashboardCard:not(.friendSharedTaskCard){

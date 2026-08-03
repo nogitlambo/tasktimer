@@ -30,7 +30,9 @@ function formatMemberSinceDate(value: string | null) {
 }
 
 function formatSubscriptionPlan(plan: SettingsAccountViewModel["authPlan"]) {
-  return plan === "pro" ? "PLUS" : "FREE";
+  if (plan === "plus_lifetime") return "PLUS Lifetime";
+  if (plan === "plus") return "PLUS";
+  return "FREE";
 }
 
 function formatPlanRenewalDate(value: number | null) {
@@ -244,10 +246,12 @@ export function SettingsAccountPane({
                             </button>
                           </>
                         ) : null}
-                        {account.authPlan === "pro" ? (
+                        {account.authPlan === "plus" ? (
                           <>
                             <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
-                            <span>Manage Subscription</span>
+                            <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
+                              Manage Subscription
+                            </button>
                           </>
                         ) : null}
                         <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
@@ -261,7 +265,7 @@ export function SettingsAccountPane({
                         </button>
                       </dd>
                     </div>
-                    {account.authPlan === "pro" ? (
+                    {account.authPlan === "plus" ? (
                       <div className="settingsAccountMetaListItem">
                         <dt className="settingsAccountUidLabel">Renews On</dt>
                         <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>
@@ -296,8 +300,9 @@ export function SettingsAccountPane({
             open={account.showNativePlusUpsellModal}
             busy={account.nativePlusCheckoutBusy}
             error={account.nativePlusCheckoutError}
-            ctaLabel={account.nativePlusCheckoutCtaLabel}
+            selectedOffer={account.nativePlusCheckoutOffer}
             onClose={() => account.setShowNativePlusUpsellModal(false)}
+            onSelectOffer={account.onSelectNativePlusCheckoutOffer}
             onConfirm={account.onStartNativePlusCheckout}
           />
 

@@ -686,6 +686,22 @@ describe("task card view model", () => {
     expect(rendered.html).toContain('data-action="edit"');
   });
 
+  it("renders stale completed runs with a disabled Completed primary action", () => {
+    const rendered = renderCard({
+      isTimeGoalCompleted: true,
+      isStaleRecordedGoalCompleted: true,
+      elapsedMs: 60_000,
+    });
+
+    expect(rendered.className).toBe("task taskCompleted");
+    expect(rendered.html).toContain('data-action="reset" title="Completed" aria-label="Completed" type="button" disabled');
+    expect(rendered.html).toContain("btn btn-done small taskPrimaryAction taskPrimaryActionDone");
+    expect(rendered.html).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
+    expect(rendered.html).not.toContain("taskPrimaryAction taskPrimaryActionReset");
+    expect(rendered.html).not.toContain('<span class="taskPrimaryActionPrimary">Resume</span>');
+    expect(rendered.html).toContain('data-action="edit"');
+  });
+
   it("renders checkpoint labels as compact durations instead of raw decimals", () => {
     const rendered = renderCard({
       sortedMilestones: [{ hours: 1.3333333333333333, description: "Break" }],

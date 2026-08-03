@@ -181,6 +181,12 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToLocalStorage(snapshot);
   }
 
+  async function persistPreferencesToCloudImmediately() {
+    persistPreferencesToCloud();
+    if (!ctx.currentUid()) return;
+    await ctx.flushPendingCloudWrites().catch(() => {});
+  }
+
   function saveModeSettings() {
     syncModeLabelsUi();
   }
@@ -1205,7 +1211,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setAutoFocusOnTaskLaunchEnabledState(!ctx.getAutoFocusOnTaskLaunchEnabled());
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1216,7 +1222,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setTimeGoalCompleteNextTasksEnabledState(!ctx.getTimeGoalCompleteNextTasksEnabled());
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1227,7 +1233,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setDashboardPreviousWeekVisibleState(!ctx.getDashboardPreviousWeekVisible());
         syncTaskSettingsUi();
-        saveDashboardPreviousWeekSetting();
+        void persistPreferencesToCloudImmediately();
         ctx.renderDashboardWidgets();
       },
     });
@@ -1265,7 +1271,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         if (!requireAdvancedTaskConfig("Dynamic colors")) return;
         ctx.setDynamicColorsEnabledState(!ctx.getDynamicColorsEnabled());
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1276,7 +1282,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setFullColorTaskCardsEnabledState(!ctx.getFullColorTaskCardsEnabled());
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1307,7 +1313,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setInteractionClickSoundEnabledState(!ctx.getInteractionClickSoundEnabled());
         syncTaskSettingsUi();
-        saveInteractionClickSoundSetting();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1318,7 +1324,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setAchievementSoundsEnabledState(!ctx.getAchievementSoundsEnabled());
         syncTaskSettingsUi();
-        saveAchievementSoundsSetting();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1330,7 +1336,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         if (!isInteractionHapticsRuntimeAvailable()) return;
         ctx.setInteractionHapticsEnabledState(!ctx.getInteractionHapticsEnabled());
         syncTaskSettingsUi();
-        saveInteractionHapticsSetting();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1344,7 +1350,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         if (!nextValue) ctx.stopCheckpointRepeatAlert();
         if (nextValue) void requestCheckpointAlarmPermissions();
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1358,7 +1364,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
         ctx.setCheckpointAlertVibrationEnabledState(nextValue);
         if (nextValue) void requestCheckpointAlarmPermissions();
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({
@@ -1369,7 +1375,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
       handleToggle: () => {
         ctx.setCheckpointAlertFlashEnabledState(!ctx.getCheckpointAlertFlashEnabled());
         syncTaskSettingsUi();
-        persistInlineTaskSettingsImmediate();
+        void persistPreferencesToCloudImmediately();
       },
     });
     bindToggleRow({

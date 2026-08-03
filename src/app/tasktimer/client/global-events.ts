@@ -48,7 +48,7 @@ type RegisterWindowRuntimeEventsOptions = {
   maybeHandlePendingTaskJump: () => void;
   maybeHandlePendingPushAction: () => void;
   rehydrateFromCloudAndRender: (opts?: { force?: boolean }) => Promise<unknown>;
-  maybeRestorePendingTimeGoalFlow: () => void;
+  maybeRestorePendingTimeGoalFlow: (restoreContext?: { source?: "push" | "appRestore"; taskId?: string }) => void;
   flushPendingCloudWrites: () => Promise<unknown>;
 };
 

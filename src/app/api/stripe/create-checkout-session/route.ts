@@ -2,12 +2,19 @@ import { NextResponse } from "next/server";
 import { getAppBaseUrl, getStripeServer } from "@/lib/stripeServer";
 import { createStripeApiErrorResponse, isStripeApiError } from "@/lib/stripeApiErrors";
 import { loadStripeCustomerIdForUser } from "@/lib/subscriptionStore";
+import type { TaskTimerPaidOffer } from "@/app/tasktimer/lib/entitlements";
 import { createApiAuthErrorResponse, createApiInternalErrorResponse, verifyFirebaseRequestUser } from "../../shared/auth";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 import { ApiRateLimitError, enforceUidRateLimit } from "../../shared/rateLimit";
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function resolveCheckoutOffer(value: unknown): TaskTimerPaidOffer | null {
+  const raw = asString(value).toLowerCase();
+  if (raw === "plus_monthly" || raw === "plus_lifetime") return raw;
+  return null;
 }
 
 function resolveSafeReturnPath(value: unknown, fallbackPath: string) {
@@ -17,7 +24,7 @@ function resolveSafeReturnPath(value: unknown, fallbackPath: string) {
     return fallbackPath;
   }
   const pathOnly = normalized.split("#")[0]?.split("?")[0] || fallbackPath;
-  const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/pricing", "/login"]);
+  const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/login"]);
   return allowedPaths.has(pathOnly.replace(/\/+$/, "") || "/") ? normalized : fallbackPath;
 }
 
@@ -66,9 +73,18 @@ export async function POST(req: Request) {
       message: "Too many checkout attempts recently. Please wait before trying again.",
     });
 
-    const priceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
+    const offer = resolveCheckoutOffer(body.offer) || "plus_monthly";
+    const monthlyPriceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
+    const lifetimePriceId = "price_1U0AvORoafccyHKo1ThKo0cG";
+    const priceId = offer === "plus_lifetime" ? lifetimePriceId : monthlyPriceId;
     if (!priceId) {
-      return withAuthenticatedApiCors(req, NextResponse.json({ error: "Missing STRIPE_PRICE_ID_PRO_MONTHLY." }, { status: 500 }));
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json(
+          { error: offer === "plus_lifetime" ? "Missing PLUS Lifetime price id." : "Missing STRIPE_PRICE_ID_PRO_MONTHLY." },
+          { status: 500 }
+        )
+      );
     }
 
     const stripe = getStripeServer();
@@ -79,7 +95,7 @@ export async function POST(req: Request) {
     const cancelReturnPath = resolveSafeReturnPath(body.cancelReturnPath, returnTarget === "native" ? successReturnPath : "/login");
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: offer === "plus_lifetime" ? "payment" : "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: buildReturnUrl(successReturnPath, returnTarget, appBaseUrl, {
         checkout: "success",
@@ -92,10 +108,14 @@ export async function POST(req: Request) {
       customer_email: existingCustomerId ? undefined : email || undefined,
       client_reference_id: uid,
       allow_promotion_codes: true,
-      subscription_data: {
-        metadata: { uid },
-      },
-      metadata: { uid },
+      ...(offer === "plus_monthly"
+        ? {
+            subscription_data: {
+              metadata: { uid, offer },
+            },
+          }
+        : {}),
+      metadata: { uid, offer },
     });
 
     return withAuthenticatedApiCors(req, NextResponse.json({ url: session.url }));

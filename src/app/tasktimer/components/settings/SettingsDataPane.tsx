@@ -18,7 +18,7 @@ function SettingsDataTileLabel({ icon, label, helper }: { icon: string; label: s
 }
 
 export function SettingsDataPane({ active, exiting = false }: { active: boolean; exiting?: boolean }) {
-  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>(() => readTaskTimerPlanFromStorage());
+  const [currentPlan, setCurrentPlan] = useState<TaskTimerPlan>("free");
 
   useEffect(() => {
     if (typeof window === "undefined") return;

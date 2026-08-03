@@ -65,6 +65,7 @@ describe("runtime bridge push actions", () => {
 
   it("opens default push taps without starting the task", async () => {
     const calls: string[] = [];
+    const restoreCalls: Array<{ source?: string; taskId?: string } | undefined> = [];
     runtimeBridgeMocks.pending = { taskId: "task-1", route: "/tasklaunch", actionId: "default" };
 
     await maybeHandleTaskTimerPendingPushAction({
@@ -72,10 +73,21 @@ describe("runtime bridge push actions", () => {
       clearPendingPushAction: () => calls.push("clear"),
       startTaskByIndex: (index) => calls.push(`start:${index}`),
       jumpToTaskById: (taskId) => calls.push(`jump:${taskId}`),
-      maybeRestorePendingTimeGoalFlow: () => calls.push("restore-flow"),
+      maybeRestorePendingTimeGoalFlow: (restoreContext) => {
+        calls.push("restore-flow");
+        restoreCalls.push(restoreContext);
+      },
     });
 
     expect(calls).toEqual(["clear", "jump:task-1", "restore-flow"]);
+    expect(restoreCalls).toEqual([{ source: "push", taskId: "task-1" }]);
+    const delayedRestore = ((globalThis.window as unknown) as { setTimeout: ReturnType<typeof vi.fn> }).setTimeout.mock.calls[0]?.[0];
+    expect(typeof delayedRestore).toBe("function");
+    if (typeof delayedRestore === "function") delayedRestore();
+    expect(restoreCalls).toEqual([
+      { source: "push", taskId: "task-1" },
+      { source: "push", taskId: "task-1" },
+    ]);
     expect(runtimeBridgeMocks.appliedActions).toEqual([]);
     expect(runtimeBridgeMocks.sourceNotifications).toEqual([]);
   });

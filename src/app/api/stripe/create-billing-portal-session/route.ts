@@ -17,7 +17,7 @@ function resolveSafeReturnPath(value: unknown) {
     return "/account";
   }
   const pathOnly = normalized.split("#")[0]?.split("?")[0] || "/account";
-  const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch", "/pricing"]);
+  const allowedPaths = new Set(["/account", "/settings", "/dashboard", "/tasklaunch"]);
   return allowedPaths.has(pathOnly.replace(/\/+$/, "") || "/") ? normalized : "/account";
 }
 

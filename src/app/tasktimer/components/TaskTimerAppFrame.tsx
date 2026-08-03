@@ -159,6 +159,12 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
   return [
     {
       kind: "link",
+      label: "Profile",
+      href: resolveTaskTimerRouteHref("/account"),
+      iconSrc: "/Settings.svg",
+    },
+    {
+      kind: "link",
       label: "Settings",
       href: resolveTaskTimerRouteHref("/settings"),
       iconSrc: "/icons/icons_default/settings.webp",

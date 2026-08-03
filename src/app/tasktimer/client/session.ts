@@ -6,6 +6,7 @@ import { formatFocusElapsed } from "../lib/tasks";
 import { normalizeCompletionDifficulty } from "../lib/completionDifficulty";
 import {
   hasTaskGoalHistoryEntryForPeriod,
+  hasRecordedTaskGoalCompletion,
   getTaskTimeGoalCompletionResolution,
   getTaskTimeGoalResetBoundaryMs,
   getTimeGoalCompletionElapsedMs as getSharedTimeGoalCompletionElapsedMs,
@@ -89,6 +90,11 @@ type HistoryEntryMutationIdentity = {
   ts?: unknown;
   ms?: unknown;
   name?: unknown;
+};
+
+type TimeGoalRestoreContext = {
+  source?: "push" | "appRestore";
+  taskId?: string;
 };
 
 export function resolveHistoryEntryMutationTarget(
@@ -1287,6 +1293,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     overlay?.classList?.toggle("isClaimDeliveryActive", active);
   }
 
+  function resetTimeGoalCompleteReplayPresentation() {
+    stopTimeGoalCompleteConfetti();
+    stopTimeGoalXpCountAudio();
+    setTimeGoalCompleteClaimDeliveryActive(false);
+    clearTimeGoalCompleteReplayState();
+    clearTimeGoalCompleteXpRevealTimer();
+    if (timeGoalCompleteAudioEndedListener && timeGoalCompleteAudio) {
+      timeGoalCompleteAudio.removeEventListener("ended", timeGoalCompleteAudioEndedListener);
+      timeGoalCompleteAudioEndedListener = null;
+    }
+    if (timeGoalCompleteAudio) {
+      try {
+        if ("pause" in timeGoalCompleteAudio) timeGoalCompleteAudio.pause();
+        timeGoalCompleteAudio.currentTime = 0;
+      } catch {}
+    }
+  }
+
   function holdClaimedTaskPrimaryActionReset(taskIdRaw: unknown) {
     const taskId = String(taskIdRaw || "").trim();
     if (!taskId || typeof window === "undefined") return;
@@ -1415,10 +1439,21 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (normalizedTaskId) delete ctx.getTimeGoalReminderAtMsByTaskId()[normalizedTaskId];
   }
 
-  function persistPendingTimeGoalFlow(task: Task, step: "main", opts?: { reminder?: boolean }) {
+  function normalizeTimeGoalAwardPreview(input: unknown): TimeGoalAwardPreview | undefined {
+    if (!input || typeof input !== "object") return undefined;
+    const preview = input as Record<string, unknown>;
+    const fromXp = Math.max(0, Math.floor(Number(preview.fromXp || 0) || 0));
+    const toXp = Math.max(fromXp, Math.floor(Number(preview.toXp || 0) || 0));
+    const awardedXp = Math.max(0, Math.floor(Number(preview.awardedXp || 0) || 0));
+    if (awardedXp <= 0 && toXp <= fromXp) return undefined;
+    return { fromXp, toXp, awardedXp };
+  }
+
+  function persistPendingTimeGoalFlow(task: Task, step: "main", opts?: { reminder?: boolean; awardPreview?: TimeGoalAwardPreview }) {
     const taskId = String(task?.id || "").trim();
     if (!taskId || typeof window === "undefined") return;
     try {
+      const awardPreview = normalizeTimeGoalAwardPreview(opts?.awardPreview);
       window.localStorage.setItem(
         ctx.storageKeys.TIME_GOAL_PENDING_FLOW_KEY,
         JSON.stringify({
@@ -1426,6 +1461,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           step,
           frozenElapsedMs: Math.max(0, Math.floor(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) || 0)),
           reminder: !!opts?.reminder,
+          ...(awardPreview ? { awardPreview } : {}),
         })
       );
     } catch {
@@ -1434,7 +1470,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
   }
 
   function loadPendingTimeGoalFlow():
-    | { taskId: string; step: "main"; frozenElapsedMs: number; reminder: boolean }
+    | { taskId: string; step: "main"; frozenElapsedMs: number; reminder: boolean; awardPreview?: TimeGoalAwardPreview }
     | null {
     if (typeof window === "undefined") return null;
     try {
@@ -1444,8 +1480,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       const taskId = String(parsed?.taskId || "").trim();
       const frozenElapsedMs = Math.max(0, Math.floor(Number(parsed?.frozenElapsedMs || 0) || 0));
       const reminder = !!parsed?.reminder;
+      const awardPreview = normalizeTimeGoalAwardPreview(parsed?.awardPreview);
       if (!taskId) return null;
-      return { taskId, step: "main", frozenElapsedMs, reminder };
+      return { taskId, step: "main", frozenElapsedMs, reminder, ...(awardPreview ? { awardPreview } : {}) };
     } catch {
       return null;
     }
@@ -1557,7 +1594,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     renderSessionNoteAttachments(els.timeGoalCompleteNoteAttachments as HTMLElement | null, getFocusNoteAttachments(taskId), {
       editorId: "timeGoalCompleteNoteInput",
     });
-    if (!opts?.acknowledgement) persistPendingTimeGoalFlow(task, "main", opts);
+    if (!opts?.acknowledgement) persistPendingTimeGoalFlow(task, "main", { reminder: opts?.reminder, awardPreview });
     ctx.openOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
     if (ctx.getAchievementSoundsEnabled()) playTimeGoalCompleteAudio();
     else revealTimeGoalCompleteXpSubtext();
@@ -1587,6 +1624,7 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
 
     ctx.closeOverlay(els.historyEntryNoteOverlay as HTMLElement | null);
     if (taskId && task) prepareCompletedTaskSurfaceForModal(taskId);
+    resetTimeGoalCompleteReplayPresentation();
     ctx.setTimeGoalModalTaskId(taskId || null);
     ctx.setTimeGoalModalFrozenElapsedMs(0);
     overlay.dataset.taskId = taskId;
@@ -1627,6 +1665,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       });
     }
     return true;
+  }
+
+  function buildReplayRequestForRestoredTimeGoalCompletion(input: {
+    taskId?: string | null;
+    awardPreview?: TimeGoalAwardPreview;
+  }): TimeGoalCompleteXpReplayRequest | null {
+    const taskId = String(input.taskId || "").trim();
+    const awardPreview = normalizeTimeGoalAwardPreview(input.awardPreview);
+    if (!taskId || !awardPreview || awardPreview.awardedXp <= 0) return null;
+    return {
+      taskId,
+      sourceTaskId: taskId,
+      fromXp: awardPreview.fromXp,
+      toXp: awardPreview.toXp,
+      awardedXp: awardPreview.awardedXp,
+      sourceElementKey: "timeGoalCompleteXpValue",
+      sourceRect: captureXpAwardRectSnapshot((els.timeGoalCompleteXpValue as HTMLElement | null) || els.timeGoalCompleteText),
+    };
   }
 
   function prepareCompletedTaskSurfaceForModal(taskIdRaw: string) {
@@ -1689,7 +1745,19 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     return ctx.getTasks().find((task) => isFinalizedGoalCompletionAwaitingAcknowledgement(task)) || null;
   }
 
-  function maybeRestorePendingTimeGoalFlow() {
+  function shouldRestoreTimeGoalCompletionViaReplay(
+    restoreContext: TimeGoalRestoreContext | null | undefined,
+    taskIdRaw: unknown,
+    awardPreview?: TimeGoalAwardPreview
+  ) {
+    const source = String(restoreContext?.source || "").trim();
+    const restoredTaskId = String(taskIdRaw || "").trim();
+    const contextTaskId = String(restoreContext?.taskId || "").trim();
+    const normalizedAwardPreview = normalizeTimeGoalAwardPreview(awardPreview);
+    return source === "push" && !!restoredTaskId && restoredTaskId === contextTaskId && !!normalizedAwardPreview && normalizedAwardPreview.awardedXp > 0;
+  }
+
+  function maybeRestorePendingTimeGoalFlow(restoreContext?: TimeGoalRestoreContext) {
     if (isTimeGoalCompleteReplayActive()) return;
     const pending = loadPendingTimeGoalFlow();
     const tasks = ctx.getTasks();
@@ -1708,8 +1776,16 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         String(ctx.getTimeGoalModalTaskId() || "") !== pending.taskId ||
         !(Number(ctx.getTimeGoalModalFrozenElapsedMs() || 0) > 0)
       ) {
+        if (shouldRestoreTimeGoalCompletionViaReplay(restoreContext, pending.taskId, pending.awardPreview)) {
+          const replayRequest = buildReplayRequestForRestoredTimeGoalCompletion({
+            taskId: pending.taskId,
+            awardPreview: pending.awardPreview,
+          });
+          if (replayRequest && openTimeGoalCompleteXpReplayModal(replayRequest)) return;
+        }
         openTimeGoalCompleteModal(task, pending.frozenElapsedMs || getTaskElapsedMs(task), {
           reminder: pending.reminder,
+          awardPreview: pending.awardPreview,
         });
       }
       return;
@@ -1717,6 +1793,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     if (String(ctx.getTimeGoalModalTaskId() || "").trim()) return;
     const queuedCompletion = findRestorablePendingCompletion();
     if (queuedCompletion) {
+      if (shouldRestoreTimeGoalCompletionViaReplay(restoreContext, queuedCompletion.task.id, queuedCompletion.completion.awardPreview)) {
+        const replayRequest = buildReplayRequestForRestoredTimeGoalCompletion({
+          taskId: queuedCompletion.task.id,
+          awardPreview: queuedCompletion.completion.awardPreview,
+        });
+        if (replayRequest && openTimeGoalCompleteXpReplayModal(replayRequest)) return;
+      }
       openTimeGoalCompleteModal(queuedCompletion.task, queuedCompletion.completion.elapsedMs || getTaskElapsedMs(queuedCompletion.task), {
         acknowledgement: true,
         awardPreview: queuedCompletion.completion.awardPreview,
@@ -2841,8 +2924,9 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
         if (!task) return;
         const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(task.id) === "Reset";
         const isCompletedForCurrentPeriod = isHeldResetPrimaryAction || isTaskTimeGoalLockedForCurrentPeriod(task);
+        const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);
         (node as HTMLElement).classList.toggle("taskRunning", !!task.running);
-        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod);
+        (node as HTMLElement).classList.toggle("taskCompleted", isCompletedForCurrentPeriod || isRecordedGoalCompleted);
         const timeEl = node.querySelector(".time");
         const elapsedMs = getElapsedMs(task);
         if (timeEl) (timeEl as HTMLElement).innerHTML = ctx.formatMainTaskElapsedHtml(elapsedMs, !!task.running);
@@ -2855,12 +2939,17 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
           let primaryActionState: TaskPrimaryActionState = "launch";
           if (isCompletedForCurrentPeriod) {
             primaryActionState = "reset";
+          } else if (isRecordedGoalCompleted) {
+            primaryActionState = "done";
           } else if (task.running) {
             primaryActionState = "stop";
           } else if (elapsedMs > 0) {
             primaryActionState = "resume";
           }
-          const primaryActionModel = getTaskPrimaryActionModel(primaryActionState);
+          const primaryActionModel = getTaskPrimaryActionModel(
+            primaryActionState,
+            primaryActionState === "done" ? { doneTitle: "Completed", doneLabel: "Completed" } : undefined
+          );
           const shouldRefreshPrimaryActionMarkup =
             primaryActionBtn.dataset.action !== primaryActionModel.dataAction ||
             primaryActionBtn.className !== primaryActionModel.className ||

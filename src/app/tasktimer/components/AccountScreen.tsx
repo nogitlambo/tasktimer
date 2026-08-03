@@ -39,7 +39,16 @@ function formatXp(value: number) {
 }
 
 function formatAccountPlan(plan: string) {
-  return plan === "pro" ? "PLUS" : "FREE";
+  if (plan === "plus_lifetime") return "PLUS Lifetime";
+  if (plan === "plus") return "PLUS";
+  return "FREE";
+}
+
+function formatPlanRenewalDate(value: number | null) {
+  if (!value) return "--";
+  const nextDate = new Date(value);
+  if (Number.isNaN(nextDate.getTime())) return "--";
+  return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function getAccountSignOutActionCopy(signOutBusy: boolean) {
@@ -172,9 +181,9 @@ export default function AccountScreen() {
                         )}
                       </span>
                     </button>
-                    <div className="accountProfileIdentity">
-                      {account.authUserAliasEditing ? (
-                        <div className="accountProfileAliasEdit">
+                    {account.authUserAliasEditing ? (
+                      <div className="accountProfileAliasSection">
+                        <div className="accountProfileAliasContent accountProfileAliasEdit">
                           <input
                             className="accountAliasInput accountProfileAliasInput"
                             type="text"
@@ -192,8 +201,11 @@ export default function AccountScreen() {
                             {"\u2715"}
                           </button>
                         </div>
-                      ) : (
-                        <h2>
+                        <div className="accountProfileAliasDivider" aria-hidden="true" />
+                      </div>
+                    ) : (
+                      <div className="accountProfileAliasSection">
+                        <h2 className="accountProfileAliasContent">
                           <button
                             className="accountProfileNameButton"
                             type="button"
@@ -204,34 +216,76 @@ export default function AccountScreen() {
                             {profileName}
                           </button>
                         </h2>
-                      )}
-                      <p className="accountProfileEmail">{account.authUserEmail || "Signed in account"}</p>
-                      {account.authUserUid ? <p className="accountProfileUserId">UserID: {account.authUserUid}</p> : null}
-                      <p className="accountProfileBio">
-                        Member since {formatMemberSinceDate(account.authMemberSince)}.
-                      </p>
-                      <p className="accountProfilePlanRow">
-                        <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
-                          {formatAccountPlan(account.authPlan)}
-                        </span>
-                        <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
-                        {account.authPlan === "pro" ? (
-                          <span>Manage Subscription</span>
-                        ) : (
-                          <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
-                            Upgrade to <strong>PLUS</strong>
-                          </button>
-                        )}
-                        <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
-                        <button
-                          className="accountProfileInlineDeleteAction"
-                          type="button"
-                          onClick={() => account.setShowDeleteAccountConfirm(true)}
-                          disabled={account.authBusy}
-                        >
-                          Delete Account
+                        <div className="accountProfileAliasDivider" aria-hidden="true" />
+                      </div>
+                    )}
+                    <div className="accountProfileIdentity">
+                      <div className="settingsAccountProfileRow accountProfileMetaRows">
+                        <dl className="settingsAccountIdCardMetaList">
+                          <div className="settingsAccountMetaListItem">
+                            <dt className="settingsAccountUidLabel">Member Since</dt>
+                            <dd className="settingsAccountMemberSinceValue">{formatMemberSinceDate(account.authMemberSince)}</dd>
+                          </div>
+                          <div className="settingsAccountMetaListItem">
+                            <dt className="settingsAccountUidLabel">Email Address</dt>
+                            <dd className="settingsAccountEmailValue">{account.authUserEmail || "Signed in account"}</dd>
+                          </div>
+                          {account.authUserUid ? (
+                            <div className="settingsAccountMetaListItem settingsAccountUidListItem">
+                              <dt className="settingsAccountUidLabel">UID</dt>
+                              <dd className="settingsAccountUserIdValue settingsAccountUserIdWithCopy">
+                                <button
+                                  className="settingsUidCopyValueBtn"
+                                  type="button"
+                                  onClick={() => void account.onCopyUid()}
+                                  aria-label={account.uidCopyStatus || "Copy UID"}
+                                  title={account.uidCopyStatus || "Copy UID"}
+                                >
+                                  {account.authUserUid}
+                                </button>
+                              </dd>
+                            </div>
+                          ) : null}
+                          <div className="settingsAccountMetaListItem">
+                            <dt className="settingsAccountUidLabel">Plan</dt>
+                            <dd className="settingsAccountMemberSinceValue accountProfilePlanRow">
+                              <span className={`settingsAccountPlanPill settingsAccountPlanPill-${account.authPlan}`}>
+                                {formatAccountPlan(account.authPlan)}
+                              </span>
+                              {account.authPlan === "plus" ? (
+                                <>
+                                  <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                                  <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
+                                    Manage Subscription
+                                  </button>
+                                </>
+                              ) : null}
+                              {account.authPlan === "free" ? (
+                                <>
+                                  <span className="settingsAccountPlanPipe" aria-hidden="true">|</span>
+                                  <button className="settingsAccountUpgradeLink" type="button" onClick={() => void account.onOpenPlanAction()}>
+                                    Upgrade to <strong>PLUS</strong>
+                                  </button>
+                                </>
+                              ) : null}
+                            </dd>
+                          </div>
+                          {account.authPlan === "plus" ? (
+                            <div className="settingsAccountMetaListItem">
+                              <dt className="settingsAccountUidLabel">Renews On</dt>
+                              <dd className="settingsAccountMemberSinceValue">{formatPlanRenewalDate(account.authPlanRenewalAtMs)}</dd>
+                            </div>
+                          ) : null}
+                        </dl>
+                      </div>
+                      <div className="accountProfileActions" role="list" aria-label="Account actions">
+                        <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
+                          <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
+                          <span>
+                            <strong>Delete Account</strong>
+                          </span>
                         </button>
-                      </p>
+                      </div>
                     </div>
                   </div>
 
@@ -255,15 +309,6 @@ export default function AccountScreen() {
                         size={44}
                       />
                       <span>Badge</span>
-                    </button>
-                  </div>
-
-                  <div className="accountProfileActions" role="list" aria-label="Account actions">
-                    <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
-                      <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
-                      <span>
-                        <strong>Delete Account</strong>
-                      </span>
                     </button>
                   </div>
 
@@ -292,8 +337,9 @@ export default function AccountScreen() {
                   open={account.showNativePlusUpsellModal}
                   busy={account.nativePlusCheckoutBusy}
                   error={account.nativePlusCheckoutError}
-                  ctaLabel={account.nativePlusCheckoutCtaLabel}
+                  selectedOffer={account.nativePlusCheckoutOffer}
                   onClose={() => account.setShowNativePlusUpsellModal(false)}
+                  onSelectOffer={account.onSelectNativePlusCheckoutOffer}
                   onConfirm={account.onStartNativePlusCheckout}
                 />
               </div>

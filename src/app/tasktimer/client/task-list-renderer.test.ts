@@ -156,7 +156,9 @@ describe("task list renderer", () => {
 
     expect(source).toContain('import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";');
     expect(source).toContain('const isHeldResetPrimaryAction = getXpAwardButtonLabelOverride(taskId) === "Reset";');
-    expect(source).toContain("isTimeGoalCompleted: isHeldResetPrimaryAction || isTaskTimeGoalStartLockedForPeriod(");
+    expect(source).toContain("const isRecordedGoalCompleted = hasRecordedTaskGoalCompletion(task);");
+    expect(source).toContain("const isCompletedForCurrentPeriod = isTaskTimeGoalStartLockedForPeriod(task, Date.now(), options.getWeekStarting?.() || \"mon\");");
+    expect(source).toContain("isStaleRecordedGoalCompleted: isRecordedGoalCompleted && !isCompletedForCurrentPeriod,");
     expect(source).toContain("applyXpAwardButtonLabelOverride(taskEl, taskId);");
   });
 
@@ -478,5 +480,42 @@ describe("task list renderer", () => {
     expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Reset"');
     expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionReset");
     expect(renderedTask?.innerHTML).not.toContain("Done until tomorrow");
+  });
+
+  it("renders an August 1, 2026 completed goal task as Completed on Sunday, August 2, 2026", () => {
+    const completedAtMs = new Date(2026, 7, 1, 21, 0, 0).getTime();
+    const originalDateNow = Date.now;
+    Date.now = () => new Date(2026, 7, 2, 8, 0, 0).getTime();
+
+    try {
+      const harness = createHarness({
+        tasks: [
+          task({
+            id: "task-1",
+            name: "Focus",
+            accumulatedMs: 60 * 60 * 1000,
+            hasStarted: true,
+            timeGoalEnabled: true,
+            timeGoalPeriod: "day",
+            timeGoalMinutes: 60,
+            timeGoalCompletedDayKey: "2026-08-01",
+            timeGoalCompletedAtMs: completedAtMs,
+            timeGoalCompletedReason: "goal",
+            timeGoalCompletedElapsedMs: 60 * 60 * 1000,
+          }),
+        ],
+      });
+
+      harness.renderer.renderTasksPage();
+
+      const renderedTask = harness.taskListEl.children[0];
+      expect(renderedTask?.className).toContain("taskCompleted");
+      expect(renderedTask?.innerHTML).toContain('data-action="reset" title="Completed" aria-label="Completed" type="button" disabled');
+      expect(renderedTask?.innerHTML).toContain("taskPrimaryAction taskPrimaryActionDone");
+      expect(renderedTask?.innerHTML).toContain('<span class="taskPrimaryActionPrimary">Completed</span>');
+      expect(renderedTask?.innerHTML).not.toContain('data-action="start" title="Resume"');
+    } finally {
+      Date.now = originalDateNow;
+    }
   });
 });

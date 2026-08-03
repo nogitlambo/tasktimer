@@ -2,13 +2,15 @@ import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 
 const TASKTIMER_STORAGE_KEY = "taskticker_tasks_v1";
 
-export type TaskTimerPlan = "free" | "pro";
+export type TaskTimerPlan = "free" | "plus" | "plus_lifetime" | "pro";
+export type TaskTimerPlanLike = TaskTimerPlan;
 export type TaskTimerEntitlement =
   | "advancedHistory"
   | "advancedInsights"
   | "advancedTaskConfig"
   | "advancedBackup"
   | "socialFeatures";
+export type TaskTimerPaidOffer = "plus_monthly" | "plus_lifetime";
 
 export const TASKTIMER_PLAN_STORAGE_KEY = `${TASKTIMER_STORAGE_KEY}:plan`;
 export const TASKTIMER_PLAN_CHANGED_EVENT = "tasktimer:plan-changed";
@@ -26,7 +28,14 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
     advancedBackup: false,
     socialFeatures: true,
   },
-  pro: {
+  plus: {
+    advancedHistory: true,
+    advancedInsights: true,
+    advancedTaskConfig: true,
+    advancedBackup: true,
+    socialFeatures: true,
+  },
+  plus_lifetime: {
     advancedHistory: true,
     advancedInsights: true,
     advancedTaskConfig: true,
@@ -37,14 +46,15 @@ const PLAN_ENTITLEMENTS: Record<TaskTimerPlan, Record<TaskTimerEntitlement, bool
 
 export function normalizeTaskTimerPlan(value: unknown): TaskTimerPlan {
   const raw = String(value || "").trim().toLowerCase();
-  if (raw === "pro") return raw;
+  if (raw === "pro" || raw === "plus") return "plus";
+  if (raw === "plus_lifetime") return "plus_lifetime";
   return "free";
 }
 
 export function getEffectiveTaskTimerPlan(plan: TaskTimerPlan): TaskTimerPlan {
   // Temporary testing-only override: treat Free users as Pro across the app surface.
   // Remove after QA when real plan gating should apply again.
-  return plan === "pro" ? "pro" : "pro";
+  return plan === "free" ? "plus" : plan;
 }
 
 export function getTaskTimerEntitlements(plan: TaskTimerPlan) {
@@ -86,7 +96,7 @@ export function readTaskTimerPlanFromStorage(): TaskTimerPlan {
   return getEffectiveTaskTimerPlan(cached.plan);
 }
 
-export function writeTaskTimerPlanToStorage(plan: TaskTimerPlan, opts?: { uid?: string | null }) {
+export function writeTaskTimerPlanToStorage(plan: TaskTimerPlanLike, opts?: { uid?: string | null }) {
   if (typeof window === "undefined") return;
   const normalizedPlan = normalizeTaskTimerPlan(plan);
   const normalizedUid =

@@ -4,6 +4,7 @@ import Link from "next/link";
 import AppImg from "../components/AppImg";
 import { useEffect, useRef, useState } from "react";
 import type { LandingProps } from "./landing.types";
+import PricingSection from "./pricing/PricingSection";
 
 const getStartedHref = "/login";
 const rocketVideoFadeOutMs = 1200;
@@ -433,6 +434,8 @@ export default function Landing(props: LandingProps) {
             </Link>
           </div>
         </section>
+
+        {showLowerSections ? <PricingSection mode="landing" /> : null}
 
         <footer className="landingV2Footer">
           <Link href="/" className="landingV2FooterBrand displayFont" aria-label="TaskLaunch home">

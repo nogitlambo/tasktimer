@@ -48,6 +48,11 @@ type TaskPrimaryActionModel = {
   innerHtml: string;
 };
 
+type TaskPrimaryActionOptions = {
+  doneTitle?: string;
+  doneLabel?: string;
+};
+
 type RenderTaskCardOptions = {
   task: Task;
   taskId: string;
@@ -68,6 +73,7 @@ type RenderTaskCardOptions = {
   hasFriends: boolean;
   isSharedByOwner: boolean;
   isTimeGoalCompleted: boolean;
+  isStaleRecordedGoalCompleted?: boolean;
   hasTaskHistory: boolean;
   dynamicColorsEnabled: boolean;
   fullColorTaskCardsEnabled: boolean;
@@ -100,18 +106,19 @@ function renderTaskBackActionTile(label: string, escapeHtml: (value: string) => 
   return `<span class="taskMenuTile">${iconHtml}<span class="taskMenuTileLabel">${escapeHtml(trimmedLabel)}</span></span>`;
 }
 
-function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState) {
+function renderTaskPrimaryActionLabelHtml(state: TaskPrimaryActionState, opts?: TaskPrimaryActionOptions) {
   const labels: Record<TaskPrimaryActionState, string> = {
     launch: "Launch",
     resume: "Resume",
     stop: "Stop",
     reset: "Reset",
-    done: "Reset",
+    done: "Done",
   };
-  return `<span class="taskPrimaryActionText"><span class="taskPrimaryActionPrimary">${labels[state]}</span></span>`;
+  const label = state === "done" ? opts?.doneLabel || labels[state] : labels[state];
+  return `<span class="taskPrimaryActionText"><span class="taskPrimaryActionPrimary">${label}</span></span>`;
 }
 
-export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: { doneTitle?: string }): TaskPrimaryActionModel {
+export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: TaskPrimaryActionOptions): TaskPrimaryActionModel {
   const title =
     state === "done" ? opts?.doneTitle || "Done until tomorrow" : state === "reset" ? "Reset" : state === "resume" ? "Resume" : state === "stop" ? "Stop" : "Launch";
   const stateClass = state[0].toUpperCase() + state.slice(1);
@@ -126,17 +133,18 @@ export function getTaskPrimaryActionModel(state: TaskPrimaryActionState, opts?: 
 
   return {
     className: `${baseClass} taskPrimaryAction taskPrimaryAction${stateClass}`,
-    dataAction: state === "stop" ? "stop" : state === "reset" ? "reset" : "start",
+    dataAction: state === "stop" ? "stop" : state === "reset" || state === "done" ? "reset" : "start",
     title,
     ariaLabel: title,
     disabled: state === "done",
     innerHtml: `<span class="taskPrimaryActionRing" aria-hidden="true"></span><span class="taskPrimaryActionFace"><span class="taskPrimaryActionLabel">${renderTaskPrimaryActionLabelHtml(
-      state
+      state,
+      opts
     )}</span></span>`,
   };
 }
 
-export function renderTaskPrimaryActionHtml(state: TaskPrimaryActionState, opts?: { doneTitle?: string }) {
+export function renderTaskPrimaryActionHtml(state: TaskPrimaryActionState, opts?: TaskPrimaryActionOptions) {
   const model = getTaskPrimaryActionModel(state, opts);
   return `<button class="${model.className}" data-action="${model.dataAction}" title="${model.title}" aria-label="${model.ariaLabel}" type="button" ${
     model.disabled ? "disabled" : ""
@@ -223,18 +231,20 @@ function renderTaskPrimaryActionWithRewindHtml({
   elapsedMs,
   sortedMilestones,
   milestoneUnitSec,
+  actionOptions,
 }: {
   state: TaskPrimaryActionState;
   elapsedMs: number;
   sortedMilestones: Milestone[];
   milestoneUnitSec: number;
+  actionOptions?: TaskPrimaryActionOptions;
 }) {
-  if (state !== "resume") return renderTaskPrimaryActionHtml(state);
+  if (state !== "resume") return renderTaskPrimaryActionHtml(state, actionOptions);
   const previousTargetMs = getPreviousRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec });
   const nextTargetMs = isElapsedAtRenderedCheckpoint({ elapsedMs, sortedMilestones, milestoneUnitSec })
     ? getNextRenderedCheckpointTargetMs({ elapsedMs, sortedMilestones, milestoneUnitSec })
     : null;
-  if (previousTargetMs == null && nextTargetMs == null) return renderTaskPrimaryActionHtml(state);
+  if (previousTargetMs == null && nextTargetMs == null) return renderTaskPrimaryActionHtml(state, actionOptions);
   const previousButtonHtml =
     previousTargetMs == null
       ? ""
@@ -246,7 +256,7 @@ function renderTaskPrimaryActionWithRewindHtml({
   return `
                   <div class="taskCheckpointRewindGroup isCheckpointRewindOpen">
                     ${previousButtonHtml}
-                    ${renderTaskPrimaryActionHtml(state)}
+                    ${renderTaskPrimaryActionHtml(state, actionOptions)}
                     ${nextButtonHtml}
                   </div>`;
 }
@@ -445,6 +455,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     hasFriends,
     isSharedByOwner,
     isTimeGoalCompleted,
+    isStaleRecordedGoalCompleted,
     hasTaskHistory,
     dynamicColorsEnabled,
     fullColorTaskCardsEnabled,
@@ -496,7 +507,9 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
       })
     : "";
   const primaryActionState: TaskPrimaryActionState = isTimeGoalCompleted
-    ? "reset"
+    ? isStaleRecordedGoalCompleted
+      ? "done"
+      : "reset"
     : task.running
       ? "stop"
       : elapsedMs > 0
@@ -507,6 +520,7 @@ export function renderTaskCardHtml(options: RenderTaskCardOptions): RenderedTask
     elapsedMs,
     sortedMilestones,
     milestoneUnitSec,
+    actionOptions: primaryActionState === "done" ? { doneTitle: "Completed", doneLabel: "Completed" } : undefined,
   });
   const hasResettableTime = elapsedMs > 0;
   const resetLabel = task.running

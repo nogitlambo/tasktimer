@@ -49,7 +49,11 @@ vi.mock("@/lib/firebaseClient", () => ({
   getFirebaseAuthClient: vi.fn(() => ({ currentUser: null })),
 }));
 
-const { buildDefaultUserPreferences, loadPreferences, loadUserWorkspace, savePreferences, saveTask } = await import("./cloudStore");
+vi.mock("./leaderboard", () => ({
+  patchLeaderboardProfileFromUserRoot: vi.fn(async () => undefined),
+}));
+
+const { buildDefaultUserPreferences, loadPreferences, loadUserWorkspace, savePreferences, saveTask, saveUserRootPatch } = await import("./cloudStore");
 
 function findSetDocWrite(path: string): Record<string, unknown> | undefined {
   const calls = firestoreMocks.setDoc.mock.calls as unknown as Array<[{ path: string }, Record<string, unknown>, unknown?]>;
@@ -267,5 +271,51 @@ describe("saveTask Firestore planned start payloads", () => {
         updatedAtMs: 123,
       })
     );
+  });
+});
+
+describe("saveUserRootPatch plan-safe writes", () => {
+  beforeEach(() => {
+    firestoreMocks.setDoc.mockClear();
+    firestoreMocks.getDoc.mockReset();
+    firestoreMocks.getDoc.mockResolvedValue({
+      exists: () => false,
+      data: () => undefined,
+      get: () => undefined,
+    });
+  });
+
+  it("does not rewrite server-managed plan fields during client account saves", async () => {
+    firestoreMocks.getDoc.mockImplementation(async (ref?: { path?: string }) => ({
+      exists: () => ref?.path === "users/user-1",
+      data: () => (ref?.path === "users/user-1" ? {
+        plan: "plus",
+        planUpdatedAt: { toMillis: () => 123 },
+        schemaVersion: 1,
+      } : undefined),
+      get: (key?: string) => {
+        if (ref?.path !== "users/user-1" || !key) return undefined;
+        const data = {
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          schemaVersion: 1,
+        } satisfies Record<string, unknown>;
+        return data[key];
+      },
+    }));
+
+    await saveUserRootPatch("user-1", { avatarId: "avatar-1" });
+
+    expect(firestoreMocks.setDoc).toHaveBeenCalledWith(
+      { path: "users/user-1" },
+      expect.objectContaining({
+        avatarId: "avatar-1",
+        schemaVersion: 1,
+      }),
+      { merge: true }
+    );
+    const rootWrite = findSetDocWrite("users/user-1");
+    expect(rootWrite).not.toHaveProperty("plan");
+    expect(rootWrite).not.toHaveProperty("planUpdatedAt");
   });
 });

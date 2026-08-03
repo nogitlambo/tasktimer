@@ -48,6 +48,13 @@ export function isTaskTimeGoalStartLockedForPeriod(
   return isTaskTimeGoalCompletedForPeriod(task, nowValue, weekStarting) && task?.timeGoalCompletedReason !== "reset";
 }
 
+export function hasRecordedTaskGoalCompletion(task: Task | null | undefined): boolean {
+  if (!task || task.timeGoalCompletedReason !== "goal") return false;
+  const completedAtMs = Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0));
+  if (!(completedAtMs > 0)) return false;
+  return String(task.timeGoalCompletedDayKey || "").trim() === getTimeGoalCompletionDayKey(completedAtMs);
+}
+
 export function getTaskTimeGoalResetBoundaryMs(
   task: Task | null | undefined,
   nowValue = Date.now(),

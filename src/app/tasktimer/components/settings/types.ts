@@ -1,6 +1,6 @@
 import type { AvatarOption } from "@/app/tasktimer/lib/avatarCatalog";
 import type { RewardProgressV1 } from "@/app/tasktimer/lib/rewards";
-import type { TaskTimerPlan } from "@/app/tasktimer/lib/entitlements";
+import type { TaskTimerPaidOffer, TaskTimerPlan } from "@/app/tasktimer/lib/entitlements";
 
 export type SettingsPaneKey =
   | "general"
@@ -63,7 +63,7 @@ export type SettingsAccountViewModel = {
   showNativePlusUpsellModal: boolean;
   nativePlusCheckoutBusy: boolean;
   nativePlusCheckoutError: string;
-  nativePlusCheckoutCtaLabel: string;
+  nativePlusCheckoutOffer: TaskTimerPaidOffer;
   setShowDeleteAccountConfirm: (open: boolean) => void;
   setShowNativePlusUpsellModal: (open: boolean) => void;
   onDeleteAccount: () => Promise<void>;
@@ -73,7 +73,8 @@ export type SettingsAccountViewModel = {
   onSaveAlias: () => Promise<void>;
   onAliasDraftChange: (value: string) => void;
   onOpenPlanAction: () => Promise<void>;
-  onStartNativePlusCheckout: () => Promise<void>;
+  onStartNativePlusCheckout: (offer: TaskTimerPaidOffer) => Promise<void>;
+  onSelectNativePlusCheckoutOffer: (offer: TaskTimerPaidOffer) => void;
 };
 
 export type SettingsAvatarViewModel = {
