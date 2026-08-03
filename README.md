@@ -44,9 +44,11 @@ Local development should stay on Stripe test mode.
   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...`
   - `STRIPE_WEBHOOK_SECRET=whsec_...`
   - `STRIPE_PRICE_ID_PRO_MONTHLY=price_...`
+  - `STRIPE_PRICE_ID_PLUS_LIFETIME=price_...`
 - Production must use live values for:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_PRICE_ID_PRO_MONTHLY`
+  - `STRIPE_PRICE_ID_PLUS_LIFETIME`
   - `STRIPE_WEBHOOK_SECRET`
   - `NEXT_PUBLIC_APP_URL`
 - The deployed Stripe webhook endpoint must include the trailing slash:

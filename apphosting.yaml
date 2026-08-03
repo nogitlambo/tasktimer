@@ -71,6 +71,11 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: STRIPE_PRICE_ID_PLUS_LIFETIME
+    value: "price_1U0AvORoafccyHKo1ThKo0cG"
+    availability:
+      - BUILD
+      - RUNTIME
   - variable: JIRA_BASE_URL
     value: "https://aniven82.atlassian.net/"
     availability:

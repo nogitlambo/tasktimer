@@ -75,13 +75,16 @@ export async function POST(req: Request) {
 
     const offer = resolveCheckoutOffer(body.offer) || "plus_monthly";
     const monthlyPriceId = asString(process.env.STRIPE_PRICE_ID_PRO_MONTHLY);
-    const lifetimePriceId = "price_1U0AvORoafccyHKo1ThKo0cG";
+    const lifetimePriceId = asString(process.env.STRIPE_PRICE_ID_PLUS_LIFETIME);
     const priceId = offer === "plus_lifetime" ? lifetimePriceId : monthlyPriceId;
     if (!priceId) {
       return withAuthenticatedApiCors(
         req,
         NextResponse.json(
-          { error: offer === "plus_lifetime" ? "Missing PLUS Lifetime price id." : "Missing STRIPE_PRICE_ID_PRO_MONTHLY." },
+          {
+            error:
+              offer === "plus_lifetime" ? "Missing STRIPE_PRICE_ID_PLUS_LIFETIME." : "Missing STRIPE_PRICE_ID_PRO_MONTHLY.",
+          },
           { status: 500 }
         )
       );

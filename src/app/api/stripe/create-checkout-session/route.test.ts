@@ -46,6 +46,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.STRIPE_PRICE_ID_PRO_MONTHLY = "price_live_no_trial";
+    process.env.STRIPE_PRICE_ID_PLUS_LIFETIME = "price_live_plus_lifetime";
     checkoutSessionsCreate.mockResolvedValue({ url: "https://checkout.stripe.com/session" });
   });
 
@@ -73,7 +74,7 @@ describe("POST /api/stripe/create-checkout-session", () => {
     expect(checkoutSessionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "payment",
-        line_items: [{ price: "price_1U0AvORoafccyHKo1ThKo0cG", quantity: 1 }],
+        line_items: [{ price: "price_live_plus_lifetime", quantity: 1 }],
         metadata: { uid: "uid-123", offer: "plus_lifetime" },
       })
     );
