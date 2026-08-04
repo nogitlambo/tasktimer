@@ -16,10 +16,7 @@ import {
   stopRankPromotionCelebration,
   type RankPromotion,
 } from "../client/rank-promotion";
-import { playDeleteAlertAudio } from "../client/delete-alert-audio";
-import { DeleteAccountConfirmActions } from "./settings/DeleteAccountConfirmActions";
 import { InlineConfirmModal } from "./settings/InlineConfirmModal";
-import SignOutConfirmModal from "./SignOutConfirmModal";
 import { useAchievementSoundsEnabled } from "./settings/useAchievementSoundsEnabled";
 import { useSettingsAccountState } from "./settings/useSettingsAccountState";
 import { useSettingsAvatarState } from "./settings/useSettingsAvatarState";
@@ -50,10 +47,11 @@ function formatPlanRenewalDate(value: number | null) {
   return nextDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export function getAccountSignOutActionCopy(signOutBusy: boolean) {
-  return {
-    label: signOutBusy ? "Signing Out" : "Sign Out",
-  };
+function formatSyncTime(value: number | null) {
+  if (!value) return "";
+  const nextDate = new Date(value);
+  if (Number.isNaN(nextDate.getTime())) return "";
+  return nextDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 export function getAccountSyncActionCopy(syncBusy: boolean) {
@@ -78,13 +76,7 @@ export default function AccountScreen() {
   });
   const rewardsHeader = useMemo(() => buildRewardsHeaderViewModel(avatar.rewardProgress), [avatar.rewardProgress]);
   const avatarUploadInputRef = useRef<HTMLInputElement | null>(null);
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [activeRankPromotion, setActiveRankPromotion] = useState<RankPromotion | null>(null);
-
-  useEffect(() => {
-    if (!account.showDeleteAccountConfirm) return;
-    playDeleteAlertAudio(undefined, { repeatCount: 3 });
-  }, [account.showDeleteAccountConfirm]);
 
   const openRankLadderWithDropdownAudio = useCallback(() => {
     avatar.setShowRankLadderModal(true);
@@ -141,6 +133,16 @@ export default function AccountScreen() {
   }, [router]);
 
   const profileName = account.authUserAlias || account.authUserEmail?.split("@")[0] || "TaskLaunch User";
+  const syncTime = formatSyncTime(account.syncAtMs);
+  const syncLabel = account.syncBusy
+    ? "Syncing..."
+    : account.syncState === "synced" && syncTime
+      ? `Synced at ${syncTime}`
+      : "Sync";
+  const syncDisabled =
+    account.syncBusy ||
+    account.syncState === "synced" ||
+    account.syncCooldownUntilMs > 0;
 
   return (
     <div className="wrap" id="app" aria-label="TaskLaunch Account">
@@ -273,28 +275,12 @@ export default function AccountScreen() {
                           className="accountProfileAction"
                           type="button"
                           onClick={() => void account.onSyncNow()}
-                          disabled={account.syncBusy || account.signOutBusy}
+                          disabled={syncDisabled}
                         >
                           <AppImg src="/icons/icons_default/refresh.webp" alt="" aria-hidden="true" />
                           <span>
-                            <strong>{getAccountSyncActionCopy(account.syncBusy).label}</strong>
-                          </span>
-                        </button>
-                        <button
-                          className="accountProfileAction"
-                          type="button"
-                          onClick={() => setShowSignOutConfirm(true)}
-                          disabled={account.syncBusy || account.signOutBusy}
-                        >
-                          <AppImg src="/icons/icons_default/signout.webp" alt="" aria-hidden="true" />
-                          <span>
-                            <strong>{getAccountSignOutActionCopy(account.signOutBusy).label}</strong>
-                          </span>
-                        </button>
-                        <button className="accountProfileAction accountProfileActionDanger" type="button" onClick={() => account.setShowDeleteAccountConfirm(true)} disabled={account.authBusy}>
-                          <AppImg src="/icons/icons_default/trash.webp" alt="" aria-hidden="true" />
-                          <span>
-                            <strong>Delete Account</strong>
+                            <strong>{syncLabel}</strong>
+                            <small>{account.syncMessage}</small>
                           </span>
                         </button>
                       </div>
@@ -330,7 +316,6 @@ export default function AccountScreen() {
                     {avatar.avatarSyncNotice ? (
                       <div className={avatar.avatarSyncNoticeIsError ? "accountAuthError" : "accountAuthNotice"}>{avatar.avatarSyncNotice}</div>
                     ) : null}
-                    {account.signOutError ? <div className="accountAuthError">{account.signOutError}</div> : null}
                   </div>
 
                 </section>
@@ -364,41 +349,6 @@ export default function AccountScreen() {
           </div>
         </div>
       </div>
-      <InlineConfirmModal
-        open={account.showDeleteAccountConfirm}
-        onClose={() => {
-          if (!account.authBusy) account.setShowDeleteAccountConfirm(false);
-        }}
-        ariaLabel="Delete Account"
-        title="Delete Account"
-        overlayClassName="standardModalOverlay accountInlineConfirmOverlay deleteAccountConfirmOverlay"
-        modalClassName="accountInlineConfirmModal deleteAccountConfirmModal"
-        titleClassName="accountInlineConfirmTitle"
-        portalToBody
-        titleIcon={
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12 3.4 21.1 20H2.9L12 3.4Z" />
-            <path d="M12 8.6v5.8" />
-            <path d="M12 17.4h.01" />
-          </svg>
-        }
-      >
-        <p className="accountInlineConfirmText">Delete your sign-in account and all related data? This action is permanent and cannot be undone.</p>
-        <DeleteAccountConfirmActions
-          className="footerBtns accountInlineConfirmBtns"
-          authBusy={account.authBusy}
-          onCancel={() => account.setShowDeleteAccountConfirm(false)}
-          onDelete={() => void account.onDeleteAccount()}
-        />
-      </InlineConfirmModal>
-
-      <SignOutConfirmModal
-        open={showSignOutConfirm}
-        busy={account.signOutBusy}
-        onCancel={() => setShowSignOutConfirm(false)}
-        onConfirm={() => void account.onSignOut()}
-      />
-
       <InlineConfirmModal
         open={avatar.showAvatarPickerModal}
         onClose={() => avatar.setShowAvatarPickerModal(false)}

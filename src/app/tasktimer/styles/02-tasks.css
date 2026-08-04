@@ -1668,6 +1668,15 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   color:#ff4d4d;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete[data-action="delete"] .taskMenuTile{
+  border-color:rgba(255,77,77,.78);
+  box-shadow:inset 0 0 0 1px rgba(255,77,77,.22);
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete[data-action="delete"] .taskMenuTileIcon{
+  filter:brightness(0) saturate(100%) invert(43%) sepia(73%) saturate(3061%) hue-rotate(335deg) brightness(107%) contrast(101%);
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .task .taskBackActions .taskMenuItemDelete[data-action="archive"] .taskMenuTile{
   color:#fff;
 }

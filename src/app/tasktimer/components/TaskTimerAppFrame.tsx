@@ -161,7 +161,7 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       kind: "link",
       label: "Profile",
       href: resolveTaskTimerRouteHref("/account"),
-      iconSrc: "/Settings.svg",
+      iconSrc: "/icons/icons_default/account.webp",
     },
     {
       kind: "link",
@@ -173,7 +173,7 @@ export function getTaskLaunchMobileMenuItems(): TaskLaunchMobileMenuItem[] {
       kind: "link",
       label: "User Guide",
       href: resolveTaskTimerRouteHref("/user-guide"),
-      iconSrc: "/User_Guide.svg",
+      iconSrc: "/icons/icons_default/question.webp",
     },
     {
       kind: "action",
@@ -552,6 +552,7 @@ export default function TaskTimerAppFrame({
                   role="menuitem"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <AppImg className="taskLaunchMobileMenuItemIcon" src={item.iconSrc} alt="" aria-hidden="true" />
                   <span className="taskLaunchMobileMenuItemText">{item.label}</span>
                 </a>
               ) : (
@@ -562,6 +563,7 @@ export default function TaskTimerAppFrame({
                   role="menuitem"
                   onClick={handleMobileMenuSignOut}
                 >
+                  <AppImg className="taskLaunchMobileMenuItemIcon" src={item.iconSrc} alt="" aria-hidden="true" />
                   <span className="taskLaunchMobileMenuItemText">{item.label}</span>
                 </button>
               )

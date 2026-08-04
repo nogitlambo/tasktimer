@@ -709,6 +709,21 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
     });
   }
 
+  function openSessionNoteFromTile(tile: HTMLElement | null) {
+    if (!tile) return false;
+    const taskId = String(tile.getAttribute("data-session-note-task-id") || "").trim();
+    const ts = Math.floor(Number(tile.getAttribute("data-session-note-ts") || 0));
+    if (!taskId || !ts) return false;
+
+    const historyEntry = getHistoryForTask(taskId).find((entry: any) => historyTsMs(entry) === ts);
+    const liveSession = ctx.getLiveSessionsByTaskId()?.[taskId];
+    const liveTs = Math.floor(Number(liveSession?.startedAtMs || liveSession?.updatedAtMs || 0));
+    const entry: any = historyEntry || (liveSession && liveTs === ts ? { ...liveSession, taskId, isLiveSession: true } : null);
+    if (!entry) return false;
+    openHistoryEntryNoteOverlay(taskId, [{ ...entry, taskId, historyMutationAllowed: !entry.isLiveSession }]);
+    return true;
+  }
+
   function saveHistoryEntryOverlayNote() {
     const overlay = els.historyEntryNoteOverlay as HTMLElement | null;
     if (!overlay || overlay.dataset.historyEntryOwner !== "inline" || overlay.dataset.historyEntryEditable !== "true") return;
@@ -1693,6 +1708,12 @@ export function createTaskTimerHistoryInline(ctx: TaskTimerHistoryInlineContext)
       { capture: true }
     );
     ctx.on(document, "click", (e: any) => {
+      const noteTile = findDelegatedElement(e.target, '[data-session-note-open="true"]') as HTMLElement | null;
+      if (noteTile) {
+        e.preventDefault();
+        openSessionNoteFromTile(noteTile);
+        return;
+      }
       const xpReplayTarget = findDelegatedElement(
         e.target,
         '[data-history-summary-action="trigger-xp-award"]'

@@ -97,7 +97,6 @@ type CreateTaskTimerPersistenceOptions = {
   loadOptimalProductivityDaysPreference: () => void;
   loadDashboardWidgetState: () => void;
   loadThemePreference: () => void;
-  loadMenuButtonStylePreference: () => void;
   syncTaskSettingsUi: () => void;
   loadPinnedHistoryTaskIds: () => void;
   loadModeLabels: () => void;
@@ -359,7 +358,6 @@ export function createTaskTimerPersistence(options: CreateTaskTimerPersistenceOp
     options.loadOptimalProductivityDaysPreference();
     options.loadDashboardWidgetState();
     options.loadThemePreference();
-    options.loadMenuButtonStylePreference();
     options.syncTaskSettingsUi();
     options.loadPinnedHistoryTaskIds();
     options.backfillHistoryColorsFromSessionLogic();

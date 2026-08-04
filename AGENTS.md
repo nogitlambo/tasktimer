@@ -172,7 +172,6 @@ This repo uses a single-context domain-doc layout rooted at `CONTEXT.md`. See `d
 - `INTERACTION_CLICK_SOUND_KEY = `${storageKey}:interactionClickSoundEnabled``
 - `INTERACTION_HAPTICS_INTENSITY_KEY = `${storageKey}:interactionHapticsIntensity``
 - `INTERACTION_HAPTICS_KEY = `${storageKey}:interactionHapticsEnabled``
-- `MENU_BUTTON_STYLE_KEY = `${storageKey}:menuButtonStyle``
 - `MOBILE_PUSH_ALERTS_KEY = `${storageKey}:mobilePushAlertsEnabled``
 - `NAV_STACK_KEY = `${storageKey}:navStack``
 - `OPTIMAL_PRODUCTIVITY_DAYS_KEY = `${storageKey}:optimalProductivityDays``

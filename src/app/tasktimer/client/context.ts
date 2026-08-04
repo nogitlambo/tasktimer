@@ -908,7 +908,6 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
     OPTIMAL_PRODUCTIVITY_START_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_END_TIME_KEY: string;
     OPTIMAL_PRODUCTIVITY_DAYS_KEY: string;
-    MENU_BUTTON_STYLE_KEY: string;
     WEEK_STARTING_KEY: string;
     FOCUS_DND_STORAGE_KEY: string;
   };
@@ -919,8 +918,6 @@ export type TaskTimerPreferencesContext = TaskTimerBindingsContext &
   setTaskViewState: (value: "list" | "tile") => void;
   getTaskOrderBy: () => TaskOrderBy;
   setTaskOrderByState: (value: TaskOrderBy) => void;
-  getMenuButtonStyle: () => "square";
-  setMenuButtonStyleState: (value: "square") => void;
   getWeekStarting: () => DashboardWeekStart;
   setWeekStartingState: (value: DashboardWeekStart) => void;
   getStartupModule: () => StartupModulePreference;
@@ -1065,6 +1062,7 @@ export type TaskTimerHistoryInlineContext = {
   getWeekStarting: () => DashboardWeekStart;
   getHistoryByTaskId: () => HistoryByTaskId;
   setHistoryByTaskId: (value: HistoryByTaskId) => void;
+  getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   getHistoryRangeDaysByTaskId: () => Record<string, 7 | 14>;
   getHistoryRangeModeByTaskId: () => Record<string, "entries" | "day">;
   getHistoryViewByTaskId: () => Record<string, HistoryViewState>;

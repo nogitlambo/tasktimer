@@ -92,7 +92,6 @@ export function createTaskTimerRuntimeComposition(
   });
   const preferencesState = createTaskTimerMutableStore({
     themeMode: initialState.themeMode,
-    menuButtonStyle: initialState.menuButtonStyle,
     addTaskCustomNames: initialState.addTaskCustomNames,
     weekStarting: initialState.weekStarting,
     startupModule: initialState.startupModule,

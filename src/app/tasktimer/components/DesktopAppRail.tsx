@@ -460,10 +460,6 @@ export function getDesktopRailProfileSignOutLabel(signOutBusy: boolean) {
   return signOutBusy ? "Signing Out" : "Sign Out";
 }
 
-export function getDesktopRailProfileSyncLabel(syncBusy: boolean) {
-  return syncBusy ? "Syncing..." : "Sync";
-}
-
 function readDisplayPlanFromStorage(): TaskTimerPlan {
   return readTaskTimerPlanCacheFromStorage().plan;
 }
@@ -498,29 +494,6 @@ function renderProfileSignOutButton(signOutBusy: boolean, disabled: boolean, onS
   );
 }
 
-function renderProfileSyncButton(syncBusy: boolean, disabled: boolean, onSync: () => void) {
-  const label = getDesktopRailProfileSyncLabel(syncBusy);
-  return (
-    <button
-      key="profile-sync"
-      className="btn btn-ghost small dashboardRailMenuBtn desktopRailProfileMenuBtn desktopRailProfileSyncBtn"
-      type="button"
-      role="menuitem"
-      aria-label="Sync"
-      onClick={onSync}
-      disabled={disabled}
-    >
-      <AppImg
-        className="dashboardRailMenuIconImage"
-        src="/icons/icons_default/refresh.webp"
-        alt=""
-        aria-hidden="true"
-      />
-      <span className="dashboardRailMenuLabel">{label}</span>
-    </button>
-  );
-}
-
 export default function DesktopAppRail({
   activePage,
   useClientNavButtons = false,
@@ -541,7 +514,7 @@ export default function DesktopAppRail({
   const [temporaryModalOpen, setTemporaryModalOpen] = useState(false);
   const profileMenuCloseTimerRef = useRef<number | null>(null);
   const profileMenuRef = useRef<HTMLDetailsElement | null>(null);
-  const { syncBusy, signOutBusy, actionBusy, runSync, runSignOut } = useSharedProfileSessionActions();
+  const { signOutBusy, actionBusy, runSignOut } = useSharedProfileSessionActions();
 
   const syncProfileFromUser = useCallback(async (user: User | null) => {
     const uid = String(user?.uid || "").trim();
@@ -706,21 +679,10 @@ export default function DesktopAppRail({
     try {
       await runSignOut();
     } catch (error: unknown) {
-      setProfileSessionNotice(getErrorMessage(error, "Could not sign out."));
       setShowSignOutConfirm(false);
+      setProfileSessionNotice(getErrorMessage(error, "Could not sign out."));
     }
   }, [actionBusy, runSignOut]);
-
-  const handleProfileSync = useCallback(async () => {
-    if (actionBusy) return;
-    setProfileSessionNotice("");
-    try {
-      const result = await runSync();
-      setProfileSessionNotice(result.hadPendingBefore ? "Synced just now." : "Cloud sync checked.");
-    } catch (error: unknown) {
-      setProfileSessionNotice(getErrorMessage(error, "Could not sync your latest local data to the cloud."));
-    }
-  }, [actionBusy, runSync]);
 
   const handleOpenBillingPortal = useCallback(async () => {
     const auth = getFirebaseAuthClient();
@@ -870,7 +832,6 @@ export default function DesktopAppRail({
                 {getDesktopRailProfileMenuItems().map((item) => (
                   <ProfileMenuLink key={`profile-${item.page}`} item={item} activePage={navActivePage} onNavigate={closeProfileMenu} />
                 ))}
-                {renderProfileSyncButton(syncBusy, actionBusy, () => void handleProfileSync())}
                 {renderProfileSignOutButton(signOutBusy, actionBusy, () => setShowSignOutConfirm(true))}
                 {profileSessionNotice ? (
                   <div className="settingsDetailNote desktopRailProfileMenuError" role="alert" aria-live="polite">

@@ -30,7 +30,6 @@ const storageKeys = {
   OPTIMAL_PRODUCTIVITY_START_TIME_KEY: "taskticker_tasks_v1:optimalProductivityStartTime",
   OPTIMAL_PRODUCTIVITY_END_TIME_KEY: "taskticker_tasks_v1:optimalProductivityEndTime",
   OPTIMAL_PRODUCTIVITY_DAYS_KEY: "taskticker_tasks_v1:optimalProductivityDays",
-  MENU_BUTTON_STYLE_KEY: "taskticker_tasks_v1:menuButtonStyle",
   WEEK_STARTING_KEY: "taskticker_tasks_v1:weekStarting",
   FOCUS_DND_STORAGE_KEY: "taskticker_tasks_v1",
 };
@@ -219,7 +218,6 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     themeMode: "lime";
     taskView: "list" | "tile";
     taskOrderBy: TaskOrderBy;
-    menuButtonStyle: "square";
     weekStarting: DashboardWeekStart;
     startupModule: StartupModulePreference;
     autoFocusOnTaskLaunchEnabled: boolean;
@@ -244,7 +242,6 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     themeMode: "lime" as const,
     taskView: "tile" as const,
     taskOrderBy: "custom" as TaskOrderBy,
-    menuButtonStyle: "square" as const,
     weekStarting: "mon" as DashboardWeekStart,
     startupModule: "tasks" as const,
     autoFocusOnTaskLaunchEnabled: false,
@@ -314,10 +311,6 @@ function createHarness(options: { setupEls?: (fakeDocument: FakeDocument) => Par
     getTaskOrderBy: () => state.taskOrderBy,
     setTaskOrderByState: (value) => {
       state.taskOrderBy = value;
-    },
-    getMenuButtonStyle: () => state.menuButtonStyle,
-    setMenuButtonStyleState: (value) => {
-      state.menuButtonStyle = value;
     },
     getWeekStarting: () => state.weekStarting,
     setWeekStartingState: (value) => {

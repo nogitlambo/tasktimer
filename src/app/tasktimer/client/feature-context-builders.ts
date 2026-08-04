@@ -154,7 +154,6 @@ type CreatePersistenceOptionsArgs = {
   loadOptimalProductivityDaysPreference: () => void;
   loadDashboardWidgetState: () => void;
   loadThemePreference: () => void;
-  loadMenuButtonStylePreference: () => void;
   syncTaskSettingsUi: () => void;
   loadPinnedHistoryTaskIds: () => void;
   loadModeLabels: () => void;
@@ -237,6 +236,7 @@ type CreateHistoryInlineOptionsArgs = {
     getTasks: () => Task[];
     getHistoryByTaskId: () => HistoryByTaskId;
     setHistoryByTaskId: (value: HistoryByTaskId) => void;
+    getLiveSessionsByTaskId: () => LiveSessionsByTaskId;
   };
   historyUiState: MutableStore;
   historyViewByTaskId: Record<string, HistoryViewState>;
@@ -908,10 +908,6 @@ export function createTaskTimerPreferencesContext(
     setTaskOrderByState: (value) => {
       args.preferencesState.set("taskOrderBy", value);
     },
-    getMenuButtonStyle: () => asType<"square">(args.preferencesState.get("menuButtonStyle")),
-    setMenuButtonStyleState: (value) => {
-      args.preferencesState.set("menuButtonStyle", value);
-    },
     getWeekStarting: () => asType<DashboardWeekStart>(args.preferencesState.get("weekStarting")),
     setWeekStartingState: (value: DashboardWeekStart) => {
       args.preferencesState.set("weekStarting", value);
@@ -1089,7 +1085,6 @@ export function createTaskTimerPersistenceContext(
     loadOptimalProductivityDaysPreference: args.loadOptimalProductivityDaysPreference,
     loadDashboardWidgetState: args.loadDashboardWidgetState,
     loadThemePreference: args.loadThemePreference,
-    loadMenuButtonStylePreference: args.loadMenuButtonStylePreference,
     syncTaskSettingsUi: args.syncTaskSettingsUi,
     loadPinnedHistoryTaskIds: args.loadPinnedHistoryTaskIds,
     loadModeLabels: args.loadModeLabels,
@@ -1204,6 +1199,7 @@ export function createTaskTimerHistoryInlineContext(
     getWeekStarting: args.getWeekStarting,
     getHistoryByTaskId: args.taskCollectionBindings.getHistoryByTaskId,
     setHistoryByTaskId: args.taskCollectionBindings.setHistoryByTaskId,
+    getLiveSessionsByTaskId: args.taskCollectionBindings.getLiveSessionsByTaskId,
     getHistoryRangeDaysByTaskId: () => asType<Record<string, 7 | 14>>(args.historyUiState.get("historyRangeDaysByTaskId")),
     getHistoryRangeModeByTaskId: () => asType<Record<string, "entries" | "day">>(args.historyUiState.get("historyRangeModeByTaskId")),
     getHistoryViewByTaskId: () => args.historyViewByTaskId,

@@ -60,10 +60,118 @@
   margin: 6px 0 0;
 }
 
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesFilterWrap{
+  display:flex;
+  justify-content:center;
+  width:100%;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPill{
+  white-space:nowrap;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup{
+  display:inline-flex;
+  align-items:center;
+  gap:0;
+  padding:3px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;
+  background:rgba(12,16,22,.92);
+  box-shadow:none;
+  flex:0 0 auto;
+  overflow:visible;
+  position:relative;
+  z-index:0;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenHeaderBtn,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenHeaderBtn:hover,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenHeaderBtn:focus-visible,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenHeaderBtn:active{
+  border-color:transparent !important;
+  box-shadow:none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:hover,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:focus-visible,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:active{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  width:auto;
+  min-width:78px;
+  height:40px;
+  min-height:40px;
+  padding:0 12px;
+  border:1px solid transparent !important;
+  border-radius:14px !important;
+  background:transparent !important;
+  background-clip:padding-box;
+  box-shadow:none !important;
+  overflow:hidden;
+  transform:none;
+  text-align:center;
+  transition:opacity .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn + .taskScreenHeaderBtn{
+  margin-left:2px;
+  border-left:none !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPill.isOn{
+  color:#f7fdff !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn.isOn{
+  border-color:transparent !important;
+  transform:none;
+  opacity:1;
+  color:rgba(245, 248, 244, .96) !important;
+  background:#1a1b20 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.22) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenPill.isOn{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.22) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn){
+  opacity:.42;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.015)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), inset 0 -2px 4px rgba(0,0,0,.2), 0 5px 12px rgba(0,0,0,.2) !important;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):hover,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenHeaderBtn:not(.isOn):focus-visible{
+  opacity:.72;
+  background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.025)) !important;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup{
+  border-color:rgba(255,255,255,.12);
+  background:rgba(18,20,24,.96);
+  box-shadow:none;
+}
+
+body[data-theme="lime"] #app[aria-label="TaskLaunch App"] #appPageSessionNotes .taskScreenPillGroup .taskScreenPill.isOn{
+  background:#1a1b20 !important;
+  color:rgba(245, 248, 244, .96) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.22) !important;
+}
+
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesList{
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes[data-session-notes-filter="active"] .sessionNotesTaskGroup.is-archived,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes[data-session-notes-filter="archived"] .sessionNotesTaskGroup.is-active{
+  display:none;
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesTaskGroup{
@@ -108,72 +216,86 @@
 }
 
 #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDateList{
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  --session-note-tile-gap: 10px;
+  --session-note-tile-width: calc((100% - (7 * var(--session-note-tile-gap))) / 8);
+  grid-template-columns: repeat(auto-fill, minmax(108px, var(--session-note-tile-width)));
+  gap: 10px;
+  align-items: stretch;
+  max-width: calc(8 * 108px + 7 * var(--session-note-tile-gap));
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteEntry{
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile{
+  width: 100%;
   min-width: 0;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  overflow: hidden;
+  font-family: var(--font-orbitron), var(--font-geist-mono), monospace;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteCard{
-  border: 1px solid #20242b;
-  background: #0d0f13;
-  padding: 10px;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile::before{
+  content: none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile .taskMenuTile{
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteMeta{
-  display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteBody{
-  color: #fff;
-  font-family: var(--font-geist-mono);
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.5;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font-family: var(--font-orbitron), var(--font-geist-mono), monospace;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteBody :first-child{
-  margin-top: 0;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile .taskMenuTileIcon{
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteBody :last-child{
-  margin-bottom: 0;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile .taskMenuTileLabel{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 4px;
+  text-align: center;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteBody a{
-  color: #b1ff59;
-}
-
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteContentGrid{
-  grid-template-columns:minmax(0, 1fr);
-}
-
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteAttachments{
-  width: 100%;
-  box-sizing: border-box;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile :is(.sessionNoteTileDate, .sessionNoteTileTime, .sessionNoteTileElapsed){
   display: block;
   overflow-wrap: anywhere;
 }
 
-#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteAttachmentItem{
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 4px;
-  vertical-align: middle;
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile:hover .taskMenuTile,
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile:focus-visible .taskMenuTile{
+  background: rgba(255,255,255,.08);
+  outline: none;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteTile:focus-visible{
+  outline: 2px solid rgba(177,255,89,.86);
+  outline-offset: 2px;
 }
 
 @media (max-width: 720px){
@@ -192,7 +314,9 @@
     padding-right: 0;
   }
 
-  #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNoteContentGrid{
-    grid-template-columns:1fr;
+  #app[aria-label="TaskLaunch App"] #appPageSessionNotes .sessionNotesDateList{
+    max-width: none;
+    --session-note-tile-width: 100px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, var(--session-note-tile-width)));
   }
 }

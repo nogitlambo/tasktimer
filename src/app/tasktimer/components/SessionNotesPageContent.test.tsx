@@ -10,6 +10,10 @@ describe("SessionNotesPageContent", () => {
     expect(html).toContain("Notes");
     expect(html).toContain("No notes yet.");
     expect(html).toContain('id="appPageSessionNotes"');
+    expect(html).toContain('data-session-notes-filter="active"');
+    expect(html).toContain('aria-label="Task note filter"');
+    expect(html).toContain("Active");
+    expect(html).toContain("Archived");
     expect(html).toContain('id="sessionNotesList"');
   });
 });

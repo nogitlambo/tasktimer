@@ -141,7 +141,6 @@ function createHarness(overrides?: {
     loadOptimalProductivityDaysPreference: () => {},
     loadDashboardWidgetState: () => {},
     loadThemePreference: () => {},
-    loadMenuButtonStylePreference: () => {},
     syncTaskSettingsUi: () => {},
     loadPinnedHistoryTaskIds: () => {},
     loadModeLabels: () => {},

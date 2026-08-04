@@ -5,7 +5,6 @@ import { createTaskTimerPreferencesService, type TaskTimerStoredPreferences } fr
 
 const storageKeys = {
   THEME_KEY: "taskticker_tasks_v1:theme",
-  MENU_BUTTON_STYLE_KEY: "taskticker_tasks_v1:menuButtonStyle",
   WEEK_STARTING_KEY: "taskticker_tasks_v1:weekStarting",
   STARTUP_MODULE_KEY: "taskticker_tasks_v1:startupModule",
   TASK_VIEW_KEY: "taskticker_tasks_v1:taskView",
@@ -29,7 +28,6 @@ function buildDefaultPreferences(): TaskTimerStoredPreferences {
   return {
     schemaVersion: 1 as const,
     theme: "lime" as const,
-    menuButtonStyle: "square" as const,
     weekStarting: "mon" as const,
     startupModule: "dashboard" as const,
     taskView: "tile" as const,
@@ -436,39 +434,6 @@ describe("createTaskTimerPreferencesService", () => {
 
     expect(localStorageMap.get(storageKeys.TASK_ORDER_BY_KEY)).toBe("dateAddedDesc");
     expect(preferencesPersistence.update).toHaveBeenCalledWith(expect.objectContaining({ taskOrderBy: "dateAddedDesc" }));
-  });
-
-  it("normalizes missing and legacy menu button styles to square", () => {
-    window.localStorage.setItem(storageKeys.MENU_BUTTON_STYLE_KEY, "legacy-shape");
-
-    expect(createService().loadMenuButtonStyle()).toBe("square");
-    expect(
-      createService({
-        cachedPreferences: { ...buildDefaultPreferences(), menuButtonStyle: "legacy-shape" as never },
-      }).loadMenuButtonStyle()
-    ).toBe("square");
-  });
-
-  it("does not persist legacy menu button styles from preference snapshots", () => {
-    const preferencesPersistence = createPreferencesPersistence();
-    const service = createTaskTimerPreferencesService({
-      storageKeys,
-      preferencesPersistence,
-      currentUid: () => "",
-      syncOwnFriendshipProfile: vi.fn(),
-    });
-
-    const snapshot = service.buildSnapshot({
-      ...buildDefaultPreferences(),
-      weekStarting: "mon",
-      menuButtonStyle: "legacy-shape" as never,
-    });
-    service.persistSnapshot(snapshot);
-
-    expect(snapshot.menuButtonStyle).toBe("square");
-    expect(localStorageMap.get(storageKeys.MENU_BUTTON_STYLE_KEY)).toBe("square");
-    expect(preferencesPersistence.update).toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "square" }));
-    expect(preferencesPersistence.update).not.toHaveBeenCalledWith(expect.objectContaining({ menuButtonStyle: "legacy-shape" }));
   });
 
   it("maps legacy stored theme values to the Primary theme", () => {

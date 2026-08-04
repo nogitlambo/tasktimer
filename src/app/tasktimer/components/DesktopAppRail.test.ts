@@ -6,7 +6,6 @@ import {
   getDesktopRailPrimaryNavItems,
   getDesktopRailProfileMenuItems,
   getDesktopRailProfileSignOutLabel,
-  getDesktopRailProfileSyncLabel,
   getMobileFooterNavItems,
   shouldCloseDesktopRailProfileMenuOnPointerDown,
 } from "./DesktopAppRail";
@@ -68,11 +67,6 @@ describe("DesktopAppRail profile menu", () => {
     expect(getDesktopRailProfileSignOutLabel(true)).toBe("Signing Out");
   });
 
-  it("keeps normal account sync labels", () => {
-    expect(getDesktopRailProfileSyncLabel(false)).toBe("Sync");
-    expect(getDesktopRailProfileSyncLabel(true)).toBe("Syncing...");
-  });
-
   it("collapses the profile menu only for outside pointer targets", () => {
     const insideTarget = {} as Node;
     const outsideTarget = {} as Node;
@@ -100,12 +94,12 @@ describe("DesktopAppRail profile menu", () => {
     expect(source).toContain('fetch(getApiUrl("/api/stripe/create-billing-portal-session/"), {');
   });
 
-  it("renders a manual sync action in the profile menu", () => {
+  it("does not render a manual sync action in the profile menu", () => {
     const source = readFileSync(resolve(__dirname, "DesktopAppRail.tsx"), "utf8");
 
-    expect(source).toContain('src="/icons/icons_default/refresh.webp"');
-    expect(source).toContain('aria-label="Sync"');
-    expect(source).toContain("renderProfileSyncButton");
+    expect(source).not.toContain('src="/icons/icons_default/refresh.webp"');
+    expect(source).not.toContain('aria-label="Sync"');
+    expect(source).not.toContain("renderProfileSyncButton");
   });
 });
 

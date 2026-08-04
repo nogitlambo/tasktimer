@@ -61,7 +61,6 @@ import type { SessionNoteAttachment } from "./types";
 export type UserPreferencesV1 = {
   schemaVersion: 1;
   theme: "lime";
-  menuButtonStyle: "square";
   weekStarting: DashboardWeekStart;
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
@@ -2274,7 +2273,6 @@ export function normalizeUserPreferencesDocument(data: Record<string, unknown>):
   return {
     schemaVersion: 1,
     theme: normalizeThemeMode(data.theme),
-    menuButtonStyle: "square",
     weekStarting: normalizeDashboardWeekStart(data.weekStarting),
     startupModule: normalizeStartupModule(data.startupModule),
     taskView: "tile",

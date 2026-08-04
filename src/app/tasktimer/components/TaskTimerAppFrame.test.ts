@@ -76,6 +76,7 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect(items.map((item) => item.label)).toEqual(["Profile", "Settings", "User Guide", "Sign Out"]);
     expect(items.map((item) => item.label)).not.toContain("Account");
     expect(items.filter((item) => item.kind === "link").map((item) => item.href)).toEqual(["/account", "/settings", "/user-guide"]);
+    expect(items.find((item) => item.label === "Profile")?.iconSrc).toBe("/icons/icons_default/account.webp");
     expect(items.find((item) => item.label === "Sign Out")).toMatchObject({
       kind: "action",
       actionId: "signOut",

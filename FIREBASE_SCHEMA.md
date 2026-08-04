@@ -281,7 +281,6 @@ Allowed fields (`isPreferencesV1`):
 
 - `schemaVersion: int`
 - `theme: "lime"`
-- `menuButtonStyle: "square"`
 - `defaultTaskTimerFormat: "day" | "hour" | "minute"`
 - `taskView: "list" | "tile"`
 - `taskOrderBy: "custom" | "alpha" | "schedule" | "dateAddedAsc" | "dateAddedDesc"`

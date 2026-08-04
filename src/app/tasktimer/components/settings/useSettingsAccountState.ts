@@ -107,6 +107,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
   const [syncState, setSyncState] = useState<SettingsAccountViewModel["syncState"]>("idle");
   const [syncMessage, setSyncMessage] = useState("Sign in to sync preferences.");
   const [syncAtMs, setSyncAtMs] = useState<number | null>(null);
+  const [syncCooldownUntilMs, setSyncCooldownUntilMs] = useState(0);
   const [signOutError, setSignOutError] = useState("");
   const [uidCopyStatus, setUidCopyStatus] = useState("");
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false);
@@ -193,6 +194,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
 
   const onSyncNow = useCallback(async () => {
     if (actionBusy) return;
+    setSyncCooldownUntilMs(Date.now() + 60_000);
     setSignOutError("");
     setAuthError("");
     setAuthStatus("");
@@ -208,6 +210,13 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       setSyncMessage(getErrorMessage(err, "Could not sync your latest local data to the cloud."));
     }
   }, [actionBusy, runSync]);
+
+  useEffect(() => {
+    if (!syncCooldownUntilMs) return;
+    const remainingMs = syncCooldownUntilMs - Date.now();
+    const timeoutId = window.setTimeout(() => setSyncCooldownUntilMs(0), Math.max(0, remainingMs));
+    return () => window.clearTimeout(timeoutId);
+  }, [syncCooldownUntilMs]);
 
   const onSignOut = useCallback(async () => {
     if (actionBusy) return;
@@ -569,6 +578,7 @@ export function useSettingsAccountState(options: UseSettingsAccountStateOptions 
       syncState,
       syncMessage,
       syncAtMs,
+      syncCooldownUntilMs,
       syncBusy,
       signOutBusy,
       signOutError,

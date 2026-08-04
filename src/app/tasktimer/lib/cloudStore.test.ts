@@ -59,7 +59,6 @@ describe("normalizeUserPreferencesDocument", () => {
   it.each([
     ["schemaVersion", 99, 1],
     ["theme", "legacy-theme", "lime"],
-    ["menuButtonStyle", "legacy-shape", "square"],
     ["weekStarting", "sun", "sun"],
     ["startupModule", "friends", "friends"],
     ["taskView", "list", "tile"],

@@ -51,14 +51,6 @@ function formatTimeLabel(ts: number) {
   }
 }
 
-function getLocalDateKey(ts: number) {
-  const date = new Date(ts);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function formatElapsed(msRaw: unknown) {
   const totalMinutes = Math.max(0, Math.floor((Number(msRaw) || 0) / 60000));
   const hours = Math.floor(totalMinutes / 60);
@@ -66,17 +58,6 @@ function formatElapsed(msRaw: unknown) {
   if (hours && minutes) return `${hours}h ${minutes}m`;
   if (hours) return `${hours}h`;
   return `${minutes}m`;
-}
-
-function formatFileSize(sizeRaw: unknown) {
-  const size = Math.max(0, Math.floor(Number(sizeRaw || 0) || 0));
-  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
-  if (size >= 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
-  return `${size} B`;
-}
-
-function formatInlineFileSize(sizeRaw: unknown) {
-  return formatFileSize(sizeRaw).replace(" ", "");
 }
 
 function taskColorToRgb(value: unknown) {
@@ -90,14 +71,32 @@ function renderTaskHeaderStyle(taskColorRgb: string | null | undefined) {
   return taskColorRgb ? ` style="--session-notes-task-color-rgb:${taskColorRgb};"` : "";
 }
 
-function renderAttachmentList(attachments: SessionNoteAttachment[]) {
-  if (!attachments.length) return "";
-  return `<div class="sessionNoteAttachments" aria-label="Session note attachments">${attachments
-    .map((attachment) => {
-      const name = attachment.name || "Attachment";
-      return `<span class="sessionNoteAttachmentItem"><a class="sessionNoteAttachmentLink" href="${escapeHtml(attachment.downloadUrl || "#")}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a> <span class="sessionNoteAttachmentMeta">(${escapeHtml(formatInlineFileSize(attachment.size))})</span></span>`;
-    })
-    .join(", ")}</div>`;
+function renderSessionNoteTile(row: SessionNoteRow) {
+  const dateLabel = formatDateLabel(row.ts);
+  const timeLabel = formatTimeLabel(row.ts);
+  const elapsedLabel = formatElapsed(row.elapsedMs);
+  const label = `${row.taskName}, ${dateLabel}, ${timeLabel}, ${elapsedLabel}${row.isLive ? ", Live" : ""}. Open note`;
+  return `
+    <button
+      class="taskMenuItem sessionNoteTile"
+      type="button"
+      data-session-note-open="true"
+      data-session-note-task-id="${escapeHtml(row.taskId)}"
+      data-session-note-ts="${escapeHtml(row.ts)}"
+      aria-label="${escapeHtml(label)}"
+      title="Open note"
+    >
+      <span class="taskMenuTile">
+        <img class="taskMenuTileIcon" src="/icons/icons_default/notes.webp" alt="" aria-hidden="true" />
+        <span class="taskMenuTileLabel">
+          <span class="sessionNoteTileDate">${escapeHtml(dateLabel)}</span>
+          <span class="sessionNoteTileTime">${escapeHtml(timeLabel)}</span>
+          <span class="sessionNoteTileElapsed">${escapeHtml(elapsedLabel)}</span>
+          ${row.isLive ? '<span class="sessionNoteLive">Live</span>' : ""}
+        </span>
+      </span>
+    </button>
+  `;
 }
 
 function collectSessionNotesRows(args: Omit<SessionNotesRenderArgs, "listEl">): SessionNoteRow[] {
@@ -171,50 +170,14 @@ export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listE
     .sort((left, right) => (right[1][0]?.ts || 0) - (left[1][0]?.ts || 0))
     .map(([, taskRows]) => {
       const firstRow = taskRows[0];
-      const dateGroups = new Map<string, SessionNoteRow[]>();
-      taskRows.forEach((row) => {
-        const dateKey = getLocalDateKey(row.ts);
-        if (!dateGroups.has(dateKey)) dateGroups.set(dateKey, []);
-        dateGroups.get(dateKey)?.push(row);
-      });
-      const datesHtml = Array.from(dateGroups.entries())
-        .sort((left, right) => (left[0] < right[0] ? 1 : left[0] > right[0] ? -1 : 0))
-        .map(([, dateRows]) => {
-          const notesHtml = dateRows
-            .sort((left, right) => right.ts - left.ts)
-            .map(
-              (row) => `
-                <div class="sessionNoteEntry">
-                  <article class="sessionNoteCard">
-                    <div class="sessionNoteMeta">
-                      <span>${escapeHtml(formatTimeLabel(row.ts))}</span>
-                      <span>${escapeHtml(formatElapsed(row.elapsedMs))}</span>
-                      ${row.isLive ? '<span class="sessionNoteLive">Live</span>' : ""}
-                    </div>
-                    <div class="sessionNoteContentGrid">
-                      <div class="sessionNoteBody" title="${escapeHtml(row.noteText)}">${row.noteHtml || '<span class="sessionNoteAttachmentOnly">Attachment-only note</span>'}</div>
-                    </div>
-                  </article>
-                  ${renderAttachmentList(row.attachments)}
-                </div>
-              `
-            )
-            .join("");
-          return `
-            <section class="sessionNotesDateGroup">
-              <h3 class="sessionNotesDateTitle">${escapeHtml(formatDateLabel(dateRows[0]?.ts || 0))}</h3>
-              <div class="sessionNotesDateList">${notesHtml}</div>
-            </section>
-          `;
-        })
-        .join("");
+      const notesHtml = taskRows.sort((left, right) => right.ts - left.ts).map(renderSessionNoteTile).join("");
       return `
-        <section class="sessionNotesTaskGroup">
+        <section class="sessionNotesTaskGroup is-${firstRow?.taskState === "archived" ? "archived" : "active"}">
           <header class="sessionNotesTaskHeader"${renderTaskHeaderStyle(firstRow?.taskColorRgb)}>
             <h2 class="sessionNotesTaskTitle">${escapeHtml(firstRow?.taskName || "Task")}</h2>
             ${firstRow?.taskState === "archived" ? '<span class="sessionNotesTaskState">Archived</span>' : ""}
           </header>
-          ${datesHtml}
+          <div class="sessionNotesDateList sessionNotesTileGrid">${notesHtml}</div>
         </section>
       `;
     })

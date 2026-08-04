@@ -6,7 +6,6 @@ type TaskTimerStorageKeys = {
   TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: string;
   DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: string;
   THEME_KEY: string;
-  MENU_BUTTON_STYLE_KEY: string;
   WEEK_STARTING_KEY: string;
   STARTUP_MODULE_KEY: string;
   TASK_VIEW_KEY: string;
@@ -41,7 +40,6 @@ export function createTaskTimerStorageKeys(storageKey: string): TaskTimerStorage
     TIME_GOAL_COMPLETE_NEXT_TASKS_KEY: `${storageKey}:timeGoalCompleteNextTasksEnabled`,
     DASHBOARD_PREVIOUS_WEEK_VISIBLE_KEY: `${storageKey}:dashboardPreviousWeekVisible`,
     THEME_KEY: `${storageKey}:theme`,
-    MENU_BUTTON_STYLE_KEY: `${storageKey}:menuButtonStyle`,
     WEEK_STARTING_KEY: `${storageKey}:weekStarting`,
     STARTUP_MODULE_KEY: `${storageKey}:startupModule`,
     TASK_VIEW_KEY: `${storageKey}:taskView`,
@@ -81,7 +79,6 @@ export function createInitialTaskTimerState(initialAppPage: AppPage): TaskTimerM
     confirmActionAlt: null,
     confirmActionCancel: null,
     themeMode: "lime",
-    menuButtonStyle: "square",
     addTaskCustomNames: [],
     weekStarting: "mon",
     startupModule: "dashboard",

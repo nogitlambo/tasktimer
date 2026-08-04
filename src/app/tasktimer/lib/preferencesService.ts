@@ -19,7 +19,6 @@ type TaskOrderByPreference = "custom" | "alpha" | "schedule" | "dateAddedAsc" | 
 
 type TaskTimerPreferenceStorageKeys = {
   THEME_KEY: string;
-  MENU_BUTTON_STYLE_KEY: string;
   WEEK_STARTING_KEY: string;
   STARTUP_MODULE_KEY: string;
   TASK_VIEW_KEY: string;
@@ -41,7 +40,6 @@ type TaskTimerPreferenceStorageKeys = {
 
 type PreferencesStateSnapshot = {
   theme: "lime";
-  menuButtonStyle: "square";
   weekStarting: "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
   startupModule: StartupModulePreference;
   taskView: "list" | "tile";
@@ -155,7 +153,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
       ...base,
       schemaVersion: 1,
       theme: state.theme,
-      menuButtonStyle: "square",
       weekStarting: state.weekStarting,
       startupModule: state.startupModule,
       taskView: "tile",
@@ -189,7 +186,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
   function persistSnapshot(snapshot: StoredPreferences): void {
     snapshot = preferencesPersistence.update(snapshot);
     safeWriteLocalStorage(storageKeys.THEME_KEY, String(snapshot.theme || "lime"));
-    safeWriteLocalStorage(storageKeys.MENU_BUTTON_STYLE_KEY, String(snapshot.menuButtonStyle || "square"));
     safeWriteLocalStorage(storageKeys.STARTUP_MODULE_KEY, String(snapshot.startupModule || "dashboard"));
     safeWriteLocalStorage(storageKeys.TASK_VIEW_KEY, "tile");
     safeWriteLocalStorage(storageKeys.TASK_ORDER_BY_KEY, String(snapshot.taskOrderBy || "custom"));
@@ -261,10 +257,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     const cached = getStoredPreferencesWithoutDefaults();
     const localValue = canUseLocalPreferenceFallback() ? safeReadLocalStorage(storageKeys.THEME_KEY) : "";
     return normalizeThemeMode(cached?.theme || localValue);
-  }
-
-  function loadMenuButtonStyle(): "square" {
-    return "square";
   }
 
   function loadWeekStarting(): "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat" {
@@ -424,7 +416,6 @@ export function createTaskTimerPreferencesService(options: PreferencesServiceOpt
     buildSnapshot,
     persistSnapshot,
     loadThemeMode,
-    loadMenuButtonStyle,
     loadWeekStarting,
     loadStartupModule,
     loadTaskView,

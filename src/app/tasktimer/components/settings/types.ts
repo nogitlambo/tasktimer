@@ -58,6 +58,7 @@ export type SettingsAccountViewModel = {
   syncState: "idle" | "syncing" | "synced" | "error";
   syncMessage: string;
   syncAtMs: number | null;
+  syncCooldownUntilMs: number;
   syncBusy: boolean;
   signOutBusy: boolean;
   signOutError: string;

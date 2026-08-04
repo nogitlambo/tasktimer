@@ -145,7 +145,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
   function buildCloudPreferencesSnapshot(): ReturnType<typeof preferenceService.buildSnapshot> {
     return preferenceService.buildSnapshot({
       theme: ctx.getThemeMode(),
-      menuButtonStyle: ctx.getMenuButtonStyle(),
       weekStarting: ctx.getWeekStarting(),
       startupModule: ctx.getStartupModule(),
       taskView: ctx.getTaskView(),
@@ -277,18 +276,8 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     syncTaskOrderByMenuUi();
   }
 
-  function applyMenuButtonStyle(next: "square") {
-    const menuButtonStyle = "square";
-    void next;
-    ctx.setMenuButtonStyleState(menuButtonStyle);
-  }
-
   function loadThemePreference() {
     applyTheme(preferenceService.loadThemeMode());
-  }
-
-  function loadMenuButtonStylePreference() {
-    applyMenuButtonStyle(preferenceService.loadMenuButtonStyle());
   }
 
   function applyWeekStartingPreference(next: DashboardWeekStart) {
@@ -1098,11 +1087,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     persistPreferencesToCloud();
   }
 
-  function setMenuButtonStyle(next: "square") {
-    applyMenuButtonStyle(next);
-    persistPreferencesToCloud();
-  }
-
   function persistInlineTaskSettingsImmediate() {
     saveWeekStartingPreference();
     saveStartupModulePreference();
@@ -1484,9 +1468,7 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     applyTheme,
     applyTaskViewPreference,
     applyTaskOrderByPreference,
-    applyMenuButtonStyle,
     loadThemePreference,
-    loadMenuButtonStylePreference,
     applyWeekStartingPreference,
     loadWeekStartingPreference,
     saveWeekStartingPreference,
@@ -1528,7 +1510,6 @@ export function createTaskTimerPreferences(ctx: TaskTimerPreferencesContext) {
     loadOptimalProductivityDaysPreference,
     saveOptimalProductivityDaysPreference,
     setThemeMode,
-    setMenuButtonStyle,
     applyMainMode,
     registerPreferenceEvents,
   };

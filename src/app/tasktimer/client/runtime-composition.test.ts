@@ -131,7 +131,6 @@ describe("createTaskTimerRuntimeComposition", () => {
     const cachedPreferences = {
       schemaVersion: 1,
       theme: "lime",
-      menuButtonStyle: "square",
       weekStarting: "mon",
       startupModule: "dashboard",
       taskView: "tile",

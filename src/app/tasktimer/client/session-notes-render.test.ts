@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderSessionNotesHtml } from "./session-notes-render";
 
 describe("renderSessionNotesHtml", () => {
-  it("renders history and live notes grouped by task and date", () => {
+  it("renders history and live notes as task-level selectable tiles", () => {
     const html = renderSessionNotesHtml({
       tasks: [{ id: "task-1", name: "Deep Work" } as never],
       deletedTaskMeta: {},
@@ -27,10 +27,14 @@ describe("renderSessionNotesHtml", () => {
     });
 
     expect(html).toContain("Deep Work");
-    expect(html).toContain("<strong>Live</strong> note");
-    expect(html).toContain("<b>Saved</b> note");
+    expect(html).toContain('class="sessionNotesTaskGroup is-active"');
+    expect(html).toContain('class="sessionNotesDateList sessionNotesTileGrid"');
+    expect(html).toContain('data-session-note-task-id="task-1"');
+    expect(html).toContain('data-session-note-ts="1767308400000"');
+    expect(html).toContain("2 Jan 2026");
     expect(html).toContain("Live");
     expect(html).not.toContain("08:00");
+    expect(html).not.toContain("sessionNotesDateGroup");
   });
 
   it("omits deleted task groups and sanitizes rich note markup", () => {
@@ -48,12 +52,12 @@ describe("renderSessionNotesHtml", () => {
     });
 
     expect(html).toContain("Archived Task");
-    expect(html).toContain('href="https://example.com"');
+    expect(html).toContain('class="sessionNotesTaskGroup is-archived"');
     expect(html).not.toContain("Deleted Task");
     expect(html).not.toContain("<script");
   });
 
-  it("renders note attachments below note cards as a comma-separated filename and size list", () => {
+  it("renders attachment-only notes as selectable tiles", () => {
     const html = renderSessionNotesHtml({
       tasks: [{ id: "task-1", name: "Deep Work" } as never],
       deletedTaskMeta: {},
@@ -90,17 +94,9 @@ describe("renderSessionNotesHtml", () => {
       },
     });
 
-    expect(html).toContain("sessionNoteContentGrid");
-    expect(html).toContain("sessionNoteEntry");
-    expect(html).toContain("sessionNoteAttachments");
-    expect(html).toContain("-report-.pdf");
-    expect(html).toContain("-report-.pdf</a> <span class=\"sessionNoteAttachmentMeta\">(2KB)</span>");
-    expect(html).toContain("(2KB)");
-    expect(html).toContain("</span>, <span class=\"sessionNoteAttachmentItem\"><a class=\"sessionNoteAttachmentLink\"");
-    expect(html).toContain("image.jpeg</a> <span class=\"sessionNoteAttachmentMeta\">(1.1MB)</span>");
-    expect(html).toContain("Attachment-only note");
-    expect(html.indexOf("</article>")).toBeLessThan(html.indexOf('<div class="sessionNoteAttachments"'));
-    expect(html.indexOf("sessionNoteContentGrid")).toBeLessThan(html.indexOf("</article>"));
+    expect(html).toContain('data-session-note-task-id="task-1"');
+    expect(html).toContain('aria-label="Deep Work, 1 Jan 2026');
+    expect(html).toContain('src="/icons/icons_default/notes.webp"');
   });
 
   it("adds a task color custom property to active task headers", () => {
