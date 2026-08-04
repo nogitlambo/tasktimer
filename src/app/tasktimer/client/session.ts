@@ -271,9 +271,19 @@ export function isFinalizedTimeGoalCompletionAwaitingAcknowledgement(
   opts: { hasAcknowledged?: boolean; nowMs?: number; weekStarting?: DashboardWeekStart } = {}
 ): boolean {
   if (!task || task.running) return false;
-  if (!hasCurrentPeriodGoalCompletionMetadata(task, opts.nowMs ?? nowMs(), opts.weekStarting)) return false;
-  if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0)) > 0)) return false;
+  if (task.timeGoalCompletedReason !== "goal") return false;
+  const completedAtMs = Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0));
+  if (!(completedAtMs > 0)) return false;
   if (!(Math.max(0, Math.floor(Number(task.timeGoalCompletedElapsedMs || 0) || 0)) > 0)) return false;
+  const periodKey =
+    task.timeGoalPeriod === "week"
+      ? String(task.timeGoalCompletedWeekKey || "").trim()
+      : String(task.timeGoalCompletedDayKey || "").trim();
+  const completedPeriodKey =
+    task.timeGoalPeriod === "week"
+      ? localDayKey(startOfCurrentWeekMs(completedAtMs, normalizeDashboardWeekStart(opts.weekStarting)))
+      : localDayKey(completedAtMs);
+  if (!periodKey || periodKey !== completedPeriodKey) return false;
   return !opts.hasAcknowledged;
 }
 
@@ -455,6 +465,43 @@ export function markTaskTimeGoalCompletedForResolution(
     })
   ) return;
   markTaskTimeGoalCompleted(task, completedAtMs, { reason: "goal", elapsedMs, weekStarting: opts.weekStarting });
+}
+
+export function isStaleTimeGoalCompletionForAcknowledgement(
+  task: Task | null | undefined,
+  nowValue = nowMs(),
+  weekStarting?: DashboardWeekStart
+): boolean {
+  if (!task || task.timeGoalCompletedReason !== "goal") return false;
+  const periodKey =
+    task.timeGoalPeriod === "week"
+      ? String(task.timeGoalCompletedWeekKey || "").trim()
+      : String(task.timeGoalCompletedDayKey || "").trim();
+  if (!periodKey) return false;
+  const currentPeriodKey =
+    task.timeGoalPeriod === "week"
+      ? localDayKey(startOfCurrentWeekMs(nowValue, normalizeDashboardWeekStart(weekStarting)))
+      : localDayKey(nowValue);
+  return !!currentPeriodKey && periodKey < currentPeriodKey;
+}
+
+export function clearStaleAcknowledgedTimeGoalCompletionTask(
+  task: Task | null | undefined,
+  nowValue = nowMs(),
+  weekStarting?: DashboardWeekStart
+): boolean {
+  if (!isStaleTimeGoalCompletionForAcknowledgement(task, nowValue, weekStarting) || !task) return false;
+  task.accumulatedMs = 0;
+  task.running = false;
+  task.startMs = null;
+  task.hasStarted = false;
+  task.resumePendingSinceDayKey = null;
+  task.timeGoalCompletedDayKey = null;
+  task.timeGoalCompletedWeekKey = null;
+  task.timeGoalCompletedAtMs = null;
+  task.timeGoalCompletedReason = null;
+  task.timeGoalCompletedElapsedMs = null;
+  return true;
 }
 
 export function didElapsedReachTimeGoalFromBaseline(
@@ -1322,7 +1369,13 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
     const taskId = String(taskIdRaw || "").trim();
     if (!taskId) return true;
     const task = ctx.getTasks().find((row) => String(row.id || "").trim() === taskId) || null;
-    return !task || isTaskTimeGoalStartLockedForPeriod(task, nowMs(), ctx.getWeekStarting());
+    if (!task) return true;
+    if (isTaskTimeGoalStartLockedForPeriod(task, nowMs(), ctx.getWeekStarting())) return true;
+    return (
+      !task.running &&
+      Math.max(0, Math.floor(Number(getTaskElapsedMs(task) || 0) || 0)) <= 0 &&
+      task.timeGoalCompletedReason !== "goal"
+    );
   }
 
   function releaseClaimedTaskPrimaryActionReset(taskIdRaw: unknown, attempt = 0) {
@@ -1849,12 +1902,24 @@ export function createTaskTimerSession(ctx: TaskTimerSessionContext) {
       })
     ) {
       acknowledgeTimeGoalCompletion(task);
+      const clearedStaleCompletion = clearStaleAcknowledgedTimeGoalCompletionTask(task, nowMs(), ctx.getWeekStarting());
+      if (clearedStaleCompletion && taskId) {
+        ctx.clearLiveSession?.(taskId, { forceCloudFlush: true, reason: "stale-acknowledgement" });
+        ctx.clearRewardSessionTracker?.(taskId);
+        resetCheckpointAlertTracking(taskId);
+        clearFocusSessionDraft(taskId);
+        if (String(ctx.getFocusModeTaskId() || "").trim() === taskId) {
+          syncFocusSessionNotesInput(taskId);
+          syncFocusSessionNotesAccordion(taskId);
+        }
+        void ctx.syncSharedTaskSummariesForTask(taskId).catch(() => {});
+      }
       clearTaskTimeGoalFlow(taskId);
       stopTimeGoalCompleteConfetti();
       ctx.closeOverlay(els.timeGoalCompleteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteSaveNoteOverlay as HTMLElement | null);
       ctx.closeOverlay(els.timeGoalCompleteNoteOverlay as HTMLElement | null);
-      ctx.save();
+      ctx.save(clearedStaleCompletion ? { forceCloudFlush: true } : undefined);
       ctx.render();
       openDeferredFocusModeTimeGoalModal();
       return true;

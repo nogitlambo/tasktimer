@@ -3,6 +3,7 @@ import type { LiveTaskSession, Task } from "../lib/types";
 import { getTaskTimeGoalCompletionResolution, getTimeGoalCompletionDayKey } from "../lib/timeGoalCompletion";
 import {
   buildTimeGoalCompleteNextTaskOptions,
+  clearStaleAcknowledgedTimeGoalCompletionTask,
   didElapsedReachTimeGoalFromBaseline,
   findTimeGoalCompleteNextScheduledTask,
   getCheckpointAlertCompletionPriority,
@@ -10,6 +11,7 @@ import {
   getTimeGoalCompletionElapsedMs,
   getTimeGoalCompleteMetaMessage,
   isFinalizedTimeGoalCompletionAwaitingAcknowledgement,
+  isStaleTimeGoalCompletionForAcknowledgement,
   markTaskTimeGoalCompletedForResolution,
   resetFocusModeScrollPosition,
   shouldAutoStopDailyTimeGoalTask,
@@ -662,7 +664,7 @@ describe("time goal complete next task launcher", () => {
     );
   });
 
-  it("does not reopen a finalized completion from a previous day", () => {
+  it("keeps an unacknowledged finalized completion from a previous day claimable", () => {
     const today = new Date(2026, 4, 8, 10, 0, 0).getTime();
     const yesterday = new Date(2026, 4, 7, 10, 0, 0).getTime();
     const completed = timeGoalTask({
@@ -674,6 +676,65 @@ describe("time goal complete next task launcher", () => {
       timeGoalCompletedElapsedMs: 60_000,
     });
 
-    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: false, nowMs: today })).toBe(false);
+    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: false, nowMs: today })).toBe(true);
+    expect(isFinalizedTimeGoalCompletionAwaitingAcknowledgement(completed, { hasAcknowledged: true, nowMs: today })).toBe(false);
+  });
+
+  it("clears stale acknowledged daily completion state back to default", () => {
+    const completedAtMs = new Date(2026, 7, 4, 22, 57, 0).getTime();
+    const acknowledgedAtMs = new Date(2026, 7, 5, 6, 30, 0).getTime();
+    const completed = timeGoalTask({
+      running: false,
+      startMs: null,
+      accumulatedMs: 20 * 60_000,
+      timeGoalMinutes: 20,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 20 * 60_000,
+    });
+
+    expect(isStaleTimeGoalCompletionForAcknowledgement(completed, acknowledgedAtMs)).toBe(true);
+    expect(clearStaleAcknowledgedTimeGoalCompletionTask(completed, acknowledgedAtMs)).toBe(true);
+    expect(completed).toMatchObject({
+      accumulatedMs: 0,
+      running: false,
+      startMs: null,
+      hasStarted: false,
+      resumePendingSinceDayKey: null,
+      timeGoalCompletedDayKey: null,
+      timeGoalCompletedWeekKey: null,
+      timeGoalCompletedAtMs: null,
+      timeGoalCompletedReason: null,
+      timeGoalCompletedElapsedMs: null,
+    });
+  });
+
+  it("preserves same-day acknowledged daily completion state for reset and rerun", () => {
+    const completedAtMs = new Date(2026, 7, 4, 22, 57, 0).getTime();
+    const acknowledgedAtMs = new Date(2026, 7, 4, 23, 10, 0).getTime();
+    const completed = timeGoalTask({
+      running: false,
+      startMs: null,
+      accumulatedMs: 20 * 60_000,
+      timeGoalMinutes: 20,
+      timeGoalCompletedDayKey: getTimeGoalCompletionDayKey(completedAtMs),
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 20 * 60_000,
+    });
+
+    expect(isStaleTimeGoalCompletionForAcknowledgement(completed, acknowledgedAtMs)).toBe(false);
+    expect(clearStaleAcknowledgedTimeGoalCompletionTask(completed, acknowledgedAtMs)).toBe(false);
+    expect(completed).toMatchObject({
+      accumulatedMs: 20 * 60_000,
+      running: false,
+      startMs: null,
+      hasStarted: true,
+      timeGoalCompletedDayKey: "2026-08-04",
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedReason: "goal",
+      timeGoalCompletedElapsedMs: 20 * 60_000,
+    });
   });
 });

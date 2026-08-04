@@ -201,6 +201,71 @@ describe("applyLiveSessionsToTasks", () => {
     }]);
   });
 
+  it("reports an overnight closed-app daily time-goal completion at the actual goal crossing time", () => {
+    const startedAtMs = new Date(2026, 7, 4, 22, 37, 0).getTime();
+    const completedAtMs = new Date(2026, 7, 4, 22, 57, 0).getTime();
+    const updatedAtMs = startedAtMs;
+    const nowValue = new Date(2026, 7, 5, 6, 30, 0).getTime();
+    const result = applyLiveSessionsToTasksWithCompletions([task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 20,
+    })], {
+      "task-1": {
+        sessionId: "task-1:overnight",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs,
+        updatedAtMs,
+        elapsedMs: 0,
+        status: "running",
+      },
+    }, () => nowValue);
+
+    expect(result.closedAppDailyTimeGoalCompletions).toEqual([{
+      taskId: "task-1",
+      periodKey: "2026-08-04",
+      completedAtMs,
+      elapsedMs: 20 * 60_000,
+    }]);
+    expect(result.tasks[0]).toMatchObject({
+      accumulatedMs: 20 * 60_000,
+      running: false,
+      startMs: null,
+      timeGoalCompletedDayKey: "2026-08-04",
+      timeGoalCompletedAtMs: completedAtMs,
+      timeGoalCompletedElapsedMs: 20 * 60_000,
+    });
+  });
+
+  it("uses elapsed-at-update timing when resumedFromMs has already reached the goal", () => {
+    const startedAtMs = new Date(2026, 7, 4, 22, 37, 0).getTime();
+    const completedAtMs = new Date(2026, 7, 4, 22, 57, 0).getTime();
+    const updatedAtMs = new Date(2026, 7, 4, 23, 7, 0).getTime();
+    const nowValue = new Date(2026, 7, 5, 6, 30, 0).getTime();
+    const result = applyLiveSessionsToTasksWithCompletions([task({
+      timeGoalEnabled: true,
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 20,
+    })], {
+      "task-1": {
+        sessionId: "task-1:overnight",
+        taskId: "task-1",
+        name: "Focus",
+        startedAtMs,
+        updatedAtMs,
+        elapsedMs: 30 * 60_000,
+        resumedFromMs: 20 * 60_000,
+        status: "running",
+      },
+    }, () => nowValue);
+
+    expect(result.closedAppDailyTimeGoalCompletions[0]).toMatchObject({
+      completedAtMs,
+      elapsedMs: 20 * 60_000,
+    });
+  });
+
   it("keeps a closed-app daily time-goal live session running while it is below the goal", () => {
     const startedAtMs = 1000;
     const updatedAtMs = 4000;

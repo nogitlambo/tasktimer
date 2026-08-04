@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Codex interaction rules
+- In Plan Mode, when using `request_user_input`, omit `autoResolutionMs`.
+- Do not answer your own Plan Mode questions unless the user explicitly says to proceed without an answer.
+- Before asking the user a question or blocking on required user input, play a short local sound.
+- Preferred Windows sound command: `[console]::beep(880,180); Start-Sleep -Milliseconds 60; [console]::beep(1175,180)`.
+- If sound playback fails, continue with the question and mention the failure briefly.
+
 ## Agent skills
 
 ### Issue tracker

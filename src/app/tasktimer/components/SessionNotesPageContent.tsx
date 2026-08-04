@@ -19,12 +19,6 @@ export default function SessionNotesPageContent({ active }: SessionNotesPageCont
       data-session-notes-filter={taskFilter}
     >
       <div className="sessionNotesShell">
-        <header className="sessionNotesHeader">
-          <div className="sessionNotesTitleBlock">
-            <h1 className="sessionNotesTitle">Notes</h1>
-            <p className="sessionNotesDescription">Review notes saved from focus sessions and manual history entries.</p>
-          </div>
-        </header>
         <div className="sessionNotesFilterWrap">
           <div className="unitButtons taskScreenPillGroup sessionNotesFilterPills" role="group" aria-label="Task note filter">
             <button

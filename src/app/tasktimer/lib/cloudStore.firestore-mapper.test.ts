@@ -9,6 +9,7 @@ type FirestoreDocumentStub = {
 };
 
 const firestoreMocks = vi.hoisted(() => ({
+  deleteField: vi.fn(() => ({ __deleteField: true })),
   setDoc: vi.fn(async () => undefined),
   getDoc: vi.fn<(ref?: { path?: string }) => Promise<FirestoreDocumentStub>>(async () => ({
     exists: () => false,
@@ -26,6 +27,7 @@ const firestoreMocks = vi.hoisted(() => ({
 
 vi.mock("firebase/firestore", () => ({
   collection: vi.fn((_db, ...parts: string[]) => ({ path: parts.join("/") })),
+  deleteField: firestoreMocks.deleteField,
   deleteDoc: firestoreMocks.deleteDoc,
   doc: vi.fn((_db, ...parts: string[]) => ({ path: parts.join("/") })),
   getDoc: firestoreMocks.getDoc,
@@ -314,6 +316,53 @@ describe("saveUserRootPatch plan-safe writes", () => {
       { path: "users/user-1" },
       expect.objectContaining({
         avatarId: "avatar-1",
+        schemaVersion: 1,
+      }),
+      { merge: true }
+    );
+    const rootWrite = findSetDocWrite("users/user-1");
+    expect(rootWrite).not.toHaveProperty("plan");
+    expect(rootWrite).not.toHaveProperty("planUpdatedAt");
+  });
+
+  it("deletes unsupported legacy root fields while preserving server-managed plan fields", async () => {
+    firestoreMocks.getDoc.mockImplementation(async (ref?: { path?: string }) => ({
+      exists: () => ref?.path === "users/user-1",
+      data: () => {
+        if (ref?.path !== "users/user-1") return undefined;
+        const data: Record<string, unknown> = {
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          legacyMode: "mode1",
+          schemaVersion: 1,
+        };
+        return data;
+      },
+      get: (key?: string) => {
+        if (ref?.path !== "users/user-1" || !key) return undefined;
+        const data: Record<string, unknown> = {
+          plan: "plus",
+          planUpdatedAt: { toMillis: () => 123 },
+          legacyMode: "mode1",
+          schemaVersion: 1,
+        };
+        return data[key];
+      },
+    }));
+
+    await saveUserRootPatch("user-1", {
+      email: "user@example.com",
+      displayName: "User",
+      googlePhotoUrl: "https://example.com/photo.png",
+    });
+
+    expect(firestoreMocks.setDoc).toHaveBeenCalledWith(
+      { path: "users/user-1" },
+      expect.objectContaining({
+        email: "user@example.com",
+        displayName: "User",
+        googlePhotoUrl: "https://example.com/photo.png",
+        legacyMode: { __deleteField: true },
         schemaVersion: 1,
       }),
       { merge: true }

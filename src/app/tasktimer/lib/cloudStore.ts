@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -579,6 +580,14 @@ function getUnsupportedUserRootKeys(data: Record<string, unknown> | null): strin
   return Object.keys(data).filter((key) => !USER_ROOT_ALLOWED_KEYS.has(key));
 }
 
+function buildUnsupportedUserRootFieldDeletes(keys: string[]): Record<string, unknown> {
+  const deletes: Record<string, unknown> = {};
+  keys.forEach((key) => {
+    deletes[key] = deleteField();
+  });
+  return deletes;
+}
+
 function sanitizeUsernameCandidate(raw: unknown): string {
   const value = String(raw || "").trim().toLowerCase();
   if (!value) return "";
@@ -794,7 +803,7 @@ async function writeUserRootDocument(uid: string, options?: UserRootWriteOptions
     if (unsupportedKeys.length && canRewriteUserRootWithoutMerge(existingData)) {
       await setDoc(root, payload);
     } else {
-      await setDoc(root, payload, { merge: true });
+      await setDoc(root, { ...payload, ...buildUnsupportedUserRootFieldDeletes(unsupportedKeys) }, { merge: true });
     }
     if (shouldSyncIdentity && !options?.skipIdentitySync) {
       await syncUserIdentityIndex(uid, {

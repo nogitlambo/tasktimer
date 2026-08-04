@@ -268,7 +268,7 @@ export default function Landing(props: LandingProps) {
                 href={getStartedHref}
                 className="btn btn-accent primitiveSciFiModalAction primitiveSciFiModalPrimaryAction landingV2PrimaryBtn displayFont"
               >
-                Launch My Free Account
+                GET STARTED
               </Link>
               <Link
                 href="https://play.google.com/store/apps/details?id=com.tasklaunch.app&hl=en-US&ah=n93boNLLkVvMLSey6j9qG9SPGek"

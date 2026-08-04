@@ -1167,6 +1167,8 @@ export function initTaskTimerClient(initialAppPage: AppPage = "tasks"): TaskTime
       syncRewardSessionTrackerForTask: (task, nowValue) => syncRewardSessionTrackerForRunningTask(task, nowValue),
       syncLiveSessionForTask: (task, nowValue) => rewardSessionBridge.syncLiveSessionForTask(task, nowValue),
       upsertLiveSession: (task, opts) => rewardSessionBridge.upsertLiveSession(task, opts),
+      clearLiveSession: (taskId, opts) => rewardSessionBridge.clearLiveSessionForTask(taskId, opts),
+      clearRewardSessionTracker: (taskId) => rewardSessionBridge.clearRewardSessionTracker(taskId),
       hasEntitlement,
       startTask: (index) => startTaskApi(index),
       stopTask: (index) => stopTaskApi(index),

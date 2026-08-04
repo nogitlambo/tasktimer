@@ -39,6 +39,21 @@ function getLiveSessionObservedElapsedMs(liveSession: LiveSessionsByTaskId[strin
   return elapsedMs + Math.max(0, nowValue - updatedAtMs);
 }
 
+function getClosedAppCompletionTimestampMs(
+  liveSession: LiveSessionsByTaskId[string],
+  goalMs: number,
+  nowValue: number
+): number {
+  const startedAtMs = safeTimestamp(liveSession.startedAtMs);
+  const updatedAtMs = safeTimestamp(liveSession.updatedAtMs, startedAtMs || nowValue);
+  const elapsedMs = Math.max(0, Math.floor(Number(liveSession.elapsedMs || 0) || 0));
+  const elapsedDeltaMs = goalMs - elapsedMs;
+  const estimatedCompletedAtMs = updatedAtMs + elapsedDeltaMs;
+  const fallbackCompletedAtMs = startedAtMs > 0 ? startedAtMs + goalMs : goalMs;
+  const completedAtMs = safeTimestamp(estimatedCompletedAtMs, fallbackCompletedAtMs);
+  return Math.min(Math.max(startedAtMs, completedAtMs), Math.max(0, nowValue));
+}
+
 function hasStoppedSessionState(task: Task | null | undefined): boolean {
   if (!task || task.running) return false;
   const accumulatedMs = Math.max(0, Math.floor(Number(task.accumulatedMs || 0) || 0));
@@ -67,9 +82,7 @@ export function getClosedAppDailyTimeGoalCompletion(
   const observedElapsedMs = elapsedMs + Math.max(0, nowValue - updatedAtMs);
   if (observedElapsedMs < goalMs) return null;
 
-  const resumedFromMs = Math.max(0, Math.floor(Number(liveSession.resumedFromMs || 0) || 0));
-  const remainingGoalMs = Math.max(0, goalMs - resumedFromMs);
-  const completedAtMs = startedAtMs + remainingGoalMs;
+  const completedAtMs = getClosedAppCompletionTimestampMs(liveSession, goalMs, nowValue);
 
   return {
     taskId,

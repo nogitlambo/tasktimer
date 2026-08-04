@@ -564,6 +564,8 @@ type CreateSessionOptionsArgs = {
   syncRewardSessionTrackerForTask: (task: Task | null | undefined, nowValue?: number) => void;
   syncLiveSessionForTask: (task: Task | null | undefined, nowValue?: number) => void;
   upsertLiveSession: Parameters<typeof createTaskTimerSession>[0]["upsertLiveSession"];
+  clearLiveSession?: Parameters<typeof createTaskTimerSession>[0]["clearLiveSession"];
+  clearRewardSessionTracker?: Parameters<typeof createTaskTimerSession>[0]["clearRewardSessionTracker"];
   hasEntitlement: Parameters<typeof createTaskTimerSession>[0]["hasEntitlement"];
   startTask: (index: number) => void;
   stopTask: (index: number) => void;
@@ -1503,6 +1505,8 @@ export function createTaskTimerSessionContext(args: CreateSessionOptionsArgs): P
     syncRewardSessionTrackerForTask: args.syncRewardSessionTrackerForTask,
     syncLiveSessionForTask: args.syncLiveSessionForTask,
     upsertLiveSession: args.upsertLiveSession,
+    clearLiveSession: args.clearLiveSession,
+    clearRewardSessionTracker: args.clearRewardSessionTracker,
     hasEntitlement: args.hasEntitlement,
     startTask: args.startTask,
     stopTask: args.stopTask,
