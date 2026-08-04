@@ -501,22 +501,25 @@ export default function TaskTimerAppFrame({
               </div>
             </section>
         </div>
-        <button
-          ref={mobileMenuBtnRef}
-          className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isHidden" : ""}`}
-          id="menuIcon"
-          type="button"
-          aria-label="Open app menu"
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobileSettingsMenu"
-          onClick={() => setMobileMenuOpen((current) => !current)}
-        >
-          <span className="taskLaunchMobileMenuBars" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-        </button>
+        <div className="taskLaunchTopbarControls">
+          <AppImg className="taskLaunchTopbarExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
+          <button
+            ref={mobileMenuBtnRef}
+            className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isHidden" : ""}`}
+            id="menuIcon"
+            type="button"
+            aria-label="Open app menu"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobileSettingsMenu"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+          >
+            <span className="taskLaunchMobileMenuBars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        </div>
       </div>
       <div
         className={`taskLaunchMobileMenu${mobileMenuOpen ? " isOpen" : ""}`}
@@ -594,6 +597,7 @@ export default function TaskTimerAppFrame({
                   <span className="appShellHeaderXpStats">
                     <span className="appShellHeaderXpStatsRow">
                       <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
+                        <AppImg className="appShellHeaderExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
                         {isDesktopInsigniaUpgradeActive && desktopInsigniaUpgrade ? (
                           <span className="appShellHeaderXpInsigniaUpgradeShell" data-insignia-upgrade-seq={desktopInsigniaUpgrade.seq}>
                             <RankThumbnail

@@ -91,6 +91,14 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect(html).toContain('id="mobileSettingsMenu"');
   });
 
+  it("renders the executive function image in the desktop header and mobile top bar", () => {
+    const html = renderTaskTimerAppFrameMarkup();
+
+    expect(html).toContain('class="taskLaunchTopbarExecutiveFunctionImg"');
+    expect(html).toContain('class="appShellHeaderExecutiveFunctionImg"');
+    expect((html.match(/src="\/executive_function\.png"/g) ?? []).length).toBe(2);
+  });
+
   it("renders the mobile menu as a dialog-style bottom sheet structure", () => {
     const html = renderTaskTimerAppFrameMarkup();
 

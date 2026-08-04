@@ -171,11 +171,12 @@ export function renderSessionNotesHtml(args: Omit<SessionNotesRenderArgs, "listE
     .map(([, taskRows]) => {
       const firstRow = taskRows[0];
       const notesHtml = taskRows.sort((left, right) => right.ts - left.ts).map(renderSessionNoteTile).join("");
+      const taskHeaderStyle =
+        firstRow?.taskState === "active" ? renderTaskHeaderStyle(firstRow?.taskColorRgb) : "";
       return `
         <section class="sessionNotesTaskGroup is-${firstRow?.taskState === "archived" ? "archived" : "active"}">
-          <header class="sessionNotesTaskHeader"${renderTaskHeaderStyle(firstRow?.taskColorRgb)}>
+          <header class="sessionNotesTaskHeader"${taskHeaderStyle}>
             <h2 class="sessionNotesTaskTitle">${escapeHtml(firstRow?.taskName || "Task")}</h2>
-            ${firstRow?.taskState === "archived" ? '<span class="sessionNotesTaskState">Archived</span>' : ""}
           </header>
           <div class="sessionNotesDateList sessionNotesTileGrid">${notesHtml}</div>
         </section>

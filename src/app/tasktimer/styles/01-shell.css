@@ -126,6 +126,10 @@
   border: 0;
 }
 
+.taskLaunchTopbarControls{
+  display:none;
+}
+
 .taskLaunchTopbarXp{
   display:none;
   flex:1 1 auto;
@@ -659,6 +663,15 @@ body[data-app-page="dashboard"] #app[aria-label="TaskLaunch App"]::-webkit-scrol
   align-items:center;
   gap:6px;
   min-width:0;
+}
+
+#app[aria-label="TaskLaunch App"] .appShellHeaderExecutiveFunctionImg{
+  display:block;
+  width:auto;
+  height:24px;
+  max-height:24px;
+  flex:0 0 auto;
+  object-fit:contain;
 }
 
 #app[aria-label="TaskLaunch App"] .appShellHeaderXpBottomRow{
@@ -1472,6 +1485,25 @@ body[data-tasktimer-native-runtime="true"] #app[aria-label="TaskLaunch App"] .ta
 
 #app[aria-label="TaskLaunch App"] .taskLaunchMobileMenuBtn{
     grid-area:controls;
+  }
+
+.taskLaunchTopbarControls{
+    grid-area: controls;
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+  }
+
+#app[aria-label="TaskLaunch App"] .taskLaunchTopbarExecutiveFunctionImg{
+    display:block;
+    width:auto;
+    height:24px;
+    max-height:24px;
+    flex:0 0 auto;
+    object-fit:contain;
   }
 
 .brand{

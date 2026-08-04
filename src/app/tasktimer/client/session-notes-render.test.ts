@@ -112,7 +112,7 @@ describe("renderSessionNotesHtml", () => {
     expect(html).toContain('<header class="sessionNotesTaskHeader" style="--session-notes-task-color-rgb:255 82 82;">');
   });
 
-  it("uses archived task metadata color for archived task headers", () => {
+  it("omits archived task state and task color from archived task headers", () => {
     const html = renderSessionNotesHtml({
       tasks: [],
       deletedTaskMeta: {
@@ -124,8 +124,9 @@ describe("renderSessionNotesHtml", () => {
       },
     });
 
-    expect(html).toContain('<header class="sessionNotesTaskHeader" style="--session-notes-task-color-rgb:0 191 165;">');
-    expect(html).toContain("Archived");
+    expect(html).toContain('<header class="sessionNotesTaskHeader">');
+    expect(html).not.toContain("--session-notes-task-color-rgb:0 191 165");
+    expect(html).not.toContain("sessionNotesTaskState");
   });
 
   it("omits the task color custom property when the task color is invalid or missing", () => {

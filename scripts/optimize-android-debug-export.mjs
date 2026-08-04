@@ -57,7 +57,7 @@ const pruneRelativePaths = [
   "landingsoon",
   "logo/launch-icon-monochrome-google-play.png",
   "logo/launch-icon-white-transparent.svg",
-  "logo/lime-icon.png",
+  "logo/lime-icon.webp",
   "logo/lime-icon-192.png",
   "logo/lime-icon-512.png",
   "logo/mobile-app-icon-dark-grey-1024.png",
