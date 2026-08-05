@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
+import { trackEvent } from "@/lib/firebaseTelemetry";
 import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
 
 import styles from "./BrainDump.module.css";
@@ -22,11 +23,17 @@ type BrainDumpReviewItem = {
 
 type BrainDumpReviewSession = {
   id: string;
-  state: "review";
+  state: "review" | "completed";
   review: {
     selectedCount: number;
     items: BrainDumpReviewItem[];
   };
+};
+
+type BrainDumpCreationBatchResult = {
+  createdCount: number;
+  skippedCount: number;
+  createdTaskIds: string[];
 };
 
 export default function BrainDumpClient() {
@@ -35,9 +42,11 @@ export default function BrainDumpClient() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
+  const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
   const trimmedText = text.trim();
   const canSubmit = trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy;
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
+  const selectedCount = session?.review.items.filter((item) => item.supported && item.selected).length ?? 0;
   const timezone = useMemo(() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -69,9 +78,71 @@ export default function BrainDumpClient() {
       const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
       if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump could not be processed.");
       setSession(payload.session);
+      setBatchResult(null);
       setStatus("Review ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Brain Dump could not be processed.");
+      setStatus("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateReviewItem(itemId: string, patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title">>) {
+    setSession((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        review: {
+          ...current.review,
+          items: current.review.items.map((item) => {
+            if (item.id !== itemId) return item;
+            return {
+              ...item,
+              title: patch.title ?? item.title,
+              selected: item.supported ? (patch.selected ?? item.selected) : false,
+            };
+          }),
+        },
+      };
+    });
+  }
+
+  async function handleConfirm() {
+    if (!session || selectedCount === 0 || busy) return;
+    setBusy(true);
+    setError("");
+    setStatus("Creating tasks");
+    try {
+      const auth = getFirebaseAuthClient();
+      const user = auth?.currentUser || null;
+      const idToken = await user?.getIdToken();
+      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+
+      const itemUpdates = session.review.items.map((item) => ({
+        itemId: item.id,
+        selected: item.supported && item.selected,
+        title: item.title,
+      }));
+      const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/confirm/`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({ itemUpdates }),
+      });
+      const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string };
+      if (!response.ok || !payload.batch) throw new Error(payload.error || "Brain Dump tasks could not be created.");
+      setBatchResult(payload.batch);
+      setSession((current) => (current ? { ...current, state: "completed" } : current));
+      setStatus(`Created ${payload.batch.createdCount} task${payload.batch.createdCount === 1 ? "" : "s"}`);
+      void trackEvent("brain_dump_tasks_created", {
+        created_count: payload.batch.createdCount,
+        skipped_count: payload.batch.skippedCount,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Brain Dump tasks could not be created.");
       setStatus("");
     } finally {
       setBusy(false);
@@ -136,14 +207,28 @@ export default function BrainDumpClient() {
                 Review
               </h2>
               <p className={styles.selectedCount}>
-                {session.review.selectedCount} selected of {session.review.items.length}
+                {selectedCount} selected of {session.review.items.length}
               </p>
             </div>
             <div className={styles.reviewList}>
               {session.review.items.map((item) => (
                 <article className={styles.reviewItem} key={item.id} data-supported={String(item.supported)}>
                   <div className={styles.reviewItemHeader}>
-                    <h3 className={styles.reviewItemTitle}>{item.title}</h3>
+                    <label className={styles.reviewControls}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${item.title}`}
+                        checked={item.supported && item.selected}
+                        disabled={!item.supported || session.state === "completed" || busy}
+                        onChange={(event) => updateReviewItem(item.id, { selected: event.target.checked })}
+                      />
+                      <input
+                        className={styles.titleInput}
+                        value={item.title}
+                        disabled={session.state === "completed" || busy}
+                        onChange={(event) => updateReviewItem(item.id, { title: event.target.value })}
+                      />
+                    </label>
                     <span className={item.supported ? styles.supportedBadge : styles.unsupportedBadge}>
                       {item.supported ? (item.selected ? "Selected" : "Review") : "Unsupported"}
                     </span>
@@ -155,6 +240,21 @@ export default function BrainDumpClient() {
                   {item.ambiguityFlags.length ? <p className={styles.flags}>{item.ambiguityFlags.join(" ")}</p> : null}
                 </article>
               ))}
+            </div>
+            <div className={styles.reviewActions}>
+              <button
+                className={styles.submitButton}
+                type="button"
+                disabled={selectedCount === 0 || busy || session.state === "completed"}
+                onClick={handleConfirm}
+              >
+                {busy ? "Creating" : `Create ${selectedCount}`}
+              </button>
+              {batchResult ? (
+                <a className={styles.backLink} href="/tasklaunch">
+                  Tasks
+                </a>
+              ) : null}
             </div>
           </section>
         ) : null}

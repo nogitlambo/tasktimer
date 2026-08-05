@@ -96,7 +96,8 @@
 
 .captureFooter,
 .reviewHeader,
-.reviewItemHeader {
+.reviewItemHeader,
+.reviewActions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -172,6 +173,42 @@
   font-size: 15px;
 }
 
+.reviewControls {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.reviewControls input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #c9ff24;
+}
+
+.titleInput {
+  min-height: 36px;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0 10px;
+  color: rgba(248, 250, 252, 0.96);
+  font-family: var(--font-display-ui);
+  font-size: 13px;
+  outline: none;
+}
+
+.titleInput:focus-visible {
+  border-color: #c9ff24;
+  box-shadow: 0 0 0 2px rgba(201, 255, 36, 0.16);
+}
+
+.titleInput:disabled {
+  color: rgba(248, 250, 252, 0.58);
+}
+
 .supportedBadge,
 .unsupportedBadge {
   display: inline-flex;
@@ -203,7 +240,8 @@
 
   .captureFooter,
   .reviewHeader,
-  .reviewItemHeader {
+  .reviewItemHeader,
+  .reviewActions {
     align-items: stretch;
     flex-direction: column;
   }

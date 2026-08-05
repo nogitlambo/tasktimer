@@ -16,7 +16,26 @@ describe("BrainDumpClient", () => {
 
     expect(source).toContain("maxLength={BRAIN_DUMP_TEXT_LIMIT}");
     expect(source).toContain("disabled={!canSubmit}");
-    expect(source).toContain("{session.review.selectedCount}");
+    expect(source).toContain("const selectedCount = session?.review.items.filter");
     expect(source).toContain("{session.review.items.length}");
+  });
+
+  it("supports title edits, item selection, and confirmed creation through the hosted endpoint", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("function updateReviewItem");
+    expect(source).toContain('type="checkbox"');
+    expect(source).toContain('aria-label={`Select ${item.title}`}');
+    expect(source).toContain('value={item.title}');
+    expect(source).toContain("selectedCount");
+    expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/confirm/`), {');
+    expect(source).toContain("itemUpdates");
+    expect(source).toContain('trackEvent("brain_dump_tasks_created"');
+    expect(source).toContain("created_count: payload.batch.createdCount");
+    expect(source).toContain("skipped_count: payload.batch.skippedCount");
+    expect(source).toContain(`void trackEvent("brain_dump_tasks_created", {
+        created_count: payload.batch.createdCount,
+        skipped_count: payload.batch.skippedCount,
+      });`);
   });
 });

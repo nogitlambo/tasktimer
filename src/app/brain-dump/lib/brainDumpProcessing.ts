@@ -46,11 +46,26 @@ export type BrainDumpReviewItem = {
   supported: boolean;
 };
 
+export type BrainDumpSessionState = "review" | "completed";
+
+export type BrainDumpCreationBatchResult = {
+  sessionId: string;
+  createdCount: number;
+  skippedCount: number;
+  completedAtMs: number;
+  items: Array<{
+    itemId: string;
+    status: "created" | "skipped";
+    createdTaskId?: string;
+    reason?: string;
+  }>;
+};
+
 export type BrainDumpReviewSession = {
   id: string;
   ownerUid: string;
   mode: "typed";
-  state: "review";
+  state: BrainDumpSessionState;
   promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID;
   createdAtMs: number;
   expiresAtMs: number;
@@ -62,6 +77,7 @@ export type BrainDumpReviewSession = {
     selectedCount: number;
     items: BrainDumpReviewItem[];
   };
+  batchResult?: BrainDumpCreationBatchResult;
 };
 
 export type BrainDumpAiProvider = {
