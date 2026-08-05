@@ -2,6 +2,7 @@
 
 ## TaskTimer
 
+- Brain Dump product contract: the approved TaskLaunch Executive Function Engine contract that keeps typed Brain Dump extraction review-gated, user-owned, hosted-API mediated, strict-schema validated, source-redacted, and mapped only into the existing TaskTimer workspace persistence and Task model fields.
 - TaskTimer workspace persistence module: the module that owns TaskTimer workspace hydration, cached task/history/live-session reads, task/history writes, cloud collection subscriptions, pending sync status, and preferences/dashboard/task-UI cache adapters.
 - TaskTimer runtime composition: the module that creates runtime stores, derived storage keys, runtime adapters, and long-lived mutable references before feature modules are wired.
 - Workspace domain adapters: focused runtime-composition adapters that expose persistence capabilities by domain (for example history snapshots or preference persistence) instead of passing broad repository objects into feature modules.
