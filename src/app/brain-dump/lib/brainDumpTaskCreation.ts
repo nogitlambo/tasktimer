@@ -10,7 +10,7 @@ import type {
   BrainDumpReviewSession,
   BrainDumpSessionStore,
 } from "./brainDumpProcessing";
-import { applyBrainDumpReviewItemUpdate, normalizeBrainDumpReviewItemUpdate } from "./brainDumpProcessing";
+import { applyBrainDumpReviewItemUpdate, ensureBrainDumpSessionNotExpired, normalizeBrainDumpReviewItemUpdate } from "./brainDumpProcessing";
 import { refreshBrainDumpDuplicateWarnings } from "./brainDumpProcessing";
 
 export type BrainDumpWorkspaceRepository = {
@@ -131,7 +131,8 @@ export async function confirmBrainDumpReviewSession(input: {
     throw new BrainDumpCreationError("Brain Dump confirmation requires an idempotency key.", "brain-dump/idempotency-required", 400);
   }
 
-  const session = await input.store.getSession(uid, sessionId);
+  const storedSession = await input.store.getSession(uid, sessionId);
+  const session = storedSession ? await ensureBrainDumpSessionNotExpired({ session: storedSession, store: input.store, now: input.now }) : null;
   if (!session || session.ownerUid !== uid || session.id !== sessionId) {
     throw new BrainDumpCreationError("Brain Dump session was not found.", "brain-dump/not-found", 404);
   }

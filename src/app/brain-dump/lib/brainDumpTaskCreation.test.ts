@@ -660,6 +660,119 @@ describe("confirmBrainDumpReviewSession", () => {
     expect(store.saveSession).not.toHaveBeenCalled();
   });
 
+  it("expires and redacts stale review sessions before any workspace write", async () => {
+    let savedSession: BrainDumpReviewSession | null = null;
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () =>
+        reviewSession({
+          expiresAtMs: 1_800_000_000_499,
+          source: { kind: "typed", rawText: "private stale source" },
+        })
+      ),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(),
+      saveTasks: vi.fn(),
+    };
+
+    await expect(
+      confirmBrainDumpReviewSession({
+        uid: "uid-1",
+        sessionId: "session-1",
+        idempotencyKey: "confirm-key-expired-unit",
+        store,
+        workspace,
+        createId: () => "task-1",
+        now: () => 1_800_000_000_500,
+      })
+    ).rejects.toMatchObject({
+      code: "brain-dump/expired",
+      status: 410,
+    });
+    expect(workspace.loadTasks).not.toHaveBeenCalled();
+    expect(workspace.saveTasks).not.toHaveBeenCalled();
+    expect(savedSession).toMatchObject({
+      state: "expired",
+      source: { kind: "typed", rawText: "" },
+      review: { selectedCount: 0 },
+    });
+    expect((savedSession as unknown as BrainDumpReviewSession).review.items[0].sourceEvidence).toEqual([]);
+    expect(JSON.stringify(savedSession)).not.toContain("private stale source");
+  });
+
+  it("does not repeatedly rewrite an already-redacted expired session", async () => {
+    const expired = reviewSession({
+      state: "expired",
+      expiredAtMs: 1_800_000_000_500,
+      source: { kind: "typed", rawText: "" },
+      review: {
+        selectedCount: 0,
+        items: reviewSession().review.items.map((item) => ({ ...item, selected: false, sourceEvidence: [] })),
+      },
+    });
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => expired),
+      saveSession: vi.fn(),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(),
+      saveTasks: vi.fn(),
+    };
+
+    await expect(
+      confirmBrainDumpReviewSession({
+        uid: "uid-1",
+        sessionId: "session-1",
+        idempotencyKey: "confirm-key-expired-replay",
+        store,
+        workspace,
+        createId: () => "task-1",
+        now: () => 1_800_000_000_600,
+      })
+    ).rejects.toMatchObject({
+      code: "brain-dump/expired",
+      status: 410,
+    });
+    expect(store.saveSession).not.toHaveBeenCalled();
+    expect(workspace.loadTasks).not.toHaveBeenCalled();
+  });
+
+  it("does not expire completed sessions when a stale confirm arrives after creation finishes", async () => {
+    const completed = reviewSession({
+      state: "completed",
+      expiresAtMs: 1_800_000_000_499,
+      source: { kind: "typed", rawText: "" },
+    });
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => completed),
+      saveSession: vi.fn(),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(),
+      saveTasks: vi.fn(),
+    };
+
+    await expect(
+      confirmBrainDumpReviewSession({
+        uid: "uid-1",
+        sessionId: "session-1",
+        idempotencyKey: "confirm-key-completed-stale",
+        store,
+        workspace,
+        createId: () => "task-1",
+        now: () => 1_800_000_000_500,
+      })
+    ).rejects.toMatchObject({
+      code: "brain-dump/not-reviewable",
+      status: 409,
+    });
+    expect(store.saveSession).not.toHaveBeenCalled();
+    expect(workspace.loadTasks).not.toHaveBeenCalled();
+  });
+
   it("skips unsupported items even when confirmation selects them", async () => {
     let savedTasks: Task[] = [];
     const unsupportedSession = reviewSession({

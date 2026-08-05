@@ -143,7 +143,7 @@ export type BrainDumpReviewItemUpdate = {
   duplicateDecision?: BrainDumpDuplicateDecision;
 };
 
-export type BrainDumpSessionState = "review" | "completed";
+export type BrainDumpSessionState = "review" | "completed" | "expired";
 
 export type BrainDumpCreationBatchResult = {
   sessionId: string;
@@ -197,6 +197,7 @@ export type BrainDumpReviewSession = {
   promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID;
   createdAtMs: number;
   expiresAtMs: number;
+  expiredAtMs?: number;
   source: {
     kind: "typed";
     rawText: string;
@@ -244,6 +245,16 @@ export class BrainDumpProviderValidationError extends Error {
   code = "brain-dump/provider-schema-invalid";
 }
 
+export class BrainDumpSessionExpiredError extends Error {
+  status = 410;
+  code = "brain-dump/expired";
+
+  constructor() {
+    super("Brain Dump session expired. Start a fresh Brain Dump to continue.");
+    this.name = "BrainDumpSessionExpiredError";
+  }
+}
+
 export class BrainDumpImageInterpretationError extends Error {
   status = 422;
   code = "brain-dump/image-unclear";
@@ -263,6 +274,50 @@ export class BrainDumpReviewUpdateError extends Error {
 function asTrimmedString(value: unknown, maxLength = 0) {
   const text = typeof value === "string" ? value.trim() : "";
   return maxLength > 0 ? text.slice(0, maxLength) : text;
+}
+
+function currentTimeMs(now?: () => number) {
+  return Math.max(0, Math.floor(Number(now?.() ?? Date.now()) || 0));
+}
+
+function sessionIsExpired(session: BrainDumpReviewSession, nowMs: number) {
+  if (session.state === "expired") return true;
+  return session.state === "review" && Number(session.expiresAtMs || 0) > 0 && Number(session.expiresAtMs || 0) <= nowMs;
+}
+
+export function redactExpiredBrainDumpSession(session: BrainDumpReviewSession, nowMs: number): BrainDumpReviewSession {
+  return {
+    ...session,
+    state: "expired",
+    expiredAtMs: session.expiredAtMs || nowMs,
+    source: {
+      ...session.source,
+      rawText: "",
+    },
+    review: {
+      ...session.review,
+      items: session.review.items.map((item) => ({
+        ...item,
+        selected: false,
+        sourceEvidence: [],
+      })),
+      selectedCount: 0,
+    },
+  };
+}
+
+export async function ensureBrainDumpSessionNotExpired(input: {
+  session: BrainDumpReviewSession;
+  store: BrainDumpSessionStore;
+  now?: () => number;
+}) {
+  const nowMs = currentTimeMs(input.now);
+  if (!sessionIsExpired(input.session, nowMs)) return input.session;
+  const expiredSession = redactExpiredBrainDumpSession(input.session, nowMs);
+  if (JSON.stringify(expiredSession) !== JSON.stringify(input.session)) {
+    await input.store.saveSession(expiredSession);
+  }
+  throw new BrainDumpSessionExpiredError();
 }
 
 function normalizeTypedInput(text: unknown) {
@@ -699,7 +754,7 @@ export async function processTypedBrainDump(input: {
   const timezone = normalizeTimezone(input.timezone);
   const sessionId = asTrimmedString(input.createId(), 120);
   if (!sessionId) throw new Error("Could not create Brain Dump session id.");
-  const nowMs = Math.max(0, Math.floor(Number(input.now?.() ?? Date.now()) || 0));
+  const nowMs = currentTimeMs(input.now);
 
   const providerResponse = await input.provider.extractTyped({
     promptId: BRAIN_DUMP_TYPED_PROMPT_ID,
@@ -880,11 +935,14 @@ export async function getBrainDumpReviewSessionForUser(input: {
   uid: string;
   sessionId: string;
   store: BrainDumpSessionStore;
+  now?: () => number;
 }): Promise<BrainDumpReviewSession | null> {
   const uid = asTrimmedString(input.uid, 120);
   const sessionId = asTrimmedString(input.sessionId, 120);
   if (!uid || !sessionId) return null;
-  return input.store.getSession(uid, sessionId);
+  const session = await input.store.getSession(uid, sessionId);
+  if (!session) return null;
+  return ensureBrainDumpSessionNotExpired({ session, store: input.store, now: input.now });
 }
 
 export async function updateBrainDumpReviewSession(input: {
@@ -892,13 +950,15 @@ export async function updateBrainDumpReviewSession(input: {
   sessionId: string;
   itemUpdates?: BrainDumpReviewItemUpdate[];
   store: BrainDumpSessionStore;
+  now?: () => number;
 }): Promise<BrainDumpReviewSession> {
   const uid = asTrimmedString(input.uid, 120);
   const sessionId = asTrimmedString(input.sessionId, 120);
   if (!uid) throw new BrainDumpReviewUpdateError("You must be signed in to continue.", "auth/unauthenticated", 401);
   if (!sessionId) throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
 
-  const session = await input.store.getSession(uid, sessionId);
+  const storedSession = await input.store.getSession(uid, sessionId);
+  const session = storedSession ? await ensureBrainDumpSessionNotExpired({ session: storedSession, store: input.store, now: input.now }) : null;
   if (!session || session.ownerUid !== uid || session.id !== sessionId) {
     throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
   }

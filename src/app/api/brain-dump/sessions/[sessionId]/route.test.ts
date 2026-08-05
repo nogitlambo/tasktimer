@@ -48,7 +48,7 @@ function reviewSession(): BrainDumpReviewSession {
     state: "review",
     promptId: "brain-dump-v1",
     createdAtMs: 1,
-    expiresAtMs: 2,
+    expiresAtMs: 4_102_444_800_000,
     source: { kind: "typed", rawText: "Prepare investor update" },
     review: {
       selectedCount: 1,
@@ -81,6 +81,7 @@ function reviewSession(): BrainDumpReviewSession {
 describe("GET /api/brain-dump/sessions/[sessionId]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     mocks.verifyFirebaseRequestUser.mockResolvedValue({
       uid: "uid-2",
       email: "other@example.com",
@@ -243,5 +244,74 @@ describe("GET /api/brain-dump/sessions/[sessionId]", () => {
       { field: "title", message: "Enter a task title before creating this item." },
     ]);
     expect(payload.session.review.items[1].validationErrors).toEqual([]);
+  });
+
+  it("denies reading an expired review session and redacts raw source", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(10_000));
+    mocks.store.getSession.mockResolvedValueOnce({
+      ...reviewSession(),
+      expiresAtMs: 9_999,
+      source: { kind: "typed", rawText: "private stale source" },
+    });
+
+    const response = await GET(
+      new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1", {
+        headers: { origin: "https://localhost", "x-firebase-auth": "token" },
+      }),
+      { params: Promise.resolve({ sessionId: "session-1" }) }
+    );
+    const payload = await response.json();
+    const expiredSession = mocks.store.saveSession.mock.calls[0]?.[0] as BrainDumpReviewSession;
+
+    expect(response.status).toBe(410);
+    expect(payload).toEqual({
+      error: "Brain Dump session expired. Start a fresh Brain Dump to continue.",
+      code: "brain-dump/expired",
+    });
+    expect(expiredSession).toMatchObject({
+      state: "expired",
+      source: { kind: "typed", rawText: "" },
+    });
+    expect(expiredSession.review.items[0].sourceEvidence).toEqual([]);
+  });
+
+  it("denies editing an expired review session without reviving stale client state", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(10_000));
+    mocks.store.getSession.mockResolvedValueOnce({
+      ...reviewSession(),
+      expiresAtMs: 9_999,
+      source: { kind: "typed", rawText: "private stale source" },
+    });
+
+    const response = await PATCH(
+      new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://localhost",
+          "x-firebase-auth": "token",
+        },
+        body: JSON.stringify({
+          itemUpdates: [{ itemId: "item-1", title: "Revived task", selected: true }],
+        }),
+      }),
+      { params: Promise.resolve({ sessionId: "session-1" }) }
+    );
+    const payload = await response.json();
+    const expiredSession = mocks.store.saveSession.mock.calls[0]?.[0] as BrainDumpReviewSession;
+
+    expect(response.status).toBe(410);
+    expect(payload).toEqual({
+      error: "Brain Dump session expired. Start a fresh Brain Dump to continue.",
+      code: "brain-dump/expired",
+    });
+    expect(expiredSession.state).toBe("expired");
+    expect(expiredSession.review.items[0]).toMatchObject({
+      title: "Prepare investor update",
+      selected: false,
+      sourceEvidence: [],
+    });
   });
 });

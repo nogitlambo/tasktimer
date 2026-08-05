@@ -148,6 +148,21 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("source_text");
   });
 
+  it("handles expired review sessions with a fresh-start path and no stale completion state", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("function payloadError");
+    expect(source).toContain("code?: string");
+    expect(source).toContain("function handleRequestError");
+    expect(source).toContain('nextCode === "brain-dump/expired"');
+    expect(source).toContain("setSession(null)");
+    expect(source).toContain("setBatchResult(null)");
+    expect(source).toContain("setUndoResult(null)");
+    expect(source).toContain("function handleStartFreshAfterExpiry");
+    expect(source).toContain('errorCode === "brain-dump/expired"');
+    expect(source).toContain("Start fresh");
+  });
+
   it("uses history-aware Back links with a TaskLaunch fallback", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 

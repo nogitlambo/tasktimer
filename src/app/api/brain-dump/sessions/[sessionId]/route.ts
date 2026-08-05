@@ -49,7 +49,7 @@ export async function GET(req: Request, context: RouteContext) {
     }
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, session: toBrainDumpReviewResponse(session) }));
   } catch (error) {
-    if (error instanceof Error && hasStatus(error) && errorCode(error).startsWith("auth/")) {
+    if (hasStatus(error)) {
       return withAuthenticatedApiCors(
         req,
         NextResponse.json(

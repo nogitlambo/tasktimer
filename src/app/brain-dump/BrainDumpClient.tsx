@@ -98,6 +98,14 @@ function readBlobAsBase64(blob: Blob) {
   });
 }
 
+function payloadError(message: string, code?: string) {
+  return Object.assign(new Error(message), { code });
+}
+
+function requestErrorCode(error: unknown) {
+  return typeof (error as { code?: unknown })?.code === "string" ? String((error as { code?: unknown }).code) : "";
+}
+
 type BrainDumpReviewItem = {
   id: string;
   itemType: string;
@@ -154,7 +162,7 @@ type BrainDumpDuplicateWarning = {
 
 type BrainDumpReviewSession = {
   id: string;
-  state: "review" | "completed";
+  state: "review" | "completed" | "expired";
   review: {
     selectedCount: number;
     items: BrainDumpReviewItem[];
@@ -184,6 +192,7 @@ export default function BrainDumpClient() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [errorCode, setErrorCode] = useState("");
   const [voiceState, setVoiceState] = useState<BrainDumpVoiceState>("idle");
   const [voiceError, setVoiceError] = useState("");
   const [voiceElapsedMs, setVoiceElapsedMs] = useState(0);
@@ -244,6 +253,23 @@ export default function BrainDumpClient() {
       event.preventDefault();
       window.history.back();
     }
+  }
+
+  function handleRequestError(err: unknown, fallback: string) {
+    const nextCode = requestErrorCode(err);
+    setError(err instanceof Error ? err.message : fallback);
+    setErrorCode(nextCode);
+    if (nextCode === "brain-dump/expired") {
+      setSession(null);
+      setBatchResult(null);
+      setUndoResult(null);
+      setConfirmIdempotencyKey("");
+    }
+  }
+
+  function handleStartFreshAfterExpiry() {
+    handleClearDraft();
+    setErrorCode("");
   }
 
   useEffect(() => {
@@ -554,6 +580,7 @@ export default function BrainDumpClient() {
     if (!voiceAudioBlob || busy || voiceState === "transcribing") return;
     setVoiceState("transcribing");
     setVoiceError("");
+    setErrorCode("");
     setVoiceUploadProgressPct(20);
     setStatus("Uploading recording securely");
     try {
@@ -576,8 +603,8 @@ export default function BrainDumpClient() {
           timezone,
         }),
       });
-      const payload = (await response.json()) as { transcript?: string; error?: string };
-      if (!response.ok || !payload.transcript) throw new Error(payload.error || "Brain Dump recording could not be transcribed.");
+      const payload = (await response.json()) as { transcript?: string; error?: string; code?: string };
+      if (!response.ok || !payload.transcript) throw payloadError(payload.error || "Brain Dump recording could not be transcribed.", payload.code);
       setText(payload.transcript);
       writeStoredDraft(payload.transcript);
       setVoiceUploadProgressPct(100);
@@ -608,6 +635,7 @@ export default function BrainDumpClient() {
     setImageState("processing");
     setImageError("");
     setError("");
+    setErrorCode("");
     setRecoverableFailure(false);
     setImageUploadProgressPct(20);
     setStatus("Uploading image securely");
@@ -634,8 +662,8 @@ export default function BrainDumpClient() {
         }),
         signal: controller.signal,
       });
-      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
-      if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump image could not be processed.");
+      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string; code?: string };
+      if (!response.ok || !payload.session) throw payloadError(payload.error || "Brain Dump image could not be processed.", payload.code);
       setImageUploadProgressPct(100);
       setImageState("ready");
       setSession(payload.session);
@@ -655,6 +683,7 @@ export default function BrainDumpClient() {
       if (err instanceof DOMException && err.name === "AbortError") {
         setStatus("Cancelled");
       } else {
+        handleRequestError(err, "Brain Dump image could not be processed.");
         setImageError(err instanceof Error ? err.message : "Brain Dump image could not be processed.");
         setStatus("");
         setRecoverableFailure(true);
@@ -680,6 +709,7 @@ export default function BrainDumpClient() {
     resetImageUpload();
     setImageInstruction("");
     setError("");
+    setErrorCode("");
     setStatus("");
     setRecoverableFailure(false);
     setSession(null);
@@ -698,6 +728,7 @@ export default function BrainDumpClient() {
     abortControllerRef.current = null;
     setBusy(false);
     setError("");
+    setErrorCode("");
     setStatus("Cancelled");
     setRecoverableFailure(false);
     void trackEvent("brain_dump_processing_cancelled", {
@@ -719,6 +750,7 @@ export default function BrainDumpClient() {
     if (options.allowAutoRetry) autoRetriedRef.current = false;
     setBusy(true);
     setError("");
+    setErrorCode("");
     setRecoverableFailure(false);
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const controller = new AbortController();
@@ -741,8 +773,8 @@ export default function BrainDumpClient() {
           body: JSON.stringify({ text: trimmedText, timezone }),
           signal: controller.signal,
         });
-        const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
-        if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump could not be processed.");
+        const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string; code?: string };
+        if (!response.ok || !payload.session) throw payloadError(payload.error || "Brain Dump could not be processed.", payload.code);
         setStatus("Saving review");
         setSession(payload.session);
         setBatchResult(null);
@@ -770,7 +802,7 @@ export default function BrainDumpClient() {
           setStatus("Retrying");
           continue;
         }
-        setError(err instanceof Error ? err.message : "Brain Dump could not be processed.");
+        handleRequestError(err, "Brain Dump could not be processed.");
         setStatus("");
         setRecoverableFailure(true);
         void trackEvent("brain_dump_processing_failed", {
@@ -829,6 +861,7 @@ export default function BrainDumpClient() {
     if (!session || busy) return;
     setBusy(true);
     setError("");
+    setErrorCode("");
     setStatus("Saving review");
     try {
       const auth = getFirebaseAuthClient();
@@ -844,8 +877,8 @@ export default function BrainDumpClient() {
         },
         body: JSON.stringify({ itemUpdates: buildReviewItemUpdates(session) }),
       });
-      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
-      if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump review could not be saved.");
+      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string; code?: string };
+      if (!response.ok || !payload.session) throw payloadError(payload.error || "Brain Dump review could not be saved.", payload.code);
       setSession(payload.session);
       setStatus("Review saved");
       void trackEvent("brain_dump_review_saved", {
@@ -853,7 +886,7 @@ export default function BrainDumpClient() {
         selected_count: payload.session.review.items.filter((item) => item.selected).length,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Brain Dump review could not be saved.");
+      handleRequestError(err, "Brain Dump review could not be saved.");
       setStatus("");
       void trackEvent("brain_dump_review_save_failed", {
         session_id: session.id,
@@ -867,6 +900,7 @@ export default function BrainDumpClient() {
     if (!session || selectedCount === 0 || busy || !confirmIdempotencyKey) return;
     setBusy(true);
     setError("");
+    setErrorCode("");
     setStatus("Creating tasks");
     try {
       const auth = getFirebaseAuthClient();
@@ -883,8 +917,8 @@ export default function BrainDumpClient() {
         },
         body: JSON.stringify({ idempotencyKey: confirmIdempotencyKey, itemUpdates }),
       });
-      const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string };
-      if (!response.ok || !payload.batch) throw new Error(payload.error || "Brain Dump tasks could not be created.");
+      const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string; code?: string };
+      if (!response.ok || !payload.batch) throw payloadError(payload.error || "Brain Dump tasks could not be created.", payload.code);
       setBatchResult(payload.batch);
       setUndoResult(null);
       if (payload.batch.state === "completed") {
@@ -907,7 +941,7 @@ export default function BrainDumpClient() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Brain Dump tasks could not be created.");
+      handleRequestError(err, "Brain Dump tasks could not be created.");
       setStatus("");
       void trackEvent("brain_dump_tasks_create_failed", {
         session_id: session.id,
@@ -922,6 +956,7 @@ export default function BrainDumpClient() {
     if (!session || !batchResult || !undoAvailable || busy) return;
     setBusy(true);
     setError("");
+    setErrorCode("");
     setStatus("Undoing tasks");
     try {
       const auth = getFirebaseAuthClient();
@@ -937,8 +972,8 @@ export default function BrainDumpClient() {
         },
         body: JSON.stringify({ idempotencyKey: batchResult.idempotencyKey }),
       });
-      const payload = (await response.json()) as { undo?: BrainDumpUndoBatchResult; error?: string };
-      if (!response.ok || !payload.undo) throw new Error(payload.error || "Brain Dump undo could not be completed.");
+      const payload = (await response.json()) as { undo?: BrainDumpUndoBatchResult; error?: string; code?: string };
+      if (!response.ok || !payload.undo) throw payloadError(payload.error || "Brain Dump undo could not be completed.", payload.code);
       setUndoResult(payload.undo);
       setStatus(`Removed ${payload.undo.removedCount}; retained ${payload.undo.retainedCount}`);
       void trackEvent("brain_dump_tasks_undone", {
@@ -946,7 +981,7 @@ export default function BrainDumpClient() {
         retained_count: payload.undo.retainedCount,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Brain Dump undo could not be completed.");
+      handleRequestError(err, "Brain Dump undo could not be completed.");
       setStatus("");
       void trackEvent("brain_dump_tasks_undo_failed", {
         session_id: session.id,
@@ -1180,6 +1215,11 @@ export default function BrainDumpClient() {
             <p id="brainDumpError" className={styles.error} role="alert" tabIndex={-1} ref={errorSummaryRef}>
               {error}
             </p>
+          ) : null}
+          {errorCode === "brain-dump/expired" ? (
+            <button className={styles.secondaryButton} type="button" onClick={handleStartFreshAfterExpiry}>
+              Start fresh
+            </button>
           ) : null}
         </div>
 
