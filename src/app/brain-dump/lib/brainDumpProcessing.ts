@@ -141,8 +141,24 @@ export type BrainDumpCreationBatchResult = {
     itemId: string;
     status: "created" | "skipped" | "failed";
     createdTaskId?: string;
+    createdTaskSnapshot?: Task;
     reason?: string;
     retryable?: boolean;
+  }>;
+};
+
+export type BrainDumpUndoBatchResult = {
+  sessionId: string;
+  idempotencyKey: string;
+  state: "undone" | "partially_undone" | "not_undone" | "expired";
+  removedCount: number;
+  retainedCount: number;
+  completedAtMs: number;
+  items: Array<{
+    itemId: string;
+    status: "removed" | "retained" | "skipped";
+    createdTaskId?: string;
+    reason?: string;
   }>;
 };
 
@@ -172,6 +188,7 @@ export type BrainDumpReviewSession = {
     items: BrainDumpReviewItem[];
   };
   batchResult?: BrainDumpCreationBatchResult;
+  undoResult?: BrainDumpUndoBatchResult;
   creationReceipts?: Record<string, BrainDumpCreationReceipt>;
 };
 

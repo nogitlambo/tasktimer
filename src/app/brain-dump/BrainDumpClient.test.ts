@@ -114,4 +114,20 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("Skip");
     expect(source).toContain('duplicateDecision: "skip"');
   });
+
+  it("exposes an accessible 30-second undo action after successful creation", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("BrainDumpUndoBatchResult");
+    expect(source).toContain("undoExpiresAtMs");
+    expect(source).toContain("30_000");
+    expect(source).toContain("undoAvailable");
+    expect(source).toContain("handleUndoBatch");
+    expect(source).toContain('aria-label="Undo Brain Dump task creation"');
+    expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/undo/`), {');
+    expect(source).toContain("idempotencyKey: batchResult.idempotencyKey");
+    expect(source).toContain('trackEvent("brain_dump_tasks_undone"');
+    expect(source).toContain("removed_count: payload.undo.removedCount");
+    expect(source).toContain("retained_count: payload.undo.retainedCount");
+  });
 });

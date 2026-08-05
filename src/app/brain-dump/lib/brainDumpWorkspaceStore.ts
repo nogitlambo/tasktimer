@@ -65,5 +65,29 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
       if (!safeUid || !taskId) return;
       await tasksCollection(safeUid).doc(taskId).set(task, { merge: true });
     },
+    async deleteTasks(uid: string, taskIds: string[]) {
+      const safeUid = asString(uid, 120);
+      if (!safeUid) return;
+      const batch = db.batch();
+      for (const taskId of taskIds.map((id) => asString(id, 120)).filter(Boolean)) {
+        batch.delete(tasksCollection(safeUid).doc(taskId));
+      }
+      await batch.commit();
+    },
+    async hasTaskDependents(uid: string, taskId: string) {
+      const safeUid = asString(uid, 120);
+      const safeTaskId = asString(taskId, 120);
+      if (!safeUid || !safeTaskId) return true;
+      const legacyHistorySnap = await tasksCollection(safeUid).doc(safeTaskId).collection("history").limit(1).get();
+      if (!legacyHistorySnap.empty) return true;
+      const canonicalHistorySnap = await db
+        .collection("users")
+        .doc(safeUid)
+        .collection("historyEntries")
+        .where("taskId", "==", safeTaskId)
+        .limit(1)
+        .get();
+      return !canonicalHistorySnap.empty;
+    },
   };
 }

@@ -120,11 +120,20 @@ type BrainDumpReviewSession = {
 };
 
 type BrainDumpCreationBatchResult = {
+  sessionId: string;
+  idempotencyKey: string;
   state: "completed" | "partially_failed" | "failed";
   createdCount: number;
   skippedCount: number;
   failedCount: number;
   retryableCount: number;
+  completedAtMs: number;
+};
+
+type BrainDumpUndoBatchResult = {
+  state: "undone" | "partially_undone" | "not_undone" | "expired";
+  removedCount: number;
+  retainedCount: number;
 };
 
 export default function BrainDumpClient() {
@@ -136,6 +145,8 @@ export default function BrainDumpClient() {
   const [recoverableFailure, setRecoverableFailure] = useState(false);
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
   const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
+  const [undoResult, setUndoResult] = useState<BrainDumpUndoBatchResult | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [confirmIdempotencyKey, setConfirmIdempotencyKey] = useState("");
   const autoRetriedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -144,6 +155,8 @@ export default function BrainDumpClient() {
   const canSubmit = trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy;
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
   const selectedCount = session?.review.items.filter((item) => item.supported && item.selected).length ?? 0;
+  const undoExpiresAtMs = batchResult?.state === "completed" ? batchResult.completedAtMs + 30_000 : 0;
+  const undoAvailable = !!batchResult && batchResult.state === "completed" && !undoResult && nowMs <= undoExpiresAtMs;
   const timezone = useMemo(() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -155,6 +168,12 @@ export default function BrainDumpClient() {
   useEffect(() => {
     if (error) errorSummaryRef.current?.focus();
   }, [error]);
+
+  useEffect(() => {
+    if (!batchResult || batchResult.state !== "completed" || undoResult) return;
+    const timer = window.setTimeout(() => setNowMs(Date.now()), 1000);
+    return () => window.clearTimeout(timer);
+  }, [batchResult, nowMs, undoResult]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -182,6 +201,7 @@ export default function BrainDumpClient() {
     setRecoverableFailure(false);
     setSession(null);
     setBatchResult(null);
+    setUndoResult(null);
     setConfirmIdempotencyKey("");
     autoRetriedRef.current = false;
     void trackEvent("brain_dump_draft_cleared", {
@@ -239,6 +259,7 @@ export default function BrainDumpClient() {
         setStatus("Saving review");
         setSession(payload.session);
         setBatchResult(null);
+        setUndoResult(null);
         setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
         setStatus("Review ready");
         autoRetriedRef.current = false;
@@ -378,6 +399,7 @@ export default function BrainDumpClient() {
       const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string };
       if (!response.ok || !payload.batch) throw new Error(payload.error || "Brain Dump tasks could not be created.");
       setBatchResult(payload.batch);
+      setUndoResult(null);
       if (payload.batch.state === "completed") {
         setSession((current) => (current ? { ...current, state: "completed" } : current));
         setStatus(`Created ${payload.batch.createdCount} task${payload.batch.createdCount === 1 ? "" : "s"}`);
@@ -403,6 +425,44 @@ export default function BrainDumpClient() {
       void trackEvent("brain_dump_tasks_create_failed", {
         session_id: session.id,
         selected_count: selectedCount,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUndoBatch() {
+    if (!session || !batchResult || !undoAvailable || busy) return;
+    setBusy(true);
+    setError("");
+    setStatus("Undoing tasks");
+    try {
+      const auth = getFirebaseAuthClient();
+      const user = auth?.currentUser || null;
+      const idToken = await user?.getIdToken();
+      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+
+      const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/undo/`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({ idempotencyKey: batchResult.idempotencyKey }),
+      });
+      const payload = (await response.json()) as { undo?: BrainDumpUndoBatchResult; error?: string };
+      if (!response.ok || !payload.undo) throw new Error(payload.error || "Brain Dump undo could not be completed.");
+      setUndoResult(payload.undo);
+      setStatus(`Removed ${payload.undo.removedCount}; retained ${payload.undo.retainedCount}`);
+      void trackEvent("brain_dump_tasks_undone", {
+        removed_count: payload.undo.removedCount,
+        retained_count: payload.undo.retainedCount,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Brain Dump undo could not be completed.");
+      setStatus("");
+      void trackEvent("brain_dump_tasks_undo_failed", {
+        session_id: session.id,
       });
     } finally {
       setBusy(false);
@@ -726,9 +786,22 @@ export default function BrainDumpClient() {
                 {busy ? "Creating" : `Create ${selectedCount}`}
               </button>
               {batchResult ? (
-                <a className={styles.backLink} href="/tasklaunch">
-                  Tasks
-                </a>
+                <>
+                  {undoAvailable ? (
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      aria-label="Undo Brain Dump task creation"
+                      disabled={busy}
+                      onClick={handleUndoBatch}
+                    >
+                      Undo
+                    </button>
+                  ) : null}
+                  <a className={styles.backLink} href="/tasklaunch">
+                    Tasks
+                  </a>
+                </>
               ) : null}
             </div>
           </section>

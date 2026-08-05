@@ -18,6 +18,8 @@ export type BrainDumpWorkspaceRepository = {
   loadTaskStatusMeta?(uid: string): Promise<DeletedTaskMeta>;
   saveTasks(uid: string, tasks: Task[]): Promise<void>;
   saveTask?(uid: string, task: Task): Promise<void>;
+  deleteTasks?(uid: string, taskIds: string[]): Promise<void>;
+  hasTaskDependents?(uid: string, taskId: string): Promise<boolean>;
 };
 
 export class BrainDumpCreationError extends Error {
@@ -202,6 +204,7 @@ export async function confirmBrainDumpReviewSession(input: {
           itemId: candidate.item.id,
           status: "created",
           createdTaskId: candidate.task.id,
+          createdTaskSnapshot: candidate.task,
         };
       } catch {
         resultItems[candidate.index] = {
@@ -220,6 +223,7 @@ export async function confirmBrainDumpReviewSession(input: {
           itemId: candidate.item.id,
           status: "created",
           createdTaskId: candidate.task.id,
+          createdTaskSnapshot: candidate.task,
         };
       }
     } catch {
