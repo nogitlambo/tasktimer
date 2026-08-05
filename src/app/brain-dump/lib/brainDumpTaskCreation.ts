@@ -10,7 +10,13 @@ import type {
   BrainDumpReviewSession,
   BrainDumpSessionStore,
 } from "./brainDumpProcessing";
-import { applyBrainDumpReviewItemUpdate, ensureBrainDumpSessionNotExpired, normalizeBrainDumpReviewItemUpdate } from "./brainDumpProcessing";
+import {
+  applyBrainDumpReviewItemUpdate,
+  BRAIN_DUMP_SOURCE_COMPLETED_DELETE_AFTER_MS,
+  ensureBrainDumpSessionNotExpired,
+  normalizeBrainDumpReviewItemUpdate,
+  scheduleBrainDumpSourceFilesForDeletion,
+} from "./brainDumpProcessing";
 import { refreshBrainDumpDuplicateWarnings } from "./brainDumpProcessing";
 
 export type BrainDumpWorkspaceRepository = {
@@ -265,6 +271,10 @@ export async function confirmBrainDumpReviewSession(input: {
     source: {
       ...session.source,
       rawText: batchState === "completed" ? "" : session.source.rawText,
+      files:
+        batchState === "completed"
+          ? scheduleBrainDumpSourceFilesForDeletion(session.source.files, createdAtMs + BRAIN_DUMP_SOURCE_COMPLETED_DELETE_AFTER_MS)
+          : session.source.files,
     },
     review: {
       selectedCount: reviewedItems.filter((item) => item.selected).length,

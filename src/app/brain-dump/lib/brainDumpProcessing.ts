@@ -7,6 +7,7 @@ export const BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID = "brain-dump-voice-transc
 export const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
 export const BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID = "brain-dump-image-interpretation-v1";
 export const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+export const BRAIN_DUMP_SOURCE_COMPLETED_DELETE_AFTER_MS = 24 * 60 * 60 * 1000;
 const BRAIN_DUMP_UNFINISHED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const brainDumpItemTypeSchema = z.enum([
@@ -180,6 +181,18 @@ export type BrainDumpUndoBatchResult = {
   }>;
 };
 
+export type BrainDumpSourceFile = {
+  path: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAtMs: number;
+  deleteAfterMs?: number;
+  deletedAtMs?: number;
+  lastCleanupAttemptAtMs?: number;
+  cleanupStatus?: "active" | "delete_pending" | "deleted" | "delete_failed";
+  cleanupErrorCode?: "storage-delete-failed" | "source-path-not-owned";
+};
+
 export type BrainDumpCreationReceipt = {
   idempotencyKey: string;
   payloadHash: string;
@@ -201,6 +214,7 @@ export type BrainDumpReviewSession = {
   source: {
     kind: "typed";
     rawText: string;
+    files?: BrainDumpSourceFile[];
   };
   review: {
     selectedCount: number;
@@ -293,6 +307,7 @@ export function redactExpiredBrainDumpSession(session: BrainDumpReviewSession, n
     source: {
       ...session.source,
       rawText: "",
+      files: scheduleBrainDumpSourceFilesForDeletion(session.source.files, nowMs),
     },
     review: {
       ...session.review,
@@ -304,6 +319,19 @@ export function redactExpiredBrainDumpSession(session: BrainDumpReviewSession, n
       selectedCount: 0,
     },
   };
+}
+
+export function scheduleBrainDumpSourceFilesForDeletion(files: BrainDumpSourceFile[] | undefined, deleteAfterMs: number) {
+  if (!files) return undefined;
+  return files.map((file) => {
+    if (file.cleanupStatus === "deleted") return file;
+    return {
+      ...file,
+      deleteAfterMs: Math.min(Number(file.deleteAfterMs || deleteAfterMs), deleteAfterMs),
+      cleanupStatus: "delete_pending" as const,
+      cleanupErrorCode: undefined,
+    };
+  });
 }
 
 export async function ensureBrainDumpSessionNotExpired(input: {

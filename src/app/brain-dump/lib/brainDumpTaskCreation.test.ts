@@ -209,6 +209,57 @@ describe("confirmBrainDumpReviewSession", () => {
     expect(workspace.saveTasks).toHaveBeenCalledTimes(1);
   });
 
+  it("schedules completed-session source files for deletion within 24 hours without putting source paths on tasks", async () => {
+    let savedTasks = [task()];
+    let savedSession = reviewSession({
+      source: {
+        kind: "typed",
+        rawText: "transcribed private source",
+        files: [
+          {
+            path: "users/uid-1/brain-dump-sources/session-1/voice.webm",
+            contentType: "audio/webm",
+            sizeBytes: 256_000,
+            createdAtMs: 1_800_000_000_000,
+            cleanupStatus: "active",
+          },
+        ],
+      },
+    });
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-source-cleanup",
+      itemUpdates: [{ itemId: "item-1", selected: true }, { itemId: "item-2", selected: false }],
+      store,
+      workspace,
+      createId: () => "unused",
+      now: () => 1_800_000_000_500,
+    });
+
+    expect(savedSession.source.rawText).toBe("");
+    expect(savedSession.source.files?.[0]).toMatchObject({
+      cleanupStatus: "delete_pending",
+      deleteAfterMs: 1_800_086_400_500,
+    });
+    expect(JSON.stringify(savedTasks)).not.toContain("voice.webm");
+    expect(JSON.stringify(savedSession.creationReceipts)).not.toContain("voice.webm");
+    expect(JSON.stringify(savedSession.creationReceipts)).not.toContain("transcribed private source");
+  });
+
   it("rejects a changed payload that reuses an existing idempotency key", async () => {
     let savedSession = reviewSession();
     const store: BrainDumpSessionStore = {
