@@ -13,6 +13,15 @@ function formatSvgNumber(value: number) {
 }
 
 describe("DashboardPageContent momentum dial markers", () => {
+  it("renders a Dashboard Brain Dump entry that routes to the shared typed flow", () => {
+    const html = renderDashboardMarkup();
+
+    expect(html).toContain('href="/brain-dump"');
+    expect(html).toContain('aria-label="Brain Dump"');
+    expect(html).toContain('data-brain-dump-entry="dashboard"');
+    expect(html).toContain(">Brain Dump<");
+  });
+
   it("renders multiplier threshold markers at 40, 70, and 90", () => {
     const html = renderDashboardMarkup();
 

@@ -1,6 +1,7 @@
 import type { HistoryByTaskId, Task } from "../lib/types";
 import { getTaskScheduledDayEntries } from "../lib/schedule-placement";
 import type { DashboardWeekStart } from "../lib/historyChart";
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 import { hasRecordedTaskGoalCompletion, isTaskTimeGoalStartLockedForPeriod } from "../lib/timeGoalCompletion";
 import { renderTaskCardHtml } from "./task-card-view-model";
 import { applyXpAwardButtonLabelOverride, getXpAwardButtonLabelOverride } from "./xp-award-button-label-override";
@@ -122,6 +123,21 @@ export function buildDisplayedTasks(tasks: Task[], taskOrderBy: "custom" | "alph
   return nextTasks.sort(compareTasksByCustomOrder);
 }
 
+function renderEmptyTaskStateHtml() {
+  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
+  return `
+    <div class="taskListEmptyState" role="status" aria-live="polite">
+      <div class="taskListEmptyContent">
+        <p class="taskListEmptyMessage">No tasks yet</p>
+        <div class="taskListEmptyActions">
+          <button class="btn btn-accent small taskListEmptyAddBtn" type="button" data-action="openAddTask">Add Task</button>
+          <a class="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry taskListEmptyBrainDumpBtn" href="${brainDumpHref}" aria-label="Brain Dump" title="Brain Dump" data-brain-dump-entry="empty-task-state">Brain Dump</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function createTaskListRenderer(options: TaskListRendererOptions) {
   function renderTasksPage() {
     const taskListEl = options.taskListEl;
@@ -138,17 +154,6 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     options.setCurrentTileColumnCount(tileColumnCount);
     if (useTileColumns) taskListEl.setAttribute("data-tile-columns", String(tileColumnCount));
     else taskListEl.removeAttribute("data-tile-columns");
-
-    const tileColumnEls: HTMLElement[] = [];
-    if (useTileColumns) {
-      for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
-        const columnEl = options.documentRef.createElement("div");
-        columnEl.className = "taskTileColumn";
-        columnEl.dataset.tileColumn = String(columnIndex);
-        taskListEl.appendChild(columnEl);
-        tileColumnEls.push(columnEl);
-      }
-    }
 
     const openHistoryTaskIds = options.getOpenHistoryTaskIds();
     const pinnedHistoryTaskIds = options.getPinnedHistoryTaskIds();
@@ -171,10 +176,22 @@ export function createTaskListRenderer(options: TaskListRendererOptions) {
     }
 
     if (!displayedTasks.length) {
+      taskListEl.innerHTML = renderEmptyTaskStateHtml();
       if (options.getCurrentAppPage() === "dashboard") options.renderDashboardWidgets();
       options.syncTimeGoalModalWithTaskState();
       options.maybeRestorePendingTimeGoalFlow();
       return;
+    }
+
+    const tileColumnEls: HTMLElement[] = [];
+    if (useTileColumns) {
+      for (let columnIndex = 0; columnIndex < tileColumnCount; columnIndex += 1) {
+        const columnEl = options.documentRef.createElement("div");
+        columnEl.className = "taskTileColumn";
+        columnEl.dataset.tileColumn = String(columnIndex);
+        taskListEl.appendChild(columnEl);
+        tileColumnEls.push(columnEl);
+      }
     }
 
     displayedTasks.forEach((task, displayIndex) => {

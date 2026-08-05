@@ -1047,6 +1047,11 @@ body[data-tasktimer-native-runtime="true"] #historyEntryNoteOverlay.historyEntry
   transform: translateX(-10px);
 }
 
+#addTaskOverlay .addTaskBrainDumpEntry{
+  min-height:44px;
+  text-decoration:none;
+}
+
 #addTaskOverlay .editTaskColorPopover{
   transform: translateY(4px);
 }

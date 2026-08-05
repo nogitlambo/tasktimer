@@ -1,6 +1,9 @@
 import TaskColorPickerPopover from "./TaskColorPickerPopover";
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
 
 export default function AddTaskOverlay() {
+  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
+
   return (
     <div className="overlay" id="addTaskOverlay">
       <div className="modal" role="dialog" aria-modal="true" aria-label="Add Task">
@@ -200,6 +203,15 @@ export default function AddTaskOverlay() {
             </div>
           </form>
           <div className="footerBtns addTaskFooterBtns">
+            <a
+              className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction addTaskPrimitiveAction addTaskPrimitiveSecondaryAction addTaskBrainDumpEntry"
+              href={brainDumpHref}
+              aria-label="Brain Dump"
+              title="Brain Dump"
+              data-brain-dump-entry="add-task-overlay"
+            >
+              Brain Dump
+            </a>
             <button className="btn btn-ghost modalPreviewSecondaryAction primitiveSciFiModalAction primitiveSciFiModalSecondaryAction addTaskPrimitiveAction addTaskPrimitiveSecondaryAction" id="addTaskCancelBtn" type="button">
               Cancel
             </button>

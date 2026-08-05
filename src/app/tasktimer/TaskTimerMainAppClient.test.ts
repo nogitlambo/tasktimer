@@ -32,6 +32,40 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(editOverlayIndex).toBeLessThan(frameCloseIndex);
   });
 
+  it("keeps the Add Task launcher label and delegated selector hook stable", () => {
+    expect(source).toContain('id="openAddTaskBtn"');
+    expect(source).toContain('aria-label="Add Task"');
+    expect(source).toContain('title="Add Task"');
+    expect(source).toContain("Add Task");
+  });
+
+  it("renders a Tasks header Brain Dump entry without replacing Add Task", () => {
+    const taskHeaderStart = source.indexOf('className="taskPageHeaderActions"');
+    const taskHeaderEnd = source.indexOf('className="tasksModeControlGroup"', taskHeaderStart);
+    const taskHeaderSource = source.slice(taskHeaderStart, taskHeaderEnd);
+
+    expect(taskHeaderSource).toContain('id="openAddTaskBtn"');
+    expect(taskHeaderSource).toContain('href={brainDumpHref}');
+    expect(taskHeaderSource).toContain('aria-label="Brain Dump"');
+    expect(taskHeaderSource).toContain('data-brain-dump-entry="tasks-header"');
+  });
+
+  it("renders floating and mobile quick-action Brain Dump entries to the shared route", () => {
+    expect(source).toContain('className="taskLaunchBrainDumpFloatingAction"');
+    expect(source).toContain('data-brain-dump-entry="floating-action"');
+    expect(source).toContain('className="taskLaunchMobileBrainDumpQuickAction"');
+    expect(source).toContain('data-brain-dump-entry="mobile-quick-action"');
+    expect(source.match(/href={brainDumpHref}/g)).toHaveLength(3);
+  });
+
+  it("tracks Brain Dump entry clicks with source metadata and no content", () => {
+    expect(source).toContain('target.closest<HTMLAnchorElement>("[data-brain-dump-entry]")');
+    expect(source).toContain('trackEvent("brain_dump_entry_opened", {');
+    expect(source).toContain('entry_point: brainDumpEntry.dataset.brainDumpEntry || "unknown"');
+    expect(source).not.toContain("raw_text");
+    expect(source).not.toContain("source_text");
+  });
+
   it("renders the leaderboard user summary reveal wrapper and entrance class", () => {
     expect(source).toContain('className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"');
     expect(source).toContain('className="friendUserSummaryBorderTrace"');

@@ -16,6 +16,18 @@
   perspective:1800px;
 }
 
+.dashboardBrainDumpEntryRow{
+  display:flex;
+  justify-content:flex-end;
+  padding:0 0 12px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageDashboard .dashboardBrainDumpEntry{
+  min-height:44px;
+  border-radius:0 !important;
+  text-decoration:none;
+}
+
 .dashboardShellScene{
   position:relative;
   min-width:0;

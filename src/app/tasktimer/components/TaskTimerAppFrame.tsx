@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import AppImg from "@/components/AppImg";
 import { usePathname, useSearchParams } from "next/navigation";
 import DesktopAppRail from "./DesktopAppRail";
+import { trackEvent } from "@/lib/firebaseTelemetry";
 import {
   getMobileSwipeCloseDragY,
   getResetMobileSwipeCloseState,
@@ -233,6 +234,7 @@ export default function TaskTimerAppFrame({
   const rankSummary = useMemo(() => buildRankLadderSummary(rewardsHeader.totalXp), [rewardsHeader.totalXp]);
   const xpProgressSubtext = getXpProgressSubtext(rewardsHeader.totalXp, rewardsHeader.xpToNext);
   const topbarUserLabel = currentUserLabel.toLocaleLowerCase();
+  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
   const rankThumbnailSrc = useMemo(() => getRankLadderThumbnailSrc(currentRankId, ""), [currentRankId]);
   const isDesktopInsigniaUpgradeActive = shouldRenderDesktopInsigniaUpgrade(
     desktopInsigniaUpgrade,
@@ -304,6 +306,12 @@ export default function TaskTimerAppFrame({
   const handleMobileMenuSignOut = useCallback(() => {
     setMobileMenuOpen(false);
     setShowSignOutConfirm(true);
+  }, []);
+
+  const handleOpenBrainDumpEntry = useCallback(() => {
+    void trackEvent("brain_dump_entry_opened", {
+      entry_point: "executive_function_image",
+    });
   }, []);
 
   const handleConfirmSignOut = useCallback(async () => {
@@ -502,7 +510,15 @@ export default function TaskTimerAppFrame({
             </section>
         </div>
         <div className="taskLaunchTopbarControls">
-          <AppImg className="taskLaunchTopbarExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
+          <a
+            className="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"
+            href={brainDumpHref}
+            aria-label="Brain Dump"
+            title="Brain Dump"
+            onClick={handleOpenBrainDumpEntry}
+          >
+            <AppImg className="taskLaunchTopbarExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
+          </a>
           <button
             ref={mobileMenuBtnRef}
             className={`menuIcon taskLaunchMobileMenuBtn${mobileMenuOpen ? " isHidden" : ""}`}
@@ -585,6 +601,15 @@ export default function TaskTimerAppFrame({
         <div className="desktopAppMain">
           <div className="appShellHeader">
             <div className="appShellHeaderSpacer" aria-hidden="true" />
+            <a
+              className="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"
+              href={brainDumpHref}
+              aria-label="Brain Dump"
+              title="Brain Dump"
+              onClick={handleOpenBrainDumpEntry}
+            >
+              <AppImg className="appShellHeaderExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
+            </a>
             <section className={`appShellHeaderXp${isXpAwardSpotlightActive ? " isXpAwardSpotlightTarget" : ""}`} aria-label="XP progress">
               <div className="appShellHeaderXpBody">
                 <button
@@ -597,7 +622,6 @@ export default function TaskTimerAppFrame({
                   <span className="appShellHeaderXpStats">
                     <span className="appShellHeaderXpStatsRow">
                       <span className="appShellHeaderXpRankWrap" aria-label={`Current rank insignia: ${rewardsHeader.rankLabel}`}>
-                        <AppImg className="appShellHeaderExecutiveFunctionImg" src="/executive_function.png" alt="" aria-hidden="true" />
                         {isDesktopInsigniaUpgradeActive && desktopInsigniaUpgrade ? (
                           <span className="appShellHeaderXpInsigniaUpgradeShell" data-insignia-upgrade-seq={desktopInsigniaUpgrade.seq}>
                             <RankThumbnail
