@@ -99,4 +99,19 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('method: "PATCH"');
     expect(source).toContain("validationErrors");
   });
+
+  it("renders duplicate warnings with explicit Create anyway and Skip actions", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("BrainDumpDuplicateWarning");
+    expect(source).toContain("duplicateWarnings");
+    expect(source).toContain("Possible duplicate");
+    expect(source).toContain('aria-label={`Possible duplicates for ${item.title}`}');
+    expect(source).toContain("warning.matchedState");
+    expect(source).toContain("warning.matchedTitle");
+    expect(source).toContain("Create anyway");
+    expect(source).toContain('duplicateDecision: "create_anyway"');
+    expect(source).toContain("Skip");
+    expect(source).toContain('duplicateDecision: "skip"');
+  });
 });

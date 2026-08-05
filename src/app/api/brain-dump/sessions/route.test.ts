@@ -8,6 +8,10 @@ const mocks = vi.hoisted(() => ({
     saveSession: vi.fn(),
     getSession: vi.fn(),
   },
+  workspace: {
+    loadTasks: vi.fn(),
+    loadTaskStatusMeta: vi.fn(),
+  },
   verifyFirebaseRequestUser: vi.fn(),
 }));
 
@@ -25,6 +29,10 @@ vi.mock("@/app/brain-dump/lib/brainDumpProvider", () => ({
 
 vi.mock("@/app/brain-dump/lib/brainDumpSessionStore", () => ({
   createFirestoreBrainDumpSessionStore: () => mocks.store,
+}));
+
+vi.mock("@/app/brain-dump/lib/brainDumpWorkspaceStore", () => ({
+  createFirestoreBrainDumpWorkspaceRepository: () => mocks.workspace,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -67,6 +75,8 @@ describe("POST /api/brain-dump/sessions", () => {
         },
       ],
     });
+    mocks.workspace.loadTasks.mockResolvedValue([]);
+    mocks.workspace.loadTaskStatusMeta.mockResolvedValue({});
   });
 
   it("allows native preflight requests with the Firebase auth header", () => {
@@ -125,6 +135,8 @@ describe("POST /api/brain-dump/sessions", () => {
       "ambiguityFlags",
       "confidence",
       "date",
+      "duplicateDecision",
+      "duplicateWarnings",
       "enrichment",
       "id",
       "itemType",
@@ -146,6 +158,8 @@ describe("POST /api/brain-dump/sessions", () => {
       firstAction: null,
     });
     expect(payload.session.review.items[0].validationErrors).toEqual([]);
+    expect(payload.session.review.items[0].duplicateWarnings).toEqual([]);
+    expect(payload.session.review.items[0].duplicateDecision).toBe("undecided");
     expect(payload.session).not.toHaveProperty("ownerUid");
     expect(payload.session).not.toHaveProperty("source");
   });

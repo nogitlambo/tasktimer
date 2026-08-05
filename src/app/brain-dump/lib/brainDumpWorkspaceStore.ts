@@ -1,5 +1,5 @@
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
-import type { Task } from "@/app/tasktimer/lib/types";
+import type { DeletedTaskMeta, Task } from "@/app/tasktimer/lib/types";
 
 import type { BrainDumpWorkspaceRepository } from "./brainDumpTaskCreation";
 
@@ -15,6 +15,10 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
     return db.collection("users").doc(uid).collection("tasks");
   }
 
+  function deletedTasksCollection(uid: string) {
+    return db.collection("users").doc(uid).collection("deletedTasks");
+  }
+
   return {
     async loadTasks(uid: string) {
       const safeUid = asString(uid, 120);
@@ -24,6 +28,25 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
         ...docSnap.data(),
         id: asString(docSnap.data().id, 120) || docSnap.id,
       })) as Task[];
+    },
+    async loadTaskStatusMeta(uid: string) {
+      const safeUid = asString(uid, 120);
+      if (!safeUid) return {};
+      const snap = await deletedTasksCollection(safeUid).get();
+      const meta: DeletedTaskMeta = {};
+      for (const docSnap of snap.docs as Array<{ id: string; data: () => Record<string, unknown> }>) {
+        const data = docSnap.data();
+        const name = asString(data.name, 200) || asString((data.taskSnapshot as { name?: unknown } | undefined)?.name, 200);
+        if (!name) continue;
+        meta[docSnap.id] = {
+          name,
+          color: typeof data.color === "string" ? data.color : null,
+          deletedAt: Math.max(0, Math.floor(Number(data.deletedAt || 0) || 0)),
+          state: data.state === "archived" ? "archived" : "deleted",
+          taskSnapshot: (data.taskSnapshot as Task | null | undefined) || null,
+        };
+      }
+      return meta;
     },
     async saveTasks(uid: string, tasks: Task[]) {
       const safeUid = asString(uid, 120);

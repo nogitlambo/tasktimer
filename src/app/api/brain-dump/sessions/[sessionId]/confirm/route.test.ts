@@ -79,6 +79,8 @@ function reviewSession(): BrainDumpReviewSession {
             firstAction: null,
           },
           validationErrors: [],
+          duplicateWarnings: [],
+          duplicateDecision: "undecided",
         },
       ],
     },

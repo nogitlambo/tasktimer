@@ -302,6 +302,27 @@
   line-height: 1.45;
 }
 
+.duplicateWarning {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid rgba(255, 184, 107, 0.22);
+  background: rgba(255, 184, 107, 0.06);
+  padding: 0.75rem;
+}
+
+.duplicateContext {
+  margin: 0;
+  color: rgba(248, 250, 252, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.duplicateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding-right: 16px;

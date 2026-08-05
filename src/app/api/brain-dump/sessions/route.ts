@@ -8,6 +8,7 @@ import {
   toBrainDumpReviewResponse,
 } from "@/app/brain-dump/lib/brainDumpProcessing";
 import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
+import { createFirestoreBrainDumpWorkspaceRepository } from "@/app/brain-dump/lib/brainDumpWorkspaceStore";
 import { verifyFirebaseRequestUser } from "../../shared/auth";
 import { authenticatedApiOptions, withAuthenticatedApiCors } from "../../shared/cors";
 
@@ -40,6 +41,9 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const { uid } = await verifyFirebaseRequestUser(req, body);
+    const workspace = createFirestoreBrainDumpWorkspaceRepository();
+    const workspaceTasks = await workspace.loadTasks(uid);
+    const archivedTaskMeta = workspace.loadTaskStatusMeta ? await workspace.loadTaskStatusMeta(uid) : {};
     const session = await processTypedBrainDump({
       uid,
       text: String(body.text || ""),
@@ -47,6 +51,8 @@ export async function POST(req: Request) {
       provider: getBrainDumpAiProvider(),
       store: createFirestoreBrainDumpSessionStore(),
       createId: createSessionId,
+      workspaceTasks,
+      archivedTaskMeta,
     });
 
     return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, session: toBrainDumpReviewResponse(session) }));

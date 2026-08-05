@@ -88,6 +88,8 @@ function reviewSession(overrides: Partial<BrainDumpReviewSession> = {}): BrainDu
           date: reviewDate(),
           enrichment: reviewEnrichment(),
           validationErrors: [],
+          duplicateWarnings: [],
+          duplicateDecision: "undecided",
         },
         {
           id: "item-2",
@@ -101,6 +103,8 @@ function reviewSession(overrides: Partial<BrainDumpReviewSession> = {}): BrainDu
           date: reviewDate(),
           enrichment: reviewEnrichment(),
           validationErrors: [],
+          duplicateWarnings: [],
+          duplicateDecision: "undecided",
         },
       ],
     },
@@ -394,6 +398,8 @@ describe("confirmBrainDumpReviewSession", () => {
             }),
             enrichment: reviewEnrichment(),
             validationErrors: [],
+            duplicateWarnings: [],
+            duplicateDecision: "undecided",
           },
           {
             id: "item-2",
@@ -412,6 +418,8 @@ describe("confirmBrainDumpReviewSession", () => {
             }),
             enrichment: reviewEnrichment(),
             validationErrors: [],
+            duplicateWarnings: [],
+            duplicateDecision: "undecided",
           },
         ],
       },
@@ -539,6 +547,91 @@ describe("confirmBrainDumpReviewSession", () => {
     expect(savedTasks[1].name).toBe("Finish screenshots");
   });
 
+  it("rechecks duplicates at confirmation and honors Create anyway", async () => {
+    let savedTasks = [task({ id: "task-dentist", name: "Call the dentist" })];
+    let savedSession: BrainDumpReviewSession | null = null;
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    const result = await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-duplicate-anyway",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call dentist", selected: true, duplicateDecision: "create_anyway" },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(result).toMatchObject({
+      createdCount: 1,
+      skippedCount: 1,
+      items: [
+        { itemId: "item-1", status: "created" },
+        { itemId: "item-2", status: "skipped" },
+      ],
+    });
+    expect(savedTasks).toHaveLength(2);
+    expect(savedTasks[1].name).toBe("Call dentist");
+    expect(savedSession).not.toBeNull();
+    const completedSession = savedSession as unknown as BrainDumpReviewSession;
+    expect(completedSession.review.items[0].duplicateDecision).toBe("create_anyway");
+    expect(completedSession.review.items[0].duplicateWarnings[0]).toMatchObject({
+      matchedTaskId: "task-dentist",
+      matchedState: "active",
+    });
+  });
+
+  it("skips duplicate warnings only when the user chooses Skip", async () => {
+    let savedTasks = [task({ id: "task-dentist", name: "Call the dentist" })];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    const result = await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-duplicate-skip",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call dentist", selected: true, duplicateDecision: "skip" },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(result).toMatchObject({
+      createdCount: 0,
+      skippedCount: 2,
+      items: [
+        { itemId: "item-1", status: "skipped", reason: "duplicate-skipped" },
+        { itemId: "item-2", status: "skipped", reason: "not-selected" },
+      ],
+    });
+    expect(savedTasks).toHaveLength(1);
+  });
+
   it("denies confirmation when the session is not owned by the authenticated user", async () => {
     const store: BrainDumpSessionStore = {
       getSession: vi.fn(async () => null),
@@ -585,6 +678,8 @@ describe("confirmBrainDumpReviewSession", () => {
             date: reviewDate(),
             enrichment: reviewEnrichment(),
             validationErrors: [],
+            duplicateWarnings: [],
+            duplicateDecision: "undecided",
           },
         ],
       },

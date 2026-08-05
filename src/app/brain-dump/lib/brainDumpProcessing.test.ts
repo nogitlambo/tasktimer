@@ -1,6 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { Task } from "@/app/tasktimer/lib/types";
 import { processTypedBrainDump, type BrainDumpAiProvider, type BrainDumpSessionStore } from "./brainDumpProcessing";
+
+function workspaceTask(overrides: Partial<Task> = {}): Task {
+  return {
+    id: "task-existing",
+    name: "Existing task",
+    taskType: "recurring",
+    onceOffDay: null,
+    onceOffTargetDate: null,
+    createdAtMs: 100,
+    order: 1,
+    accumulatedMs: 0,
+    running: false,
+    startMs: null,
+    collapsed: false,
+    milestonesEnabled: false,
+    milestoneTimeUnit: "hour",
+    milestones: [],
+    hasStarted: false,
+    ...overrides,
+  };
+}
 
 describe("processTypedBrainDump", () => {
   it("turns typed input into a validated review session without creating tasks", async () => {
@@ -222,6 +244,163 @@ describe("processTypedBrainDump", () => {
       estimatedDurationMinutes: null,
       priority: null,
       firstAction: null,
+    });
+  });
+
+  it("adds advisory duplicate warnings for similar existing tasks without sending workspace content to the provider", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Call dentist",
+            sourceEvidence: ["call dentist"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Call dentist.",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+      workspaceTasks: [workspaceTask({ id: "task-dentist", name: "Call the dentist" })],
+    });
+
+    expect(provider.extractTyped).toHaveBeenCalledWith({
+      promptId: "brain-dump-v1",
+      text: "Call dentist.",
+      timezone: "UTC",
+    });
+    expect(JSON.stringify(vi.mocked(provider.extractTyped).mock.calls)).not.toContain("Call the dentist");
+    expect(session.review.items[0].duplicateWarnings).toEqual([
+      expect.objectContaining({
+        source: "workspace",
+        matchedTaskId: "task-dentist",
+        matchedTitle: "Call the dentist",
+        matchedState: "active",
+        reason: "Similar existing task title.",
+      }),
+    ]);
+    expect(session.review.items[0].duplicateDecision).toBe("undecided");
+  });
+
+  it("adds same-dump warnings and ignores distinct titles", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Call dentist",
+            sourceEvidence: ["call dentist"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+          },
+          {
+            itemType: "task",
+            title: "Call the dentist",
+            sourceEvidence: ["call the dentist"],
+            confidence: 0.86,
+            ambiguityFlags: [],
+          },
+          {
+            itemType: "task",
+            title: "Call plumber",
+            sourceEvidence: ["call plumber"],
+            confidence: 0.86,
+            ambiguityFlags: [],
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Call dentist. Call the dentist. Call plumber.",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+    });
+
+    expect(session.review.items[1].duplicateWarnings).toEqual([
+      expect.objectContaining({
+        source: "same-dump",
+        matchedItemId: "brain-dump-session-1-item-1",
+        matchedState: "proposed",
+      }),
+    ]);
+    expect(session.review.items[2].duplicateWarnings).toEqual([]);
+  });
+
+  it("classifies recent and archived workspace duplicate matches", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Submit report",
+            sourceEvidence: ["submit report"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+          },
+          {
+            itemType: "task",
+            title: "Renew passport",
+            sourceEvidence: ["renew passport"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Submit report. Renew passport.",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+      now: () => 1_800_000_000_000,
+      workspaceTasks: [
+        workspaceTask({
+          id: "task-report",
+          name: "Submit report",
+          timeGoalCompletedAtMs: 1_799_999_000_000,
+        }),
+      ],
+      archivedTaskMeta: {
+        "archived-passport": {
+          name: "Renew passport",
+          color: null,
+          deletedAt: 1,
+          state: "archived",
+        },
+      },
+    });
+
+    expect(session.review.items[0].duplicateWarnings[0]).toMatchObject({
+      matchedTaskId: "task-report",
+      matchedState: "recent",
+    });
+    expect(session.review.items[1].duplicateWarnings[0]).toMatchObject({
+      matchedTaskId: "archived-passport",
+      matchedState: "archived",
     });
   });
 

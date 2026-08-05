@@ -68,6 +68,8 @@ type BrainDumpReviewItem = {
   date: BrainDumpReviewDate;
   enrichment: BrainDumpReviewEnrichment;
   validationErrors: BrainDumpReviewValidationError[];
+  duplicateWarnings: BrainDumpDuplicateWarning[];
+  duplicateDecision: BrainDumpDuplicateDecision;
 };
 
 type BrainDumpReviewDate = {
@@ -93,6 +95,19 @@ type BrainDumpReviewEnrichment = {
 type BrainDumpReviewValidationError = {
   field: string;
   message: string;
+};
+
+type BrainDumpDuplicateDecision = "undecided" | "create_anyway" | "skip";
+
+type BrainDumpDuplicateWarning = {
+  id: string;
+  source: "same-dump" | "workspace";
+  matchType: "title" | "title-date";
+  matchedItemId: string | null;
+  matchedTaskId: string | null;
+  matchedTitle: string;
+  matchedState: "proposed" | "active" | "recent" | "archived";
+  reason: string;
 };
 
 type BrainDumpReviewSession = {
@@ -264,7 +279,7 @@ export default function BrainDumpClient() {
 
   function updateReviewItem(
     itemId: string,
-    patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date" | "enrichment">>
+    patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date" | "enrichment" | "duplicateDecision">>
   ) {
     setSession((current) => {
       if (!current) return current;
@@ -280,6 +295,7 @@ export default function BrainDumpClient() {
               selected: item.supported ? (patch.selected ?? item.selected) : false,
               date: patch.date ?? item.date,
               enrichment: patch.enrichment ?? item.enrichment,
+              duplicateDecision: patch.duplicateDecision ?? item.duplicateDecision,
             };
           }),
         },
@@ -297,6 +313,7 @@ export default function BrainDumpClient() {
         userConfirmedDate: item.date.userConfirmedDate,
       },
       enrichment: item.enrichment,
+      duplicateDecision: item.duplicateDecision,
     }));
   }
 
@@ -514,6 +531,36 @@ export default function BrainDumpClient() {
                         <li key={`${validationError.field}-${validationError.message}`}>{validationError.message}</li>
                       ))}
                     </ul>
+                  ) : null}
+                  {item.duplicateWarnings.length ? (
+                    <section className={styles.duplicateWarning} aria-label={`Possible duplicates for ${item.title}`}>
+                      <p className={styles.flags}>Possible duplicate</p>
+                      {item.duplicateWarnings.map((warning) => (
+                        <p className={styles.duplicateContext} key={warning.id}>
+                          {warning.reason} Matched {warning.matchedState}: {warning.matchedTitle}
+                        </p>
+                      ))}
+                      <div className={styles.duplicateActions}>
+                        <button
+                          className={styles.secondaryButton}
+                          type="button"
+                          disabled={session.state === "completed" || busy}
+                          aria-pressed={item.duplicateDecision === "create_anyway"}
+                          onClick={() => updateReviewItem(item.id, { duplicateDecision: "create_anyway", selected: true })}
+                        >
+                          Create anyway
+                        </button>
+                        <button
+                          className={styles.secondaryButton}
+                          type="button"
+                          disabled={session.state === "completed" || busy}
+                          aria-pressed={item.duplicateDecision === "skip"}
+                          onClick={() => updateReviewItem(item.id, { duplicateDecision: "skip", selected: false })}
+                        >
+                          Skip
+                        </button>
+                      </div>
+                    </section>
                   ) : null}
                   <div className={styles.dateReview}>
                     <label className={styles.label} htmlFor={`brainDumpDate-${item.id}`}>

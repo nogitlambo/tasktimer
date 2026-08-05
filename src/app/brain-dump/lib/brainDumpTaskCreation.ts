@@ -1,5 +1,6 @@
 import type { Task } from "@/app/tasktimer/lib/types";
 import { createTaskTimerSharedTask } from "@/app/tasktimer/client/task-shared";
+import type { DeletedTaskMeta } from "@/app/tasktimer/lib/types";
 
 import type {
   BrainDumpCreationBatchResult,
@@ -10,9 +11,11 @@ import type {
   BrainDumpSessionStore,
 } from "./brainDumpProcessing";
 import { applyBrainDumpReviewItemUpdate, normalizeBrainDumpReviewItemUpdate } from "./brainDumpProcessing";
+import { refreshBrainDumpDuplicateWarnings } from "./brainDumpProcessing";
 
 export type BrainDumpWorkspaceRepository = {
   loadTasks(uid: string): Promise<Task[]>;
+  loadTaskStatusMeta?(uid: string): Promise<DeletedTaskMeta>;
   saveTasks(uid: string, tasks: Task[]): Promise<void>;
   saveTask?(uid: string, task: Task): Promise<void>;
 };
@@ -61,7 +64,13 @@ function hashCreationPayload(updates: ReturnType<typeof normalizeBrainDumpReview
 }
 
 function itemCanCreateTask(item: BrainDumpReviewItem) {
-  return item.itemType === "task" && item.supported && item.selected && item.validationErrors.length === 0;
+  return (
+    item.itemType === "task" &&
+    item.supported &&
+    item.selected &&
+    item.validationErrors.length === 0 &&
+    item.duplicateDecision !== "skip"
+  );
 }
 
 function taskIdForReviewItem(input: { sessionId: string; idempotencyKey: string; itemId: string }) {
@@ -146,9 +155,15 @@ export async function confirmBrainDumpReviewSession(input: {
   const updatesByItemId = new Map(
     normalizedUpdates.map((update) => [update.itemId, update])
   );
-  const reviewedItems = session.review.items.map((item) => applyBrainDumpReviewItemUpdate(item, updatesByItemId.get(item.id) || null));
   const existingTasks = await input.workspace.loadTasks(uid);
   const createdAtMs = Math.max(0, Math.floor(Number(input.now?.() ?? Date.now()) || 0));
+  const archivedTaskMeta = input.workspace.loadTaskStatusMeta ? await input.workspace.loadTaskStatusMeta(uid) : {};
+  const reviewedItems = refreshBrainDumpDuplicateWarnings({
+    items: session.review.items.map((item) => applyBrainDumpReviewItemUpdate(item, updatesByItemId.get(item.id) || null)),
+    workspaceTasks: existingTasks,
+    archivedTaskMeta,
+    nowMs: createdAtMs,
+  });
   let nextOrder = nextTaskOrder(existingTasks);
   const resultItems: Array<BrainDumpCreationBatchResult["items"][number] | null> = [];
   const candidateTasks: Array<{ index: number; item: BrainDumpReviewItem; task: Task }> = [];
@@ -158,7 +173,13 @@ export async function confirmBrainDumpReviewSession(input: {
       resultItems[index] = {
         itemId: item.id,
         status: "skipped",
-        reason: item.validationErrors.length ? "validation-error" : item.supported ? "not-selected" : "unsupported",
+        reason: item.validationErrors.length
+          ? "validation-error"
+          : item.duplicateDecision === "skip"
+            ? "duplicate-skipped"
+            : item.supported
+              ? "not-selected"
+              : "unsupported",
       };
       return;
     }

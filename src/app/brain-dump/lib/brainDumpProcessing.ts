@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { DeletedTaskMeta, Task } from "@/app/tasktimer/lib/types";
+
 export const BRAIN_DUMP_TYPED_PROMPT_ID = "brain-dump-v1";
 const BRAIN_DUMP_UNFINISHED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -73,6 +75,19 @@ export type BrainDumpReviewValidationError = {
   message: string;
 };
 
+export type BrainDumpDuplicateDecision = "undecided" | "create_anyway" | "skip";
+
+export type BrainDumpDuplicateWarning = {
+  id: string;
+  source: "same-dump" | "workspace";
+  matchType: "title" | "title-date";
+  matchedItemId: string | null;
+  matchedTaskId: string | null;
+  matchedTitle: string;
+  matchedState: "proposed" | "active" | "recent" | "archived";
+  reason: string;
+};
+
 export type BrainDumpReviewItem = {
   id: string;
   itemType: BrainDumpItemType;
@@ -85,6 +100,8 @@ export type BrainDumpReviewItem = {
   date: BrainDumpReviewDate;
   enrichment: BrainDumpReviewEnrichment;
   validationErrors: BrainDumpReviewValidationError[];
+  duplicateWarnings: BrainDumpDuplicateWarning[];
+  duplicateDecision: BrainDumpDuplicateDecision;
 };
 
 export type BrainDumpReviewDateUpdate = {
@@ -105,6 +122,7 @@ export type BrainDumpReviewItemUpdate = {
   selected?: boolean;
   date?: BrainDumpReviewDateUpdate;
   enrichment?: BrainDumpReviewEnrichmentUpdate;
+  duplicateDecision?: BrainDumpDuplicateDecision;
 };
 
 export type BrainDumpSessionState = "review" | "completed";
@@ -224,10 +242,122 @@ function normalizePriority(value: unknown): BrainDumpPriority | null {
   return value === "low" || value === "medium" || value === "high" ? value : null;
 }
 
+function normalizeDuplicateDecision(value: unknown): BrainDumpDuplicateDecision | undefined {
+  if (value === "undecided" || value === "create_anyway" || value === "skip") return value;
+  return undefined;
+}
+
 function normalizeDateValue(value: unknown) {
   if (value === null) return null;
   const text = asTrimmedString(value, 40);
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function normalizeDuplicateTitle(value: unknown) {
+  return asTrimmedString(value, 200)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\b(the|a|an|to|for|and)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function taskDate(task: Task) {
+  return typeof task.onceOffTargetDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.onceOffTargetDate) ? task.onceOffTargetDate : null;
+}
+
+function taskState(task: Task, nowMs: number): BrainDumpDuplicateWarning["matchedState"] {
+  const completedAtMs = Math.max(0, Math.floor(Number(task.timeGoalCompletedAtMs || 0) || 0));
+  const recentWindowMs = 14 * 24 * 60 * 60 * 1000;
+  return completedAtMs > 0 && nowMs - completedAtMs <= recentWindowMs ? "recent" : "active";
+}
+
+function duplicateWarningId(input: {
+  itemId: string;
+  source: BrainDumpDuplicateWarning["source"];
+  matchedId: string;
+}) {
+  return `${input.itemId}-${input.source}-${input.matchedId}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function warningsForItem(input: {
+  item: BrainDumpReviewItem;
+  previousItems: BrainDumpReviewItem[];
+  workspaceTasks: Task[];
+  archivedTaskMeta: DeletedTaskMeta;
+  nowMs: number;
+}): BrainDumpDuplicateWarning[] {
+  const title = normalizeDuplicateTitle(input.item.title);
+  if (!title || !input.item.supported) return [];
+  const date = input.item.date.resolvedDate;
+  const warnings: BrainDumpDuplicateWarning[] = [];
+
+  for (const previousItem of input.previousItems) {
+    if (normalizeDuplicateTitle(previousItem.title) !== title) continue;
+    const previousDate = previousItem.date.resolvedDate;
+    const matchType = date && previousDate && date === previousDate ? "title-date" : "title";
+    warnings.push({
+      id: duplicateWarningId({ itemId: input.item.id, source: "same-dump", matchedId: previousItem.id }),
+      source: "same-dump",
+      matchType,
+      matchedItemId: previousItem.id,
+      matchedTaskId: null,
+      matchedTitle: previousItem.title,
+      matchedState: "proposed",
+      reason: matchType === "title-date" ? "Same proposed title and date." : "Similar proposed title.",
+    });
+  }
+
+  for (const task of input.workspaceTasks) {
+    if (normalizeDuplicateTitle(task.name) !== title) continue;
+    const existingDate = taskDate(task);
+    const matchType = date && existingDate && date === existingDate ? "title-date" : "title";
+    warnings.push({
+      id: duplicateWarningId({ itemId: input.item.id, source: "workspace", matchedId: task.id }),
+      source: "workspace",
+      matchType,
+      matchedItemId: null,
+      matchedTaskId: task.id,
+      matchedTitle: task.name,
+      matchedState: taskState(task, input.nowMs),
+      reason: matchType === "title-date" ? "Same existing task title and date." : "Similar existing task title.",
+    });
+  }
+
+  for (const [taskId, meta] of Object.entries(input.archivedTaskMeta || {})) {
+    if (meta.state !== "archived") continue;
+    if (normalizeDuplicateTitle(meta.name) !== title) continue;
+    warnings.push({
+      id: duplicateWarningId({ itemId: input.item.id, source: "workspace", matchedId: taskId }),
+      source: "workspace",
+      matchType: "title",
+      matchedItemId: null,
+      matchedTaskId: taskId,
+      matchedTitle: meta.name,
+      matchedState: "archived",
+      reason: "Similar archived task title.",
+    });
+  }
+
+  return warnings;
+}
+
+export function refreshBrainDumpDuplicateWarnings(input: {
+  items: BrainDumpReviewItem[];
+  workspaceTasks?: Task[];
+  archivedTaskMeta?: DeletedTaskMeta;
+  nowMs: number;
+}): BrainDumpReviewItem[] {
+  return input.items.map((item, index) => ({
+    ...item,
+    duplicateWarnings: warningsForItem({
+      item,
+      previousItems: input.items.slice(0, index),
+      workspaceTasks: input.workspaceTasks || [],
+      archivedTaskMeta: input.archivedTaskMeta || {},
+      nowMs: input.nowMs,
+    }),
+  }));
 }
 
 function createItemId(sessionId: string, index: number, providerId?: string) {
@@ -382,6 +512,7 @@ export function normalizeBrainDumpReviewItemUpdate(update: BrainDumpReviewItemUp
               : undefined,
           }
         : undefined,
+    duplicateDecision: normalizeDuplicateDecision(update?.duplicateDecision),
   };
 }
 
@@ -431,6 +562,7 @@ export function applyBrainDumpReviewItemUpdate(
     selected: typeof update?.selected === "boolean" && item.supported ? update.selected : item.supported ? item.selected : false,
     date: applyDateUpdate(item.date, update?.date),
     enrichment: applyEnrichmentUpdate(item.enrichment, update?.enrichment),
+    duplicateDecision: update?.duplicateDecision ?? item.duplicateDecision,
   };
   return {
     ...nextItem,
@@ -446,6 +578,8 @@ export async function processTypedBrainDump(input: {
   store: BrainDumpSessionStore;
   createId: () => string;
   now?: () => number;
+  workspaceTasks?: Task[];
+  archivedTaskMeta?: DeletedTaskMeta;
 }): Promise<BrainDumpReviewSession> {
   const uid = asTrimmedString(input.uid, 120);
   if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
@@ -492,7 +626,15 @@ export async function processTypedBrainDump(input: {
         firstAction: item.firstAction,
       }),
       validationErrors: [],
+      duplicateWarnings: [],
+      duplicateDecision: "undecided",
     };
+  });
+  const reviewedItems = refreshBrainDumpDuplicateWarnings({
+    items,
+    workspaceTasks: input.workspaceTasks,
+    archivedTaskMeta: input.archivedTaskMeta,
+    nowMs,
   });
 
   const session: BrainDumpReviewSession = {
@@ -508,8 +650,8 @@ export async function processTypedBrainDump(input: {
       rawText: text,
     },
     review: {
-      selectedCount: items.filter((item) => item.selected).length,
-      items,
+      selectedCount: reviewedItems.filter((item) => item.selected).length,
+      items: reviewedItems,
     },
   };
 
