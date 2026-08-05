@@ -173,6 +173,49 @@
   color: rgba(248, 250, 252, 0.34);
 }
 
+.voicePanel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #15171d;
+  padding: 14px;
+}
+
+.voiceMeterRow,
+.voicePlayback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voiceTimer {
+  min-width: 54px;
+  color: rgba(201, 255, 36, 0.86);
+  font-family: var(--font-display-ui);
+  font-size: 13px;
+}
+
+.voiceMeter,
+.voiceProgress {
+  overflow: hidden;
+  flex: 1;
+  height: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.voiceMeter span,
+.voiceProgress span {
+  display: block;
+  height: 100%;
+  background: #c9ff24;
+}
+
+.voicePlayback audio {
+  min-width: 0;
+  flex: 1;
+}
+
 .statusRow {
   min-height: 22px;
 }
@@ -340,6 +383,12 @@
 
   .submitButton {
     width: 100%;
+  }
+
+  .voiceMeterRow,
+  .voicePlayback {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .dateReview {

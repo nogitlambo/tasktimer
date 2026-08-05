@@ -20,6 +20,50 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("{session.review.items.length}");
   });
 
+  it("turns a voice recording into an editable transcript before the normal review session", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain('type BrainDumpCaptureMode = "typed" | "voice"');
+    expect(source).toContain("navigator.mediaDevices.getUserMedia({ audio: true })");
+    expect(source).toContain("new MediaRecorder(stream, { mimeType: BRAIN_DUMP_VOICE_MIME_TYPE })");
+    expect(source).toContain('fetch(getApiUrl("/api/brain-dump/transcriptions/"), {');
+    expect(source).toContain("setText(payload.transcript)");
+    expect(source).toContain("writeStoredDraft(payload.transcript)");
+    expect(source).toContain('fetch(getApiUrl("/api/brain-dump/sessions/"), {');
+    expect(source).toContain('"Voice"');
+    expect(source).toContain("Editable transcript");
+  });
+
+  it("exposes voice recording permissions, controls, duration limit, playback, progress, and accessible announcements", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000");
+    expect(source).toContain("browserSupportsVoiceRecording");
+    expect(source).toContain('"Microphone permission was denied."');
+    expect(source).toContain("function handlePauseVoiceRecording");
+    expect(source).toContain("mediaRecorderRef.current?.pause()");
+    expect(source).toContain("function handleResumeVoiceRecording");
+    expect(source).toContain("mediaRecorderRef.current?.resume()");
+    expect(source).toContain("function handleCancelVoiceRecording");
+    expect(source).toContain("handleStopVoiceRecording()");
+    expect(source).toContain('<audio controls src={voiceAudioUrl} aria-label="Brain Dump voice recording playback" />');
+    expect(source).toContain('role="meter"');
+    expect(source).toContain('aria-label="Voice input level"');
+    expect(source).toContain("voiceUploadProgressPct");
+    expect(source).toContain('role="progressbar"');
+    expect(source).toContain('aria-live="polite"');
+    expect(source).toContain('trackEvent("brain_dump_voice_transcription_failed"');
+    expect(source).toContain('trackEvent("brain_dump_voice_transcribed"');
+    expect(source).not.toContain("raw_audio");
+    expect(source).not.toContain("audio_bytes");
+  });
+
+  it("allows microphone use only from the app origin in the response headers", () => {
+    const source = readFileSync(resolve(__dirname, "../../../next.config.ts"), "utf8");
+
+    expect(source).toContain('Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()"');
+  });
+
   it("supports title edits, item selection, and confirmed creation through the hosted endpoint", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 
@@ -60,7 +104,7 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('"Uploading securely"');
     expect(source).toContain('"Analysing Brain Dump"');
     expect(source).toContain('trackEvent("brain_dump_processing_failed"');
-    expect(source).toContain("mode: \"typed\"");
+    expect(source).toContain("mode: captureMode");
     expect(source).toContain("draft_length: text.length");
     expect(source).toContain("Retry");
     expect(source).toContain("Clear draft");

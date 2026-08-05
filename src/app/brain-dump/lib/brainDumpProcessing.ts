@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { DeletedTaskMeta, Task } from "@/app/tasktimer/lib/types";
 
 export const BRAIN_DUMP_TYPED_PROMPT_ID = "brain-dump-v1";
+export const BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID = "brain-dump-voice-transcription-v1";
+export const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
 const BRAIN_DUMP_UNFINISHED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const brainDumpItemTypeSchema = z.enum([
@@ -43,6 +45,12 @@ const providerItemSchema = z
 const providerResponseSchema = z
   .object({
     items: z.array(providerItemSchema).min(1).max(100),
+  })
+  .strict();
+
+const voiceTranscriptionResponseSchema = z
+  .object({
+    transcript: z.string().trim().min(1).max(20_000),
   })
   .strict();
 
@@ -194,6 +202,13 @@ export type BrainDumpReviewSession = {
 
 export type BrainDumpAiProvider = {
   extractTyped(input: { promptId: typeof BRAIN_DUMP_TYPED_PROMPT_ID; text: string; timezone: string }): Promise<unknown>;
+  transcribeVoice?(input: {
+    promptId: typeof BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID;
+    audioBase64: string;
+    mimeType: string;
+    timezone: string;
+    uid: string;
+  }): Promise<unknown>;
 };
 
 export type BrainDumpSessionStore = {
@@ -240,6 +255,28 @@ function normalizeTypedInput(text: unknown) {
 
 function normalizeTimezone(timezone: unknown) {
   return asTrimmedString(timezone, 120) || "UTC";
+}
+
+function normalizeVoiceAudioBase64(value: unknown) {
+  const audioBase64 = asTrimmedString(value);
+  if (!audioBase64) throw new BrainDumpInputError("Record audio before transcribing.");
+  if (!/^[a-zA-Z0-9+/=_-]+$/.test(audioBase64)) throw new BrainDumpInputError("Voice recording data is invalid.");
+  return audioBase64;
+}
+
+function normalizeVoiceMimeType(value: unknown) {
+  const mimeType = asTrimmedString(value, 80).toLowerCase();
+  if (mimeType !== "audio/webm") throw new BrainDumpInputError("Brain Dump voice recording must use audio/webm.");
+  return mimeType;
+}
+
+function normalizeVoiceDurationMs(value: unknown) {
+  const durationMs = Math.max(0, Math.floor(Number(value) || 0));
+  if (!durationMs) throw new BrainDumpInputError("Voice recording duration is required.");
+  if (durationMs > BRAIN_DUMP_VOICE_MAX_MS) {
+    throw new BrainDumpInputError("Brain Dump voice recordings must be five minutes or shorter.");
+  }
+  return durationMs;
 }
 
 function normalizeNullableText(value: unknown, maxLength: number) {
@@ -674,6 +711,41 @@ export async function processTypedBrainDump(input: {
 
   await input.store.saveSession(session);
   return session;
+}
+
+export async function transcribeVoiceBrainDump(input: {
+  uid: string;
+  audioBase64: string;
+  mimeType: string;
+  durationMs: number;
+  timezone?: string;
+  provider: BrainDumpAiProvider;
+}) {
+  const uid = asTrimmedString(input.uid, 120);
+  if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
+  const audioBase64 = normalizeVoiceAudioBase64(input.audioBase64);
+  const mimeType = normalizeVoiceMimeType(input.mimeType);
+  const durationMs = normalizeVoiceDurationMs(input.durationMs);
+  const timezone = normalizeTimezone(input.timezone);
+  if (!input.provider.transcribeVoice) {
+    throw new BrainDumpProviderValidationError("Brain Dump voice transcription is not configured.");
+  }
+  const providerResponse = await input.provider.transcribeVoice({
+    promptId: BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID,
+    audioBase64,
+    mimeType,
+    timezone,
+    uid,
+  });
+  const parsed = voiceTranscriptionResponseSchema.safeParse(providerResponse);
+  if (!parsed.success) {
+    throw new BrainDumpProviderValidationError("Brain Dump transcription output did not match the expected schema.");
+  }
+  return {
+    transcript: parsed.data.transcript,
+    mimeType,
+    durationMs,
+  };
 }
 
 export async function getBrainDumpReviewSessionForUser(input: {
