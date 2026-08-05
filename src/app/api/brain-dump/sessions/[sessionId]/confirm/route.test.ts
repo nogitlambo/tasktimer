@@ -76,6 +76,7 @@ describe("POST /api/brain-dump/sessions/[sessionId]/confirm", () => {
         method: "POST",
         headers: { "content-type": "application/json", origin: "https://localhost", "x-firebase-auth": "token" },
         body: JSON.stringify({
+          idempotencyKey: "confirm-key-route-1",
           itemUpdates: [{ itemId: "item-1", title: "Call orthodontist", selected: true }],
         }),
       }),
@@ -97,5 +98,25 @@ describe("POST /api/brain-dump/sessions/[sessionId]/confirm", () => {
         skippedCount: 0,
       },
     });
+  });
+
+  it("rejects creation requests without an idempotency key", async () => {
+    const response = await POST(
+      new Request("https://tasklaunch.app/api/brain-dump/sessions/session-1/confirm", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://localhost", "x-firebase-auth": "token" },
+        body: JSON.stringify({
+          itemUpdates: [{ itemId: "item-1", title: "Call orthodontist", selected: true }],
+        }),
+      }),
+      { params: Promise.resolve({ sessionId: "session-1" }) }
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(payload).toMatchObject({
+      code: "brain-dump/idempotency-required",
+    });
+    expect(mocks.workspace.saveTasks).not.toHaveBeenCalled();
   });
 });

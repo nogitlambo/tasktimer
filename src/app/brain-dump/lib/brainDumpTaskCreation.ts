@@ -17,6 +17,7 @@ export type BrainDumpReviewItemUpdate = {
 export type BrainDumpWorkspaceRepository = {
   loadTasks(uid: string): Promise<Task[]>;
   saveTasks(uid: string, tasks: Task[]): Promise<void>;
+  saveTask?(uid: string, task: Task): Promise<void>;
 };
 
 export class BrainDumpCreationError extends Error {
@@ -56,17 +57,42 @@ function applyUpdate(item: BrainDumpReviewItem, update: ReturnType<typeof normal
   };
 }
 
+function hashString(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function hashCreationPayload(updates: ReturnType<typeof normalizeItemUpdate>[]) {
+  const canonical = updates
+    .slice()
+    .sort((a, b) => a.itemId.localeCompare(b.itemId))
+    .map((update) => ({
+      itemId: update.itemId,
+      selected: update.selected === true,
+      title: update.title ?? "",
+    }));
+  return `fnv1a:${hashString(JSON.stringify(canonical))}`;
+}
+
 function itemCanCreateTask(item: BrainDumpReviewItem) {
   return item.itemType === "task" && item.supported && item.selected;
+}
+
+function taskIdForReviewItem(input: { sessionId: string; idempotencyKey: string; itemId: string }) {
+  return `brain-dump-task-${hashString(`${input.sessionId}|${input.idempotencyKey}|${input.itemId}`)}`;
 }
 
 function buildTaskFromReviewItem(input: {
   item: BrainDumpReviewItem;
   order: number;
-  createId: () => string;
+  taskId: string;
   createdAtMs: number;
 }): Task {
-  const sharedTasks = createTaskTimerSharedTask({ createId: input.createId });
+  const sharedTasks = createTaskTimerSharedTask({ createId: () => input.taskId });
   const task = sharedTasks.makeTask(input.item.title, input.order);
   task.createdAtMs = input.createdAtMs;
   task.plannedStartPushRemindersEnabled = false;
@@ -76,6 +102,7 @@ function buildTaskFromReviewItem(input: {
 export async function confirmBrainDumpReviewSession(input: {
   uid: string;
   sessionId: string;
+  idempotencyKey?: string;
   itemUpdates?: BrainDumpReviewItemUpdate[];
   store: BrainDumpSessionStore;
   workspace: BrainDumpWorkspaceRepository;
@@ -84,78 +111,149 @@ export async function confirmBrainDumpReviewSession(input: {
 }): Promise<BrainDumpCreationBatchResult> {
   const uid = asString(input.uid, 120);
   const sessionId = asString(input.sessionId, 120);
+  const idempotencyKey = asString(input.idempotencyKey, 120);
   if (!uid) throw new BrainDumpCreationError("You must be signed in to continue.", "auth/unauthenticated", 401);
   if (!sessionId) throw new BrainDumpCreationError("Brain Dump session was not found.", "brain-dump/not-found", 404);
+  if (!idempotencyKey) {
+    throw new BrainDumpCreationError("Brain Dump confirmation requires an idempotency key.", "brain-dump/idempotency-required", 400);
+  }
 
   const session = await input.store.getSession(uid, sessionId);
   if (!session || session.ownerUid !== uid || session.id !== sessionId) {
     throw new BrainDumpCreationError("Brain Dump session was not found.", "brain-dump/not-found", 404);
   }
+
+  const normalizedUpdates = (input.itemUpdates || []).map(normalizeItemUpdate).filter((update) => update.itemId);
+  const payloadHash = hashCreationPayload(normalizedUpdates);
+  const existingReceipt = session.creationReceipts?.[idempotencyKey];
+  if (existingReceipt) {
+    if (existingReceipt.payloadHash !== payloadHash) {
+      throw new BrainDumpCreationError(
+        "Brain Dump confirmation payload does not match the existing idempotency key.",
+        "brain-dump/idempotency-payload-mismatch",
+        409
+      );
+    }
+    if (existingReceipt.batchResult) return existingReceipt.batchResult;
+  }
+
   if (session.state !== "review") {
     throw new BrainDumpCreationError("Brain Dump session is not ready for confirmation.", "brain-dump/not-reviewable", 409);
   }
 
   const updatesByItemId = new Map(
-    (input.itemUpdates || [])
-      .map(normalizeItemUpdate)
-      .filter((update) => update.itemId)
-      .map((update) => [update.itemId, update])
+    normalizedUpdates.map((update) => [update.itemId, update])
   );
   const reviewedItems = session.review.items.map((item) => applyUpdate(item, updatesByItemId.get(item.id) || null));
   const existingTasks = await input.workspace.loadTasks(uid);
   const createdAtMs = Math.max(0, Math.floor(Number(input.now?.() ?? Date.now()) || 0));
   let nextOrder = nextTaskOrder(existingTasks);
-  const createdTasks: Task[] = [];
-  const resultItems: BrainDumpCreationBatchResult["items"] = [];
+  const resultItems: Array<BrainDumpCreationBatchResult["items"][number] | null> = [];
+  const candidateTasks: Array<{ index: number; item: BrainDumpReviewItem; task: Task }> = [];
 
-  for (const item of reviewedItems) {
+  reviewedItems.forEach((item, index) => {
     if (!itemCanCreateTask(item)) {
-      resultItems.push({
+      resultItems[index] = {
         itemId: item.id,
         status: "skipped",
         reason: item.supported ? "not-selected" : "unsupported",
-      });
-      continue;
+      };
+      return;
     }
 
     const task = buildTaskFromReviewItem({
       item,
       order: nextOrder,
-      createId: input.createId,
+      taskId: taskIdForReviewItem({ sessionId, idempotencyKey, itemId: item.id }),
       createdAtMs,
     });
     nextOrder += 1;
-    createdTasks.push(task);
-    resultItems.push({
-      itemId: item.id,
-      status: "created",
-      createdTaskId: task.id,
-    });
+    candidateTasks.push({ index, item, task });
+  });
+
+  if (input.workspace.saveTask) {
+    for (const candidate of candidateTasks) {
+      try {
+        await input.workspace.saveTask(uid, candidate.task);
+        resultItems[candidate.index] = {
+          itemId: candidate.item.id,
+          status: "created",
+          createdTaskId: candidate.task.id,
+        };
+      } catch {
+        resultItems[candidate.index] = {
+          itemId: candidate.item.id,
+          status: "failed",
+          reason: "workspace-write-failed",
+          retryable: true,
+        };
+      }
+    }
+  } else if (candidateTasks.length) {
+    try {
+      await input.workspace.saveTasks(uid, [...existingTasks, ...candidateTasks.map((candidate) => candidate.task)]);
+      for (const candidate of candidateTasks) {
+        resultItems[candidate.index] = {
+          itemId: candidate.item.id,
+          status: "created",
+          createdTaskId: candidate.task.id,
+        };
+      }
+    } catch {
+      for (const candidate of candidateTasks) {
+        resultItems[candidate.index] = {
+          itemId: candidate.item.id,
+          status: "failed",
+          reason: "workspace-write-failed",
+          retryable: true,
+        };
+      }
+    }
   }
 
-  if (createdTasks.length) {
-    await input.workspace.saveTasks(uid, [...existingTasks, ...createdTasks]);
-  }
+  const finalizedItems = resultItems.filter((item): item is BrainDumpCreationBatchResult["items"][number] => Boolean(item));
+  const createdCount = finalizedItems.filter((item) => item.status === "created").length;
+  const skippedCount = finalizedItems.filter((item) => item.status === "skipped").length;
+  const failedCount = finalizedItems.filter((item) => item.status === "failed").length;
+  const retryableCount = finalizedItems.filter((item) => item.status === "failed" && item.retryable).length;
+  const batchState: BrainDumpCreationBatchResult["state"] =
+    failedCount > 0 ? (createdCount > 0 || skippedCount > 0 ? "partially_failed" : "failed") : "completed";
 
   const batchResult: BrainDumpCreationBatchResult = {
     sessionId,
-    createdCount: createdTasks.length,
-    skippedCount: resultItems.filter((item) => item.status === "skipped").length,
+    idempotencyKey,
+    payloadHash,
+    state: batchState,
+    createdCount,
+    skippedCount,
+    failedCount,
+    retryableCount,
     completedAtMs: createdAtMs,
-    items: resultItems,
+    items: finalizedItems,
   };
   const completedSession: BrainDumpReviewSession = {
     ...session,
-    state: "completed",
+    state: batchState === "completed" ? "completed" : "review",
     source: {
       ...session.source,
-      rawText: "",
+      rawText: batchState === "completed" ? "" : session.source.rawText,
     },
     review: {
       selectedCount: reviewedItems.filter((item) => item.selected).length,
       items: reviewedItems,
     },
     batchResult,
+    creationReceipts: {
+      ...(session.creationReceipts || {}),
+      [idempotencyKey]: {
+        idempotencyKey,
+        payloadHash,
+        state: batchResult.state,
+        startedAtMs: createdAtMs,
+        completedAtMs: createdAtMs,
+        batchResult,
+      },
+    },
   };
   await input.store.saveSession(completedSession);
   return batchResult;

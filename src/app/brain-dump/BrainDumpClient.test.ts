@@ -29,13 +29,19 @@ describe("BrainDumpClient", () => {
     expect(source).toContain('value={item.title}');
     expect(source).toContain("selectedCount");
     expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/confirm/`), {');
+    expect(source).toContain("confirmIdempotencyKey");
+    expect(source).toContain("idempotencyKey: confirmIdempotencyKey");
     expect(source).toContain("itemUpdates");
     expect(source).toContain('trackEvent("brain_dump_tasks_created"');
     expect(source).toContain("created_count: payload.batch.createdCount");
     expect(source).toContain("skipped_count: payload.batch.skippedCount");
+    expect(source).toContain('trackEvent("brain_dump_tasks_partial_failed"');
+    expect(source).toContain('trackEvent("brain_dump_tasks_create_failed"');
+    expect(source).toContain("failed_count: payload.batch.failedCount");
+    expect(source).toContain("retryable_count: payload.batch.retryableCount");
     expect(source).toContain(`void trackEvent("brain_dump_tasks_created", {
-        created_count: payload.batch.createdCount,
-        skipped_count: payload.batch.skippedCount,
-      });`);
+          created_count: payload.batch.createdCount,
+          skipped_count: payload.batch.skippedCount,
+        });`);
   });
 });

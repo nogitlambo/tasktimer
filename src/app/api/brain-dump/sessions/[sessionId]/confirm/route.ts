@@ -39,6 +39,7 @@ export async function POST(req: Request, context: RouteContext) {
     const batch = await confirmBrainDumpReviewSession({
       uid,
       sessionId: String(params.sessionId || ""),
+      idempotencyKey: String(body.idempotencyKey || ""),
       itemUpdates: Array.isArray(body.itemUpdates) ? body.itemUpdates : [],
       store: createFirestoreBrainDumpSessionStore(),
       workspace: createFirestoreBrainDumpWorkspaceRepository(),

@@ -91,6 +91,7 @@ describe("confirmBrainDumpReviewSession", () => {
     const result = await confirmBrainDumpReviewSession({
       uid: "uid-1",
       sessionId: "session-1",
+      idempotencyKey: "confirm-key-edit-one",
       itemUpdates: [
         { itemId: "item-1", title: "Call orthodontist", selected: true },
         { itemId: "item-2", selected: false },
@@ -106,13 +107,12 @@ describe("confirmBrainDumpReviewSession", () => {
       createdCount: 1,
       skippedCount: 1,
       items: [
-        { itemId: "item-1", createdTaskId: "brain-dump-task-1", status: "created" },
+        { itemId: "item-1", status: "created" },
         { itemId: "item-2", status: "skipped", reason: "not-selected" },
       ],
     });
     expect(savedTasks).toHaveLength(2);
     expect(savedTasks[1]).toMatchObject({
-      id: "brain-dump-task-1",
       name: "Call orthodontist",
       taskType: "recurring",
       order: 2,
@@ -120,6 +120,7 @@ describe("confirmBrainDumpReviewSession", () => {
       running: false,
       hasStarted: false,
     });
+    expect(savedTasks[1].id).toMatch(/^brain-dump-task-/);
     expect(JSON.stringify(savedTasks[1])).not.toContain("Call dentist and finish screenshots");
     expect(savedSession).toMatchObject({
       state: "completed",
@@ -128,6 +129,209 @@ describe("confirmBrainDumpReviewSession", () => {
         skippedCount: 1,
       },
     });
+  });
+
+  it("returns the same batch receipt for a repeated idempotency key without duplicating tasks", async () => {
+    let savedTasks = [task()];
+    let savedSession = reviewSession();
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+    const request = {
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-1",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call orthodontist", selected: true },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "random-task-id-that-should-not-drive-idempotency",
+      now: () => 1_800_000_000_500,
+    };
+
+    const first = await confirmBrainDumpReviewSession(request);
+    const second = await confirmBrainDumpReviewSession(request);
+
+    expect(second).toEqual(first);
+    expect(savedTasks.filter((entry) => entry.id !== "task-existing")).toHaveLength(1);
+    expect(workspace.saveTasks).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a changed payload that reuses an existing idempotency key", async () => {
+    let savedSession = reviewSession();
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => [task()]),
+      saveTasks: vi.fn(async () => {}),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-mismatch",
+      itemUpdates: [{ itemId: "item-1", title: "Call orthodontist", selected: true }],
+      store,
+      workspace,
+      createId: () => "task-id-1",
+    });
+    await expect(
+      confirmBrainDumpReviewSession({
+        uid: "uid-1",
+        sessionId: "session-1",
+        idempotencyKey: "confirm-key-mismatch",
+        itemUpdates: [{ itemId: "item-1", title: "Call plumber", selected: true }],
+        store,
+        workspace,
+        createId: () => "task-id-2",
+      })
+    ).rejects.toMatchObject({
+      code: "brain-dump/idempotency-payload-mismatch",
+      status: 409,
+    });
+    expect(workspace.saveTasks).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses stable task ids so concurrent same-key requests cannot create duplicate workspace tasks", async () => {
+    let savedSession = reviewSession();
+    let savedTasks = [task()];
+    let releaseSaves!: () => void;
+    const savesCanFinish = new Promise<void>((resolve) => {
+      releaseSaves = resolve;
+    });
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    let idSequence = 0;
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        await savesCanFinish;
+        for (const entry of tasks) {
+          if (!savedTasks.some((existing) => existing.id === entry.id)) savedTasks = [...savedTasks, entry];
+        }
+      }),
+    };
+    const request = {
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-concurrent",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call orthodontist", selected: true },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => `non-deterministic-${(idSequence += 1)}`,
+      now: () => 1_800_000_000_500,
+    };
+
+    const first = confirmBrainDumpReviewSession(request);
+    const second = confirmBrainDumpReviewSession(request);
+    releaseSaves();
+    const results = await Promise.all([first, second]);
+
+    expect(results[1].items[0].createdTaskId).toBe(results[0].items[0].createdTaskId);
+    expect(savedTasks.filter((entry) => entry.id !== "task-existing")).toHaveLength(1);
+  });
+
+  it("records partial failures with retryable item receipts without claiming full success", async () => {
+    let savedSession = reviewSession();
+    const createdTaskIds: string[] = [];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => [task()]),
+      saveTasks: vi.fn(),
+      saveTask: vi.fn(async (_uid, entry) => {
+        if (entry.name === "Finish screenshots") throw new Error("Firestore write failed");
+        createdTaskIds.push(entry.id);
+      }),
+    };
+
+    const result = await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-partial",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call orthodontist", selected: true },
+        { itemId: "item-2", title: "Finish screenshots", selected: true },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(result).toMatchObject({
+      state: "partially_failed",
+      createdCount: 1,
+      failedCount: 1,
+      retryableCount: 1,
+      items: [
+        { itemId: "item-1", status: "created" },
+        { itemId: "item-2", status: "failed", reason: "workspace-write-failed", retryable: true },
+      ],
+    });
+    expect(createdTaskIds).toHaveLength(1);
+    expect(savedSession.state).toBe("review");
+    expect(savedSession.batchResult).toMatchObject({ state: "partially_failed" });
+  });
+
+  it("replays a partial receipt without recreating already successful items", async () => {
+    let savedSession = reviewSession();
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => savedSession),
+      saveSession: vi.fn(async (session) => {
+        savedSession = session;
+      }),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => [task()]),
+      saveTasks: vi.fn(),
+      saveTask: vi.fn(async (_uid, entry) => {
+        if (entry.name === "Finish screenshots") throw new Error("Firestore write failed");
+      }),
+    };
+    const request = {
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-partial-replay",
+      itemUpdates: [
+        { itemId: "item-1", title: "Call orthodontist", selected: true },
+        { itemId: "item-2", title: "Finish screenshots", selected: true },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    };
+
+    const first = await confirmBrainDumpReviewSession(request);
+    const second = await confirmBrainDumpReviewSession(request);
+
+    expect(second).toEqual(first);
+    expect(workspace.saveTask).toHaveBeenCalledTimes(2);
   });
 
   it("denies confirmation when the session is not owned by the authenticated user", async () => {
@@ -144,6 +348,7 @@ describe("confirmBrainDumpReviewSession", () => {
       confirmBrainDumpReviewSession({
         uid: "uid-2",
         sessionId: "session-1",
+        idempotencyKey: "confirm-key-wrong-user",
         store,
         workspace,
         createId: () => "task-1",
@@ -190,6 +395,7 @@ describe("confirmBrainDumpReviewSession", () => {
     const result = await confirmBrainDumpReviewSession({
       uid: "uid-1",
       sessionId: "session-1",
+      idempotencyKey: "confirm-key-unsupported",
       itemUpdates: [{ itemId: "item-unsupported", selected: true }],
       store,
       workspace,

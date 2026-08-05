@@ -31,7 +31,8 @@ export function createFirestoreBrainDumpSessionStore(): BrainDumpSessionStore {
       const snap = await sessionDoc(safeUid, safeSessionId).get();
       if (!snap.exists) return null;
       const data = snap.data() as BrainDumpReviewSession | undefined;
-      if (!data || data.ownerUid !== safeUid || data.id !== safeSessionId || data.state !== "review") return null;
+      if (!data || data.ownerUid !== safeUid || data.id !== safeSessionId) return null;
+      if (data.state !== "review" && data.state !== "completed") return null;
       return data;
     },
   };

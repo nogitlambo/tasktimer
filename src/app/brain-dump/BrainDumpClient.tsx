@@ -10,6 +10,14 @@ import styles from "./BrainDump.module.css";
 
 const BRAIN_DUMP_TEXT_LIMIT = 20_000;
 
+function createConfirmIdempotencyKey(sessionId: string) {
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return `${sessionId}:${suffix}`;
+}
+
 type BrainDumpReviewItem = {
   id: string;
   itemType: string;
@@ -31,9 +39,11 @@ type BrainDumpReviewSession = {
 };
 
 type BrainDumpCreationBatchResult = {
+  state: "completed" | "partially_failed" | "failed";
   createdCount: number;
   skippedCount: number;
-  createdTaskIds: string[];
+  failedCount: number;
+  retryableCount: number;
 };
 
 export default function BrainDumpClient() {
@@ -43,6 +53,7 @@ export default function BrainDumpClient() {
   const [error, setError] = useState("");
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
   const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
+  const [confirmIdempotencyKey, setConfirmIdempotencyKey] = useState("");
   const trimmedText = text.trim();
   const canSubmit = trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy;
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
@@ -79,6 +90,7 @@ export default function BrainDumpClient() {
       if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump could not be processed.");
       setSession(payload.session);
       setBatchResult(null);
+      setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
       setStatus("Review ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Brain Dump could not be processed.");
@@ -109,7 +121,7 @@ export default function BrainDumpClient() {
   }
 
   async function handleConfirm() {
-    if (!session || selectedCount === 0 || busy) return;
+    if (!session || selectedCount === 0 || busy || !confirmIdempotencyKey) return;
     setBusy(true);
     setError("");
     setStatus("Creating tasks");
@@ -130,20 +142,37 @@ export default function BrainDumpClient() {
           "Content-Type": "application/json",
           "x-firebase-auth": idToken,
         },
-        body: JSON.stringify({ itemUpdates }),
+        body: JSON.stringify({ idempotencyKey: confirmIdempotencyKey, itemUpdates }),
       });
       const payload = (await response.json()) as { batch?: BrainDumpCreationBatchResult; error?: string };
       if (!response.ok || !payload.batch) throw new Error(payload.error || "Brain Dump tasks could not be created.");
       setBatchResult(payload.batch);
-      setSession((current) => (current ? { ...current, state: "completed" } : current));
-      setStatus(`Created ${payload.batch.createdCount} task${payload.batch.createdCount === 1 ? "" : "s"}`);
-      void trackEvent("brain_dump_tasks_created", {
-        created_count: payload.batch.createdCount,
-        skipped_count: payload.batch.skippedCount,
-      });
+      if (payload.batch.state === "completed") {
+        setSession((current) => (current ? { ...current, state: "completed" } : current));
+        setStatus(`Created ${payload.batch.createdCount} task${payload.batch.createdCount === 1 ? "" : "s"}`);
+        void trackEvent("brain_dump_tasks_created", {
+          created_count: payload.batch.createdCount,
+          skipped_count: payload.batch.skippedCount,
+        });
+      } else {
+        setStatus(
+          `Created ${payload.batch.createdCount}; ${payload.batch.failedCount} failed and ${payload.batch.retryableCount} can retry`
+        );
+        void trackEvent("brain_dump_tasks_partial_failed", {
+          session_id: session.id,
+          created_count: payload.batch.createdCount,
+          skipped_count: payload.batch.skippedCount,
+          failed_count: payload.batch.failedCount,
+          retryable_count: payload.batch.retryableCount,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Brain Dump tasks could not be created.");
       setStatus("");
+      void trackEvent("brain_dump_tasks_create_failed", {
+        session_id: session.id,
+        selected_count: selectedCount,
+      });
     } finally {
       setBusy(false);
     }

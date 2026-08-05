@@ -36,5 +36,11 @@ export function createFirestoreBrainDumpWorkspaceRepository(): BrainDumpWorkspac
       }
       await batch.commit();
     },
+    async saveTask(uid: string, task: Task) {
+      const safeUid = asString(uid, 120);
+      const taskId = asString(task.id, 120);
+      if (!safeUid || !taskId) return;
+      await tasksCollection(safeUid).doc(taskId).set(task, { merge: true });
+    },
   };
 }

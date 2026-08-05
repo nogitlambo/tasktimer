@@ -50,15 +50,30 @@ export type BrainDumpSessionState = "review" | "completed";
 
 export type BrainDumpCreationBatchResult = {
   sessionId: string;
+  idempotencyKey: string;
+  payloadHash: string;
+  state: "completed" | "partially_failed" | "failed";
   createdCount: number;
   skippedCount: number;
+  failedCount: number;
+  retryableCount: number;
   completedAtMs: number;
   items: Array<{
     itemId: string;
-    status: "created" | "skipped";
+    status: "created" | "skipped" | "failed";
     createdTaskId?: string;
     reason?: string;
+    retryable?: boolean;
   }>;
+};
+
+export type BrainDumpCreationReceipt = {
+  idempotencyKey: string;
+  payloadHash: string;
+  state: "in_progress" | BrainDumpCreationBatchResult["state"];
+  startedAtMs: number;
+  completedAtMs?: number;
+  batchResult?: BrainDumpCreationBatchResult;
 };
 
 export type BrainDumpReviewSession = {
@@ -78,6 +93,7 @@ export type BrainDumpReviewSession = {
     items: BrainDumpReviewItem[];
   };
   batchResult?: BrainDumpCreationBatchResult;
+  creationReceipts?: Record<string, BrainDumpCreationReceipt>;
 };
 
 export type BrainDumpAiProvider = {
