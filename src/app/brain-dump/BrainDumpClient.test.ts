@@ -58,10 +58,45 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("audio_bytes");
   });
 
+  it("turns one image and optional instruction into a normal review session without replacing typed drafts", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain('type BrainDumpCaptureMode = "typed" | "voice" | "image"');
+    expect(source).toContain("const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024");
+    expect(source).toContain('const BRAIN_DUMP_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp"');
+    expect(source).toContain("function handleImageFileChange");
+    expect(source).toContain("event.target.files?.[0]");
+    expect(source).toContain("URL.createObjectURL(file)");
+    expect(source).toContain("setImagePreviewUrl");
+    expect(source).toContain("function handleRemoveImage");
+    expect(source).toContain("setImageInstruction");
+    expect(source).toContain('fetch(getApiUrl("/api/brain-dump/images/"), {');
+    expect(source).toContain("imageUploadProgressPct");
+    expect(source).toContain("setSession(payload.session)");
+    expect(source).toContain("writeStoredDraft(nextText)");
+  });
+
+  it("exposes image capture validation, camera runtime hints, preview accessibility, retry, and redacted analytics", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("file.size > BRAIN_DUMP_IMAGE_MAX_BYTES");
+    expect(source).toContain("!BRAIN_DUMP_IMAGE_TYPES.has(file.type)");
+    expect(source).toContain('"Choose a JPEG, PNG, or WebP image."');
+    expect(source).toContain('"Brain Dump images must be 10 MB or smaller."');
+    expect(source).toContain('accept={BRAIN_DUMP_IMAGE_ACCEPT}');
+    expect(source).toContain('capture="environment"');
+    expect(source).toContain('alt={imageFileName ? `Preview of ${imageFileName}` : "Brain Dump image preview"}');
+    expect(source).toContain('role="progressbar"');
+    expect(source).toContain('trackEvent("brain_dump_image_review_ready"');
+    expect(source).toContain('trackEvent("brain_dump_image_review_failed"');
+    expect(source).not.toContain("raw_image");
+    expect(source).not.toContain("image_bytes");
+  });
+
   it("allows microphone use only from the app origin in the response headers", () => {
     const source = readFileSync(resolve(__dirname, "../../../next.config.ts"), "utf8");
 
-    expect(source).toContain('Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()"');
+    expect(source).toContain('Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()"');
   });
 
   it("supports title edits, item selection, and confirmed creation through the hosted endpoint", () => {

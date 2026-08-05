@@ -216,6 +216,80 @@
   flex: 1;
 }
 
+.imagePanel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #15171d;
+  padding: 14px;
+}
+
+.imagePickerLabel {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 14px;
+  color: rgba(248, 250, 252, 0.86);
+  font-family: var(--font-display-ui);
+  font-size: 11px;
+}
+
+.imagePickerLabel:focus-within,
+.imagePickerLabel:hover {
+  border-color: #c9ff24;
+  color: #c9ff24;
+}
+
+.imageFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.imagePreviewGrid {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.imagePreview {
+  width: 100%;
+  max-height: 220px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  object-fit: contain;
+}
+
+.imageMeta {
+  display: grid;
+  gap: 8px;
+}
+
+.instructionTextarea {
+  min-height: 96px;
+  resize: vertical;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  color: rgba(248, 250, 252, 0.96);
+  font-family: var(--font-readable);
+  font-size: 14px;
+  line-height: 1.45;
+  outline: none;
+}
+
+.instructionTextarea:focus-visible {
+  border-color: #c9ff24;
+  box-shadow: 0 0 0 2px rgba(201, 255, 36, 0.16);
+}
+
 .statusRow {
   min-height: 22px;
 }
@@ -389,6 +463,15 @@
   .voicePlayback {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .imagePickerLabel,
+  .imagePreviewGrid {
+    width: 100%;
+  }
+
+  .imagePreviewGrid {
+    grid-template-columns: 1fr;
   }
 
   .dateReview {

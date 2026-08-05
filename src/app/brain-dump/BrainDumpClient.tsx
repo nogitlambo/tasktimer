@@ -13,12 +13,17 @@ const BRAIN_DUMP_TEXT_LIMIT = 20_000;
 const BRAIN_DUMP_VOICE_MIME_TYPE = "audio/webm";
 const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
 const BRAIN_DUMP_VOICE_LABEL = "Voice";
+const BRAIN_DUMP_IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
+const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const BRAIN_DUMP_IMAGE_LABEL = "Image";
+const BRAIN_DUMP_IMAGE_TYPES = new Set(BRAIN_DUMP_IMAGE_ACCEPT.split(","));
 const TASKTIMER_STORAGE_KEY = "taskticker_tasks_v1";
 const BRAIN_DUMP_TYPED_DRAFT_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:typedDraft:v1`;
 const BRAIN_DUMP_CAPTURE_MODE_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:captureMode:v1`;
 
-type BrainDumpCaptureMode = "typed" | "voice";
+type BrainDumpCaptureMode = "typed" | "voice" | "image";
 type BrainDumpVoiceState = "idle" | "recording" | "paused" | "recorded" | "transcribing";
+type BrainDumpImageState = "idle" | "ready" | "processing";
 
 function readStoredDraft() {
   if (typeof window === "undefined") return "";
@@ -40,7 +45,9 @@ function writeStoredDraft(value: string) {
 function readStoredCaptureMode(): BrainDumpCaptureMode {
   if (typeof window === "undefined") return "typed";
   try {
-    return window.localStorage.getItem(BRAIN_DUMP_CAPTURE_MODE_KEY) === "voice" ? "voice" : "typed";
+    const stored = window.localStorage.getItem(BRAIN_DUMP_CAPTURE_MODE_KEY);
+    if (stored === "voice" || stored === "image") return stored;
+    return "typed";
   } catch {
     return "typed";
   }
@@ -184,6 +191,15 @@ export default function BrainDumpClient() {
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [voiceAudioBlob, setVoiceAudioBlob] = useState<Blob | null>(null);
   const [voiceAudioUrl, setVoiceAudioUrl] = useState("");
+  const [imageState, setImageState] = useState<BrainDumpImageState>("idle");
+  const [imageError, setImageError] = useState("");
+  const [imageFileName, setImageFileName] = useState("");
+  const [imageMimeType, setImageMimeType] = useState("");
+  const [imageSizeBytes, setImageSizeBytes] = useState(0);
+  const [imageBase64, setImageBase64] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [imageInstruction, setImageInstruction] = useState("");
+  const [imageUploadProgressPct, setImageUploadProgressPct] = useState(0);
   const [recoverableFailure, setRecoverableFailure] = useState(false);
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
   const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
@@ -202,9 +218,13 @@ export default function BrainDumpClient() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const voiceLevelFrameRef = useRef<number | null>(null);
   const voiceAudioUrlRef = useRef("");
+  const imagePreviewUrlRef = useRef("");
   const trimmedText = text.trim();
   const voiceBusy = voiceState === "recording" || voiceState === "paused" || voiceState === "transcribing";
-  const canSubmit = trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy && !voiceBusy;
+  const imageBusy = imageState === "processing";
+  const canProcessImage = !!imageBase64 && imageState === "ready" && !busy;
+  const canSubmit =
+    captureMode === "image" ? canProcessImage : trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy && !voiceBusy;
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
   const selectedCount = session?.review.items.filter((item) => item.supported && item.selected).length ?? 0;
   const undoExpiresAtMs = batchResult?.state === "completed" ? batchResult.completedAtMs + 30_000 : 0;
@@ -241,16 +261,25 @@ export default function BrainDumpClient() {
   }, [voiceAudioUrl]);
 
   useEffect(() => {
+    imagePreviewUrlRef.current = imagePreviewUrl;
+  }, [imagePreviewUrl]);
+
+  useEffect(() => {
     return () => {
       clearVoiceTimer();
       stopVoiceLevelMeter();
       stopVoiceStream();
       if (voiceAudioUrlRef.current) URL.revokeObjectURL(voiceAudioUrlRef.current);
+      if (imagePreviewUrlRef.current) URL.revokeObjectURL(imagePreviewUrlRef.current);
     };
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (captureMode === "image") {
+      await handleProcessImage();
+      return;
+    }
     await submitForReview({ allowAutoRetry: true });
   }
 
@@ -262,9 +291,71 @@ export default function BrainDumpClient() {
   }
 
   function handleCaptureModeChange(event: ChangeEvent<HTMLSelectElement>) {
-    const nextMode: BrainDumpCaptureMode = event.target.value === "voice" ? "voice" : "typed";
+    const nextMode: BrainDumpCaptureMode = event.target.value === "voice" || event.target.value === "image" ? event.target.value : "typed";
     setCaptureMode(nextMode);
     writeStoredCaptureMode(nextMode);
+  }
+
+  function resetImageUpload() {
+    setImageState("idle");
+    setImageError("");
+    setImageFileName("");
+    setImageMimeType("");
+    setImageSizeBytes(0);
+    setImageBase64("");
+    setImageUploadProgressPct(0);
+    setImagePreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return "";
+    });
+  }
+
+  async function handleImageFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setImageError("");
+    setImageUploadProgressPct(0);
+    if (!file) return;
+    if (!BRAIN_DUMP_IMAGE_TYPES.has(file.type)) {
+      resetImageUpload();
+      setImageError("Choose a JPEG, PNG, or WebP image.");
+      return;
+    }
+    if (!file.size) {
+      resetImageUpload();
+      setImageError("Brain Dump image is empty or unreadable.");
+      return;
+    }
+    if (file.size > BRAIN_DUMP_IMAGE_MAX_BYTES) {
+      resetImageUpload();
+      setImageError("Brain Dump images must be 10 MB or smaller.");
+      return;
+    }
+    try {
+      const nextImageBase64 = await readBlobAsBase64(file);
+      if (!nextImageBase64) throw new Error("Brain Dump image is empty or unreadable.");
+      setImageFileName(file.name);
+      setImageMimeType(file.type);
+      setImageSizeBytes(file.size);
+      setImageBase64(nextImageBase64);
+      setImagePreviewUrl((currentUrl) => {
+        if (currentUrl) URL.revokeObjectURL(currentUrl);
+        return URL.createObjectURL(file);
+      });
+      setImageState("ready");
+      setStatus("Image ready");
+      setRecoverableFailure(false);
+    } catch (err) {
+      resetImageUpload();
+      setImageError(err instanceof Error ? err.message : "Brain Dump image is empty or unreadable.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  function handleRemoveImage() {
+    resetImageUpload();
+    setStatus("Image removed");
+    void trackEvent("brain_dump_image_removed", { mode: "image" });
   }
 
   function clearVoiceAudio() {
@@ -511,10 +602,83 @@ export default function BrainDumpClient() {
     }
   }
 
+  async function handleProcessImage() {
+    if (!canProcessImage || imageBusy) return;
+    setBusy(true);
+    setImageState("processing");
+    setImageError("");
+    setError("");
+    setRecoverableFailure(false);
+    setImageUploadProgressPct(20);
+    setStatus("Uploading image securely");
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    try {
+      const auth = getFirebaseAuthClient();
+      const user = auth?.currentUser || null;
+      const idToken = await user?.getIdToken();
+      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+      setImageUploadProgressPct(65);
+      const response = await fetch(getApiUrl("/api/brain-dump/images/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({
+          imageBase64,
+          mimeType: imageMimeType,
+          sizeBytes: imageSizeBytes,
+          instruction: imageInstruction,
+          timezone,
+        }),
+        signal: controller.signal,
+      });
+      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
+      if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump image could not be processed.");
+      setImageUploadProgressPct(100);
+      setImageState("ready");
+      setSession(payload.session);
+      setBatchResult(null);
+      setUndoResult(null);
+      setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
+      setStatus("Review ready");
+      void trackEvent("brain_dump_image_review_ready", {
+        mode: "image",
+        mime_type: imageMimeType,
+        size_bytes: imageSizeBytes,
+        instruction_length: imageInstruction.length,
+        item_count: payload.session.review.items.length,
+        selected_count: payload.session.review.items.filter((item) => item.selected).length,
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setStatus("Cancelled");
+      } else {
+        setImageError(err instanceof Error ? err.message : "Brain Dump image could not be processed.");
+        setStatus("");
+        setRecoverableFailure(true);
+        void trackEvent("brain_dump_image_review_failed", {
+          mode: "image",
+          mime_type: imageMimeType,
+          size_bytes: imageSizeBytes,
+          instruction_length: imageInstruction.length,
+        });
+      }
+      setImageUploadProgressPct(0);
+      setImageState(imageBase64 ? "ready" : "idle");
+    } finally {
+      setBusy(false);
+      abortControllerRef.current = null;
+    }
+  }
+
   function handleClearDraft() {
     setText("");
     writeStoredDraft("");
     resetVoiceRecording();
+    resetImageUpload();
+    setImageInstruction("");
     setError("");
     setStatus("");
     setRecoverableFailure(false);
@@ -543,6 +707,10 @@ export default function BrainDumpClient() {
   }
 
   async function handleRetryProcessing() {
+    if (captureMode === "image") {
+      await handleProcessImage();
+      return;
+    }
     await submitForReview({ allowAutoRetry: false });
   }
 
@@ -816,6 +984,7 @@ export default function BrainDumpClient() {
           >
             <option value="typed">Typed</option>
             <option value="voice">{BRAIN_DUMP_VOICE_LABEL}</option>
+            <option value="image">{BRAIN_DUMP_IMAGE_LABEL}</option>
           </select>
           {captureMode === "voice" ? (
             <section className={styles.voicePanel} aria-label="Voice Brain Dump recorder">
@@ -901,6 +1070,69 @@ export default function BrainDumpClient() {
               ) : null}
             </section>
           ) : null}
+          {captureMode === "image" ? (
+            <section className={styles.imagePanel} aria-label="Image Brain Dump capture">
+              <label className={styles.imagePickerLabel} htmlFor="brainDumpImageFile">
+                Choose image
+              </label>
+              <input
+                id="brainDumpImageFile"
+                className={styles.imageFileInput}
+                type="file"
+                accept={BRAIN_DUMP_IMAGE_ACCEPT}
+                capture="environment"
+                disabled={busy}
+                onChange={handleImageFileChange}
+              />
+              {imagePreviewUrl ? (
+                <div className={styles.imagePreviewGrid}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Blob preview URL must render the selected local file directly. */}
+                  <img
+                    className={styles.imagePreview}
+                    src={imagePreviewUrl}
+                    alt={imageFileName ? `Preview of ${imageFileName}` : "Brain Dump image preview"}
+                  />
+                  <div className={styles.imageMeta}>
+                    <p className={styles.itemMeta}>{imageFileName || "Selected image"}</p>
+                    <p className={styles.dateMeta}>
+                      {imageMimeType} | {Math.round(imageSizeBytes / 1024)} KB
+                    </p>
+                    <button className={styles.secondaryButton} type="button" disabled={busy} onClick={handleRemoveImage}>
+                      Remove image
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <label className={styles.label} htmlFor="brainDumpImageInstruction">
+                Image instruction
+              </label>
+              <textarea
+                id="brainDumpImageInstruction"
+                className={styles.instructionTextarea}
+                value={imageInstruction}
+                maxLength={1000}
+                onChange={(event) => setImageInstruction(event.target.value)}
+                placeholder="Ignore the grocery list. Extract only tasks from the whiteboard."
+              />
+              {imageState === "processing" ? (
+                <div
+                  className={styles.voiceProgress}
+                  role="progressbar"
+                  aria-label="Image upload progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={imageUploadProgressPct}
+                >
+                  <span style={{ width: `${imageUploadProgressPct}%` }} />
+                </div>
+              ) : null}
+              {imageError ? (
+                <p className={styles.error} role="alert">
+                  {imageError}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
           <label className={styles.label} htmlFor="brainDumpText">
             {captureMode === "voice" ? "Editable transcript" : "Brain Dump input"}
           </label>
@@ -918,7 +1150,7 @@ export default function BrainDumpClient() {
               {remaining} characters left
             </span>
             <button className={styles.submitButton} type="submit" disabled={!canSubmit}>
-              {busy ? "Analysing" : "Review"}
+              {busy ? "Analysing" : captureMode === "image" ? "Review image" : "Review"}
             </button>
           </div>
           <div className={styles.secondaryActions}>

@@ -5,6 +5,8 @@ import type { DeletedTaskMeta, Task } from "@/app/tasktimer/lib/types";
 export const BRAIN_DUMP_TYPED_PROMPT_ID = "brain-dump-v1";
 export const BRAIN_DUMP_VOICE_TRANSCRIPTION_PROMPT_ID = "brain-dump-voice-transcription-v1";
 export const BRAIN_DUMP_VOICE_MAX_MS = 5 * 60 * 1000;
+export const BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID = "brain-dump-image-interpretation-v1";
+export const BRAIN_DUMP_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 const BRAIN_DUMP_UNFINISHED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const brainDumpItemTypeSchema = z.enum([
@@ -51,6 +53,14 @@ const providerResponseSchema = z
 const voiceTranscriptionResponseSchema = z
   .object({
     transcript: z.string().trim().min(1).max(20_000),
+  })
+  .strict();
+
+const imageInterpretationResponseSchema = z
+  .object({
+    text: z.string().trim().min(1).max(20_000).optional(),
+    unclear: z.boolean().default(false),
+    feedback: z.string().trim().min(1).max(500).optional(),
   })
   .strict();
 
@@ -209,6 +219,14 @@ export type BrainDumpAiProvider = {
     timezone: string;
     uid: string;
   }): Promise<unknown>;
+  interpretImage?(input: {
+    promptId: typeof BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID;
+    imageBase64: string;
+    mimeType: string;
+    instruction: string;
+    timezone: string;
+    uid: string;
+  }): Promise<unknown>;
 };
 
 export type BrainDumpSessionStore = {
@@ -224,6 +242,11 @@ export class BrainDumpInputError extends Error {
 export class BrainDumpProviderValidationError extends Error {
   status = 502;
   code = "brain-dump/provider-schema-invalid";
+}
+
+export class BrainDumpImageInterpretationError extends Error {
+  status = 422;
+  code = "brain-dump/image-unclear";
 }
 
 export class BrainDumpReviewUpdateError extends Error {
@@ -277,6 +300,41 @@ function normalizeVoiceDurationMs(value: unknown) {
     throw new BrainDumpInputError("Brain Dump voice recordings must be five minutes or shorter.");
   }
   return durationMs;
+}
+
+function normalizeImageBase64(value: unknown) {
+  const imageBase64 = asTrimmedString(value);
+  if (!imageBase64) throw new BrainDumpInputError("Choose an image before processing.");
+  if (!/^[a-zA-Z0-9+/=_-]+$/.test(imageBase64)) throw new BrainDumpInputError("Brain Dump image data is invalid.");
+  return imageBase64;
+}
+
+function normalizeImageMimeType(value: unknown) {
+  const mimeType = asTrimmedString(value, 80).toLowerCase();
+  if (mimeType !== "image/jpeg" && mimeType !== "image/png" && mimeType !== "image/webp") {
+    throw new BrainDumpInputError("Brain Dump images must be JPEG, PNG, or WebP.");
+  }
+  return mimeType;
+}
+
+function estimateBase64ByteLength(base64: string) {
+  const withoutPadding = base64.replace(/=+$/, "");
+  return Math.floor((withoutPadding.length * 3) / 4);
+}
+
+function normalizeImageSizeBytes(value: unknown, imageBase64: string) {
+  const declaredBytes = Math.max(0, Math.floor(Number(value) || 0));
+  const estimatedBytes = estimateBase64ByteLength(imageBase64);
+  const sizeBytes = Math.max(declaredBytes, estimatedBytes);
+  if (!sizeBytes) throw new BrainDumpInputError("Brain Dump image is empty or unreadable.");
+  if (sizeBytes > BRAIN_DUMP_IMAGE_MAX_BYTES) {
+    throw new BrainDumpInputError("Brain Dump images must be 10 MB or smaller.");
+  }
+  return sizeBytes;
+}
+
+function normalizeImageInstruction(value: unknown) {
+  return asTrimmedString(value, 1000);
 }
 
 function normalizeNullableText(value: unknown, maxLength: number) {
@@ -746,6 +804,76 @@ export async function transcribeVoiceBrainDump(input: {
     mimeType,
     durationMs,
   };
+}
+
+export async function interpretImageBrainDump(input: {
+  uid: string;
+  imageBase64: string;
+  mimeType: string;
+  sizeBytes: number;
+  instruction?: string;
+  timezone?: string;
+  provider: BrainDumpAiProvider;
+}) {
+  const uid = asTrimmedString(input.uid, 120);
+  if (!uid) throw new BrainDumpInputError("You must be signed in to continue.");
+  const imageBase64 = normalizeImageBase64(input.imageBase64);
+  const mimeType = normalizeImageMimeType(input.mimeType);
+  const sizeBytes = normalizeImageSizeBytes(input.sizeBytes, imageBase64);
+  const instruction = normalizeImageInstruction(input.instruction);
+  const timezone = normalizeTimezone(input.timezone);
+  if (!input.provider.interpretImage) {
+    throw new BrainDumpProviderValidationError("Brain Dump image interpretation is not configured.");
+  }
+  const providerResponse = await input.provider.interpretImage({
+    promptId: BRAIN_DUMP_IMAGE_INTERPRETATION_PROMPT_ID,
+    imageBase64,
+    mimeType,
+    instruction,
+    timezone,
+    uid,
+  });
+  const parsed = imageInterpretationResponseSchema.safeParse(providerResponse);
+  if (!parsed.success) {
+    throw new BrainDumpProviderValidationError("Brain Dump image output did not match the expected schema.");
+  }
+  if (parsed.data.unclear || !parsed.data.text) {
+    throw new BrainDumpImageInterpretationError(parsed.data.feedback || "The image is unclear. Try a sharper image or add instructions.");
+  }
+  return {
+    text: parsed.data.text,
+    mimeType,
+    sizeBytes,
+    instruction,
+  };
+}
+
+export async function processImageBrainDump(input: {
+  uid: string;
+  imageBase64: string;
+  mimeType: string;
+  sizeBytes: number;
+  instruction?: string;
+  timezone?: string;
+  provider: BrainDumpAiProvider;
+  store: BrainDumpSessionStore;
+  createId: () => string;
+  now?: () => number;
+  workspaceTasks?: Task[];
+  archivedTaskMeta?: DeletedTaskMeta;
+}): Promise<BrainDumpReviewSession> {
+  const interpreted = await interpretImageBrainDump(input);
+  return processTypedBrainDump({
+    uid: input.uid,
+    text: interpreted.text,
+    timezone: input.timezone,
+    provider: input.provider,
+    store: input.store,
+    createId: input.createId,
+    now: input.now,
+    workspaceTasks: input.workspaceTasks,
+    archivedTaskMeta: input.archivedTaskMeta,
+  });
 }
 
 export async function getBrainDumpReviewSessionForUser(input: {

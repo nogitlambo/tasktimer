@@ -13,5 +13,8 @@ export function getBrainDumpAiProvider(): BrainDumpAiProvider {
     async transcribeVoice() {
       throw new BrainDumpProviderUnavailableError("Brain Dump voice transcription is not configured yet.");
     },
+    async interpretImage() {
+      throw new BrainDumpProviderUnavailableError("Brain Dump image interpretation is not configured yet.");
+    },
   };
 }
