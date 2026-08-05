@@ -17,6 +17,7 @@ const brainDumpItemTypeSchema = z.enum([
 ]);
 
 const brainDumpDateSourceSchema = z.enum(["explicit", "inferred", "suggested", "none"]);
+const brainDumpPrioritySchema = z.enum(["low", "medium", "high"]);
 
 const providerItemSchema = z
   .object({
@@ -30,6 +31,10 @@ const providerItemSchema = z
     dateSource: brainDumpDateSourceSchema.default("none"),
     recurrenceText: z.string().trim().min(1).max(200).optional(),
     dependencyTimingText: z.string().trim().min(1).max(200).optional(),
+    notes: z.string().trim().min(1).max(1000).optional(),
+    estimatedDurationMinutes: z.number().min(1).max(24 * 60).optional(),
+    priority: brainDumpPrioritySchema.optional(),
+    firstAction: z.string().trim().min(1).max(240).optional(),
   })
   .strict();
 
@@ -41,6 +46,7 @@ const providerResponseSchema = z
 
 export type BrainDumpItemType = z.infer<typeof brainDumpItemTypeSchema>;
 export type BrainDumpDateSource = z.infer<typeof brainDumpDateSourceSchema>;
+export type BrainDumpPriority = z.infer<typeof brainDumpPrioritySchema>;
 
 export type BrainDumpReviewDate = {
   originalDateText: string | null;
@@ -55,6 +61,18 @@ export type BrainDumpReviewDate = {
   dependencyTimingText: string | null;
 };
 
+export type BrainDumpReviewEnrichment = {
+  notes: string | null;
+  estimatedDurationMinutes: number | null;
+  priority: BrainDumpPriority | null;
+  firstAction: string | null;
+};
+
+export type BrainDumpReviewValidationError = {
+  field: "title" | "estimatedDurationMinutes" | "notes" | "priority" | "firstAction" | "date";
+  message: string;
+};
+
 export type BrainDumpReviewItem = {
   id: string;
   itemType: BrainDumpItemType;
@@ -65,6 +83,28 @@ export type BrainDumpReviewItem = {
   ambiguityFlags: string[];
   supported: boolean;
   date: BrainDumpReviewDate;
+  enrichment: BrainDumpReviewEnrichment;
+  validationErrors: BrainDumpReviewValidationError[];
+};
+
+export type BrainDumpReviewDateUpdate = {
+  resolvedDate?: string | null;
+  userConfirmedDate?: boolean;
+};
+
+export type BrainDumpReviewEnrichmentUpdate = Partial<{
+  notes: string | null;
+  estimatedDurationMinutes: number | string | null;
+  priority: BrainDumpPriority | "" | null;
+  firstAction: string | null;
+}>;
+
+export type BrainDumpReviewItemUpdate = {
+  itemId: string;
+  title?: string;
+  selected?: boolean;
+  date?: BrainDumpReviewDateUpdate;
+  enrichment?: BrainDumpReviewEnrichmentUpdate;
 };
 
 export type BrainDumpSessionState = "review" | "completed";
@@ -136,6 +176,17 @@ export class BrainDumpProviderValidationError extends Error {
   code = "brain-dump/provider-schema-invalid";
 }
 
+export class BrainDumpReviewUpdateError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = "BrainDumpReviewUpdateError";
+  }
+}
+
 function asTrimmedString(value: unknown, maxLength = 0) {
   const text = typeof value === "string" ? value.trim() : "";
   return maxLength > 0 ? text.slice(0, maxLength) : text;
@@ -154,6 +205,29 @@ function normalizeTypedInput(text: unknown) {
 
 function normalizeTimezone(timezone: unknown) {
   return asTrimmedString(timezone, 120) || "UTC";
+}
+
+function normalizeNullableText(value: unknown, maxLength: number) {
+  if (value === null) return null;
+  const text = asTrimmedString(value, maxLength);
+  return text || null;
+}
+
+function normalizeDurationMinutes(value: unknown) {
+  if (value === null || value === "") return null;
+  const minutes = Math.floor(Number(value));
+  if (!Number.isFinite(minutes)) return null;
+  return Math.max(1, Math.min(24 * 60, minutes));
+}
+
+function normalizePriority(value: unknown): BrainDumpPriority | null {
+  return value === "low" || value === "medium" || value === "high" ? value : null;
+}
+
+function normalizeDateValue(value: unknown) {
+  if (value === null) return null;
+  const text = asTrimmedString(value, 40);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
 function createItemId(sessionId: string, index: number, providerId?: string) {
@@ -264,6 +338,106 @@ function buildReviewDate(input: {
   };
 }
 
+function buildReviewEnrichment(input: {
+  notes?: string;
+  estimatedDurationMinutes?: number;
+  priority?: BrainDumpPriority;
+  firstAction?: string;
+}): BrainDumpReviewEnrichment {
+  return {
+    notes: normalizeNullableText(input.notes, 1000),
+    estimatedDurationMinutes: normalizeDurationMinutes(input.estimatedDurationMinutes),
+    priority: normalizePriority(input.priority),
+    firstAction: normalizeNullableText(input.firstAction, 240),
+  };
+}
+
+export function normalizeBrainDumpReviewItemUpdate(update: BrainDumpReviewItemUpdate | null | undefined) {
+  const date = update?.date;
+  const enrichment = update?.enrichment;
+  return {
+    itemId: asTrimmedString(update?.itemId, 120),
+    title: update && Object.prototype.hasOwnProperty.call(update, "title") ? asTrimmedString(update.title, 200) : undefined,
+    selected: typeof update?.selected === "boolean" ? update.selected : undefined,
+    date:
+      date && typeof date === "object"
+        ? {
+            resolvedDate:
+              Object.prototype.hasOwnProperty.call(date, "resolvedDate") && typeof date.resolvedDate !== "undefined"
+                ? normalizeDateValue(date.resolvedDate)
+                : undefined,
+            userConfirmedDate: typeof date.userConfirmedDate === "boolean" ? date.userConfirmedDate : undefined,
+          }
+        : undefined,
+    enrichment:
+      enrichment && typeof enrichment === "object"
+        ? {
+            notes: Object.prototype.hasOwnProperty.call(enrichment, "notes") ? normalizeNullableText(enrichment.notes, 1000) : undefined,
+            estimatedDurationMinutes: Object.prototype.hasOwnProperty.call(enrichment, "estimatedDurationMinutes")
+              ? normalizeDurationMinutes(enrichment.estimatedDurationMinutes)
+              : undefined,
+            priority: Object.prototype.hasOwnProperty.call(enrichment, "priority") ? normalizePriority(enrichment.priority) : undefined,
+            firstAction: Object.prototype.hasOwnProperty.call(enrichment, "firstAction")
+              ? normalizeNullableText(enrichment.firstAction, 240)
+              : undefined,
+          }
+        : undefined,
+  };
+}
+
+function applyDateUpdate(date: BrainDumpReviewDate, update: ReturnType<typeof normalizeBrainDumpReviewItemUpdate>["date"]): BrainDumpReviewDate {
+  if (!update) return date;
+  const resolvedDate = typeof update.resolvedDate !== "undefined" ? update.resolvedDate ?? null : date.resolvedDate;
+  return {
+    ...date,
+    resolvedDate,
+    userConfirmedDate: typeof update.userConfirmedDate === "boolean" ? update.userConfirmedDate : date.userConfirmedDate,
+    ambiguity: resolvedDate ? "none" : date.ambiguity,
+    ambiguityFlags: resolvedDate ? [] : date.ambiguityFlags,
+  };
+}
+
+function applyEnrichmentUpdate(
+  enrichment: BrainDumpReviewEnrichment,
+  update: ReturnType<typeof normalizeBrainDumpReviewItemUpdate>["enrichment"]
+): BrainDumpReviewEnrichment {
+  if (!update) return enrichment;
+  return {
+    notes: typeof update.notes !== "undefined" ? (update.notes ?? null) : enrichment.notes,
+    estimatedDurationMinutes: typeof update.estimatedDurationMinutes !== "undefined"
+      ? (update.estimatedDurationMinutes ?? null)
+      : enrichment.estimatedDurationMinutes,
+    priority: typeof update.priority !== "undefined" ? (update.priority ?? null) : enrichment.priority,
+    firstAction: typeof update.firstAction !== "undefined" ? (update.firstAction ?? null) : enrichment.firstAction,
+  };
+}
+
+function validateReviewItem(item: BrainDumpReviewItem): BrainDumpReviewValidationError[] {
+  const errors: BrainDumpReviewValidationError[] = [];
+  if (item.selected && item.supported && !item.title.trim()) {
+    errors.push({ field: "title", message: "Enter a task title before creating this item." });
+  }
+  return errors;
+}
+
+export function applyBrainDumpReviewItemUpdate(
+  item: BrainDumpReviewItem,
+  update: ReturnType<typeof normalizeBrainDumpReviewItemUpdate> | null
+): BrainDumpReviewItem {
+  const nextTitle = update && typeof update.title !== "undefined" ? update.title : item.title;
+  const nextItem: BrainDumpReviewItem = {
+    ...item,
+    title: nextTitle,
+    selected: typeof update?.selected === "boolean" && item.supported ? update.selected : item.supported ? item.selected : false,
+    date: applyDateUpdate(item.date, update?.date),
+    enrichment: applyEnrichmentUpdate(item.enrichment, update?.enrichment),
+  };
+  return {
+    ...nextItem,
+    validationErrors: validateReviewItem(nextItem),
+  };
+}
+
 export async function processTypedBrainDump(input: {
   uid: string;
   text: string;
@@ -311,6 +485,13 @@ export async function processTypedBrainDump(input: {
         recurrenceText: item.recurrenceText,
         dependencyTimingText: item.dependencyTimingText,
       }),
+      enrichment: buildReviewEnrichment({
+        notes: item.notes,
+        estimatedDurationMinutes: item.estimatedDurationMinutes,
+        priority: item.priority,
+        firstAction: item.firstAction,
+      }),
+      validationErrors: [],
     };
   });
 
@@ -345,6 +526,43 @@ export async function getBrainDumpReviewSessionForUser(input: {
   const sessionId = asTrimmedString(input.sessionId, 120);
   if (!uid || !sessionId) return null;
   return input.store.getSession(uid, sessionId);
+}
+
+export async function updateBrainDumpReviewSession(input: {
+  uid: string;
+  sessionId: string;
+  itemUpdates?: BrainDumpReviewItemUpdate[];
+  store: BrainDumpSessionStore;
+}): Promise<BrainDumpReviewSession> {
+  const uid = asTrimmedString(input.uid, 120);
+  const sessionId = asTrimmedString(input.sessionId, 120);
+  if (!uid) throw new BrainDumpReviewUpdateError("You must be signed in to continue.", "auth/unauthenticated", 401);
+  if (!sessionId) throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
+
+  const session = await input.store.getSession(uid, sessionId);
+  if (!session || session.ownerUid !== uid || session.id !== sessionId) {
+    throw new BrainDumpReviewUpdateError("Brain Dump session was not found.", "brain-dump/not-found", 404);
+  }
+  if (session.state !== "review") {
+    throw new BrainDumpReviewUpdateError("Brain Dump session is not ready for editing.", "brain-dump/not-reviewable", 409);
+  }
+
+  const updatesByItemId = new Map(
+    (input.itemUpdates || [])
+      .map(normalizeBrainDumpReviewItemUpdate)
+      .filter((update) => update.itemId)
+      .map((update) => [update.itemId, update])
+  );
+  const updatedSession: BrainDumpReviewSession = {
+    ...session,
+    review: {
+      selectedCount: session.review.items.filter((item) => item.selected).length,
+      items: session.review.items.map((item) => applyBrainDumpReviewItemUpdate(item, updatesByItemId.get(item.id) || null)),
+    },
+  };
+  updatedSession.review.selectedCount = updatedSession.review.items.filter((item) => item.supported && item.selected).length;
+  await input.store.saveSession(updatedSession);
+  return updatedSession;
 }
 
 export function toBrainDumpReviewResponse(session: BrainDumpReviewSession) {

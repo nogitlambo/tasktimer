@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Task } from "@/app/tasktimer/lib/types";
-import type { BrainDumpReviewDate, BrainDumpReviewSession, BrainDumpSessionStore } from "./brainDumpProcessing";
+import type {
+  BrainDumpReviewDate,
+  BrainDumpReviewEnrichment,
+  BrainDumpReviewSession,
+  BrainDumpSessionStore,
+} from "./brainDumpProcessing";
 import {
   confirmBrainDumpReviewSession,
   type BrainDumpWorkspaceRepository,
@@ -45,6 +50,16 @@ function reviewDate(overrides: Partial<BrainDumpReviewDate> = {}): BrainDumpRevi
   };
 }
 
+function reviewEnrichment(overrides: Partial<BrainDumpReviewEnrichment> = {}): BrainDumpReviewEnrichment {
+  return {
+    notes: null,
+    estimatedDurationMinutes: null,
+    priority: null,
+    firstAction: null,
+    ...overrides,
+  };
+}
+
 function reviewSession(overrides: Partial<BrainDumpReviewSession> = {}): BrainDumpReviewSession {
   return {
     id: "session-1",
@@ -71,6 +86,8 @@ function reviewSession(overrides: Partial<BrainDumpReviewSession> = {}): BrainDu
           ambiguityFlags: [],
           supported: true,
           date: reviewDate(),
+          enrichment: reviewEnrichment(),
+          validationErrors: [],
         },
         {
           id: "item-2",
@@ -82,6 +99,8 @@ function reviewSession(overrides: Partial<BrainDumpReviewSession> = {}): BrainDu
           ambiguityFlags: [],
           supported: true,
           date: reviewDate(),
+          enrichment: reviewEnrichment(),
+          validationErrors: [],
         },
       ],
     },
@@ -373,6 +392,8 @@ describe("confirmBrainDumpReviewSession", () => {
               resolvedDate: "2026-08-06",
               dateConfidence: 0.9,
             }),
+            enrichment: reviewEnrichment(),
+            validationErrors: [],
           },
           {
             id: "item-2",
@@ -389,6 +410,8 @@ describe("confirmBrainDumpReviewSession", () => {
               resolvedDate: "2026-08-07",
               dateConfidence: 0.55,
             }),
+            enrichment: reviewEnrichment(),
+            validationErrors: [],
           },
         ],
       },
@@ -428,6 +451,92 @@ describe("confirmBrainDumpReviewSession", () => {
       onceOffTargetDate: null,
     });
     expect(JSON.stringify(savedTasks)).not.toContain("originalDateText");
+  });
+
+  it("maps estimated duration while keeping review-only enrichment out of Task documents", async () => {
+    let savedTasks = [task()];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-enrichment",
+      itemUpdates: [
+        {
+          itemId: "item-1",
+          selected: true,
+          enrichment: {
+            notes: "Mention onboarding metrics.",
+            estimatedDurationMinutes: 45,
+            priority: "high",
+            firstAction: "Open the draft deck",
+          },
+        },
+        { itemId: "item-2", selected: false },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(savedTasks[1]).toMatchObject({
+      name: "Call dentist",
+      timeGoalEnabled: true,
+      timeGoalValue: 45,
+      timeGoalUnit: "minute",
+      timeGoalPeriod: "day",
+      timeGoalMinutes: 45,
+    });
+    expect(JSON.stringify(savedTasks[1])).not.toContain("Mention onboarding metrics");
+    expect(JSON.stringify(savedTasks[1])).not.toContain("Open the draft deck");
+    expect(JSON.stringify(savedTasks[1])).not.toContain("priority");
+  });
+
+  it("skips invalid reviewed items without blocking unrelated valid items", async () => {
+    let savedTasks = [task()];
+    const store: BrainDumpSessionStore = {
+      getSession: vi.fn(async () => reviewSession()),
+      saveSession: vi.fn(async () => {}),
+    };
+    const workspace: BrainDumpWorkspaceRepository = {
+      loadTasks: vi.fn(async () => savedTasks),
+      saveTasks: vi.fn(async (_uid, tasks) => {
+        savedTasks = tasks;
+      }),
+    };
+
+    const result = await confirmBrainDumpReviewSession({
+      uid: "uid-1",
+      sessionId: "session-1",
+      idempotencyKey: "confirm-key-validation",
+      itemUpdates: [
+        { itemId: "item-1", title: "", selected: true },
+        { itemId: "item-2", title: "Finish screenshots", selected: true },
+      ],
+      store,
+      workspace,
+      createId: () => "unused-random-id",
+    });
+
+    expect(result).toMatchObject({
+      createdCount: 1,
+      skippedCount: 1,
+      items: [
+        { itemId: "item-1", status: "skipped", reason: "validation-error" },
+        { itemId: "item-2", status: "created" },
+      ],
+    });
+    expect(savedTasks).toHaveLength(2);
+    expect(savedTasks[1].name).toBe("Finish screenshots");
   });
 
   it("denies confirmation when the session is not owned by the authenticated user", async () => {
@@ -474,6 +583,8 @@ describe("confirmBrainDumpReviewSession", () => {
             ambiguityFlags: ["Unsupported item type for task creation."],
             supported: false,
             date: reviewDate(),
+            enrichment: reviewEnrichment(),
+            validationErrors: [],
           },
         ],
       },

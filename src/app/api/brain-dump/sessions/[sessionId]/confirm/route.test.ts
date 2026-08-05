@@ -72,6 +72,13 @@ function reviewSession(): BrainDumpReviewSession {
           ambiguityFlags: [],
           supported: true,
           date: reviewDate(),
+          enrichment: {
+            notes: null,
+            estimatedDurationMinutes: null,
+            priority: null,
+            firstAction: null,
+          },
+          validationErrors: [],
         },
       ],
     },

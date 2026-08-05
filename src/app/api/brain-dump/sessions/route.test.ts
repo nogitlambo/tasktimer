@@ -125,18 +125,27 @@ describe("POST /api/brain-dump/sessions", () => {
       "ambiguityFlags",
       "confidence",
       "date",
+      "enrichment",
       "id",
       "itemType",
       "selected",
       "sourceEvidence",
       "supported",
       "title",
+      "validationErrors",
     ]);
     expect(payload.session.review.items[0].date).toMatchObject({
       dateSource: "none",
       resolvedDate: null,
       originalDateText: null,
     });
+    expect(payload.session.review.items[0].enrichment).toEqual({
+      notes: null,
+      estimatedDurationMinutes: null,
+      priority: null,
+      firstAction: null,
+    });
+    expect(payload.session.review.items[0].validationErrors).toEqual([]);
     expect(payload.session).not.toHaveProperty("ownerUid");
     expect(payload.session).not.toHaveProperty("source");
   });

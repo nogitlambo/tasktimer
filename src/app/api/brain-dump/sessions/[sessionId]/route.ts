@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { getBrainDumpReviewSessionForUser, toBrainDumpReviewResponse } from "@/app/brain-dump/lib/brainDumpProcessing";
+import {
+  getBrainDumpReviewSessionForUser,
+  toBrainDumpReviewResponse,
+  updateBrainDumpReviewSession,
+} from "@/app/brain-dump/lib/brainDumpProcessing";
 import { createFirestoreBrainDumpSessionStore } from "@/app/brain-dump/lib/brainDumpSessionStore";
 import { verifyFirebaseRequestUser } from "../../../shared/auth";
 import { withAuthenticatedApiCors } from "../../../shared/cors";
@@ -61,6 +65,39 @@ export async function GET(req: Request, context: RouteContext) {
     return withAuthenticatedApiCors(
       req,
       NextResponse.json({ error: "Could not load Brain Dump session.", code: "internal" }, { status: 500 })
+    );
+  }
+}
+
+export async function PATCH(req: Request, context: RouteContext) {
+  try {
+    const body = (await req.json()) as Record<string, unknown>;
+    const { uid } = await verifyFirebaseRequestUser(req, body);
+    const params = await context.params;
+    const session = await updateBrainDumpReviewSession({
+      uid,
+      sessionId: String(params.sessionId || ""),
+      itemUpdates: Array.isArray(body.itemUpdates) ? body.itemUpdates : [],
+      store: createFirestoreBrainDumpSessionStore(),
+    });
+    return withAuthenticatedApiCors(req, NextResponse.json({ ok: true, session: toBrainDumpReviewResponse(session) }));
+  } catch (error) {
+    if (hasStatus(error)) {
+      return withAuthenticatedApiCors(
+        req,
+        NextResponse.json(
+          { error: errorMessage(error, "Could not update Brain Dump session."), code: errorCode(error) },
+          { status: errorStatus(error) }
+        )
+      );
+    }
+    console.error("[api/brain-dump/sessions/sessionId] Update failed", {
+      name: error instanceof Error ? error.name : "unknown",
+      code: errorCode(error),
+    });
+    return withAuthenticatedApiCors(
+      req,
+      NextResponse.json({ error: "Could not update Brain Dump session.", code: "internal" }, { status: 500 })
     );
   }
 }

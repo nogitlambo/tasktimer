@@ -66,6 +66,8 @@ type BrainDumpReviewItem = {
   ambiguityFlags: string[];
   supported: boolean;
   date: BrainDumpReviewDate;
+  enrichment: BrainDumpReviewEnrichment;
+  validationErrors: BrainDumpReviewValidationError[];
 };
 
 type BrainDumpReviewDate = {
@@ -79,6 +81,18 @@ type BrainDumpReviewDate = {
   userConfirmedDate: boolean;
   recurrenceText: string | null;
   dependencyTimingText: string | null;
+};
+
+type BrainDumpReviewEnrichment = {
+  notes: string | null;
+  estimatedDurationMinutes: number | null;
+  priority: "low" | "medium" | "high" | null;
+  firstAction: string | null;
+};
+
+type BrainDumpReviewValidationError = {
+  field: string;
+  message: string;
 };
 
 type BrainDumpReviewSession = {
@@ -248,7 +262,10 @@ export default function BrainDumpClient() {
     }
   }
 
-  function updateReviewItem(itemId: string, patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date">>) {
+  function updateReviewItem(
+    itemId: string,
+    patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date" | "enrichment">>
+  ) {
     setSession((current) => {
       if (!current) return current;
       return {
@@ -262,11 +279,63 @@ export default function BrainDumpClient() {
               title: patch.title ?? item.title,
               selected: item.supported ? (patch.selected ?? item.selected) : false,
               date: patch.date ?? item.date,
+              enrichment: patch.enrichment ?? item.enrichment,
             };
           }),
         },
       };
     });
+  }
+
+  function buildReviewItemUpdates(currentSession: BrainDumpReviewSession) {
+    return currentSession.review.items.map((item) => ({
+      itemId: item.id,
+      selected: item.supported && item.selected,
+      title: item.title,
+      date: {
+        resolvedDate: item.date.resolvedDate,
+        userConfirmedDate: item.date.userConfirmedDate,
+      },
+      enrichment: item.enrichment,
+    }));
+  }
+
+  async function handleSaveReview() {
+    if (!session || busy) return;
+    setBusy(true);
+    setError("");
+    setStatus("Saving review");
+    try {
+      const auth = getFirebaseAuthClient();
+      const user = auth?.currentUser || null;
+      const idToken = await user?.getIdToken();
+      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+
+      const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-firebase-auth": idToken,
+        },
+        body: JSON.stringify({ itemUpdates: buildReviewItemUpdates(session) }),
+      });
+      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
+      if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump review could not be saved.");
+      setSession(payload.session);
+      setStatus("Review saved");
+      void trackEvent("brain_dump_review_saved", {
+        item_count: payload.session.review.items.length,
+        selected_count: payload.session.review.items.filter((item) => item.selected).length,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Brain Dump review could not be saved.");
+      setStatus("");
+      void trackEvent("brain_dump_review_save_failed", {
+        session_id: session.id,
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleConfirm() {
@@ -280,15 +349,7 @@ export default function BrainDumpClient() {
       const idToken = await user?.getIdToken();
       if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
 
-      const itemUpdates = session.review.items.map((item) => ({
-        itemId: item.id,
-        selected: item.supported && item.selected,
-        title: item.title,
-        date: {
-          resolvedDate: item.date.resolvedDate,
-          userConfirmedDate: item.date.userConfirmedDate,
-        },
-      }));
+      const itemUpdates = buildReviewItemUpdates(session);
       const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/confirm/`), {
         method: "POST",
         headers: {
@@ -447,6 +508,13 @@ export default function BrainDumpClient() {
                   </p>
                   {item.sourceEvidence.length ? <p className={styles.evidence}>{item.sourceEvidence.join(" ")}</p> : null}
                   {item.ambiguityFlags.length ? <p className={styles.flags}>{item.ambiguityFlags.join(" ")}</p> : null}
+                  {item.validationErrors.length ? (
+                    <ul className={styles.validationErrors} aria-label={`Review errors for ${item.title || "item"}`}>
+                      {item.validationErrors.map((validationError) => (
+                        <li key={`${validationError.field}-${validationError.message}`}>{validationError.message}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                   <div className={styles.dateReview}>
                     <label className={styles.label} htmlFor={`brainDumpDate-${item.id}`}>
                       Date
@@ -491,10 +559,117 @@ export default function BrainDumpClient() {
                     </p>
                     {item.date.ambiguityFlags.length ? <p className={styles.flags}>{item.date.ambiguityFlags.join(" ")}</p> : null}
                   </div>
+                  <details className={styles.optionalDetails}>
+                    <summary>Optional details</summary>
+                    <div className={styles.optionalGrid}>
+                      <label className={styles.label} htmlFor={`brainDumpNotes-${item.id}`}>
+                        Notes
+                      </label>
+                      <textarea
+                        id={`brainDumpNotes-${item.id}`}
+                        className={styles.textarea}
+                        aria-label={`Notes for ${item.title}`}
+                        value={item.enrichment.notes || ""}
+                        disabled={session.state === "completed" || busy}
+                        onChange={(event) =>
+                          updateReviewItem(item.id, {
+                            enrichment: { ...item.enrichment, notes: event.target.value || null },
+                          })
+                        }
+                      />
+                      <label className={styles.label} htmlFor={`brainDumpDuration-${item.id}`}>
+                        Duration
+                      </label>
+                      <input
+                        id={`brainDumpDuration-${item.id}`}
+                        className={styles.titleInput}
+                        type="number"
+                        min="1"
+                        max="1440"
+                        inputMode="numeric"
+                        aria-label={`Estimated duration minutes for ${item.title}`}
+                        value={item.enrichment.estimatedDurationMinutes ?? ""}
+                        disabled={session.state === "completed" || busy}
+                        onChange={(event) =>
+                          updateReviewItem(item.id, {
+                            enrichment: {
+                              ...item.enrichment,
+                              estimatedDurationMinutes: event.target.value ? Math.max(1, Number(event.target.value)) : null,
+                            },
+                          })
+                        }
+                      />
+                      <label className={styles.label} htmlFor={`brainDumpPriority-${item.id}`}>
+                        Priority
+                      </label>
+                      <select
+                        id={`brainDumpPriority-${item.id}`}
+                        className={styles.titleInput}
+                        aria-label={`Priority for ${item.title}`}
+                        value={item.enrichment.priority || ""}
+                        disabled={session.state === "completed" || busy}
+                        onChange={(event) =>
+                          updateReviewItem(item.id, {
+                            enrichment: {
+                              ...item.enrichment,
+                              priority: event.target.value === "low" || event.target.value === "medium" || event.target.value === "high"
+                                ? event.target.value
+                                : null,
+                            },
+                          })
+                        }
+                      >
+                        <option value="">None</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                      <label className={styles.label} htmlFor={`brainDumpFirstAction-${item.id}`}>
+                        First action
+                      </label>
+                      <input
+                        id={`brainDumpFirstAction-${item.id}`}
+                        className={styles.titleInput}
+                        aria-label={`First action for ${item.title}`}
+                        value={item.enrichment.firstAction || ""}
+                        disabled={session.state === "completed" || busy}
+                        onChange={(event) =>
+                          updateReviewItem(item.id, {
+                            enrichment: { ...item.enrichment, firstAction: event.target.value || null },
+                          })
+                        }
+                      />
+                      <button
+                        className={styles.secondaryButton}
+                        type="button"
+                        disabled={session.state === "completed" || busy}
+                        onClick={() =>
+                          updateReviewItem(item.id, {
+                            enrichment: {
+                              notes: null,
+                              estimatedDurationMinutes: null,
+                              priority: null,
+                              firstAction: null,
+                            },
+                          })
+                        }
+                      >
+                        Clear optional details
+                      </button>
+                    </div>
+                  </details>
                 </article>
               ))}
             </div>
             <div className={styles.reviewActions}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={busy || session.state === "completed"}
+                onClick={handleSaveReview}
+              >
+                Save review
+              </button>
               <button
                 className={styles.submitButton}
                 type="button"

@@ -173,6 +173,58 @@ describe("processTypedBrainDump", () => {
     });
   });
 
+  it("preserves optional enrichment only when the provider supplies it", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Prepare investor update",
+            sourceEvidence: ["prepare investor update"],
+            confidence: 0.88,
+            ambiguityFlags: [],
+            notes: "Mention onboarding metrics.",
+            estimatedDurationMinutes: 45,
+            priority: "high",
+            firstAction: "Open the draft deck",
+          },
+          {
+            itemType: "task",
+            title: "Clean desk",
+            sourceEvidence: ["clean desk"],
+            confidence: 0.74,
+            ambiguityFlags: [],
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Prepare investor update. Clean desk.",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+    });
+
+    expect(session.review.items[0].enrichment).toEqual({
+      notes: "Mention onboarding metrics.",
+      estimatedDurationMinutes: 45,
+      priority: "high",
+      firstAction: "Open the draft deck",
+    });
+    expect(session.review.items[1].enrichment).toEqual({
+      notes: null,
+      estimatedDurationMinutes: null,
+      priority: null,
+      firstAction: null,
+    });
+  });
+
   it("keeps unsupported extracted items visible and unselected", async () => {
     const provider: BrainDumpAiProvider = {
       extractTyped: vi.fn(async () => ({

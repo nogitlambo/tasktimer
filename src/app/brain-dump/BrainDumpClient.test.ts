@@ -82,4 +82,21 @@ describe("BrainDumpClient", () => {
     expect(source).toContain("item.date.originalDateText");
     expect(source).toContain("item.date.ambiguityFlags");
   });
+
+  it("keeps optional enrichment collapsed, accessible, editable, saveable, and clearable", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("BrainDumpReviewEnrichment");
+    expect(source).toContain("<details");
+    expect(source).toContain("<summary");
+    expect(source).toContain("Optional details");
+    expect(source).toContain('aria-label={`Notes for ${item.title}`}');
+    expect(source).toContain('aria-label={`Estimated duration minutes for ${item.title}`}');
+    expect(source).toContain('aria-label={`Priority for ${item.title}`}');
+    expect(source).toContain('aria-label={`First action for ${item.title}`}');
+    expect(source).toContain("Clear optional details");
+    expect(source).toContain('fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}`), {');
+    expect(source).toContain('method: "PATCH"');
+    expect(source).toContain("validationErrors");
+  });
 });

@@ -5,21 +5,11 @@ import type {
   BrainDumpCreationBatchResult,
   BrainDumpReviewDate,
   BrainDumpReviewItem,
+  BrainDumpReviewItemUpdate,
   BrainDumpReviewSession,
   BrainDumpSessionStore,
 } from "./brainDumpProcessing";
-
-export type BrainDumpReviewDateUpdate = {
-  resolvedDate?: string | null;
-  userConfirmedDate?: boolean;
-};
-
-export type BrainDumpReviewItemUpdate = {
-  itemId: string;
-  title?: string;
-  selected?: boolean;
-  date?: BrainDumpReviewDateUpdate;
-};
+import { applyBrainDumpReviewItemUpdate, normalizeBrainDumpReviewItemUpdate } from "./brainDumpProcessing";
 
 export type BrainDumpWorkspaceRepository = {
   loadTasks(uid: string): Promise<Task[]>;
@@ -47,54 +37,6 @@ function nextTaskOrder(tasks: Task[]) {
   return (tasks || []).reduce((max, task) => Math.max(max, Number(task?.order || 0)), 0) + 1;
 }
 
-function normalizeItemUpdate(update: BrainDumpReviewItemUpdate | null | undefined) {
-  const date = update?.date;
-  return {
-    itemId: asString(update?.itemId, 120),
-    title: update && Object.prototype.hasOwnProperty.call(update, "title") ? asString(update.title, 200) : undefined,
-    selected: typeof update?.selected === "boolean" ? update.selected : undefined,
-    date:
-      date && typeof date === "object"
-        ? {
-            resolvedDate:
-              Object.prototype.hasOwnProperty.call(date, "resolvedDate") && typeof date.resolvedDate !== "undefined"
-                ? normalizeDateValue(date.resolvedDate)
-                : undefined,
-            userConfirmedDate: typeof date.userConfirmedDate === "boolean" ? date.userConfirmedDate : undefined,
-          }
-        : undefined,
-  };
-}
-
-function applyUpdate(item: BrainDumpReviewItem, update: ReturnType<typeof normalizeItemUpdate> | null): BrainDumpReviewItem {
-  const nextTitle = update?.title;
-  const nextDate = applyDateUpdate(item.date, update?.date);
-  return {
-    ...item,
-    title: nextTitle ? nextTitle : item.title,
-    selected: typeof update?.selected === "boolean" ? update.selected : item.selected,
-    date: nextDate,
-  };
-}
-
-function normalizeDateValue(value: unknown) {
-  if (value === null) return null;
-  const text = asString(value, 40);
-  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
-}
-
-function applyDateUpdate(date: BrainDumpReviewDate, update: ReturnType<typeof normalizeItemUpdate>["date"]): BrainDumpReviewDate {
-  if (!update) return date;
-  const resolvedDate = Object.prototype.hasOwnProperty.call(update, "resolvedDate") ? update.resolvedDate ?? null : date.resolvedDate;
-  return {
-    ...date,
-    resolvedDate,
-    userConfirmedDate: typeof update.userConfirmedDate === "boolean" ? update.userConfirmedDate : date.userConfirmedDate,
-    ambiguity: resolvedDate ? "none" : date.ambiguity,
-    ambiguityFlags: resolvedDate ? [] : date.ambiguityFlags,
-  };
-}
-
 function hashString(value: string) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -104,7 +46,7 @@ function hashString(value: string) {
   return (hash >>> 0).toString(36);
 }
 
-function hashCreationPayload(updates: ReturnType<typeof normalizeItemUpdate>[]) {
+function hashCreationPayload(updates: ReturnType<typeof normalizeBrainDumpReviewItemUpdate>[]) {
   const canonical = updates
     .slice()
     .sort((a, b) => a.itemId.localeCompare(b.itemId))
@@ -112,12 +54,14 @@ function hashCreationPayload(updates: ReturnType<typeof normalizeItemUpdate>[]) 
       itemId: update.itemId,
       selected: update.selected === true,
       title: update.title ?? "",
+      date: update.date ?? null,
+      enrichment: update.enrichment ?? null,
     }));
   return `fnv1a:${hashString(JSON.stringify(canonical))}`;
 }
 
 function itemCanCreateTask(item: BrainDumpReviewItem) {
-  return item.itemType === "task" && item.supported && item.selected;
+  return item.itemType === "task" && item.supported && item.selected && item.validationErrors.length === 0;
 }
 
 function taskIdForReviewItem(input: { sessionId: string; idempotencyKey: string; itemId: string }) {
@@ -138,6 +82,14 @@ function buildTaskFromReviewItem(input: {
     task.taskType = "once-off";
     task.onceOffTargetDate = input.item.date.resolvedDate;
     task.onceOffDay = null;
+  }
+  const durationMinutes = input.item.enrichment.estimatedDurationMinutes;
+  if (durationMinutes && durationMinutes > 0) {
+    task.timeGoalEnabled = true;
+    task.timeGoalValue = durationMinutes;
+    task.timeGoalUnit = "minute";
+    task.timeGoalPeriod = "day";
+    task.timeGoalMinutes = durationMinutes;
   }
   return task;
 }
@@ -173,7 +125,7 @@ export async function confirmBrainDumpReviewSession(input: {
     throw new BrainDumpCreationError("Brain Dump session was not found.", "brain-dump/not-found", 404);
   }
 
-  const normalizedUpdates = (input.itemUpdates || []).map(normalizeItemUpdate).filter((update) => update.itemId);
+  const normalizedUpdates = (input.itemUpdates || []).map(normalizeBrainDumpReviewItemUpdate).filter((update) => update.itemId);
   const payloadHash = hashCreationPayload(normalizedUpdates);
   const existingReceipt = session.creationReceipts?.[idempotencyKey];
   if (existingReceipt) {
@@ -194,7 +146,7 @@ export async function confirmBrainDumpReviewSession(input: {
   const updatesByItemId = new Map(
     normalizedUpdates.map((update) => [update.itemId, update])
   );
-  const reviewedItems = session.review.items.map((item) => applyUpdate(item, updatesByItemId.get(item.id) || null));
+  const reviewedItems = session.review.items.map((item) => applyBrainDumpReviewItemUpdate(item, updatesByItemId.get(item.id) || null));
   const existingTasks = await input.workspace.loadTasks(uid);
   const createdAtMs = Math.max(0, Math.floor(Number(input.now?.() ?? Date.now()) || 0));
   let nextOrder = nextTaskOrder(existingTasks);
@@ -206,7 +158,7 @@ export async function confirmBrainDumpReviewSession(input: {
       resultItems[index] = {
         itemId: item.id,
         status: "skipped",
-        reason: item.supported ? "not-selected" : "unsupported",
+        reason: item.validationErrors.length ? "validation-error" : item.supported ? "not-selected" : "unsupported",
       };
       return;
     }

@@ -275,6 +275,33 @@
   line-height: 1.45;
 }
 
+.optionalDetails {
+  margin-top: 0.85rem;
+  border-top: 1px solid rgba(201, 255, 36, 0.12);
+  padding-top: 0.75rem;
+}
+
+.optionalDetails summary {
+  cursor: pointer;
+  color: rgba(248, 250, 252, 0.76);
+  font-family: var(--font-readable);
+  font-size: 13px;
+}
+
+.optionalGrid {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.validationErrors {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  color: #ffb86b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding-right: 16px;
