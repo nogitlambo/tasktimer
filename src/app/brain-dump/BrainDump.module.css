@@ -97,7 +97,8 @@
 .captureFooter,
 .reviewHeader,
 .reviewItemHeader,
-.reviewActions {
+.reviewActions,
+.secondaryActions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -142,6 +143,34 @@
   border-color: rgba(148, 163, 184, 0.24);
   background: rgba(148, 163, 184, 0.16);
   color: rgba(248, 250, 252, 0.42);
+}
+
+.secondaryActions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.secondaryButton {
+  min-height: 34px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 12px;
+  color: rgba(248, 250, 252, 0.78);
+  font-family: var(--font-display-ui);
+  font-size: 10px;
+}
+
+.secondaryButton:focus-visible,
+.secondaryButton:hover {
+  border-color: #c9ff24;
+  color: #c9ff24;
+  outline: none;
+}
+
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  border-color: rgba(148, 163, 184, 0.16);
+  color: rgba(248, 250, 252, 0.34);
 }
 
 .statusRow {
@@ -241,7 +270,8 @@
   .captureFooter,
   .reviewHeader,
   .reviewItemHeader,
-  .reviewActions {
+  .reviewActions,
+  .secondaryActions {
     align-items: stretch;
     flex-direction: column;
   }

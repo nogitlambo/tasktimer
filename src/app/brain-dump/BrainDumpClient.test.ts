@@ -44,4 +44,28 @@ describe("BrainDumpClient", () => {
           skipped_count: payload.batch.skippedCount,
         });`);
   });
+
+  it("preserves typed drafts through failures and exposes safe recovery controls", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("BRAIN_DUMP_TYPED_DRAFT_KEY");
+    expect(source).toContain("readStoredDraft");
+    expect(source).toContain("writeStoredDraft");
+    expect(source).toContain("handleClearDraft");
+    expect(source).toContain("handleRetryProcessing");
+    expect(source).toContain("handleCancelProcessing");
+    expect(source).toContain("AbortController");
+    expect(source).toContain("autoRetriedRef");
+    expect(source).toContain('"Validating input"');
+    expect(source).toContain('"Uploading securely"');
+    expect(source).toContain('"Analysing Brain Dump"');
+    expect(source).toContain('trackEvent("brain_dump_processing_failed"');
+    expect(source).toContain("mode: \"typed\"");
+    expect(source).toContain("draft_length: text.length");
+    expect(source).toContain("Retry");
+    expect(source).toContain("Clear draft");
+    expect(source).toContain("Cancel");
+    expect(source).not.toContain("raw_text");
+    expect(source).not.toContain("source_text");
+  });
 });

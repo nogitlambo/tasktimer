@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
@@ -9,6 +9,44 @@ import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
 import styles from "./BrainDump.module.css";
 
 const BRAIN_DUMP_TEXT_LIMIT = 20_000;
+const TASKTIMER_STORAGE_KEY = "taskticker_tasks_v1";
+const BRAIN_DUMP_TYPED_DRAFT_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:typedDraft:v1`;
+const BRAIN_DUMP_CAPTURE_MODE_KEY = `${TASKTIMER_STORAGE_KEY}:brainDump:captureMode:v1`;
+
+type BrainDumpCaptureMode = "typed";
+
+function readStoredDraft() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(BRAIN_DUMP_TYPED_DRAFT_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredDraft(value: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (value) window.localStorage.setItem(BRAIN_DUMP_TYPED_DRAFT_KEY, value);
+    else window.localStorage.removeItem(BRAIN_DUMP_TYPED_DRAFT_KEY);
+  } catch {}
+}
+
+function readStoredCaptureMode(): BrainDumpCaptureMode {
+  if (typeof window === "undefined") return "typed";
+  try {
+    return window.localStorage.getItem(BRAIN_DUMP_CAPTURE_MODE_KEY) === "typed" ? "typed" : "typed";
+  } catch {
+    return "typed";
+  }
+}
+
+function writeStoredCaptureMode(mode: BrainDumpCaptureMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(BRAIN_DUMP_CAPTURE_MODE_KEY, mode);
+  } catch {}
+}
 
 function createConfirmIdempotencyKey(sessionId: string) {
   const suffix =
@@ -47,13 +85,18 @@ type BrainDumpCreationBatchResult = {
 };
 
 export default function BrainDumpClient() {
-  const [text, setText] = useState("");
+  const [captureMode, setCaptureMode] = useState<BrainDumpCaptureMode>(() => readStoredCaptureMode());
+  const [text, setText] = useState(() => readStoredDraft());
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [recoverableFailure, setRecoverableFailure] = useState(false);
   const [session, setSession] = useState<BrainDumpReviewSession | null>(null);
   const [batchResult, setBatchResult] = useState<BrainDumpCreationBatchResult | null>(null);
   const [confirmIdempotencyKey, setConfirmIdempotencyKey] = useState("");
+  const autoRetriedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const errorSummaryRef = useRef<HTMLParagraphElement | null>(null);
   const trimmedText = text.trim();
   const canSubmit = trimmedText.length > 0 && trimmedText.length <= BRAIN_DUMP_TEXT_LIMIT && !busy;
   const remaining = BRAIN_DUMP_TEXT_LIMIT - text.length;
@@ -66,37 +109,128 @@ export default function BrainDumpClient() {
     }
   }, []);
 
+  useEffect(() => {
+    if (error) errorSummaryRef.current?.focus();
+  }, [error]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    await submitForReview({ allowAutoRetry: true });
+  }
+
+  function handleTextChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    const nextText = event.target.value;
+    setText(nextText);
+    writeStoredDraft(nextText);
+    if (recoverableFailure) setRecoverableFailure(false);
+  }
+
+  function handleCaptureModeChange(event: ChangeEvent<HTMLSelectElement>) {
+    const nextMode: BrainDumpCaptureMode = event.target.value === "typed" ? "typed" : "typed";
+    setCaptureMode(nextMode);
+    writeStoredCaptureMode(nextMode);
+  }
+
+  function handleClearDraft() {
+    setText("");
+    writeStoredDraft("");
+    setError("");
+    setStatus("");
+    setRecoverableFailure(false);
+    setSession(null);
+    setBatchResult(null);
+    setConfirmIdempotencyKey("");
+    autoRetriedRef.current = false;
+    void trackEvent("brain_dump_draft_cleared", {
+      mode: "typed",
+      draft_length: 0,
+    });
+  }
+
+  function handleCancelProcessing() {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setBusy(false);
+    setError("");
+    setStatus("Cancelled");
+    setRecoverableFailure(false);
+    void trackEvent("brain_dump_processing_cancelled", {
+      mode: "typed",
+      draft_length: text.length,
+    });
+  }
+
+  async function handleRetryProcessing() {
+    await submitForReview({ allowAutoRetry: false });
+  }
+
+  async function submitForReview(options: { allowAutoRetry: boolean }) {
     if (!canSubmit) return;
+    if (options.allowAutoRetry) autoRetriedRef.current = false;
     setBusy(true);
     setError("");
-    setStatus("Analysing");
-    try {
-      const auth = getFirebaseAuthClient();
-      const user = auth?.currentUser || null;
-      const idToken = await user?.getIdToken();
-      if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
+    setRecoverableFailure(false);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      try {
+        setStatus("Validating input");
+        const auth = getFirebaseAuthClient();
+        const user = auth?.currentUser || null;
+        const idToken = await user?.getIdToken();
+        if (!idToken) throw new Error("Your sign-in session is no longer valid. Please sign in again.");
 
-      const response = await fetch(getApiUrl("/api/brain-dump/sessions/"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-firebase-auth": idToken,
-        },
-        body: JSON.stringify({ text: trimmedText, timezone }),
-      });
-      const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
-      if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump could not be processed.");
-      setSession(payload.session);
-      setBatchResult(null);
-      setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
-      setStatus("Review ready");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Brain Dump could not be processed.");
-      setStatus("");
-    } finally {
-      setBusy(false);
+        setStatus("Uploading securely");
+        setStatus("Analysing Brain Dump");
+        const response = await fetch(getApiUrl("/api/brain-dump/sessions/"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-firebase-auth": idToken,
+          },
+          body: JSON.stringify({ text: trimmedText, timezone }),
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as { session?: BrainDumpReviewSession; error?: string };
+        if (!response.ok || !payload.session) throw new Error(payload.error || "Brain Dump could not be processed.");
+        setStatus("Saving review");
+        setSession(payload.session);
+        setBatchResult(null);
+        setConfirmIdempotencyKey(createConfirmIdempotencyKey(payload.session.id));
+        setStatus("Review ready");
+        autoRetriedRef.current = false;
+        void trackEvent("brain_dump_review_ready", {
+          mode: "typed",
+          item_count: payload.session.review.items.length,
+          selected_count: payload.session.review.items.filter((item) => item.selected).length,
+        });
+        setBusy(false);
+        abortControllerRef.current = null;
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          setStatus("Cancelled");
+          setBusy(false);
+          abortControllerRef.current = null;
+          return;
+        }
+        if (options.allowAutoRetry && attempt === 0 && !autoRetriedRef.current) {
+          autoRetriedRef.current = true;
+          setStatus("Retrying");
+          continue;
+        }
+        setError(err instanceof Error ? err.message : "Brain Dump could not be processed.");
+        setStatus("");
+        setRecoverableFailure(true);
+        void trackEvent("brain_dump_processing_failed", {
+          mode: "typed",
+          draft_length: text.length,
+          retry_count: attempt,
+        });
+        setBusy(false);
+        abortControllerRef.current = null;
+        return;
+      }
     }
   }
 
@@ -194,6 +328,18 @@ export default function BrainDumpClient() {
         </header>
 
         <form className={styles.capture} onSubmit={handleSubmit}>
+          <label className={styles.label} htmlFor="brainDumpCaptureMode">
+            Capture mode
+          </label>
+          <select
+            id="brainDumpCaptureMode"
+            className={styles.titleInput}
+            value={captureMode}
+            disabled={busy}
+            onChange={handleCaptureModeChange}
+          >
+            <option value="typed">Typed</option>
+          </select>
           <label className={styles.label} htmlFor="brainDumpText">
             Brain Dump input
           </label>
@@ -202,7 +348,7 @@ export default function BrainDumpClient() {
             className={styles.textarea}
             value={text}
             maxLength={BRAIN_DUMP_TEXT_LIMIT}
-            onChange={(event) => setText(event.target.value)}
+            onChange={handleTextChange}
             aria-describedby="brainDumpCount brainDumpStatus brainDumpError"
             placeholder="Finish Play Store screenshots, call dentist before Thursday..."
           />
@@ -214,6 +360,21 @@ export default function BrainDumpClient() {
               {busy ? "Analysing" : "Review"}
             </button>
           </div>
+          <div className={styles.secondaryActions}>
+            <button className={styles.secondaryButton} type="button" disabled={!text || busy} onClick={handleClearDraft}>
+              Clear draft
+            </button>
+            {recoverableFailure ? (
+              <button className={styles.secondaryButton} type="button" disabled={!canSubmit} onClick={handleRetryProcessing}>
+                Retry
+              </button>
+            ) : null}
+            {busy ? (
+              <button className={styles.secondaryButton} type="button" onClick={handleCancelProcessing}>
+                Cancel
+              </button>
+            ) : null}
+          </div>
         </form>
 
         <div className={styles.statusRow} aria-live="polite">
@@ -223,7 +384,7 @@ export default function BrainDumpClient() {
             </p>
           ) : null}
           {error ? (
-            <p id="brainDumpError" className={styles.error} role="alert">
+            <p id="brainDumpError" className={styles.error} role="alert" tabIndex={-1} ref={errorSummaryRef}>
               {error}
             </p>
           ) : null}
