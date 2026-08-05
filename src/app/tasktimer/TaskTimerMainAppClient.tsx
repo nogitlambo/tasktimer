@@ -19,7 +19,8 @@ import { doc, getDoc } from "firebase/firestore";
 import AppImg from "@/components/AppImg";
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { getFirebaseFirestoreClient } from "@/lib/firebaseFirestoreClient";
-import { trackScreen } from "@/lib/firebaseTelemetry";
+import { trackEvent, trackScreen } from "@/lib/firebaseTelemetry";
+import { resolveTaskTimerRouteHref } from "./lib/routeHref";
 import AddTaskOverlay from "./components/AddTaskOverlay";
 import EditTaskOverlay from "./components/EditTaskOverlay";
 import ElapsedPadOverlay from "./components/ElapsedPadOverlay";
@@ -922,6 +923,7 @@ function closeDailyRewardOverlay(documentRef: Document): void {
 }
 
 export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainAppClientProps) {
+  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
   const searchParams = useSearchParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [dailyRewardOnboardingGate, setDailyRewardOnboardingGate] = useState<DailyRewardOnboardingGateState>({
@@ -1040,6 +1042,23 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
       destroy();
     };
   }, [initialPage, friendsAuthRuntimeKey]);
+
+  useEffect(() => {
+    function handleBrainDumpEntryClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const brainDumpEntry = target.closest<HTMLAnchorElement>("[data-brain-dump-entry]");
+      if (!brainDumpEntry) return;
+      void trackEvent("brain_dump_entry_opened", {
+        entry_point: brainDumpEntry.dataset.brainDumpEntry || "unknown",
+      });
+    }
+
+    document.addEventListener("click", handleBrainDumpEntryClick);
+    return () => {
+      document.removeEventListener("click", handleBrainDumpEntryClick);
+    };
+  }, []);
 
   useEffect(() => {
     const hydrateRewards = (sourcePrefs: UserPreferencesV1 | null | undefined) => {
@@ -2402,8 +2421,30 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
           setActiveRankPromotion(promotion);
         }}
         xpAwardFx={xpAwardFx}
+        mobileToolbar={
+          <div className="taskLaunchMobileToolbarInner taskLaunchMobileBrainDumpQuickActions">
+            <a
+              className="taskLaunchMobileBrainDumpQuickAction"
+              href={brainDumpHref}
+              aria-label="Brain Dump"
+              title="Brain Dump"
+              data-brain-dump-entry="mobile-quick-action"
+            >
+              Brain Dump
+            </a>
+          </div>
+        }
       >
         <div className="appPages">
+          <a
+            className="taskLaunchBrainDumpFloatingAction"
+            href={brainDumpHref}
+            aria-label="Brain Dump"
+            title="Brain Dump"
+            data-brain-dump-entry="floating-action"
+          >
+            Brain Dump
+          </a>
           <section className={`appPage appPageTasks${initialPage === "tasks" || initialPage === "schedule" ? " appPageOn" : ""}`} id="appPageTasks" aria-label="Tasks page">
             <div className="tasksTopRow">
               <div className="taskPageHeaderActions">
@@ -2441,6 +2482,15 @@ export default function TaskTimerMainAppClient({ initialPage }: TaskTimerMainApp
                 >
                   <span className="taskScreenHeaderBtnText pageHeaderAccentBtnLabel">Add Task</span>
                 </button>
+                <a
+                  className="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry taskPageBrainDumpEntry"
+                  href={brainDumpHref}
+                  aria-label="Brain Dump"
+                  title="Brain Dump"
+                  data-brain-dump-entry="tasks-header"
+                >
+                  <span className="taskScreenHeaderBtnText">Brain Dump</span>
+                </a>
                 <div className="tasksModeControlGroup" aria-label="Task ordering controls">
                   <details className="tasksModeMenu" id="taskOrderByMenu">
                     <summary className="btn btn-ghost small tasksModeMenuBtn" id="taskOrderByMenuBtn" title="Order tasks">

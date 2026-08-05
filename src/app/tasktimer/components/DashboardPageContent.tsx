@@ -1,16 +1,31 @@
 "use client";
 
+import { resolveTaskTimerRouteHref } from "../lib/routeHref";
+
 type DashboardPageContentProps = {
   active: boolean;
 };
 
 export default function DashboardPageContent({ active }: DashboardPageContentProps) {
+  const brainDumpHref = resolveTaskTimerRouteHref("/brain-dump");
+
   return (
     <section className={`appPage${active ? " appPageOn" : ""}`} id="appPageDashboard" aria-label="Dashboard page">
       <div className="dashboardNeonLayout">
         <div className="dashboardMain">
           <div className="dashboardShell">
             <div className="dashboardShellBody">
+              <div className="dashboardBrainDumpEntryRow">
+                <a
+                  className="btn btn-ghost small taskLaunchSurfaceBrainDumpEntry dashboardBrainDumpEntry"
+                  href={brainDumpHref}
+                  aria-label="Brain Dump"
+                  title="Brain Dump"
+                  data-brain-dump-entry="dashboard"
+                >
+                  Brain Dump
+                </a>
+              </div>
             <div className="dashboardShellScene" id="dashboardShellScene">
               <div
                 className="dashboardShellContent dashboardShellFace dashboardShellFaceFront"

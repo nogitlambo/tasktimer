@@ -1736,6 +1736,14 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
   gap:18px;
 }
 
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyActions{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyMessage{
   margin:0;
   color:rgba(234,240,248,.9);
@@ -1748,6 +1756,11 @@ body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .tas
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyAddBtn{
   min-width:190px;
+}
+
+body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyBrainDumpBtn{
+  min-width:190px;
+  text-decoration:none;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskListEmptyAddBtn:hover,
@@ -1847,6 +1860,12 @@ body[data-app-page="schedule"] #app[aria-label="TaskLaunch App"] #appPageTasks .
   flex:1 1 100%;
   width:100%;
   gap:12px;
+}
+
+#app[aria-label="TaskLaunch App"] #appPageTasks .taskPageBrainDumpEntry{
+  min-height:44px;
+  border-radius:0 !important;
+  text-decoration:none;
 }
 
 body[data-app-page="tasks"] #app[aria-label="TaskLaunch App"] #appPageTasks .taskScreenPillGroup,
