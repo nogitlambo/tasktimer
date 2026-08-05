@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Task } from "@/app/tasktimer/lib/types";
-import type { BrainDumpReviewSession } from "@/app/brain-dump/lib/brainDumpProcessing";
+import type { BrainDumpReviewDate, BrainDumpReviewSession } from "@/app/brain-dump/lib/brainDumpProcessing";
 
 const mocks = vi.hoisted(() => ({
   store: {
@@ -33,6 +33,22 @@ vi.mock("@/app/brain-dump/lib/brainDumpWorkspaceStore", () => ({
 
 import { POST } from "./route";
 
+function reviewDate(overrides: Partial<BrainDumpReviewDate> = {}): BrainDumpReviewDate {
+  return {
+    originalDateText: null,
+    dateSource: "none",
+    timezone: "Australia/Sydney",
+    resolvedDate: null,
+    dateConfidence: 0,
+    ambiguity: "none",
+    ambiguityFlags: [],
+    userConfirmedDate: false,
+    recurrenceText: null,
+    dependencyTimingText: null,
+    ...overrides,
+  };
+}
+
 function reviewSession(): BrainDumpReviewSession {
   return {
     id: "session-1",
@@ -55,6 +71,7 @@ function reviewSession(): BrainDumpReviewSession {
           confidence: 0.9,
           ambiguityFlags: [],
           supported: true,
+          date: reviewDate(),
         },
       ],
     },

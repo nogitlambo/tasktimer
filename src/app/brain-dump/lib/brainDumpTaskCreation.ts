@@ -3,15 +3,22 @@ import { createTaskTimerSharedTask } from "@/app/tasktimer/client/task-shared";
 
 import type {
   BrainDumpCreationBatchResult,
+  BrainDumpReviewDate,
   BrainDumpReviewItem,
   BrainDumpReviewSession,
   BrainDumpSessionStore,
 } from "./brainDumpProcessing";
 
+export type BrainDumpReviewDateUpdate = {
+  resolvedDate?: string | null;
+  userConfirmedDate?: boolean;
+};
+
 export type BrainDumpReviewItemUpdate = {
   itemId: string;
   title?: string;
   selected?: boolean;
+  date?: BrainDumpReviewDateUpdate;
 };
 
 export type BrainDumpWorkspaceRepository = {
@@ -41,19 +48,50 @@ function nextTaskOrder(tasks: Task[]) {
 }
 
 function normalizeItemUpdate(update: BrainDumpReviewItemUpdate | null | undefined) {
+  const date = update?.date;
   return {
     itemId: asString(update?.itemId, 120),
     title: update && Object.prototype.hasOwnProperty.call(update, "title") ? asString(update.title, 200) : undefined,
     selected: typeof update?.selected === "boolean" ? update.selected : undefined,
+    date:
+      date && typeof date === "object"
+        ? {
+            resolvedDate:
+              Object.prototype.hasOwnProperty.call(date, "resolvedDate") && typeof date.resolvedDate !== "undefined"
+                ? normalizeDateValue(date.resolvedDate)
+                : undefined,
+            userConfirmedDate: typeof date.userConfirmedDate === "boolean" ? date.userConfirmedDate : undefined,
+          }
+        : undefined,
   };
 }
 
 function applyUpdate(item: BrainDumpReviewItem, update: ReturnType<typeof normalizeItemUpdate> | null): BrainDumpReviewItem {
   const nextTitle = update?.title;
+  const nextDate = applyDateUpdate(item.date, update?.date);
   return {
     ...item,
     title: nextTitle ? nextTitle : item.title,
     selected: typeof update?.selected === "boolean" ? update.selected : item.selected,
+    date: nextDate,
+  };
+}
+
+function normalizeDateValue(value: unknown) {
+  if (value === null) return null;
+  const text = asString(value, 40);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function applyDateUpdate(date: BrainDumpReviewDate, update: ReturnType<typeof normalizeItemUpdate>["date"]): BrainDumpReviewDate {
+  if (!update) return date;
+  const resolvedDate = Object.prototype.hasOwnProperty.call(update, "resolvedDate") ? update.resolvedDate ?? null : date.resolvedDate;
+  return {
+    ...date,
+    resolvedDate,
+    userConfirmedDate: typeof update.userConfirmedDate === "boolean" ? update.userConfirmedDate : date.userConfirmedDate,
+    ambiguity: resolvedDate ? "none" : date.ambiguity,
+    ambiguityFlags: resolvedDate ? [] : date.ambiguityFlags,
   };
 }
 
@@ -96,7 +134,19 @@ function buildTaskFromReviewItem(input: {
   const task = sharedTasks.makeTask(input.item.title, input.order);
   task.createdAtMs = input.createdAtMs;
   task.plannedStartPushRemindersEnabled = false;
+  if (dateCanAffectTask(input.item.date)) {
+    task.taskType = "once-off";
+    task.onceOffTargetDate = input.item.date.resolvedDate;
+    task.onceOffDay = null;
+  }
   return task;
+}
+
+function dateCanAffectTask(date: BrainDumpReviewDate) {
+  if (!date.resolvedDate) return false;
+  if (date.ambiguity === "ambiguous" && !date.userConfirmedDate) return false;
+  if (date.dateSource === "suggested" && !date.userConfirmedDate) return false;
+  return date.dateSource === "explicit" || date.dateSource === "inferred" || date.userConfirmedDate;
 }
 
 export async function confirmBrainDumpReviewSession(input: {

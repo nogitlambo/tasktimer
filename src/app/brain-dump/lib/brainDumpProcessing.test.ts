@@ -115,6 +115,64 @@ describe("processTypedBrainDump", () => {
     expect(store.saveSession).not.toHaveBeenCalled();
   });
 
+  it("preserves explicit source dates separately from AI-suggested dates in review items", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Call dentist",
+            sourceEvidence: ["call dentist tomorrow"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+            dueDateText: "tomorrow",
+            dateSource: "explicit",
+          },
+          {
+            itemType: "task",
+            title: "Clean desk",
+            sourceEvidence: ["clean desk"],
+            confidence: 0.72,
+            ambiguityFlags: [],
+            dueDateText: "Friday",
+            dateSource: "suggested",
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Call dentist tomorrow. Clean desk.",
+      timezone: "Australia/Sydney",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+      now: () => Date.parse("2026-08-05T02:00:00.000Z"),
+    });
+
+    expect(session.review.items[0].date).toMatchObject({
+      originalDateText: "tomorrow",
+      dateSource: "explicit",
+      timezone: "Australia/Sydney",
+      resolvedDate: "2026-08-06",
+      userConfirmedDate: false,
+      ambiguity: "none",
+    });
+    expect(session.review.items[1].date).toMatchObject({
+      originalDateText: "Friday",
+      dateSource: "suggested",
+      timezone: "Australia/Sydney",
+      resolvedDate: "2026-08-07",
+      userConfirmedDate: false,
+      ambiguity: "none",
+    });
+  });
+
   it("keeps unsupported extracted items visible and unselected", async () => {
     const provider: BrainDumpAiProvider = {
       extractTyped: vi.fn(async () => ({
@@ -156,6 +214,98 @@ describe("processTypedBrainDump", () => {
       selected: false,
       supported: false,
       ambiguityFlags: ["Unsupported item type for task creation."],
+    });
+  });
+
+  it("does not invent missing dates and flags approximate timing as ambiguous", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Clean desk",
+            sourceEvidence: ["clean desk"],
+            confidence: 0.8,
+            ambiguityFlags: [],
+          },
+          {
+            itemType: "task",
+            title: "Review budget",
+            sourceEvidence: ["review budget sometime next week"],
+            confidence: 0.8,
+            ambiguityFlags: [],
+            dueDateText: "sometime next week",
+            dateSource: "explicit",
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Clean desk. Review budget sometime next week.",
+      timezone: "Australia/Sydney",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+      now: () => Date.parse("2026-08-05T02:00:00.000Z"),
+    });
+
+    expect(session.review.items[0].date).toMatchObject({
+      originalDateText: null,
+      dateSource: "none",
+      resolvedDate: null,
+      ambiguity: "none",
+    });
+    expect(session.review.items[1].date).toMatchObject({
+      originalDateText: "sometime next week",
+      dateSource: "explicit",
+      resolvedDate: null,
+      ambiguity: "ambiguous",
+    });
+    expect(session.review.items[1].date.ambiguityFlags[0]).toContain("needs review");
+  });
+
+  it("resolves relative dates against the user's timezone across a daylight-saving boundary", async () => {
+    const provider: BrainDumpAiProvider = {
+      extractTyped: vi.fn(async () => ({
+        items: [
+          {
+            itemType: "task",
+            title: "Pack charger",
+            sourceEvidence: ["pack charger tomorrow"],
+            confidence: 0.9,
+            ambiguityFlags: [],
+            dueDateText: "tomorrow",
+            dateSource: "explicit",
+          },
+        ],
+      })),
+    };
+    const store: BrainDumpSessionStore = {
+      saveSession: vi.fn(async () => {}),
+      getSession: vi.fn(),
+    };
+
+    const session = await processTypedBrainDump({
+      uid: "uid-1",
+      text: "Pack charger tomorrow.",
+      timezone: "Australia/Sydney",
+      provider,
+      store,
+      createId: () => "brain-dump-session-1",
+      now: () => Date.parse("2026-10-03T13:30:00.000Z"),
+    });
+
+    expect(session.review.items[0].date).toMatchObject({
+      originalDateText: "tomorrow",
+      timezone: "Australia/Sydney",
+      resolvedDate: "2026-10-04",
+      ambiguity: "none",
     });
   });
 

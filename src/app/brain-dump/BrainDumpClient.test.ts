@@ -68,4 +68,18 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("raw_text");
     expect(source).not.toContain("source_text");
   });
+
+  it("renders editable review dates without hiding source provenance", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain("BrainDumpReviewDate");
+    expect(source).toContain('type="date"');
+    expect(source).toContain('aria-label={`Date for ${item.title}`}');
+    expect(source).toContain("date: {");
+    expect(source).toContain("userConfirmedDate: true");
+    expect(source).toContain("Remove date");
+    expect(source).toContain("item.date.dateSource");
+    expect(source).toContain("item.date.originalDateText");
+    expect(source).toContain("item.date.ambiguityFlags");
+  });
 });

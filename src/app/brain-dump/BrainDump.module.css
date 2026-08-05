@@ -194,6 +194,13 @@
   padding: 14px;
 }
 
+.dateReview {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+}
+
 .reviewItem[data-supported="false"] {
   border-color: rgba(255, 155, 155, 0.38);
 }
@@ -261,6 +268,13 @@
   color: rgba(248, 250, 252, 0.68);
 }
 
+.dateMeta {
+  margin: 0;
+  color: rgba(248, 250, 252, 0.58);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 @media (max-width: 640px) {
   .shell {
     padding-right: 16px;
@@ -278,5 +292,9 @@
 
   .submitButton {
     width: 100%;
+  }
+
+  .dateReview {
+    grid-template-columns: 1fr;
   }
 }

@@ -65,6 +65,20 @@ type BrainDumpReviewItem = {
   confidence: number;
   ambiguityFlags: string[];
   supported: boolean;
+  date: BrainDumpReviewDate;
+};
+
+type BrainDumpReviewDate = {
+  originalDateText: string | null;
+  dateSource: "explicit" | "inferred" | "suggested" | "none";
+  timezone: string;
+  resolvedDate: string | null;
+  dateConfidence: number;
+  ambiguity: "none" | "ambiguous";
+  ambiguityFlags: string[];
+  userConfirmedDate: boolean;
+  recurrenceText: string | null;
+  dependencyTimingText: string | null;
 };
 
 type BrainDumpReviewSession = {
@@ -234,7 +248,7 @@ export default function BrainDumpClient() {
     }
   }
 
-  function updateReviewItem(itemId: string, patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title">>) {
+  function updateReviewItem(itemId: string, patch: Partial<Pick<BrainDumpReviewItem, "selected" | "title" | "date">>) {
     setSession((current) => {
       if (!current) return current;
       return {
@@ -247,6 +261,7 @@ export default function BrainDumpClient() {
               ...item,
               title: patch.title ?? item.title,
               selected: item.supported ? (patch.selected ?? item.selected) : false,
+              date: patch.date ?? item.date,
             };
           }),
         },
@@ -269,6 +284,10 @@ export default function BrainDumpClient() {
         itemId: item.id,
         selected: item.supported && item.selected,
         title: item.title,
+        date: {
+          resolvedDate: item.date.resolvedDate,
+          userConfirmedDate: item.date.userConfirmedDate,
+        },
       }));
       const response = await fetch(getApiUrl(`/api/brain-dump/sessions/${session.id}/confirm/`), {
         method: "POST",
@@ -428,6 +447,50 @@ export default function BrainDumpClient() {
                   </p>
                   {item.sourceEvidence.length ? <p className={styles.evidence}>{item.sourceEvidence.join(" ")}</p> : null}
                   {item.ambiguityFlags.length ? <p className={styles.flags}>{item.ambiguityFlags.join(" ")}</p> : null}
+                  <div className={styles.dateReview}>
+                    <label className={styles.label} htmlFor={`brainDumpDate-${item.id}`}>
+                      Date
+                    </label>
+                    <input
+                      id={`brainDumpDate-${item.id}`}
+                      className={styles.titleInput}
+                      type="date"
+                      aria-label={`Date for ${item.title}`}
+                      value={item.date.resolvedDate || ""}
+                      disabled={session.state === "completed" || busy}
+                      onChange={(event) =>
+                        updateReviewItem(item.id, {
+                          date: {
+                            ...item.date,
+                            resolvedDate: event.target.value || null,
+                            userConfirmedDate: true,
+                            ambiguity: event.target.value ? "none" : item.date.ambiguity,
+                            ambiguityFlags: event.target.value ? [] : item.date.ambiguityFlags,
+                          },
+                        })
+                      }
+                    />
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={!item.date.resolvedDate || session.state === "completed" || busy}
+                      onClick={() =>
+                        updateReviewItem(item.id, {
+                          date: {
+                            ...item.date,
+                            resolvedDate: null,
+                            userConfirmedDate: true,
+                          },
+                        })
+                      }
+                    >
+                      Remove date
+                    </button>
+                    <p className={styles.dateMeta}>
+                      {item.date.dateSource} {item.date.originalDateText ? `| ${item.date.originalDateText}` : ""}
+                    </p>
+                    {item.date.ambiguityFlags.length ? <p className={styles.flags}>{item.date.ambiguityFlags.join(" ")}</p> : null}
+                  </div>
                 </article>
               ))}
             </div>

@@ -16,6 +16,8 @@ const brainDumpItemTypeSchema = z.enum([
   "reference",
 ]);
 
+const brainDumpDateSourceSchema = z.enum(["explicit", "inferred", "suggested", "none"]);
+
 const providerItemSchema = z
   .object({
     id: z.string().trim().min(1).max(120).optional(),
@@ -24,6 +26,10 @@ const providerItemSchema = z
     sourceEvidence: z.array(z.string().trim().min(1).max(280)).max(5).default([]),
     confidence: z.number().min(0).max(1),
     ambiguityFlags: z.array(z.string().trim().min(1).max(160)).max(10).default([]),
+    dueDateText: z.string().trim().min(1).max(160).optional(),
+    dateSource: brainDumpDateSourceSchema.default("none"),
+    recurrenceText: z.string().trim().min(1).max(200).optional(),
+    dependencyTimingText: z.string().trim().min(1).max(200).optional(),
   })
   .strict();
 
@@ -34,6 +40,20 @@ const providerResponseSchema = z
   .strict();
 
 export type BrainDumpItemType = z.infer<typeof brainDumpItemTypeSchema>;
+export type BrainDumpDateSource = z.infer<typeof brainDumpDateSourceSchema>;
+
+export type BrainDumpReviewDate = {
+  originalDateText: string | null;
+  dateSource: BrainDumpDateSource;
+  timezone: string;
+  resolvedDate: string | null;
+  dateConfidence: number;
+  ambiguity: "none" | "ambiguous";
+  ambiguityFlags: string[];
+  userConfirmedDate: boolean;
+  recurrenceText: string | null;
+  dependencyTimingText: string | null;
+};
 
 export type BrainDumpReviewItem = {
   id: string;
@@ -44,6 +64,7 @@ export type BrainDumpReviewItem = {
   confidence: number;
   ambiguityFlags: string[];
   supported: boolean;
+  date: BrainDumpReviewDate;
 };
 
 export type BrainDumpSessionState = "review" | "completed";
@@ -144,6 +165,105 @@ function itemIsSupported(itemType: BrainDumpItemType) {
   return itemType === "task";
 }
 
+function formatDateUtc(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(dateText: string, days: number) {
+  const [year, month, day] = dateText.split("-").map((part) => Number(part));
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return formatDateUtc(date);
+}
+
+function getLocalDateText(nowMs: number, timezone: string) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(nowMs));
+    const year = parts.find((part) => part.type === "year")?.value || "1970";
+    const month = parts.find((part) => part.type === "month")?.value || "01";
+    const day = parts.find((part) => part.type === "day")?.value || "01";
+    return `${year}-${month}-${day}`;
+  } catch {
+    return formatDateUtc(new Date(nowMs));
+  }
+}
+
+const WEEKDAY_INDEX: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+function weekdayIndex(dateText: string) {
+  const [year, month, day] = dateText.split("-").map((part) => Number(part));
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+function resolveDateText(input: { text: string | null; timezone: string; nowMs: number }) {
+  const raw = asTrimmedString(input.text, 160);
+  if (!raw) return { resolvedDate: null, ambiguity: "none" as const, ambiguityFlags: [] };
+  const lower = raw.toLowerCase();
+  const today = getLocalDateText(input.nowMs, input.timezone);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(lower)) {
+    return { resolvedDate: lower, ambiguity: "none" as const, ambiguityFlags: [] };
+  }
+  if (lower === "today") return { resolvedDate: today, ambiguity: "none" as const, ambiguityFlags: [] };
+  if (lower === "tomorrow") return { resolvedDate: addDays(today, 1), ambiguity: "none" as const, ambiguityFlags: [] };
+  if (/\b(sometime|around|approx|approximately|next week|later)\b/.test(lower)) {
+    return {
+      resolvedDate: null,
+      ambiguity: "ambiguous" as const,
+      ambiguityFlags: [`Date wording "${raw}" needs review before it can affect task creation.`],
+    };
+  }
+  const weekdayMatch = lower.match(/\b(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/);
+  if (weekdayMatch) {
+    const target = WEEKDAY_INDEX[weekdayMatch[2]];
+    const current = weekdayIndex(today);
+    let delta = (target - current + 7) % 7;
+    if (delta === 0 || weekdayMatch[1]) delta += 7;
+    return { resolvedDate: addDays(today, delta), ambiguity: "none" as const, ambiguityFlags: [] };
+  }
+  return {
+    resolvedDate: null,
+    ambiguity: "ambiguous" as const,
+    ambiguityFlags: [`Date wording "${raw}" could not be resolved deterministically.`],
+  };
+}
+
+function buildReviewDate(input: {
+  dueDateText?: string;
+  dateSource: BrainDumpDateSource;
+  timezone: string;
+  nowMs: number;
+  recurrenceText?: string;
+  dependencyTimingText?: string;
+}): BrainDumpReviewDate {
+  const originalDateText = asTrimmedString(input.dueDateText, 160) || null;
+  const dateSource = originalDateText ? input.dateSource : "none";
+  const resolved = resolveDateText({ text: originalDateText, timezone: input.timezone, nowMs: input.nowMs });
+  return {
+    originalDateText,
+    dateSource,
+    timezone: input.timezone,
+    resolvedDate: resolved.resolvedDate,
+    dateConfidence: dateSource === "suggested" ? 0.55 : originalDateText ? 0.9 : 0,
+    ambiguity: resolved.ambiguity,
+    ambiguityFlags: resolved.ambiguityFlags,
+    userConfirmedDate: false,
+    recurrenceText: asTrimmedString(input.recurrenceText, 200) || null,
+    dependencyTimingText: asTrimmedString(input.dependencyTimingText, 200) || null,
+  };
+}
+
 export async function processTypedBrainDump(input: {
   uid: string;
   text: string;
@@ -183,6 +303,14 @@ export async function processTypedBrainDump(input: {
       confidence: item.confidence,
       ambiguityFlags: item.ambiguityFlags,
       supported,
+      date: buildReviewDate({
+        dueDateText: item.dueDateText,
+        dateSource: item.dateSource,
+        timezone,
+        nowMs,
+        recurrenceText: item.recurrenceText,
+        dependencyTimingText: item.dependencyTimingText,
+      }),
     };
   });
 
