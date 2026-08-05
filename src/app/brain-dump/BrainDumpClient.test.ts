@@ -69,6 +69,17 @@ describe("BrainDumpClient", () => {
     expect(source).not.toContain("source_text");
   });
 
+  it("uses history-aware Back links with a TaskLaunch fallback", () => {
+    const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
+
+    expect(source).toContain('resolveTaskTimerRouteHref("/tasklaunch")');
+    expect(source).toContain("function handleBackNavigation");
+    expect(source).toContain("window.history.length > 1");
+    expect(source).toContain("window.history.back()");
+    expect(source).toContain("href={taskLaunchHref}");
+    expect(source).not.toContain('href="/tasklaunch"');
+  });
+
   it("renders editable review dates without hiding source provenance", () => {
     const source = readFileSync(resolve(__dirname, "BrainDumpClient.tsx"), "utf8");
 

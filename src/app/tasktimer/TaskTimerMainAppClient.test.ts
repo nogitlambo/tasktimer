@@ -32,6 +32,13 @@ describe("TaskTimerMainAppClient leaderboard user summary modal", () => {
     expect(editOverlayIndex).toBeLessThan(frameCloseIndex);
   });
 
+  it("keeps the Add Task launcher label and delegated selector hook stable", () => {
+    expect(source).toContain('id="openAddTaskBtn"');
+    expect(source).toContain('aria-label="Add Task"');
+    expect(source).toContain('title="Add Task"');
+    expect(source).toContain("Add Task");
+  });
+
   it("renders the leaderboard user summary reveal wrapper and entrance class", () => {
     expect(source).toContain('className="modal leaderboardPositionModal leaderboardPositionPrimitiveModal isLeaderboardPositionRevealing"');
     expect(source).toContain('className="friendUserSummaryBorderTrace"');

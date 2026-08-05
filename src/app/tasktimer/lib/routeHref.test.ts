@@ -51,4 +51,11 @@ describe("resolveTaskTimerRouteHref", () => {
 
     expect(resolveTaskTimerRouteHref("/tasklaunch")).toBe("/tasklaunch/index.html");
   });
+
+  it("uses exported index paths for the Brain Dump route in native runtime", () => {
+    setWindowLocation("https:", "/tasklaunch");
+    Capacitor.isNativePlatform = () => true;
+
+    expect(resolveTaskTimerRouteHref("/brain-dump")).toBe("/brain-dump/index.html");
+  });
 });

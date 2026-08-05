@@ -99,6 +99,17 @@ describe("TaskTimerAppFrame mobile menu", () => {
     expect((html.match(/src="\/executive_function\.png"/g) ?? []).length).toBe(2);
   });
 
+  it("uses the executive function image as the primary Brain Dump entry on mobile and desktop", () => {
+    const html = renderTaskTimerAppFrameMarkup();
+
+    expect(html).toContain('href="/brain-dump"');
+    expect(html).toContain('aria-label="Brain Dump"');
+    expect(html).toContain('title="Brain Dump"');
+    expect(html).toContain('class="taskLaunchBrainDumpEntry taskLaunchTopbarBrainDumpEntry"');
+    expect(html).toContain('class="taskLaunchBrainDumpEntry appShellHeaderBrainDumpEntry"');
+    expect((html.match(/aria-label="Brain Dump"/g) ?? []).length).toBe(2);
+  });
+
   it("renders the mobile menu as a dialog-style bottom sheet structure", () => {
     const html = renderTaskTimerAppFrameMarkup();
 
@@ -208,8 +219,24 @@ describe("TaskTimerAppFrame rank ladder wiring", () => {
 });
 
 describe("TaskTimerAppFrame XP award CSS contracts", () => {
+  const frameSource = readFileSync(resolve(__dirname, "TaskTimerAppFrame.tsx"), "utf8");
   const shellCss = readFileSync(resolve(__dirname, "../styles/01-shell.css"), "utf8");
   const overlaysCss = readFileSync(resolve(__dirname, "../styles/04-overlays.css"), "utf8");
+
+  it("tracks Brain Dump entry opens without source content", () => {
+    expect(frameSource).toContain('trackEvent("brain_dump_entry_opened", {');
+    expect(frameSource).toContain('entry_point: "executive_function_image"');
+    expect(frameSource).not.toContain("raw_text");
+    expect(frameSource).not.toContain("source_text");
+  });
+
+  it("styles Brain Dump shell entry links as accessible primary-theme image controls", () => {
+    expect(shellCss).toContain(".taskLaunchBrainDumpEntry{");
+    expect(shellCss).toContain("min-width:44px;");
+    expect(shellCss).toContain("min-height:44px;");
+    expect(shellCss).toContain(".taskLaunchBrainDumpEntry:focus-visible");
+    expect(shellCss).toContain("outline:2px solid var(--primary);");
+  });
 
   it("keeps the XP award spotlight transparent without applying backdrop blur", () => {
     const spotlightRule = shellCss.match(/\.xpAwardSpotlightLayer\s*\{([\s\S]*?)\}/)?.[1] ?? "";

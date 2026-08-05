@@ -1,10 +1,11 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { getFirebaseAuthClient } from "@/lib/firebaseClient";
 import { trackEvent } from "@/lib/firebaseTelemetry";
 import { getApiUrl } from "@/app/tasktimer/lib/apiClient";
+import { resolveTaskTimerRouteHref } from "@/app/tasktimer/lib/routeHref";
 
 import styles from "./BrainDump.module.css";
 
@@ -164,6 +165,15 @@ export default function BrainDumpClient() {
       return "UTC";
     }
   }, []);
+  const taskLaunchHref = resolveTaskTimerRouteHref("/tasklaunch");
+
+  function handleBackNavigation(event: MouseEvent<HTMLAnchorElement>) {
+    if (typeof window === "undefined") return;
+    if (window.history.length > 1) {
+      event.preventDefault();
+      window.history.back();
+    }
+  }
 
   useEffect(() => {
     if (error) errorSummaryRef.current?.focus();
@@ -473,7 +483,7 @@ export default function BrainDumpClient() {
     <main className={styles.page}>
       <section className={styles.shell} aria-labelledby="brainDumpTitle">
         <header className={styles.header}>
-          <a className={styles.backLink} href="/tasklaunch">
+          <a className={styles.backLink} href={taskLaunchHref} onClick={handleBackNavigation}>
             Back
           </a>
           <div>
@@ -798,7 +808,7 @@ export default function BrainDumpClient() {
                       Undo
                     </button>
                   ) : null}
-                  <a className={styles.backLink} href="/tasklaunch">
+                  <a className={styles.backLink} href={taskLaunchHref} onClick={handleBackNavigation}>
                     Tasks
                   </a>
                 </>
